@@ -22,7 +22,7 @@ A modern web application built with Java, Kotlin, Spring Boot, Gradle, JavaScrip
 Clone the repository and navigate to the project directory:
 
 ```shell
-git clone git@github.com:simplepoint1024/simplepoint-main.git
+git clone git@github.com:simplepoint1024/open-simplepoint-dashboard.git
 cd simplepoint-main
 ```
 
