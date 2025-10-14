@@ -1,0 +1,31 @@
+### 获取用户列表（可附加条件）
+GET http://localhost:8080/common/user
+cookie: JSESSIONID=34B7B1173DB9C9080624B91FB144E6B5; SESSION=75f3d8fc-aab7-4283-a3a4-85c211f78bdc
+
+### 添加用户
+POST http://localhost:8090/user
+Content-Type: application/json
+
+{
+  "username": "admin1",
+  "password": "Admin@123.",
+  "givenName": "管理员",
+  "nickname": "管理员",
+  "locale": "zh_CN"
+}
+
+### 修改用户（不包含密码）
+PUT http://localhost:8090/user
+Content-Type: application/json
+
+{
+  "id": "1910274517201195008",
+  "username": "superadmin",
+  "password": "$2a$10$uWQLeQRSQ8lYTEYRF56WReUaG18afDZNGxosdhB5g.dVc37m6C2ee",
+  "givenName": "管理员",
+  "nickname": "管理员",
+  "locale": "zh_CN"
+}
+
+### 删除用户
+DELETE localhost:8081/common/user?ids=1910275158715797504

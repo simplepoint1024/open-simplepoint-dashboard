@@ -1,0 +1,6 @@
+org.simplepoint.core.table.types.impl.BooleanAccessColumnType
+org.simplepoint.core.table.types.impl.DateAccessColumnType
+org.simplepoint.core.table.types.impl.InstantAccessColumnType
+org.simplepoint.core.table.types.impl.IntegerAccessColumnType
+org.simplepoint.core.table.types.impl.LongAccessColumnType
+org.simplepoint.core.table.types.impl.StringAccessColumnType

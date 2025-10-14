@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+    <pid>simplepoint-plugin-rbac-service</pid>
+    <name>RBAC-REST</name>
+    <version>1.0</version>
+    <author>ljx</author>
+    <email>xxxxx@xxx.com</email>
+    <document>暂无</document>
+    <phone>118888888888</phone>
+    <declaration>提供RBAC权限体系相关的接口</declaration>
+    <packageName>org.simplepoint.plugin.rbac.core.rest</packageName>
+    <autoRegister>true</autoRegister>
+
+    <packageScan>
+        <controller>org.simplepoint.plugin.rbac.core.rest.endpoint</controller>
+    </packageScan>
+
+    <instances>
+        <!--                <controller>-->
+        <!--                    <beanContext>-->
+        <!--                        <beanName>orgSimplepointTController</beanName>-->
+        <!--                        <beanClassName>org.simplepoint.controller.TController</beanClassName>-->
+        <!--                    </beanContext>-->
+        <!--                </controller>-->
+
+        <!--        <service>-->
+        <!--            <beanContext>-->
+        <!--                <beanName>orgSimplepointTServiceImpl</beanName>-->
+        <!--                <beanClassName>org.simplepoint.service.impl.TServiceImpl</beanClassName>-->
+        <!--            </beanContext>-->
+        <!--        </service>-->
+        <!--        <repository>-->
+        <!--        </repository>-->
+    </instances>
+</plugin>

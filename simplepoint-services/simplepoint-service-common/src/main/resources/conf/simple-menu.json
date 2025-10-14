@@ -1,0 +1,121 @@
+[
+  {
+    "label": "系统维护",
+    "path": "/ops",
+    "icon": "SettingOutlined",
+    "children": [
+      {
+        "label": "微应用中心",
+        "path": "/ops/app",
+        "component": "common/ops/MicroApp",
+        "type": "item",
+        "icon": "AppstoreAddOutlined"
+      },
+      {
+        "label": "微服务中心",
+        "path": "/ops/services",
+        "component": "common/ops/MicroService",
+        "type": "item",
+        "icon": "AppstoreOutlined"
+      }
+    ]
+  },
+  {
+    "label": "访问控制",
+    "path": "/ac",
+    "icon": "SecurityScanOutlined",
+    "children": [
+      {
+        "label": "应用管理",
+        "path": "/ac",
+        "component": "common/ac/Client",
+        "type": "item",
+        "icon": "KeyOutlined"
+      },
+      {
+        "label": "授权管理",
+        "path": "/ac/auth",
+        "component": "common/ac/Auth",
+        "type": "item",
+        "icon": "AppstoreOutlined"
+      },
+      {
+        "label": "字段权限",
+        "path": "/ac/field",
+        "component": "common/ac/Field",
+        "type": "item",
+        "icon": "TableOutlined"
+      },
+      {
+        "label": "数据权限",
+        "path": "/ac/data",
+        "component": "common/ac/Data",
+        "type": "item",
+        "icon": "BarsOutlined"
+      },
+      {
+        "label": "用户管理",
+        "path": "/ac/user",
+        "component": "common/ac/User",
+        "type": "item",
+        "icon": "UserOutlined"
+      },
+      {
+        "label": "角色管理",
+        "path": "/ac/role",
+        "component": "common/ac/Role",
+        "type": "item",
+        "icon": "UsergroupAddOutlined"
+      },
+      {
+        "label": "菜单管理",
+        "path": "/ac/menu",
+        "component": "common/ac/Menu",
+        "type": "item",
+        "icon": "MenuOutlined"
+      },
+      {
+        "label": "端点管理",
+        "path": "/ac/endpoints",
+        "component": "common/ac/Endpoint",
+        "type": "item",
+        "icon": "ApiOutlined"
+      }
+    ]
+  },
+  {
+    "label": "国际化多语言",
+    "path": "/locale",
+    "icon": "GlobalOutlined",
+    "children": [
+      {
+        "label": "多语言管理",
+        "path": "/locale/language",
+        "component": "common/locale/Language",
+        "type": "item",
+        "icon": "TranslationOutlined"
+      },
+      {
+        "label": "国家和地区",
+        "path": "/locale/country-range",
+        "component": "common/locale/CountryRange",
+        "type": "item",
+        "icon": "BankOutlined"
+      },
+      {
+        "label": "时区",
+        "path": "/locale/timezone",
+        "component": "common/locale/timezone",
+        "type": "item",
+        "icon": "HistoryOutlined"
+      },
+      {
+        "label": "国际化键值",
+        "path": "/locale/message",
+        "component": "common/locale/message",
+        "type": "item",
+        "icon": "MessageOutlined"
+      }
+    ]
+  }
+]

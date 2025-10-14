@@ -1,0 +1,6 @@
+#!/bin/sh
+./gradlew checkstyleMain -Pcheckstyle.ignoreWarnings=false
+if [ $? -ne 0 ]; then
+  echo "Checkstyle 未通过，禁止提交！"
+  exit 1
+fi

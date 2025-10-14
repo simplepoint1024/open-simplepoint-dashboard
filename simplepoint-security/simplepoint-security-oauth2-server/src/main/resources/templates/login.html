@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        button, .oauth-btn {
+            padding: 12px;
+            margin-top: 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+        }
+
+        .oauth-btn {
+            background-color: white;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .oauth-btn img {
+            height: 20px;
+            margin-right: 8px;
+        }
+
+        .sign-in-btn {
+            background-color: #1a73e8;
+            color: white;
+        }
+    </style>
+    <title></title>
+</head>
+<body>
+<div class="card">
+    <form method="post" th:action="@{/login}">
+        <div style="text-align: center; margin-bottom: 24px;">
+            <h2 style="margin: 0 0 8px 0; font-weight: 400; font-size: 24px; color: #202124;">Sign in</h2>
+            <div style="font-size: 16px; color: #5f6368;">Use your Simplepoint Account</div>
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+            <label>
+                <input type="text" name="username" placeholder="Email or phone" required autofocus
+                       style="width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px;"/>
+            </label>
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+            <label>
+                <input type="password" name="password" placeholder="Enter your password" required
+                       style="width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px;"/>
+            </label>
+        </div>
+        <div th:if="${param.error}" class="alert alert-danger" role="alert"
+             style="color: #d93025; font-size: 14px; margin-bottom: 16px;">
+            Invalid username or password.
+        </div>
+        <div th:if="${param.logout}" class="alert alert-success" role="alert"
+             style="color: #188038; font-size: 14px; margin-bottom: 16px;">
+            You have been logged out.
+        </div>
+        <a class="oauth-btn sign-in-btn" href="#" onclick="document.querySelector('form').submit()"
+           style="text-decoration: none; text-align: center; background-color: #1a73e8; color: white; padding: 12px; border-radius: 4px; font-size: 14px; display: block;">
+            Sign in
+        </a>
+        <a class="oauth-btn" href="/oauth2/authorization/google-idp">
+            <img src="/assets/img/google.png" th:src="@{/assets/img/google.png}" alt="Google logo">
+            Sign in with Google
+        </a>
+        <a class="oauth-btn" href="/oauth2/authorization/github-idp">
+            <img src="/assets/img/github.png" th:src="@{/assets/img/github.png}" alt="Github logo">
+            Sign in with Github
+        </a>
+    </form>
+</div>
+</body>
+</html>

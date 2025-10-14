@@ -1,0 +1,43 @@
+services:
+  simple_point_postgresql:
+    container_name: sp_postgresql
+    image: postgres
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=simplepoint
+    ports:
+      - "5432:5432"
+
+  simple_point_mysql:
+    container_name: sp_mysql
+    image: mysql:8.0.41-debian
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+
+  simple_point_consul:
+    container_name: sp_consul
+    build:
+      context: .
+      dockerfile: ./consul/Dockerfile
+    command: ["consul","agent", "-dev","-client=0.0.0.0"]
+    ports:
+      - "8600:8600"
+      - "8500:8500"
+      - "8301:8301"
+      - "8302:8302"
+
+  simple_point_redis:
+    container_name: sp_redis
+    image: redis:8.0-M03
+    ports:
+      - "6379:6379"
+
+  simple_point_rabbitmq:
+    container_name: sp_mq
+    image: rabbitmq:3.13.7-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"

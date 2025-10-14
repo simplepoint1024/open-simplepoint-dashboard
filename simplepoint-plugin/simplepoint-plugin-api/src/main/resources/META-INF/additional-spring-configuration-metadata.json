@@ -1,0 +1,23 @@
+{
+  "properties": [
+    {
+      "name": "plugin.endpoint.enable",
+      "type": "java.lang.String",
+      "description": "Description for plugin.endpoint.enable."
+    },
+    {
+      "name": "plugin.endpoint.uninstall",
+      "type": "java.lang.String",
+      "description": "Description for plugin.endpoint.uninstall."
+    },
+    {
+      "name": "plugin.endpoint.install",
+      "type": "java.lang.String",
+      "description": "Description for plugin.endpoint.install."
+    },
+    {
+      "name": "plugin.autoloader.path",
+      "type": "java.lang.String",
+      "description": "Description for plugin.autoloader.path."
+    }
+  ] }

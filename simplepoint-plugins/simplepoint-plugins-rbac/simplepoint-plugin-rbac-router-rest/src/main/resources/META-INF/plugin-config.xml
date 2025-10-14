@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+    <pid>simplepoint-plugin-rbac-service</pid>
+    <name>RBAC-MENU-REST</name>
+    <version>1.0</version>
+    <author>ljx</author>
+    <email>xxxxx@xxx.com</email>
+    <document>暂无</document>
+    <phone>118888888888</phone>
+    <declaration>提供RBAC权限体系相关的接口</declaration>
+    <packageName>org.simplepoint.plugin.rbac.menu.rest</packageName>
+    <autoRegister>true</autoRegister>
+
+    <packageScan>
+        <controller>org.simplepoint.plugin.rbac.core.menu.endpoint</controller>
+    </packageScan>
+</plugin>

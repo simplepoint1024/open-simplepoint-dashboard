@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+    <pid>simplepoint-plugin-rbac-service</pid>
+    <name>RBAC-MENU-SERVICE</name>
+    <version>1.0</version>
+    <author>ljx</author>
+    <email>xxxxx@xxx.com</email>
+    <document>暂无</document>
+    <phone>118888888888</phone>
+    <declaration>提供基础菜单功能服务</declaration>
+    <packageName>org.simplepoint.plugin.rbac.menu.service</packageName>
+    <autoRegister>true</autoRegister>
+
+    <packageScan>
+        <service>org.simplepoint.plugin.rbac.menu.service.impl</service>
+    </packageScan>
+</plugin>

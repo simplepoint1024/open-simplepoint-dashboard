@@ -1,0 +1,9 @@
+dependencies{
+    implementation("org.springdoc:springdoc-openapi-starter-common")
+    api("com.github.victools:jsonschema-generator")
+    api("com.github.victools:jsonschema-module-jackson")
+    api("org.springframework.boot:spring-boot-starter-validation")
+    api("com.github.victools:jsonschema-module-jakarta-validation")
+    api(project(":simplepoint-api"))
+    api(project(":simplepoint-security:simplepoint-security-core"))
+}
