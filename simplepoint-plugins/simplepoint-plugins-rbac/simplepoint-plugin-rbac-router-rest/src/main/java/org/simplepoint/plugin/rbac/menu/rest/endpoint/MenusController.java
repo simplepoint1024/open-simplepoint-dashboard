@@ -10,6 +10,7 @@ package org.simplepoint.plugin.rbac.menu.rest.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
@@ -64,6 +65,17 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
   public Response<Page<Menu>> limit(@RequestParam Map<String, String> attributes, Pageable pageable)
       throws Exception {
     return limit(service.limit(attributes, pageable), Menu.class);
+  }
+
+  /**
+   * Retrieves the menu list for the currently logged-in user.
+   *
+   * @return a collection of menu records accessible to the current user wrapped in {@link Response}
+   */
+  @GetMapping("/user")
+  @Operation(summary = "获取用户菜单", description = "获取当前登录用户的菜单列表")
+  public Response<Collection<Menu>> userMenus() {
+    return Response.data(service.userMenus());
   }
 
   /**

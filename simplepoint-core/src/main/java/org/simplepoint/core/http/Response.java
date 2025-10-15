@@ -9,6 +9,7 @@
 package org.simplepoint.core.http;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Collection;
 import org.simplepoint.core.annotation.FormSchema;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatusCode;
@@ -107,6 +108,20 @@ public class Response<T> extends ResponseEntity<T> {
         ok().contentType(MediaType.APPLICATION_JSON)
             .header("X-Resource", name)
             .body(pageable)
+    );
+  }
+
+  /**
+   * Return to collection query.
+   *
+   * @param data Collection data.
+   * @param <T>  entity type.
+   * @return Return a unified request result.
+   */
+  public static <T> Response<Collection<T>> data(Collection<T> data) {
+    return of(
+        ok().contentType(MediaType.APPLICATION_JSON)
+            .body(data)
     );
   }
 

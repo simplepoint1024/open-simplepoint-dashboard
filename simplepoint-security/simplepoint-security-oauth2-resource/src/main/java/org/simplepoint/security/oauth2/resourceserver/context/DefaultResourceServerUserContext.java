@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.simplepoint.api.security.base.BaseUser;
+import org.simplepoint.core.context.UserContext;
 import org.simplepoint.core.oidc.OidcScopes;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.oauth2.resourceserver.ResourceServerUserContext;
@@ -34,7 +35,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
  * <p>This class implements the UserContext interface,
  * providing user information context in an OAuth 2.0 resource server.
  */
-public class DefaultResourceServerUserContext implements ResourceServerUserContext<BaseUser> {
+public class DefaultResourceServerUserContext implements ResourceServerUserContext<BaseUser>, UserContext<BaseUser> {
 
   /**
    * JSON 解析器，用于处理用户信息数据

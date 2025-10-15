@@ -8,9 +8,11 @@
 
 package org.simplepoint.plugin.rbac.menu.base.repository;
 
+import java.util.Collection;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
 import org.simplepoint.security.entity.Menu;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -20,5 +22,15 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface JpaMenuRepository extends BaseRepository<Menu, String>, MenuRepository {
+
+  @Override
+  @Query("""
+      select menus
+      from Menu as menus
+               inner join RolePermissionsRelevance srpr on srpr.permissionAuthority = menus.uuid
+               inner join UserRoleRelevance urr on urr.authority = srpr.roleAuthority
+      where urr.username = 'system'
+      """)
+  Collection<Menu> findUserMenus(String username);
 }
 

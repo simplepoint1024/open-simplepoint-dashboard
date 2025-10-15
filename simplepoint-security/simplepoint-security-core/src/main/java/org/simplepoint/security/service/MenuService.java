@@ -8,6 +8,7 @@
 
 package org.simplepoint.security.service;
 
+import java.util.Collection;
 import java.util.Set;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
@@ -31,4 +32,11 @@ public interface MenuService extends BaseService<Menu, String> {
    * @param data the set of menu children to synchronize
    */
   void sync(Set<MenuChildren> data);
+
+  /**
+   * Retrieves the collection of menus accessible to the current user.
+   *
+   * @return a collection of {@link Menu} entities available to the user
+   */
+  Collection<Menu> userMenus();
 }

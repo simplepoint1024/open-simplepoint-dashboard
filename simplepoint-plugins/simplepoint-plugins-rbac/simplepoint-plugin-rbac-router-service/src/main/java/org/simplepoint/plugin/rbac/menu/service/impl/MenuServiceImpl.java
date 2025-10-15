@@ -8,6 +8,7 @@
 
 package org.simplepoint.plugin.rbac.menu.service.impl;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
@@ -15,8 +16,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import lombok.extern.slf4j.Slf4j;
+import org.simplepoint.api.security.base.BaseUser;
+import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.F;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.core.context.UserContext;
 import org.simplepoint.core.locale.I18nContextHolder;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
@@ -43,14 +47,18 @@ public class MenuServiceImpl
     implements MenuService {
 
   /**
-   * Constructs a MenusServiceImpl with the specified repository and optional metadata sync service.
+   * Constructs a new {@code MenuServiceImpl} with the specified repository.
    *
-   * @param repository the repository used for menu operations
+   * @param repository             the {@link MenuRepository} instance for data access
+   * @param userContext            the user context for retrieving current user information
+   * @param detailsProviderService the service for providing user details
    */
   public MenuServiceImpl(
-      final MenuRepository repository
+      final MenuRepository repository,
+      final UserContext<BaseUser> userContext,
+      final DetailsProviderService detailsProviderService
   ) {
-    super(repository);
+    super(repository, userContext, detailsProviderService);
   }
 
   @Override
@@ -94,6 +102,13 @@ public class MenuServiceImpl
         }
       }
     }
+  }
+
+  @Override
+  public Collection<Menu> userMenus() {
+    UserContext<BaseUser> userContext = getUserContext();
+    String username = userContext.getName();
+    return getRepository().findUserMenus(username);
   }
 }
 
