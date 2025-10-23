@@ -8,9 +8,9 @@
 
 package org.simplepoint.core.base.controller;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import java.io.Serializable;
+import java.util.Map;
 import org.simplepoint.api.base.BaseEntity;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.core.http.Response;
@@ -56,7 +56,7 @@ public class BaseController<S extends BaseService<T, I>, T extends BaseEntity<I>
    */
   @GetMapping("/schema")
   @Operation(summary = "获取实体元数据", description = "检索有关实体的元数据")
-  public Response<ObjectNode> schema() {
+  public Response<Map<String, Object>> schema() {
     return ok(service.schema());
   }
 

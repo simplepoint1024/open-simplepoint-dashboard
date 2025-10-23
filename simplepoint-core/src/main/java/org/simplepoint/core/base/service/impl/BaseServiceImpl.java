@@ -147,7 +147,7 @@ public class BaseServiceImpl
    * @return Metadata instance containing access permissions and related information
    */
   @Override
-  public ObjectNode schema() {
+  public Map<String, Object> schema() {
     if (detailsProviderService == null) {
       throw new IllegalStateException("DetailsProviderService is null");
     }
@@ -158,6 +158,19 @@ public class BaseServiceImpl
     }
     Class<T> domainClass = repository.getDomainClass();
 
+    ObjectNode jsonSchema = getJsonSchema(formSchemaGenerator, domainClass);
+    return Map.of("schema", jsonSchema);
+  }
+
+  /**
+   * Generates a JSON schema for the given domain class,
+   * applying field-level permissions based on the current user's details.
+   *
+   * @param formSchemaGenerator the service used to load field permissions
+   * @param domainClass         the domain class for which to generate the schema
+   * @return the generated JSON schema with applied field permissions
+   */
+  protected ObjectNode getJsonSchema(JsonSchemaDetailsService formSchemaGenerator, Class<T> domainClass) {
     var jsonSchemaGenerate = detailsProviderService.getDialect(JsonSchemaGenerator.class);
     ObjectNode schema = jsonSchemaGenerate.generateSchema(domainClass);
     BaseUser details = userContext.getDetails();
