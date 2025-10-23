@@ -5,7 +5,7 @@ import java.util.Collection;
 import org.simplepoint.api.base.BaseDetailsService;
 
 /**
- * Access control service.
+ * Details Provider Service.
  */
 public interface DetailsProviderService {
 
