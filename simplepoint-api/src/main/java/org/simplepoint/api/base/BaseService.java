@@ -39,7 +39,7 @@ public interface BaseService<T extends BaseEntity<I>, I extends Serializable> {
    *
    * @return metadata
    */
-  ObjectNode schema();
+  Map<String, Object> schema();
 
   /**
    * add.
