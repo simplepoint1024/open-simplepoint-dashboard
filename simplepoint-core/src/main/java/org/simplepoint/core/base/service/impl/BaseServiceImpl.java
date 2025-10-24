@@ -148,6 +148,19 @@ public class BaseServiceImpl
    */
   @Override
   public Map<String, Object> schema() {
+    Class<T> domainClass = repository.getDomainClass();
+    ObjectNode jsonSchema = getJsonSchema(domainClass);
+    return Map.of("schema", jsonSchema);
+  }
+
+  /**
+   * Generates a JSON schema for the given domain class,
+   * applying field-level permissions based on the current user's details.
+   *
+   * @param domainClass the domain class for which to generate the schema
+   * @return the generated JSON schema with applied field permissions
+   */
+  protected ObjectNode getJsonSchema(Class<T> domainClass) {
     if (detailsProviderService == null) {
       throw new IllegalStateException("DetailsProviderService is null");
     }
@@ -156,21 +169,6 @@ public class BaseServiceImpl
     if (formSchemaGenerator == null) {
       throw new RuntimeException("Form Schema Generator has not been initialized");
     }
-    Class<T> domainClass = repository.getDomainClass();
-
-    ObjectNode jsonSchema = getJsonSchema(formSchemaGenerator, domainClass);
-    return Map.of("schema", jsonSchema);
-  }
-
-  /**
-   * Generates a JSON schema for the given domain class,
-   * applying field-level permissions based on the current user's details.
-   *
-   * @param formSchemaGenerator the service used to load field permissions
-   * @param domainClass         the domain class for which to generate the schema
-   * @return the generated JSON schema with applied field permissions
-   */
-  protected ObjectNode getJsonSchema(JsonSchemaDetailsService formSchemaGenerator, Class<T> domainClass) {
     var jsonSchemaGenerate = detailsProviderService.getDialect(JsonSchemaGenerator.class);
     ObjectNode schema = jsonSchemaGenerate.generateSchema(domainClass);
     BaseUser details = userContext.getDetails();
@@ -194,6 +192,22 @@ public class BaseServiceImpl
     }
     schema.withObjectProperty("properties").retain(fieldNames);
     return schema;
+  }
+
+  /**
+   * Retrieves all field names from the JSON schema of the specified domain class.
+   *
+   * @param domainClass the domain class for which to retrieve field names
+   * @return a set of all field names in the domain class
+   */
+  protected Set<String> getAllFieldNames(Class<T> domainClass) {
+    ObjectNode jsonSchema = getJsonSchema(domainClass);
+    Set<String> fieldNames = new HashSet<>();
+    var propsNode = jsonSchema.get("properties");
+    if (propsNode instanceof ObjectNode props) {
+      props.fieldNames().forEachRemaining(fieldNames::add);
+    }
+    return fieldNames;
   }
 
   /**
@@ -240,11 +254,22 @@ public class BaseServiceImpl
     if (entity.getId() == null) {
       throw new NullPointerException("entity id is null");
     }
-    detailsProviderService.getDialect(ModifyDataAuditingService.class);
-    repository.findById(entity.getId()).ifPresent(t -> {
-      BeanUtil.copyProperties(t, entity, getCopyOptions());
-      getModifyDataAuditingServices().forEach(service -> service.modify(t, entity, repository.getDomainClass()));
+    repository.findById(entity.getId()).ifPresent(db -> {
+      // Only these fields are allowed to be modified by the client
+      Set<String> scopeFields = getAllFieldNames(getRepository().getDomainClass()); // e.g. load from permissions if needed
+
+      // For fields NOT in scopeFields, copy from db -> entity (including nulls)
+      CopyOptions options = CopyOptions.create()
+          .setIgnoreNullValue(false) // must overwrite with nulls from db to revert forbidden changes
+          .setIgnoreError(true)
+          .setFieldNameEditor(name -> scopeFields.contains(name) ? null : name); // null => skip copy for allowed fields
+
+      BeanUtil.copyProperties(db, entity, options);
+
+      // Audit diff between db (before) and entity (after merge)
+      getModifyDataAuditingServices().forEach(svc -> svc.modify(db, entity, repository.getDomainClass()));
     });
+
     return lock(getClass().getName() + ".modifyById", () -> repository.updateById(entity), 60, 60);
   }
 

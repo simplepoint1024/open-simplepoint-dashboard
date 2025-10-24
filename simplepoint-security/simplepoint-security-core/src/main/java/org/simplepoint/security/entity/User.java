@@ -9,6 +9,8 @@
 package org.simplepoint.security.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.Column;
@@ -71,7 +73,11 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * This field uniquely identifies the user within the system.
    */
   @Order(1)
-  @Schema(title = "用户名", description = "用户的唯一标识符")
+  @Schema(title = "用户名", description = "用户的唯一标识符", extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   private String username;
 
   /**
@@ -79,7 +85,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * This is securely stored and used for authentication purposes.
    */
   @Order(2)
-  @Schema(hidden = true, title = "密码", description = "用户的登录密码")
+  @Schema(title = "密码", description = "用户的登录密码")
   private String password;
 
   /**
@@ -88,7 +94,11 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    */
   @Email
   @JsonProperty(index = 1)
-  @Schema(maxLength = 64, minLength = 5, title = "邮箱", description = "用户的电子邮件地址")
+  @Schema(maxLength = 64, minLength = 5, title = "邮箱", description = "用户的电子邮件地址", extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   @Column(unique = true, nullable = false, length = 64)
   private String email;
 
@@ -103,7 +113,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * The birthdate of the user.
    * This field contains the user's date of birth.
    */
-  @Schema(accessMode = Schema.AccessMode.READ_ONLY, title = "出生日期", description = "用户的出生日期")
+  @Schema(title = "出生日期", description = "用户的出生日期", type = "string", format = "date-time")
   private Instant birthdate;
 
   /**
@@ -115,14 +125,18 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   /**
    * The family name (last name) of the user.
    */
-  @Schema(accessMode = Schema.AccessMode.READ_ONLY, title = "姓氏", description = "用户的姓氏", maxLength = 50, minLength = 1)
+  @Schema(title = "姓氏", description = "用户的姓氏", maxLength = 50, minLength = 1)
   private String familyName;
 
   /**
    * The gender of the user.
    * This field specifies the user's gender.
    */
-  @Schema(hidden = true, title = "性别", description = "用户的性别", maxLength = 10, minLength = 1)
+  @Schema(hidden = true, title = "性别", description = "用户的性别", maxLength = 10, minLength = 1, extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   private String gender;
 
   /**
@@ -135,7 +149,12 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * The locale of the user.
    * This field specifies the user's preferred language or region.
    */
-  @Schema(hidden = true, title = "区域设置", description = "用户的语言或地区偏好")
+  @Order(5)
+  @Schema(hidden = true, title = "区域设置", description = "用户的语言或地区偏好", extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   private String locale;
 
   /**
@@ -153,7 +172,12 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   /**
    * The nickname of the user.
    */
-  @Schema(maxLength = 50, minLength = 1, title = "昵称", description = "用户的昵称")
+  @Order(2)
+  @Schema(maxLength = 50, minLength = 1, title = "昵称", description = "用户的昵称", extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   private String nickname;
 
   /**
@@ -165,7 +189,12 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   /**
    * The phone number of the user.
    */
-  @Schema(maxLength = 50, minLength = 5, title = "手机号", description = "用户的联系电话")
+  @Order(3)
+  @Schema(maxLength = 50, minLength = 5, title = "手机号", description = "用户的联系电话", extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   @Column(length = 18)
   private String phoneNumber;
 
@@ -179,7 +208,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * The preferred username of the user.
    * This field is typically used for display purposes.
    */
-  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY, title = "首选用户名", description = "用户的首选用户名")
+  @Schema(hidden = true, title = "首选用户名", description = "用户的首选用户名")
   private String preferredUsername;
 
   /**
@@ -205,7 +234,11 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * 指示账户是否启用
    * Indicates whether the account is enabled.
    */
-  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY, title = "是否启用", description = "指示账户是否启用")
+  @Schema(accessMode = Schema.AccessMode.READ_ONLY, title = "是否启用", description = "指示账户是否启用", extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   private Boolean enabled;
 
   /**
@@ -229,7 +262,11 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY, title = "凭据是否过期", description = "指示凭据是否未过期")
   private Boolean credentialsNonExpired;
 
-  @Schema(title = "是否为管理员", description = "指示用户是否具有管理员权限")
+  @Schema(title = "是否为管理员", description = "指示用户是否具有管理员权限", extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   private Boolean superAdmin;
 
   /**
