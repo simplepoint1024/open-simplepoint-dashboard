@@ -105,9 +105,12 @@ public class MenuServiceImpl
   }
 
   @Override
-  public Collection<Menu> userMenus() {
+  public Collection<Menu> routes() {
     UserContext<BaseUser> userContext = getUserContext();
     String username = userContext.getName();
+    if (userContext.getDetails().superAdmin()) {
+      return getRepository().findAll(Map.of());
+    }
     return getRepository().findUserMenus(username);
   }
 }
