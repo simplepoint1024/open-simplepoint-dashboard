@@ -38,5 +38,5 @@ public interface MenuService extends BaseService<Menu, String> {
    *
    * @return a collection of {@link Menu} entities available to the user
    */
-  Collection<Menu> userMenus();
+  Collection<Menu> routes();
 }

@@ -19,6 +19,7 @@ import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.service.MenuService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -72,10 +73,10 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    *
    * @return a collection of menu records accessible to the current user wrapped in {@link Response}
    */
-  @GetMapping("/user")
+  @GetMapping("/routes")
   @Operation(summary = "获取用户菜单", description = "获取当前登录用户的菜单列表")
-  public Response<Collection<Menu>> userMenus() {
-    return Response.data(service.userMenus());
+  public Response<Page<Menu>> routes() {
+    return Response.okay(new PageImpl<>(service.routes().stream().toList(), Pageable.unpaged(), service.routes().size()));
   }
 
   /**
