@@ -2,6 +2,7 @@ package org.simplepoint.security.oauth2.resourceserver.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.GeneralException;
 import java.io.IOException;
 import org.simplepoint.api.security.base.BaseUser;
@@ -28,6 +29,7 @@ public class ResourceServerAutoConfiguration {
    *
    * @param resourceServerProperties the properties of the OAuth2 resource server
    *                                 OAuth2 资源服务器的属性
+   * @param objectMapper             the ObjectMapper for JSON processing
    * @return a UserContext instance for handling authentication 处理身份验证的 UserContext 实例
    * @throws GeneralException if an unexpected error occurs
    *                          如果发生未预期的错误
@@ -37,9 +39,10 @@ public class ResourceServerAutoConfiguration {
   @Bean("resourceServerUserContext")
   @ConditionalOnMissingBean(ResourceServerUserContext.class)
   public ResourceServerUserContext<BaseUser> resourceServerUserContext(
-      final OAuth2ResourceServerProperties resourceServerProperties
+      final OAuth2ResourceServerProperties resourceServerProperties,
+      final ObjectMapper objectMapper
   ) throws GeneralException, IOException {
-    return new DefaultResourceServerUserContext(resourceServerProperties);
+    return new DefaultResourceServerUserContext(objectMapper, resourceServerProperties);
   }
 
   /**

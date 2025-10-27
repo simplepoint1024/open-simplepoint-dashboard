@@ -12,9 +12,12 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.Serializable;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +38,8 @@ import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.api.security.service.JsonSchemaDetailsService;
 import org.simplepoint.api.security.simple.SimpleFieldPermissions;
+import org.simplepoint.core.annotation.ButtonDeclaration;
+import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.context.UserContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -150,7 +155,11 @@ public class BaseServiceImpl
   public Map<String, Object> schema() {
     Class<T> domainClass = repository.getDomainClass();
     ObjectNode jsonSchema = getJsonSchema(domainClass);
-    return Map.of("schema", jsonSchema);
+    Set<Map<String, Object>> buttonDeclarationsSchema = getButtonDeclarationsSchema(domainClass);
+    return Map.of(
+        "schema", jsonSchema,
+        "buttons", buttonDeclarationsSchema
+    );
   }
 
   /**
@@ -192,6 +201,48 @@ public class BaseServiceImpl
     }
     schema.withObjectProperty("properties").retain(fieldNames);
     return schema;
+  }
+
+  /**
+   * Retrieves button declarations from the specified domain class.
+   *
+   * @param domainClass the domain class from which to retrieve button declarations
+   * @return a set of maps representing button declaration attributes
+   */
+  protected Set<Map<String, Object>> getButtonDeclarationsSchema(Class<T> domainClass) {
+    boolean annotationPresent = domainClass.isAnnotationPresent(ButtonDeclarations.class);
+    if (annotationPresent) {
+      ButtonDeclarations annotation = domainClass.getAnnotation(ButtonDeclarations.class);
+      ButtonDeclaration[] buttonDeclarations = annotation.value();
+      if (buttonDeclarations.length > 0) {
+        Set<Map<String, Object>> result = new HashSet<>();
+        for (ButtonDeclaration buttonDeclaration : buttonDeclarations) {
+          result.add(extractAnnotationAttributes(buttonDeclaration));
+        }
+        return result;
+      }
+    }
+    return Set.of();
+  }
+
+  /**
+   * Extracts the attributes of the given annotation into a map.
+   *
+   * @param annotation the annotation from which to extract attributes
+   * @return a map containing the annotation's attribute names and their corresponding values
+   */
+  protected Map<String, Object> extractAnnotationAttributes(Annotation annotation) {
+    Map<String, Object> result = new HashMap<>();
+    Method[] methods = annotation.annotationType().getDeclaredMethods();
+    for (Method method : methods) {
+      try {
+        Object value = method.invoke(annotation);
+        result.put(method.getName(), value);
+      } catch (Exception e) {
+        log.warn("Could not extract annotation attributes from method " + method.getName(), e);
+      }
+    }
+    return result;
   }
 
   /**

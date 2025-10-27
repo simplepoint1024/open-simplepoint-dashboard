@@ -43,9 +43,9 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
     @GenericsType(name = "id", value = String.class),
 })
 @ButtonDeclarations({
-    @ButtonDeclaration(text = "添加", title = "添加", key = "add", icon = "PlusCircleOutlined", sort = 0),
-    @ButtonDeclaration(text = "编辑", title = "编辑", key = "edit", color = "orange", icon = "EditOutlined", sort = 1),
-    @ButtonDeclaration(text = "删除", title = "删除", key = "del", color = "danger", icon = "MinusCircleOutlined", sort = 2)
+    @ButtonDeclaration(title = "添加", key = "add", icon = "PlusCircleOutlined", sort = 0),
+    @ButtonDeclaration(title = "编辑", key = "edit", color = "orange", icon = "EditOutlined", sort = 1),
+    @ButtonDeclaration(title = "删除", key = "del", color = "danger", icon = "MinusCircleOutlined", sort = 2)
 })
 @Schema(name = "菜单对象", description = "用于表示系统中的菜单项")
 public class Menu extends BaseEntityImpl<String> {
