@@ -8,10 +8,14 @@
 
 package org.simplepoint.plugin.rbac.core.service.impl;
 
+import org.simplepoint.api.security.base.BaseUser;
+import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.core.context.UserContext;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.service.RolesService;
 import org.simplepoint.security.entity.Role;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -24,12 +28,15 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     implements RolesService {
 
   /**
-   * Constructs a new RolesServiceImpl with the specified repository and optional metadata sync service.
+   * Constructs a new RolesServiceImpl with the specified repository, user context, and details provider service.
    *
-   * @param rolesRepository the repository used for role operations
+   * @param repository             the RoleRepository instance for data access
+   * @param userContext            the user context for retrieving current user information
+   * @param detailsProviderService the service for providing user details
    */
-  public RolesServiceImpl(final RoleRepository rolesRepository) {
-    super(rolesRepository);
+  public RolesServiceImpl(RoleRepository repository,
+                          @Autowired(required = false) UserContext<BaseUser> userContext,
+                          DetailsProviderService detailsProviderService) {
+    super(repository, userContext, detailsProviderService);
   }
-
 }
