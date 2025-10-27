@@ -41,7 +41,7 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
    * JSON 解析器，用于处理用户信息数据
    * ObjectMapper used for JSON processing of user information.
    */
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
 
   /**
    * OAuth 2.0 资源服务器的配置属性
@@ -60,12 +60,14 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
    * Constructor initializing the resource server properties and OIDC provider metadata.
    *
    * @param resourceServerProperties OAuth2 资源服务器属性
+   * @param objectMapper             JSON 解析器
    * @throws GeneralException 一般性异常
    * @throws IOException      I/O 异常
    */
   public DefaultResourceServerUserContext(
-      OAuth2ResourceServerProperties resourceServerProperties
+      ObjectMapper objectMapper, OAuth2ResourceServerProperties resourceServerProperties
   ) throws GeneralException, IOException {
+    this.objectMapper = objectMapper;
     this.resourceServerProperties = resourceServerProperties;
     this.providerMetadata = OIDCProviderMetadata.resolve(
         Issuer.parse(resourceServerProperties.getJwt().getIssuerUri()));

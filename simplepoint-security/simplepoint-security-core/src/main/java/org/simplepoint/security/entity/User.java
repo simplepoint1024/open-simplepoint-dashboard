@@ -30,8 +30,6 @@ import org.hibernate.validator.constraints.URL;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.annotation.FormSchema;
-import org.simplepoint.core.annotation.GenericsType;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -49,13 +47,18 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
     @Index(name = "idx_phone", columnList = "phone_number")
 })
 @EqualsAndHashCode(callSuper = true)
-@FormSchema(genericsTypes = {
-    @GenericsType(name = "id", value = String.class),
-})
 @ButtonDeclarations({
-    @ButtonDeclaration(text = "添加", title = "添加", key = "add", icon = "PlusCircleOutlined", sort = 0),
-    @ButtonDeclaration(text = "编辑", title = "编辑", key = "edit", color = "orange", icon = "EditOutlined", sort = 1),
-    @ButtonDeclaration(text = "删除", title = "删除", key = "del", color = "danger", icon = "MinusCircleOutlined", sort = 2)
+    @ButtonDeclaration(
+        title = "添加", key = "add", icon = "PlusCircleOutlined", sort = 0, argumentMaxSize = 0, argumentMinSize = 0
+    ),
+    @ButtonDeclaration(
+        title = "编辑", key = "edit", color = "orange", icon = "EditOutlined", sort = 1,
+        argumentMinSize = 1, argumentMaxSize = 1
+    ),
+    @ButtonDeclaration(
+        title = "删除", key = "delete", color = "danger", icon = "MinusCircleOutlined", sort = 2,
+        argumentMinSize = 1, argumentMaxSize = 10, danger = true
+    )
 })
 @NoArgsConstructor
 @AllArgsConstructor

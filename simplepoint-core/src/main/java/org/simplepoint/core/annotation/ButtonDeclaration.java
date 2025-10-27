@@ -22,12 +22,6 @@ public @interface ButtonDeclaration {
    * The access value associated with the button.
    * This can be used to control access permissions for the button.
    */
-  String text() default "";
-
-  /**
-   * The access value associated with the button.
-   * This can be used to control access permissions for the button.
-   */
   String title() default "";
 
   /**
@@ -35,6 +29,24 @@ public @interface ButtonDeclaration {
    * This can be used to reference the button in the system.
    */
   String key() default "";
+
+  /**
+   * The path associated with the button.
+   * This can be used to define the URL or endpoint for the button action.
+   */
+  String path() default "[default]";
+
+  /**
+   * The maximum size of the arguments the button accepts.
+   * This can be used to limit the number of arguments for the button.
+   */
+  int argumentMaxSize() default -1;
+
+  /**
+   * The minimum size of the arguments the button accepts.
+   * This can be used to enforce a minimum number of arguments for the button.
+   */
+  int argumentMinSize() default -1;
 
   /**
    * The type of the button.
@@ -53,6 +65,12 @@ public @interface ButtonDeclaration {
    * This can be used to define its appearance and style.
    */
   ButtonVariantTypes variant() default ButtonVariantTypes.OUTLINED;
+
+  /**
+   * Indicates whether the button represents a dangerous action.
+   * This can be used to apply special styling or behavior for dangerous actions.
+   */
+  boolean danger() default false;
 
   /**
    * The icon associated with the button.

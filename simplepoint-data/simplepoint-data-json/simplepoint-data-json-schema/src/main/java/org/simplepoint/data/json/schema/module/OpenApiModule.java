@@ -1,5 +1,3 @@
-// java
-
 package org.simplepoint.data.json.schema.module;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -10,6 +8,7 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.Instant;
 import org.springframework.core.annotation.Order;
 
 /**
@@ -63,7 +62,13 @@ public class OpenApiModule implements Module {
         })
         .withNullableCheck(field -> {
           Schema schema = field.getAnnotation(Schema.class);
-          return schema != null && schema.nullable();
+          // 1) Respect @Schema(nullable = true)
+          if (schema != null && schema.nullable()) {
+            return true;
+          }
+          // 2) Make String and Instant nullable by default
+          Class<?> raw = field.getType().getErasedType();
+          return raw == String.class || raw == Instant.class;
         })
         .withDefaultResolver(field -> {
           Schema schema = field.getAnnotation(Schema.class);
