@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+    <pid>simplepoint-plugin-example-controller</pid>
+    <name>demo-controller</name>
+    <version>1.0</version>
+    <author>simplepoint</author>
+    <email>xxxxx@xxx.com</email>
+    <document>暂无</document>
+    <phone>118888888888</phone>
+    <declaration>演示插件（控制器）</declaration>
+    <packageName>org.simplepoint.example.plugin.controller</packageName>
+    <autoRegister>true</autoRegister>
+
+    <packageScan>
+        <controller>org.simplepoint.example.plugin.controller</controller>
+    </packageScan>
+
+    <instances>
+    </instances>
+
+    <dependencies>
+        <dependency>org.simplepoint.example.plugin.service.impl</dependency>
+        <dependency>org.simplepoint.example.plugin.service</dependency>
+    </dependencies>
+</plugin>

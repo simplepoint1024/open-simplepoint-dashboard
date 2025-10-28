@@ -11,11 +11,13 @@ package org.simplepoint.plugin.core;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NotDirectoryException;
 import java.util.ArrayList;
@@ -29,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.JarEntry;
@@ -54,6 +57,10 @@ public final class PluginClassloader extends ApplicationClassLoader {
   private final Storage<Plugin> storage;
 
   private final Queue<Runnable> handleQueue = new LinkedBlockingQueue<>();
+  // per-plugin isolated classloaders
+  private final Map<String, URLClassLoader> pluginClassLoaders = new ConcurrentHashMap<>();
+  // dependency graph: plugin packageName -> list of dependent plugin packageNames
+  private final Map<String, List<String>> pluginDependencies = new ConcurrentHashMap<>();
 
   /**
    * Constructs a new PluginClassloader instance.
@@ -164,12 +171,33 @@ public final class PluginClassloader extends ApplicationClassLoader {
    * @param packageName the package name of the plugin to uninstall
    */
   public synchronized void uninstall(String packageName) {
+    // Prevent uninstall if other plugins depend on this one
+    List<String> blockers = new ArrayList<>();
+    pluginDependencies.forEach((pkg, deps) -> {
+      if (deps != null && deps.contains(packageName)) {
+        blockers.add(pkg);
+      }
+    });
+    if (!blockers.isEmpty()) {
+      throw new IllegalStateException("插件 " + packageName + " 被以下插件依赖，无法卸载: " + String.join(", ", blockers));
+    }
+
     Plugin plugin = storage.find(packageName);
     if (plugin != null) {
       log.debug("正在卸载插件");
       printPluginInfo(plugin.metadata());
       uninstall(plugin.registered());
       storage.remove(plugin.metadata().getPackageName());
+      // Close and remove isolated classloader
+      URLClassLoader cl = pluginClassLoaders.remove(packageName);
+      if (cl != null) {
+        try {
+          cl.close();
+        } catch (IOException e) {
+          log.warn("关闭插件类加载器失败:{}", e.getMessage());
+        }
+      }
+      pluginDependencies.remove(packageName);
       log.debug("清理完成！卸载成功！");
     }
   }
@@ -222,10 +250,31 @@ public final class PluginClassloader extends ApplicationClassLoader {
       log.debug("读取成功,信息如下");
       printPluginInfo(pluginMetadata);
       checkPlugin(new Plugin(uri, pluginMetadata, classes));
-      super.addURL(uri.toURL());
-      merge(classes, registerInstances(pluginMetadata.getInstances()));
+
+      // Resolve dependencies classloaders
+      String pkg = pluginMetadata.getPackageName();
+      List<String> deps = pluginMetadata.getDependencies();
+      List<ClassLoader> depCls = new ArrayList<>();
+      if (deps != null && !deps.isEmpty()) {
+        for (String d : deps) {
+          URLClassLoader cl = pluginClassLoaders.get(d);
+          if (cl == null) {
+            throw new IllegalStateException("找不到依赖插件 '" + d + "' 的类加载器，请先安装依赖或调整加载顺序。");
+          }
+          depCls.add(cl);
+        }
+      }
+
+      // Create dependency-aware classloader for this plugin
+      URL[] urls = new URL[] { uri.toURL() };
+      URLClassLoader pluginCl = new DependencyAwareUrlClassLoader(urls, this.getParent(), depCls);
+      pluginClassLoaders.put(pkg, pluginCl);
+      pluginDependencies.put(pkg, deps == null ? List.of() : List.copyOf(deps));
+
+      // Use the plugin-specific classloader to register instances
+      merge(classes, registerInstances(pluginMetadata.getInstances(), pluginCl));
       merge(classes,
-          registerInstances(analyzeBeanPackageScan(pluginMetadata.getPackageScan(), jarFile)));
+          registerInstances(analyzeBeanPackageScan(pluginMetadata.getPackageScan(), jarFile), pluginCl));
       return new Plugin(uri, pluginMetadata, classes);
     } catch (ClassExistException classExistException) {
       log.error("安装失败，正在清理本次安装！");
@@ -278,7 +327,7 @@ public final class PluginClassloader extends ApplicationClassLoader {
    * @throws Exception if an error occurs during registration
    */
   private Map<String, Set<Plugin.PluginInstance>> registerInstances(
-      Map<String, Set<Plugin.PluginInstance>> beansRegister) throws Exception {
+      Map<String, Set<Plugin.PluginInstance>> beansRegister, ClassLoader pluginCl) throws Exception {
     Map<String, Set<Plugin.PluginInstance>> beanContexts = new Hashtable<>();
     AtomicReference<Exception> exception = new AtomicReference<>(null);
 
@@ -292,7 +341,8 @@ public final class PluginClassloader extends ApplicationClassLoader {
           try {
             String name = pluginInstance.getName();
             log.info("正在初始化实例：[分组：{} 名称:{}]", group, name);
-            pluginInstance.classes(this.loadClass(name));
+            // Load with isolated plugin classloader
+            pluginInstance.classes(pluginCl.loadClass(name));
             handleQueue.add(() -> {
               log.info("正在注册实例：[分组：{} 名称:{}]", group, name);
               handler.handle(pluginInstance);
