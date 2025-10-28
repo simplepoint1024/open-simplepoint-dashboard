@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+    <pid>simplepoint-plugin-example-api</pid>
+    <name>demo-api</name>
+    <version>1.0</version>
+    <author>simplepoint</author>
+    <email>xxxxx@xxx.com</email>
+    <document>暂无</document>
+    <phone>118888888888</phone>
+    <declaration>演示插件（控制器）</declaration>
+    <packageName>org.simplepoint.example.plugin.service</packageName>
+    <autoRegister>true</autoRegister>
+
+    <packageScan>
+    </packageScan>
+
+    <instances>
+    </instances>
+</plugin>

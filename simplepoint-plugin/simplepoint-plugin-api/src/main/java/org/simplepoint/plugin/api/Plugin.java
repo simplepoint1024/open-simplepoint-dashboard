@@ -59,6 +59,8 @@ public record Plugin(
     private String autoRegister;
     private Map<String, String> packageScan;
     private Map<String, Set<PluginInstance>> instances;
+    // New: dependent plugin package names this plugin requires
+    private java.util.List<String> dependencies;
   }
 
   /**
@@ -123,6 +125,3 @@ public record Plugin(
     }
   }
 }
-
-
-

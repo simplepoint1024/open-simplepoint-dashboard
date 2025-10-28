@@ -8,13 +8,16 @@
 
 package org.simplepoint.plugin.webmvc.handler;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.simplepoint.plugin.api.Plugin;
 import org.simplepoint.plugin.api.PluginInstanceHandler;
 import org.simplepoint.plugin.spring.handle.SpringBeanPluginInstanceHandler;
 import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.ReflectionUtils;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
@@ -46,17 +49,54 @@ public class ServletMappingPluginInstanceHandler extends RequestMappingHandlerMa
    * @param beanName the name of the bean whose mappings are to be unregistered
    */
   public void unregisterMapping(String beanName) {
-    Object bean = this.handler.applicationContext().getBean(beanName);
-    Class<?> targetClass = bean.getClass();
+    ApplicationContext ctx = this.handler.applicationContext();
+    Map<String, RequestMappingHandlerMapping> all = ctx.getBeansOfType(RequestMappingHandlerMapping.class);
+    // Also include this mapping instance
+    if (!all.containsValue(this)) {
+      all.put("_self", this);
+    }
+    all.values().forEach(m -> unregisterFrom(m, beanName));
+  }
 
-    // Iterate through all user-declared methods and unregister mappings
-    ReflectionUtils.doWithMethods(targetClass, method -> {
-      RequestMappingInfo requestMappingInfo =
-          getMappingForMethod(ClassUtils.getMostSpecificMethod(method, targetClass), targetClass);
-      if (requestMappingInfo != null) {
-        unregisterMapping(requestMappingInfo);
+  /**
+   * Unregisters servlet mappings from the specified RequestMappingHandlerMapping
+   * that are associated with the given bean name.
+   *
+   * @param mapping  the RequestMappingHandlerMapping to unregister from
+   * @param beanName the name of the bean whose mappings are to be unregistered
+   */
+  private void unregisterFrom(RequestMappingHandlerMapping mapping, String beanName) {
+    List<RequestMappingInfo> toRemove = new ArrayList<>();
+    Class<?> currentType = null;
+    try {
+      currentType = this.handler.applicationContext().getType(beanName);
+      if (currentType != null) {
+        currentType = ClassUtils.getUserClass(currentType);
       }
-    }, ReflectionUtils.USER_DECLARED_METHODS);
+    } catch (Exception e) {
+      logger.warn(e.getMessage());
+    }
+
+    for (Map.Entry<RequestMappingInfo, HandlerMethod> entry : mapping.getHandlerMethods().entrySet()) {
+      HandlerMethod hm = entry.getValue();
+      Object bean = hm.getBean();
+      boolean match = false;
+      if (bean instanceof String name) {
+        match = beanName.equals(name);
+      } else {
+        Class<?> mappedType = hm.getBeanType();
+        String mappedName = mappedType.getName();
+        if (mappedName.equals(beanName)) {
+          match = true;
+        } else if (currentType != null && mappedName.equals(currentType.getName())) {
+          match = true;
+        }
+      }
+      if (match) {
+        toRemove.add(entry.getKey());
+      }
+    }
+    toRemove.forEach(mapping::unregisterMapping);
   }
 
   /**
@@ -77,6 +117,8 @@ public class ServletMappingPluginInstanceHandler extends RequestMappingHandlerMa
    */
   @Override
   public void handle(Plugin.PluginInstance instance) {
+    // Defensive: pre-clean any stale mappings with the same bean name before re-registering
+    this.unregisterMapping(instance.getName());
     this.handler.handle(instance);
     super.processCandidateBean(instance.getName());
   }

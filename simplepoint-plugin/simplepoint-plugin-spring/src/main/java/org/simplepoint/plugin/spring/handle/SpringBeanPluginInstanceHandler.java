@@ -11,7 +11,7 @@ package org.simplepoint.plugin.spring.handle;
 import java.util.List;
 import org.simplepoint.plugin.api.Plugin;
 import org.simplepoint.plugin.api.PluginInstanceHandler;
-import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -42,9 +42,21 @@ public record SpringBeanPluginInstanceHandler(ApplicationContext applicationCont
   public void registerBean(String beanName, Object bean) {
     unregisterBean(beanName);
 
-    ((DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory())
-        .registerBeanDefinition(beanName,
-            BeanDefinitionBuilder.genericBeanDefinition(bean.getClass()).getBeanDefinition());
+    if (applicationContext instanceof ConfigurableApplicationContext cac
+        && cac.getBeanFactory() instanceof DefaultListableBeanFactory dlbf) {
+      // Ensure bean is fully initialized with post-processors (including AOP)
+      Object initialized = bean;
+      if (!(bean instanceof org.springframework.aop.framework.Advised)) {
+        initialized = applicationContext.getAutowireCapableBeanFactory()
+            .initializeBean(bean, beanName);
+      }
+      dlbf.registerSingleton(beanName, initialized);
+    } else {
+      // Fallback
+      applicationContext.getAutowireCapableBeanFactory().initializeBean(bean, beanName);
+      ((DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory())
+          .registerSingleton(beanName, bean);
+    }
   }
 
   /**
@@ -57,8 +69,11 @@ public record SpringBeanPluginInstanceHandler(ApplicationContext applicationCont
    *                  要创建的 Bean 类
    * @return the newly created bean instance 新创建的 Bean 实例
    */
+  @SuppressWarnings("all")
   public <T> T createBean(Class<T> beanClass) {
-    return applicationContext.getAutowireCapableBeanFactory().createBean(beanClass);
+    // Create with full autowiring & post-processors to allow AOP proxies
+    return (T) applicationContext.getAutowireCapableBeanFactory()
+        .createBean(beanClass, AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR, true);
   }
 
   /**
@@ -116,4 +131,3 @@ public record SpringBeanPluginInstanceHandler(ApplicationContext applicationCont
     unregisterBean(instance.getName());
   }
 }
-
