@@ -31,7 +31,7 @@ import org.springframework.util.StringUtils;
  * retrieve user consent information related to registered clients.
  */
 @Component
-public class Oauth2AuthorizationConsentServiceImpl implements OAuth2AuthorizationConsentService {
+public class OidcAuthorizationConsentServiceImpl implements OAuth2AuthorizationConsentService {
 
   /**
    * Repository for storing authorization consent data.
@@ -50,7 +50,7 @@ public class Oauth2AuthorizationConsentServiceImpl implements OAuth2Authorizatio
    * @param registeredClientRepository     the repository for retrieving registered clients
    * @throws IllegalArgumentException if any parameter is null
    */
-  public Oauth2AuthorizationConsentServiceImpl(
+  public OidcAuthorizationConsentServiceImpl(
       JpaAuthorizationConsentRepository authorizationConsentRepository,
       RegisteredClientRepository registeredClientRepository) {
     Assert.notNull(authorizationConsentRepository, "authorizationConsentRepository cannot be null");

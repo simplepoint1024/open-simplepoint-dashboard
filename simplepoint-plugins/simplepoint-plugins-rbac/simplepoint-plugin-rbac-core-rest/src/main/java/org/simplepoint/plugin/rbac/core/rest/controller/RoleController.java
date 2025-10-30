@@ -6,7 +6,7 @@
  * https://www.apache.org/licenses/LICENSE-2.0
  */
 
-package org.simplepoint.plugin.rbac.core.rest.endpoint;
+package org.simplepoint.plugin.rbac.core.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -58,7 +58,6 @@ public class RoleController extends BaseController<RolesService, Role, String> {
   @Operation(summary = "分页查询角色", description = "根据提供的属性和分页参数，检索角色的分页列表")
   public Response<Page<Role>> limit(@RequestParam Map<String, String> attributes, Pageable pageable)
       throws Exception {
-
     return limit(service.limit(attributes, pageable), Role.class);
   }
 

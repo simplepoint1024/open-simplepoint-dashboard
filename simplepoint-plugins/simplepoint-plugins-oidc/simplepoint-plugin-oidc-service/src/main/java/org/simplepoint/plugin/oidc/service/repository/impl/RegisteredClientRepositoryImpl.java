@@ -1,12 +1,4 @@
-/*
- * Copyright (c) 2025 Jinxu Liu or Organization
- * Licensed under the Apache License, Version 2.0 (the "License");
- * You may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * https://www.apache.org/licenses/LICENSE-2.0
- */
-
-package  org.simplepoint.plugin.oidc.service.service.impl;
+package org.simplepoint.plugin.oidc.service.repository.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import org.simplepoint.plugin.oidc.api.entity.Client;
 import org.simplepoint.plugin.oidc.service.repository.JpaClientRepository;
+import org.simplepoint.plugin.oidc.service.service.impl.OidcClientServiceImpl;
 import org.springframework.security.jackson2.SecurityJackson2Modules;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -29,34 +22,31 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Implementation of {@link RegisteredClientRepository} that manages OAuth2 clients,
- * providing functionality to store and retrieve registered clients from a repository.
- * This service handles the persistence of OAuth2 client authentication and authorization data.
- * Clients are stored using {@code ClientRepository}, and their configurations are mapped
- * between {@link RegisteredClient} and {@code Client} entity.
+ * Implementation of {@link RegisteredClientRepository} for managing OAuth2 registered clients.
+ *
+ * <p>This class provides methods to save and retrieve registered clients using a JPA repository.
+ * It handles the conversion between {@link RegisteredClient} objects and the underlying
+ * {@link Client} entity used for persistence.</p>
  */
 @Component
-public class OauthClientServiceImpl implements RegisteredClientRepository {
+public class RegisteredClientRepositoryImpl implements RegisteredClientRepository {
+
   /**
    * Repository for storing OAuth2 client information.
    */
   private final JpaClientRepository clientRepository;
-  /**
-   * Object mapper for handling JSON serialization and deserialization.
-   */
+
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   /**
-   * Constructs an instance of {@code OauthClientServiceImpl}.
+   * Constructs a new RegisteredClientRepositoryImpl with the provided client repository.
    *
-   * @param clientRepository the repository used for storing OAuth2 client data
-   * @throws IllegalArgumentException if {@code clientRepository} is null
+   * @param clientRepository the repository for storing OAuth2 client information
    */
-  public OauthClientServiceImpl(JpaClientRepository clientRepository) {
+  public RegisteredClientRepositoryImpl(final JpaClientRepository clientRepository) {
     Assert.notNull(clientRepository, "clientRepository cannot be null");
     this.clientRepository = clientRepository;
-
-    ClassLoader classLoader = OauthClientServiceImpl.class.getClassLoader();
+    ClassLoader classLoader = OidcClientServiceImpl.class.getClassLoader();
     var securityModules = SecurityJackson2Modules.getModules(classLoader);
     this.objectMapper.registerModules(securityModules);
     this.objectMapper.registerModule(new OAuth2AuthorizationServerJackson2Module());
@@ -99,6 +89,7 @@ public class OauthClientServiceImpl implements RegisteredClientRepository {
     Assert.hasText(clientId, "clientId cannot be empty");
     return this.clientRepository.findByClientId(clientId).map(this::toObject).orElse(null);
   }
+
 
   /**
    * Converts a {@code Client} entity to a {@link RegisteredClient} instance.

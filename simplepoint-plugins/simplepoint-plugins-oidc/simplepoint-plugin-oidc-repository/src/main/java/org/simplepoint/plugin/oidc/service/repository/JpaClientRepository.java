@@ -9,8 +9,9 @@
 package org.simplepoint.plugin.oidc.service.repository;
 
 import java.util.Optional;
+import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.oidc.api.entity.Client;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.simplepoint.plugin.oidc.api.repository.OidcClientRepository;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Repository;
  * </p>
  */
 @Repository
-public interface JpaClientRepository extends JpaRepository<Client, String> {
+public interface JpaClientRepository extends BaseRepository<Client, String>, OidcClientRepository {
 
   /**
    * Finds a client by its client ID.

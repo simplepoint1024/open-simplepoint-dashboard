@@ -51,7 +51,7 @@ import org.springframework.util.StringUtils;
  * </p>
  */
 @Component
-public class Oauth2AuthorizationServiceImpl implements OAuth2AuthorizationService {
+public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService {
   /**
    * Repository for storing OAuth2 authorization data.
    */
@@ -72,14 +72,14 @@ public class Oauth2AuthorizationServiceImpl implements OAuth2AuthorizationServic
    * @param registeredClientRepository the repository for retrieving registered clients
    * @throws IllegalArgumentException if any parameter is {@code null}
    */
-  public Oauth2AuthorizationServiceImpl(JpaAuthorizationRepository authorizationRepository,
-                                        RegisteredClientRepository registeredClientRepository) {
+  public OidcAuthorizationServiceImpl(JpaAuthorizationRepository authorizationRepository,
+                                      RegisteredClientRepository registeredClientRepository) {
     Assert.notNull(authorizationRepository, "authorizationRepository cannot be null");
     Assert.notNull(registeredClientRepository, "registeredClientRepository cannot be null");
     this.authorizationRepository = authorizationRepository;
     this.registeredClientRepository = registeredClientRepository;
 
-    ClassLoader classLoader = Oauth2AuthorizationServiceImpl.class.getClassLoader();
+    ClassLoader classLoader = OidcAuthorizationServiceImpl.class.getClassLoader();
     List<Module> securityModules = SecurityJackson2Modules.getModules(classLoader);
     this.objectMapper.registerModules(securityModules);
     this.objectMapper.registerModule(new OAuth2AuthorizationServerJackson2Module());
