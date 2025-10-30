@@ -14,6 +14,7 @@ import org.simplepoint.security.entity.Menu;
  * @since 1.0
  */
 public interface MenuRepository extends BaseRepository<Menu, String> {
+
   /**
    * Finds menus associated with the specified username.
    *

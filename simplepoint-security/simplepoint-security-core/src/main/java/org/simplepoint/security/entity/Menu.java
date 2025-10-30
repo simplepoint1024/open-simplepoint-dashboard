@@ -9,6 +9,8 @@
 package org.simplepoint.security.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,6 +23,7 @@ import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.annotation.FormSchema;
 import org.simplepoint.core.annotation.GenericsType;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.springframework.core.annotation.Order;
 
 /**
  * Represents a menu entity in the RBAC (Role-Based Access Control) system.
@@ -43,65 +46,91 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
     @GenericsType(name = "id", value = String.class),
 })
 @ButtonDeclarations({
-    @ButtonDeclaration(title = "添加", key = "add", icon = "PlusCircleOutlined", sort = 0),
-    @ButtonDeclaration(title = "编辑", key = "edit", color = "orange", icon = "EditOutlined", sort = 1),
-    @ButtonDeclaration(title = "删除", key = "del", color = "danger", icon = "MinusCircleOutlined", sort = 2)
+    @ButtonDeclaration(
+        title = "添加", key = "add", icon = "PlusCircleOutlined", sort = 0, argumentMaxSize = 0, argumentMinSize = 0
+    ),
+    @ButtonDeclaration(
+        title = "编辑", key = "edit", color = "orange", icon = "EditOutlined", sort = 1,
+        argumentMinSize = 1, argumentMaxSize = 1
+    ),
+    @ButtonDeclaration(
+        title = "删除", key = "delete", color = "danger", icon = "MinusCircleOutlined", sort = 2,
+        argumentMinSize = 1, argumentMaxSize = 10, danger = true
+    )
 })
 @Schema(name = "菜单对象", description = "用于表示系统中的菜单项")
 public class Menu extends BaseEntityImpl<String> {
   /**
    * Unique identifier for the menu.
    */
-  @Schema(title = "菜单UUID", description = "菜单的唯一标识符", maxLength = 32, minLength = 1)
+  @Schema(title = "菜单UUID", description = "菜单的唯一标识符", maxLength = 32, minLength = 1, hidden = true)
   @Column(unique = true, nullable = false, length = 32)
   private String uuid;
 
   /**
-   * Display title of the menu.
-   */
-  @Schema(title = "菜单标题", description = "菜单的显示标题", maxLength = 50, minLength = 1)
-  @Column(nullable = false, length = 50)
-  private String title;
-
-  /**
    * Label associated with the menu.
    */
-  @Schema(title = "菜单标签", description = "菜单的标签", maxLength = 50, minLength = 1)
+  @Order(0)
+  @Schema(title = "菜单标签", description = "菜单的标签", maxLength = 50, minLength = 1, extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   @Column(nullable = false, length = 50)
   private String label;
 
   /**
    * Parent menu identifier, representing hierarchical structure.
    */
-  @Schema(title = "父级菜单", description = "父级菜单的标识符", maxLength = 32, minLength = 1)
+  @Schema(title = "父级菜单", description = "父级菜单的标识符", maxLength = 32, minLength = 1, hidden = true)
   @Column(length = 32)
   private String parent;
 
   /**
    * Icon representing the menu visually.
    */
-  @Schema(title = "菜单图标", description = "菜单的图标", maxLength = 100, minLength = 1)
+  @Order(1)
+  @Schema(title = "菜单图标", description = "菜单的图标", maxLength = 100, minLength = 1, extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   @Column(length = 100)
   private String icon;
 
   /**
    * Path associated with the menu for navigation.
    */
-  @Schema(title = "菜单路径", description = "菜单的导航路径", maxLength = 200, minLength = 1)
-  @Column(nullable = false, length = 200)
+  @Order(3)
+  @Schema(title = "菜单路径", description = "菜单的导航路径", maxLength = 200, minLength = 1, extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
+  @Column(nullable = false, length = 200, unique = true)
   private String path;
 
   /**
    * Type of menu item.
    */
-  @Schema(title = "菜单类型", description = "菜单项的类型", maxLength = 20, minLength = 1)
+  @Order(2)
+  @Schema(title = "菜单类型", description = "菜单项的类型", maxLength = 20, minLength = 1, extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   @Column(length = 20)
   private String type;
 
   /**
    * Associated UI component for rendering the menu.
    */
-  @Schema(title = "菜单组件", description = "用于渲染菜单的UI组件", maxLength = 100, minLength = 5)
+  @Order(4)
+  @Schema(title = "菜单组件", description = "用于渲染菜单的UI组件", maxLength = 100, minLength = 5, extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   @Column(length = 100)
   private String component;
 
@@ -115,14 +144,11 @@ public class Menu extends BaseEntityImpl<String> {
   /**
    * Flag indicating if the menu item is disabled.
    */
-  @Schema(title = "禁用标志", description = "指示菜单项是否被禁用")
+  @Schema(title = "禁用标志", description = "指示菜单项是否被禁用", extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
   @Column(nullable = false)
   private Boolean disabled;
-
-  /**
-   * Hierarchical ancestor relationships of the menu.
-   */
-  @Schema(title = "祖先关系", description = "菜单的层级祖先关系")
-  @Column(nullable = false)
-  private String ancestors;
 }

@@ -55,6 +55,17 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
   /**
    * Constructs a new BaseRepositoryImpl instance.
    * This constructor initializes the repository with an entity class and an entity manager.
+   *
+   * @param domainClass the class type of the entity
+   * @param em          the entity manager used for persistence operations
+   */
+  public BaseRepositoryImpl(Class<T> domainClass, EntityManager em) {
+    super(domainClass, em);
+  }
+
+  /**
+   * Constructs a new BaseRepositoryImpl instance.
+   * This constructor initializes the repository with an entity class and an entity manager.
    */
   @Override
   public Class<T> getDomainClass() {
