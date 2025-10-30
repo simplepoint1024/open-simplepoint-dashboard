@@ -95,14 +95,9 @@ public class OpenApiModule implements Module {
 
       // Named group like "x-ui": { ... }
       if (extName != null && !extName.isEmpty()) {
-        if (extName.startsWith("x-")) {
-          ObjectNode node = attributes.objectNode();
-          putProperties(node, props);
-          attributes.set(extName, node);
-        } else {
-          // Not a vendor name; only lift properties that already start with "x-"
-          putProperties(attributes, props); // flattened
-        }
+        ObjectNode node = attributes.objectNode();
+        putProperties(node, props);
+        attributes.set(extName, node);
         continue;
       }
 
@@ -118,10 +113,6 @@ public class OpenApiModule implements Module {
     for (ExtensionProperty p : props) {
       String name = p.name();
       if (name == null || name.isEmpty()) {
-        continue;
-      }
-      // Only vendor extensions
-      if (!name.startsWith("x-")) {
         continue;
       }
       String value = p.value();

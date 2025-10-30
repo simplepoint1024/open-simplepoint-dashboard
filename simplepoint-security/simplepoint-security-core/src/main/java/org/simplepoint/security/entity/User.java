@@ -88,7 +88,11 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * This is securely stored and used for authentication purposes.
    */
   @Order(2)
-  @Schema(title = "密码", description = "用户的登录密码")
+  @Schema(title = "密码", description = "用户的登录密码", extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "widget", value = "password"),
+      })
+  })
   private String password;
 
   /**

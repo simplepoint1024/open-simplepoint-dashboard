@@ -6,7 +6,7 @@
  * https://www.apache.org/licenses/LICENSE-2.0
  */
 
-package org.simplepoint.plugin.rbac.core.rest.endpoint;
+package org.simplepoint.plugin.rbac.core.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

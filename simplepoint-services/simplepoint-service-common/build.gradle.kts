@@ -22,6 +22,12 @@ dependencies {
     api(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-repository"))
     api(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-service"))
     api(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-rest"))
+    // 引入OIDC体系插件
+    api(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-api"))
+    api(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-repository"))
+    api(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-service"))
+    api(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-rest"))
+
     // 引入国际化多语言插件
     api(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api"))
     api(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-repository"))

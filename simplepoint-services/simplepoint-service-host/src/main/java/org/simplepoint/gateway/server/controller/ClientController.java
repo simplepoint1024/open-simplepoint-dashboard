@@ -18,6 +18,7 @@ import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2Aut
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
  * ClientController handles login and user authentication information retrieval.
@@ -45,8 +46,8 @@ public class ClientController {
    * @return the OAuth2AuthenticationToken containing user information
    */
   @GetMapping("/")
-  @Operation(summary = "获取用户信息", description = "获取OAuth2认证令牌，提供用户认证信息")
-  public String getUserInfo(
+  @Operation(summary = "/", description = "/")
+  public String userinfo(
       @AuthenticationPrincipal OAuth2AuthenticatedPrincipal principal,
       @RegisteredOAuth2AuthorizedClient OAuth2AuthorizedClient authorizedClient
   ) {
@@ -55,4 +56,19 @@ public class ClientController {
     log.debug("Refresh Token : {}", Objects.requireNonNull(authorizedClient.getRefreshToken()).getTokenValue());
     return "redirect:index.html";
   }
+
+  /**
+   * Retrieves information about the currently logged-in user.
+   *
+   * @return the User object containing user details
+   */
+  @ResponseBody
+  @GetMapping("/userinfo")
+  @Operation(summary = "获取当前用户信息", description = "获取当前登录用户的详细信息")
+  public Object userinfo(
+      @AuthenticationPrincipal OAuth2AuthenticatedPrincipal principal
+  ) {
+    return principal.getAttributes();
+  }
+
 }

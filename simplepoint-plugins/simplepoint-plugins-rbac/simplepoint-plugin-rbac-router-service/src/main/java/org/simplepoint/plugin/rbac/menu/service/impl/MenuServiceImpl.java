@@ -84,6 +84,14 @@ public class MenuServiceImpl
   }
 
   @Override
+  public <S extends Menu> S add(S entity) throws Exception {
+    if (entity.getUuid() == null || entity.getUuid().isEmpty()) {
+      entity.setUuid(UUID.randomUUID().toString());
+    }
+    return super.add(entity);
+  }
+
+  @Override
   public void sync(Set<MenuChildren> data) {
     Set<Menu> menus = new HashSet<>();
     Queue<MenuChildren> queue = new LinkedBlockingQueue<>(data);

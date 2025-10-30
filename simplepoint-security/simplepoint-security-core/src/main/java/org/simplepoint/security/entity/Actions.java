@@ -67,8 +67,7 @@ public class Actions extends BaseEntityImpl<String> {
    * The type of the button, which can be used to define its behavior and appearance.
    * This can be DEFAULT, PRIMARY, DASHED, LINK, TEXT, etc.
    */
-  @Column(nullable = false)
-  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 100)
   @Schema(title = "按钮类型", description = "按钮的类型，用于定义其行为和外观")
   private ButtonType type;
   /**

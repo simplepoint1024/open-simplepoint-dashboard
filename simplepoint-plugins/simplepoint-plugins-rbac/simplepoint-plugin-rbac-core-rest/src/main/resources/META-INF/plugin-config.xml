@@ -12,7 +12,7 @@
     <autoRegister>true</autoRegister>
 
     <packageScan>
-        <controller>org.simplepoint.plugin.rbac.core.rest.endpoint</controller>
+        <controller>org.simplepoint.plugin.rbac.core.rest.controller</controller>
     </packageScan>
 
     <instances>

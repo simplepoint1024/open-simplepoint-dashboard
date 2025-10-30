@@ -47,7 +47,7 @@ import org.springframework.core.annotation.Order;
 })
 @ButtonDeclarations({
     @ButtonDeclaration(
-        title = "添加", key = "add", icon = "PlusCircleOutlined", sort = 0, argumentMaxSize = 0, argumentMinSize = 0
+        title = "添加", key = "add", icon = "PlusCircleOutlined", sort = 0, argumentMaxSize = 1, argumentMinSize = 0
     ),
     @ButtonDeclaration(
         title = "编辑", key = "edit", color = "orange", icon = "EditOutlined", sort = 1,
@@ -63,8 +63,8 @@ public class Menu extends BaseEntityImpl<String> {
   /**
    * Unique identifier for the menu.
    */
-  @Schema(title = "菜单UUID", description = "菜单的唯一标识符", maxLength = 32, minLength = 1, hidden = true)
-  @Column(unique = true, nullable = false, length = 32)
+  @Schema(title = "菜单UUID", description = "菜单的唯一标识符", maxLength = 36, minLength = 1, hidden = true)
+  @Column(unique = true, nullable = false, length = 36)
   private String uuid;
 
   /**
@@ -82,8 +82,8 @@ public class Menu extends BaseEntityImpl<String> {
   /**
    * Parent menu identifier, representing hierarchical structure.
    */
-  @Schema(title = "父级菜单", description = "父级菜单的标识符", maxLength = 32, minLength = 1, hidden = true)
-  @Column(length = 32)
+  @Schema(title = "父级菜单", description = "父级菜单的标识符", maxLength = 36, minLength = 1, hidden = true)
+  @Column(length = 36)
   private String parent;
 
   /**
@@ -93,6 +93,7 @@ public class Menu extends BaseEntityImpl<String> {
   @Schema(title = "菜单图标", description = "菜单的图标", maxLength = 100, minLength = 1, extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
+          @ExtensionProperty(name = "widget", value = "IconPicker"),
       })
   })
   @Column(length = 100)
@@ -114,19 +115,19 @@ public class Menu extends BaseEntityImpl<String> {
    * Type of menu item.
    */
   @Order(2)
-  @Schema(title = "菜单类型", description = "菜单项的类型", maxLength = 20, minLength = 1, extensions = {
+  @Schema(title = "菜单类型", description = "菜单项的类型", maxLength = 32, minLength = 1, extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
   })
-  @Column(length = 20)
+  @Column(length = 32)
   private String type;
 
   /**
    * Associated UI component for rendering the menu.
    */
   @Order(4)
-  @Schema(title = "菜单组件", description = "用于渲染菜单的UI组件", maxLength = 100, minLength = 5, extensions = {
+  @Schema(title = "菜单组件", description = "用于渲染菜单的UI组件,如果添加iframe:前缀则为外链", maxLength = 100, minLength = 5, extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
