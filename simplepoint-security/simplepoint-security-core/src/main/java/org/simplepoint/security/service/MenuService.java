@@ -9,11 +9,15 @@
 package org.simplepoint.security.service;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.security.MenuChildren;
 import org.simplepoint.security.entity.Menu;
+import org.simplepoint.security.entity.TreeMenu;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Service interface for managing {@link Menu} entities.
@@ -36,7 +40,16 @@ public interface MenuService extends BaseService<Menu, String> {
   /**
    * Retrieves the collection of menus accessible to the current user.
    *
-   * @return a collection of {@link Menu} entities available to the user
+   * @return a collection of {@link TreeMenu} entities available to the user
    */
-  Collection<Menu> routes();
+  Collection<TreeMenu> routes();
+
+  /**
+   * Retrieves a paginated list of tree-structured menus based on the specified filter attributes.
+   *
+   * @param attributes a map of filtering attributes
+   * @param pageable   the pagination information
+   * @return a paginated list of {@link TreeMenu} entities matching the filters
+   */
+  Page<TreeMenu> limitTree(Map<String, String> attributes, Pageable pageable);
 }

@@ -10,13 +10,13 @@ package org.simplepoint.plugin.rbac.menu.rest.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.security.entity.Menu;
+import org.simplepoint.security.entity.TreeMenu;
 import org.simplepoint.security.service.MenuService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -59,13 +59,11 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    * @param attributes a map of filtering attributes
    * @param pageable   pagination information
    * @return a paginated list of menu records wrapped in {@link Response}
-   * @throws Exception if an error occurs during retrieval
    */
   @GetMapping
   @Operation(summary = "分页查询菜单", description = "根据提供的属性和分页参数，检索菜单的分页列表")
-  public Response<Page<Menu>> limit(@RequestParam Map<String, String> attributes, Pageable pageable)
-      throws Exception {
-    return limit(service.limit(attributes, pageable), Menu.class);
+  public Response<Page<TreeMenu>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
+    return Response.limit(service.limitTree(attributes, pageable), TreeMenu.class);
   }
 
   /**
@@ -75,7 +73,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    */
   @GetMapping("/routes")
   @Operation(summary = "获取用户菜单", description = "获取当前登录用户的菜单列表")
-  public Response<Page<Menu>> routes() {
+  public Response<Page<TreeMenu>> routes() {
     return Response.okay(new PageImpl<>(service.routes().stream().toList(), Pageable.unpaged(), service.routes().size()));
   }
 

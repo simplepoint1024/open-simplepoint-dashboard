@@ -13,6 +13,7 @@ import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
 import org.simplepoint.security.entity.Menu;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -29,8 +30,7 @@ public interface JpaMenuRepository extends BaseRepository<Menu, String>, MenuRep
       from Menu as menus
                inner join RolePermissionsRelevance srpr on srpr.permissionAuthority = menus.uuid
                inner join UserRoleRelevance urr on urr.authority = srpr.roleAuthority
-      where urr.username = 'system'
+      where urr.username = :username
       """)
-  Collection<Menu> findUserMenus(String username);
+  Collection<Menu> findUserMenus(@Param("username") String username);
 }
-
