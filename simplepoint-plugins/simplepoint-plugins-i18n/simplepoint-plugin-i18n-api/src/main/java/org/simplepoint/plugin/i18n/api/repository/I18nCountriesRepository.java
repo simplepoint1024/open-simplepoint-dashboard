@@ -8,5 +8,5 @@ import org.simplepoint.plugin.i18n.api.entity.Countries;
  * It extends the BaseRepository to inherit basic CRUD operations.
  * This interface is used to interact with the persistence layer for Countries entities.
  */
-public interface CountriesRepository extends BaseRepository<Countries, String> {
+public interface I18nCountriesRepository extends BaseRepository<Countries, String> {
 }
