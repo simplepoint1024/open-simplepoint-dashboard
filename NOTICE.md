@@ -2,9 +2,9 @@
 
 This project includes third-party libraries and dependencies. Below are their licenses and attributions:
 
-## Apache Calcite
+## Spring Cloud
 
-- **Website:** [https://calcite.apache.org](https://calcite.apache.org)
+- **Website:** [https://spring.io/projects/spring-cloud](https://spring.io/projects/spring-cloud)
 - **License:** Apache License
   2.0 ([https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0))
 
