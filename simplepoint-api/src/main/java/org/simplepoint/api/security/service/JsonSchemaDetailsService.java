@@ -1,6 +1,5 @@
 package org.simplepoint.api.security.service;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Set;
 import org.simplepoint.api.base.BaseDetailsService;
 import org.simplepoint.api.security.base.BaseUser;
