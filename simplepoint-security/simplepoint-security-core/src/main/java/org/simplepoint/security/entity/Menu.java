@@ -15,14 +15,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.util.UUID;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.annotation.FormSchema;
-import org.simplepoint.core.annotation.GenericsType;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.constants.Icons;
+import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
 
 /**
@@ -42,20 +44,33 @@ import org.springframework.core.annotation.Order;
     @Index(name = "idx_menus_uuid", columnList = "uuid"),
 })
 @EqualsAndHashCode(callSuper = true)
-@FormSchema(genericsTypes = {
-    @GenericsType(name = "id", value = String.class),
-})
 @ButtonDeclarations({
     @ButtonDeclaration(
-        title = "添加", key = "add", icon = "PlusCircleOutlined", sort = 0, argumentMaxSize = 1, argumentMinSize = 0
+        title = PublicButtonKeys.ADD_TITLE,
+        key = PublicButtonKeys.ADD_KEY,
+        icon = Icons.PLUS_CIRCLE,
+        sort = 0,
+        argumentMaxSize = 1,
+        argumentMinSize = 0
     ),
     @ButtonDeclaration(
-        title = "编辑", key = "edit", color = "orange", icon = "EditOutlined", sort = 1,
-        argumentMinSize = 1, argumentMaxSize = 1
+        title = PublicButtonKeys.EDIT_TITLE,
+        key = PublicButtonKeys.EDIT_KEY,
+        color = "orange",
+        icon = Icons.EDIT,
+        sort = 1,
+        argumentMinSize = 1,
+        argumentMaxSize = 1
     ),
     @ButtonDeclaration(
-        title = "删除", key = "delete", color = "danger", icon = "MinusCircleOutlined", sort = 2,
-        argumentMinSize = 1, argumentMaxSize = 10, danger = true
+        title = PublicButtonKeys.DELETE_TITLE,
+        key = PublicButtonKeys.DELETE_KEY,
+        color = "danger",
+        icon = Icons.MINUS_CIRCLE,
+        sort = 2,
+        argumentMinSize = 1,
+        argumentMaxSize = 10,
+        danger = true
     )
 })
 @Schema(name = "菜单对象", description = "用于表示系统中的菜单项")
@@ -63,7 +78,7 @@ public class Menu extends BaseEntityImpl<String> {
   /**
    * Unique identifier for the menu.
    */
-  @Schema(title = "菜单UUID", description = "菜单的唯一标识符", maxLength = 36, minLength = 1, hidden = true)
+  @Schema(title = "i18n:menus.title.uuid", description = "i18n:menus.description.uuid", maxLength = 36, minLength = 1, hidden = true)
   @Column(unique = true, nullable = false, length = 36)
   private String uuid;
 
@@ -71,7 +86,7 @@ public class Menu extends BaseEntityImpl<String> {
    * Label associated with the menu.
    */
   @Order(0)
-  @Schema(title = "菜单标签", description = "菜单的标签", maxLength = 50, minLength = 1, extensions = {
+  @Schema(title = "i18n:menus.title.label", description = "i18n:menus.description.label", maxLength = 50, minLength = 1, extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
@@ -79,10 +94,18 @@ public class Menu extends BaseEntityImpl<String> {
   @Column(nullable = false, length = 50)
   private String label;
 
+  @Order(0)
+  @Schema(title = "i18n:menus.title.title", description = "i18n:menus.description.title", maxLength = 100, minLength = 1, extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
+  private String title;
+
   /**
    * Parent menu identifier, representing hierarchical structure.
    */
-  @Schema(title = "父级菜单", description = "父级菜单的标识符", maxLength = 36, minLength = 1, hidden = true)
+  @Schema(title = "i18n:menus.title.parent", description = "i18n:menus.description.parent", maxLength = 36, minLength = 1, hidden = true)
   @Column(length = 36)
   private String parent;
 
@@ -90,7 +113,7 @@ public class Menu extends BaseEntityImpl<String> {
    * Icon representing the menu visually.
    */
   @Order(1)
-  @Schema(title = "菜单图标", description = "菜单的图标", maxLength = 100, minLength = 1, extensions = {
+  @Schema(title = "i18n:menus.title.icon", description = "i18n:menus.description.icon", maxLength = 100, minLength = 1, extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
           @ExtensionProperty(name = "widget", value = "IconPicker"),
@@ -99,11 +122,19 @@ public class Menu extends BaseEntityImpl<String> {
   @Column(length = 100)
   private String icon;
 
+  @Order(1)
+  @Schema(title = "i18n:menus.title.sort", description = "i18n:menus.description.sort", extensions = {
+      @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+      })
+  })
+  private Integer sort;
+
   /**
    * Path associated with the menu for navigation.
    */
   @Order(3)
-  @Schema(title = "菜单路径", description = "菜单的导航路径", maxLength = 200, minLength = 1, extensions = {
+  @Schema(title = "i18n:menus.title.path", description = "i18n:menus.description.path", maxLength = 200, minLength = 1, extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
@@ -115,7 +146,7 @@ public class Menu extends BaseEntityImpl<String> {
    * Type of menu item.
    */
   @Order(2)
-  @Schema(title = "菜单类型", description = "菜单项的类型", maxLength = 32, minLength = 1, extensions = {
+  @Schema(title = "i18n:menus.title.type", description = "i18n:menus.description.type", maxLength = 32, minLength = 1, extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
@@ -125,9 +156,12 @@ public class Menu extends BaseEntityImpl<String> {
 
   /**
    * Associated UI component for rendering the menu.
+   *
+   * <p>用于渲染菜单的UI组件,如果添加iframe:前缀则为外链"
+   * </p>
    */
   @Order(4)
-  @Schema(title = "菜单组件", description = "用于渲染菜单的UI组件,如果添加iframe:前缀则为外链", maxLength = 100, minLength = 5, extensions = {
+  @Schema(title = "i18n:menus.title.component", description = "i18n:menus.description.component", maxLength = 100, minLength = 5, extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
@@ -138,18 +172,28 @@ public class Menu extends BaseEntityImpl<String> {
   /**
    * Flag indicating if the menu represents a potentially dangerous action.
    */
-  @Schema(title = "危险标志", description = "指示菜单项是否表示潜在的危险操作")
+  @Schema(title = "i18n:menus.title.danger", description = "i18n:menus.description.danger")
   @Column
   private Boolean danger;
 
   /**
    * Flag indicating if the menu item is disabled.
    */
-  @Schema(title = "禁用标志", description = "指示菜单项是否被禁用", extensions = {
+  @Schema(title = "i18n:menus.title.disabled", description = "i18n:menus.description.disabled", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
   })
   @Column(nullable = false)
   private Boolean disabled;
+
+  @PrePersist
+  private void preInsert() {
+    if (this.uuid == null || this.uuid.isEmpty()) {
+      this.uuid = UUID.randomUUID().toString();
+    }
+    if (this.disabled == null) {
+      this.disabled = false;
+    }
+  }
 }

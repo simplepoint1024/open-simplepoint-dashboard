@@ -1,64 +1,181 @@
 [
   {
+    "title": "menu.dashboard",
+    "label": "Dashboard",
+    "icon": "DashboardOutlined",
+    "path": "/dashboard",
+    "sort": 0,
+    "component": "common/dashboard"
+  },
+  {
+    "title": "menu.system",
     "label": "系统配置",
+    "icon": "SettingOutlined",
     "path": "/system",
-    "icon": "SecurityScanOutlined",
+    "sort": 1,
+    "type": "item",
     "children": [
       {
-        "label": "应用管理",
-        "path": "/system/client",
-        "component": "common/system/Client",
-        "type": "item",
-        "icon": "KeyOutlined"
-      },
-      {
-        "label": "授权管理",
-        "path": "/system/auth",
-        "component": "common/system/Auth",
-        "type": "item",
-        "icon": "AppstoreOutlined"
-      },
-      {
-        "label": "字段权限",
-        "path": "/system/field",
-        "component": "common/system/Field",
-        "type": "item",
-        "icon": "TableOutlined"
-      },
-      {
-        "label": "数据权限",
-        "path": "/system/data",
-        "component": "common/system/Data",
-        "type": "item",
-        "icon": "BarsOutlined"
-      },
-      {
+        "title": "menu.system.user",
         "label": "用户管理",
+        "icon": "UserOutlined",
         "path": "/system/user",
-        "component": "common/system/User",
         "type": "item",
-        "icon": "UserOutlined"
+        "sort": 0,
+        "component": "common/system/user",
+        "children": []
       },
       {
-        "label": "角色管理",
-        "path": "/system/role",
-        "component": "common/system/Role",
-        "type": "item",
-        "icon": "UsergroupAddOutlined"
-      },
-      {
+        "title": "menu.system.menu",
         "label": "菜单管理",
+        "icon": "MenuOutlined",
         "path": "/system/menu",
-        "component": "common/system/Menu",
         "type": "item",
-        "icon": "MenuOutlined"
+        "sort": 1,
+        "component": "common/system/menu",
+        "children": []
       },
       {
-        "label": "端点管理",
-        "path": "/system/endpoints",
-        "component": "common/system/Endpoint",
+        "title": "menu.system.role",
+        "label": "角色管理",
+        "icon": "UsergroupAddOutlined",
+        "path": "/system/role",
         "type": "item",
-        "icon": "ApiOutlined"
+        "sort": 2,
+        "component": "common/system/role",
+        "children": []
+      },
+      {
+        "title": "menu.system.client",
+        "label": "应用管理",
+        "icon": "KeyOutlined",
+        "path": "/system/client",
+        "type": "item",
+        "sort": 3,
+        "component": "common/system/client",
+        "children": []
+      },
+      {
+        "title": "menu.system.auth",
+        "label": "授权管理",
+        "icon": "AppstoreOutlined",
+        "path": "/system/auth",
+        "type": "item",
+        "sort": 4,
+        "component": "common/system/auth",
+        "children": []
+      },
+      {
+        "title": "menu.system.endpoints",
+        "label": "端点管理",
+        "icon": "ApiOutlined",
+        "path": "/system/endpoints",
+        "type": "item",
+        "component": "common/system/endpoint",
+        "children": []
+      },
+      {
+        "title": "menu.system.field",
+        "label": "字段权限",
+        "icon": "TableOutlined",
+        "path": "/system/field",
+        "type": "item",
+        "component": "common/system/field",
+        "children": []
+      },
+      {
+        "title": "menu.system.data",
+        "label": "数据权限",
+        "icon": "BarsOutlined",
+        "path": "/system/data",
+        "type": "item",
+        "component": "common/system/data",
+        "children": []
+      }
+    ]
+  },
+  {
+    "uuid": "de233e0c-7b13-4ffb-9754-0857a59a8f69",
+    "title": "menu.i18n",
+    "label": "国际化管理",
+    "icon": "GlobalOutlined",
+    "path": "/i18n",
+    "type": "item",
+    "children": [
+      {
+        "title": "menu.i18n.countryRange",
+        "label": "国家和地区",
+        "icon": "GlobalOutlined",
+        "path": "/i18n/country-range",
+        "type": "item",
+        "children": []
+      },
+      {
+        "title": "menu.i18n.message",
+        "label": "国际化消息",
+        "parent": "de233e0c-7b13-4ffb-9754-0857a59a8f69",
+        "icon": "CommentOutlined",
+        "path": "/i18n/message",
+        "type": "item",
+        "children": []
+      }
+    ]
+  },
+  {
+    "title": "menu.monitoring",
+    "label": "监控审计",
+    "icon": "EyeOutlined",
+    "path": "/monitoring",
+    "type": "item",
+    "children": [
+      {
+        "title": "menu.monitoring.loginLog",
+        "label": "登录日志",
+        "icon": "SendOutlined",
+        "path": "/monitoring/login-log",
+        "type": "item",
+        "children": []
+      },
+      {
+        "title": "menu.monitoring.operationLog",
+        "label": "操作日志",
+        "icon": "FormOutlined",
+        "path": "/monitoring",
+        "type": "item",
+        "children": []
+      }
+    ]
+  },
+  {
+    "title": "menu.ops",
+    "label": "系统维护",
+    "icon": "ClusterOutlined",
+    "path": "/ops",
+    "type": "item",
+    "children": [
+      {
+        "title": "menu.ops.microService",
+        "label": "微服务管理",
+        "icon": "QrcodeOutlined",
+        "path": "/ops/micro-service",
+        "type": "item",
+        "children": []
+      },
+      {
+        "title": "menu.ops.microPlugin",
+        "label": "插件市场",
+        "icon": "BuildOutlined",
+        "path": "/ops/micro-plugin",
+        "type": "item",
+        "children": []
+      },
+      {
+        "title": "menu.ops.microApplication",
+        "label": "微应用管理",
+        "icon": "DropboxOutlined",
+        "path": "/ops/micro-application",
+        "type": "item",
+        "children": []
       }
     ]
   }

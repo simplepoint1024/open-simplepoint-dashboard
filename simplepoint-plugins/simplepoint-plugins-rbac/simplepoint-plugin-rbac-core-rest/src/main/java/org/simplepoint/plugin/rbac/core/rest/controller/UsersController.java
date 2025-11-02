@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
  * This controller provides endpoints for retrieving, creating, updating, and deleting users.
  */
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/users")
 @Tag(name = "用户管理", description = "用于管理系统中的用户")
 public class UsersController extends BaseController<UsersService, User, String> {
 

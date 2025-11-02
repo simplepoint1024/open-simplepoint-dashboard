@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
  * This controller provides endpoints for retrieving, creating, updating, and deleting roles.
  */
 @RestController
-@RequestMapping("/role")
+@RequestMapping("/roles")
 @Tag(name = "角色管理", description = "用于管理系统中的角色")
 public class RoleController extends BaseController<RolesService, Role, String> {
 

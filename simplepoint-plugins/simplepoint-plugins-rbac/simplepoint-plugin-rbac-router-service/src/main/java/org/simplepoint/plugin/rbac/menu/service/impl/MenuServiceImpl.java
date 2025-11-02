@@ -115,7 +115,7 @@ public class MenuServiceImpl
         try {
           this.add(menu);
         } catch (Exception e) {
-          log.warn("Failed to add menu: {}", menu.getPath());
+          log.warn("Failed to add menu: {}", menu.getPath(), e);
         }
       }
     }
@@ -126,7 +126,7 @@ public class MenuServiceImpl
     UserContext<BaseUser> userContext = getUserContext();
     String username = userContext.getName();
     if (userContext.getDetails().superAdmin()) {
-      return buildMenuTree(getRepository().findAll(Map.of()));
+      return buildMenuTree(getRepository().findAllByOrderBySortAsc());
     }
     return buildMenuTree(getRepository().findUserMenus(username));
   }
