@@ -11,16 +11,16 @@ import org.springframework.stereotype.Component;
  * It uses the MessageService to fetch messages and caches the results to improve performance.
  */
 @Component
-@ConditionalOnBean(MessageService.class)
+@ConditionalOnBean(I18nMessageService.class)
 public class CacheSimpleMessageSource {
-  private final MessageService messageService;
+  private final I18nMessageService messageService;
 
   /**
    * Constructs a CacheMessageService with the provided MessageService.
    *
    * @param messageService the MessageService to use for retrieving messages
    */
-  public CacheSimpleMessageSource(MessageService messageService) {
+  public CacheSimpleMessageSource(I18nMessageService messageService) {
     this.messageService = messageService;
   }
 

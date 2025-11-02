@@ -8,5 +8,5 @@ import org.simplepoint.plugin.i18n.api.entity.TimeZone;
  * It extends the BaseRepository to inherit basic CRUD operations.
  * This interface is used to interact with the persistence layer for TimeZone entities.
  */
-public interface TimeZoneRepository extends BaseRepository<TimeZone, String> {
+public interface I18nTimeZoneRepository extends BaseRepository<TimeZone, String> {
 }

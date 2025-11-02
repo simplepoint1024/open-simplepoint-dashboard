@@ -9,5 +9,5 @@ import org.simplepoint.plugin.i18n.api.entity.Region;
  * This service will handle operations related to countries, such as retrieving country information,
  * managing country data, and other related functionalities.
  */
-public interface RegionService extends BaseService<Region, String> {
+public interface I18nRegionService extends BaseService<Region, String> {
 }

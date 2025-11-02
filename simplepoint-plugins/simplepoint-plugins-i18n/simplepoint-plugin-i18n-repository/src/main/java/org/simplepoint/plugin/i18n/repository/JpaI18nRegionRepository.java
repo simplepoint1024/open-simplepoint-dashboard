@@ -1,7 +1,7 @@
 package org.simplepoint.plugin.i18n.repository;
 
 import org.simplepoint.plugin.i18n.api.entity.Region;
-import org.simplepoint.plugin.i18n.api.repository.RegionRepository;
+import org.simplepoint.plugin.i18n.api.repository.I18nRegionRepository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,5 +12,5 @@ import org.springframework.stereotype.Repository;
  * This interface is used to interact with the persistence layer for Region entities.
  */
 @Repository
-public interface JpaRegionRepository extends JpaRepository<Region, String>, RegionRepository {
+public interface JpaI18nRegionRepository extends JpaRepository<Region, String>, I18nRegionRepository {
 }

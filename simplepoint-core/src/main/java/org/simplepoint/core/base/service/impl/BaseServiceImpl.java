@@ -41,6 +41,7 @@ import org.simplepoint.api.security.simple.SimpleFieldPermissions;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.context.UserContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -111,7 +112,7 @@ public class BaseServiceImpl
    */
   public BaseServiceImpl(
       final R repository,
-      final UserContext<BaseUser> userContext,
+      @Autowired(required = false) final UserContext<BaseUser> userContext,
       final DetailsProviderService detailsProviderService
   ) {
     this(repository, userContext, detailsProviderService, null);
@@ -239,7 +240,7 @@ public class BaseServiceImpl
         Object value = method.invoke(annotation);
         result.put(method.getName(), value);
       } catch (Exception e) {
-        log.warn("Could not extract annotation attributes from method " + method.getName(), e);
+        log.warn("Could not extract annotation attributes from method {}", method.getName(), e);
       }
     }
     return result;

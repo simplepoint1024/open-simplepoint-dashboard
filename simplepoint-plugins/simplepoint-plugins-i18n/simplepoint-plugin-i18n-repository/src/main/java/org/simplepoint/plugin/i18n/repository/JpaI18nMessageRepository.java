@@ -3,7 +3,7 @@ package org.simplepoint.plugin.i18n.repository;
 import java.util.Collection;
 import org.simplepoint.core.entity.Message;
 import org.simplepoint.data.jpa.base.BaseRepository;
-import org.simplepoint.plugin.i18n.api.repository.MessageRepository;
+import org.simplepoint.plugin.i18n.api.repository.I18nMessageRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
  * This repository is used to interact with the persistence layer for Message entities.
  */
 @Repository
-public interface JpaMessageRepository extends BaseRepository<Message, String>, MessageRepository {
+public interface JpaI18nMessageRepository extends BaseRepository<Message, String>, I18nMessageRepository {
 
   /**
    * Retrieves a message by its code and locale.
