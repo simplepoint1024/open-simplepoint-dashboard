@@ -1,5 +1,7 @@
 package org.simplepoint.plugin.i18n.service.impl;
 
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.core.entity.Message;
 import org.simplepoint.core.locale.MessageService;
@@ -34,5 +36,20 @@ public class MessageServiceImpl extends BaseServiceImpl<MessageRepository, Messa
    */
   public String getMessage(String code, String locale) {
     return getRepository().getMessage(code, locale);
+  }
+
+  /**
+   * Retrieves global messages based on the provided locale and namespace.
+   *
+   * @param locale the locale for which messages are requested
+   * @param ns     the namespace of the messages
+   * @return a map of message codes to their corresponding texts
+   */
+  @Override
+  public Map<String, String> mapping(String locale, String ns) {
+    boolean notNull = ns != null && !ns.isEmpty();
+    return (notNull ? getRepository().mapping(locale, ns.split(",")) : getRepository().global(locale))
+        .stream()
+        .collect(Collectors.toMap(Message::getCode, Message::getMessage));
   }
 }

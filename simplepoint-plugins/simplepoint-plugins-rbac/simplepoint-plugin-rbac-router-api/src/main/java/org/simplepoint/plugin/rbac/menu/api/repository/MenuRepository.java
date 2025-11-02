@@ -22,4 +22,11 @@ public interface MenuRepository extends BaseRepository<Menu, String> {
    * @return a collection of {@link Menu} entities linked to the user
    */
   Collection<Menu> findUserMenus(String username);
+
+  /**
+   * Finds all menus ordered by their sort value in ascending order.
+   *
+   * @return a collection of all {@link Menu} entities sorted by sort value
+   */
+  Collection<Menu> findAllByOrderBySortAsc();
 }

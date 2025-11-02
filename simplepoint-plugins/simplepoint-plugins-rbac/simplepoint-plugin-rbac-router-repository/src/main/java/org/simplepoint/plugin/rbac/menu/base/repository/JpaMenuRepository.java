@@ -30,7 +30,10 @@ public interface JpaMenuRepository extends BaseRepository<Menu, String>, MenuRep
       from Menu as menus
                inner join RolePermissionsRelevance srpr on srpr.permissionAuthority = menus.uuid
                inner join UserRoleRelevance urr on urr.authority = srpr.roleAuthority
-      where urr.username = :username
+      where urr.username = :username order by menus.sort asc
       """)
   Collection<Menu> findUserMenus(@Param("username") String username);
+
+  @Override
+  Collection<Menu> findAllByOrderBySortAsc();
 }

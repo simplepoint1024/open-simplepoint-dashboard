@@ -1,5 +1,6 @@
 package org.simplepoint.core.locale;
 
+import java.util.Map;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.core.entity.Message;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
@@ -20,4 +21,13 @@ public interface MessageService extends BaseService<Message, String> {
    * @return the text of the message or null if not found
    */
   String getMessage(String code, String language);
+
+  /**
+   * Retrieves mapping messages based on the provided locale and namespace.
+   *
+   * @param locale the locale for which messages are requested
+   * @param ns     the namespace of the messages
+   * @return a map of message codes to their corresponding texts
+   */
+  Map<String, String> mapping(String locale, String ns);
 }
