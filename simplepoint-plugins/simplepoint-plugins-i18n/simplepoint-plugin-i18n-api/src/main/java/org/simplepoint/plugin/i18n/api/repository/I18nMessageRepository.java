@@ -9,7 +9,7 @@ import org.simplepoint.core.entity.Message;
  * It extends the BaseRepository to inherit basic CRUD operations.
  * This interface is used to interact with the persistence layer for Message entities.
  */
-public interface MessageRepository extends BaseRepository<Message, String> {
+public interface I18nMessageRepository extends BaseRepository<Message, String> {
 
   /**
    * Retrieves a message by its code and language.

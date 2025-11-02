@@ -9,5 +9,5 @@ import org.simplepoint.plugin.i18n.api.entity.TimeZone;
  * This service will handle operations related to countries, such as retrieving country information,
  * managing country data, and other related functionalities.
  */
-public interface TimeZoneService extends BaseService<TimeZone, String> {
+public interface I18nTimeZoneService extends BaseService<TimeZone, String> {
 }

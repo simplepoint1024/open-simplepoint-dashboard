@@ -1,7 +1,7 @@
 package org.simplepoint.plugin.i18n.repository;
 
 import org.simplepoint.plugin.i18n.api.entity.TimeZone;
-import org.simplepoint.plugin.i18n.api.repository.TimeZoneRepository;
+import org.simplepoint.plugin.i18n.api.repository.I18nTimeZoneRepository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
  * This interface is used to interact with the persistence layer for TimeZone entities.
  */
 @Repository
-public interface JpaTimeZoneRepository extends JpaRepository<TimeZone, String>,
-    TimeZoneRepository {
+public interface JpaI18nTimeZoneRepository extends JpaRepository<TimeZone, String>,
+    I18nTimeZoneRepository {
   
 }

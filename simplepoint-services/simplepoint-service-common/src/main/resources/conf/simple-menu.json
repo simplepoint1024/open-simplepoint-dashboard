@@ -1,180 +1,224 @@
 [
   {
-    "title": "menu.dashboard",
     "label": "Dashboard",
+    "title": "menu.dashboard",
     "icon": "DashboardOutlined",
     "path": "/dashboard",
-    "sort": 0,
-    "component": "common/dashboard"
+    "component": "common/dashboard",
+    "disabled": false,
+    "children": []
   },
   {
-    "title": "menu.system",
     "label": "系统配置",
+    "title": "menu.system",
     "icon": "SettingOutlined",
     "path": "/system",
-    "sort": 1,
     "type": "item",
+    "disabled": false,
     "children": [
       {
-        "title": "menu.system.user",
         "label": "用户管理",
+        "title": "menu.system.user",
         "icon": "UserOutlined",
         "path": "/system/user",
         "type": "item",
-        "sort": 0,
         "component": "common/system/user",
+        "disabled": false,
         "children": []
       },
       {
-        "title": "menu.system.menu",
         "label": "菜单管理",
+        "title": "menu.system.menu",
         "icon": "MenuOutlined",
         "path": "/system/menu",
         "type": "item",
-        "sort": 1,
         "component": "common/system/menu",
+        "disabled": false,
         "children": []
       },
       {
-        "title": "menu.system.role",
         "label": "角色管理",
+        "title": "menu.system.role",
         "icon": "UsergroupAddOutlined",
         "path": "/system/role",
         "type": "item",
-        "sort": 2,
         "component": "common/system/role",
+        "disabled": false,
         "children": []
       },
       {
-        "title": "menu.system.client",
         "label": "应用管理",
+        "title": "menu.system.client",
         "icon": "KeyOutlined",
         "path": "/system/client",
         "type": "item",
-        "sort": 3,
         "component": "common/system/client",
+        "disabled": false,
         "children": []
       },
       {
-        "title": "menu.system.auth",
         "label": "授权管理",
+        "title": "menu.system.auth",
         "icon": "AppstoreOutlined",
         "path": "/system/auth",
         "type": "item",
-        "sort": 4,
         "component": "common/system/auth",
+        "disabled": false,
         "children": []
       },
       {
-        "title": "menu.system.endpoints",
-        "label": "端点管理",
-        "icon": "ApiOutlined",
-        "path": "/system/endpoints",
-        "type": "item",
-        "component": "common/system/endpoint",
-        "children": []
-      },
-      {
-        "title": "menu.system.field",
         "label": "字段权限",
+        "title": "menu.system.field",
         "icon": "TableOutlined",
         "path": "/system/field",
         "type": "item",
         "component": "common/system/field",
+        "disabled": false,
         "children": []
       },
       {
-        "title": "menu.system.data",
+        "label": "端点管理",
+        "title": "menu.system.endpoints",
+        "icon": "ApiOutlined",
+        "path": "/system/endpoints",
+        "type": "item",
+        "component": "common/system/endpoint",
+        "disabled": false,
+        "children": []
+      },
+      {
         "label": "数据权限",
+        "title": "menu.system.data",
         "icon": "BarsOutlined",
         "path": "/system/data",
         "type": "item",
         "component": "common/system/data",
+        "disabled": false,
         "children": []
       }
     ]
   },
   {
-    "uuid": "de233e0c-7b13-4ffb-9754-0857a59a8f69",
-    "title": "menu.i18n",
     "label": "国际化管理",
+    "title": "menu.i18n",
     "icon": "GlobalOutlined",
     "path": "/i18n",
     "type": "item",
+    "disabled": false,
     "children": [
       {
-        "title": "menu.i18n.countryRange",
-        "label": "国家和地区",
+        "label": "国家管理",
+        "title": "menu.i18n.countries",
         "icon": "GlobalOutlined",
-        "path": "/i18n/country-range",
+        "path": "/i18n/countries",
+        "component": "common/i18n/countries",
         "type": "item",
+        "disabled": false,
         "children": []
       },
       {
-        "title": "menu.i18n.message",
+        "label": "区域管理",
+        "title": "menu.i18n.regions",
+        "icon": "CompassOutlined",
+        "path": "/i18n/regions",
+        "component": "common/i18n/region",
+        "type": "item",
+        "disabled": false,
+        "children": []
+      },
+      {
+        "label": "时区管理",
+        "title": "menu.i18n.timezones",
+        "icon": "ClockCircleOutlined",
+        "path": "/i18n/timezones",
+        "component": "common/i18n/timezone",
+        "type": "item",
+        "disabled": false,
+        "children": []
+      }, {
+        "label": "语言管理",
+        "title": "menu.i18n.languages",
+        "icon": "TranslationOutlined",
+        "path": "/i18n/languages",
+        "component": "common/i18n/language",
+        "type": "item",
+        "disabled": false,
+        "children": []
+      },
+      {
+        "label": "国际化命名空间",
+        "title": "menu.i18n.namespace",
+        "icon": "FolderOpenOutlined",
+        "path": "/i18n/namespace",
+        "component": "common/i18n/namespace",
+        "type": "item",
+        "disabled": false,
+        "children": []
+      },
+      {
         "label": "国际化消息",
-        "parent": "de233e0c-7b13-4ffb-9754-0857a59a8f69",
+        "title": "menu.i18n.message",
         "icon": "CommentOutlined",
         "path": "/i18n/message",
+        "component": "common/i18n/message",
         "type": "item",
+        "disabled": false,
         "children": []
       }
     ]
   },
   {
-    "title": "menu.monitoring",
-    "label": "监控审计",
-    "icon": "EyeOutlined",
-    "path": "/monitoring",
-    "type": "item",
-    "children": [
-      {
-        "title": "menu.monitoring.loginLog",
-        "label": "登录日志",
-        "icon": "SendOutlined",
-        "path": "/monitoring/login-log",
-        "type": "item",
-        "children": []
-      },
-      {
-        "title": "menu.monitoring.operationLog",
-        "label": "操作日志",
-        "icon": "FormOutlined",
-        "path": "/monitoring",
-        "type": "item",
-        "children": []
-      }
-    ]
-  },
-  {
-    "title": "menu.ops",
     "label": "系统维护",
+    "title": "menu.ops",
     "icon": "ClusterOutlined",
     "path": "/ops",
     "type": "item",
+    "disabled": false,
     "children": [
       {
-        "title": "menu.ops.microService",
-        "label": "微服务管理",
-        "icon": "QrcodeOutlined",
-        "path": "/ops/micro-service",
-        "type": "item",
-        "children": []
-      },
-      {
-        "title": "menu.ops.microPlugin",
         "label": "插件市场",
+        "title": "menu.ops.microPlugin",
         "icon": "BuildOutlined",
         "path": "/ops/micro-plugin",
         "type": "item",
+        "disabled": false,
         "children": []
       },
       {
-        "title": "menu.ops.microApplication",
         "label": "微应用管理",
+        "title": "menu.ops.microApplication",
         "icon": "DropboxOutlined",
         "path": "/ops/micro-application",
         "type": "item",
+        "disabled": false,
+        "children": []
+      },
+      {
+        "label": "微服务管理",
+        "title": "menu.ops.microService",
+        "icon": "QrcodeOutlined",
+        "path": "/ops/micro-service",
+        "type": "item",
+        "disabled": false,
+        "children": []
+      }
+    ]
+  },
+  {
+    "label": "监控审计",
+    "title": "menu.monitoring",
+    "icon": "EyeOutlined",
+    "path": "/monitoring",
+    "type": "item",
+    "disabled": false,
+    "children": [
+      {
+        "label": "登录日志",
+        "title": "menu.monitoring.loginLog",
+        "icon": "SendOutlined",
+        "path": "/monitoring/login-log",
+        "type": "item",
+        "disabled": false,
         "children": []
       }
     ]

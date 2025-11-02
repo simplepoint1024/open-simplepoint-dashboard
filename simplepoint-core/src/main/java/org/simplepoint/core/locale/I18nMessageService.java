@@ -11,7 +11,7 @@ import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
  * This interface is parameterized with Message type and String as the ID type.
  */
 @AmqpRemoteClient(to = "i18n.message")
-public interface MessageService extends BaseService<Message, String> {
+public interface I18nMessageService extends BaseService<Message, String> {
   /**
    * Retrieves a message based on the provided code and language.
    * If the message is not found, it returns null.

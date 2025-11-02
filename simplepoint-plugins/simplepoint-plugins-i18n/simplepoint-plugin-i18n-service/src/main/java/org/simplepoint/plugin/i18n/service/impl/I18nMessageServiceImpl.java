@@ -2,11 +2,15 @@ package org.simplepoint.plugin.i18n.service.impl;
 
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.simplepoint.api.security.base.BaseUser;
+import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.core.context.UserContext;
 import org.simplepoint.core.entity.Message;
-import org.simplepoint.core.locale.MessageService;
+import org.simplepoint.core.locale.I18nMessageService;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
-import org.simplepoint.plugin.i18n.api.repository.MessageRepository;
+import org.simplepoint.plugin.i18n.api.repository.I18nMessageRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * MessageServiceImpl provides the implementation for MessageService.
@@ -14,16 +18,21 @@ import org.simplepoint.plugin.i18n.api.repository.MessageRepository;
  * This service is used to interact with the persistence layer for message entities.
  */
 @AmqpRemoteService
-public class MessageServiceImpl extends BaseServiceImpl<MessageRepository, Message, String> implements
-    MessageService {
+public class I18nMessageServiceImpl extends BaseServiceImpl<I18nMessageRepository, Message, String> implements
+    I18nMessageService {
 
   /**
-   * Constructs a BaseServiceImpl with the specified repository and access metadata sync service.
+   * Constructs a BaseServiceImpl with the specified repository, user context, and details provider service.
    *
-   * @param repository the repository to be used for entity operations
+   * @param repository             the repository to be used for entity operations
+   * @param userContext            the user context for accessing user-related information
+   * @param detailsProviderService the service providing additional details
    */
-  public MessageServiceImpl(MessageRepository repository) {
-    super(repository);
+  public I18nMessageServiceImpl(
+      I18nMessageRepository repository,
+      @Autowired(required = false) UserContext<BaseUser> userContext,
+      DetailsProviderService detailsProviderService) {
+    super(repository, userContext, detailsProviderService);
   }
 
   /**

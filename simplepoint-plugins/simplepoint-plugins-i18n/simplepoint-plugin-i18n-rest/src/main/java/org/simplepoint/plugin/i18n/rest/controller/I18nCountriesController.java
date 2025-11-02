@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
  * facilitating operations such as fetching country lists, details, and other related functionalities.
  */
 @RestController
-@RequestMapping("/i18n/country")
+@RequestMapping("/i18n/countries")
 @Tag(name = "国家管理", description = "用于管理系统中的国家配置")
 public class I18nCountriesController extends BaseController<I18nCountriesService, Countries, String> {
   /**

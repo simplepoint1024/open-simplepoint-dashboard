@@ -1,65 +1,172 @@
 package org.simplepoint.plugin.i18n.api.entity;
 
-import jakarta.persistence.Column;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.simplepoint.core.annotation.FormPropsSchema;
-import org.simplepoint.core.annotation.FormSchema;
-import org.simplepoint.core.annotation.GenericsType;
+import lombok.NoArgsConstructor;
+import org.simplepoint.core.annotation.ButtonDeclaration;
+import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.constants.Icons;
+import org.simplepoint.core.constants.PublicButtonKeys;
 
 /**
  * Represents a time zone entity with display name, code, UTC offset, etc.
  */
 @Data
 @Entity
-@EqualsAndHashCode(callSuper = false)
-@FormSchema(genericsTypes = {
-    @GenericsType(name = "id", value = String.class),
+@Table(name = "i18n_timezones")
+@EqualsAndHashCode(callSuper = true)
+@ButtonDeclarations({
+    @ButtonDeclaration(
+        title = PublicButtonKeys.ADD_TITLE,
+        key = PublicButtonKeys.ADD_KEY,
+        icon = Icons.PLUS_CIRCLE,
+        sort = 0,
+        argumentMaxSize = 1,
+        argumentMinSize = 0
+    ),
+    @ButtonDeclaration(
+        title = PublicButtonKeys.EDIT_TITLE,
+        key = PublicButtonKeys.EDIT_KEY,
+        color = "orange",
+        icon = Icons.EDIT,
+        sort = 1,
+        argumentMinSize = 1,
+        argumentMaxSize = 1
+    ),
+    @ButtonDeclaration(
+        title = PublicButtonKeys.DELETE_TITLE,
+        key = PublicButtonKeys.DELETE_KEY,
+        color = "danger",
+        icon = Icons.MINUS_CIRCLE,
+        sort = 2,
+        argumentMinSize = 1,
+        argumentMaxSize = 10,
+        danger = true
+    )
 })
-@Table(name = "i18n_time_zones", indexes = {
-    @Index(name = "idx_i18n_timezones_code", columnList = "code"),
-})
+@NoArgsConstructor
+@AllArgsConstructor
+@Tag(name = "时区对象", description = "用于管理系统中的时区")
 public class TimeZone extends BaseEntityImpl<String> {
 
   /**
-   * Display name of the time zone.
+   * The IANA time zone code (e.g., "Asia/Shanghai").
    */
-  @FormPropsSchema(sort = 1)
-  @Column(nullable = false, unique = true)
-  private String displayName;
+  @Schema(
+      title = "i18n:timezone.title.timezoneCode",
+      description = "i18n:timezone.description.timezoneCode",
+      example = "Asia/Shanghai",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      })
+  private String timezoneCode;
 
   /**
-   * Time zone code (e.g., "Asia/Shanghai").
+   * The English name of the time zone.
    */
-  @FormPropsSchema(sort = 2)
-  @Column(nullable = false, unique = true)
-  private String code;
+  @Schema(
+      title = "i18n:timezone.title.nameEnglish",
+      description = "i18n:timezone.description.nameEnglish",
+      example = "China Standard Time",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      })
+  private String nameEnglish;
 
   /**
-   * UTC offset in minutes.
+   * The native name of the time zone.
    */
-  @FormPropsSchema(sort = 3)
-  private Integer utcOffset;
+  @Schema(
+      title = "i18n:timezone.title.nameNative",
+      description = "i18n:timezone.description.nameNative",
+      example = "中国标准时间",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      })
+  private String nameNative;
 
   /**
-   * Sort order.
+   * The UTC offset of the time zone (e.g., "+08:00", "-05:00").
    */
-  @FormPropsSchema(sort = 4)
-  private Integer sort;
+  @Schema(
+      title = "i18n:timezone.title.utcOffset",
+      description = "i18n:timezone.description.utcOffset",
+      example = "+08:00",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      })
+  private String utcOffset;
 
   /**
-   * Country code to which the time zone belongs.
+   * The country code associated with the time zone.
    */
-  @FormPropsSchema(sort = 5)
+  @Schema(
+      title = "i18n:timezone.title.countryCode",
+      description = "i18n:timezone.description.countryCode",
+      example = "CN",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      })
   private String countryCode;
 
   /**
-   * Description or remarks.
+   * Indicates whether the time zone observes Daylight Saving Time (DST).
    */
-  @FormPropsSchema(sort = 6)
-  private String description;
+  @Schema(
+      title = "i18n:timezone.title.isDst",
+      description = "i18n:timezone.description.isDst",
+      example = "true",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  private Boolean isDst;
+
+  /**
+   * Indicates whether the time zone is enabled.
+   */
+  @Schema(
+      title = "i18n:timezone.title.enabled",
+      description = "i18n:timezone.description.enabled",
+      example = "true",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  private Boolean enabled;
+
+
+  /**
+   * Pre-persist lifecycle callback to set default values.
+   */
+  @PrePersist
+  public void prePersist() {
+    if (enabled == null) {
+      enabled = true;
+    }
+  }
+
 }

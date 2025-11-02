@@ -8,5 +8,5 @@ import org.simplepoint.plugin.i18n.api.entity.Region;
  * It extends the BaseRepository to inherit basic CRUD operations.
  * This interface is used to interact with the persistence layer for Region entities.
  */
-public interface RegionRepository extends BaseRepository<Region, String> {
+public interface I18nRegionRepository extends BaseRepository<Region, String> {
 }

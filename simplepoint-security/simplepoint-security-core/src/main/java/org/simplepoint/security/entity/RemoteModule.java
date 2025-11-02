@@ -33,6 +33,8 @@ public class RemoteModule extends BaseEntityImpl<String> {
   @Column(nullable = false, unique = true)
   @Schema(title = "模块名称", description = "远程模块名称")
   private String name;
+  @Schema(title = "服务名称", description = "远程模块服务名称")
+  private String serviceName;
   @Column(nullable = false, unique = true)
   @Schema(title = "模块入口", description = "远程模块入口")
   private String entry;

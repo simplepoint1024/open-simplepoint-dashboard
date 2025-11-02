@@ -173,6 +173,7 @@ public class MenuServiceImpl
       String parentId = m.getParent();
       TreeMenu current = nodeMap.get(m.getUuid());
       if (parentId == null || parentId.isBlank()) {
+        clearUnnecessaryFields(current);
         roots.add(current);
         continue;
       }
@@ -181,13 +182,30 @@ public class MenuServiceImpl
         if (parent.getChildren() == null) {
           parent.setChildren(new ArrayList<>());
         }
+        clearUnnecessaryFields(current);
         parent.getChildren().add(current);
       } else {
         // Orphan node, treat as root
+        clearUnnecessaryFields(current);
         roots.add(current);
       }
     }
     return roots;
+  }
+
+  /**
+   * Clears unnecessary fields from the Menu entity before returning it to the client.
+   *
+   * @param menu the Menu entity to be cleaned
+   */
+  private void clearUnnecessaryFields(Menu menu) {
+    menu.setCreatedBy(null);
+    menu.setCreatedAt(null);
+    menu.setUpdatedBy(null);
+    menu.setUpdatedAt(null);
+    menu.setParent(null);
+    menu.setId(null);
+    menu.setUuid(null);
   }
 }
 
