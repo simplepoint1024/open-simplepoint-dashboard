@@ -76,7 +76,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * This field uniquely identifies the user within the system.
    */
   @Order(1)
-  @Schema(title = "用户名", description = "用户的唯一标识符", extensions = {
+  @Schema(title = "i18n:users.title.username", description = "i18n:users.description.username", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
@@ -88,7 +88,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * This is securely stored and used for authentication purposes.
    */
   @Order(2)
-  @Schema(title = "密码", description = "用户的登录密码", extensions = {
+  @Schema(title = "i18n:users.title.password", description = "i18n:users.description.username", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "widget", value = "password"),
       })
@@ -101,11 +101,16 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    */
   @Email
   @JsonProperty(index = 1)
-  @Schema(maxLength = 64, minLength = 5, title = "邮箱", description = "用户的电子邮件地址", extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
+  @Schema(
+      maxLength = 64,
+      minLength = 5,
+      title = "i18n:users.title.email",
+      description = "i18n:users.description.email",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
       })
-  })
   @Column(unique = true, nullable = false, length = 64)
   private String email;
 
@@ -113,43 +118,74 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * The address of the user.
    * This field contains the user's physical address details.
    */
-  @Schema(title = "地址", description = "用户的地址信息", maxLength = 255, minLength = 5)
+  @Schema(
+      title = "i18n:users.title.address",
+      description = "i18n:users.description.address",
+      maxLength = 255,
+      minLength = 5
+  )
   private String address;
 
   /**
    * The birthdate of the user.
    * This field contains the user's date of birth.
    */
-  @Schema(title = "出生日期", description = "用户的出生日期", type = "string", format = "date-time")
+  @Schema(
+      title = "i18n:users.title.birthdate",
+      description = "i18n:users.description.birthdate",
+      type = "string",
+      format = "date-time"
+  )
   private Instant birthdate;
 
   /**
    * Indicates whether the user's email is verified.
    */
-  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY, title = "邮箱是否验证", description = "指示用户的电子邮件是否已验证")
+  @Schema(
+      hidden = true,
+      accessMode = Schema.AccessMode.READ_ONLY,
+      title = "i18n:users.title.emailVerified",
+      description = "i18n:users.description.emailVerified"
+  )
   private Boolean emailVerified;
 
   /**
    * The family name (last name) of the user.
    */
-  @Schema(title = "姓氏", description = "用户的姓氏", maxLength = 50, minLength = 1)
+  @Schema(
+      title = "i18n:users.title.familyName",
+      description = "i18n:users.description.familyName",
+      maxLength = 50,
+      minLength = 1
+  )
   private String familyName;
 
   /**
    * The gender of the user.
    * This field specifies the user's gender.
    */
-  @Schema(hidden = true, title = "性别", description = "用户的性别", maxLength = 10, minLength = 1, extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
+  @Schema(
+      hidden = true,
+      title = "i18n:users.title.gender",
+      description = "i18n:users.description.gender",
+      maxLength = 10,
+      minLength = 1,
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
       })
-  })
   private String gender;
 
   /**
    * The given name (first name) of the user.
    */
-  @Schema(maxLength = 50, minLength = 1, title = "名字", description = "用户的名字")
+  @Schema(
+      maxLength = 50,
+      minLength = 1,
+      title = "i18n:users.title.givenName",
+      description = "i18n:users.description.givenName"
+  )
   private String givenName;
 
   /**
@@ -157,123 +193,175 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * This field specifies the user's preferred language or region.
    */
   @Order(5)
-  @Schema(hidden = true, title = "区域设置", description = "用户的语言或地区偏好", extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
+  @Schema(
+      hidden = true,
+      title = "i18n:users.title.locale",
+      description = "i18n:users.description.locale",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
       })
-  })
   private String locale;
 
   /**
    * The middle name of the user.
    */
-  @Schema(title = "中间名", description = "用户的中间名", maxLength = 50, minLength = 1)
+  @Schema(
+      title = "i18n:users.title.middleName",
+      description = "i18n:users.description.middleName",
+      maxLength = 50,
+      minLength = 1
+  )
   private String middleName;
 
   /**
    * The full name of the user.
    */
-  @Schema(hidden = true, title = "姓名", description = "用户的全名", maxLength = 100, minLength = 1)
+  @Schema(
+      hidden = true,
+      title = "i18n:users.title.name",
+      description = "i18n:users.description.name",
+      maxLength = 100,
+      minLength = 1
+  )
   private String name;
 
   /**
    * The nickname of the user.
    */
   @Order(2)
-  @Schema(maxLength = 50, minLength = 1, title = "昵称", description = "用户的昵称", extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
+  @Schema(
+      maxLength = 50,
+      minLength = 1,
+      title = "i18n:users.title.nickname",
+      description = "i18n:users.description.nickname",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
       })
-  })
   private String nickname;
 
   /**
    * The URL or path to the user's profile picture.
    */
-  @Schema(title = "头像", description = "用户的头像图片URL或路径", format = "data-url")
+  @Schema(title = "i18n:users.title.picture", description = "i18n:users.description.picture", format = "data-url")
   private String picture;
 
   /**
    * The phone number of the user.
    */
   @Order(3)
-  @Schema(maxLength = 50, minLength = 5, title = "手机号", description = "用户的联系电话", extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
+  @Schema(
+      maxLength = 50,
+      minLength = 5,
+      title = "i18n:users.title.phoneNumber",
+      description = "i18n:users.description.phoneNumber",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
       })
-  })
   @Column(length = 18)
   private String phoneNumber;
 
   /**
    * Indicates whether the user's phone number is verified.
    */
-  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY, title = "手机号是否验证", description = "指示用户的联系电话是否已验证")
+  @Schema(
+      hidden = true,
+      accessMode = Schema.AccessMode.READ_ONLY,
+      title = "i18n:users.title.phoneNumberVerified",
+      description = "i18n:users.description.phoneNumberVerified"
+  )
   private Boolean phoneNumberVerified;
 
   /**
    * The preferred username of the user.
    * This field is typically used for display purposes.
    */
-  @Schema(hidden = true, title = "首选用户名", description = "用户的首选用户名")
+  @Schema(hidden = true, title = "i18n:users.title.preferredUsername", description = "i18n:users.description.preferredUsername")
   private String preferredUsername;
 
   /**
    * The URL or path to the user's profile.
    */
   @URL
-  @Schema(title = "个人资料", description = "用户的个人资料URL或路径")
+  @Schema(title = "i18n:users.title.profile", description = "i18n:users.description.profile")
   private String profile;
 
   /**
    * The personal or business website of the user.
    */
-  @Schema(hidden = true, title = "网站", description = "用户的个人或商业网站URL")
+  @Schema(hidden = true, title = "i18n:users.title.website", description = "i18n:users.description.website")
   private String website;
 
   /**
    * The time zone information of the user.
    */
-  @Schema(hidden = true, title = "时区", description = "用户的时区信息")
+  @Schema(hidden = true, title = "i18n:users.title.zoneinfo", description = "i18n:users.description.zoneinfo")
   private String zoneinfo;
 
   /**
    * 指示账户是否启用
    * Indicates whether the account is enabled.
    */
-  @Schema(accessMode = Schema.AccessMode.READ_ONLY, title = "是否启用", description = "指示账户是否启用", extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
+  @Schema(
+      accessMode = Schema.AccessMode.READ_ONLY,
+      title = "i18n:users.title.enabled",
+      description = "i18n:users.description.enabled",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
       })
-  })
   private Boolean enabled;
 
   /**
    * 指示账户是否未过期
    * Indicates whether the account is non-expired.
    */
-  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY, title = "是否过期", description = "指示账户是否未过期")
+  @Schema(
+      hidden = true,
+      accessMode = Schema.AccessMode.READ_ONLY,
+      title = "i18n:users.title.accountNonExpired",
+      description = "i18n:users.description.accountNonExpired"
+  )
   private Boolean accountNonExpired;
 
   /**
    * 指示账户是否未被锁定
    * Indicates whether the account is non-locked.
    */
-  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY, title = "是否锁定", description = "指示账户是否未被锁定")
+  @Schema(
+      hidden = true,
+      accessMode = Schema.AccessMode.READ_ONLY,
+      title = "i18n:users.title.accountNonLocked",
+      description = "i18n:users.description.accountNonLocked"
+  )
   private Boolean accountNonLocked;
 
   /**
    * 指示凭据是否未过期
    * Indicates whether the credentials are non-expired.
    */
-  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY, title = "凭据是否过期", description = "指示凭据是否未过期")
+  @Schema(
+      hidden = true,
+      accessMode = Schema.AccessMode.READ_ONLY,
+      title = "i18n:users.title.credentialsNonExpired",
+      description = "i18n:users.description.credentialsNonExpired"
+  )
   private Boolean credentialsNonExpired;
 
-  @Schema(title = "是否为管理员", description = "指示用户是否具有管理员权限", extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
+  @Schema(
+      title = "i18n:users.title.superAdmin",
+      description = "i18n:users.description.superAdmin",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
       })
-  })
   private Boolean superAdmin;
 
   /**

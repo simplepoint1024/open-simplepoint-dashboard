@@ -8,10 +8,14 @@
 
 package org.simplepoint.plugin.rbac.core.service.impl;
 
+import org.simplepoint.api.security.base.BaseUser;
+import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.core.context.UserContext;
 import org.simplepoint.plugin.rbac.core.api.repository.PermissionsRepository;
 import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
 import org.simplepoint.security.entity.Permissions;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -24,13 +28,17 @@ public class PermissionsServiceImpl
     implements PermissionsService {
 
   /**
-   * Constructs a PermissionsServiceImpl with the specified repository and optional metadata sync service.
+   * Constructs a PermissionsServiceImpl with the specified repository, user context, and details provider service.
    *
-   * @param permissionsRepository the repository used for permissions operations
+   * @param repository             the PermissionsRepository for data access
+   * @param userContext            the UserContext for accessing user-related information
+   * @param detailsProviderService the DetailsProviderService for additional details
    */
   public PermissionsServiceImpl(
-      final PermissionsRepository permissionsRepository
+      PermissionsRepository repository,
+      @Autowired(required = false) UserContext<BaseUser> userContext,
+      DetailsProviderService detailsProviderService
   ) {
-    super(permissionsRepository);
+    super(repository, userContext, detailsProviderService);
   }
 }

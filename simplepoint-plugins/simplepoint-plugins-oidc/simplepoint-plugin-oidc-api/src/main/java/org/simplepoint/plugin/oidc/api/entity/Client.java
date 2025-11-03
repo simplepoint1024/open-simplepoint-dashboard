@@ -21,6 +21,8 @@ import lombok.EqualsAndHashCode;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.constants.Icons;
+import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
 
 
@@ -37,15 +39,31 @@ import org.springframework.core.annotation.Order;
 @Entity
 @ButtonDeclarations({
     @ButtonDeclaration(
-        title = "添加", key = "add", icon = "PlusCircleOutlined", sort = 0, argumentMaxSize = 0, argumentMinSize = 0
+        title = PublicButtonKeys.ADD_TITLE,
+        key = PublicButtonKeys.ADD_KEY,
+        icon = Icons.PLUS_CIRCLE,
+        sort = 0,
+        argumentMaxSize = 1,
+        argumentMinSize = 0
     ),
     @ButtonDeclaration(
-        title = "编辑", key = "edit", color = "orange", icon = "EditOutlined", sort = 1,
-        argumentMinSize = 1, argumentMaxSize = 1
+        title = PublicButtonKeys.EDIT_TITLE,
+        key = PublicButtonKeys.EDIT_KEY,
+        color = "orange",
+        icon = Icons.EDIT,
+        sort = 1,
+        argumentMinSize = 1,
+        argumentMaxSize = 1
     ),
     @ButtonDeclaration(
-        title = "删除", key = "delete", color = "danger", icon = "MinusCircleOutlined", sort = 2,
-        argumentMinSize = 1, argumentMaxSize = 10, danger = true
+        title = PublicButtonKeys.DELETE_TITLE,
+        key = PublicButtonKeys.DELETE_KEY,
+        color = "danger",
+        icon = Icons.MINUS_CIRCLE,
+        sort = 2,
+        argumentMinSize = 1,
+        argumentMaxSize = 10,
+        danger = true
     )
 })
 @Table(name = "security_oauth2_client")
@@ -57,7 +75,7 @@ public class Client extends BaseEntityImpl<String> {
    */
   @Order(0)
   @Column(unique = true, nullable = false)
-  @Schema(title = "Client ID", description = "客户端的唯一标识", extensions = {
+  @Schema(title = "i18n:clients.title.clientId", description = "i18n:clients.description.clientId", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
@@ -69,7 +87,12 @@ public class Client extends BaseEntityImpl<String> {
    */
   @Order(8)
   @Column(unique = true, nullable = false)
-  @Schema(title = "有效时间", description = "客户端的有效时间", type = "string", format = "date-time")
+  @Schema(
+      title = "i18n:clients.title.clientIdIssuedAt",
+      description = "i18n:clients.description.clientIdIssuedAt",
+      type = "string",
+      format = "date-time"
+  )
   private Instant clientIdIssuedAt;
 
   /**
@@ -77,7 +100,7 @@ public class Client extends BaseEntityImpl<String> {
    */
   @Order(2)
   @Column(unique = true, nullable = false)
-  @Schema(title = "Secret", description = "客户端的秘钥", extensions = {
+  @Schema(title = "i18n:clients.title.clientSecret", description = "i18n:clients.description.clientSecret", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "widget", value = "password"),
       })
@@ -88,14 +111,19 @@ public class Client extends BaseEntityImpl<String> {
    * Timestamp indicating when the client secret expires.
    */
   @Order(9)
-  @Schema(title = "秘钥有效期", description = "过期后就是失效了", type = "string", format = "date-time")
+  @Schema(
+      title = "i18n:clients.title.clientSecretExpiresAt",
+      description = "i18n:clients.description.clientSecretExpiresAt",
+      type = "string",
+      format = "date-time"
+  )
   private Instant clientSecretExpiresAt;
 
   /**
    * Human-readable name assigned to the client.
    */
   @Order(1)
-  @Schema(title = "客户端名称", description = "客户端的名字", extensions = {
+  @Schema(title = "i18n:clients.title.clientName", description = "i18n:clients.description.clientName", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
@@ -107,11 +135,14 @@ public class Client extends BaseEntityImpl<String> {
    */
   @Order(3)
   @Column(length = 1000)
-  @Schema(title = "认证方式", description = "客户端支持的认证方式", extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
+  @Schema(
+      title = "i18n:clients.title.clientAuthenticationMethods",
+      description = "i18n:clients.description.clientAuthenticationMethods",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
       })
-  })
   private String clientAuthenticationMethods;
 
   /**
@@ -119,7 +150,7 @@ public class Client extends BaseEntityImpl<String> {
    */
   @Order(4)
   @Column(length = 1000)
-  @Schema(title = "授权模式", description = "客户端支持的授权模式", extensions = {
+  @Schema(title = "i18n:clients.title.authorizationGrantTypes", description = "i18n:clients.description.authorizationGrantTypes", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
@@ -131,7 +162,7 @@ public class Client extends BaseEntityImpl<String> {
    */
   @Order(5)
   @Column(length = 1000)
-  @Schema(title = "重定向地址", description = "如果是多个请使用英文逗号分隔")
+  @Schema(title = "i18n:clients.title.redirectUris", description = "i18n:clients.description.redirectUris")
   private String redirectUris;
 
   /**
@@ -139,7 +170,7 @@ public class Client extends BaseEntityImpl<String> {
    */
   @Order(6)
   @Column(length = 1000)
-  @Schema(title = "登出重定向地址", description = "如果是多个请使用英文逗号分隔")
+  @Schema(title = "i18n:clients.title.postLogoutRedirectUris", description = "i18n:clients.description.postLogoutRedirectUris")
   private String postLogoutRedirectUris;
 
   /**
@@ -147,7 +178,7 @@ public class Client extends BaseEntityImpl<String> {
    */
   @Order(7)
   @Column(length = 1000)
-  @Schema(title = "授权范围", description = "如果是多个请使用英文逗号分隔", extensions = {
+  @Schema(title = "i18n:clients.title.scopes", description = "i18n:clients.description.scopes", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
@@ -158,7 +189,7 @@ public class Client extends BaseEntityImpl<String> {
    * JSON-encoded client settings (e.g., requiring consent, token endpoint authentication).
    */
   @Column(length = 2000)
-  @Schema(title = "客户端设置", description = "JSON格式存储客户端的相关设置", extensions = {
+  @Schema(title = "i18n:clients.title.clientSettings", description = "i18n:clients.description.clientSettings", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "widget", value = "textarea"),
       })
@@ -169,7 +200,7 @@ public class Client extends BaseEntityImpl<String> {
    * JSON-encoded token settings (e.g., access token lifetime, refresh token policies).
    */
   @Column(length = 2000)
-  @Schema(title = "令牌设置", description = "JSON格式存储令牌的相关设置", extensions = {
+  @Schema(title = "i18n:clients.title.tokenSettings", description = "i18n:clients.description.tokenSettings", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "widget", value = "textarea"),
       })
