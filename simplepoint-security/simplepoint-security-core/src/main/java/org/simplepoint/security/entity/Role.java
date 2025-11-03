@@ -20,6 +20,8 @@ import org.simplepoint.api.security.base.BaseRole;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.constants.Icons;
+import org.simplepoint.core.constants.PublicButtonKeys;
 
 /**
  * Represents the Role entity in the RBAC (Role-Based Access Control) system.
@@ -35,15 +37,31 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
     @ButtonDeclaration(
-        title = "添加", key = "add", icon = "PlusCircleOutlined", sort = 0, argumentMaxSize = 0, argumentMinSize = 0
+        title = PublicButtonKeys.ADD_TITLE,
+        key = PublicButtonKeys.ADD_KEY,
+        icon = Icons.PLUS_CIRCLE,
+        sort = 0,
+        argumentMaxSize = 1,
+        argumentMinSize = 0
     ),
     @ButtonDeclaration(
-        title = "编辑", key = "edit", color = "orange", icon = "EditOutlined", sort = 1,
-        argumentMinSize = 1, argumentMaxSize = 1
+        title = PublicButtonKeys.EDIT_TITLE,
+        key = PublicButtonKeys.EDIT_KEY,
+        color = "orange",
+        icon = Icons.EDIT,
+        sort = 1,
+        argumentMinSize = 1,
+        argumentMaxSize = 1
     ),
     @ButtonDeclaration(
-        title = "删除", key = "delete", color = "danger", icon = "MinusCircleOutlined", sort = 2,
-        argumentMinSize = 1, argumentMaxSize = 10, danger = true
+        title = PublicButtonKeys.DELETE_TITLE,
+        key = PublicButtonKeys.DELETE_KEY,
+        color = "danger",
+        icon = Icons.MINUS_CIRCLE,
+        sort = 2,
+        argumentMinSize = 1,
+        argumentMaxSize = 10,
+        danger = true
     )
 })
 @Schema(title = "角色对象", description = "用于定义系统中的角色及其权限")
@@ -53,7 +71,7 @@ public class Role extends BaseEntityImpl<String> implements BaseRole {
    * The name of the role.
    * This field defines the name identifier for the role within the RBAC system.
    */
-  @Schema(title = "角色名称", description = "定义角色的名称", extensions = {
+  @Schema(title = "i18n:roles.title.roleName", description = "i18n:roles.description.roleName", maxLength = 50, minLength = 1, extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
       })
@@ -64,22 +82,20 @@ public class Role extends BaseEntityImpl<String> implements BaseRole {
    * The authority associated with the role.
    * This field specifies the permissions or scope tied to the role.
    */
-  @Schema(title = "角色权限", description = "定义角色的权限标识", extensions = {
+  @Schema(title = "i18n:roles.title.authority", description = "i18n:roles.description.authority", maxLength = 100, minLength = 1, extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
-      })
-  })
+      })})
   private String authority;
 
   /**
    * A brief description of the role.
    * Provides additional context or details about the role's purpose and usage.
    */
-  @Schema(title = "角色描述", description = "对角色的简要描述", extensions = {
+  @Schema(title = "i18n:roles.title.description", description = "i18n:roles.description.description", maxLength = 200, extensions = {
       @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
-      })
-  })
+          @ExtensionProperty(name = "x-list-visible", value = "true")
+      })})
   private String description;
 
   /**
@@ -87,10 +103,9 @@ public class Role extends BaseEntityImpl<String> implements BaseRole {
    * Defines the order or importance of the role in the system.
    * Roles with higher priority levels may override roles with lower levels.
    */
-  @Schema(title = "角色优先级", description = "定义角色的优先级，数值越大优先级越高", extensions = {
+  @Schema(title = "i18n:roles.title.priority", description = "i18n:roles.description.priority", example = "1", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
-      })
-  })
+      })})
   private Integer priority;
 }
