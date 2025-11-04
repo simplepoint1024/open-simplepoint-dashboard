@@ -8,9 +8,13 @@
 
 package org.simplepoint.plugin.rbac.core.base.repository;
 
+import java.util.Collection;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.security.entity.Role;
+import org.simplepoint.security.entity.RolePermissionsRelevance;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -22,4 +26,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface JpaRolesRepository extends BaseRepository<Role, String>, RoleRepository {
+  @Override
+  @Query("SELECT rpr FROM RolePermissionsRelevance rpr WHERE rpr.roleAuthority IN :roleAuthorities")
+  Collection<RolePermissionsRelevance> loadPermissionsByRoleAuthorities(@Param("roleAuthorities") Collection<String> roleAuthorities);
 }

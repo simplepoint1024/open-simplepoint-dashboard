@@ -7,6 +7,7 @@ import jakarta.persistence.criteria.Root;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.simplepoint.core.query.ConditionsBuilder;
 import org.springframework.data.jpa.repository.query.EscapeCharacter;
 
 /**
@@ -19,20 +20,20 @@ public class AttributeMatchers {
   private static final Map<String, AttributeMatcher> attributeMatchers = new HashMap<>();
 
   static {
-    registerAttributeMatcher("like", like());
-    registerAttributeMatcher("in", in());
-    registerAttributeMatcher("not:in", notIn());
-    registerAttributeMatcher("not:like", notLike());
-    registerAttributeMatcher("between", between());
-    registerAttributeMatcher("not:between", notBetween());
-    registerAttributeMatcher("equals", equals());
-    registerAttributeMatcher("not:equals", notEquals());
-    registerAttributeMatcher("than:greater", greaterThan());
-    registerAttributeMatcher("than:less", lessThan());
-    registerAttributeMatcher("than:equal:greater", greaterThanOrEqualTo());
-    registerAttributeMatcher("than:equal:less", lessThanOrEqualTo());
-    registerAttributeMatcher("is:null", isNull());
-    registerAttributeMatcher("is:not:null", isNotNull());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_LIKE, like());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_IN, in());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_NOT_IN, notIn());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_NOT_LIKE, notLike());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_BETWEEN, between());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_NOT_BETWEEN, notBetween());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_EQUALS, equals());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_NOT_EQUALS, notEquals());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_THAN_GREATER, greaterThan());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_THAN_LESS, lessThan());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_THAN_EQUAL_GREATER, greaterThanOrEqualTo());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_THAN_EQUAL_LESS, lessThanOrEqualTo());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_IS_NULL, isNull());
+    registerAttributeMatcher(ConditionsBuilder.PREFIX_IS_NOT_NULL, isNotNull());
   }
 
   /**

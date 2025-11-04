@@ -10,6 +10,7 @@ package org.simplepoint.plugin.rbac.menu.base.repository;
 
 import java.util.Collection;
 import org.simplepoint.data.jpa.base.BaseRepository;
+import org.simplepoint.plugin.rbac.menu.api.entity.MenuPermissionsRelevance;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
 import org.simplepoint.security.entity.Menu;
 import org.springframework.data.jpa.repository.Query;
@@ -25,5 +26,16 @@ import org.springframework.stereotype.Repository;
 public interface JpaMenuRepository extends BaseRepository<Menu, String>, MenuRepository {
 
   @Override
-  Collection<Menu> findAllByOrderBySortAsc();
+  @Query("SELECT mpr FROM MenuPermissionsRelevance mpr WHERE mpr.permissionAuthority IN :permissionAuthorities")
+  Collection<MenuPermissionsRelevance> loadPermissionsByPermissionAuthorities(
+      @Param("permissionAuthorities") Collection<String> permissionAuthorities
+  );
+
+  @Override
+  @Query("SELECT m FROM Menu m WHERE m.id IN :ids order by m.sort asc")
+  Collection<Menu> loadByIds(@Param("ids") Collection<String> ids);
+
+  @Override
+  @Query("SELECT m FROM Menu m order by m.sort asc")
+  Collection<Menu> loadAll();
 }

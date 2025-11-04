@@ -28,20 +28,6 @@ public interface BasePermissions {
   void setAuthority(String authority);
 
   /**
-   * Resource type(menu,field,button).
-   *
-   * @return Resource type.
-   */
-  String getResourceType();
-
-  /**
-   * Resource type.
-   *
-   * @param resourceType Resource type.
-   */
-  void setResourceType(String resourceType);
-
-  /**
    * Resource.
    *
    * @return Resource.

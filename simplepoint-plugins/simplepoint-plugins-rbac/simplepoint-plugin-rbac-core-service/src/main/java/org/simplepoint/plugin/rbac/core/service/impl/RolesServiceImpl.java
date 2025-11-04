@@ -8,13 +8,16 @@
 
 package org.simplepoint.plugin.rbac.core.service.impl;
 
+import java.util.Collection;
+import java.util.List;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.core.context.UserContext;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
-import org.simplepoint.plugin.rbac.core.api.service.RolesService;
+import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.security.entity.Role;
+import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +28,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, String>
-    implements RolesService {
+    implements RoleService {
 
   /**
    * Constructs a new RolesServiceImpl with the specified repository, user context, and details provider service.
@@ -38,5 +41,10 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
                           @Autowired(required = false) UserContext<BaseUser> userContext,
                           DetailsProviderService detailsProviderService) {
     super(repository, userContext, detailsProviderService);
+  }
+
+  @Override
+  public Collection<RolePermissionsRelevance> loadPermissionsByRoleAuthorities(Collection<String> roleAuthorities) {
+    return getRepository().loadPermissionsByRoleAuthorities(roleAuthorities);
   }
 }

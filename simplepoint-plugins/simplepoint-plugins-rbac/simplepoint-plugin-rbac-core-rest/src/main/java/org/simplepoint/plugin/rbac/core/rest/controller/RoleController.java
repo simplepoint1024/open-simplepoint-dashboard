@@ -15,7 +15,7 @@ import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
-import org.simplepoint.plugin.rbac.core.api.service.RolesService;
+import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.security.entity.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,14 +35,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/roles")
 @Tag(name = "角色管理", description = "用于管理系统中的角色")
-public class RoleController extends BaseController<RolesService, Role, String> {
+public class RoleController extends BaseController<RoleService, Role, String> {
 
   /**
    * Constructs a RoleController with the specified service.
    *
    * @param service The RolesService instance to be used.
    */
-  public RoleController(final RolesService service) {
+  public RoleController(final RoleService service) {
     super(service);
   }
 

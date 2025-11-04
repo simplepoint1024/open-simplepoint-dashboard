@@ -17,7 +17,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import java.util.UUID;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.annotation.ButtonDeclaration;
@@ -40,9 +39,7 @@ import org.springframework.core.annotation.Order;
 @Data
 @Entity
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Table(name = "security_menus", indexes = {
-    @Index(name = "idx_menus_uuid", columnList = "uuid"),
-})
+@Table(name = "security_menus")
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
     @ButtonDeclaration(
@@ -78,9 +75,9 @@ public class Menu extends BaseEntityImpl<String> {
   /**
    * Unique identifier for the menu.
    */
-  @Schema(title = "i18n:menus.title.uuid", description = "i18n:menus.description.uuid", maxLength = 36, minLength = 1, hidden = true)
+  @Schema(title = "i18n:menus.title.authority", description = "i18n:menus.description.authority", maxLength = 36, minLength = 1, hidden = true)
   @Column(unique = true, nullable = false, length = 36)
-  private String uuid;
+  private String authority;
 
   /**
    * Label associated with the menu.
@@ -189,8 +186,9 @@ public class Menu extends BaseEntityImpl<String> {
 
   @PrePersist
   private void preInsert() {
-    if (this.uuid == null || this.uuid.isEmpty()) {
-      this.uuid = UUID.randomUUID().toString();
+    if (this.authority == null || this.authority.isEmpty()) {
+      // Generate authority from path by replacing "/" with ":"
+      this.authority = this.path.toLowerCase().replaceAll("/", ":");
     }
     if (this.disabled == null) {
       this.disabled = false;

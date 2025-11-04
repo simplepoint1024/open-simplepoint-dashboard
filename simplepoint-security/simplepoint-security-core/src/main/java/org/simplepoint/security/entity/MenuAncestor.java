@@ -18,8 +18,8 @@ import org.simplepoint.security.entity.id.MenuAncestorId;
 public class MenuAncestor implements Serializable {
 
   @Id
-  private String childUuid;
+  private String childId;
 
   @Id
-  private String ancestorUuid;
+  private String ancestorId;
 }

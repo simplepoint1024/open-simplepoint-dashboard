@@ -268,10 +268,9 @@ public class BaseServiceImpl
    * @param entity the entity to add
    * @param <S>    the type of the entity
    * @return the added entity
-   * @throws Exception if an error occurs during the addition
    */
   @Override
-  public <S extends T> S add(S entity) throws Exception {
+  public <S extends T> S add(S entity) {
     S save = repository.save(entity);
     getModifyDataAuditingServices().forEach(service -> service.save(Set.of(save), repository.getDomainClass()));
     return save;
@@ -296,10 +295,9 @@ public class BaseServiceImpl
    * @param entity the entity to modify
    * @param <S>    the type of the entity
    * @return the modified entity
-   * @throws Exception if an error occurs during the modification
    */
   @Override
-  public <S extends T> T modifyById(S entity) throws Exception {
+  public <S extends T> T modifyById(S entity) {
     if (entity == null) {
       throw new NullPointerException("entity is null");
     }
@@ -409,11 +407,9 @@ public class BaseServiceImpl
    * @param pageable   the pagination and sorting information
    * @param <S>        the type of the entity
    * @return the paginated list of entities
-   * @throws Exception if an error occurs during retrieval
    */
   @Override
-  public <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable)
-      throws Exception {
+  public <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
     attributes.remove("number");
     attributes.remove("size");
     Page<S> limit = repository.limit(attributes, pageable);
@@ -500,17 +496,20 @@ public class BaseServiceImpl
    * @param leaseTime the lease time for holding the lock
    * @param <V>       the type of the result
    * @return the result of the callable
-   * @throws Exception if an error occurs during execution
    */
-  public <V> V lock(String key, Callable<V> runnable, long waitTime, long leaseTime)
-      throws Exception {
-    if (locking == null) {
-      log.warn(
-          "The distributed lock did not take effect, "
-              + "check whether the lock implementation "
-              + "was introduced and whether the bean was injected!");
-      return runnable.call();
+  public <V> V lock(String key, Callable<V> runnable, long waitTime, long leaseTime) {
+    try {
+      if (locking == null) {
+        log.warn(
+            "The distributed lock did not take effect, "
+                + "check whether the lock implementation "
+                + "was introduced and whether the bean was injected!");
+        return runnable.call();
+      }
+      return locking.executeWithLock(key, runnable, waitTime, leaseTime);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
-    return locking.executeWithLock(key, runnable, waitTime, leaseTime);
+
   }
 }
