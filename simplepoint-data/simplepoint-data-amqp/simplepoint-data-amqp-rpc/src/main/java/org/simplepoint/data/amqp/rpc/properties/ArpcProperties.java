@@ -50,7 +50,7 @@ public class ArpcProperties implements EnvironmentConfiguration {
 
   private String responseQueueName;
 
-  private Map<String, String> services = new LinkedHashMap<>();
+  private Map<String, String> providers = new LinkedHashMap<>();
 
   /**
    * Constructs the full prefixed key for a given key.

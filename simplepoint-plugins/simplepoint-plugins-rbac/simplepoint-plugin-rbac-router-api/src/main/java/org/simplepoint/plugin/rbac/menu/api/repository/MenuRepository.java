@@ -16,14 +16,6 @@ import org.simplepoint.security.entity.Menu;
 public interface MenuRepository extends BaseRepository<Menu, String> {
 
   /**
-   * Finds menus associated with the specified username.
-   *
-   * @param username the username to search menus for
-   * @return a collection of {@link Menu} entities linked to the user
-   */
-  Collection<Menu> findUserMenus(String username);
-
-  /**
    * Finds all menus ordered by their sort value in ascending order.
    *
    * @return a collection of all {@link Menu} entities sorted by sort value

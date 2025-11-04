@@ -8,8 +8,8 @@
 
 package org.simplepoint.plugin.rbac.core.service.impl;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
@@ -21,6 +21,7 @@ import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -71,20 +72,26 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    *                                   users are found with the given username
    */
   @Override
-  public User loadUserByUsername(String username) throws UsernameNotFoundException {
-    var users = findAll(Collections.singletonMap(User.ACCOUNT_FIELD, username));
+  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    var users = findAll(Map.of(User.ACCOUNT_FIELD, username));
     if (users.isEmpty()) {
-      log.info("No users found for username {}", username);
-      return null;
+      log.warn("User not found: {}", username);
+      throw new UsernameNotFoundException("User not found: " + username);
     }
     if (users.size() > 1) {
-      log.warn("More than one user found for username: {}", username);
+      log.error("Duplicate users found for username: {}", username);
+      throw new IllegalStateException("Duplicate users found: " + username);
     }
+
     var user = users.get(0);
-    List<String> roles = this.loadRolesByUsername(username);
-    user.setAuthorities(roles.stream().map(SimpleGrantedAuthority::new).toList());
+    List<String> roles = loadRolesByUsername(username);
+    List<SimpleGrantedAuthority> authorities = roles.stream()
+        .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+        .toList();
+    user.setAuthorities(authorities);
     return user;
   }
+
 
   /**
    * Loads roles associated with the given username.
@@ -101,8 +108,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    * Loads permissions associated with the given role authorities.
    *
    * @param roleAuthorities a list of role authorities
-   * @return a list of RolePermissionsRelevance entities representing permissions
-   *         assigned to the specified roles
+   * @return a list of RolePermissionsRelevance entities representing permissions assigned to the specified roles
    */
   @Override
   public List<RolePermissionsRelevance> loadPermissionsInRoleAuthorities(List<String> roleAuthorities) {

@@ -25,15 +25,5 @@ import org.springframework.stereotype.Repository;
 public interface JpaMenuRepository extends BaseRepository<Menu, String>, MenuRepository {
 
   @Override
-  @Query("""
-      select menus
-      from Menu as menus
-               inner join RolePermissionsRelevance srpr on srpr.permissionAuthority = menus.uuid
-               inner join UserRoleRelevance urr on urr.authority = srpr.roleAuthority
-      where urr.username = :username order by menus.sort asc
-      """)
-  Collection<Menu> findUserMenus(@Param("username") String username);
-
-  @Override
   Collection<Menu> findAllByOrderBySortAsc();
 }
