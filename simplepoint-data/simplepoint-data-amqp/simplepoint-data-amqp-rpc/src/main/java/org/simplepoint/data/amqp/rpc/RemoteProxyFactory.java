@@ -72,9 +72,8 @@ class RemoteProxyFactory {
    *
    * @param object the object to serialize
    * @return the serialized byte array
-   * @throws Exception if an I/O error occurs
    */
-  static byte[] toByteArray(Object object) throws Exception {
+  static byte[] toByteArray(Object object) {
     Kryo kryo = kryoThreadLocal.get();
     try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
          Output output = new Output(bos)) {
@@ -91,9 +90,8 @@ class RemoteProxyFactory {
    *
    * @param byteArray the byte array to deserialize
    * @return the deserialized object
-   * @throws Exception if an I/O error occurs
    */
-  static Object toObjectArray(byte[] byteArray) throws Exception {
+  static Object toObjectArray(byte[] byteArray) {
     Kryo kryo = kryoThreadLocal.get();
     try (Input input = new Input(new ByteArrayInputStream(byteArray))) {
       return kryo.readClassAndObject(input);
@@ -142,9 +140,10 @@ class RemoteProxyFactory {
         }
 
         String target = attributes.get("to").toString();
-        boolean exist = properties.getServices().containsKey(target);
+        Map<String, String> providers = properties.getProviders();
+        boolean exist = providers.containsKey(target);
         String to = properties.prefix(exist
-            ? properties.getServices().get(target) :
+            ? providers.get(target) :
             target);
         String correlationId = rabbitTemplate.getUUID();
         String typeName = getTypeName(method);
@@ -198,6 +197,7 @@ class RemoteProxyFactory {
     @Configuration
     static class ApplicationContextLoader implements ApplicationContextAware {
 
+      @SuppressWarnings("all")
       public ApplicationContextLoader(
           final ArpcProperties properties
       ) {

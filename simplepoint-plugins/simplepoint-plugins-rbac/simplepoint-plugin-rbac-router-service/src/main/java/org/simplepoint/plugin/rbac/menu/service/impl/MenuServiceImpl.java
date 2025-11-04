@@ -24,16 +24,21 @@ import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.core.context.UserContext;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
+import org.simplepoint.plugin.rbac.menu.api.repository.MenuAncestorRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
-import org.simplepoint.plugin.rbac.menu.api.repository.TreeMenuRepository;
 import org.simplepoint.security.MenuChildren;
 import org.simplepoint.security.entity.Menu;
+import org.simplepoint.security.entity.MenuAncestor;
 import org.simplepoint.security.entity.TreeMenu;
+import org.simplepoint.security.entity.User;
 import org.simplepoint.security.service.MenuService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Implementation of {@link MenuService} providing business logic for menu management.
@@ -50,7 +55,8 @@ public class MenuServiceImpl
     extends BaseServiceImpl<MenuRepository, Menu, String>
     implements MenuService {
 
-  private final TreeMenuRepository treeMenuRepository;
+
+  private final MenuAncestorRepository menuAncestorRepository;
 
   /**
    * Constructs a new {@code MenuServiceImpl} with the specified repository.
@@ -58,40 +64,50 @@ public class MenuServiceImpl
    * @param repository             the {@link MenuRepository} instance for data access
    * @param userContext            the user context for retrieving current user information
    * @param detailsProviderService the service for providing user details
-   * @param treeMenuRepository     the {@link TreeMenuRepository} instance for tree menu operations
+   * @param menuAncestorRepository the {@link MenuAncestorRepository} instance for menu ancestor operations
    */
   public MenuServiceImpl(
       final MenuRepository repository,
       final UserContext<BaseUser> userContext,
       final DetailsProviderService detailsProviderService,
-      TreeMenuRepository treeMenuRepository
+      final MenuAncestorRepository menuAncestorRepository
   ) {
     super(repository, userContext, detailsProviderService);
-    this.treeMenuRepository = treeMenuRepository;
+    this.menuAncestorRepository = menuAncestorRepository;
   }
 
   @Override
-  public <S extends Menu> Page<S> limit(Map<String, String> attributes, Pageable pageable)
-      throws Exception {
-    //F.processing(limit,
-    //s -> I18nContextHolder.localize(
-    //s.getContent(),
-    //Menu::getLabel,
-    //Menu::setLabel,
-    //attributes.containsKey(I18nContextHolder.DISABLE_I18N)
-    //));
-    return super.limit(attributes, pageable);
-  }
-
-  @Override
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
   public <S extends Menu> S add(S entity) throws Exception {
     if (entity.getUuid() == null || entity.getUuid().isEmpty()) {
       entity.setUuid(UUID.randomUUID().toString());
     }
-    return super.add(entity);
+    var saved = super.add(entity);
+
+    var parent = saved.getParent();
+
+    if (parent != null && !parent.isEmpty()) {
+      // Inherit ancestors from parent
+      var ancestors = menuAncestorRepository.findAncestorUuidsByChildUuids(Set.of(parent));
+      List<MenuAncestor> toSave = new ArrayList<>();
+      for (String ancestorUuid : ancestors) {
+        MenuAncestor ma = new MenuAncestor();
+        ma.setChildUuid(saved.getUuid());
+        ma.setAncestorUuid(ancestorUuid);
+        toSave.add(ma);
+      }
+      // Add parent as direct ancestor
+      MenuAncestor directAncestor = new MenuAncestor();
+      directAncestor.setChildUuid(saved.getUuid());
+      directAncestor.setAncestorUuid(parent);
+      toSave.add(directAncestor);
+      menuAncestorRepository.saveAll(toSave);
+    }
+    return saved;
   }
 
   @Override
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
   public void sync(Set<MenuChildren> data) {
     Set<Menu> menus = new HashSet<>();
     Queue<MenuChildren> queue = new LinkedBlockingQueue<>(data);
@@ -124,24 +140,39 @@ public class MenuServiceImpl
   @Override
   public Collection<TreeMenu> routes() {
     UserContext<BaseUser> userContext = getUserContext();
-    String username = userContext.getName();
-    if (userContext.getDetails().superAdmin()) {
-      return buildMenuTree(getRepository().findAllByOrderBySortAsc());
+
+    if (userContext == null) {
+      throw new IllegalArgumentException("User context is null or not logged in");
     }
-    return buildMenuTree(getRepository().findUserMenus(username));
+
+    if (userContext.getDetails() instanceof User loginUser) {
+      if (loginUser.getSuperAdmin() != null && loginUser.getSuperAdmin()) {
+        return buildMenuTree(getRepository().findAllByOrderBySortAsc());
+      }
+      Collection<SimpleGrantedAuthority> authorities = loginUser.getAuthorities();
+      Set<String> roles = new HashSet<>();
+      for (SimpleGrantedAuthority grantedAuthority : authorities) {
+        String authority = grantedAuthority.getAuthority();
+        if (authority.startsWith("ROLE_")) {
+          roles.add(authority.substring(5));
+        }
+      }
+
+    }
+    throw new IllegalArgumentException("Invalid user context");
   }
 
   @Override
   public Page<TreeMenu> limitTree(Map<String, String> attributes, Pageable pageable) {
     attributes.put("parent", "is:null:");
     Page<Menu> limit = getRepository().limit(attributes, pageable);
-    List<String> paths = limit.map(Menu::getPath).stream().toList();
+    List<String> rootUuids = limit.map(Menu::getUuid).stream().toList();
+    Collection<String> ancestorUuids = menuAncestorRepository.findChildUuidsByAncestorUuids(rootUuids);
+    List<Menu> ancestorMenus = getRepository().findAllByIds(ancestorUuids);
+    ancestorMenus.addAll(limit.getContent());
     return new PageImpl<>(
-        buildMenuTree(
-            !paths.isEmpty()
-                ? treeMenuRepository.findInPathStartingWith(paths)
-                : limit.getContent()
-        ).stream().toList(),
+        buildMenuTree(ancestorMenus)
+            .stream().toList(),
         pageable,
         limit.getTotalElements()
     );

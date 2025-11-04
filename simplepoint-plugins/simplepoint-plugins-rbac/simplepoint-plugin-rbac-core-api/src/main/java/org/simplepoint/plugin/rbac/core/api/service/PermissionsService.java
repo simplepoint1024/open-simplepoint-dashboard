@@ -9,11 +9,13 @@
 package org.simplepoint.plugin.rbac.core.api.service;
 
 import org.simplepoint.api.base.BaseService;
+import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.security.entity.Permissions;
 
 /**
  * PermissionsService interface provides methods for handling permissions-related operations.
  * It includes a custom query to retrieve permission authorities by role authority.
  */
+@AmqpRemoteClient(to = "security.permissions")
 public interface PermissionsService extends BaseService<Permissions, String> {
 }
