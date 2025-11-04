@@ -16,20 +16,19 @@ public interface JpaMenuAncestorRepository extends JpaRepository<MenuAncestor, S
 
   @Override
   @Modifying
-  @Query("DELETE FROM MenuAncestor ma WHERE ma.childUuid = ?1")
+  @Query("DELETE FROM MenuAncestor ma WHERE ma.childId = ?1")
   void deleteChild(String childUuid);
 
   @Override
   @Modifying
-  @Query("DELETE FROM MenuAncestor ma WHERE ma.ancestorUuid = ?1")
+  @Query("DELETE FROM MenuAncestor ma WHERE ma.ancestorId = ?1")
   void deleteAncestor(String ancestorUuid);
 
   @Override
-  @Query("SELECT ma.ancestorUuid FROM MenuAncestor ma WHERE ma.childUuid in ?1")
-  Collection<String> findAncestorUuidsByChildUuids(Collection<String> childUuid);
-
+  @Query("SELECT ma.ancestorId FROM MenuAncestor ma WHERE ma.childId in ?1")
+  Collection<String> findAncestorIdsByChildIds(Collection<String> childUuid);
 
   @Override
-  @Query("SELECT ma.childUuid FROM MenuAncestor ma WHERE ma.ancestorUuid in ?1")
-  Collection<String> findChildUuidsByAncestorUuids(Collection<String> uuids);
+  @Query("SELECT ma.childId FROM MenuAncestor ma WHERE ma.ancestorId in ?1")
+  Collection<String> findChildIdsByAncestorIds(Collection<String> uuids);
 }

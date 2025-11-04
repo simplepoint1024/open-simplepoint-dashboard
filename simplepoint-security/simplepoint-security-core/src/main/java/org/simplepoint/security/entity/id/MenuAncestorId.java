@@ -8,6 +8,6 @@ import lombok.Data;
  */
 @Data
 public class MenuAncestorId implements Serializable {
-  private String childUuid;
-  private String ancestorUuid;
+  private String childId;
+  private String ancestorId;
 }

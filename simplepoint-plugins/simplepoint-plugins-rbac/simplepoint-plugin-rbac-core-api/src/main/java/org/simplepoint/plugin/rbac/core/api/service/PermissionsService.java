@@ -16,6 +16,6 @@ import org.simplepoint.security.entity.Permissions;
  * PermissionsService interface provides methods for handling permissions-related operations.
  * It includes a custom query to retrieve permission authorities by role authority.
  */
-@AmqpRemoteClient(to = "security.permissions")
+@AmqpRemoteClient(to = "security.permission")
 public interface PermissionsService extends BaseService<Permissions, String> {
 }

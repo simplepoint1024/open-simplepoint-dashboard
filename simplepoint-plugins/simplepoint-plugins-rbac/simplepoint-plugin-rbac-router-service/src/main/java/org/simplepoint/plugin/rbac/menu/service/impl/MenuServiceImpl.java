@@ -24,11 +24,14 @@ import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.core.context.UserContext;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
+import org.simplepoint.plugin.rbac.core.api.service.RoleService;
+import org.simplepoint.plugin.rbac.menu.api.entity.MenuPermissionsRelevance;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuAncestorRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
 import org.simplepoint.security.MenuChildren;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.MenuAncestor;
+import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.TreeMenu;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.service.MenuService;
@@ -55,8 +58,9 @@ public class MenuServiceImpl
     extends BaseServiceImpl<MenuRepository, Menu, String>
     implements MenuService {
 
-
   private final MenuAncestorRepository menuAncestorRepository;
+
+  private final RoleService roleService;
 
   /**
    * Constructs a new {@code MenuServiceImpl} with the specified repository.
@@ -65,22 +69,25 @@ public class MenuServiceImpl
    * @param userContext            the user context for retrieving current user information
    * @param detailsProviderService the service for providing user details
    * @param menuAncestorRepository the {@link MenuAncestorRepository} instance for menu ancestor operations
+   * @param roleService            the {@link RoleService} instance for role operations
    */
   public MenuServiceImpl(
       final MenuRepository repository,
       final UserContext<BaseUser> userContext,
       final DetailsProviderService detailsProviderService,
-      final MenuAncestorRepository menuAncestorRepository
+      final MenuAncestorRepository menuAncestorRepository,
+      final RoleService roleService
   ) {
     super(repository, userContext, detailsProviderService);
     this.menuAncestorRepository = menuAncestorRepository;
+    this.roleService = roleService;
   }
 
   @Override
   @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
-  public <S extends Menu> S add(S entity) throws Exception {
-    if (entity.getUuid() == null || entity.getUuid().isEmpty()) {
-      entity.setUuid(UUID.randomUUID().toString());
+  public <S extends Menu> S add(S entity) {
+    if (entity.getAuthority() == null || entity.getAuthority().isEmpty()) {
+      entity.setAuthority(entity.getPath().replace("/", ":"));
     }
     var saved = super.add(entity);
 
@@ -88,18 +95,18 @@ public class MenuServiceImpl
 
     if (parent != null && !parent.isEmpty()) {
       // Inherit ancestors from parent
-      var ancestors = menuAncestorRepository.findAncestorUuidsByChildUuids(Set.of(parent));
+      var ancestors = menuAncestorRepository.findAncestorIdsByChildIds(Set.of(parent));
       List<MenuAncestor> toSave = new ArrayList<>();
       for (String ancestorUuid : ancestors) {
         MenuAncestor ma = new MenuAncestor();
-        ma.setChildUuid(saved.getUuid());
-        ma.setAncestorUuid(ancestorUuid);
+        ma.setChildId(saved.getId());
+        ma.setAncestorId(ancestorUuid);
         toSave.add(ma);
       }
       // Add parent as direct ancestor
       MenuAncestor directAncestor = new MenuAncestor();
-      directAncestor.setChildUuid(saved.getUuid());
-      directAncestor.setAncestorUuid(parent);
+      directAncestor.setChildId(saved.getId());
+      directAncestor.setAncestorId(parent);
       toSave.add(directAncestor);
       menuAncestorRepository.saveAll(toSave);
     }
@@ -107,32 +114,54 @@ public class MenuServiceImpl
   }
 
   @Override
-  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+  @Transactional(propagation = Propagation.SUPPORTS, rollbackFor = Exception.class)
   public void sync(Set<MenuChildren> data) {
-    Set<Menu> menus = new HashSet<>();
+    // Map temp menu id (from MenuChildren) -> persisted real id
+    Map<String, String> idMap = new HashMap<>();
+
+    // Flatten tree in BFS order, making sure parent is processed before children
     Queue<MenuChildren> queue = new LinkedBlockingQueue<>(data);
     while (!queue.isEmpty()) {
       MenuChildren current = queue.poll();
-      if (current.getUuid() == null) {
-        current.setUuid(UUID.randomUUID().toString());
+      if (current.getId() == null) {
+        // Assign a temporary id only for in-memory parent-child wiring
+        current.setId(UUID.randomUUID().toString());
       }
       if (current.getChildren() != null) {
         queue.addAll(current.getChildren().stream()
-            .peek(child -> child.setParent(current.getUuid())).toList());
+            .peek(child -> child.setParent(current.getId())).toList());
       }
+
+      // Build Menu entity without carrying over the temp id
       Menu menu = new Menu();
       BeanUtils.copyProperties(current, menu);
-      menus.add(menu);
-    }
-    for (Menu menu : menus) {
-      Menu example = new Menu();
-      example.setPath(menu.getPath());
-      if (!exists(example)) {
-        try {
-          this.add(menu);
-        } catch (Exception e) {
-          log.warn("Failed to add menu: {}", menu.getPath(), e);
+      menu.setId(null); // ensure Hibernate treats it as new if not already existing by path
+
+      // Resolve real parent id from map (parent always processed earlier in BFS)
+      if (current.getParent() != null) {
+        String realParentId = idMap.get(current.getParent());
+        menu.setParent(realParentId); // may be null for roots
+      }
+
+      try {
+        // Try to find existing menu by unique path to avoid duplicates and get real id
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("path", menu.getPath());
+        List<Menu> existing = getRepository().findAll(attrs);
+
+        String realId;
+        if (existing == null || existing.isEmpty()) {
+          // Not exists -> persist; add() will also build ancestors using resolved parent id
+          Menu saved = this.add(menu);
+          realId = saved.getId();
+        } else {
+          // Already exists -> just use its id for mapping; optionally parent adjustments can be handled later
+          realId = existing.get(0).getId();
         }
+        // Map temp id to real id for children
+        idMap.put(current.getId(), realId);
+      } catch (Exception e) {
+        log.warn("Failed to sync menu by path: {}", menu.getPath(), e);
       }
     }
   }
@@ -147,15 +176,35 @@ public class MenuServiceImpl
 
     if (userContext.getDetails() instanceof User loginUser) {
       if (loginUser.getSuperAdmin() != null && loginUser.getSuperAdmin()) {
-        return buildMenuTree(getRepository().findAllByOrderBySortAsc());
+        return buildMenuTree(getRepository().loadAll());
       }
+      // Extract roles from granted authorities
       Collection<SimpleGrantedAuthority> authorities = loginUser.getAuthorities();
       Set<String> roles = new HashSet<>();
+      // Extract role names from authorities
       for (SimpleGrantedAuthority grantedAuthority : authorities) {
         String authority = grantedAuthority.getAuthority();
         if (authority.startsWith("ROLE_")) {
           roles.add(authority.substring(5));
         }
+      }
+
+      if (!roles.isEmpty()) {
+        var rolePermissions = roleService.loadPermissionsByRoleAuthorities(roles);
+        if (!rolePermissions.isEmpty()) {
+          List<String> permissions = rolePermissions.stream().map(RolePermissionsRelevance::getPermissionAuthority).toList();
+          Collection<MenuPermissionsRelevance> menuPermissions = getRepository().loadPermissionsByPermissionAuthorities(permissions);
+          // Collect menu authorities from permissions
+          List<String> menuAuthorities = new ArrayList<>(menuPermissions.stream().map(MenuPermissionsRelevance::getMenuAuthority).toList());
+          // Include ancestor menus to ensure proper tree structure
+          menuAuthorities.addAll(menuAncestorRepository.findAncestorIdsByChildIds(menuAuthorities));
+          // Load menus by collected authorities
+          Collection<Menu> menus = getRepository().loadByIds(menuAuthorities);
+          // Build and return menu tree
+          return buildMenuTree(menus);
+        }
+
+
       }
 
     }
@@ -165,10 +214,10 @@ public class MenuServiceImpl
   @Override
   public Page<TreeMenu> limitTree(Map<String, String> attributes, Pageable pageable) {
     attributes.put("parent", "is:null:");
-    Page<Menu> limit = getRepository().limit(attributes, pageable);
-    List<String> rootUuids = limit.map(Menu::getUuid).stream().toList();
-    Collection<String> ancestorUuids = menuAncestorRepository.findChildUuidsByAncestorUuids(rootUuids);
-    List<Menu> ancestorMenus = getRepository().findAllByIds(ancestorUuids);
+    Page<Menu> limit = limit(attributes, pageable);
+    List<String> rootUuids = limit.map(Menu::getId).stream().toList();
+    Collection<String> ancestorUuids = menuAncestorRepository.findChildIdsByAncestorIds(rootUuids);
+    List<Menu> ancestorMenus = findAllByIds(ancestorUuids);
     ancestorMenus.addAll(limit.getContent());
     return new PageImpl<>(
         buildMenuTree(ancestorMenus)
@@ -195,14 +244,14 @@ public class MenuServiceImpl
       } else {
         node.getChildren().clear(); // ensure rebuilding tree from scratch
       }
-      nodeMap.put(m.getUuid(), node);
+      nodeMap.put(m.getId(), node);
     }
 
     // 2) Link children to parent and collect roots
     final List<TreeMenu> roots = new ArrayList<>();
     for (Menu m : menus) {
       String parentId = m.getParent();
-      TreeMenu current = nodeMap.get(m.getUuid());
+      TreeMenu current = nodeMap.get(m.getId());
       if (parentId == null || parentId.isBlank()) {
         clearUnnecessaryFields(current);
         roots.add(current);
@@ -236,7 +285,5 @@ public class MenuServiceImpl
     menu.setUpdatedAt(null);
     menu.setParent(null);
     menu.setId(null);
-    menu.setUuid(null);
   }
 }
-

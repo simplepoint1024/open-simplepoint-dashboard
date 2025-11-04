@@ -124,10 +124,9 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    * @param entity the User object to add
    * @param <S>    the type of the User entity
    * @return the added User object
-   * @throws Exception if an error occurs during the addition or if the username already exists
    */
   @Override
-  public <S extends User> S add(S entity) throws Exception {
+  public <S extends User> S add(S entity) {
     return lock(getClass().getName() + ".add", () -> {
       if (passwordEncoder != null) {
         entity.setPassword(passwordEncoder.encode(entity.getPassword()));
@@ -144,7 +143,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   }
 
   @Override
-  public <S extends User> User modifyById(S entity) throws Exception {
+  public <S extends User> User modifyById(S entity) {
     var password = entity.getPassword();
     if (password != null && !password.isEmpty()) {
       entity.setPassword(password.matches("\\A\\$2([ayb])?\\$(\\d\\d)\\$[./0-9A-Za-z]{53}")

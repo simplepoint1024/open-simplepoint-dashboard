@@ -9,7 +9,6 @@
 package org.simplepoint.api.base;
 
 import cn.hutool.core.bean.copier.CopyOptions;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -47,18 +46,16 @@ public interface BaseService<T extends BaseEntity<I>, I extends Serializable> {
    * @param entity entity
    * @param <S>    entity
    * @return list g
-   * @throws Exception exception
    */
-  <S extends T> S add(S entity) throws Exception;
+  <S extends T> S add(S entity);
 
   /**
    * add.
    *
    * @param entities entity collection
    * @return list
-   * @throws Exception exception
    */
-  List<T> add(Collection<T> entities) throws Exception;
+  List<T> add(Collection<T> entities);
 
   /**
    * modifyById.
@@ -66,9 +63,8 @@ public interface BaseService<T extends BaseEntity<I>, I extends Serializable> {
    * @param entity entity
    * @param <S>    entity
    * @return entity
-   * @throws Exception exception
    */
-  <S extends T> T modifyById(S entity) throws Exception;
+  <S extends T> T modifyById(S entity);
 
   /**
    * getCopyOptions.
@@ -79,53 +75,46 @@ public interface BaseService<T extends BaseEntity<I>, I extends Serializable> {
 
   /**
    * removeAll.
-   *
-   * @throws Exception exception
    */
-  void removeAll() throws Exception;
+  void removeAll();
 
   /**
    * removeById.
    *
    * @param id primary key
-   * @throws Exception exception
    */
-  void removeById(I id) throws Exception;
+  void removeById(I id);
 
   /**
    * removeByIds.
    *
    * @param ids primary keys
-   * @throws Exception exception
    */
-  void removeByIds(Collection<I> ids) throws Exception;
+  void removeByIds(Collection<I> ids);
 
   /**
    * findById.
    *
    * @param id primary key
    * @return data
-   * @throws Exception exception
    */
-  Optional<T> findById(I id) throws Exception;
+  Optional<T> findById(I id);
 
   /**
    * find all by ids.
    *
    * @param ids ids
    * @return list
-   * @throws Exception exception
    */
-  List<T> findAllByIds(Iterable<I> ids) throws Exception;
+  List<T> findAllByIds(Iterable<I> ids);
 
   /**
    * findAll.
    *
    * @param attributes args
    * @return list
-   * @throws Exception exception
    */
-  List<T> findAll(Map<String, String> attributes) throws Exception;
+  List<T> findAll(Map<String, String> attributes);
 
   /**
    * limit.
@@ -134,9 +123,8 @@ public interface BaseService<T extends BaseEntity<I>, I extends Serializable> {
    * @param pageable   pageable
    * @param <S>        entity
    * @return page
-   * @throws Exception exception
    */
-  <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable) throws Exception;
+  <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable);
 
   /**
    * validate.
@@ -152,18 +140,16 @@ public interface BaseService<T extends BaseEntity<I>, I extends Serializable> {
    * @param example condition
    * @param <S>     entity
    * @return exists.
-   * @throws Exception exception
    */
-  <S extends T> boolean exists(S example) throws Exception;
+  <S extends T> boolean exists(S example);
 
   /**
    * existsById.
    *
    * @param id primary key
    * @return exists
-   * @throws Exception exception
    */
-  boolean existsById(I id) throws Exception;
+  boolean existsById(I id);
 
   /**
    * count.
@@ -171,7 +157,6 @@ public interface BaseService<T extends BaseEntity<I>, I extends Serializable> {
    * @param example condition
    * @param <S>     entity
    * @return COUNT
-   * @throws Exception exception
    */
-  <S extends T> long count(S example) throws Exception;
+  <S extends T> long count(S example);
 }

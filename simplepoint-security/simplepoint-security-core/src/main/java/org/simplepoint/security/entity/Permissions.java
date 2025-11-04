@@ -32,10 +32,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 @Data
 @Entity
 @EqualsAndHashCode(callSuper = true)
-@Table(name = "security_permissions", indexes = {
-    @Index(name = "idx_access_permissions_authority", columnList = "authority"),
-    @Index(name = "idx_access_permissions_permission_name", columnList = "permissionName")
-})
+@Table(name = "security_permissions")
 @ButtonDeclarations({
     @ButtonDeclaration(
         title = PublicButtonKeys.ADD_TITLE,
@@ -67,11 +64,11 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 })
 @Schema(title = "权限实体", description = "表示RBAC系统中的权限实体")
 public class Permissions extends BaseEntityImpl<String> implements BasePermissions {
-
+  public static final String AUTHORITY_FIELD = "authority";
   @Schema(
       title = "i18n:permissions.title.authority",
       description = "i18n:permissions.description.authority",
-      example = "ADMIN",
+      example = "ROLE_ADMIN",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
@@ -80,19 +77,6 @@ public class Permissions extends BaseEntityImpl<String> implements BasePermissio
   )
   @Column(length = 100, nullable = false)
   private String authority;
-
-  @Column(length = 32, nullable = false)
-  @Schema(
-      title = "i18n:permissions.title.permissionName",
-      description = "i18n:permissions.description.permissionName",
-      example = "menu,button,field",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
-  private String resourceType;
 
   @Column(length = 100, nullable = false)
   @Schema(
@@ -105,17 +89,4 @@ public class Permissions extends BaseEntityImpl<String> implements BasePermissio
           })}
   )
   private String resource;
-
-  @Column(length = 100, nullable = false)
-  @Schema(
-      title = "i18n:permissions.title.method",
-      description = "i18n:permissions.description.method",
-      example = "GET,POST,PUT,DELETE",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
-  private String method;
 }

@@ -44,16 +44,16 @@ public interface MenuAncestorRepository {
   /**
    * Finds ancestors by child UUID.
    *
-   * @param uuids the UUID of the child menu
+   * @param ids the UUID of the child menu
    * @return a collection of Ancestors
    */
-  Collection<String> findAncestorUuidsByChildUuids(Collection<String> uuids);
+  Collection<String> findAncestorIdsByChildIds(Collection<String> ids);
 
   /**
    * Finds children by ancestor UUID.
    *
-   * @param uuids the UUID of the ancestor menu
+   * @param ids the UUID of the ancestor menu
    * @return a collection of Children
    */
-  Collection<String> findChildUuidsByAncestorUuids(Collection<String> uuids);
+  Collection<String> findChildIdsByAncestorIds(Collection<String> ids);
 }
