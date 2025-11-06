@@ -79,11 +79,10 @@ public class UsersController extends BaseController<UsersService, User, String> 
    *
    * @param data the User object with updated information
    * @return a response containing the updated User object
-   * @throws Exception if an error occurs during the update
    */
   @PutMapping
   @Operation(summary = "修改用户", description = "修改一个已存在的用户信息")
-  public Response<User> modify(@RequestBody User data) throws Exception {
+  public Response<User> modify(@RequestBody User data) {
     return ok(service.modifyById(data));
   }
 
@@ -92,11 +91,10 @@ public class UsersController extends BaseController<UsersService, User, String> 
    *
    * @param ids a comma-separated string of user IDs to be deleted
    * @return a response indicating the success of the deletion operation
-   * @throws Exception if an error occurs during deletion
    */
   @DeleteMapping
   @Operation(summary = "删除用户", description = "根据提供的用户ID集合，删除一个或多个用户")
-  public Response<Set<String>> remove(@RequestParam("ids") String ids) throws Exception {
+  public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);

@@ -10,13 +10,17 @@ package org.simplepoint.plugin.rbac.core.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.RoleSelectDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleSelectVo;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.security.entity.Role;
+import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -100,5 +104,41 @@ public class RoleController extends BaseController<RoleService, Role, String> {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);
+  }
+
+  /**
+   * Retrieve a paginated list of RoleSelectDto for role selection purposes.
+   *
+   * @param pageable Pagination information.
+   * @return A page of RoleSelectDto containing role selection data.
+   */
+  @GetMapping("/items")
+  @Operation(summary = "获取角色下拉列表数据", description = "检索用于角色选择的角色下拉列表数据")
+  public Response<Page<RoleSelectVo>> items(Pageable pageable) {
+    return ok(service.roleSelectItems(pageable));
+  }
+
+  /**
+   * Retrieves a collection of role authorities associated with a specific username.
+   *
+   * @param username The username to filter the role authorities.
+   * @return A response containing a collection of role authorities for the given username.
+   */
+  @GetMapping("/authorized")
+  @Operation(summary = "获取用户角色权限", description = "根据用户名获取该用户")
+  public Response<Collection<String>> authorized(@RequestParam("username") String username) {
+    return ok(service.userRoleAuthorities(username));
+  }
+
+  /**
+   * Authorize user roles based on the provided UserRoleRelevance.
+   *
+   * @param dto The RoleSelectDto containing role information.
+   * @return A collection of UserRoleRelevance entities after authorization.
+   */
+  @PostMapping("/authorize")
+  @Operation(summary = "加载角色用户关联关系", description = "根据一组角色")
+  public Response<Collection<UserRoleRelevance>> authorize(@RequestBody RoleSelectDto dto) {
+    return ok(service.authorize(dto));
   }
 }
