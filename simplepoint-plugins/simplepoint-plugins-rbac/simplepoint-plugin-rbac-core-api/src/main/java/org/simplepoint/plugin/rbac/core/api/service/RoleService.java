@@ -10,8 +10,13 @@ package org.simplepoint.plugin.rbac.core.api.service;
 
 import java.util.Collection;
 import org.simplepoint.api.base.BaseService;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.RoleSelectDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleSelectVo;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
+import org.simplepoint.security.entity.UserRoleRelevance;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Service interface for managing Role entities in the RBAC (Role-Based Access Control) system.
@@ -28,4 +33,29 @@ public interface RoleService extends BaseService<Role, String> {
   Collection<RolePermissionsRelevance> loadPermissionsByRoleAuthorities(
       Collection<String> roleAuthorities
   );
+
+  /**
+   * Retrieve a paginated list of RoleSelectDto for role selection purposes.
+   *
+   * @param pageable Pagination information.
+   * @return A page of RoleSelectDto containing role selection data.
+   */
+  Page<RoleSelectVo> roleSelectItems(Pageable pageable);
+
+  /**
+   * Retrieve a collection of role authorities associated with a specific username.
+   *
+   * @param username The username to filter the role authorities.
+   * @return A collection of role authorities for the given username.
+   */
+  Collection<String> userRoleAuthorities(String username);
+
+
+  /**
+   * Authorize roles based on the provided RoleSelectDto.
+   *
+   * @param dto The RoleSelectDto containing authorization criteria.
+   * @return A collection of UserRoleRelevance entities that match the authorization criteria.
+   */
+  Collection<UserRoleRelevance> authorize(RoleSelectDto dto);
 }
