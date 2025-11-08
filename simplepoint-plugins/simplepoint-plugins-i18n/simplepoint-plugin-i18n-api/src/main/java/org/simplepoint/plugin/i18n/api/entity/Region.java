@@ -34,7 +34,8 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         icon = Icons.PLUS_CIRCLE,
         sort = 0,
         argumentMaxSize = 1,
-        argumentMinSize = 0
+        argumentMinSize = 0,
+        authority = "menu:regions:add"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -43,7 +44,8 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         icon = Icons.EDIT,
         sort = 1,
         argumentMinSize = 1,
-        argumentMaxSize = 1
+        argumentMaxSize = 1,
+        authority = "menu:regions:edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -53,7 +55,8 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         sort = 2,
         argumentMinSize = 1,
         argumentMaxSize = 10,
-        danger = true
+        danger = true,
+        authority = "menu:regions:delete"
     )
 })
 @NoArgsConstructor

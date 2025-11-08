@@ -3,7 +3,7 @@ package org.simplepoint.plugin.rbac.menu.base.repository;
 import java.util.List;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.ButtonRepository;
-import org.simplepoint.security.entity.Actions;
+import org.simplepoint.security.entity.Button;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Repository;
  */
 
 @Repository
-public interface JpaButtonRepository extends BaseRepository<Actions, String>, ButtonRepository {
+public interface JpaButtonRepository extends BaseRepository<Button, String>, ButtonRepository {
   @Override
-  List<Actions> findByAccessValue(String accessValue);
+  List<Button> findByAccessValue(String accessValue);
 }

@@ -32,6 +32,7 @@ import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
+import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -50,24 +51,44 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
     @ButtonDeclaration(
-        title = "添加", key = "add", icon = "PlusCircleOutlined", sort = 0, argumentMaxSize = 0, argumentMinSize = 0
+        title = PublicButtonKeys.ADD_TITLE,
+        key = PublicButtonKeys.ADD_KEY,
+        icon = Icons.PLUS_CIRCLE,
+        sort = 0,
+        argumentMaxSize = 1,
+        argumentMinSize = 0,
+        authority = "users:add"
     ),
     @ButtonDeclaration(
-        title = "编辑", key = "edit", color = "orange", icon = "EditOutlined", sort = 1,
-        argumentMinSize = 1, argumentMaxSize = 1
+        title = PublicButtonKeys.EDIT_TITLE,
+        key = PublicButtonKeys.EDIT_KEY,
+        color = "orange",
+        icon = Icons.EDIT,
+        sort = 1,
+        argumentMinSize = 1,
+        argumentMaxSize = 1,
+        authority = "users:edit"
     ),
     @ButtonDeclaration(
-        title = "删除", key = "delete", color = "danger", icon = "MinusCircleOutlined", sort = 2,
-        argumentMinSize = 1, argumentMaxSize = 10, danger = true
+        title = PublicButtonKeys.DELETE_TITLE,
+        key = PublicButtonKeys.DELETE_KEY,
+        color = "danger",
+        icon = Icons.MINUS_CIRCLE,
+        sort = 2,
+        argumentMinSize = 1,
+        argumentMaxSize = 10,
+        danger = true,
+        authority = "users:delete"
     ),
     @ButtonDeclaration(
-        title = "i18n:users.button.configRoles",
-        key = "onConfigRoles",
+        title = "i18n:users.button.config.role",
+        key = "config.role",
         color = "orange",
         icon = Icons.SAFETY_OUTLINED,
         sort = 3,
         argumentMinSize = 1,
-        argumentMaxSize = 1
+        argumentMaxSize = 1,
+        authority = "users:config:role"
     )
 })
 @NoArgsConstructor

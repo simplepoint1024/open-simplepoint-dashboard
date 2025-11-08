@@ -44,7 +44,8 @@ import org.springframework.core.annotation.Order;
         icon = Icons.PLUS_CIRCLE,
         sort = 0,
         argumentMaxSize = 1,
-        argumentMinSize = 0
+        argumentMinSize = 0,
+        authority = "menu:clients:add"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -53,7 +54,8 @@ import org.springframework.core.annotation.Order;
         icon = Icons.EDIT,
         sort = 1,
         argumentMinSize = 1,
-        argumentMaxSize = 1
+        argumentMaxSize = 1,
+        authority = "menu:clients:edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -63,7 +65,8 @@ import org.springframework.core.annotation.Order;
         sort = 2,
         argumentMinSize = 1,
         argumentMaxSize = 10,
-        danger = true
+        danger = true,
+        authority = "menu:clients:delete"
     )
 })
 @Table(name = "security_oauth2_client")

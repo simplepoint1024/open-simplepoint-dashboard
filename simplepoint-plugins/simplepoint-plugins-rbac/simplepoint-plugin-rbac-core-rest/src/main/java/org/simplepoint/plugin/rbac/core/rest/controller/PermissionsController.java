@@ -22,6 +22,7 @@ import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
 import org.simplepoint.security.entity.Permissions;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -71,15 +72,14 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
    * @param attributes 查询参数 Query parameters.
    * @param pageable   分页信息 Pagination details.
    * @return 权限的分页响应 Response containing paginated permissions.
-   * @throws Exception 可能的异常
-   *                   Possible exceptions.
    */
   @GetMapping
   @Operation(summary = "获取权限的分页列表", description = "根据查询参数和分页信息获取权限的分页列表")
+  @PreAuthorize("hasAuthority('menu:permissions:view')")
   public Response<Page<Permissions>> limit(
       @RequestParam Map<String, String> attributes,
       Pageable pageable
-  ) throws Exception {
+  ) {
     log.info("current login username: {}", userContext.getDetails().toString());
     return limit(service.limit(attributes, pageable), Permissions.class);
   }
@@ -95,6 +95,7 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
    */
   @PostMapping
   @Operation(summary = "添加新的权限", description = "添加一个新的权限到系统中")
+  @PreAuthorize("hasAuthority('menu:permissions:add')")
   public Response<Permissions> add(@RequestBody Permissions data) throws Exception {
     return ok(service.add(data));
   }
@@ -105,11 +106,11 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
    *
    * @param data 权限数据  Permission data.
    * @return 修改后的权限响应  Response containing the modified permission.
-   * @throws Exception 可能的异常  Possible exceptions.
    */
   @PutMapping
   @Operation(summary = "修改现有权限", description = "根据提供的数据修改一个现有的权限")
-  public Response<Permissions> modify(@RequestBody Permissions data) throws Exception {
+  @PreAuthorize("hasAuthority('menu:permissions:edit')")
+  public Response<Permissions> modify(@RequestBody Permissions data) {
     return ok(service.modifyById(data));
   }
 
@@ -119,11 +120,11 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
    *
    * @param ids 权限 ID 集合 Collection of permission IDs.
    * @return 删除操作的响应 Response confirming deletion.
-   * @throws Exception 可能的异常  Possible exceptions.
    */
   @DeleteMapping
   @Operation(summary = "删除指定的权限 ID", description = "根据提供的权限 ID 集合删除对应的权限")
-  public Response<Set<String>> remove(@RequestParam("ids") String ids) throws Exception {
+  @PreAuthorize("hasAuthority('menu:permissions:delete')")
+  public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);

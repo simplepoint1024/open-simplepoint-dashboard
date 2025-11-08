@@ -18,8 +18,9 @@ import org.springframework.cache.annotation.EnableCaching;
  * the application and enable repository-related features, including JPA repositories.
  */
 @Boot
-@EnableRepository
 @EnableCaching
+@EnableRepository
+//@EnableMethodSecurity
 public class Common {
 
   /**

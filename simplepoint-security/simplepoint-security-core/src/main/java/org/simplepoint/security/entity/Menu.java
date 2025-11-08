@@ -48,7 +48,8 @@ import org.springframework.core.annotation.Order;
         icon = Icons.PLUS_CIRCLE,
         sort = 0,
         argumentMaxSize = 1,
-        argumentMinSize = 0
+        argumentMinSize = 0,
+        authority = "menus:add"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -57,7 +58,8 @@ import org.springframework.core.annotation.Order;
         icon = Icons.EDIT,
         sort = 1,
         argumentMinSize = 1,
-        argumentMaxSize = 1
+        argumentMaxSize = 1,
+        authority = "menus:edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -67,7 +69,8 @@ import org.springframework.core.annotation.Order;
         sort = 2,
         argumentMinSize = 1,
         argumentMaxSize = 10,
-        danger = true
+        danger = true,
+        authority = "menus:delete"
     )
 })
 @Schema(name = "菜单对象", description = "用于表示系统中的菜单项")
@@ -75,7 +78,13 @@ public class Menu extends BaseEntityImpl<String> {
   /**
    * Unique identifier for the menu.
    */
-  @Schema(title = "i18n:menus.title.authority", description = "i18n:menus.description.authority", maxLength = 36, minLength = 1, hidden = true)
+  @Schema(
+      title = "i18n:menus.title.authority",
+      description = "i18n:menus.description.authority",
+      maxLength = 36,
+      minLength = 1,
+      example = "menu:dashboard"
+  )
   @Column(unique = true, nullable = false, length = 36)
   private String authority;
 

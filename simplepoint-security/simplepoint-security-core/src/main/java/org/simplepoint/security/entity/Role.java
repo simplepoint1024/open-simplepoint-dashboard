@@ -42,7 +42,8 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         icon = Icons.PLUS_CIRCLE,
         sort = 0,
         argumentMaxSize = 1,
-        argumentMinSize = 0
+        argumentMinSize = 0,
+        authority = "roles:add"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -51,7 +52,8 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         icon = Icons.EDIT,
         sort = 1,
         argumentMinSize = 1,
-        argumentMaxSize = 1
+        argumentMaxSize = 1,
+        authority = "roles:edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -61,16 +63,18 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         sort = 2,
         argumentMinSize = 1,
         argumentMaxSize = 10,
-        danger = true
+        danger = true,
+        authority = "roles:delete"
     ),
     @ButtonDeclaration(
-        title = "i18n:table.button.permissionConfig",
-        key = "permissionConfig",
+        title = "i18n:roles.config.permission",
+        key = "config.permission",
         color = "orange",
         icon = Icons.SAFETY_OUTLINED,
         sort = 3,
         argumentMinSize = 1,
-        argumentMaxSize = 1
+        argumentMaxSize = 1,
+        authority = "roles:config:permission"
     )
 })
 @Schema(title = "角色对象", description = "用于定义系统中的角色及其权限")
