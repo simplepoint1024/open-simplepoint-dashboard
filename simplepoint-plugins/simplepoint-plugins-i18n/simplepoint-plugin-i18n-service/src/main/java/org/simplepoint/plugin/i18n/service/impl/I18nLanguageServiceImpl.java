@@ -38,6 +38,6 @@ public class I18nLanguageServiceImpl extends BaseServiceImpl<I18nLanguageReposit
 
   @Override
   public Map<String, String> mapping() {
-    return getRepository().mapping().stream().collect(Collectors.toMap(Language::getCode, Language::getNameEnglish));
+    return getRepository().mapping().stream().collect(Collectors.toMap(Language::getLocale, Language::getNameEnglish));
   }
 }

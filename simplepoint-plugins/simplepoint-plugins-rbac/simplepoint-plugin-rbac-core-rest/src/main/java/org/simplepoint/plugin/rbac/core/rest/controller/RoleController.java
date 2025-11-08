@@ -56,12 +56,10 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    * @param attributes a map of attributes to filter the roles
    * @param pageable   the pagination and sorting information
    * @return a paginated response containing roles that match the given attributes
-   * @throws Exception if an error occurs during retrieval
    */
   @GetMapping
   @Operation(summary = "分页查询角色", description = "根据提供的属性和分页参数，检索角色的分页列表")
-  public Response<Page<Role>> limit(@RequestParam Map<String, String> attributes, Pageable pageable)
-      throws Exception {
+  public Response<Page<Role>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), Role.class);
   }
 
@@ -83,11 +81,10 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    *
    * @param data the Role object with updated information
    * @return a response containing the updated Role object
-   * @throws Exception if an error occurs during the update
    */
   @PutMapping
   @Operation(summary = "更新角色信息", description = "更新系统中现有角色的信息")
-  public Response<Role> modify(@RequestBody Role data) throws Exception {
+  public Response<Role> modify(@RequestBody Role data) {
     return ok(service.modifyById(data));
   }
 
@@ -96,11 +93,10 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    *
    * @param ids a comma-separated string of role IDs to be deleted
    * @return a response indicating the success of the deletion operation
-   * @throws Exception if an error occurs during deletion
    */
   @DeleteMapping
   @Operation(summary = "删除角色", description = "根据提供的角色ID删除一个或多个角色")
-  public Response<Set<String>> remove(@RequestParam("ids") String ids) throws Exception {
+  public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);
@@ -137,8 +133,21 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    * @return A collection of UserRoleRelevance entities after authorization.
    */
   @PostMapping("/authorize")
-  @Operation(summary = "加载角色用户关联关系", description = "根据一组角色")
+  @Operation(summary = "授权角色用户关联关系", description = "根据一组角色")
   public Response<Collection<UserRoleRelevance>> authorize(@RequestBody RoleSelectDto dto) {
     return ok(service.authorize(dto));
+  }
+
+  /**
+   * Cancel the authorization of user roles based on the provided UserRoleRelevance.
+   *
+   * @param dto The RoleSelectDto containing role information.
+   * @return A response indicating the success of the unauthorization operation.
+   */
+  @PostMapping("/unauthorized")
+  @Operation(summary = "取消授权角色用户关联关系", description = "根据角色用户关联关系取消授权")
+  public Response<Void> unauthorized(@RequestBody RoleSelectDto dto) {
+    service.unauthorized(dto);
+    return Response.okay();
   }
 }

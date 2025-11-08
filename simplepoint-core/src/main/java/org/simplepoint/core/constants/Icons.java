@@ -18,4 +18,9 @@ public class Icons {
    * Icon for the "Delete" action.
    */
   public static final String MINUS_CIRCLE = "MinusCircleOutlined";
+
+  /**
+   * Icon for the "Safety" action.
+   */
+  public static final String SAFETY_OUTLINED = "SafetyOutlined";
 }

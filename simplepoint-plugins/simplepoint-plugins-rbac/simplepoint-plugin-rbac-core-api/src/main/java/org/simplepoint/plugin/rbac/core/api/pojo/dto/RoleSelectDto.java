@@ -5,7 +5,7 @@ import java.util.Set;
 import lombok.Data;
 
 /**
- * RoleSelectVo is a data transfer object that encapsulates information
+ * RoleSelectDto is a data transfer object that encapsulates information
  * about a user's role selection, including the username and associated role authorities.
  */
 @Data

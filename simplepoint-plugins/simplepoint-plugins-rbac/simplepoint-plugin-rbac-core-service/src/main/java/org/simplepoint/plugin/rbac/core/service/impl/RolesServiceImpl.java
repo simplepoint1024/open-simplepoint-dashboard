@@ -97,4 +97,10 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     }
     return userRoleRelevanceRepository.saveAll(authorities);
   }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void unauthorized(RoleSelectDto dto) {
+    userRoleRelevanceRepository.unauthorized(dto.getUsername(), dto.getRoleAuthorities());
+  }
 }

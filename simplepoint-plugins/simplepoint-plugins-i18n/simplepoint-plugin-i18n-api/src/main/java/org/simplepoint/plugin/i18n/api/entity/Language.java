@@ -188,4 +188,5 @@ public class Language extends BaseEntityImpl<String> {
       enabled = true;
     }
   }
+
 }
