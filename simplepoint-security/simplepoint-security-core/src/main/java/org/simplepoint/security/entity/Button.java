@@ -33,7 +33,7 @@ import org.simplepoint.core.enums.ButtonVariantTypes;
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(name = "按钮对象", description = "用于表示系统中的按钮项")
-public class Actions extends BaseEntityImpl<String> {
+public class Button extends BaseEntityImpl<String> {
   /**
    * The text displayed on the button.
    * This can be a label or any other text that describes the button's purpose.
@@ -99,4 +99,12 @@ public class Actions extends BaseEntityImpl<String> {
   @Column(nullable = false)
   @Schema(title = "按钮排序", description = "按钮的排序顺序，用于确定其在列表或菜单中的位置")
   private Integer sort;
+  @Schema(
+      title = "按钮权限标识",
+      description = "按钮的权限标识，用于系统权限控制",
+      maxLength = 512,
+      minLength = 1,
+      example = "btn:edit:user"
+  )
+  private String authority;
 }

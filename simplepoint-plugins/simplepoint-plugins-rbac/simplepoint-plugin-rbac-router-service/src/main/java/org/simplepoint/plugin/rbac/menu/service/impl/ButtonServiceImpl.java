@@ -4,7 +4,7 @@ import java.util.List;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.rbac.menu.api.repository.ButtonRepository;
-import org.simplepoint.security.entity.Actions;
+import org.simplepoint.security.entity.Button;
 import org.simplepoint.security.service.ButtonService;
 
 /**
@@ -17,7 +17,7 @@ import org.simplepoint.security.service.ButtonService;
  * @since 1.0
  */
 @AmqpRemoteService
-public class ButtonServiceImpl extends BaseServiceImpl<ButtonRepository, Actions, String>
+public class ButtonServiceImpl extends BaseServiceImpl<ButtonRepository, Button, String>
     implements ButtonService {
 
   /**
@@ -32,7 +32,7 @@ public class ButtonServiceImpl extends BaseServiceImpl<ButtonRepository, Actions
   }
 
   @Override
-  public List<Actions> findByAccessValue(String accessValue) {
+  public List<Button> findByAccessValue(String accessValue) {
     return getRepository().findByAccessValue(accessValue);
   }
 }

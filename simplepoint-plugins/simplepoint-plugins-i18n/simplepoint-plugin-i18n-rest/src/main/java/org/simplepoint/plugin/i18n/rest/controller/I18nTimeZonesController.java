@@ -11,6 +11,7 @@ import org.simplepoint.plugin.i18n.api.entity.TimeZone;
 import org.simplepoint.plugin.i18n.api.service.I18nTimeZoneService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,13 +51,11 @@ public class I18nTimeZonesController extends BaseController<I18nTimeZoneService,
    * @param pageable   the pagination and sorting information
    *                   分页和排序信息
    * @return a paginated response containing time zones that match the given attributes 包含符合给定属性的时区的分页响应
-   * @throws Exception if an error occurs during retrieval
-   *                   如果检索过程中发生错误
    */
   @GetMapping
+  @PreAuthorize("hasAuthority('menu:i18n:timezones:view')")
   @Operation(summary = "分页查询时区", description = "根据提供的属性和分页参数，检索时区的分页列表")
-  public Response<Page<TimeZone>> limit(@RequestParam Map<String, String> attributes, Pageable pageable)
-      throws Exception {
+  public Response<Page<TimeZone>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), TimeZone.class);
   }
 
@@ -70,6 +69,7 @@ public class I18nTimeZonesController extends BaseController<I18nTimeZoneService,
    *                   如果添加过程中发生错误
    */
   @PostMapping
+  @PreAuthorize("hasAuthority('menu:i18n:timezones:add')")
   @Operation(summary = "添加时区", description = "添加一个新的时区到系统中")
   public Response<TimeZone> add(@RequestBody TimeZone data) throws Exception {
     return ok(service.add(data));
@@ -81,12 +81,11 @@ public class I18nTimeZonesController extends BaseController<I18nTimeZoneService,
    * @param data the time zone data to be modified
    *             要修改的时区数据
    * @return a response containing the modified time zone 包含已修改时区的响应
-   * @throws Exception if an error occurs during modification
-   *                   如果修改过程中发生错误
    */
   @PutMapping
+  @PreAuthorize("hasAuthority('menu:i18n:timezones:edit')")
   @Operation(summary = "修改时区", description = "修改一个已存在的时区信息")
-  public Response<TimeZone> modify(@RequestBody TimeZone data) throws Exception {
+  public Response<TimeZone> modify(@RequestBody TimeZone data) {
     return ok(service.modifyById(data));
   }
 
@@ -96,12 +95,11 @@ public class I18nTimeZonesController extends BaseController<I18nTimeZoneService,
    * @param ids a comma-separated string of time zone IDs to be deleted
    *            要删除的时区ID的逗号分隔字符串
    * @return a response containing the set of deleted time zone IDs 包含已删除时区ID集合的响应
-   * @throws Exception if an error occurs during deletion
-   *                   如果删除过程中发生错误
    */
   @DeleteMapping
+  @PreAuthorize("hasAuthority('menu:i18n:timezones:delete')")
   @Operation(summary = "删除时区", description = "根据提供的时区ID集合，删除一个或多个时区")
-  public Response<Set<String>> remove(@RequestParam("ids") String ids) throws Exception {
+  public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);

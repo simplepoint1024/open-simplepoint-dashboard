@@ -14,7 +14,7 @@ import org.simplepoint.core.enums.ButtonVariantTypes;
  * This annotation can be used to mark methods or classes that represent a button declaration.
  */
 @Documented
-@Target(ElementType.TYPE)
+@Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public @interface ButtonDeclaration {
@@ -77,6 +77,12 @@ public @interface ButtonDeclaration {
    * This can be a string representing the icon name or a URL to the icon image.
    */
   String icon() default "";
+
+  /**
+   * The authority associated with the button.
+   * This can be used to define the permissions or scope tied to the button.
+   */
+  String authority();
 
   /**
    * The sort order of the button.

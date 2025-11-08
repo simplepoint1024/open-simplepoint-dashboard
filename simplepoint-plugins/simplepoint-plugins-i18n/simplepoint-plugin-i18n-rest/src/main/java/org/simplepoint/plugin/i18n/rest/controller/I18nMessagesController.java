@@ -11,6 +11,7 @@ import org.simplepoint.core.locale.I18nMessageService;
 import org.simplepoint.core.utils.StringUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,13 +48,11 @@ public class I18nMessagesController extends BaseController<I18nMessageService, M
    * @param pageable   the pagination and sorting information
    *                   分页和排序信息
    * @return a paginated response containing messages that match the given attributes 包含符合给定属性的消息的分页响应
-   * @throws Exception if an error occurs during retrieval
-   *                   如果检索过程中发生错误
    */
   @GetMapping
+  @PreAuthorize("hasAuthority('menu:i18n:messages:view')")
   @Operation(summary = "分页查询消息", description = "根据提供的属性和分页参数，检索消息的分页列表")
-  public Response<Page<Message>> limit(@RequestParam Map<String, String> attributes, Pageable pageable)
-      throws Exception {
+  public Response<Page<Message>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), Message.class);
   }
 
@@ -67,6 +66,7 @@ public class I18nMessagesController extends BaseController<I18nMessageService, M
    * @return a response containing a map of global messages 包含全局消息映射的响应
    */
   @GetMapping("/mapping")
+  @PreAuthorize("hasAuthority('menu:i18n:messages:view')")
   @Operation(summary = "获取全局消息", description = "根据提供的语言环境和命名空间，获取全局消息映射")
   public Response<Map<String, String>> mapping(
       @RequestParam(name = "locale") String locale,
@@ -85,6 +85,7 @@ public class I18nMessagesController extends BaseController<I18nMessageService, M
    *                   如果添加过程中发生错误
    */
   @PostMapping
+  @PreAuthorize("hasAuthority('menu:i18n:messages:add')")
   @Operation(summary = "添加消息", description = "添加一个新的消息到系统中")
   public Response<Message> add(@RequestBody Message data) throws Exception {
     return ok(service.add(data));
@@ -96,12 +97,11 @@ public class I18nMessagesController extends BaseController<I18nMessageService, M
    * @param data the message data to be modified
    *             要修改的消息数据
    * @return a response containing the modified message 包含已修改消息的响应
-   * @throws Exception if an error occurs during modification
-   *                   如果修改过程中发生错误
    */
   @PutMapping
+  @PreAuthorize("hasAuthority('menu:i18n:messages:edit')")
   @Operation(summary = "修改消息", description = "修改一个已存在的消息信息")
-  public Response<Message> modify(@RequestBody Message data) throws Exception {
+  public Response<Message> modify(@RequestBody Message data) {
     return ok(service.modifyById(data));
   }
 
@@ -111,12 +111,11 @@ public class I18nMessagesController extends BaseController<I18nMessageService, M
    * @param ids a comma-separated string of message IDs to be deleted
    *            要删除的消息ID的逗号分隔字符串
    * @return a response containing the set of deleted message IDs 包含已删除消息ID集合的响应
-   * @throws Exception if an error occurs during deletion
-   *                   如果删除过程中发生错误
    */
   @DeleteMapping
+  @PreAuthorize("hasAuthority('menu:i18n:messages:delete')")
   @Operation(summary = "删除消息", description = "根据提供的消息ID集合，删除一个或多个消息")
-  public Response<Set<String>> remove(@RequestParam("ids") String ids) throws Exception {
+  public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);

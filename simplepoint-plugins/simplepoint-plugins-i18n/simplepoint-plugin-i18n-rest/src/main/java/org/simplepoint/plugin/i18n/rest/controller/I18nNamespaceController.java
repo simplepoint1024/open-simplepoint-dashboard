@@ -11,6 +11,7 @@ import org.simplepoint.plugin.i18n.api.entity.Namespace;
 import org.simplepoint.plugin.i18n.api.service.I18nNamespaceService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,13 +49,11 @@ public class I18nNamespaceController extends BaseController<I18nNamespaceService
    * @param pageable   the pagination and sorting information
    *                   分页和排序信息
    * @return a paginated response containing namespaces that match the given attributes 包含符合给定属性的命名空间的分页响应
-   * @throws Exception if an error occurs during retrieval
-   *                   如果检索过程中发生错误
    */
   @GetMapping
+  @PreAuthorize("hasAuthority('menu:i18n:namespaces:view')")
   @Operation(summary = "分页查询命名空间", description = "根据提供的属性和分页参数，检索命名空间的分页列表")
-  public Response<Page<Namespace>> limit(@RequestParam Map<String, String> attributes, Pageable pageable)
-      throws Exception {
+  public Response<Page<Namespace>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), Namespace.class);
   }
 
@@ -64,12 +63,11 @@ public class I18nNamespaceController extends BaseController<I18nNamespaceService
    * @param data the namespace data to be added
    *             要添加的命名空间数据
    * @return a response containing the added namespace 包含已添加命名空间的响应
-   * @throws Exception if an error occurs during the addition
-   *                   如果添加过程中发生错误
    */
   @PostMapping
+  @PreAuthorize("hasAuthority('menu:i18n:namespaces:add')")
   @Operation(summary = "添加命名空间", description = "添加一个新的命名空间到系统中")
-  public Response<Namespace> add(@RequestBody Namespace data) throws Exception {
+  public Response<Namespace> add(@RequestBody Namespace data) {
     return ok(service.add(data));
   }
 
@@ -79,12 +77,11 @@ public class I18nNamespaceController extends BaseController<I18nNamespaceService
    * @param data the namespace data to be modified
    *             要修改的命名空间数据
    * @return a response containing the modified namespace 包含已修改命名空间的响应
-   * @throws Exception if an error occurs during the modification
-   *                   如果修改过程中发生错误
    */
   @PutMapping
+  @PreAuthorize("hasAuthority('menu:i18n:namespaces:edit')")
   @Operation(summary = "修改命名空间", description = "修改一个已存在的命名空间信息")
-  public Response<Namespace> modify(@RequestBody Namespace data) throws Exception {
+  public Response<Namespace> modify(@RequestBody Namespace data) {
     return ok(service.modifyById(data));
   }
 
@@ -94,12 +91,11 @@ public class I18nNamespaceController extends BaseController<I18nNamespaceService
    * @param ids a comma-separated string of namespace IDs to be deleted
    *            要删除的命名空间ID的逗号分隔字符串
    * @return a response containing the set of deleted namespace IDs 包含已删除命名空间ID集合的响应
-   * @throws Exception if an error occurs during deletion
-   *                   如果删除过程中发生错误
    */
   @DeleteMapping
+  @PreAuthorize("hasAuthority('menu:i18n:namespaces:delete')")
   @Operation(summary = "删除命名空间", description = "根据提供的命名空间ID集合，删除一个或多个命名空间")
-  public Response<Set<String>> remove(@RequestParam("ids") String ids) throws Exception {
+  public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);

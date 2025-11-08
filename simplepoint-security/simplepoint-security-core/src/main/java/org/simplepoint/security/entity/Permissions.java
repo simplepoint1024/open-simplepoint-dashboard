@@ -40,7 +40,8 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         icon = Icons.PLUS_CIRCLE,
         sort = 0,
         argumentMaxSize = 1,
-        argumentMinSize = 0
+        argumentMinSize = 0,
+        authority = "permissions:add"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -49,7 +50,8 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         icon = Icons.EDIT,
         sort = 1,
         argumentMinSize = 1,
-        argumentMaxSize = 1
+        argumentMaxSize = 1,
+        authority = "permissions:edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -59,12 +61,27 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         sort = 2,
         argumentMinSize = 1,
         argumentMaxSize = 10,
-        danger = true
+        danger = true,
+        authority = "permissions:delete"
     )
 })
 @Schema(title = "权限实体", description = "表示RBAC系统中的权限实体")
 public class Permissions extends BaseEntityImpl<String> implements BasePermissions {
   public static final String AUTHORITY_FIELD = "authority";
+
+  @Schema(
+      title = "i18n:permissions.title.name",
+      description = "i18n:permissions.description.name",
+      example = "查看用户列表",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  @Column(length = 100, nullable = false)
+  private String name;
+
   @Schema(
       title = "i18n:permissions.title.authority",
       description = "i18n:permissions.description.authority",
@@ -89,4 +106,17 @@ public class Permissions extends BaseEntityImpl<String> implements BasePermissio
           })}
   )
   private String resource;
+
+  @Schema(
+      title = "i18n:permissions.title.description",
+      description = "i18n:permissions.description.description",
+      example = "系统管理员角色，拥有所有权限",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  @Column(length = 100, nullable = false)
+  private String description;
 }
