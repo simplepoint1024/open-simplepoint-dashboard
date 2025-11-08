@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.rbac.core.api.repository;
 
 import java.util.List;
+import java.util.Set;
 import org.simplepoint.security.entity.UserRoleRelevance;
 
 /**
@@ -24,4 +25,12 @@ public interface UserRoleRelevanceRepository {
    * @param username the username whose associated UserRoleRelevance entities are to be deleted
    */
   void deleteAllByUsername(String username);
+
+  /**
+   * Remove specific authorities from a user identified by username.
+   *
+   * @param username    the username of the user
+   * @param authorities a set of authorities to be removed from the user
+   */
+  void unauthorized(String username, Set<String> authorities);
 }

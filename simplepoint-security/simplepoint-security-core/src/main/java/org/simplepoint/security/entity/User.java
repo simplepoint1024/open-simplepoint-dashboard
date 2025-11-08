@@ -31,6 +31,7 @@ import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.constants.Icons;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -58,6 +59,15 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
     @ButtonDeclaration(
         title = "删除", key = "delete", color = "danger", icon = "MinusCircleOutlined", sort = 2,
         argumentMinSize = 1, argumentMaxSize = 10, danger = true
+    ),
+    @ButtonDeclaration(
+        title = "i18n:users.button.configRoles",
+        key = "onConfigRoles",
+        color = "orange",
+        icon = Icons.SAFETY_OUTLINED,
+        sort = 3,
+        argumentMinSize = 1,
+        argumentMaxSize = 1
     )
 })
 @NoArgsConstructor

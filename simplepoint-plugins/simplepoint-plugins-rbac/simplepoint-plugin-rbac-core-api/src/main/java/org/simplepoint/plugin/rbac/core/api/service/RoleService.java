@@ -58,4 +58,11 @@ public interface RoleService extends BaseService<Role, String> {
    * @return A collection of UserRoleRelevance entities that match the authorization criteria.
    */
   Collection<UserRoleRelevance> authorize(RoleSelectDto dto);
+
+  /**
+   * unauthorized roles based on the provided RoleSelectDto.
+   *
+   * @param dto The RoleSelectDto containing unauthorization criteria.
+   */
+  void unauthorized(RoleSelectDto dto);
 }

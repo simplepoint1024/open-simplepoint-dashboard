@@ -15,6 +15,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface JpaI18nLanguageRepository extends BaseRepository<Language, String>, I18nLanguageRepository {
   @Override
-  @Query("SELECT l.code,l.nameEnglish FROM Language l where l.enabled = true")
+  @Query("SELECT l FROM Language l where l.enabled = true")
   Collection<Language> mapping();
 }
