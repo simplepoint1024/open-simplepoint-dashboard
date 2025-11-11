@@ -20,7 +20,9 @@ import org.simplepoint.security.entity.TreeMenu;
 import org.simplepoint.security.service.MenuService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -65,6 +67,9 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
   @PreAuthorize("hasAuthority('menu.menus.view')")
   @Operation(summary = "分页查询菜单", description = "根据提供的属性和分页参数，检索菜单的分页列表")
   public Response<Page<TreeMenu>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
+    if (!pageable.getSort().isSorted()) {
+      pageable = PageRequest.of(pageable.getPageNumber(),  pageable.getPageSize(), Sort.by(Sort.Direction.ASC, "sort"));
+    }
     return Response.limit(service.limitTree(attributes, pageable), TreeMenu.class);
   }
 

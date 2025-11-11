@@ -36,7 +36,7 @@ public class DefaultJsonSchemaDetailsService implements JsonSchemaDetailsService
             FROM Permissions sp
             JOIN RolePermissionsRelevance srpr ON sp.authority = srpr.permissionAuthority
             WHERE srpr.roleAuthority IN :roles
-              AND sp.resource LIKE :resourcePrefix and sp.resourceType='field' and srpr.action like '%READ%'
+              AND sp.resource LIKE :resourcePrefix
         """;
     List<SimpleFieldPermissions> resultList = entityManager.createQuery(
         jpql, SimpleFieldPermissions.class).setParameter("roles", roles).setParameter("resourcePrefix", className + "%").getResultList();

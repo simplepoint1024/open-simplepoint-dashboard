@@ -10,6 +10,7 @@ package org.simplepoint.plugin.rbac.menu.service.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -217,7 +218,9 @@ public class MenuServiceImpl
     Page<Menu> limit = limit(attributes, pageable);
     List<String> rootUuids = limit.map(Menu::getId).stream().toList();
     Collection<String> ancestorUuids = menuAncestorRepository.findChildIdsByAncestorIds(rootUuids);
-    List<Menu> ancestorMenus = findAllByIds(ancestorUuids);
+    List<Menu> ancestorMenus =
+        new ArrayList<>(findAllByIds(ancestorUuids)
+            .stream().sorted(Comparator.comparing(Menu::getSort, Comparator.nullsLast(Integer::compareTo))).toList());
     ancestorMenus.addAll(limit.getContent());
     return new PageImpl<>(
         buildMenuTree(ancestorMenus)

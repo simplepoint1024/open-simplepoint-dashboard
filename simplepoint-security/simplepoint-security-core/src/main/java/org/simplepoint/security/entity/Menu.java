@@ -83,7 +83,12 @@ public class Menu extends BaseEntityImpl<String> {
       description = "i18n:menus.description.authority",
       maxLength = 36,
       minLength = 1,
-      example = "menu:dashboard"
+      example = "menu:dashboard",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
   )
   @Column(unique = true, nullable = false, length = 36)
   private String authority;
