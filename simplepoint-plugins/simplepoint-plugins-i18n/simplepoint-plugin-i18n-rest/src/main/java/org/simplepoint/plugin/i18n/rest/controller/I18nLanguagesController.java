@@ -53,7 +53,7 @@ public class I18nLanguagesController extends BaseController<I18nLanguageService,
    * @return a paginated response containing Language that match the given attributes 包含符合给定属性的语言的分页响应
    */
   @GetMapping
-  @PreAuthorize("hasAuthority('menu:i18n:languages:view')")
+  @PreAuthorize("hasAuthority('menu.i18n.languages.view')")
   @Operation(summary = "分页查询语言", description = "根据提供的属性和分页参数，检索语言的分页列表")
   public Response<Page<Language>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), Language.class);
@@ -80,7 +80,7 @@ public class I18nLanguagesController extends BaseController<I18nLanguageService,
    *                   如果添加过程中发生错误
    */
   @PostMapping
-  @PreAuthorize("hasAuthority('menu:i18n:languages:add')")
+  @PreAuthorize("hasAuthority('menu.i18n.languages.add')")
   @Operation(summary = "添加语言", description = "添加一个新的语言到系统中")
   public Response<Language> add(@RequestBody Language data) throws Exception {
     return ok(service.add(data));
@@ -94,7 +94,7 @@ public class I18nLanguagesController extends BaseController<I18nLanguageService,
    * @return a response containing the modified country 包含已修改语言的响应
    */
   @PutMapping
-  @PreAuthorize("hasAuthority('menu:i18n:languages:edit')")
+  @PreAuthorize("hasAuthority('menu.i18n.languages.edit')")
   @Operation(summary = "修改语言", description = "修改一个已存在的语言信息")
   public Response<Language> modify(@RequestBody Language data) {
     return ok(service.modifyById(data));
@@ -108,7 +108,7 @@ public class I18nLanguagesController extends BaseController<I18nLanguageService,
    * @return a response containing the set of deleted country IDs 包含已删除语言ID集合的响应
    */
   @DeleteMapping
-  @PreAuthorize("hasAuthority('menu:i18n:languages:delete')")
+  @PreAuthorize("hasAuthority('menu.i18n.languages.delete')")
   @Operation(summary = "删除语言", description = "根据提供的语言ID集合，删除一个或多个语言")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);

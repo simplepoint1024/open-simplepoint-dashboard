@@ -56,7 +56,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @GetMapping
   @Operation(summary = "分页查询用户", description = "根据提供的属性和分页参数，检索用户的分页列表")
-  @PreAuthorize("hasAuthority('menu:users:view')")
+  @PreAuthorize("hasAuthority('menu.users.view')")
   public Response<Page<User>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), User.class);
   }
@@ -70,7 +70,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @PostMapping
   @Operation(summary = "添加用户", description = "添加一个新的用户到系统中")
-  @PreAuthorize("hasAuthority('menu:users:add')")
+  @PreAuthorize("hasAuthority('menu.users.add')")
   public Response<User> add(@RequestBody User data) throws Exception {
     return ok(service.add(data));
   }
@@ -83,7 +83,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @PutMapping
   @Operation(summary = "修改用户", description = "修改一个已存在的用户信息")
-  @PreAuthorize("hasAuthority('menu:users:edit')")
+  @PreAuthorize("hasAuthority('menu.users.edit')")
   public Response<User> modify(@RequestBody User data) {
     return ok(service.modifyById(data));
   }
@@ -96,7 +96,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @DeleteMapping
   @Operation(summary = "删除用户", description = "根据提供的用户ID集合，删除一个或多个用户")
-  @PreAuthorize("hasAuthority('menu:users:delete')")
+  @PreAuthorize("hasAuthority('menu.users.delete')")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
