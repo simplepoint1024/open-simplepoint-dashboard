@@ -57,7 +57,8 @@ public class BaseController<S extends BaseService<T, I>, T extends BaseEntity<I>
   @GetMapping("/schema")
   @Operation(summary = "获取实体元数据", description = "检索有关实体的元数据")
   public Response<Map<String, Object>> schema() {
-    return ok(service.schema());
+    Map<String, Object> schema = service.schema();
+    return ok(schema);
   }
 
   /**

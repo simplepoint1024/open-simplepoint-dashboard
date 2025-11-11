@@ -10,15 +10,20 @@ package org.simplepoint.core.base.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -60,6 +65,7 @@ public class BaseServiceImpl
     <R extends BaseRepository<T, I>, T extends BaseEntity<I>, I extends Serializable>
     implements BaseService<T, I> {
 
+  private final ObjectMapper mapper = new ObjectMapper();
   private final R repository;
 
   private final UserContext<BaseUser> userContext;
@@ -181,26 +187,32 @@ public class BaseServiceImpl
     }
     var jsonSchemaGenerate = detailsProviderService.getDialect(JsonSchemaGenerator.class);
     ObjectNode schema = jsonSchemaGenerate.generateSchema(domainClass);
-    BaseUser details = userContext.getDetails();
-    // If user is super admin, return full schema
-    if (details.superAdmin()) {
-      return schema;
+
+    // 获取 properties 节点
+    ObjectNode propertiesNode = (ObjectNode) schema.get("properties");
+
+    // 收集字段和对应的 x-order
+    List<Map.Entry<String, JsonNode>> fields = new LinkedList<>();
+    propertiesNode.fields().forEachRemaining(fields::add);
+
+    // 按 x-order 排序
+    fields.sort(Comparator.comparingInt(entry -> {
+      JsonNode orderNode = entry.getValue().get("x-order");
+      return orderNode != null ? orderNode.asInt() : Integer.MAX_VALUE;
+    }));
+
+    // 重新构建 properties
+    ObjectNode sortedProperties = mapper.createObjectNode();
+    for (Map.Entry<String, JsonNode> entry : fields) {
+      sortedProperties.set(entry.getKey(), entry.getValue());
     }
-    Set<SimpleFieldPermissions> fields = formSchemaGenerator.loadCurrentUserSchemaPropertiesPermissions(details, domainClass.getName());
-    Set<String> fieldNames = new HashSet<>();
-    var propsNode = schema.get("properties");
-    if (propsNode instanceof ObjectNode props) {
-      for (SimpleFieldPermissions field : fields) {
-        String fieldName = field.getFieldName();
-        // 处理只读属性
-        if (Objects.nonNull(fieldName) && props.get(fieldName) instanceof ObjectNode prop) {
-          String action = field.action();
-          prop.put("readOnly", action == null || !action.contains("WRITE"));
-          fieldNames.add(fieldName);
-        }
-      }
-    }
-    schema.withObjectProperty("properties").retain(fieldNames);
+
+    // 替换原来的 properties
+    schema.set("properties", sortedProperties);
+
+    //BaseUser details = userContext.getDetails();
+    //Set<SimpleFieldPermissions> fields = formSchemaGenerator.loadCurrentUserSchemaPropertiesPermissions(details, domainClass.getName());
+
     return schema;
   }
 
