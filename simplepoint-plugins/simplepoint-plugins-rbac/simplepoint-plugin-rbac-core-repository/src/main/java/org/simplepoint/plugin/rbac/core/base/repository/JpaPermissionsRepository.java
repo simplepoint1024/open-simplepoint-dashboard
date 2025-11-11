@@ -11,8 +11,7 @@ package org.simplepoint.plugin.rbac.core.base.repository;
 import java.util.Collection;
 import java.util.Set;
 import org.simplepoint.data.jpa.base.BaseRepository;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.RolePermissionsRelevanceVo;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.PermissionsRepository;
 import org.simplepoint.security.entity.Permissions;
 import org.springframework.data.domain.Page;
@@ -31,15 +30,6 @@ public interface JpaPermissionsRepository extends BaseRepository<Permissions, St
     PermissionsRepository {
 
   @Override
-  @Modifying
-  @Query("delete from RolePermissionsRelevance p where p.roleAuthority = ?1 and p.permissionAuthority in ?2")
-  void unauthorized(String roleAuthority, Set<String> authorities);
-
-  @Override
-  @Query("select new org.simplepoint.plugin.rbac.core.api.pojo.vo.RolePermissionsRelevanceVo(p.name,p.authority,p.description) from Permissions p ")
-  Page<RolePermissionsRelevanceVo> permissionItems(Pageable pageable);
-
-  @Override
-  @Query("select permissionAuthority from RolePermissionsRelevance where roleAuthority = ?1")
-  Collection<String> authorized(String roleAuthority);
+  @Query("select new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.name,p.authority,p.description) from Permissions p ")
+  Page<PermissionsRelevanceVo> permissionItems(Pageable pageable);
 }

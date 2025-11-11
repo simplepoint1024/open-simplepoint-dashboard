@@ -9,9 +9,11 @@
 package org.simplepoint.plugin.rbac.core.api.service;
 
 import java.util.Collection;
+import java.util.Set;
 import org.simplepoint.api.base.BaseService;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
@@ -25,13 +27,6 @@ import org.springframework.data.domain.Pageable;
  * for defining role-specific business logic.
  */
 public interface RoleService extends BaseService<Role, String> {
-
-  /**
-   * Get the UserRoleRelevanceRepository instance.
-   *
-   * @return The UserRoleRelevanceRepository.
-   */
-  UserRoleRelevanceRepository getUserRoleRelevanceRepository();
 
   /**
    * Load role-permission relationships based on a collection of role authorities.
@@ -49,29 +44,31 @@ public interface RoleService extends BaseService<Role, String> {
    * @param pageable Pagination information.
    * @return A page of RoleSelectDto containing role selection data.
    */
-  Page<UserRoleRelevanceVo> roleSelectItems(Pageable pageable);
-
-  /**
-   * Retrieve a collection of role authorities associated with a specific username.
-   *
-   * @param username The username to filter the role authorities.
-   * @return A collection of role authorities for the given username.
-   */
-  Collection<String> authorized(String username);
+  Page<RoleRelevanceVo> roleSelectItems(Pageable pageable);
 
 
   /**
-   * Authorize roles based on the provided RoleSelectDto.
+   * Removes the specified authorities from the given role authority.
    *
-   * @param dto The RoleSelectDto containing authorization criteria.
-   * @return A collection of UserRoleRelevance entities that match the authorization criteria.
+   * @param roleAuthority the authority of the role
+   * @param authorities   the set of permission authorities to be removed
    */
-  Collection<UserRoleRelevance> authorize(UserRoleRelevanceDto dto);
+  void unauthorized(String roleAuthority, Set<String> authorities);
 
   /**
-   * unauthorized roles based on the provided RoleSelectDto.
+   * Retrieves a collection of authorized permission strings for the specified role authority.
    *
-   * @param dto The RoleSelectDto containing unauthorization criteria.
+   * @param roleAuthority the authority of the role
+   * @return a collection of authorized permission strings
    */
-  void unauthorized(UserRoleRelevanceDto dto);
+  Collection<String> authorized(String roleAuthority);
+
+  /**
+   * Authorizes permissions based on the provided RolePermissionsRelevanceDto.
+   *
+   * @param dto the RolePermissionsRelevanceDto containing authorization details
+   * @return a collection of RolePermissionsRelevance entities representing the authorized permissions
+   */
+  Collection<RolePermissionsRelevance> authorize(RolePermissionsRelevanceDto dto);
+
 }

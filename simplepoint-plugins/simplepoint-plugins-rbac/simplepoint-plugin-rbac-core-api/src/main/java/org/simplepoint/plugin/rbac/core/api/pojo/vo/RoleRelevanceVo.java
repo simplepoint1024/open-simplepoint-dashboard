@@ -4,11 +4,11 @@ import java.io.Serializable;
 import lombok.Data;
 
 /**
- * Data Transfer Object (DTO) for selecting roles.
- * 角色选择的数据传输对象
+ * RoleRelevanceVo is a value object that encapsulates
+ * the details of a role.
  */
 @Data
-public class UserRoleRelevanceVo implements Serializable {
+public class RoleRelevanceVo implements Serializable {
   private String name;
   private String description;
   private String authority;
@@ -20,7 +20,7 @@ public class UserRoleRelevanceVo implements Serializable {
    * @param authority   the authority string of the role
    * @param description the description of the role
    */
-  public UserRoleRelevanceVo(
+  public RoleRelevanceVo(
       String name,
       String authority,
       String description

@@ -7,7 +7,7 @@ import lombok.Data;
  * the details of permissions associated with a role.
  */
 @Data
-public class RolePermissionsRelevanceVo {
+public class PermissionsRelevanceVo {
   private String name;
   private String authority;
   private String description;
@@ -19,7 +19,7 @@ public class RolePermissionsRelevanceVo {
    * @param authority   the authority string of the permission
    * @param description the description of the permission
    */
-  public RolePermissionsRelevanceVo(String name, String authority, String description) {
+  public PermissionsRelevanceVo(String name, String authority, String description) {
     this.name = name;
     this.authority = authority;
     this.description = description;
@@ -28,6 +28,6 @@ public class RolePermissionsRelevanceVo {
   /**
    * Default constructor.
    */
-  public RolePermissionsRelevanceVo() {
+  public PermissionsRelevanceVo() {
   }
 }

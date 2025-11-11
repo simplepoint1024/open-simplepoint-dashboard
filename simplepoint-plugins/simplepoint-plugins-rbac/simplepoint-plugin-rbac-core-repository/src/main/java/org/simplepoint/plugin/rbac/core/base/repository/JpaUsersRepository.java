@@ -8,6 +8,7 @@
 
 package org.simplepoint.plugin.rbac.core.base.repository;
 
+import java.util.Collection;
 import java.util.List;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
@@ -40,4 +41,8 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
   @Override
   @Query("select pr from RolePermissionsRelevance pr where pr.roleAuthority in :roleAuthorities")
   List<RolePermissionsRelevance> loadPermissionsInRoleAuthorities(@Param("roleAuthorities") List<String> roleAuthorities);
+
+  @Override
+  @Query("select authority from UserRoleRelevance where username = :username")
+  Collection<String> authorized(@Param("username") String username);
 }
