@@ -19,8 +19,8 @@ import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.RoleSelectDto;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleSelectVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.UserRoleRelevance;
@@ -128,7 +128,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
   @GetMapping("/items")
   @Operation(summary = "获取角色下拉列表数据", description = "检索用于角色选择的角色下拉列表数据")
   @PreAuthorize("hasAuthority('menu.roles.authorized') or hasPermission('menu.roles.unauthorized')")
-  public Response<Page<RoleSelectVo>> items(Pageable pageable) {
+  public Response<Page<UserRoleRelevanceVo>> items(Pageable pageable) {
     return ok(service.roleSelectItems(pageable));
   }
 
@@ -142,7 +142,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
   @Operation(summary = "获取用户角色权限", description = "根据用户名获取该用户")
   @PreAuthorize("hasAuthority('menu.roles.authorize') or hasPermission('menu.roles.unauthorized')")
   public Response<Collection<String>> authorized(@RequestParam("username") String username) {
-    return ok(service.userRoleAuthorities(username));
+    return ok(service.authorized(username));
   }
 
   /**
@@ -154,7 +154,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
   @PostMapping("/authorize")
   @Operation(summary = "授权角色用户关联关系", description = "根据一组角色")
   @PreAuthorize("hasAuthority('menu.roles.authorize')")
-  public Response<Collection<UserRoleRelevance>> authorize(@RequestBody RoleSelectDto dto) {
+  public Response<Collection<UserRoleRelevance>> authorize(@RequestBody UserRoleRelevanceDto dto) {
     return ok(service.authorize(dto));
   }
 
@@ -167,7 +167,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
   @PostMapping("/unauthorized")
   @Operation(summary = "取消授权角色用户关联关系", description = "根据角色用户关联关系取消授权")
   @PreAuthorize("hasPermission('menu.roles.unauthorized')")
-  public Response<Void> unauthorized(@RequestBody RoleSelectDto dto) {
+  public Response<Void> unauthorized(@RequestBody UserRoleRelevanceDto dto) {
     service.unauthorized(dto);
     return Response.okay();
   }

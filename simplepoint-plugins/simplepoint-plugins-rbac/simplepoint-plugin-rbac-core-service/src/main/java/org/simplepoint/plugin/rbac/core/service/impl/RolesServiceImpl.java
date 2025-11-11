@@ -15,8 +15,8 @@ import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.core.context.UserContext;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.RoleSelectDto;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleSelectVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
@@ -57,6 +57,11 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   }
 
   @Override
+  public UserRoleRelevanceRepository getUserRoleRelevanceRepository() {
+    return this.userRoleRelevanceRepository;
+  }
+
+  @Override
   public Collection<RolePermissionsRelevance> loadPermissionsByRoleAuthorities(Collection<String> roleAuthorities) {
     return getRepository().loadPermissionsByRoleAuthorities(roleAuthorities);
   }
@@ -68,7 +73,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
    * @return A page of RoleSelectDto containing role selection data.
    */
   @Override
-  public Page<RoleSelectVo> roleSelectItems(Pageable pageable) {
+  public Page<UserRoleRelevanceVo> roleSelectItems(Pageable pageable) {
     return getRepository().roleSelectItems(pageable);
   }
 
@@ -80,13 +85,13 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
    * @return A collection of role authorities for the given username.
    */
   @Override
-  public Collection<String> userRoleAuthorities(String username) {
-    return getRepository().userRoleAuthorities(username);
+  public Collection<String> authorized(String username) {
+    return getRepository().authorized(username);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public Collection<UserRoleRelevance> authorize(RoleSelectDto dto) {
+  public Collection<UserRoleRelevance> authorize(UserRoleRelevanceDto dto) {
     Set<String> roleAuthorities = dto.getRoleAuthorities();
     Set<UserRoleRelevance> authorities = new HashSet<>(roleAuthorities.size());
     for (String roleAuthority : roleAuthorities) {
@@ -100,7 +105,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public void unauthorized(RoleSelectDto dto) {
+  public void unauthorized(UserRoleRelevanceDto dto) {
     userRoleRelevanceRepository.unauthorized(dto.getUsername(), dto.getRoleAuthorities());
   }
 }

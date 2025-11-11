@@ -9,7 +9,7 @@ import lombok.Data;
  * about a user's role selection, including the username and associated role authorities.
  */
 @Data
-public class RoleSelectDto implements Serializable {
+public class UserRoleRelevanceDto implements Serializable {
   private String username;
   private Set<String> roleAuthorities;
 }

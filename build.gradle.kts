@@ -51,7 +51,7 @@ subprojects {
 }
 
 tasks.register<Copy>("installGitHooks") {
-    from("scripts/pre-commit")
+    from("scripts/hooks/pre-commit")
     into(".git/hooks")
     rename { "pre-commit" }
 }
