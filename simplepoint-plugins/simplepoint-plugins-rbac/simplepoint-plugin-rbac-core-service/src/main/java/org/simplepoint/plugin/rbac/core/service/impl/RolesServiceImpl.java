@@ -15,14 +15,13 @@ import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.core.context.UserContext;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
-import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
-import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,27 +37,25 @@ import org.springframework.transaction.annotation.Transactional;
 public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, String>
     implements RoleService {
 
-  private final UserRoleRelevanceRepository userRoleRelevanceRepository;
+  private final RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository;
 
   /**
    * Constructs a new RolesServiceImpl with the specified repository, user context, and details provider service.
    *
-   * @param repository                  the RoleRepository instance for data access
-   * @param userContext                 the user context for retrieving current user information
-   * @param detailsProviderService      the service for providing user details
-   * @param userRoleRelevanceRepository the repository for managing UserRoleRelevance entities
+   * @param repository                         the RoleRepository instance for data access
+   * @param userContext                        the user context for retrieving current user information
+   * @param detailsProviderService             the service for providing user details
+   * @param rolePermissionsRelevanceRepository the RolePermissionsRelevanceRepository for role-permission relations
    */
-  public RolesServiceImpl(RoleRepository repository,
-                          @Autowired(required = false) UserContext<BaseUser> userContext,
-                          DetailsProviderService detailsProviderService,
-                          UserRoleRelevanceRepository userRoleRelevanceRepository) {
+  public RolesServiceImpl(
+      RoleRepository repository,
+      @Autowired(required = false) UserContext<BaseUser> userContext,
+      DetailsProviderService detailsProviderService,
+      RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository
+  ) {
     super(repository, userContext, detailsProviderService);
-    this.userRoleRelevanceRepository = userRoleRelevanceRepository;
-  }
+    this.rolePermissionsRelevanceRepository = rolePermissionsRelevanceRepository;
 
-  @Override
-  public UserRoleRelevanceRepository getUserRoleRelevanceRepository() {
-    return this.userRoleRelevanceRepository;
   }
 
   @Override
@@ -73,39 +70,51 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
    * @return A page of RoleSelectDto containing role selection data.
    */
   @Override
-  public Page<UserRoleRelevanceVo> roleSelectItems(Pageable pageable) {
+  public Page<RoleRelevanceVo> roleSelectItems(Pageable pageable) {
     return getRepository().roleSelectItems(pageable);
   }
 
 
   /**
-   * Retrieves a collection of role authorities associated with a specific username.
+   * Removes the authorization of specified permissions from a role.
    *
-   * @param username The username to filter the role authorities.
-   * @return A collection of role authorities for the given username.
+   * @param roleAuthority the authority of the role
+   * @param authorities   the set of permission authorities to be unauthorized
    */
   @Override
-  public Collection<String> authorized(String username) {
-    return getRepository().authorized(username);
+  @Transactional(rollbackFor = Exception.class)
+  public void unauthorized(String roleAuthority, Set<String> authorities) {
+    this.getRepository().unauthorized(roleAuthority, authorities);
   }
 
+  /**
+   * Retrieves a collection of authorized permission authorities for a given role authority.
+   *
+   * @param roleAuthority the authority of the role
+   * @return a collection of authorized permission authorities
+   */
+  @Override
+  public Collection<String> authorized(String roleAuthority) {
+    return getRepository().authorized(roleAuthority);
+  }
+
+  /**
+   * Authorizes a set of permissions to a role based on the provided DTO.
+   *
+   * @param dto the RolePermissionsRelevanceDto containing role authority and permission authorities
+   * @return a collection of RolePermissionsRelevance representing the authorized permissions
+   */
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public Collection<UserRoleRelevance> authorize(UserRoleRelevanceDto dto) {
-    Set<String> roleAuthorities = dto.getRoleAuthorities();
-    Set<UserRoleRelevance> authorities = new HashSet<>(roleAuthorities.size());
-    for (String roleAuthority : roleAuthorities) {
-      UserRoleRelevance relevance = new UserRoleRelevance();
-      relevance.setUsername(dto.getUsername());
-      relevance.setAuthority(roleAuthority);
-      authorities.add(relevance);
+  public Collection<RolePermissionsRelevance> authorize(RolePermissionsRelevanceDto dto) {
+    Set<String> permissionAuthorities = dto.getPermissionAuthorities();
+    Set<RolePermissionsRelevance> permissionRelevantAuthorities = new HashSet<>();
+    for (String permissionAuthority : permissionAuthorities) {
+      RolePermissionsRelevance relevance = new RolePermissionsRelevance();
+      relevance.setRoleAuthority(dto.getRoleAuthority());
+      relevance.setPermissionAuthority(permissionAuthority);
+      permissionRelevantAuthorities.add(relevance);
     }
-    return userRoleRelevanceRepository.saveAll(authorities);
-  }
-
-  @Override
-  @Transactional(rollbackFor = Exception.class)
-  public void unauthorized(UserRoleRelevanceDto dto) {
-    userRoleRelevanceRepository.unauthorized(dto.getUsername(), dto.getRoleAuthorities());
+    return this.rolePermissionsRelevanceRepository.saveAll(permissionRelevantAuthorities);
   }
 }

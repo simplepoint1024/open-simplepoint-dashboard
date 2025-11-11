@@ -68,7 +68,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
   @Operation(summary = "分页查询菜单", description = "根据提供的属性和分页参数，检索菜单的分页列表")
   public Response<Page<TreeMenu>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     if (!pageable.getSort().isSorted()) {
-      pageable = PageRequest.of(pageable.getPageNumber(),  pageable.getPageSize(), Sort.by(Sort.Direction.ASC, "sort"));
+      pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.ASC, "sort"));
     }
     return Response.limit(service.limitTree(attributes, pageable), TreeMenu.class);
   }
@@ -103,12 +103,11 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    *
    * @param data the {@link Menu} instance to be updated
    * @return the updated menu record wrapped in {@link Response}
-   * @throws Exception if an error occurs during modification
    */
   @PutMapping
   @PreAuthorize("hasAuthority('menu.menus.edit')")
   @Operation(summary = "更新菜单信息", description = "更新系统中现有菜单的信息")
-  public Response<Menu> modify(@RequestBody Menu data) throws Exception {
+  public Response<Menu> modify(@RequestBody Menu data) {
     return ok(service.modifyById(data));
   }
 
@@ -117,12 +116,11 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    *
    * @param ids a comma-separated string of menu IDs to be removed
    * @return a success response indicating removal completion
-   * @throws Exception if an error occurs during deletion
    */
   @DeleteMapping
   @PreAuthorize("hasAuthority('menu.menus.delete')")
   @Operation(summary = "删除菜单", description = "根据提供的菜单ID列表，删除对应的菜单记录")
-  public Response<Set<String>> remove(@RequestParam("ids") String ids) throws Exception {
+  public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);

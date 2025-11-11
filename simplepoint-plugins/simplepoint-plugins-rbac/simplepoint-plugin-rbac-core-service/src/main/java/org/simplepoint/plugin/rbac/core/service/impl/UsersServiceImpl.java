@@ -8,23 +8,30 @@
 
 package org.simplepoint.plugin.rbac.core.service.impl;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.core.context.UserContext;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
+import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.User;
+import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service implementation class for managing User entities
@@ -38,6 +45,8 @@ import org.springframework.stereotype.Service;
 public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, String>
     implements UsersService {
 
+  private final UserRoleRelevanceRepository userRoleRelevanceRepository;
+
   /**
    * Optional password encoder for encrypting user passwords.
    * If no encoder is configured, passwords will not be encrypted.
@@ -47,18 +56,21 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   /**
    * Constructs a UsersServiceImpl with the specified repository and optional metadata sync service.
    *
-   * @param passwordEncoder        the optional PasswordEncoder for encrypting user passwords
-   * @param usersRepository        the repository used for user operations
-   * @param detailsProviderService the access control service for managing permissions
+   * @param passwordEncoder             the optional PasswordEncoder for encrypting user passwords
+   * @param usersRepository             the repository used for user operations
+   * @param detailsProviderService      the access control service for managing permissions
+   * @param userRoleRelevanceRepository the repository for managing UserRoleRelevance entities
    */
   public UsersServiceImpl(
       @Autowired(required = false) final PasswordEncoder passwordEncoder,
       final UserRepository usersRepository,
       @Autowired(required = false) final UserContext<BaseUser> userContext,
-      final DetailsProviderService detailsProviderService
+      final DetailsProviderService detailsProviderService,
+      UserRoleRelevanceRepository userRoleRelevanceRepository
   ) {
     super(usersRepository, userContext, detailsProviderService);
     this.passwordEncoder = passwordEncoder;
+    this.userRoleRelevanceRepository = userRoleRelevanceRepository;
   }
 
 
@@ -154,5 +166,37 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     }
     return super.modifyById(entity);
   }
+
+  /**
+   * Retrieves a collection of role authorities associated with a specific username.
+   *
+   * @param username The username to filter the role authorities.
+   * @return A collection of role authorities for the given username.
+   */
+  @Override
+  public Collection<String> authorized(String username) {
+    return getRepository().authorized(username);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Collection<UserRoleRelevance> authorize(UserRoleRelevanceDto dto) {
+    Set<String> roleAuthorities = dto.getRoleAuthorities();
+    Set<UserRoleRelevance> authorities = new HashSet<>(roleAuthorities.size());
+    for (String roleAuthority : roleAuthorities) {
+      UserRoleRelevance relevance = new UserRoleRelevance();
+      relevance.setUsername(dto.getUsername());
+      relevance.setAuthority(roleAuthority);
+      authorities.add(relevance);
+    }
+    return userRoleRelevanceRepository.saveAll(authorities);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void unauthorized(UserRoleRelevanceDto dto) {
+    userRoleRelevanceRepository.unauthorized(dto.getUsername(), dto.getRoleAuthorities());
+  }
+
 }
 

@@ -19,10 +19,12 @@ import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.security.entity.Role;
+import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -128,47 +130,52 @@ public class RoleController extends BaseController<RoleService, Role, String> {
   @GetMapping("/items")
   @Operation(summary = "获取角色下拉列表数据", description = "检索用于角色选择的角色下拉列表数据")
   @PreAuthorize("hasAuthority('menu.roles.authorized') or hasPermission('menu.roles.unauthorized')")
-  public Response<Page<UserRoleRelevanceVo>> items(Pageable pageable) {
+  public Response<Page<RoleRelevanceVo>> items(Pageable pageable) {
     return ok(service.roleSelectItems(pageable));
   }
 
-  /**
-   * Retrieves a collection of role authorities associated with a specific username.
-   *
-   * @param username The username to filter the role authorities.
-   * @return A response containing a collection of role authorities for the given username.
-   */
-  @GetMapping("/authorized")
-  @Operation(summary = "获取用户角色权限", description = "根据用户名获取该用户")
-  @PreAuthorize("hasAuthority('menu.roles.authorize') or hasPermission('menu.roles.unauthorized')")
-  public Response<Collection<String>> authorized(@RequestParam("username") String username) {
-    return ok(service.authorized(username));
-  }
+
 
   /**
-   * Authorize user roles based on the provided UserRoleRelevance.
+   * 授权角色权限关联关系
+   * Authorizes role-permission associations.
    *
-   * @param dto The RoleSelectDto containing role information.
-   * @return A collection of UserRoleRelevance entities after authorization.
+   * @param dto 角色权限关联关系数据传输对象 Role-permission relevance data transfer object.
+   * @return 授权操作的响应 Response containing authorized role-permission associations.
    */
   @PostMapping("/authorize")
-  @Operation(summary = "授权角色用户关联关系", description = "根据一组角色")
-  @PreAuthorize("hasAuthority('menu.roles.authorize')")
-  public Response<Collection<UserRoleRelevance>> authorize(@RequestBody UserRoleRelevanceDto dto) {
+  @Operation(summary = "授权角色权限关联关系", description = "根据一组角色权限关联关系进行授权")
+  @PreAuthorize("hasAuthority('menu.permissions.authorize')")
+  public Response<Collection<RolePermissionsRelevance>> authorize(@RequestBody RolePermissionsRelevanceDto dto) {
     return ok(service.authorize(dto));
   }
 
   /**
-   * Cancel the authorization of user roles based on the provided UserRoleRelevance.
+   * 获取角色权限
+   * Retrieves authorized permissions for a given role.
    *
-   * @param dto The RoleSelectDto containing role information.
-   * @return A response indicating the success of the unauthorization operation.
+   * @param roleAuthority 角色权限标识 Role authority identifier.
+   * @return 角色权限响应 Response containing authorized permissions.
+   */
+  @GetMapping("/authorized")
+  @Operation(summary = "获取角色权限", description = "根据角色权限标识获取该用户")
+  @PreAuthorize("hasAuthority('menu.permissions.authorize') or hasPermission('menu.roles.unauthorized')")
+  public Response<Collection<String>> authorized(@RequestParam("roleAuthority") String roleAuthority) {
+    return ok(service.authorized(roleAuthority));
+  }
+
+  /**
+   * 授权角色权限关联关系
+   * Authorizes role-permission associations.
+   *
+   * @param dto 角色权限关联关系数据传输对象
+   * @return 操作响应
    */
   @PostMapping("/unauthorized")
-  @Operation(summary = "取消授权角色用户关联关系", description = "根据角色用户关联关系取消授权")
-  @PreAuthorize("hasPermission('menu.roles.unauthorized')")
-  public Response<Void> unauthorized(@RequestBody UserRoleRelevanceDto dto) {
-    service.unauthorized(dto);
+  @Operation(summary = "取消授权角色权限关联关系", description = "根据角色权限关联关系取消授权")
+  @PreAuthorize("hasPermission('menu.permissions.unauthorized')")
+  public Response<Void> unauthorized(@RequestBody RolePermissionsRelevanceDto dto) {
+    service.unauthorized(dto.getRoleAuthority(), dto.getPermissionAuthorities());
     return Response.okay();
   }
 }

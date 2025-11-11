@@ -1,5 +1,6 @@
 package org.simplepoint.plugin.rbac.core.api.repository;
 
+import java.util.Collection;
 import java.util.List;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
@@ -26,4 +27,12 @@ public interface UserRepository extends BaseRepository<User, String> {
    * @return a list of SimplePermissions associated with the specified role authorities
    */
   List<RolePermissionsRelevance> loadPermissionsInRoleAuthorities(List<String> roleAuthorities);
+
+  /**
+   * Retrieve a collection of role authorities associated with a specific username.
+   *
+   * @param username The username to filter the role authorities.
+   * @return A collection of role authorities for the given username.
+   */
+  Collection<String> authorized(String username);
 }

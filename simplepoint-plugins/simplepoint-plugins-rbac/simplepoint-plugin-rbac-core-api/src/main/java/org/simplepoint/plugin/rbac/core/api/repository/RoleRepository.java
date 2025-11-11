@@ -1,8 +1,9 @@
 package org.simplepoint.plugin.rbac.core.api.repository;
 
 import java.util.Collection;
+import java.util.Set;
 import org.simplepoint.api.base.BaseRepository;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.springframework.data.domain.Page;
@@ -29,14 +30,21 @@ public interface RoleRepository extends BaseRepository<Role, String> {
    * @param pageable Pagination information.
    * @return A page of RoleSelectDto containing role selection data.
    */
-  Page<UserRoleRelevanceVo> roleSelectItems(Pageable pageable);
-
+  Page<RoleRelevanceVo> roleSelectItems(Pageable pageable);
 
   /**
-   * Retrieve a collection of role authorities associated with a specific username.
+   * Removes the specified authorities from the given role authority.
    *
-   * @param username The username to filter the role authorities.
-   * @return A collection of role authorities for the given username.
+   * @param roleAuthority the authority of the role
+   * @param authorities   the set of permission authorities to be removed
    */
-  Collection<String> authorized(String username);
+  void unauthorized(String roleAuthority, Set<String> authorities);
+
+  /**
+   * Retrieve a collection of permission authorities associated with a specific roleAuthority.
+   *
+   * @param roleAuthority The roleAuthority to filter the permission authorities.
+   * @return A collection of permission authorities for the given roleAuthority.
+   */
+  Collection<String> authorized(String roleAuthority);
 }

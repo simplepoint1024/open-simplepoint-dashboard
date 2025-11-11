@@ -9,13 +9,15 @@
 package org.simplepoint.plugin.rbac.core.base.repository;
 
 import java.util.Collection;
+import java.util.Set;
 import org.simplepoint.data.jpa.base.BaseRepository;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -34,11 +36,16 @@ public interface JpaRolesRepository extends BaseRepository<Role, String>, RoleRe
   Collection<RolePermissionsRelevance> loadPermissionsByRoleAuthorities(@Param("roleAuthorities") Collection<String> roleAuthorities);
 
   @Override
-  @Query("SELECT new org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo(r.roleName, r.authority, r.description) FROM Role r")
-  Page<UserRoleRelevanceVo> roleSelectItems(Pageable pageable);
+  @Query("SELECT new org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo(r.roleName, r.authority, r.description) FROM Role r")
+  Page<RoleRelevanceVo> roleSelectItems(Pageable pageable);
 
   @Override
-  @Query("select authority from UserRoleRelevance where username = :username")
-  Collection<String> authorized(@Param("username") String username);
+  @Modifying
+  @Query("delete from RolePermissionsRelevance p where p.roleAuthority = ?1 and p.permissionAuthority in ?2")
+  void unauthorized(String roleAuthority, Set<String> authorities);
+
+  @Override
+  @Query("select permissionAuthority from RolePermissionsRelevance where roleAuthority = ?1")
+  Collection<String> authorized(String roleAuthority);
 
 }
