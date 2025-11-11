@@ -8,7 +8,7 @@ import lombok.Data;
  * 角色选择的数据传输对象
  */
 @Data
-public class RoleSelectVo implements Serializable {
+public class UserRoleRelevanceVo implements Serializable {
   private String name;
   private String description;
   private String authority;
@@ -20,7 +20,7 @@ public class RoleSelectVo implements Serializable {
    * @param authority   the authority string of the role
    * @param description the description of the role
    */
-  public RoleSelectVo(
+  public UserRoleRelevanceVo(
       String name,
       String authority,
       String description

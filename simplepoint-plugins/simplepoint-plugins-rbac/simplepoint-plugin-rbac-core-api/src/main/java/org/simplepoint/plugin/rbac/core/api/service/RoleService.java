@@ -10,8 +10,9 @@ package org.simplepoint.plugin.rbac.core.api.service;
 
 import java.util.Collection;
 import org.simplepoint.api.base.BaseService;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.RoleSelectDto;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleSelectVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.UserRoleRelevance;
@@ -24,6 +25,14 @@ import org.springframework.data.domain.Pageable;
  * for defining role-specific business logic.
  */
 public interface RoleService extends BaseService<Role, String> {
+
+  /**
+   * Get the UserRoleRelevanceRepository instance.
+   *
+   * @return The UserRoleRelevanceRepository.
+   */
+  UserRoleRelevanceRepository getUserRoleRelevanceRepository();
+
   /**
    * Load role-permission relationships based on a collection of role authorities.
    *
@@ -40,7 +49,7 @@ public interface RoleService extends BaseService<Role, String> {
    * @param pageable Pagination information.
    * @return A page of RoleSelectDto containing role selection data.
    */
-  Page<RoleSelectVo> roleSelectItems(Pageable pageable);
+  Page<UserRoleRelevanceVo> roleSelectItems(Pageable pageable);
 
   /**
    * Retrieve a collection of role authorities associated with a specific username.
@@ -48,7 +57,7 @@ public interface RoleService extends BaseService<Role, String> {
    * @param username The username to filter the role authorities.
    * @return A collection of role authorities for the given username.
    */
-  Collection<String> userRoleAuthorities(String username);
+  Collection<String> authorized(String username);
 
 
   /**
@@ -57,12 +66,12 @@ public interface RoleService extends BaseService<Role, String> {
    * @param dto The RoleSelectDto containing authorization criteria.
    * @return A collection of UserRoleRelevance entities that match the authorization criteria.
    */
-  Collection<UserRoleRelevance> authorize(RoleSelectDto dto);
+  Collection<UserRoleRelevance> authorize(UserRoleRelevanceDto dto);
 
   /**
    * unauthorized roles based on the provided RoleSelectDto.
    *
    * @param dto The RoleSelectDto containing unauthorization criteria.
    */
-  void unauthorized(RoleSelectDto dto);
+  void unauthorized(UserRoleRelevanceDto dto);
 }

@@ -10,6 +10,7 @@ package org.simplepoint.plugin.rbac.core.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +19,11 @@ import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.context.UserContext;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RolePermissionsRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
 import org.simplepoint.security.entity.Permissions;
+import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -128,6 +132,63 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);
+  }
+
+  /**
+   * 获取权限下拉列表数据
+   * Retrieves permission dropdown list data.
+   *
+   * @param pageable 分页信息 Pagination details.
+   * @return 权限下拉列表数据响应 Response containing permission dropdown list data.
+   */
+  @GetMapping("/items")
+  @Operation(summary = "获取权限下拉列表数据", description = "检索用于权限选择的权限下拉列表数据")
+  @PreAuthorize("hasAuthority('menu.permissions.authorized') or hasPermission('menu.roles.unauthorized')")
+  public Response<Page<RolePermissionsRelevanceVo>> items(Pageable pageable) {
+    return ok(service.permissionItems(pageable));
+  }
+
+  /**
+   * 授权角色权限关联关系
+   * Authorizes role-permission associations.
+   *
+   * @param dto 角色权限关联关系数据传输对象 Role-permission relevance data transfer object.
+   * @return 授权操作的响应 Response containing authorized role-permission associations.
+   */
+  @PostMapping("/authorize")
+  @Operation(summary = "授权角色权限关联关系", description = "根据一组角色权限关联关系进行授权")
+  @PreAuthorize("hasAuthority('menu.permissions.authorize')")
+  public Response<Collection<RolePermissionsRelevance>> authorize(@RequestBody RolePermissionsRelevanceDto dto) {
+    return ok(service.authorize(dto));
+  }
+
+  /**
+   * 获取角色权限
+   * Retrieves authorized permissions for a given role.
+   *
+   * @param roleAuthority 角色权限标识 Role authority identifier.
+   * @return 角色权限响应 Response containing authorized permissions.
+   */
+  @GetMapping("/authorized")
+  @Operation(summary = "获取角色权限", description = "根据角色权限标识获取该用户")
+  @PreAuthorize("hasAuthority('menu.permissions.authorize') or hasPermission('menu.roles.unauthorized')")
+  public Response<Collection<String>> authorized(@RequestParam("roleAuthority") String roleAuthority) {
+    return ok(service.authorized(roleAuthority));
+  }
+
+  /**
+   * 授权角色权限关联关系
+   * Authorizes role-permission associations.
+   *
+   * @param dto 角色权限关联关系数据传输对象
+   * @return 操作响应
+   */
+  @PostMapping("/unauthorized")
+  @Operation(summary = "取消授权角色权限关联关系", description = "根据角色权限关联关系取消授权")
+  @PreAuthorize("hasPermission('menu.permissions.unauthorized')")
+  public Response<Void> unauthorized(@RequestBody RolePermissionsRelevanceDto dto) {
+    service.unauthorized(dto.getRoleAuthority(), dto.getPermissionAuthorities());
+    return Response.okay();
   }
 }
 

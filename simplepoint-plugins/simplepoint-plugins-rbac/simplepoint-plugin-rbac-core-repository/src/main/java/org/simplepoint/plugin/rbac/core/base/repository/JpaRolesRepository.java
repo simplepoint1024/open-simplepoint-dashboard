@@ -10,7 +10,7 @@ package org.simplepoint.plugin.rbac.core.base.repository;
 
 import java.util.Collection;
 import org.simplepoint.data.jpa.base.BaseRepository;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleSelectVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
@@ -34,11 +34,11 @@ public interface JpaRolesRepository extends BaseRepository<Role, String>, RoleRe
   Collection<RolePermissionsRelevance> loadPermissionsByRoleAuthorities(@Param("roleAuthorities") Collection<String> roleAuthorities);
 
   @Override
-  @Query("SELECT new org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleSelectVo(r.roleName, r.authority, r.description) FROM Role r")
-  Page<RoleSelectVo> roleSelectItems(Pageable pageable);
+  @Query("SELECT new org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo(r.roleName, r.authority, r.description) FROM Role r")
+  Page<UserRoleRelevanceVo> roleSelectItems(Pageable pageable);
 
   @Override
   @Query("select authority from UserRoleRelevance where username = :username")
-  Collection<String> userRoleAuthorities(@Param("username") String username);
+  Collection<String> authorized(@Param("username") String username);
 
 }

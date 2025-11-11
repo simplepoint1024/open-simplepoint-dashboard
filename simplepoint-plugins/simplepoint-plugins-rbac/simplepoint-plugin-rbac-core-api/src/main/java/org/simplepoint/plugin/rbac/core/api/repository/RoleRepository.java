@@ -2,7 +2,7 @@ package org.simplepoint.plugin.rbac.core.api.repository;
 
 import java.util.Collection;
 import org.simplepoint.api.base.BaseRepository;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleSelectVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserRoleRelevanceVo;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.springframework.data.domain.Page;
@@ -29,7 +29,7 @@ public interface RoleRepository extends BaseRepository<Role, String> {
    * @param pageable Pagination information.
    * @return A page of RoleSelectDto containing role selection data.
    */
-  Page<RoleSelectVo> roleSelectItems(Pageable pageable);
+  Page<UserRoleRelevanceVo> roleSelectItems(Pageable pageable);
 
 
   /**
@@ -38,5 +38,5 @@ public interface RoleRepository extends BaseRepository<Role, String> {
    * @param username The username to filter the role authorities.
    * @return A collection of role authorities for the given username.
    */
-  Collection<String> userRoleAuthorities(String username);
+  Collection<String> authorized(String username);
 }
