@@ -2,6 +2,7 @@ package org.simplepoint.plugin.rbac.menu.api.repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.simplepoint.security.entity.MenuAncestor;
 
 /**
@@ -30,9 +31,9 @@ public interface MenuAncestorRepository {
   /**
    * Deletes MenuAncestor entities by child UUID.
    *
-   * @param childUuid the UUID of the child menu
+   * @param childId the UUID of the child menu
    */
-  void deleteChild(String childUuid);
+  void deleteChild(Collection<String> childId);
 
   /**
    * Deletes MenuAncestor entities by ancestor UUID.

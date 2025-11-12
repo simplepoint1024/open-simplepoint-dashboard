@@ -43,4 +43,8 @@ public interface JpaMenuRepository extends BaseRepository<Menu, String>, MenuRep
   @Override
   @Query("SELECT m.id FROM Menu m WHERE m.authority IN :menuAuthorities")
   List<String> loadMenuIdsByAuthorities(@Param("menuAuthorities") List<String> menuAuthorities);
+
+  @Override
+  @Query("SELECT m.authority FROM Menu m WHERE m.id IN :menuIds")
+  List<String> loadAuthoritiesByMenuIds(@Param("menuIds") Collection<String> menuIds);
 }
