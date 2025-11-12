@@ -15,10 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -26,7 +23,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -42,7 +38,6 @@ import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.api.security.service.JsonSchemaDetailsService;
-import org.simplepoint.api.security.simple.SimpleFieldPermissions;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.context.UserContext;
@@ -444,24 +439,6 @@ public class BaseServiceImpl
       return;
     }
     // 验证字段权限 ，如果没有改字段权限，则设置为 null
-    Set<SimpleFieldPermissions> allowField =
-        dialect.loadCurrentUserSchemaPropertiesPermissions(details, repository.getDomainClass().getName());
-    List<String> fieldNames = allowField.stream().map(SimpleFieldPermissions::getFieldName).filter(Objects::nonNull).toList();
-    for (S item : data) {
-      Field[] fields = item.getClass().getDeclaredFields();
-      for (Field field : fields) {
-        if (!fieldNames.contains(field.getName())) {
-          if (!Modifier.isFinal(field.getModifiers())) {
-            field.setAccessible(true);
-            try {
-              field.set(item, null);
-            } catch (IllegalAccessException e) {
-              log.error("Failed to set field to null: {}", field.getName(), e);
-            }
-          }
-        }
-      }
-    }
   }
 
   /**

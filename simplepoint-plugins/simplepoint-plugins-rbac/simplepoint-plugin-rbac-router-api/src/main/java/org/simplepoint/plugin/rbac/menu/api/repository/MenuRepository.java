@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.rbac.menu.api.repository;
 
 import java.util.Collection;
+import java.util.List;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.plugin.rbac.menu.api.entity.MenuPermissionsRelevance;
 import org.simplepoint.security.entity.Menu;
@@ -37,4 +38,12 @@ public interface MenuRepository extends BaseRepository<Menu, String> {
    * @return SQL Connection containing all {@link Menu} entities
    */
   Collection<Menu> loadAll();
+
+  /**
+   * Load menu IDs by a list of menu authorities.
+   *
+   * @param menuAuthorities list of menu authorities
+   * @return list of menu IDs
+   */
+  List<String> loadMenuIdsByAuthorities(List<String> menuAuthorities);
 }

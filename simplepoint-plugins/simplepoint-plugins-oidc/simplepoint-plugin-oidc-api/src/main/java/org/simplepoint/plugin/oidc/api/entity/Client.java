@@ -89,7 +89,7 @@ public class Client extends BaseEntityImpl<String> {
    * Timestamp indicating when the client ID was issued.
    */
   @Order(8)
-  @Column(unique = true, nullable = false)
+  @Column(unique = true)
   @Schema(
       title = "i18n:clients.title.clientIdIssuedAt",
       description = "i18n:clients.description.clientIdIssuedAt",

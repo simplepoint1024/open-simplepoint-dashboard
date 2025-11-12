@@ -9,6 +9,7 @@ import java.util.Set;
 import org.simplepoint.plugin.oidc.api.entity.Client;
 import org.simplepoint.plugin.oidc.service.repository.JpaClientRepository;
 import org.simplepoint.plugin.oidc.service.service.impl.OidcClientServiceImpl;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.jackson2.SecurityJackson2Modules;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -36,14 +37,21 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientRepositor
    */
   private final JpaClientRepository clientRepository;
 
+  private final PasswordEncoder passwordEncoder;
+
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   /**
    * Constructs a new RegisteredClientRepositoryImpl with the provided client repository.
    *
    * @param clientRepository the repository for storing OAuth2 client information
+   * @param passwordEncoder  the password encoder for encoding client secrets
    */
-  public RegisteredClientRepositoryImpl(final JpaClientRepository clientRepository) {
+  public RegisteredClientRepositoryImpl(
+      final JpaClientRepository clientRepository,
+      final PasswordEncoder passwordEncoder
+  ) {
+    this.passwordEncoder = passwordEncoder;
     Assert.notNull(clientRepository, "clientRepository cannot be null");
     this.clientRepository = clientRepository;
     ClassLoader classLoader = OidcClientServiceImpl.class.getClassLoader();
@@ -146,10 +154,17 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientRepositor
         authorizationGrantTypes.add(authorizationGrantType.getValue()));
 
     Client entity = new Client();
-    entity.setId(registeredClient.getId());
     entity.setClientId(registeredClient.getClientId());
     entity.setClientIdIssuedAt(registeredClient.getClientIdIssuedAt());
-    entity.setClientSecret(registeredClient.getClientSecret());
+    String clientSecret = registeredClient.getClientSecret();
+
+    if (clientSecret != null) {
+      entity.setClientSecret(
+          clientSecret.matches("\\A\\$2([ayb])?\\$(\\d\\d)\\$[./0-9A-Za-z]{53}")
+              ? clientSecret
+              : passwordEncoder.encode(clientSecret)
+      );
+    }
     entity.setClientSecretExpiresAt(registeredClient.getClientSecretExpiresAt());
     entity.setClientName(registeredClient.getClientName());
     entity.setClientAuthenticationMethods(

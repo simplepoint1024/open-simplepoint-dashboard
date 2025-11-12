@@ -58,7 +58,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
         sort = 0,
         argumentMaxSize = 1,
         argumentMinSize = 0,
-        authority = "users:add"
+        authority = "users.add"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -68,7 +68,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
         sort = 1,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "users:edit"
+        authority = "users.edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -79,7 +79,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
         argumentMinSize = 1,
         argumentMaxSize = 10,
         danger = true,
-        authority = "users:delete"
+        authority = "users.delete"
     ),
     @ButtonDeclaration(
         title = "i18n:users.button.config.role",
@@ -89,7 +89,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
         sort = 3,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "users:config:role"
+        authority = "users.config.role"
     )
 })
 @NoArgsConstructor
@@ -143,7 +143,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
           })
       })
-  @Column(unique = true, nullable = false, length = 64)
+  @Column(unique = true, length = 64)
   private String email;
 
   /**

@@ -4,6 +4,7 @@ import java.util.Set;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.security.entity.Menu;
+import org.simplepoint.security.entity.Permissions;
 
 /**
  * Represents a menu entity that is initialized with a hierarchical structure.
@@ -16,4 +17,5 @@ import org.simplepoint.security.entity.Menu;
 @EqualsAndHashCode(callSuper = true)
 public class MenuChildren extends Menu {
   private Set<MenuChildren> children;
+  private Set<Permissions> permissions;
 }

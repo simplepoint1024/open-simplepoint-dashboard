@@ -6,7 +6,7 @@
  * https://www.apache.org/licenses/LICENSE-2.0
  */
 
-package  org.simplepoint.plugin.oidc.service.initialize;
+package org.simplepoint.plugin.oidc.service.initialize;
 
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -14,10 +14,10 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.security.oauth2.server.servlet.AuthorizationServerPropertiesMapperDelegate;
 import org.springframework.boot.autoconfigure.security.oauth2.server.servlet.OAuth2AuthorizationServerProperties;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 
 /**
@@ -43,25 +43,18 @@ public class ClientRegistrationInitialize implements ApplicationRunner {
   private final RegisteredClientRepository registeredClientRepository;
 
   /**
-   * Password encoder used to securely store client secrets.
-   */
-  private final PasswordEncoder passwordEncoder;
-
-  /**
    * Constructs an instance of {@code ClientRegistrationInitialize}.
    *
    * @param clientProperties           the authorization server properties defining OAuth2 clients
    * @param registeredClientRepository the repository storing registered clients
-   * @param passwordEncoder            the password encoder for securing client secrets
    * @throws IllegalArgumentException if any parameter is {@code null}
    */
   public ClientRegistrationInitialize(
       OAuth2AuthorizationServerProperties clientProperties,
-      RegisteredClientRepository registeredClientRepository, PasswordEncoder passwordEncoder) {
+      RegisteredClientRepository registeredClientRepository) {
     this.registeredClients =
         new AuthorizationServerPropertiesMapperDelegate(clientProperties).asRegisteredClients();
     this.registeredClientRepository = registeredClientRepository;
-    this.passwordEncoder = passwordEncoder;
   }
 
   /**
@@ -75,19 +68,19 @@ public class ClientRegistrationInitialize implements ApplicationRunner {
    * @throws Exception if an error occurs during client registration
    */
   @Override
+  @Transactional
   public void run(ApplicationArguments args) throws Exception {
-    registeredClients.forEach(registeredClient -> {
+    for (RegisteredClient registeredClient : registeredClients) {
       log.info("Checking client registration for {}", registeredClient.getClientId());
 
       if (registeredClientRepository.findByClientId(registeredClient.getClientId()) == null) {
         log.info("Found client with id {}", registeredClient.getClientId());
 
         // Encode client secret before saving
-        registeredClientRepository.save(RegisteredClient.from(registeredClient)
-            .clientSecret(passwordEncoder.encode(registeredClient.getClientSecret())).build());
+        registeredClientRepository.save(registeredClient);
 
         log.info("Saved registered client {}", registeredClient.getClientId());
       }
-    });
+    }
   }
 }

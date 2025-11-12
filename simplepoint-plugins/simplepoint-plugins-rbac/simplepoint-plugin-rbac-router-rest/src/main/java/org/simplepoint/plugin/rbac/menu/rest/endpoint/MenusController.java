@@ -66,7 +66,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    * @return a paginated list of menu records wrapped in {@link Response}
    */
   @GetMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.menus.view')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.view')")
   @Operation(summary = "分页查询菜单", description = "根据提供的属性和分页参数，检索菜单的分页列表")
   public Response<Page<TreeMenu>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     if (!pageable.getSort().isSorted()) {
@@ -94,7 +94,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    * @throws Exception if an error occurs during creation
    */
   @PostMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.menus.add')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.add')")
   @Operation(summary = "添加新菜单", description = "将新的菜单添加到系统中")
   public Response<Menu> add(@RequestBody Menu data) throws Exception {
     return ok(service.add(data));
@@ -107,7 +107,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    * @return the updated menu record wrapped in {@link Response}
    */
   @PutMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.menus.edit')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.edit')")
   @Operation(summary = "更新菜单信息", description = "更新系统中现有菜单的信息")
   public Response<Menu> modify(@RequestBody Menu data) {
     return ok(service.modifyById(data));
@@ -120,7 +120,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    * @return a success response indicating removal completion
    */
   @DeleteMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.menus.delete')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.delete')")
   @Operation(summary = "删除菜单", description = "根据提供的菜单ID列表，删除对应的菜单记录")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
@@ -136,7 +136,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    */
   @GetMapping("/authorized")
   @Operation(summary = "获取已授权的菜单权限点", description = "获取指定角色已授权的菜单权限点")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.menus.authorize') or hasAuthority('menu.menus.unauthorized')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.authorize') or hasAuthority('menus.unauthorized')")
   public Response<Collection<String>> authorized(@RequestParam("menuAuthority") String menuAuthority) {
     return ok(service.authorized(menuAuthority));
   }
@@ -149,7 +149,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    */
   @PostMapping("/authorize")
   @Operation(summary = "为菜单分配权限", description = "为菜单分配权限点")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.menus.authorize')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.authorize')")
   public Response<Void> authorize(@RequestBody MenuPermissionsRelevanceDto dto) {
     service.authorize(dto);
     return Response.okay();
@@ -163,7 +163,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    */
   @PostMapping("/unauthorized")
   @Operation(summary = "取消已授权的菜单权限", description = "取消菜单已分配的权限点")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.menus.unauthorized')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.unauthorized')")
   public Response<Void> unauthorized(@RequestBody MenuPermissionsRelevanceDto dto) {
     service.unauthorized(dto);
     return Response.okay();

@@ -4,74 +4,221 @@
     "title": "menu.dashboard",
     "icon": "DashboardOutlined",
     "path": "/dashboard",
+    "authority": "dashboard.view",
     "sort": 0,
     "component": "common/Dashboard",
     "disabled": false,
-    "children": []
+    "permissions": [
+      {
+        "name": "Dashboard View",
+        "authority": "dashboard.view",
+        "resource": "/dashboard",
+        "description": "允许访问Dashboard页面"
+      }
+    ]
   },
   {
     "label": "系统配置",
     "title": "menu.system",
     "icon": "SettingOutlined",
     "path": "/system",
+    "authority": "system.view",
     "sort": 1,
     "type": "item",
     "disabled": false,
+    "permissions": [
+      {
+        "name": "System Config View",
+        "authority": "system.view",
+        "resource": "/system",
+        "description": "允许访问系统配置菜单"
+      }
+    ],
     "children": [
       {
         "label": "用户管理",
         "title": "menu.system.user",
         "icon": "UserOutlined",
         "path": "/system/user",
+        "authority": "users.view",
         "sort": 0,
         "type": "item",
         "component": "common/system/User",
         "disabled": false,
-        "children": []
+        "permissions": [
+          {
+            "name": "User View",
+            "authority": "users.view",
+            "resource": "/system/user",
+            "description": "允许访问用户管理页面"
+          },
+          {
+            "name": "User Create",
+            "authority": "users.create",
+            "resource": "/system/user",
+            "description": "允许创建用户"
+          },
+          {
+            "name": "User Edit",
+            "authority": "users.edit",
+            "resource": "/system/user",
+            "description": "允许编辑用户"
+          },
+          {
+            "name": "User Delete",
+            "authority": "users.delete",
+            "resource": "/system/user",
+            "description": "允许删除用户"
+          }
+        ]
       },
       {
         "label": "菜单管理",
         "title": "menu.system.menu",
         "icon": "MenuOutlined",
         "path": "/system/menu",
+        "authority": "menus.view",
         "sort": 1,
         "type": "item",
         "component": "common/system/Menu",
         "disabled": false,
-        "children": []
+        "permissions": [
+          {
+            "name": "Menu View",
+            "authority": "menus.view",
+            "resource": "/system/menu",
+            "description": "允许访问菜单管理页面"
+          },
+          {
+            "name": "Menu Create",
+            "authority": "menus.create",
+            "resource": "/system/menu",
+            "description": "允许创建菜单"
+          },
+          {
+            "name": "Menu Edit",
+            "authority": "menus.edit",
+            "resource": "/system/menu",
+            "description": "允许编辑菜单"
+          },
+          {
+            "name": "Menu Delete",
+            "authority": "menus.delete",
+            "resource": "/system/menu",
+            "description": "允许删除菜单"
+          }
+        ]
       },
       {
         "label": "角色管理",
         "title": "menu.system.role",
         "icon": "UsergroupAddOutlined",
         "path": "/system/role",
+        "authority": "roles.view",
         "sort": 2,
         "type": "item",
         "component": "common/system/Role",
         "disabled": false,
-        "children": []
+        "permissions": [
+          {
+            "name": "Role View",
+            "authority": "roles.view",
+            "resource": "/system/role",
+            "description": "允许访问角色管理页面"
+          },
+          {
+            "name": "Role Create",
+            "authority": "roles.create",
+            "resource": "/system/role",
+            "description": "允许创建角色"
+          },
+          {
+            "name": "Role Edit",
+            "authority": "roles.edit",
+            "resource": "/system/role",
+            "description": "允许编辑角色"
+          },
+          {
+            "name": "Role Delete",
+            "authority": "roles.delete",
+            "resource": "/system/role",
+            "description": "允许删除角色"
+          }
+        ]
       },
       {
         "label": "权限管理",
         "title": "menu.system.permission",
         "icon": "SafetyCertificateOutlined",
         "path": "/system/permission",
+        "authority": "permissions.view",
         "sort": 3,
         "type": "item",
         "component": "common/system/Permission",
         "disabled": false,
-        "children": []
+        "permissions": [
+          {
+            "name": "Permission View",
+            "authority": "permissions.view",
+            "resource": "/system/permission",
+            "description": "允许访问权限管理页面"
+          },
+          {
+            "name": "Permission Create",
+            "authority": "permissions.create",
+            "resource": "/system/permission",
+            "description": "允许创建权限"
+          },
+          {
+            "name": "Permission Edit",
+            "authority": "permissions.edit",
+            "resource": "/system/permission",
+            "description": "允许编辑权限"
+          },
+          {
+            "name": "Permission Delete",
+            "authority": "permissions.delete",
+            "resource": "/system/permission",
+            "description": "允许删除权限"
+          }
+        ]
       },
       {
         "label": "客户端管理",
         "title": "menu.system.oauthClient",
         "icon": "ApiOutlined",
         "path": "/system/oauth-client",
+        "authority": "oauthClients.view",
         "sort": 3,
         "type": "item",
         "component": "common/system/OAuthClient",
         "disabled": false,
-        "children": []
+        "permissions": [
+          {
+            "name": "OAuth Client View",
+            "authority": "oauthClients.view",
+            "resource": "/system/oauth-client",
+            "description": "允许访问客户端管理页面"
+          },
+          {
+            "name": "OAuth Client Create",
+            "authority": "oauthClients.create",
+            "resource": "/system/oauth-client",
+            "description": "允许创建客户端"
+          },
+          {
+            "name": "OAuth Client Edit",
+            "authority": "oauthClients.edit",
+            "resource": "/system/oauth-client",
+            "description": "允许编辑客户端"
+          },
+          {
+            "name": "OAuth Client Delete",
+            "authority": "oauthClients.delete",
+            "resource": "/system/oauth-client",
+            "description": "允许删除客户端"
+          }
+        ]
       }
     ]
   },
@@ -80,131 +227,240 @@
     "title": "menu.i18n",
     "icon": "GlobalOutlined",
     "path": "/i18n",
+    "authority": "i18n.view",
     "type": "item",
     "sort": 2,
     "disabled": false,
+    "permissions": [
+      {
+        "name": "I18n View",
+        "authority": "i18n.view",
+        "resource": "/i18n",
+        "description": "允许访问国际化管理菜单"
+      }
+    ],
     "children": [
       {
         "label": "国家管理",
         "title": "menu.i18n.countries",
         "icon": "GlobalOutlined",
         "path": "/i18n/countries",
+        "authority": "countries.view",
         "sort": 0,
         "component": "common/i18n/Countries",
         "type": "item",
         "disabled": false,
-        "children": []
+        "permissions": [
+          {
+            "name": "Country View",
+            "authority": "countries.view",
+            "resource": "/i18n/countries",
+            "description": "允许访问国家管理页面"
+          },
+          {
+            "name": "Country Create",
+            "authority": "countries.create",
+            "resource": "/i18n/countries",
+            "description": "允许创建国家"
+          },
+          {
+            "name": "Country Edit",
+            "authority": "countries.edit",
+            "resource": "/i18n/countries",
+            "description": "允许编辑国家"
+          },
+          {
+            "name": "Country Delete",
+            "authority": "countries.delete",
+            "resource": "/i18n/countries",
+            "description": "允许删除国家"
+          }
+        ]
       },
       {
         "label": "区域管理",
         "title": "menu.i18n.regions",
         "icon": "CompassOutlined",
         "path": "/i18n/regions",
+        "authority": "regions.view",
         "sort": 1,
         "component": "common/i18n/Region",
         "type": "item",
         "disabled": false,
-        "children": []
+        "permissions": [
+          {
+            "name": "Region View",
+            "authority": "regions.view",
+            "resource": "/i18n/regions",
+            "description": "允许访问区域管理页面"
+          },
+          {
+            "name": "Region Create",
+            "authority": "regions.create",
+            "resource": "/i18n/regions",
+            "description": "允许创建区域"
+          },
+          {
+            "name": "Region Edit",
+            "authority": "regions.edit",
+            "resource": "/i18n/regions",
+            "description": "允许编辑区域"
+          },
+          {
+            "name": "Region Delete",
+            "authority": "regions.delete",
+            "resource": "/i18n/regions",
+            "description": "允许删除区域"
+          }
+        ]
       },
       {
         "label": "时区管理",
         "title": "menu.i18n.timezones",
         "icon": "ClockCircleOutlined",
         "path": "/i18n/timezones",
+        "authority": "timezones.view",
         "sort": 2,
         "component": "common/i18n/Timezone",
         "type": "item",
         "disabled": false,
-        "children": []
+        "permissions": [
+          {
+            "name": "Timezone View",
+            "authority": "timezones.view",
+            "resource": "/i18n/timezones",
+            "description": "允许访问时区管理页面"
+          },
+          {
+            "name": "Timezone Create",
+            "authority": "timezones.create",
+            "resource": "/i18n/timezones",
+            "description": "允许创建时区"
+          },
+          {
+            "name": "Timezone Edit",
+            "authority": "timezones.edit",
+            "resource": "/i18n/timezones",
+            "description": "允许编辑时区"
+          },
+          {
+            "name": "Timezone Delete",
+            "authority": "timezones.delete",
+            "resource": "/i18n/timezones",
+            "description": "允许删除时区"
+          }
+        ]
       },
       {
         "label": "语言管理",
         "title": "menu.i18n.languages",
         "icon": "TranslationOutlined",
         "path": "/i18n/languages",
+        "authority": "languages.view",
         "sort": 3,
         "component": "common/i18n/Language",
         "type": "item",
         "disabled": false,
-        "children": []
+        "permissions": [
+          {
+            "name": "Language View",
+            "authority": "languages.view",
+            "resource": "/i18n/languages",
+            "description": "允许访问语言管理页面"
+          },
+          {
+            "name": "Language Create",
+            "authority": "languages.create",
+            "resource": "/i18n/languages",
+            "description": "允许创建语言"
+          },
+          {
+            "name": "Language Edit",
+            "authority": "languages.edit",
+            "resource": "/i18n/languages",
+            "description": "允许编辑语言"
+          },
+          {
+            "name": "Language Delete",
+            "authority": "languages.delete",
+            "resource": "/i18n/languages",
+            "description": "允许删除语言"
+          }
+        ]
       },
       {
         "label": "国际化命名空间",
         "title": "menu.i18n.namespace",
         "icon": "FolderOpenOutlined",
         "path": "/i18n/namespace",
+        "authority": "namespaces.view",
         "sort": 4,
         "component": "common/i18n/Namespace",
         "type": "item",
         "disabled": false,
-        "children": []
+        "permissions": [
+          {
+            "name": "Namespace View",
+            "authority": "namespaces.view",
+            "resource": "/i18n/namespace",
+            "description": "允许访问国际化命名空间页面"
+          },
+          {
+            "name": "Namespace Create",
+            "authority": "namespaces.create",
+            "resource": "/i18n/namespace",
+            "description": "允许创建国际化命名空间"
+          },
+          {
+            "name": "Namespace Edit",
+            "authority": "namespaces.edit",
+            "resource": "/i18n/namespace",
+            "description": "允许编辑国际化命名空间"
+          },
+          {
+            "name": "Namespace Delete",
+            "authority": "namespaces.delete",
+            "resource": "/i18n/namespace",
+            "description": "允许删除国际化命名空间"
+          }
+        ]
       },
       {
         "label": "国际化消息",
         "title": "menu.i18n.message",
         "icon": "CommentOutlined",
         "path": "/i18n/message",
+        "authority": "messages.view",
         "sort": 5,
         "component": "common/i18n/Message",
         "type": "item",
         "disabled": false,
-        "children": []
-      }
-    ]
-  },
-  {
-    "label": "系统维护",
-    "title": "menu.ops",
-    "icon": "ClusterOutlined",
-    "path": "/ops",
-    "type": "item",
-    "disabled": false,
-    "children": [
-      {
-        "label": "插件市场",
-        "title": "menu.ops.microPlugin",
-        "icon": "BuildOutlined",
-        "path": "/ops/micro-plugin",
-        "type": "item",
-        "disabled": false,
-        "children": []
-      },
-      {
-        "label": "微应用管理",
-        "title": "menu.ops.microApplication",
-        "icon": "DropboxOutlined",
-        "path": "/ops/micro-application",
-        "type": "item",
-        "disabled": false,
-        "children": []
-      },
-      {
-        "label": "微服务管理",
-        "title": "menu.ops.microService",
-        "icon": "QrcodeOutlined",
-        "path": "/ops/micro-service",
-        "type": "item",
-        "disabled": false,
-        "children": []
-      }
-    ]
-  },
-  {
-    "label": "监控审计",
-    "title": "menu.monitoring",
-    "icon": "EyeOutlined",
-    "path": "/monitoring",
-    "type": "item",
-    "disabled": false,
-    "children": [
-      {
-        "label": "登录日志",
-        "title": "menu.monitoring.loginLog",
-        "icon": "SendOutlined",
-        "path": "/monitoring/login-log",
-        "type": "item",
-        "disabled": false,
-        "children": []
+        "permissions": [
+          {
+            "name": "Message View",
+            "authority": "messages.view",
+            "resource": "/i18n/message",
+            "description": "允许访问国际化消息页面"
+          },
+          {
+            "name": "Message Create",
+            "authority": "messages.create",
+            "resource": "/i18n/message",
+            "description": "允许创建国际化消息"
+          },
+          {
+            "name": "Message Edit",
+            "authority": "messages.edit",
+            "resource": "/i18n/message",
+            "description": "允许编辑国际化消息"
+          },
+          {
+            "name": "Message Delete",
+            "authority": "messages.delete",
+            "resource": "/i18n/message",
+            "description": "允许删除国际化消息"
+          }
+        ]
       }
     ]
   }

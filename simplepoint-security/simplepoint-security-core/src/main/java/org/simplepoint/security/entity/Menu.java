@@ -49,7 +49,7 @@ import org.springframework.core.annotation.Order;
         sort = 0,
         argumentMaxSize = 1,
         argumentMinSize = 0,
-        authority = "menus:add"
+        authority = "menus.add"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -59,7 +59,7 @@ import org.springframework.core.annotation.Order;
         sort = 1,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "menus:edit"
+        authority = "menus.edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -70,7 +70,7 @@ import org.springframework.core.annotation.Order;
         argumentMinSize = 1,
         argumentMaxSize = 10,
         danger = true,
-        authority = "menus:delete"
+        authority = "menus.delete"
     ),
     @ButtonDeclaration(
         title = "i18n:menus.config.permission",
@@ -80,7 +80,7 @@ import org.springframework.core.annotation.Order;
         sort = 3,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "menus:config:permission"
+        authority = "menus.config.permission"
     )
 })
 @Schema(name = "菜单对象", description = "用于表示系统中的菜单项")

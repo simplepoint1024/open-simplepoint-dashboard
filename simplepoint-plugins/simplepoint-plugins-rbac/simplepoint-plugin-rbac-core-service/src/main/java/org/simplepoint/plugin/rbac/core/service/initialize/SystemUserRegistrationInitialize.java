@@ -6,13 +6,11 @@
  * https://www.apache.org/licenses/LICENSE-2.0
  */
 
-package  org.simplepoint.plugin.rbac.core.service.initialize;
+package org.simplepoint.plugin.rbac.core.service.initialize;
 
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.core.service.properties.UserRegistrationProperties;
-import org.simplepoint.security.entity.User;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Import;
@@ -69,16 +67,20 @@ public class SystemUserRegistrationInitialize implements ApplicationRunner {
     log.info("Initialize system user registration");
 
     properties.getUsers().values().forEach(user -> {
+      boolean exists = false;
       try {
         log.info("Initialize system user {}", user.getUsername());
 
         // Check if the user already exists
         UserDetails existUser = usersService.loadUserByUsername(user.getUsername());
-        if (existUser == null) {
-          usersService.add(user);
+        if (existUser != null) {
+          exists = true;
         }
-      } catch (Exception e) {
-        log.info("user {} exists!", user.getUsername());
+      } catch (Exception ignore) {
+        // User does not exist
+      }
+      if (!exists) {
+        usersService.add(user);
       }
     });
 

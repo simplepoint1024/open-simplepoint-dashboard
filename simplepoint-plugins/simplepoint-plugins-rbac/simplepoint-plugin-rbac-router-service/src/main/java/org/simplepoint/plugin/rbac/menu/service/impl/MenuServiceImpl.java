@@ -25,6 +25,7 @@ import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.core.context.UserContext;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
+import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.plugin.rbac.menu.api.entity.MenuPermissionsRelevance;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuAncestorRepository;
@@ -33,6 +34,7 @@ import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
 import org.simplepoint.security.MenuChildren;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.MenuAncestor;
+import org.simplepoint.security.entity.Permissions;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.TreeMenu;
 import org.simplepoint.security.entity.User;
@@ -66,6 +68,8 @@ public class MenuServiceImpl
 
   private final RoleService roleService;
 
+  private final PermissionsService permissionsService;
+
   /**
    * Constructs a new {@code MenuServiceImpl} with the specified repository.
    *
@@ -75,6 +79,7 @@ public class MenuServiceImpl
    * @param menuPermissionsRelevanceRepository the {@link MenuPermissionsRelevanceRepository} instance for menu-permission operations
    * @param menuAncestorRepository             the {@link MenuAncestorRepository} instance for menu ancestor operations
    * @param roleService                        the {@link RoleService} instance for role operations
+   * @param permissionsService                 the {@link PermissionsService} instance for permission operations
    */
   public MenuServiceImpl(
       final MenuRepository repository,
@@ -82,12 +87,14 @@ public class MenuServiceImpl
       final DetailsProviderService detailsProviderService,
       final MenuPermissionsRelevanceRepository menuPermissionsRelevanceRepository,
       final MenuAncestorRepository menuAncestorRepository,
-      final RoleService roleService
+      final RoleService roleService,
+      final PermissionsService permissionsService
   ) {
     super(repository, userContext, detailsProviderService);
     this.menuPermissionsRelevanceRepository = menuPermissionsRelevanceRepository;
     this.menuAncestorRepository = menuAncestorRepository;
     this.roleService = roleService;
+    this.permissionsService = permissionsService;
   }
 
   /**
@@ -173,10 +180,24 @@ public class MenuServiceImpl
           // Not exists -> persist; add() will also build ancestors using resolved parent id
           Menu saved = this.add(menu);
           realId = saved.getId();
+          Set<Permissions> permissions = current.getPermissions();
+          if (permissions != null && !permissions.isEmpty()) {
+            for (Permissions permission : permissions) {
+              try {
+                this.permissionsService.add(permission);
+                this.menuPermissionsRelevanceRepository.saveAll(Set.of(
+                    new MenuPermissionsRelevance(current.getAuthority(), permission.getAuthority())
+                ));
+              } catch (Exception e) {
+                log.warn("Failed to sync permission by authority: {}", permission.getAuthority());
+              }
+            }
+          }
         } else {
           // Already exists -> just use its id for mapping; optionally parent adjustments can be handled later
           realId = existing.get(0).getId();
         }
+
         // Map temp id to real id for children
         idMap.put(current.getId(), realId);
       } catch (Exception e) {
@@ -220,10 +241,12 @@ public class MenuServiceImpl
           Collection<MenuPermissionsRelevance> menuPermissions = getRepository().loadPermissionsByPermissionAuthorities(permissions);
           // Collect menu authorities from permissions
           List<String> menuAuthorities = new ArrayList<>(menuPermissions.stream().map(MenuPermissionsRelevance::getMenuAuthority).toList());
+          // 根据已授权的菜单权限标识加载菜单ID
+          List<String> authorizedMenuIds = getRepository().loadMenuIdsByAuthorities(menuAuthorities);
           // Include ancestor menus to ensure proper tree structure
-          menuAuthorities.addAll(menuAncestorRepository.findAncestorIdsByChildIds(menuAuthorities));
+          authorizedMenuIds.addAll(menuAncestorRepository.findAncestorIdsByChildIds(authorizedMenuIds));
           // Load menus by collected authorities
-          Collection<Menu> menus = getRepository().loadByIds(menuAuthorities);
+          Collection<Menu> menus = getRepository().loadByIds(authorizedMenuIds);
           // Build and return menu tree
           return buildMenuTree(menus);
         }
@@ -277,6 +300,7 @@ public class MenuServiceImpl
    * @param dto the data transfer object containing menu authority and permission authorities
    */
   @Override
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
   public void authorize(MenuPermissionsRelevanceDto dto) {
     Set<String> authorities = dto.getPermissionAuthorities();
     Set<MenuPermissionsRelevance> saveAuthorities = new HashSet<>(authorities.size());
@@ -295,6 +319,7 @@ public class MenuServiceImpl
    * @param dto the data transfer object containing menu authority and permission authorities
    */
   @Override
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
   public void unauthorized(MenuPermissionsRelevanceDto dto) {
     menuPermissionsRelevanceRepository.unauthorized(dto.getMenuAuthority(), dto.getPermissionAuthorities());
   }

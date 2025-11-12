@@ -52,7 +52,7 @@ public class I18nRegionsController extends BaseController<I18nRegionService, Reg
    * @return a paginated response containing regions that match the given attributes 包含符合给定属性的区域的分页响应
    */
   @GetMapping
-  @PreAuthorize("hasAuthority('menu.i18n.regions.view')")
+  @PreAuthorize("hasAuthority('i18n.regions.view')")
   @Operation(summary = "分页查询区域", description = "根据提供的属性和分页参数，检索区域的分页列表")
   public Response<Page<Region>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), Region.class);
@@ -66,7 +66,7 @@ public class I18nRegionsController extends BaseController<I18nRegionService, Reg
    * @return a response containing the added region 包含已添加区域的响应
    */
   @PostMapping
-  @PreAuthorize("hasAuthority('menu.i18n.regions.add')")
+  @PreAuthorize("hasAuthority('i18n.regions.add')")
   @Operation(summary = "添加区域", description = "添加一个新的区域到系统中")
   public Response<Region> add(@RequestBody Region data) {
     return ok(service.add(data));
@@ -80,7 +80,7 @@ public class I18nRegionsController extends BaseController<I18nRegionService, Reg
    * @return a response containing the modified region 包含已修改区域的响应
    */
   @PutMapping
-  @PreAuthorize("hasAuthority('menu.i18n.regions.edit')")
+  @PreAuthorize("hasAuthority('i18n.regions.edit')")
   @Operation(summary = "修改区域", description = "修改一个已存在的区域信息")
   public Response<Region> modify(@RequestBody Region data) {
     return ok(service.modifyById(data));
@@ -94,7 +94,7 @@ public class I18nRegionsController extends BaseController<I18nRegionService, Reg
    * @return a response containing the set of deleted region IDs 包含已删除区域ID集合的响应
    */
   @DeleteMapping
-  @PreAuthorize("hasAuthority('menu.i18n.regions.delete')")
+  @PreAuthorize("hasAuthority('i18n.regions.delete')")
   @Operation(summary = "删除区域", description = "根据提供的区域ID集合，删除一个或多个区域")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
