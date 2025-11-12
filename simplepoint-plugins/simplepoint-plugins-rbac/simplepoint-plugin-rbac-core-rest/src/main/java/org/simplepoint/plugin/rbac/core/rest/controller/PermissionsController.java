@@ -145,8 +145,7 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
   @Operation(summary = "获取权限下拉列表数据", description = "检索用于权限选择的权限下拉列表数据")
   @PreAuthorize(
       """
-      hasRole('SYSTEM') or hasAuthority('users.unauthorized') or hasAuthority('users.authorize')
-      or hasAuthority('roles.unauthorized')or hasAuthority('roles.authorize')
+      hasRole('SYSTEM') or hasAuthority('menus.config.permission') or hasAuthority('roles.config.permission')
       """
   )
   public Response<Page<PermissionsRelevanceVo>> items(Pageable pageable) {

@@ -136,7 +136,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    */
   @GetMapping("/authorized")
   @Operation(summary = "获取已授权的菜单权限点", description = "获取指定角色已授权的菜单权限点")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.authorize') or hasAuthority('menus.unauthorized')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.config.permission')")
   public Response<Collection<String>> authorized(@RequestParam("menuAuthority") String menuAuthority) {
     return ok(service.authorized(menuAuthority));
   }
@@ -149,7 +149,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    */
   @PostMapping("/authorize")
   @Operation(summary = "为菜单分配权限", description = "为菜单分配权限点")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.authorize')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.config.permission')")
   public Response<Void> authorize(@RequestBody MenuPermissionsRelevanceDto dto) {
     service.authorize(dto);
     return Response.okay();
@@ -163,7 +163,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    */
   @PostMapping("/unauthorized")
   @Operation(summary = "取消已授权的菜单权限", description = "取消菜单已分配的权限点")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.unauthorized')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.config.permission')")
   public Response<Void> unauthorized(@RequestBody MenuPermissionsRelevanceDto dto) {
     service.unauthorized(dto);
     return Response.okay();
