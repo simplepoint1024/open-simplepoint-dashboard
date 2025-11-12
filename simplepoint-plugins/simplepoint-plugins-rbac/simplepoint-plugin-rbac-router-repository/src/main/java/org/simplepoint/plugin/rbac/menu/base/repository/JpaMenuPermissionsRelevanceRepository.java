@@ -24,6 +24,11 @@ public interface JpaMenuPermissionsRelevanceRepository extends JpaRepository<Men
 
   @Override
   @Modifying
+  @Query("DELETE FROM MenuPermissionsRelevance mpr WHERE mpr.menuAuthority IN ?1")
+  void deleteAllByMenuAuthorities(Collection<String> menuAuthorities);
+
+  @Override
+  @Modifying
   @Query("DELETE FROM MenuPermissionsRelevance mpr WHERE mpr.menuAuthority = ?1 AND mpr.permissionAuthority IN ?2")
   void unauthorized(String menuAuthority, Set<String> authorities);
 

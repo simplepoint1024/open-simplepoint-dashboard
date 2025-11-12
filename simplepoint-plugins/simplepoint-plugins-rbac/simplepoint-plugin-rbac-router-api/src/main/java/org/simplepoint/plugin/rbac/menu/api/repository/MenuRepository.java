@@ -46,4 +46,12 @@ public interface MenuRepository extends BaseRepository<Menu, String> {
    * @return list of menu IDs
    */
   List<String> loadMenuIdsByAuthorities(List<String> menuAuthorities);
+
+  /**
+   * Load menu authorities by a list of menu IDs.
+   *
+   * @param menuIds list of menu IDs
+   * @return list of menu authorities
+   */
+  List<String> loadAuthoritiesByMenuIds(Collection<String> menuIds);
 }

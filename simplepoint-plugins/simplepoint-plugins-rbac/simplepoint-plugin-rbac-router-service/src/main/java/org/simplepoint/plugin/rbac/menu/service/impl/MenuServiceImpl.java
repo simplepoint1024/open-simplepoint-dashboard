@@ -134,6 +134,33 @@ public class MenuServiceImpl
     return saved;
   }
 
+  @Override
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+  public void removeById(String id) {
+    this.removeByIds(Set.of(id));
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+  public void removeByIds(Collection<String> ids) {
+    if (ids != null && !ids.isEmpty()) {
+      var allIds = new HashSet<>(ids);
+      // 顺便删除子菜单
+      Collection<String> child = menuAncestorRepository.findChildIdsByAncestorIds(ids);
+      allIds.addAll(child);
+      Collection<String> childIdsByAncestorIds = menuAncestorRepository.findChildIdsByAncestorIds(allIds);
+      if (childIdsByAncestorIds != null && !childIdsByAncestorIds.isEmpty()) {
+        menuAncestorRepository.deleteChild(childIdsByAncestorIds);
+        // 删除菜单关联的权限
+        List<String> menuAuthorities = getRepository().loadAuthoritiesByMenuIds(childIdsByAncestorIds);
+        if (!menuAuthorities.isEmpty()) {
+          menuPermissionsRelevanceRepository.deleteAllByMenuAuthorities(menuAuthorities);
+        }
+      }
+      super.removeByIds(allIds);
+    }
+  }
+
   /**
    * Synchronizes the menu data with the provided set of {@link MenuChildren}.
    *

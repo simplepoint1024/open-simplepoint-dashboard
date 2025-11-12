@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.rbac.menu.base.repository;
 
 import java.util.Collection;
+import java.util.Set;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuAncestorRepository;
 import org.simplepoint.security.entity.MenuAncestor;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,8 +17,8 @@ public interface JpaMenuAncestorRepository extends JpaRepository<MenuAncestor, S
 
   @Override
   @Modifying
-  @Query("DELETE FROM MenuAncestor ma WHERE ma.childId = ?1")
-  void deleteChild(String childUuid);
+  @Query("DELETE FROM MenuAncestor ma WHERE ma.childId in ?1")
+  void deleteChild(Collection<String> childId);
 
   @Override
   @Modifying
