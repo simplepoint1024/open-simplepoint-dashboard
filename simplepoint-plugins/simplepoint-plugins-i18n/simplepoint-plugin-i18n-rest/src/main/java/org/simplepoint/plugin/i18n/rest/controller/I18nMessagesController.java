@@ -52,7 +52,7 @@ public class I18nMessagesController extends BaseController<I18nMessageService, M
    * @return a paginated response containing messages that match the given attributes 包含符合给定属性的消息的分页响应
    */
   @GetMapping
-  @PreAuthorize("hasAuthority('menu.i18n.messages.view')")
+  @PreAuthorize("hasAuthority('i18n.messages.view')")
   @Operation(summary = "分页查询消息", description = "根据提供的属性和分页参数，检索消息的分页列表")
   public Response<Page<Message>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), Message.class);
@@ -87,7 +87,7 @@ public class I18nMessagesController extends BaseController<I18nMessageService, M
    *                   如果添加过程中发生错误
    */
   @PostMapping
-  @PreAuthorize("hasAuthority('menu.i18n.messages.add')")
+  @PreAuthorize("hasAuthority('i18n.messages.add')")
   @Operation(summary = "添加消息", description = "添加一个新的消息到系统中")
   public Response<Message> add(@RequestBody Message data) throws Exception {
     return ok(service.add(data));
@@ -101,7 +101,7 @@ public class I18nMessagesController extends BaseController<I18nMessageService, M
    * @return a response containing the modified message 包含已修改消息的响应
    */
   @PutMapping
-  @PreAuthorize("hasAuthority('menu.i18n.messages.edit')")
+  @PreAuthorize("hasAuthority('i18n.messages.edit')")
   @Operation(summary = "修改消息", description = "修改一个已存在的消息信息")
   public Response<Message> modify(@RequestBody Message data) {
     return ok(service.modifyById(data));
@@ -115,7 +115,7 @@ public class I18nMessagesController extends BaseController<I18nMessageService, M
    * @return a response containing the set of deleted message IDs 包含已删除消息ID集合的响应
    */
   @DeleteMapping
-  @PreAuthorize("hasAuthority('menu.i18n.messages.delete')")
+  @PreAuthorize("hasAuthority('i18n.messages.delete')")
   @Operation(summary = "删除消息", description = "根据提供的消息ID集合，删除一个或多个消息")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);

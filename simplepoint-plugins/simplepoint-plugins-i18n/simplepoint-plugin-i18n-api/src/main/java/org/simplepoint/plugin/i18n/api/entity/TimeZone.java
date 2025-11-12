@@ -32,7 +32,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         sort = 0,
         argumentMaxSize = 1,
         argumentMinSize = 0,
-        authority = "menu:timezones:add"
+        authority = "timezones.add"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -42,7 +42,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         sort = 1,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "menu:timezones:edit"
+        authority = "timezones.edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -53,7 +53,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         argumentMinSize = 1,
         argumentMaxSize = 10,
         danger = true,
-        authority = "menu:timezones:delete"
+        authority = "timezones.delete"
     )
 })
 @NoArgsConstructor

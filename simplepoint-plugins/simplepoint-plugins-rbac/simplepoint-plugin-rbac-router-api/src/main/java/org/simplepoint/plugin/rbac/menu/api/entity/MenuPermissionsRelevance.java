@@ -26,4 +26,20 @@ public class MenuPermissionsRelevance {
 
   @Id
   private String permissionAuthority;
+
+  /**
+   * Constructs a new MenuPermissionsRelevance with the specified menu and permission authorities.
+   *
+   * @param menuAuthority       the authority string of the menu
+   * @param permissionAuthority the authority string of the permission
+   */
+  public MenuPermissionsRelevance(String menuAuthority, String permissionAuthority) {
+    this.menuAuthority = menuAuthority;
+    this.permissionAuthority = permissionAuthority;
+  }
+
+  /**
+   * Default constructor for MenuPermissionsRelevance.
+   */
+  public MenuPermissionsRelevance() {}
 }

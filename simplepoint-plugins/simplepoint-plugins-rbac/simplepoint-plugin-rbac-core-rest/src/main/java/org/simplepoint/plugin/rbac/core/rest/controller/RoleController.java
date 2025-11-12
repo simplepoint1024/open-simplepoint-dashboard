@@ -13,19 +13,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.base.controller.BaseController;
-import org.simplepoint.core.constants.Icons;
-import org.simplepoint.core.constants.PublicButtonKeys;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
-import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -65,7 +60,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @GetMapping
   @Operation(summary = "分页查询角色", description = "根据提供的属性和分页参数，检索角色的分页列表")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.roles.view')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.view')")
   public Response<Page<Role>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), Role.class);
   }
@@ -79,16 +74,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @PostMapping
   @Operation(summary = "添加新角色", description = "将新的角色添加到系统中")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.roles.add')")
-  @ButtonDeclaration(
-      title = PublicButtonKeys.ADD_TITLE,
-      key = PublicButtonKeys.ADD_KEY,
-      icon = Icons.PLUS_CIRCLE,
-      sort = 0,
-      argumentMaxSize = 1,
-      argumentMinSize = 0,
-      authority = "menu.roles.add"
-  )
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.add')")
   public Response<Role> add(@RequestBody Role data) throws Exception {
     return ok(service.add(data));
   }
@@ -101,7 +87,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @PutMapping
   @Operation(summary = "更新角色信息", description = "更新系统中现有角色的信息")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.roles.edit')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.edit')")
   public Response<Role> modify(@RequestBody Role data) {
     return ok(service.modifyById(data));
   }
@@ -114,7 +100,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @DeleteMapping
   @Operation(summary = "删除角色", description = "根据提供的角色ID删除一个或多个角色")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.roles.delete')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.delete')")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
@@ -129,7 +115,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @GetMapping("/items")
   @Operation(summary = "获取角色下拉列表数据", description = "检索用于角色选择的角色下拉列表数据")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.roles.authorize') or hasAuthority('menu.roles.unauthorized')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.authorize') or hasAuthority('roles.unauthorized')")
   public Response<Page<RoleRelevanceVo>> items(Pageable pageable) {
     return ok(service.roleSelectItems(pageable));
   }
@@ -143,7 +129,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @GetMapping("/authorized")
   @Operation(summary = "获取角色权限", description = "根据角色权限标识获取该用户")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.roles.authorize') or hasAuthority('menu.roles.unauthorized')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.authorize') or hasAuthority('roles.unauthorized')")
   public Response<Collection<String>> authorized(@RequestParam("roleAuthority") String roleAuthority) {
     return ok(service.authorized(roleAuthority));
   }
@@ -157,7 +143,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @PostMapping("/authorize")
   @Operation(summary = "授权角色权限关联关系", description = "根据一组角色权限关联关系进行授权")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.roles.authorize')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.authorize')")
   public Response<Collection<RolePermissionsRelevance>> authorize(@RequestBody RolePermissionsRelevanceDto dto) {
     return ok(service.authorize(dto));
   }
@@ -171,7 +157,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @PostMapping("/unauthorized")
   @Operation(summary = "取消授权角色权限关联关系", description = "根据角色权限关联关系取消授权")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.roles.unauthorized')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.unauthorized')")
   public Response<Void> unauthorized(@RequestBody RolePermissionsRelevanceDto dto) {
     service.unauthorized(dto.getRoleAuthority(), dto.getPermissionAuthorities());
     return Response.okay();

@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -41,7 +40,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         sort = 0,
         argumentMaxSize = 1,
         argumentMinSize = 0,
-        authority = "permissions:add"
+        authority = "permissions.add"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -51,7 +50,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         sort = 1,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "permissions:edit"
+        authority = "permissions.edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -62,7 +61,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         argumentMinSize = 1,
         argumentMaxSize = 10,
         danger = true,
-        authority = "permissions:delete"
+        authority = "permissions.delete"
     )
 })
 @Schema(title = "权限实体", description = "表示RBAC系统中的权限实体")
@@ -92,7 +91,7 @@ public class Permissions extends BaseEntityImpl<String> implements BasePermissio
           })
       }
   )
-  @Column(length = 100, nullable = false)
+  @Column(length = 100, nullable = false, unique = true)
   private String authority;
 
   @Column(length = 100, nullable = false)

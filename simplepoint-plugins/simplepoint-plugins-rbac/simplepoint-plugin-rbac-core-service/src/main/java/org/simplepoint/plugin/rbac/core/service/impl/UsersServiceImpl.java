@@ -106,6 +106,9 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
 
     var user = users.get(0);
     List<String> roles = loadRolesByUsername(username);
+    if (user.getSuperAdmin()) {
+      roles.add("SYSTEM");
+    }
     List<String> permissions = loadPermissionsInRoleAuthorities(roles);
     List<GrantedAuthority> authorities = new ArrayList<>(roles.stream()
         .map(role -> new SimpleGrantedAuthority("ROLE_" + role))

@@ -14,7 +14,7 @@ import org.simplepoint.core.enums.ButtonVariantTypes;
  * This annotation can be used to mark methods or classes that represent a button declaration.
  */
 @Documented
-@Target({ElementType.TYPE, ElementType.METHOD})
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public @interface ButtonDeclaration {

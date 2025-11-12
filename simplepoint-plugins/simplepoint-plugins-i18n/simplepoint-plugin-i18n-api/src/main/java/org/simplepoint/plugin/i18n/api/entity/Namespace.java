@@ -32,7 +32,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         sort = 0,
         argumentMaxSize = 1,
         argumentMinSize = 0,
-        authority = "menu:namespaces:add"
+        authority = "namespaces.add"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -42,7 +42,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         sort = 1,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "menu:namespaces:edit"
+        authority = "namespaces.edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -53,7 +53,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         argumentMinSize = 1,
         argumentMaxSize = 10,
         danger = true,
-        authority = "menu:namespaces:delete"
+        authority = "namespaces.delete"
     )
 })
 @NoArgsConstructor
