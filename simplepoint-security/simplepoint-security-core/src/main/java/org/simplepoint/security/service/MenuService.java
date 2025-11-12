@@ -16,6 +16,7 @@ import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.security.MenuChildren;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.TreeMenu;
+import org.simplepoint.security.pojo.dto.MenuPermissionsRelevanceDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -52,4 +53,26 @@ public interface MenuService extends BaseService<Menu, String> {
    * @return a paginated list of {@link TreeMenu} entities matching the filters
    */
   Page<TreeMenu> limitTree(Map<String, String> attributes, Pageable pageable);
+
+  /**
+   * Retrieves the collection of authorized menu identifiers based on the provided menu authority.
+   *
+   * @param menuAuthority the menu authority string
+   * @return a collection of authorized menu identifiers
+   */
+  Collection<String> authorized(String menuAuthority);
+
+  /**
+   * Authorizes the menu with the specified permissions based on the provided DTO.
+   *
+   * @param dto the data transfer object containing menu authority and permission authorities
+   */
+  void authorize(MenuPermissionsRelevanceDto dto);
+
+  /**
+   * Revokes the authorization of the menu with the specified permissions based on the provided DTO.
+   *
+   * @param dto the data transfer object containing menu authority and permission authorities
+   */
+  void unauthorized(MenuPermissionsRelevanceDto dto);
 }

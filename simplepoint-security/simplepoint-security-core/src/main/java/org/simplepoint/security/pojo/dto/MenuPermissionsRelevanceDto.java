@@ -1,4 +1,4 @@
-package org.simplepoint.plugin.rbac.menu.api.pojo.dto;
+package org.simplepoint.security.pojo.dto;
 
 import java.util.Set;
 import lombok.Data;

@@ -11,6 +11,7 @@ package org.simplepoint.common.server;
 import org.simplepoint.boot.starter.Boot;
 import org.simplepoint.data.jpa.base.repository.EnableRepository;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 /**
  * The main entry point for the Simplepoint application.
@@ -20,7 +21,7 @@ import org.springframework.cache.annotation.EnableCaching;
 @Boot
 @EnableCaching
 @EnableRepository
-//@EnableMethodSecurity
+@EnableMethodSecurity
 public class Common {
 
   /**

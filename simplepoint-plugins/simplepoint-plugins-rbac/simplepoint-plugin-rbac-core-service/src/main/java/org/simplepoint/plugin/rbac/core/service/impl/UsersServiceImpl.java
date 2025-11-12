@@ -8,6 +8,7 @@
 
 package org.simplepoint.plugin.rbac.core.service.impl;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -22,10 +23,11 @@ import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
+import org.simplepoint.security.provider.AuthorityProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -54,6 +56,11 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   private final PasswordEncoder passwordEncoder;
 
   /**
+   * A set of AuthorityProvider instances for managing user authorities.
+   */
+  private final Set<AuthorityProvider> authorityProviders;
+
+  /**
    * Constructs a UsersServiceImpl with the specified repository and optional metadata sync service.
    *
    * @param passwordEncoder             the optional PasswordEncoder for encrypting user passwords
@@ -66,11 +73,13 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
       final UserRepository usersRepository,
       @Autowired(required = false) final UserContext<BaseUser> userContext,
       final DetailsProviderService detailsProviderService,
-      UserRoleRelevanceRepository userRoleRelevanceRepository
+      final UserRoleRelevanceRepository userRoleRelevanceRepository,
+      final Set<AuthorityProvider> authorityProviders
   ) {
     super(usersRepository, userContext, detailsProviderService);
     this.passwordEncoder = passwordEncoder;
     this.userRoleRelevanceRepository = userRoleRelevanceRepository;
+    this.authorityProviders = authorityProviders;
   }
 
 
@@ -97,9 +106,17 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
 
     var user = users.get(0);
     List<String> roles = loadRolesByUsername(username);
-    List<SimpleGrantedAuthority> authorities = roles.stream()
+    List<String> permissions = loadPermissionsInRoleAuthorities(roles);
+    List<GrantedAuthority> authorities = new ArrayList<>(roles.stream()
         .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-        .toList();
+        .toList());
+    for (AuthorityProvider authorityProvider : authorityProviders) {
+      try {
+        authorities.addAll(authorityProvider.getAuthorities(user, roles, permissions));
+      } catch (Exception e) {
+        log.warn("Failed to get authorities from provider: {}", authorityProvider.getClass().getName(), e);
+      }
+    }
     user.setAuthorities(authorities);
     return user;
   }
@@ -123,7 +140,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    * @return a list of RolePermissionsRelevance entities representing permissions assigned to the specified roles
    */
   @Override
-  public List<RolePermissionsRelevance> loadPermissionsInRoleAuthorities(List<String> roleAuthorities) {
+  public List<String> loadPermissionsInRoleAuthorities(List<String> roleAuthorities) {
     return getRepository().loadPermissionsInRoleAuthorities(roleAuthorities);
   }
 

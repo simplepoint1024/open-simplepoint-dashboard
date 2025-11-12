@@ -71,6 +71,16 @@ import org.springframework.core.annotation.Order;
         argumentMaxSize = 10,
         danger = true,
         authority = "menus:delete"
+    ),
+    @ButtonDeclaration(
+        title = "i18n:menus.config.permission",
+        key = "config.permission",
+        color = "orange",
+        icon = Icons.SAFETY_OUTLINED,
+        sort = 3,
+        argumentMinSize = 1,
+        argumentMaxSize = 1,
+        authority = "menus:config:permission"
     )
 })
 @Schema(name = "菜单对象", description = "用于表示系统中的菜单项")

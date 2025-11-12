@@ -37,6 +37,15 @@ public interface UserContext<T extends UserDetails> {
   T getDetails();
 
   /**
+   * 根据用户名和访问令牌获取用户的详细信息
+   * Retrieves the details of a user based on the provided username and access token.
+   *
+   * @param accessTokenValue 访问令牌 The access token.
+   * @return 用户详细信息 The user details.
+   */
+  T getDetails(String accessTokenValue);
+
+  /**
    * 获取当前的身份验证对象
    * Retrieves the current authentication object.
    *

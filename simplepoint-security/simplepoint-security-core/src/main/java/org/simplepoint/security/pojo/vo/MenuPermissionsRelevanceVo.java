@@ -1,4 +1,4 @@
-package org.simplepoint.plugin.rbac.menu.api.pojo.vo;
+package org.simplepoint.security.pojo.vo;
 
 import lombok.Data;
 

@@ -59,7 +59,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @GetMapping
   @Operation(summary = "分页查询用户", description = "根据提供的属性和分页参数，检索用户的分页列表")
-  @PreAuthorize("hasAuthority('menu.users.view')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.users.view')")
   public Response<Page<User>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), User.class);
   }
@@ -73,7 +73,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @PostMapping
   @Operation(summary = "添加用户", description = "添加一个新的用户到系统中")
-  @PreAuthorize("hasAuthority('menu.users.add')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.users.add')")
   public Response<User> add(@RequestBody User data) throws Exception {
     return ok(service.add(data));
   }
@@ -86,7 +86,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @PutMapping
   @Operation(summary = "修改用户", description = "修改一个已存在的用户信息")
-  @PreAuthorize("hasAuthority('menu.users.edit')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.users.edit')")
   public Response<User> modify(@RequestBody User data) {
     return ok(service.modifyById(data));
   }
@@ -99,13 +99,12 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @DeleteMapping
   @Operation(summary = "删除用户", description = "根据提供的用户ID集合，删除一个或多个用户")
-  @PreAuthorize("hasAuthority('menu.users.delete')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.users.delete')")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);
   }
-
 
   /**
    * Retrieves a collection of role authorities associated with a specific username.
@@ -115,7 +114,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @GetMapping("/authorized")
   @Operation(summary = "获取用户角色权限", description = "根据用户名获取该用户")
-  @PreAuthorize("hasAuthority('menu.roles.authorize') or hasPermission('menu.roles.unauthorized')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.users.authorize') or hasAuthority('menu.users.unauthorized')")
   public Response<Collection<String>> authorized(@RequestParam("username") String username) {
     return ok(service.authorized(username));
   }
@@ -128,7 +127,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @PostMapping("/authorize")
   @Operation(summary = "授权角色用户关联关系", description = "根据一组角色")
-  @PreAuthorize("hasAuthority('menu.roles.authorize')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.users.authorize')")
   public Response<Collection<UserRoleRelevance>> authorize(@RequestBody UserRoleRelevanceDto dto) {
     return ok(service.authorize(dto));
   }
@@ -141,7 +140,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @PostMapping("/unauthorized")
   @Operation(summary = "取消授权角色用户关联关系", description = "根据角色用户关联关系取消授权")
-  @PreAuthorize("hasPermission('menu.roles.unauthorized')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menu.users.unauthorized')")
   public Response<Void> unauthorized(@RequestBody UserRoleRelevanceDto dto) {
     service.unauthorized(dto);
     return Response.okay();
