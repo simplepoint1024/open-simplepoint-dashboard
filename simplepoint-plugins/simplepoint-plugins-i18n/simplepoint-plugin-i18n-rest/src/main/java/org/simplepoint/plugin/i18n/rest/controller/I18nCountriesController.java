@@ -50,7 +50,7 @@ public class I18nCountriesController extends BaseController<I18nCountriesService
    * @return a paginated response containing countries that match the given attributes
    */
   @GetMapping
-  @PreAuthorize("hasAuthority('i18n.countries.view')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('countries.view')")
   @Operation(summary = "分页查询国家", description = "根据提供的属性和分页参数，检索国家的分页列表")
   public Response<Page<Countries>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), Countries.class);
@@ -64,7 +64,7 @@ public class I18nCountriesController extends BaseController<I18nCountriesService
    * @throws Exception if an error occurs during the addition
    */
   @PostMapping
-  @PreAuthorize("hasAuthority('i18n.countries.add')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('countries.add')")
   @Operation(summary = "添加国家", description = "添加一个新的国家到系统中")
   public Response<Countries> add(@RequestBody Countries data) throws Exception {
     return ok(service.add(data));
@@ -77,7 +77,7 @@ public class I18nCountriesController extends BaseController<I18nCountriesService
    * @return a response containing the modified country
    */
   @PutMapping
-  @PreAuthorize("hasAuthority('i18n.countries.edit')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('countries.edit')")
   @Operation(summary = "修改国家", description = "修改一个已存在的国家信息")
   public Response<Countries> modify(@RequestBody Countries data) {
     return ok(service.modifyById(data));
@@ -90,7 +90,7 @@ public class I18nCountriesController extends BaseController<I18nCountriesService
    * @return a response containing the set of deleted country IDs
    */
   @DeleteMapping
-  @PreAuthorize("hasAuthority('i18n.countries.delete')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('countries.delete')")
   @Operation(summary = "删除国家", description = "根据提供的国家ID集合，删除一个或多个国家")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);

@@ -221,7 +221,7 @@ public class MenuServiceImpl
 
     if (userContext.getDetails() instanceof User loginUser) {
       if (loginUser.getSuperAdmin() != null && loginUser.getSuperAdmin()) {
-        return buildMenuTree(getRepository().loadAll());
+        return buildMenuTree(getRepository().loadAll(), true);
       }
       // Extract roles from granted authorities
       var authorities = loginUser.getAuthorities();
@@ -248,12 +248,9 @@ public class MenuServiceImpl
           // Load menus by collected authorities
           Collection<Menu> menus = getRepository().loadByIds(authorizedMenuIds);
           // Build and return menu tree
-          return buildMenuTree(menus);
+          return buildMenuTree(menus, true);
         }
-
-
       }
-
     }
     throw new IllegalArgumentException("Invalid user context");
   }
@@ -276,7 +273,7 @@ public class MenuServiceImpl
             .stream().sorted(Comparator.comparing(Menu::getSort, Comparator.nullsLast(Integer::compareTo))).toList());
     ancestorMenus.addAll(limit.getContent());
     return new PageImpl<>(
-        buildMenuTree(ancestorMenus)
+        buildMenuTree(ancestorMenus, false)
             .stream().toList(),
         pageable,
         limit.getTotalElements()
@@ -330,7 +327,7 @@ public class MenuServiceImpl
    * @param menus the flat collection of {@link Menu} entities
    * @return a collection of {@link TreeMenu} representing the hierarchical menu structure
    */
-  protected Collection<TreeMenu> buildMenuTree(Collection<Menu> menus) {
+  protected Collection<TreeMenu> buildMenuTree(Collection<Menu> menus, boolean clearUnnecessaryFields) {
     // 1) Create TreeMenu nodes map keyed by uuid
     final Map<String, TreeMenu> nodeMap = new HashMap<>();
     for (Menu m : menus) {
@@ -350,7 +347,9 @@ public class MenuServiceImpl
       String parentId = m.getParent();
       TreeMenu current = nodeMap.get(m.getId());
       if (parentId == null || parentId.isBlank()) {
-        clearUnnecessaryFields(current);
+        if (clearUnnecessaryFields) {
+          clearUnnecessaryFields(current);
+        }
         roots.add(current);
         continue;
       }
@@ -359,11 +358,15 @@ public class MenuServiceImpl
         if (parent.getChildren() == null) {
           parent.setChildren(new ArrayList<>());
         }
-        clearUnnecessaryFields(current);
+        if (clearUnnecessaryFields) {
+          clearUnnecessaryFields(current);
+        }
         parent.getChildren().add(current);
       } else {
         // Orphan node, treat as root
-        clearUnnecessaryFields(current);
+        if (clearUnnecessaryFields) {
+          clearUnnecessaryFields(current);
+        }
         roots.add(current);
       }
     }

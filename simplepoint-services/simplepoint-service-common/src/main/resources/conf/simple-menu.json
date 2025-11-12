@@ -69,6 +69,11 @@
             "authority": "users.delete",
             "resource": "/system/user",
             "description": "允许删除用户"
+          },{
+            "name": "User Permission Assign",
+            "authority": "users.config.role",
+            "resource": "/system/user",
+            "description": "允许分配用户角色"
           }
         ]
       },
@@ -106,6 +111,12 @@
             "authority": "menus.delete",
             "resource": "/system/menu",
             "description": "允许删除菜单"
+          },
+          {
+            "name": "Menu Permission Assign",
+            "authority": "menus.config.permission",
+            "resource": "/system/menu",
+            "description": "允许分配菜单权限"
           }
         ]
       },
@@ -143,6 +154,12 @@
             "authority": "roles.delete",
             "resource": "/system/role",
             "description": "允许删除角色"
+          },
+          {
+            "name": "Role Permission Assign",
+            "authority": "roles.config.permission",
+            "resource": "/system/role",
+            "description": "允许分配角色权限"
           }
         ]
       },

@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
@@ -113,13 +114,8 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     List<GrantedAuthority> authorities = new ArrayList<>(roles.stream()
         .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
         .toList());
-    for (AuthorityProvider authorityProvider : authorityProviders) {
-      try {
-        authorities.addAll(authorityProvider.getAuthorities(user, roles, permissions));
-      } catch (Exception e) {
-        log.warn("Failed to get authorities from provider: {}", authorityProvider.getClass().getName(), e);
-      }
-    }
+    // 将额外的权限提供者的权限添加到用户权限中
+    authorities.addAll(permissions.stream().map(SimpleGrantedAuthority::new).toList());
     user.setAuthorities(authorities);
     return user;
   }

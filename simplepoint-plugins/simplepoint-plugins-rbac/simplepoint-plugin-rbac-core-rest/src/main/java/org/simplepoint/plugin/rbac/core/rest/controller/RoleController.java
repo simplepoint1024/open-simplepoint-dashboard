@@ -115,7 +115,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @GetMapping("/items")
   @Operation(summary = "获取角色下拉列表数据", description = "检索用于角色选择的角色下拉列表数据")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.authorize') or hasAuthority('roles.unauthorized')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.config.permission') or hasAuthority('users.config.permission')")
   public Response<Page<RoleRelevanceVo>> items(Pageable pageable) {
     return ok(service.roleSelectItems(pageable));
   }
@@ -129,7 +129,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @GetMapping("/authorized")
   @Operation(summary = "获取角色权限", description = "根据角色权限标识获取该用户")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.authorize') or hasAuthority('roles.unauthorized')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.config.permission')")
   public Response<Collection<String>> authorized(@RequestParam("roleAuthority") String roleAuthority) {
     return ok(service.authorized(roleAuthority));
   }
@@ -143,7 +143,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @PostMapping("/authorize")
   @Operation(summary = "授权角色权限关联关系", description = "根据一组角色权限关联关系进行授权")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.authorize')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.config.permission')")
   public Response<Collection<RolePermissionsRelevance>> authorize(@RequestBody RolePermissionsRelevanceDto dto) {
     return ok(service.authorize(dto));
   }
@@ -157,7 +157,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @PostMapping("/unauthorized")
   @Operation(summary = "取消授权角色权限关联关系", description = "根据角色权限关联关系取消授权")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.unauthorized')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.config.permission')")
   public Response<Void> unauthorized(@RequestBody RolePermissionsRelevanceDto dto) {
     service.unauthorized(dto.getRoleAuthority(), dto.getPermissionAuthorities());
     return Response.okay();
