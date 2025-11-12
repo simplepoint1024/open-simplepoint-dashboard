@@ -26,7 +26,7 @@ public interface UserRepository extends BaseRepository<User, String> {
    * @param roleAuthorities a list of role authorities for which to load permissions
    * @return a list of SimplePermissions associated with the specified role authorities
    */
-  List<RolePermissionsRelevance> loadPermissionsInRoleAuthorities(List<String> roleAuthorities);
+  List<String> loadPermissionsInRoleAuthorities(List<String> roleAuthorities);
 
   /**
    * Retrieve a collection of role authorities associated with a specific username.

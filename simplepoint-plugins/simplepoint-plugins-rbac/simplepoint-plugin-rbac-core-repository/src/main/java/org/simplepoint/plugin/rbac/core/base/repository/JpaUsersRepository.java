@@ -39,8 +39,8 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
   List<String> loadRolesByUsername(@Param("username") String username);
 
   @Override
-  @Query("select pr from RolePermissionsRelevance pr where pr.roleAuthority in :roleAuthorities")
-  List<RolePermissionsRelevance> loadPermissionsInRoleAuthorities(@Param("roleAuthorities") List<String> roleAuthorities);
+  @Query("select pr.permissionAuthority from RolePermissionsRelevance pr where pr.roleAuthority in :roleAuthorities")
+  List<String> loadPermissionsInRoleAuthorities(@Param("roleAuthorities") List<String> roleAuthorities);
 
   @Override
   @Query("select authority from UserRoleRelevance where username = :username")

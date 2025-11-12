@@ -34,6 +34,7 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
@@ -401,7 +402,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    */
   @Schema(hidden = true)
   @Transient
-  private Collection<SimpleGrantedAuthority> authorities;
+  private Collection<GrantedAuthority> authorities;
 
   /**
    * 在实体持久化之前执行的回调方法

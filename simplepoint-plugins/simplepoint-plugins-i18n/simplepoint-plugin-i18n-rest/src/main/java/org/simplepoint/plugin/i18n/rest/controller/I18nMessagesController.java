@@ -12,6 +12,8 @@ import org.simplepoint.core.utils.StringUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -66,12 +68,12 @@ public class I18nMessagesController extends BaseController<I18nMessageService, M
    * @return a response containing a map of global messages 包含全局消息映射的响应
    */
   @GetMapping("/mapping")
-  @PreAuthorize("hasAuthority('menu.i18n.messages.view')")
   @Operation(summary = "获取全局消息", description = "根据提供的语言环境和命名空间，获取全局消息映射")
   public Response<Map<String, String>> mapping(
       @RequestParam(name = "locale") String locale,
       @RequestParam(name = "ns", required = false) String ns
   ) {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     return ok(service.mapping(locale, ns));
   }
 

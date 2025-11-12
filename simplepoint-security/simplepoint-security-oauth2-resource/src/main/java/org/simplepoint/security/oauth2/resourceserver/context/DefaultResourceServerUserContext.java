@@ -23,6 +23,7 @@ import org.simplepoint.security.oauth2.resourceserver.ResourceServerUserContext;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
@@ -93,12 +94,18 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
    */
   @Override
   public User getDetails() {
-    if (this.getAuthentication() instanceof JwtAuthenticationToken authenticationToken) {
-      Map<String, Object> userInfo =
-          getUserInfo(new BearerAccessToken(authenticationToken.getToken().getTokenValue()));
-      return this.createUser(userInfo);
+    Authentication authentication = this.getAuthentication();
+    if (authentication instanceof JwtAuthenticationToken authenticationToken) {
+      return getDetails(authenticationToken.getToken().getTokenValue());
     }
     return null;
+  }
+
+  @Override
+  public User getDetails(String accessTokenValue) {
+    Map<String, Object> userInfo =
+        getUserInfo(new BearerAccessToken(accessTokenValue));
+    return this.createUser(userInfo);
   }
 
   /**
@@ -161,7 +168,7 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
 
     Object roles = userInfo.get(OidcScopes.ROLES);
     if (roles instanceof Collection<?> collection) {
-      List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+      List<GrantedAuthority> authorities = new ArrayList<>();
       collection.forEach(
           role -> authorities.add(new SimpleGrantedAuthority(String.valueOf(role))));
       user.setAuthorities(authorities);

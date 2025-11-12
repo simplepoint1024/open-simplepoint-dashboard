@@ -28,6 +28,7 @@ import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.plugin.rbac.menu.api.entity.MenuPermissionsRelevance;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuAncestorRepository;
+import org.simplepoint.plugin.rbac.menu.api.repository.MenuPermissionsRelevanceRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
 import org.simplepoint.security.MenuChildren;
 import org.simplepoint.security.entity.Menu;
@@ -35,12 +36,12 @@ import org.simplepoint.security.entity.MenuAncestor;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.TreeMenu;
 import org.simplepoint.security.entity.User;
+import org.simplepoint.security.pojo.dto.MenuPermissionsRelevanceDto;
 import org.simplepoint.security.service.MenuService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +60,8 @@ public class MenuServiceImpl
     extends BaseServiceImpl<MenuRepository, Menu, String>
     implements MenuService {
 
+  private final MenuPermissionsRelevanceRepository menuPermissionsRelevanceRepository;
+
   private final MenuAncestorRepository menuAncestorRepository;
 
   private final RoleService roleService;
@@ -66,24 +69,34 @@ public class MenuServiceImpl
   /**
    * Constructs a new {@code MenuServiceImpl} with the specified repository.
    *
-   * @param repository             the {@link MenuRepository} instance for data access
-   * @param userContext            the user context for retrieving current user information
-   * @param detailsProviderService the service for providing user details
-   * @param menuAncestorRepository the {@link MenuAncestorRepository} instance for menu ancestor operations
-   * @param roleService            the {@link RoleService} instance for role operations
+   * @param repository                         the {@link MenuRepository} instance for data access
+   * @param userContext                        the user context for retrieving current user information
+   * @param detailsProviderService             the service for providing user details
+   * @param menuPermissionsRelevanceRepository the {@link MenuPermissionsRelevanceRepository} instance for menu-permission operations
+   * @param menuAncestorRepository             the {@link MenuAncestorRepository} instance for menu ancestor operations
+   * @param roleService                        the {@link RoleService} instance for role operations
    */
   public MenuServiceImpl(
       final MenuRepository repository,
       final UserContext<BaseUser> userContext,
       final DetailsProviderService detailsProviderService,
+      final MenuPermissionsRelevanceRepository menuPermissionsRelevanceRepository,
       final MenuAncestorRepository menuAncestorRepository,
       final RoleService roleService
   ) {
     super(repository, userContext, detailsProviderService);
+    this.menuPermissionsRelevanceRepository = menuPermissionsRelevanceRepository;
     this.menuAncestorRepository = menuAncestorRepository;
     this.roleService = roleService;
   }
 
+  /**
+   * Adds a new menu entity to the system.
+   *
+   * @param entity the {@link Menu} entity to be added
+   * @param <S>    the type of the menu entity
+   * @return the saved {@link Menu} entity
+   */
   @Override
   @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
   public <S extends Menu> S add(S entity) {
@@ -114,6 +127,11 @@ public class MenuServiceImpl
     return saved;
   }
 
+  /**
+   * Synchronizes the menu data with the provided set of {@link MenuChildren}.
+   *
+   * @param data the set of menu children to synchronize
+   */
   @Override
   @Transactional(propagation = Propagation.SUPPORTS, rollbackFor = Exception.class)
   public void sync(Set<MenuChildren> data) {
@@ -167,6 +185,11 @@ public class MenuServiceImpl
     }
   }
 
+  /**
+   * Retrieves the collection of menus accessible to the current user.
+   *
+   * @return a collection of {@link TreeMenu} entities available to the user
+   */
   @Override
   public Collection<TreeMenu> routes() {
     UserContext<BaseUser> userContext = getUserContext();
@@ -180,10 +203,10 @@ public class MenuServiceImpl
         return buildMenuTree(getRepository().loadAll());
       }
       // Extract roles from granted authorities
-      Collection<SimpleGrantedAuthority> authorities = loginUser.getAuthorities();
+      var authorities = loginUser.getAuthorities();
       Set<String> roles = new HashSet<>();
       // Extract role names from authorities
-      for (SimpleGrantedAuthority grantedAuthority : authorities) {
+      for (var grantedAuthority : authorities) {
         String authority = grantedAuthority.getAuthority();
         if (authority.startsWith("ROLE_")) {
           roles.add(authority.substring(5));
@@ -212,6 +235,13 @@ public class MenuServiceImpl
     throw new IllegalArgumentException("Invalid user context");
   }
 
+  /**
+   * Retrieves a paginated list of tree-structured menus based on the specified filter attributes.
+   *
+   * @param attributes a map of filtering attributes
+   * @param pageable   the pagination information
+   * @return a paginated list of {@link TreeMenu} entities matching the filters
+   */
   @Override
   public Page<TreeMenu> limitTree(Map<String, String> attributes, Pageable pageable) {
     attributes.put("parent", "is:null:");
@@ -228,6 +258,45 @@ public class MenuServiceImpl
         pageable,
         limit.getTotalElements()
     );
+  }
+
+  /**
+   * Retrieves the collection of authorized menu identifiers based on the provided menu authority.
+   *
+   * @param menuAuthority the menu authority string
+   * @return a collection of authorized menu identifiers
+   */
+  @Override
+  public Collection<String> authorized(String menuAuthority) {
+    return this.menuPermissionsRelevanceRepository.authorized(menuAuthority);
+  }
+
+  /**
+   * Authorizes the menu with the specified permissions based on the provided DTO.
+   *
+   * @param dto the data transfer object containing menu authority and permission authorities
+   */
+  @Override
+  public void authorize(MenuPermissionsRelevanceDto dto) {
+    Set<String> authorities = dto.getPermissionAuthorities();
+    Set<MenuPermissionsRelevance> saveAuthorities = new HashSet<>(authorities.size());
+    for (String roleAuthority : authorities) {
+      MenuPermissionsRelevance relevance = new MenuPermissionsRelevance();
+      relevance.setMenuAuthority(dto.getMenuAuthority());
+      relevance.setPermissionAuthority(roleAuthority);
+      saveAuthorities.add(relevance);
+    }
+    menuPermissionsRelevanceRepository.saveAll(saveAuthorities);
+  }
+
+  /**
+   * Revokes the authorization of the menu with the specified permissions based on the provided DTO.
+   *
+   * @param dto the data transfer object containing menu authority and permission authorities
+   */
+  @Override
+  public void unauthorized(MenuPermissionsRelevanceDto dto) {
+    menuPermissionsRelevanceRepository.unauthorized(dto.getMenuAuthority(), dto.getPermissionAuthorities());
   }
 
   /**
