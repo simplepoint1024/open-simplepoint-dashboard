@@ -17,6 +17,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -64,25 +66,24 @@ public class AuthorizationServerConfiguration {
   @Order(1)
   public SecurityFilterChain authorizationServerSecurityFilterChain(
       final HttpSecurity http,
-      final OidcConfigurerExpansion oidcConfigurerExpansion
+      @Autowired(required = false) final OidcConfigurerExpansion oidcConfigurerExpansion
   )
       throws Exception {
-    // Configure OAuth2 Authorization Server
-    // 配置 OAuth2 授权服务器
     OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
         OAuth2AuthorizationServerConfigurer.authorizationServer();
     http.csrf(AbstractHttpConfigurer::disable);
     http
         .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
-        .with(authorizationServerConfigurer, (authorizationServer) ->
-            authorizationServer
-                .oidc(oidcConfigurerExpansion)
-        )
-        .authorizeHttpRequests((authorize) ->
+        .with(authorizationServerConfigurer, authorizationServer -> {
+          if (oidcConfigurerExpansion != null) {
+            authorizationServer.oidc(oidcConfigurerExpansion);
+          }
+        })
+        .authorizeHttpRequests(authorize ->
             // Require authentication for all requests 需要认证所有请求
             authorize.anyRequest().authenticated()
         )
-        .exceptionHandling((exceptions) -> exceptions
+        .exceptionHandling(exceptions -> exceptions
             .defaultAuthenticationEntryPointFor(
                 new LoginUrlAuthenticationEntryPoint("/login"),
                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
@@ -93,17 +94,19 @@ public class AuthorizationServerConfiguration {
   }
 
   /**
-   * Defines the default security filter chain.
-   * 定义默认的安全过滤链
+   * Defines the default security filter chain for general application requests.
+   * 定义一般应用请求的默认安全过滤链
    *
-   * @param http the HTTP security configuration HTTP 安全配置
+   * @param http                             the HTTP security configuration HTTP 安全配置
+   * @param loginAuthenticationSuccessHandler the login authentication success handler 登录认证成功处理器
    * @return the security filter chain 安全过滤链
    * @throws Exception if an error occurs 如果发生错误
    */
   @Bean
   @Order(2)
   public SecurityFilterChain defaultSecurityFilterChain(
-      final HttpSecurity http
+      final HttpSecurity http,
+      final LoginAuthenticationSuccessHandler loginAuthenticationSuccessHandler
   )
       throws Exception {
     http
@@ -117,11 +120,23 @@ public class AuthorizationServerConfiguration {
           configurer.loginPage("/login").permitAll();
           if (authorizationContextCacheable != null) {
             log.info("Lodding LoginAuthenticationSuccessHandler with AuthorizationContextCacheable");
-            configurer.successHandler(new LoginAuthenticationSuccessHandler(authorizationContextCacheable));
+            configurer.successHandler(loginAuthenticationSuccessHandler);
           }
         });
 
     return http.build();
+  }
+
+  /**
+   * Provides the authentication manager bean so that it can be injected into controllers
+   * such as the TwoFactorController, delegating to Spring Security's configuration.
+   */
+  @Bean
+  public AuthenticationManager authenticationManager(
+      final AuthenticationConfiguration authenticationConfiguration
+  )
+      throws Exception {
+    return authenticationConfiguration.getAuthenticationManager();
   }
 
   /**
