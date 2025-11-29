@@ -1,5 +1,6 @@
 package org.simplepoint.cloud.oauth.server.service;
 
+import java.time.Instant;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
 import org.simplepoint.security.entity.User;
 import org.springframework.stereotype.Service;
@@ -32,12 +33,43 @@ public class TwoFactorSetupServiceImpl implements TwoFactorSetupService {
     User persisted = userRepository.findById(user.getId()).orElse(user);
 
     String secret = totpService.generateSecret();
+    // 这里只是为当前用户准备一个待确认的 secret，不立即启用 2FA
     persisted.setTwoFactorSecret(secret);
-    persisted.setTwoFactorEnabled(true);
+    persisted.setTwoFactorEnabled(Boolean.FALSE);
     user.setTwoFactorSecret(secret);
-    user.setTwoFactorEnabled(true);
+    user.setTwoFactorEnabled(Boolean.FALSE);
     userRepository.save(persisted);
-    return new EnableResult(secret, totpService.buildOtpAuthUrl("Simplepoint", persisted.getUsername(), persisted.getTwoFactorSecret()));
+    return new EnableResult(secret,
+        totpService.buildOtpAuthUrl("Simplepoint", persisted.getUsername(), secret));
+  }
+
+  @Override
+  public boolean confirm(User user, String code) {
+    User persisted = userRepository.findById(user.getId()).orElse(user);
+    String secret = persisted.getTwoFactorSecret();
+    if (secret == null || secret.isEmpty()) {
+      return false;
+    }
+    boolean ok = totpService.verifyCode(secret, code, Instant.now());
+    if (!ok) {
+      return false;
+    }
+    // 校验通过，真正启用 2FA
+    persisted.setTwoFactorEnabled(Boolean.TRUE);
+    user.setTwoFactorEnabled(Boolean.TRUE);
+    userRepository.save(persisted);
+    return true;
+  }
+
+  @Override
+  public EnableResult currentPending(User user) {
+    User persisted = userRepository.findById(user.getId()).orElse(user);
+    String secret = persisted.getTwoFactorSecret();
+    if (secret == null || secret.isEmpty()) {
+      return null;
+    }
+    return new EnableResult(secret,
+        totpService.buildOtpAuthUrl("Simplepoint", persisted.getUsername(), secret));
   }
 
   @Override
