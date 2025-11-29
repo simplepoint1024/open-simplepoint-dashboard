@@ -11,9 +11,7 @@ package org.simplepoint.plugin.rbac.core.api.service;
 import java.util.Collection;
 import java.util.List;
 import org.simplepoint.api.base.BaseService;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,7 +21,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
  * This interface extends BaseService to inherit common service operations and provides
  * additional methods for handling user-specific functionality.
  */
-@AmqpRemoteClient(to = "security.user")
 public interface UsersService extends BaseService<User, String>, UserDetailsService {
 
   /**

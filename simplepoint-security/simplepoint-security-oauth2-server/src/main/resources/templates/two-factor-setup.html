@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Set up Two-Factor Authentication</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 40px;
+            color: #333;
+        }
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background: #fff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+        }
+        ol {
+            margin: 0 0 20px 20px;
+            padding: 0;
+            color: #555;
+        }
+        ol li {
+            margin-bottom: 10px;
+        }
+        .secret, .otpauth {
+            background: #f0f3f7;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 1.05em;
+            margin-bottom: 20px;
+            word-break: break-all;
+        }
+        .note {
+            font-size: 0.95em;
+            color: #666;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        a.back-link {
+            display: inline-block;
+            margin-top: 15px;
+            text-decoration: none;
+            color: #3498db;
+            font-weight: 500;
+        }
+        a.back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Set up Two-Factor Authentication</h2>
+
+    <ol>
+        <li>Open Authy or Google Authenticator on your phone.</li>
+        <li>Add a new account and choose to enter a setup key or scan a QR code.</li>
+        <li>Use the secret below or generate a QR code from the otpauth URL.</li>
+    </ol>
+
+    <div class="secret">
+        <strong>Secret (keep this private):</strong><br/>
+        <code th:text="${secret}">SECRET</code>
+    </div>
+
+    <div class="otpauth">
+        <strong>otpauth URL:</strong><br/>
+        <code th:text="${otpauthUrl}">otpauth://totp/...</code>
+    </div>
+
+    <p class="note">
+        You can use any QR code generator tool to turn the otpauth URL into a QR code for scanning.
+    </p>
+
+    <p class="note">
+        After adding the account in your authenticator app, log out and sign in again.<br/>
+        If 2FA is enabled correctly, you will be prompted on the next login to enter the 6-digit code
+        on the <code>/two-factor-verify</code> page.
+    </p>
+
+    <p style="text-align:center;">
+        <a href="/account/2fa" th:href="@{/account/2fa}" class="back-link">← Back to 2FA settings</a>
+    </p>
+</div>
+</body>
+</html>

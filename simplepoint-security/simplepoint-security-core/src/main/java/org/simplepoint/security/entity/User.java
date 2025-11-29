@@ -397,6 +397,25 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   private Boolean superAdmin;
 
   /**
+   * Indicates whether two-factor authentication (TOTP) is enabled for this user.
+   */
+  @Schema(
+      hidden = true,
+      accessMode = Schema.AccessMode.READ_ONLY,
+      title = "i18n:users.title.twoFactorEnabled",
+      description = "i18n:users.description.twoFactorEnabled"
+  )
+  private Boolean twoFactorEnabled;
+
+  /**
+   * The TOTP secret key associated with this user for two-factor authentication.
+   * Stored as a Base32-encoded string. Only used on the server side for TOTP verification.
+   */
+  @Schema(hidden = true)
+  @Column(length = 128)
+  private String twoFactorSecret;
+
+  /**
    * 用户的授权集合，存储该用户的权限信息
    * A collection of authorities granted to the user.
    */

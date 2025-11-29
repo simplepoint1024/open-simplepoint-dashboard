@@ -11,4 +11,5 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-service"))
     implementation("com.github.ben-manes.caffeine:caffeine:2.9.2")
     implementation("org.apache.tomcat.embed:tomcat-embed-core")
+    implementation("commons-codec:commons-codec:1.16.0")
 }

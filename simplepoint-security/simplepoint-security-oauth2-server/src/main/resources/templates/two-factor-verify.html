@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Two-factor authentication</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .btn {
+            padding: 12px;
+            margin-top: 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            width: 100%;
+            background-color: #1a73e8;
+            color: white;
+            cursor: pointer;
+        }
+        .error {
+            color: #d93025;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2 style="margin-top: 0;">Two-factor authentication</h2>
+    <p>Please enter the 6-digit code from your authenticator app.</p>
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+    <form th:action="@{/two-factor/verify}" method="post">
+        <div class="form-group">
+            <input type="text" name="code" placeholder="6-digit code" required autofocus maxlength="6" pattern="[0-9]{6}">
+        </div>
+        <button type="submit" class="btn">Verify</button>
+    </form>
+</div>
+</body>
+</html>
