@@ -15,9 +15,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.core.context.UserContext;
 import org.simplepoint.core.oidc.OidcScopes;
+import org.simplepoint.security.cache.AuthorizationContextCacheable;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.oauth2.resourceserver.ResourceServerUserContext;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
@@ -57,6 +59,12 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
   protected final OIDCProviderMetadata providerMetadata;
 
   /**
+   * 授权上下文缓存接口
+   * Authorization context caching interface.
+   */
+  protected final AuthorizationContextCacheable authorizationContextCacheable;
+
+  /**
    * 构造函数，初始化资源服务器属性和 OIDC 提供者元数据
    * Constructor initializing the resource server properties and OIDC provider metadata.
    *
@@ -66,12 +74,13 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
    * @throws IOException      I/O 异常
    */
   public DefaultResourceServerUserContext(
-      ObjectMapper objectMapper, OAuth2ResourceServerProperties resourceServerProperties
+      ObjectMapper objectMapper, OAuth2ResourceServerProperties resourceServerProperties, AuthorizationContextCacheable authorizationContextCacheable
   ) throws GeneralException, IOException {
     this.objectMapper = objectMapper;
     this.resourceServerProperties = resourceServerProperties;
     this.providerMetadata = OIDCProviderMetadata.resolve(
         Issuer.parse(resourceServerProperties.getJwt().getIssuerUri()));
+    this.authorizationContextCacheable = authorizationContextCacheable;
   }
 
   /**
@@ -101,11 +110,90 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
     return null;
   }
 
+  /**
+   * 根据访问令牌获取用户的详细信息
+   * Retrieves the details of a user based on the provided access token.
+   *
+   * @param accessTokenValue 访问令牌
+   * @return 用户详细信息
+   */
   @Override
   public User getDetails(String accessTokenValue) {
+    if (this.authorizationContextCacheable != null) {
+      User userContext = getUserFromCache(this.getName());
+      if (userContext != null) {
+        return userContext;
+      }
+    }
+    // 从用户信息端点获取用户信息
     Map<String, Object> userInfo =
         getUserInfo(new BearerAccessToken(accessTokenValue));
     return this.createUser(userInfo);
+  }
+
+  /**
+   * 根据用户名获取用户的详细信息
+   * Retrieves the details of a user based on the provided username.
+   *
+   * @param username 用户名
+   * @return 用户详细信息
+   */
+  @Override
+  public BaseUser getDetailsByUsername(String username) {
+    // 尝试从缓存中获取用户上下文
+    if (this.authorizationContextCacheable != null) {
+      User userContext = getUserFromCache(username);
+      if (userContext != null) {
+        return userContext;
+      }
+    }
+    throw new IllegalStateException("Not implemented yet.");
+  }
+
+  /**
+   * 根据用户名获取用户的权限集合
+   * Retrieves the set of permissions associated with the given username.
+   *
+   * @param username 用户名
+   * @return 权限集合
+   */
+  @Override
+  public Set<String> getPermissionsByUsername(String username) {
+    if (this.authorizationContextCacheable != null) {
+      Collection<String> permission = this.authorizationContextCacheable.getUserPermission(username);
+      if (permission != null) {
+        return Set.copyOf(permission);
+      }
+    }
+    throw new IllegalStateException("Not implemented yet.");
+  }
+
+  /**
+   * 获取当前用户的权限集合
+   * Retrieves the set of permissions for the currently authenticated user.
+   *
+   * @return 权限集合
+   */
+  @Override
+  public Set<String> getPermissions() {
+    if (this.authorizationContextCacheable != null) {
+      Set<String> permissions = getPermissionsByUsername(getName());
+      if (permissions != null) {
+        return permissions;
+      }
+    }
+    throw new IllegalStateException("Not implemented yet.");
+  }
+
+  /**
+   * 从缓存中获取用户上下文
+   * Retrieves the user context from the cache.
+   *
+   * @param username 用户名
+   * @return 用户对象或 null
+   */
+  private User getUserFromCache(String username) {
+    return this.authorizationContextCacheable.getUserContext(username, User.class);
   }
 
   /**

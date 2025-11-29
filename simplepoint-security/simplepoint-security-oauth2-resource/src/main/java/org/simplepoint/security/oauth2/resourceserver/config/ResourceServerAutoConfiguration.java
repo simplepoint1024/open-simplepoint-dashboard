@@ -3,22 +3,19 @@ package org.simplepoint.security.oauth2.resourceserver.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.GeneralException;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.core.context.UserContext;
+import org.simplepoint.security.cache.AuthorizationContextCacheable;
 import org.simplepoint.security.oauth2.resourceserver.ResourceServerUserContext;
 import org.simplepoint.security.oauth2.resourceserver.context.DefaultResourceServerUserContext;
 import org.simplepoint.security.oauth2.resourceserver.delegate.JwtAuthenticationConverterDelegate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -45,9 +42,10 @@ public class ResourceServerAutoConfiguration {
   @ConditionalOnMissingBean(ResourceServerUserContext.class)
   public ResourceServerUserContext<BaseUser> resourceServerUserContext(
       final OAuth2ResourceServerProperties resourceServerProperties,
-      final ObjectMapper objectMapper
+      final ObjectMapper objectMapper,
+      @Autowired(required = false) final AuthorizationContextCacheable authorizationContextCacheable
   ) throws GeneralException, IOException {
-    return new DefaultResourceServerUserContext(objectMapper, resourceServerProperties);
+    return new DefaultResourceServerUserContext(objectMapper, resourceServerProperties, authorizationContextCacheable);
   }
 
   /**
@@ -62,7 +60,10 @@ public class ResourceServerAutoConfiguration {
    * @throws Exception if an error occurs during the security configuration process
    */
   @Bean
-  public SecurityFilterChain securityWebFilterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain securityWebFilterChain(
+      HttpSecurity http,
+      UserContext<BaseUser> userContext
+  ) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable);
     return http
         .authorizeHttpRequests(request -> request
@@ -72,37 +73,10 @@ public class ResourceServerAutoConfiguration {
         )
         .oauth2ResourceServer(configurer ->
             configurer.jwt(
-                jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(new JwtAuthenticationConverterDelegate())
+                jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(new JwtAuthenticationConverterDelegate(userContext))
             )
         )
         .build();
   }
-
-  /**
-   * Configures a JwtAuthenticationConverter to extract roles and authorities from JWT tokens.
-   * 配置 JwtAuthenticationConverter 以从 JWT 令牌中提取角色和权限
-   *
-   * @param userContext the UserContext instance for user information
-   *                    用户信息的 UserContext 实例
-   * @return a JwtAuthenticationConverter configured to extract roles and authorities
-   * 配置为提取角色和权限的 JwtAuthenticationConverter
-   */
-  @Bean
-  public JwtAuthenticationConverter jwtAuthenticationConverter(UserContext<BaseUser> userContext) {
-    JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-    converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-      Set<GrantedAuthority> authorities = new HashSet<>();
-      BaseUser details = userContext.getDetails(jwt.getTokenValue());
-      if (details != null) {
-        Collection<? extends GrantedAuthority> grantedAuthorities = details.getAuthorities();
-        if (grantedAuthorities != null) {
-          authorities.addAll(grantedAuthorities);
-        }
-      }
-      return authorities;
-    });
-    return converter;
-  }
-
 }
 
