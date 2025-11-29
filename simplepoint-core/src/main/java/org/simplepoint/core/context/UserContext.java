@@ -8,6 +8,7 @@
 
 package org.simplepoint.core.context;
 
+import java.util.Set;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -44,6 +45,32 @@ public interface UserContext<T extends UserDetails> {
    * @return 用户详细信息 The user details.
    */
   T getDetails(String accessTokenValue);
+
+  /**
+   * 根据用户名获取用户的详细信息
+   * Retrieves the details of a user based on the provided username.
+   *
+   * @param username 用户名 The username.
+   * @return 用户详细信息 The user details.
+   */
+  T getDetailsByUsername(String username);
+
+  /**
+   * 根据用户名获取用户的权限集合
+   * Retrieves the set of permissions associated with the given username.
+   *
+   * @param username 用户名 The username.
+   * @return 权限集合 The set of permissions.
+   */
+  Set<String> getPermissionsByUsername(String username);
+
+  /**
+   * 获取当前用户的权限集合
+   * Retrieves the set of permissions for the currently authenticated user.
+   *
+   * @return 权限集合 The set of permissions.
+   */
+  Set<String> getPermissions();
 
   /**
    * 获取当前的身份验证对象
