@@ -8,8 +8,11 @@
 
 package org.simplepoint.cloud.oauth.server.configuration;
 
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion;
+import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationSuccessHandler;
+import org.simplepoint.security.cache.AuthorizationContextCacheable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -27,10 +30,26 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
  * Configuration class for the authorization server.
  * 授权服务器的配置类
  */
+@Slf4j
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class AuthorizationServerConfiguration {
+
+  private final AuthorizationContextCacheable authorizationContextCacheable;
+
+  /**
+   * Constructs the AuthorizationServerConfiguration with an optional
+   * AuthorizationContextCacheable dependency.
+   *
+   * @param authorizationContextCacheable the authorization context cacheable
+   *                                      授权上下文缓存接口
+   */
+  public AuthorizationServerConfiguration(
+      @Autowired(required = false)
+      AuthorizationContextCacheable authorizationContextCacheable
+  ) {
+    this.authorizationContextCacheable = authorizationContextCacheable;
+  }
 
   /**
    * Defines the security filter chain for the authorization server.
@@ -94,7 +113,13 @@ public class AuthorizationServerConfiguration {
                     "/v3/api-docs/**", "/swagger-ui/**", "/error", "/css/**", "/js/**", "/images/**"
                 ).permitAll().anyRequest()
                 .authenticated())
-        .formLogin(configurer -> configurer.loginPage("/login").permitAll());
+        .formLogin(configurer -> {
+          configurer.loginPage("/login").permitAll();
+          if (authorizationContextCacheable != null) {
+            log.info("Lodding LoginAuthenticationSuccessHandler with AuthorizationContextCacheable");
+            configurer.successHandler(new LoginAuthenticationSuccessHandler(authorizationContextCacheable));
+          }
+        });
 
     return http.build();
   }

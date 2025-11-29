@@ -1,6 +1,9 @@
 allprojects {
     group = "org.simplepoint.core"
 }
+subprojects {
+    apply(plugin = "java-library")
+}
 
 dependencies {
     implementation("org.slf4j:slf4j-api")

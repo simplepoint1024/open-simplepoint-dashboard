@@ -12,11 +12,15 @@ import static org.springframework.security.oauth2.jwt.JwtClaimNames.SUB;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.AbstractOidcUserInfoAuthentication;
 import org.simplepoint.core.oidc.OidcScopes;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.security.cache.AuthorizationContextCacheable;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationContext;
@@ -29,6 +33,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
  */
 public class DefaultOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthentication {
 
+  private final AuthorizationContextCacheable authorizationContextCacheable;
+
   /**
    * Constructs a default implementation of OIDC user info authentication.
    * Calls the superclass constructor to initialize the user service dependency.
@@ -39,8 +45,9 @@ public class DefaultOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthe
    * @param usersService The service responsible for managing user information.
    *                     用户服务，负责管理用户信息
    */
-  public DefaultOidcUserInfoAuthentication(final UsersService usersService) {
+  public DefaultOidcUserInfoAuthentication(final UsersService usersService, AuthorizationContextCacheable authorizationContextCacheable) {
     super(usersService);
+    this.authorizationContextCacheable = authorizationContextCacheable;
   }
 
 
@@ -57,44 +64,42 @@ public class DefaultOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthe
     // Retrieve authentication token from the context
     // 从上下文中获取认证令牌
     OidcUserInfoAuthenticationToken authentication = context.getAuthentication();
-
     // Extract JWT authentication token
     // 提取 JWT 认证令牌
     JwtAuthenticationToken principal = (JwtAuthenticationToken) authentication.getPrincipal();
     claims.put(SUB, principal.getName());
-    Collection<GrantedAuthority> authorities = principal.getAuthorities();
-
-    if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.PROFILE))) {
-      UserDetails userDetails = usersService.loadUserByUsername(principal.getName());
-      if (userDetails instanceof User user) {
-        claims.put("name", user.getName());
-        claims.put("picture", user.getPicture());
-        claims.put("gender", user.getGender());
-        claims.put("locale", user.getLocale());
-        claims.put("zoneinfo", user.getZoneinfo());
-        claims.put("middle_name", user.getMiddleName());
-        claims.put("nickname", user.getNickname());
-        claims.put("given_name", user.getGivenName());
-        claims.put("super_admin", user.getSuperAdmin());
-        if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.EMAIL))) {
-          claims.put("email", user.getEmail());
+    Collection<GrantedAuthority> scopeAuthorities = principal.getAuthorities();
+    if (scopeAuthorities.contains(OidcScopes.getScopeAuthority(OidcScopes.PROFILE))) {
+      // 如果开启缓存，优先从缓存中获取用户信息
+      if (this.authorizationContextCacheable != null) {
+        User userContext = this.authorizationContextCacheable.getUserContext(principal.getName(), User.class);
+        Collection<String> permission = this.authorizationContextCacheable.getUserPermission(principal.getName());
+        if (permission != null) {
+          userContext.setPermissions(permission);
+          userContext.setAuthorities(permission.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toSet()));
         }
-        if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.PHONE))) {
-          claims.put("phone", user.getPhoneNumber());
-        }
-        if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.ADDRESS))) {
-          claims.put("address", user.getAddress());
-        }
-        if (user.getAuthorities() != null
-            && authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.ROLES))) {
-          claims.put("roles",
-              user.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList());
+        setClaims(claims, userContext);
+      // 否则从用户服务中加载用户信息
+      } else {
+        UserDetails userDetails = usersService.loadUserByUsername(principal.getName());
+        if (userDetails instanceof User user) {
+          setClaims(claims, user);
         }
       }
+
     }
 
     // Construct OIDC user information from token claims
     // 从令牌声明构造 OIDC 用户信息
     return new OidcUserInfo(claims);
+  }
+
+  private void setClaims(Map<String, Object> claims, User user) {
+    claims.put("name", user.getName());
+    claims.put("picture", user.getPicture());
+    claims.put("locale", user.getLocale());
+    claims.put("zoneinfo", user.getZoneinfo());
+    claims.put("super_admin", user.getSuperAdmin());
+    claims.put("roles", user.getPermissions().stream().filter(ft -> ft.startsWith("ROLE_")).toList());
   }
 }

@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
@@ -105,18 +104,22 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
       throw new IllegalStateException("Duplicate users found: " + username);
     }
 
-    var user = users.get(0);
+    var user = users.getFirst();
     List<String> roles = loadRolesByUsername(username);
     if (user.getSuperAdmin()) {
       roles.add("SYSTEM");
     }
     List<String> permissions = loadPermissionsInRoleAuthorities(roles);
-    List<GrantedAuthority> authorities = new ArrayList<>(roles.stream()
-        .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-        .toList());
+    List<GrantedAuthority> authorities = new ArrayList<>();
+    for (String role : roles) {
+      var permission = "ROLE_" + role;
+      authorities.add(new SimpleGrantedAuthority(permission));
+      permissions.add(permission);
+    }
     // 将额外的权限提供者的权限添加到用户权限中
     authorities.addAll(permissions.stream().map(SimpleGrantedAuthority::new).toList());
     user.setAuthorities(authorities);
+    user.setPermissions(permissions);
     return user;
   }
 

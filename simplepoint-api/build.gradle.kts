@@ -1,3 +1,6 @@
+plugins {
+    `java-library`
+}
 allprojects {
     group = "org.simplepoint.api"
 }
