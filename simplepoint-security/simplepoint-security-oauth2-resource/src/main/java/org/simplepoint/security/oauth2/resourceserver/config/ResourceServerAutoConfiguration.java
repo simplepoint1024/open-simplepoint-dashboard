@@ -1,18 +1,16 @@
 package org.simplepoint.security.oauth2.resourceserver.config;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.GeneralException;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.core.context.UserContext;
 import org.simplepoint.security.oauth2.resourceserver.ResourceServerUserContext;
 import org.simplepoint.security.oauth2.resourceserver.context.DefaultResourceServerUserContext;
+import org.simplepoint.security.oauth2.resourceserver.delegate.JwtAuthenticationConverterDelegate;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
@@ -20,7 +18,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -73,7 +70,11 @@ public class ResourceServerAutoConfiguration {
             .permitAll()
             .anyRequest().authenticated()
         )
-        .oauth2ResourceServer(configurer -> configurer.jwt(withDefaults()))
+        .oauth2ResourceServer(configurer ->
+            configurer.jwt(
+                jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(new JwtAuthenticationConverterDelegate())
+            )
+        )
         .build();
   }
 
@@ -84,7 +85,7 @@ public class ResourceServerAutoConfiguration {
    * @param userContext the UserContext instance for user information
    *                    用户信息的 UserContext 实例
    * @return a JwtAuthenticationConverter configured to extract roles and authorities
-   *         配置为提取角色和权限的 JwtAuthenticationConverter
+   * 配置为提取角色和权限的 JwtAuthenticationConverter
    */
   @Bean
   public JwtAuthenticationConverter jwtAuthenticationConverter(UserContext<BaseUser> userContext) {

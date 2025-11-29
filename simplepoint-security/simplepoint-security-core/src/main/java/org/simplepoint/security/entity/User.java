@@ -404,6 +404,10 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   @Transient
   private Collection<GrantedAuthority> authorities;
 
+  @Transient
+  @Schema(hidden = true)
+  private Collection<String> permissions;
+
   /**
    * 在实体持久化之前执行的回调方法
    * Callback method executed before persisting the entity.

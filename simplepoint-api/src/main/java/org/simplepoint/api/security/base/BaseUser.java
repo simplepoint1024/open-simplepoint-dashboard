@@ -8,6 +8,7 @@
 
 package org.simplepoint.api.security.base;
 
+import java.util.Collection;
 import org.springframework.security.core.userdetails.UserDetails;
 
 /**
@@ -20,4 +21,11 @@ public interface BaseUser extends UserDetails {
    * @return true if the user is an admin, false otherwise.
    */
   Boolean superAdmin();
+
+  /**
+   * Get the permissions associated with the user.
+   *
+   * @return a collection of permission strings.
+   */
+  Collection<String> getPermissions();
 }
