@@ -64,7 +64,7 @@ public class I18nCountriesController extends BaseController<I18nCountriesService
    * @throws Exception if an error occurs during the addition
    */
   @PostMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('countries.add')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('countries.create')")
   @Operation(summary = "添加国家", description = "添加一个新的国家到系统中")
   public Response<Countries> add(@RequestBody Countries data) throws Exception {
     return ok(service.add(data));

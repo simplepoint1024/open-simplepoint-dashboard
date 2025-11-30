@@ -99,7 +99,7 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
    */
   @PostMapping
   @Operation(summary = "添加新的权限", description = "添加一个新的权限到系统中")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('permissions.add')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('permissions.create')")
   public Response<Permissions> add(@RequestBody Permissions data) throws Exception {
     return ok(service.add(data));
   }

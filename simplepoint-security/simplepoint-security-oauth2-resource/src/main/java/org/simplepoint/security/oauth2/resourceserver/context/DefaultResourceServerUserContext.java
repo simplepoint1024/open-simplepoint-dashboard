@@ -207,6 +207,19 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
     return SecurityContextHolder.getContext().getAuthentication();
   }
 
+  @Override
+  public boolean isSuperAdmin() {
+    User details = getDetails();
+    if (details == null) {
+      return false;
+    }
+    Boolean superAdmin = details.getSuperAdmin();
+    if (superAdmin == null) {
+      return false;
+    }
+    return superAdmin;
+  }
+
   /**
    * 通过访问令牌获取用户信息
    * Retrieves user information using the access token.
