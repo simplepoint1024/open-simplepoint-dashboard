@@ -9,7 +9,7 @@
 package org.simplepoint.cloud.oauth.server.expansion.oidc;
 
 import org.springframework.security.config.Customizer;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OidcConfigurer;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OidcConfigurer;
 
 /**
  * Interface for expanding OIDC configuration.

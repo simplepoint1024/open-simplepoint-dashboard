@@ -12,11 +12,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Collection;
 import org.simplepoint.core.annotation.FormSchema;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
-import org.springframework.util.MultiValueMap;
 
 /**
  * HTTP Unified response structure.
@@ -32,7 +31,7 @@ public class Response<T> extends ResponseEntity<T> {
    * @param headers    response headers.
    * @param statusCode Response status code.
    */
-  public Response(@Nullable T body, @Nullable MultiValueMap<String, String> headers,
+  public Response(T body, HttpHeaders headers,
                   HttpStatusCode statusCode) {
     super(body, headers, statusCode);
   }
@@ -46,8 +45,8 @@ public class Response<T> extends ResponseEntity<T> {
    * @param <T>        type.
    * @return Return a unified request result.
    */
-  public static <T> Response<T> of(@Nullable T body,
-                                   @Nullable MultiValueMap<String, String> headers,
+  public static <T> Response<T> of(T body,
+                                   HttpHeaders headers,
                                    HttpStatusCode statusCode) {
 
     return new Response<>(body, headers, statusCode);

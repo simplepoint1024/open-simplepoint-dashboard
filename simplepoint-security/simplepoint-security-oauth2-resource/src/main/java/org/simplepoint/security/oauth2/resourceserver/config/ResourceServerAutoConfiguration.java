@@ -12,7 +12,7 @@ import org.simplepoint.security.oauth2.resourceserver.delegate.JwtAuthentication
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
+import org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -24,6 +24,7 @@ import org.springframework.security.web.SecurityFilterChain;
  */
 @AutoConfiguration
 public class ResourceServerAutoConfiguration {
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   /**
    * Creates a UserContext bean for the OAuth2 resource server.
@@ -31,7 +32,6 @@ public class ResourceServerAutoConfiguration {
    *
    * @param resourceServerProperties the properties of the OAuth2 resource server
    *                                 OAuth2 资源服务器的属性
-   * @param objectMapper             the ObjectMapper for JSON processing
    * @return a UserContext instance for handling authentication 处理身份验证的 UserContext 实例
    * @throws GeneralException if an unexpected error occurs
    *                          如果发生未预期的错误
@@ -42,7 +42,6 @@ public class ResourceServerAutoConfiguration {
   @ConditionalOnMissingBean(ResourceServerUserContext.class)
   public ResourceServerUserContext<BaseUser> resourceServerUserContext(
       final OAuth2ResourceServerProperties resourceServerProperties,
-      final ObjectMapper objectMapper,
       @Autowired(required = false) final AuthorizationContextCacheable authorizationContextCacheable
   ) throws GeneralException, IOException {
     return new DefaultResourceServerUserContext(objectMapper, resourceServerProperties, authorizationContextCacheable);

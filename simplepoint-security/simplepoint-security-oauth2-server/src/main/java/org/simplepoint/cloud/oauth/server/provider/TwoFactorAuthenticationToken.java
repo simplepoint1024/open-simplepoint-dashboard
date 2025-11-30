@@ -1,6 +1,7 @@
 package org.simplepoint.cloud.oauth.server.provider;
 
 import java.util.Collection;
+import java.util.List;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -19,7 +20,7 @@ public class TwoFactorAuthenticationToken extends AbstractAuthenticationToken {
    * @param verificationCode the submitted TOTP code
    */
   public TwoFactorAuthenticationToken(Object principal, String verificationCode) {
-    super(null);
+    super(List.of());
     this.principal = principal;
     this.verificationCode = verificationCode;
     setAuthenticated(false);

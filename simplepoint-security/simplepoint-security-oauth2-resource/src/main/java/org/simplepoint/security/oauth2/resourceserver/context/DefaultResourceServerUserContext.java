@@ -22,7 +22,7 @@ import org.simplepoint.core.oidc.OidcScopes;
 import org.simplepoint.security.cache.AuthorizationContextCacheable;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.oauth2.resourceserver.ResourceServerUserContext;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
+import org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
