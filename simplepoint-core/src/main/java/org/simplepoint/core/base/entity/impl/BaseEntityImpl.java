@@ -43,7 +43,7 @@ public class BaseEntityImpl<I extends Serializable> implements BaseEntity<I> {
    * This field is annotated with @Id and @SnowflakeId for ID generation.
    */
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
+//  @GeneratedValue(strategy = GenerationType.UUID)
   @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
   private I id;
 

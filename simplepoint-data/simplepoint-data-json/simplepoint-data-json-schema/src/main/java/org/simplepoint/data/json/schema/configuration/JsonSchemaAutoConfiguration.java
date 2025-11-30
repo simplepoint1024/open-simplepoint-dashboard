@@ -22,6 +22,8 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 public class JsonSchemaAutoConfiguration {
 
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
   /**
    * Provides a Function bean that generates JSON schemas for given classes using the SchemaGenerator.
    *
@@ -37,13 +39,12 @@ public class JsonSchemaAutoConfiguration {
   /**
    * Configures and provides a SchemaGenerator bean.
    *
-   * @param objectMapper the ObjectMapper to use for JSON processing
-   * @param modules      a set of additional modules to enhance schema generation
+   * @param modules a set of additional modules to enhance schema generation
    * @return a configured SchemaGenerator instance
    */
   @Bean
   @ConditionalOnMissingBean
-  public SchemaGenerator schemaGenerator(ObjectMapper objectMapper, Set<Module> modules) {
+  public SchemaGenerator schemaGenerator(Set<Module> modules) {
     SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(
         objectMapper, SchemaVersion.DRAFT_7, OptionPreset.PLAIN_JSON
     );

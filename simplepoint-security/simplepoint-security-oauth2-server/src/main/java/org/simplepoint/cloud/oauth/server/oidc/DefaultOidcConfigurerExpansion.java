@@ -10,7 +10,7 @@ package org.simplepoint.cloud.oauth.server.oidc;
 
 import org.simplepoint.cloud.oauth.server.expansion.oidc.AbstractOidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcUserInfoAuthenticationExpansion;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OidcConfigurer;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OidcConfigurer;
 
 /**
  * Default implementation for OIDC configuration expansion.

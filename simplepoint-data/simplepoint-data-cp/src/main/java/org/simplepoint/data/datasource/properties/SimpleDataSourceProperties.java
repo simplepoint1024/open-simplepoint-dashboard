@@ -1,7 +1,7 @@
 package org.simplepoint.data.datasource.properties;
 
 import org.simplepoint.core.ApplicationContextHolder;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 
 /**
  * Configuration class for defining properties of a SimpleDataSource.

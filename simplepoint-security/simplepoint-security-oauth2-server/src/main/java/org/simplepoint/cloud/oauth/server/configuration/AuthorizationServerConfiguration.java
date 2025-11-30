@@ -22,7 +22,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
@@ -69,8 +69,7 @@ public class AuthorizationServerConfiguration {
       @Autowired(required = false) final OidcConfigurerExpansion oidcConfigurerExpansion
   )
       throws Exception {
-    OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
-        OAuth2AuthorizationServerConfigurer.authorizationServer();
+    OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
     http.csrf(AbstractHttpConfigurer::disable);
     http
         .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
@@ -97,7 +96,7 @@ public class AuthorizationServerConfiguration {
    * Defines the default security filter chain for general application requests.
    * 定义一般应用请求的默认安全过滤链
    *
-   * @param http                             the HTTP security configuration HTTP 安全配置
+   * @param http                              the HTTP security configuration HTTP 安全配置
    * @param loginAuthenticationSuccessHandler the login authentication success handler 登录认证成功处理器
    * @return the security filter chain 安全过滤链
    * @throws Exception if an error occurs 如果发生错误

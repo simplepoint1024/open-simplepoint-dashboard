@@ -26,7 +26,7 @@ import org.springframework.core.io.ClassPathResource;
 public class MenuAutoConfiguration implements InitializingBean {
   private final MenuService menuService;
 
-  private final ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   private final ClassPathResource resource = new ClassPathResource("conf/simple-menu.json");
 
@@ -37,11 +37,9 @@ public class MenuAutoConfiguration implements InitializingBean {
    * @param menuService the service used for managing menus
    */
   public MenuAutoConfiguration(
-      @Autowired(required = false) MenuService menuService,
-      ObjectMapper objectMapper
+      @Autowired(required = false) MenuService menuService
   ) {
     this.menuService = menuService;
-    this.objectMapper = objectMapper;
   }
 
   private Set<MenuChildren> readConf() throws IOException {

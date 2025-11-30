@@ -10,6 +10,7 @@ package org.simplepoint.core.base.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -157,9 +158,11 @@ public class BaseServiceImpl
   public Map<String, Object> schema() {
     Class<T> domainClass = repository.getDomainClass();
     ObjectNode jsonSchema = getJsonSchema(domainClass);
+    Map<String, Object> schema = mapper.convertValue(jsonSchema, new TypeReference<Map<String, Object>>() {
+    });
     Set<Map<String, Object>> buttonDeclarationsSchema = getButtonDeclarationsSchema(domainClass);
     return Map.of(
-        "schema", jsonSchema,
+        "schema", schema,
         "buttons", buttonDeclarationsSchema
     );
   }
