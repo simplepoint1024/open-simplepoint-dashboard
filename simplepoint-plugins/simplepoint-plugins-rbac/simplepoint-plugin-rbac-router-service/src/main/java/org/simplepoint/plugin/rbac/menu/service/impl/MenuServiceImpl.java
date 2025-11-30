@@ -37,7 +37,6 @@ import org.simplepoint.security.entity.MenuAncestor;
 import org.simplepoint.security.entity.Permissions;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.TreeMenu;
-import org.simplepoint.security.entity.User;
 import org.simplepoint.security.pojo.dto.MenuPermissionsRelevanceDto;
 import org.simplepoint.security.service.MenuService;
 import org.springframework.beans.BeanUtils;
@@ -241,42 +240,38 @@ public class MenuServiceImpl
   @Override
   public Collection<TreeMenu> routes() {
     UserContext<BaseUser> userContext = getUserContext();
-
     if (userContext == null) {
       throw new IllegalArgumentException("User context is null or not logged in");
     }
 
-    if (userContext.getDetails() instanceof User loginUser) {
-      if (loginUser.getSuperAdmin() != null && loginUser.getSuperAdmin()) {
-        return buildMenuTree(getRepository().loadAll(), true);
+    if (userContext.isSuperAdmin()) {
+      return buildMenuTree(getRepository().loadAll(), true);
+    }
+    // Extract roles from granted authorities
+    Set<String> permissionsSet = userContext.getPermissions();
+    Set<String> roles = new HashSet<>();
+    // Extract role names from authorities
+    for (var permission : permissionsSet) {
+      if (permission.startsWith("ROLE_")) {
+        roles.add(permission.substring(5));
       }
-      // Extract roles from granted authorities
-      var authorities = loginUser.getAuthorities();
-      Set<String> roles = new HashSet<>();
-      // Extract role names from authorities
-      for (var grantedAuthority : authorities) {
-        String authority = grantedAuthority.getAuthority();
-        if (authority.startsWith("ROLE_")) {
-          roles.add(authority.substring(5));
-        }
-      }
+    }
 
-      if (!roles.isEmpty()) {
-        var rolePermissions = roleService.loadPermissionsByRoleAuthorities(roles);
-        if (!rolePermissions.isEmpty()) {
-          List<String> permissions = rolePermissions.stream().map(RolePermissionsRelevance::getPermissionAuthority).toList();
-          Collection<MenuPermissionsRelevance> menuPermissions = getRepository().loadPermissionsByPermissionAuthorities(permissions);
-          // Collect menu authorities from permissions
-          List<String> menuAuthorities = new ArrayList<>(menuPermissions.stream().map(MenuPermissionsRelevance::getMenuAuthority).toList());
-          // 根据已授权的菜单权限标识加载菜单ID
-          List<String> authorizedMenuIds = getRepository().loadMenuIdsByAuthorities(menuAuthorities);
-          // Include ancestor menus to ensure proper tree structure
-          authorizedMenuIds.addAll(menuAncestorRepository.findAncestorIdsByChildIds(authorizedMenuIds));
-          // Load menus by collected authorities
-          Collection<Menu> menus = getRepository().loadByIds(authorizedMenuIds);
-          // Build and return menu tree
-          return buildMenuTree(menus, true);
-        }
+    if (!roles.isEmpty()) {
+      var rolePermissions = roleService.loadPermissionsByRoleAuthorities(roles);
+      if (!rolePermissions.isEmpty()) {
+        List<String> permissions = rolePermissions.stream().map(RolePermissionsRelevance::getPermissionAuthority).toList();
+        Collection<MenuPermissionsRelevance> menuPermissions = getRepository().loadPermissionsByPermissionAuthorities(permissions);
+        // Collect menu authorities from permissions
+        List<String> menuAuthorities = new ArrayList<>(menuPermissions.stream().map(MenuPermissionsRelevance::getMenuAuthority).toList());
+        // 根据已授权的菜单权限标识加载菜单ID
+        List<String> authorizedMenuIds = getRepository().loadMenuIdsByAuthorities(menuAuthorities);
+        // Include ancestor menus to ensure proper tree structure
+        authorizedMenuIds.addAll(menuAncestorRepository.findAncestorIdsByChildIds(authorizedMenuIds));
+        // Load menus by collected authorities
+        Collection<Menu> menus = getRepository().loadByIds(authorizedMenuIds);
+        // Build and return menu tree
+        return buildMenuTree(menus, true);
       }
     }
     throw new IllegalArgumentException("Invalid user context");

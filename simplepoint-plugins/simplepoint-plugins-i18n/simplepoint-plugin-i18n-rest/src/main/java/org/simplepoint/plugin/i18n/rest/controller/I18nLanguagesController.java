@@ -80,7 +80,7 @@ public class I18nLanguagesController extends BaseController<I18nLanguageService,
    *                   如果添加过程中发生错误
    */
   @PostMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('languages.add')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('languages.create')")
   @Operation(summary = "添加语言", description = "添加一个新的语言到系统中")
   public Response<Language> add(@RequestBody Language data) throws Exception {
     return ok(service.add(data));

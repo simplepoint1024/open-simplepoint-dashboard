@@ -66,7 +66,7 @@ public class I18nRegionsController extends BaseController<I18nRegionService, Reg
    * @return a response containing the added region 包含已添加区域的响应
    */
   @PostMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('regions.add')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('regions.create')")
   @Operation(summary = "添加区域", description = "添加一个新的区域到系统中")
   public Response<Region> add(@RequestBody Region data) {
     return ok(service.add(data));

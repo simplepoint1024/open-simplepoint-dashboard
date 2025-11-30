@@ -74,7 +74,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @PostMapping
   @Operation(summary = "添加新角色", description = "将新的角色添加到系统中")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.add')")
+  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('roles.create')")
   public Response<Role> add(@RequestBody Role data) throws Exception {
     return ok(service.add(data));
   }

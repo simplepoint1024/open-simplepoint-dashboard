@@ -79,5 +79,14 @@ public interface UserContext<T extends UserDetails> {
    * @return 身份验证对象 The authentication object.
    */
   Authentication getAuthentication();
+
+  /**
+   * 检查当前用户是否为超级管理员
+   * Checks if the current user is a super administrator.
+   *
+   * @return 如果是超级管理员则返回 true，否则返回 false
+   *         Returns true if the user is a super administrator, false otherwise.
+   */
+  boolean isSuperAdmin();
 }
 
