@@ -65,6 +65,20 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 public class Region extends BaseEntityImpl<String> {
 
   /**
+   * The code of the region.
+   */
+  @Schema(
+      title = "i18n:region.title.code",
+      description = "i18n:region.description.code",
+      example = "BJ",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      })
+  private String code;
+
+  /**
    * The country code of the region.
    */
   @Schema(
@@ -78,20 +92,6 @@ public class Region extends BaseEntityImpl<String> {
       })
   @Column(length = 32, nullable = false, unique = true)
   private String countryCode;
-
-  /**
-   * The code of the region.
-   */
-  @Schema(
-      title = "i18n:region.title.code",
-      description = "i18n:region.description.code",
-      example = "BJ",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      })
-  private String code;
 
   /**
    * The English name of the region.

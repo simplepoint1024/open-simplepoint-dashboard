@@ -155,6 +155,30 @@ public class Countries extends BaseEntityImpl<String> {
   )
   private String currencyCode;
 
+  @Schema(
+      title = "i18n:countries.title.continent",
+      description = "i18n:countries.description.continent",
+      example = "North America",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  private String continent;
+
+  @Schema(
+      title = "i18n:countries.title.subRegion",
+      description = "i18n:countries.description.subRegion",
+      example = "Northern America",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  private String subRegion;
+
   /**
    * The currency name of the country.
    */
@@ -182,6 +206,18 @@ public class Countries extends BaseEntityImpl<String> {
           })
       })
   private String currencySymbol;
+
+  @Schema(
+      title = "i18n:countries.title.currencyNumeric",
+      description = "i18n:countries.description.currencyNumeric",
+      example = "840",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  private String currencyNumeric;
 
   /**
    * The default timezone of the country.

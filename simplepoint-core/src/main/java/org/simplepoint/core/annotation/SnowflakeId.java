@@ -10,6 +10,7 @@ package org.simplepoint.core.annotation;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -26,8 +27,9 @@ import org.simplepoint.core.generator.SnowflakeIdGenerator;
  * or methods.
  * </p>
  */
+
+@Retention(RUNTIME)
 @IdGeneratorType(SnowflakeIdGenerator.class)
-@Retention(RetentionPolicy.RUNTIME)
 @Target({FIELD, METHOD})
 public @interface SnowflakeId {
 }

@@ -73,7 +73,7 @@ public class TimeZone extends BaseEntityImpl<String> {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
           })
       })
-  private String timezoneCode;
+  private String code;
 
   /**
    * The English name of the time zone.

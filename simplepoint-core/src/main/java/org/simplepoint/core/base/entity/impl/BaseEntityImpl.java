@@ -10,16 +10,17 @@ package org.simplepoint.core.base.entity.impl;
 
 import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import java.io.Serializable;
 import java.time.Instant;
 import lombok.Data;
+import org.hibernate.annotations.IdGeneratorType;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.simplepoint.api.base.BaseEntity;
 import org.simplepoint.core.annotation.FormSchema;
+import org.simplepoint.core.annotation.UuidStringGenerator;
+import org.simplepoint.core.base.generator.UuidStringIdentifierGenerator;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -43,7 +44,7 @@ public class BaseEntityImpl<I extends Serializable> implements BaseEntity<I> {
    * This field is annotated with @Id and @SnowflakeId for ID generation.
    */
   @Id
-//  @GeneratedValue(strategy = GenerationType.UUID)
+  @UuidStringGenerator
   @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
   private I id;
 

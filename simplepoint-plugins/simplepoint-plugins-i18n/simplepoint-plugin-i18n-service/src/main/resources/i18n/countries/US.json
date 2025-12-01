@@ -1,0 +1,63 @@
+{
+  "nameEnglish": "United States",
+  "nameNative": "美国",
+  "isoCode2": "US",
+  "isoCode3": "USA",
+  "currencyCode": "USD",
+  "currencyName": "美元",
+  "currencySymbol": "$",
+  "defaultTimezone": "America/New_York",
+  "flagIcon": null,
+  "numericCode": 840,
+  "phoneCode": "1",
+  "subRegion": "Northern America",
+  "currencyNumeric": "840",
+  "enabled": true,
+  "regions": [
+    {
+      "code": "NY",
+      "countryCode": "US",
+      "enabled": true,
+      "isDst": true,
+      "nameEnglish": "New York",
+      "nameNative": "纽约",
+      "timezoneCode": "America/New_York",
+      "level": "state",
+      "utcOffset": "-05:00"
+    }
+  ],
+  "timezones": [
+    {
+      "code": "NY",
+      "countryCode": "US",
+      "level": "state",
+      "nameEnglish": "New York",
+      "nameNative": "纽约",
+      "parentId": "US",
+      "postalCode": "10001",
+      "enabled": true
+    }
+  ],
+  "languages": [
+    {
+      "code": "en",
+      "dateFormat": "MM/dd/yyyy",
+      "description": "English (United States)",
+      "enabled": true,
+      "locale": "en_US",
+      "nameEnglish": "English (US)",
+      "nameNative": "English",
+      "textDirection": "LTR"
+    },
+    {
+      "code": "es",
+      "dateFormat": "dd/MM/yyyy",
+      "description": "Spanish language",
+      "enabled": true,
+      "locale": "es_US",
+      "nameEnglish": "Spanish (US)",
+      "nameNative": "Español",
+      "textDirection": "LTR"
+    }
+  ]
+}
