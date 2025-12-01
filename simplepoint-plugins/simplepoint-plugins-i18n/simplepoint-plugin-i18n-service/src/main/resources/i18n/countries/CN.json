@@ -1,0 +1,63 @@
+{
+  "nameEnglish": "China",
+  "nameNative": "中国",
+  "isoCode2": "CN",
+  "isoCode3": "CHN",
+  "currencyCode": "CNY",
+  "currencyName": "人民币",
+  "currencySymbol": "¥",
+  "defaultTimezone": "Asia/Shanghai",
+  "flagIcon": null,
+  "numericCode": 156,
+  "phoneCode": "86",
+  "subRegion": "Eastern Asia",
+  "currencyNumeric": "156",
+  "enabled": true,
+  "regions": [
+    {
+      "code": "SH",
+      "countryCode": "CN",
+      "enabled": true,
+      "isDst": false,
+      "nameEnglish": "Shanghai",
+      "nameNative": "上海",
+      "timezoneCode": "Asia/Shanghai",
+      "level": "province-level municipality",
+      "utcOffset": "+08:00"
+    }
+  ],
+  "timezones": [
+    {
+      "code": "SH",
+      "countryCode": "CN",
+      "level": "province-level municipality",
+      "nameEnglish": "Shanghai",
+      "nameNative": "上海",
+      "parentId": "CN",
+      "postalCode": "200000",
+      "enabled": true
+    }
+  ],
+  "languages": [
+    {
+      "code": "zh",
+      "dateFormat": "yyyy-MM-dd",
+      "description": "Simplified Chinese language",
+      "enabled": true,
+      "locale": "zh_CN",
+      "nameEnglish": "Chinese (Simplified)",
+      "nameNative": "简体中文",
+      "textDirection": "LTR"
+    },
+    {
+      "code": "zh",
+      "dateFormat": "yyyy/MM/dd",
+      "description": "Traditional Chinese language",
+      "enabled": true,
+      "locale": "zh_TW",
+      "nameEnglish": "Chinese (Traditional)",
+      "nameNative": "繁體中文",
+      "textDirection": "LTR"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 kotlin = "2.2.20"
 spring-boot = "4.0.0"
 spring-dependency-management = "1.1.2"
-spring-security = "6.5.3"
+spring-security = "7.0.0"
 spring-cloud = "2025.1.0"
 spring-authorization-server = "7.0.0"
 oauth2-oidc-sdk = "11.30.1"

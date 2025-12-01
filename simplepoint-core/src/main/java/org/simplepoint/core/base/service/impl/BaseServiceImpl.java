@@ -26,15 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.locks.Lock;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.base.BaseEntity;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.api.base.audit.ModifyDataAuditingService;
-import org.simplepoint.api.lock.DistributedLocking;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.api.security.service.DetailsProviderService;
@@ -68,43 +65,6 @@ public class BaseServiceImpl
 
   private final DetailsProviderService detailsProviderService;
 
-  private final DistributedLocking<Lock> locking;
-
-  /**
-   * Configurable function to generate form schemas for entities.
-   * If not provided, schema generation will not be available.
-   *
-   * @param repository             the repository to be used for entity operations
-   * @param userContext            the user context for accessing user information
-   * @param detailsProviderService the access control service for managing permissions
-   * @param locking                the distributed locking mechanism
-   */
-  public BaseServiceImpl(
-      final R repository,
-      final UserContext<BaseUser> userContext,
-      final DetailsProviderService detailsProviderService,
-      final DistributedLocking<Lock> locking
-  ) {
-    this.repository = repository;
-    this.userContext = userContext;
-    this.detailsProviderService = detailsProviderService;
-    this.locking = locking;
-  }
-
-  /**
-   * Constructs a BaseServiceImpl with the specified repository and access metadata sync service.
-   *
-   * @param repository the repository to be used for entity operations
-   * @param locking    the distributed locking mechanism
-   */
-  public BaseServiceImpl(
-      final R repository,
-      final UserContext<BaseUser> userContext,
-      final DistributedLocking<Lock> locking
-  ) {
-    this(repository, userContext, null, locking);
-  }
-
   /**
    * Constructs a BaseServiceImpl with the specified repository and form schema generator.
    *
@@ -117,7 +77,9 @@ public class BaseServiceImpl
       @Autowired(required = false) final UserContext<BaseUser> userContext,
       final DetailsProviderService detailsProviderService
   ) {
-    this(repository, userContext, detailsProviderService, null);
+    this.repository = repository;
+    this.userContext = userContext;
+    this.detailsProviderService = detailsProviderService;
   }
 
   /**
@@ -128,7 +90,7 @@ public class BaseServiceImpl
   public BaseServiceImpl(
       final R repository
   ) {
-    this(repository, null, null, null);
+    this(repository, null, null);
   }
 
   /**
@@ -330,7 +292,7 @@ public class BaseServiceImpl
       getModifyDataAuditingServices().forEach(svc -> svc.modify(db, entity, repository.getDomainClass()));
     });
 
-    return lock(getClass().getName() + ".modifyById", () -> repository.updateById(entity), 60, 60);
+    return repository.updateById(entity);
   }
 
   /**
@@ -477,31 +439,5 @@ public class BaseServiceImpl
   @Override
   public <S extends T> long count(S example) {
     return repository.count(example);
-  }
-
-  /**
-   * Executes a callable with distributed locking.
-   *
-   * @param key       the locking key
-   * @param runnable  the callable to execute
-   * @param waitTime  the wait time for acquiring the lock
-   * @param leaseTime the lease time for holding the lock
-   * @param <V>       the type of the result
-   * @return the result of the callable
-   */
-  public <V> V lock(String key, Callable<V> runnable, long waitTime, long leaseTime) {
-    try {
-      if (locking == null) {
-        log.warn(
-            "The distributed lock did not take effect, "
-                + "check whether the lock implementation "
-                + "was introduced and whether the bean was injected!");
-        return runnable.call();
-      }
-      return locking.executeWithLock(key, runnable, waitTime, leaseTime);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-
   }
 }

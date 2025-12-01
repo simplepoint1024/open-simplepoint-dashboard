@@ -25,7 +25,6 @@ import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceReposito
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
-import org.simplepoint.security.provider.AuthorityProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -56,11 +55,6 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   private final PasswordEncoder passwordEncoder;
 
   /**
-   * A set of AuthorityProvider instances for managing user authorities.
-   */
-  private final Set<AuthorityProvider> authorityProviders;
-
-  /**
    * Constructs a UsersServiceImpl with the specified repository and optional metadata sync service.
    *
    * @param passwordEncoder             the optional PasswordEncoder for encrypting user passwords
@@ -73,13 +67,11 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
       final UserRepository usersRepository,
       @Autowired(required = false) final UserContext<BaseUser> userContext,
       final DetailsProviderService detailsProviderService,
-      final UserRoleRelevanceRepository userRoleRelevanceRepository,
-      final Set<AuthorityProvider> authorityProviders
+      final UserRoleRelevanceRepository userRoleRelevanceRepository
   ) {
     super(usersRepository, userContext, detailsProviderService);
     this.passwordEncoder = passwordEncoder;
     this.userRoleRelevanceRepository = userRoleRelevanceRepository;
-    this.authorityProviders = authorityProviders;
   }
 
 
@@ -158,19 +150,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    */
   @Override
   public <S extends User> S add(S entity) {
-    return lock(getClass().getName() + ".add", () -> {
-      if (passwordEncoder != null) {
-        entity.setPassword(passwordEncoder.encode(entity.getPassword()));
-      } else {
-        log.warn("Password encryption is not configured!");
-      }
-      User user = new User();
-      user.setUsername(entity.getUsername());
-      if (exists(user)) {
-        throw new UsernameNotFoundException("The user name already exists!");
-      }
-      return super.add(entity);
-    }, 30, 30);
+    return super.add(entity);
   }
 
   @Override
