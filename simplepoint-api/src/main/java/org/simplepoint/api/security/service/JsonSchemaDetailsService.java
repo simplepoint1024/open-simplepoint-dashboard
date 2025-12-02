@@ -5,12 +5,10 @@ import org.simplepoint.api.base.BaseDetailsService;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.simple.SimpleFieldPermissions;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 
 /**
  * JSON Schema service.
  */
-@AmqpRemoteService
 @AmqpRemoteClient(to = "security.schema")
 public interface JsonSchemaDetailsService extends BaseDetailsService {
 

@@ -1,0 +1,14 @@
+{
+  "roles.title.authority": "权限标识",
+  "roles.description.authority": "用于系统授权校验的唯一标识",
+  "roles.title.description": "描述",
+  "roles.description.description": "该角色的简要说明",
+  "roles.title.priority": "优先级",
+  "roles.description.priority": "数值越大优先级越高",
+  "roles.title.roleName": "角色名称",
+  "roles.description.roleName": "例如：超级管理员",
+  "table.button.permissionConfig": "权限配置",
+  "roles.permissionConfig.title": "系统权限配置",
+  "roles.permissionConfig.menu": "菜单配置",
+  "roles.config.permission": "权限配置"
+}

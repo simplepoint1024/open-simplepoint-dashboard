@@ -75,7 +75,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
   @Operation(summary = "添加用户", description = "添加一个新的用户到系统中")
   @PreAuthorize("hasRole('SYSTEM') or hasAuthority('users.create')")
   public Response<User> add(@RequestBody User data) throws Exception {
-    return ok(service.add(data));
+    return ok(service.persist(data));
   }
 
   /**

@@ -72,7 +72,7 @@ public class I18nTimeZonesController extends BaseController<I18nTimeZoneService,
   @PreAuthorize("hasRole('SYSTEM') or hasAuthority('timezones.create')")
   @Operation(summary = "添加时区", description = "添加一个新的时区到系统中")
   public Response<TimeZone> add(@RequestBody TimeZone data) throws Exception {
-    return ok(service.add(data));
+    return ok(service.persist(data));
   }
 
   /**

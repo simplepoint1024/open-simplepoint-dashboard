@@ -29,4 +29,10 @@ public class RoleRelevanceVo implements Serializable {
     this.authority = authority;
     this.description = description;
   }
+
+  /**
+   * Default constructor for RoleRelevanceVo.
+   */
+  public RoleRelevanceVo() {
+  }
 }

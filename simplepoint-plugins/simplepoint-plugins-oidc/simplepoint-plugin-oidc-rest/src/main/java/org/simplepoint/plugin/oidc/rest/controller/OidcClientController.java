@@ -64,7 +64,7 @@ public class OidcClientController extends BaseController<OidcClientService, Clie
   @PostMapping
   @Operation(summary = "添加新客户端", description = "将新的客户端添加到系统中")
   public Response<Client> add(@RequestBody Client data) throws Exception {
-    return ok(service.add(data));
+    return ok(service.persist(data));
   }
 
   /**

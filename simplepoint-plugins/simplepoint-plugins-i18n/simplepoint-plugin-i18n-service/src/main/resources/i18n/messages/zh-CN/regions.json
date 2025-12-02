@@ -1,0 +1,16 @@
+{
+  "regions.title.code": "区域编码",
+  "regions.description.code": "区域唯一编码",
+  "regions.title.countryCode": "国家代码",
+  "regions.description.countryCode": "所属国家/地区代码",
+  "regions.title.level": "层级",
+  "regions.description.level": "行政层级（省/市/区等）",
+  "regions.title.nameEnglish": "英文名",
+  "regions.description.nameEnglish": "区域的英文名称",
+  "regions.title.nameNative": "本地名",
+  "regions.description.nameNative": "区域的本地语言名称",
+  "regions.title.parentCode": "上级编码",
+  "regions.description.parentCode": "父级区域编码",
+  "regions.title.postalCode": "邮政编码",
+  "regions.description.postalCode": "区域的邮政编码"
+}

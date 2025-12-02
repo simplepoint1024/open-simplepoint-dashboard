@@ -67,8 +67,8 @@ public class Language extends BaseEntityImpl<String> {
    * The language code ISO 639-1 (e.g., "en", "fr", "zh").
    */
   @Schema(
-      title = "i18n:language.title.code",
-      description = "i18n:language.description.code",
+      title = "i18n:languages.title.code",
+      description = "i18n:languages.description.code",
       example = "CN",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -81,8 +81,8 @@ public class Language extends BaseEntityImpl<String> {
    * The locale associated with the language (e.g., "zh-CN", "en_US", "fr_FR").
    */
   @Schema(
-      title = "i18n:language.title.locale",
-      description = "i18n:language.description.locale",
+      title = "i18n:languages.title.locale",
+      description = "i18n:languages.description.locale",
       example = "zh-CN",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -96,8 +96,8 @@ public class Language extends BaseEntityImpl<String> {
    * The English name of the language (e.g., "Chinese", "French").
    */
   @Schema(
-      title = "i18n:language.title.nameEnglish",
-      description = "i18n:language.description.nameEnglish",
+      title = "i18n:languages.title.nameEnglish",
+      description = "i18n:languages.description.nameEnglish",
       example = "Chinese",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -111,8 +111,8 @@ public class Language extends BaseEntityImpl<String> {
    * The native name of the language (e.g., "中文" for Chinese, "Français" for French).
    */
   @Schema(
-      title = "i18n:language.title.nameNative",
-      description = "i18n:language.description.nameNative",
+      title = "i18n:languages.title.nameNative",
+      description = "i18n:languages.description.nameNative",
       example = "中文",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -126,8 +126,8 @@ public class Language extends BaseEntityImpl<String> {
    * The text direction of the language (e.g., "LTR" for left-to-right, "RTL" for right-to-left).
    */
   @Schema(
-      title = "i18n:language.title.textDirection",
-      description = "i18n:language.description.textDirection",
+      title = "i18n:languages.title.textDirection",
+      description = "i18n:languages.description.textDirection",
       example = "LTR",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -138,8 +138,8 @@ public class Language extends BaseEntityImpl<String> {
   private String textDirection;
 
   @Schema(
-      title = "i18n:language.title.dateFormat",
-      description = "i18n:language.description.dateFormat",
+      title = "i18n:languages.title.dateFormat",
+      description = "i18n:languages.description.dateFormat",
       example = "yyyy-MM-dd",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -153,8 +153,8 @@ public class Language extends BaseEntityImpl<String> {
    * Indicates whether the language is enabled.
    */
   @Schema(
-      title = "i18n:language.title.enabled",
-      description = "i18n:language.description.enabled",
+      title = "i18n:languages.title.enabled",
+      description = "i18n:languages.description.enabled",
       example = "true",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -169,8 +169,8 @@ public class Language extends BaseEntityImpl<String> {
    * Additional description or notes about the language.
    */
   @Schema(
-      title = "i18n:language.title.description",
-      description = "i18n:language.description.description",
+      title = "i18n:languages.title.description",
+      description = "i18n:languages.description.description",
       example = "This language is used for the Chinese locale.",
       extensions = {
           @Extension(name = "x-ui", properties = {

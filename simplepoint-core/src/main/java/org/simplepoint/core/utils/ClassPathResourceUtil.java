@@ -48,7 +48,7 @@ public class ClassPathResourceUtil {
   }
 
   /**
-   * 读取多语言目录下的 JSON 文件，返回嵌套 Map 结构。
+   * 读取多语言目录下的 JSON 文件，返回嵌套 Map 结构.
    *
    * @param dir 目录路径
    * @return 嵌套 Map 结构，第一层键为语言目录名，第二层键为文件名（不含 .json），第三层为文件内容的键值对
@@ -74,7 +74,8 @@ public class ClassPathResourceUtil {
 
       // 反序列化 JSON 为 Map<String,String>
       Map<String, String> obj = objectMapper.readValue(resource.getInputStream(),
-          new TypeReference<Map<String, String>>() {});
+          new TypeReference<>() {
+          });
 
       // 放入结果 Map
       result.computeIfAbsent(lang, k -> new HashMap<>())

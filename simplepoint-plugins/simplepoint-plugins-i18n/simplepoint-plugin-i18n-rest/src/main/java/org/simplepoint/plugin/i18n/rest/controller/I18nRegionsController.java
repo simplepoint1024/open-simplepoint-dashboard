@@ -69,7 +69,7 @@ public class I18nRegionsController extends BaseController<I18nRegionService, Reg
   @PreAuthorize("hasRole('SYSTEM') or hasAuthority('regions.create')")
   @Operation(summary = "添加区域", description = "添加一个新的区域到系统中")
   public Response<Region> add(@RequestBody Region data) {
-    return ok(service.add(data));
+    return ok(service.persist(data));
   }
 
   /**

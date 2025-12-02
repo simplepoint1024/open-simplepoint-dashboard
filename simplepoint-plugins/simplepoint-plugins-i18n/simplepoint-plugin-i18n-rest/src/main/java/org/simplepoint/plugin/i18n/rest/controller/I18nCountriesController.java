@@ -67,7 +67,7 @@ public class I18nCountriesController extends BaseController<I18nCountriesService
   @PreAuthorize("hasRole('SYSTEM') or hasAuthority('countries.create')")
   @Operation(summary = "添加国家", description = "添加一个新的国家到系统中")
   public Response<Countries> add(@RequestBody Countries data) throws Exception {
-    return ok(service.add(data));
+    return ok(service.persist(data));
   }
 
   /**

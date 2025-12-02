@@ -10,7 +10,6 @@ package org.simplepoint.plugin.rbac.core.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -19,11 +18,9 @@ import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.context.UserContext;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
 import org.simplepoint.security.entity.Permissions;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -101,7 +98,7 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
   @Operation(summary = "添加新的权限", description = "添加一个新的权限到系统中")
   @PreAuthorize("hasRole('SYSTEM') or hasAuthority('permissions.create')")
   public Response<Permissions> add(@RequestBody Permissions data) throws Exception {
-    return ok(service.add(data));
+    return ok(service.persist(data));
   }
 
   /**

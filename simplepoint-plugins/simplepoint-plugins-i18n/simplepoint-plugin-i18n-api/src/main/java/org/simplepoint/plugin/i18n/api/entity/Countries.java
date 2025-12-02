@@ -275,7 +275,7 @@ public class Countries extends BaseEntityImpl<String> {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
           })
       })
-  @Column(nullable = false, unique = true)
+  @Column(nullable = false)
   private Boolean enabled;
 
   /**

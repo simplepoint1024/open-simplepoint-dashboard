@@ -1,0 +1,21 @@
+{
+  "menus.title.component": "组件",
+  "menus.description.component": "绑定的组件标识或路径",
+  "menus.title.danger": "危险标记",
+  "menus.description.danger": "是否以危险样式显示该菜单项",
+  "menus.title.disabled": "禁用",
+  "menus.description.disabled": "是否禁用该菜单项",
+  "menus.title.icon": "图标",
+  "menus.description.icon": "菜单图标名称",
+  "menus.title.label": "标签",
+  "menus.description.label": "菜单显示名称",
+  "menus.title.path": "路径",
+  "menus.description.path": "路由路径或外链地址",
+  "menus.title.sort": "排序",
+  "menus.description.sort": "显示顺序（数值越小越靠前）",
+  "menus.title.title": "标题",
+  "menus.description.title": "菜单或页面标题",
+  "menus.title.type": "类型",
+  "menus.description.type": "菜单类型（目录/分组/项等）",
+  "menus.config.permission": "权限配置"
+}

@@ -68,8 +68,8 @@ public class Region extends BaseEntityImpl<String> {
    * The code of the region.
    */
   @Schema(
-      title = "i18n:region.title.code",
-      description = "i18n:region.description.code",
+      title = "i18n:regions.title.code",
+      description = "i18n:regions.description.code",
       example = "BJ",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -82,8 +82,8 @@ public class Region extends BaseEntityImpl<String> {
    * The country code of the region.
    */
   @Schema(
-      title = "i18n:region.title.countryCode",
-      description = "i18n:region.description.countryCode",
+      title = "i18n:regions.title.countryCode",
+      description = "i18n:regions.description.countryCode",
       example = "CN",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -97,8 +97,8 @@ public class Region extends BaseEntityImpl<String> {
    * The English name of the region.
    */
   @Schema(
-      title = "i18n:region.title.nameEnglish",
-      description = "i18n:region.description.nameEnglish",
+      title = "i18n:regions.title.nameEnglish",
+      description = "i18n:regions.description.nameEnglish",
       example = "Beijing",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -112,8 +112,8 @@ public class Region extends BaseEntityImpl<String> {
    * The native name of the region.
    */
   @Schema(
-      title = "i18n:region.title.nameNative",
-      description = "i18n:region.description.nameNative",
+      title = "i18n:regions.title.nameNative",
+      description = "i18n:regions.description.nameNative",
       example = "北京",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -127,8 +127,8 @@ public class Region extends BaseEntityImpl<String> {
    * The level of the region (e.g., province, city).
    */
   @Schema(
-      title = "i18n:region.title.level",
-      description = "i18n:region.description.level",
+      title = "i18n:regions.title.level",
+      description = "i18n:regions.description.level",
       example = "province",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -142,8 +142,8 @@ public class Region extends BaseEntityImpl<String> {
    * The postal code of the region.
    */
   @Schema(
-      title = "i18n:region.title.postalCode",
-      description = "i18n:region.description.postalCode",
+      title = "i18n:regions.title.postalCode",
+      description = "i18n:regions.description.postalCode",
       example = "110000",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -157,8 +157,8 @@ public class Region extends BaseEntityImpl<String> {
    * The parent region identifier.
    */
   @Schema(
-      title = "i18n:region.title.parentCode",
-      description = "i18n:region.description.parentCode",
+      title = "i18n:regions.title.parentCode",
+      description = "i18n:regions.description.parentCode",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),

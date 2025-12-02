@@ -8,14 +8,10 @@
 
 package org.simplepoint.plugin.rbac.core.api.service;
 
-import java.util.Collection;
-import java.util.Set;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
 import org.simplepoint.security.entity.Permissions;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

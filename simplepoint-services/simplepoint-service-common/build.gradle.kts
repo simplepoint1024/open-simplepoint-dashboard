@@ -35,5 +35,7 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-service"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-rest"))
 
+    implementation(project(":simplepoint-data:simplepoint-data-initializer"))
+
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
 }

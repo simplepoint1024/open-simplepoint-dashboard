@@ -83,7 +83,7 @@ public class I18nLanguagesController extends BaseController<I18nLanguageService,
   @PreAuthorize("hasRole('SYSTEM') or hasAuthority('languages.create')")
   @Operation(summary = "添加语言", description = "添加一个新的语言到系统中")
   public Response<Language> add(@RequestBody Language data) throws Exception {
-    return ok(service.add(data));
+    return ok(service.persist(data));
   }
 
   /**
