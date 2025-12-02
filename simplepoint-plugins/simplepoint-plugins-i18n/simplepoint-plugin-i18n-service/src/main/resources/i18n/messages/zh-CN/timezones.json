@@ -1,0 +1,16 @@
+{
+  "timezones.title.countryCode": "国家代码",
+  "timezones.description.countryCode": "该时区所属国家/地区代码",
+  "timezones.title.enabled": "是否启用",
+  "timezones.description.enabled": "是否在系统中启用该时区",
+  "timezones.title.isDst": "夏令时",
+  "timezones.description.isDst": "是否为夏令时",
+  "timezones.title.nameEnglish": "英文名",
+  "timezones.description.nameEnglish": "时区的英文名称",
+  "timezones.title.nameNative": "本地名",
+  "timezones.description.nameNative": "时区的本地语言名称",
+  "timezones.title.timezoneCode": "时区代码",
+  "timezones.description.timezoneCode": "IANA 时区代码，例如 Asia/Shanghai",
+  "timezones.title.utcOffset": "UTC 偏移",
+  "timezones.description.utcOffset": "与 UTC 的时间偏移，例如 +08:00"
+}

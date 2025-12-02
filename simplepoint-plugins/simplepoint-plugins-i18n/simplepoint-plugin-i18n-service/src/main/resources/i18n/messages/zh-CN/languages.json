@@ -1,0 +1,18 @@
+{
+  "languages.title.code": "语言编码",
+  "languages.description.code": "唯一的语言编码，如 zh-CN",
+  "languages.title.dateFormat": "日期格式",
+  "languages.description.dateFormat": "该语言使用的日期格式",
+  "languages.title.description": "描述",
+  "languages.description.description": "语言项的说明信息",
+  "languages.title.enabled": "是否启用",
+  "languages.description.enabled": "是否在系统中启用",
+  "languages.title.locale": "Locale",
+  "languages.description.locale": "语言区域标识，如 en-US/ja-JP",
+  "languages.title.nameEnglish": "英文名",
+  "languages.description.nameEnglish": "语言的英文名称",
+  "languages.title.nameNative": "本地名",
+  "languages.description.nameNative": "语言的本地名称",
+  "languages.title.textDirection": "文字方向",
+  "languages.description.textDirection": "文字书写方向（LTR/RTL）"
+}

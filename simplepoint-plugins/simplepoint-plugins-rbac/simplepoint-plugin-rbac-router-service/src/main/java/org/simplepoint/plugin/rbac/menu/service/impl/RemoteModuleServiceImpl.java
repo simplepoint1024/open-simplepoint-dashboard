@@ -54,9 +54,9 @@ public class RemoteModuleServiceImpl
       if (module == null) {
         return;
       }
-      add(module);
+      persist(module);
       if (menus != null && !menus.isEmpty()) {
-        menuService.add(menus);
+        menuService.persist(menus);
       }
     } catch (Exception e) {
       throw new ServiceException("Failed to register remote module", e);

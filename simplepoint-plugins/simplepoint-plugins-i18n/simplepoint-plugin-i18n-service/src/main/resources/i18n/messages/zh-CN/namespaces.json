@@ -1,0 +1,10 @@
+{
+  "namespaces.title.code": "命名空间编码",
+  "namespaces.description.code": "命名空间的唯一标识",
+  "namespaces.title.description": "描述",
+  "namespaces.description.description": "命名空间的说明信息",
+  "namespaces.title.module": "所属模块",
+  "namespaces.description.module": "归属的功能模块或应用",
+  "namespaces.title.name": "名称",
+  "namespaces.description.name": "命名空间名称"
+}

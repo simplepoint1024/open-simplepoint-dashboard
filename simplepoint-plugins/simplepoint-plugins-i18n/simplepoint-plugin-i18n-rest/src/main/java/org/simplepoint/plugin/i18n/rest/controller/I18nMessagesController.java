@@ -90,7 +90,7 @@ public class I18nMessagesController extends BaseController<I18nMessageService, M
   @PreAuthorize("hasRole('SYSTEM') or hasAuthority('messages.create')")
   @Operation(summary = "添加消息", description = "添加一个新的消息到系统中")
   public Response<Message> add(@RequestBody Message data) throws Exception {
-    return ok(service.add(data));
+    return ok(service.persist(data));
   }
 
   /**

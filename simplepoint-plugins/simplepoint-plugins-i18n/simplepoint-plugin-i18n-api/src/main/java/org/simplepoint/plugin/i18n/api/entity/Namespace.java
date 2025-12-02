@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -57,15 +56,14 @@ import org.simplepoint.core.constants.PublicButtonKeys;
     )
 })
 @NoArgsConstructor
-@AllArgsConstructor
 @Tag(name = "命名空间对象", description = "用于管理系统中的命名空间")
 public class Namespace extends BaseEntityImpl<String> {
   /**
    * The name of the namespace.
    */
   @Schema(
-      title = "i18n:namespace.title.name",
-      description = "i18n:namespace.description.name",
+      title = "i18n:namespaces.title.name",
+      description = "i18n:namespaces.description.name",
       example = "United States",
       extensions = {
           @Extension(name = "x-ui",
@@ -80,8 +78,8 @@ public class Namespace extends BaseEntityImpl<String> {
    * The code of the namespace.
    */
   @Schema(
-      title = "i18n:namespace.title.code",
-      description = "i18n:namespace.description.code",
+      title = "i18n:namespaces.title.code",
+      description = "i18n:namespaces.description.code",
       example = "US",
       extensions = {
           @Extension(name = "x-ui",
@@ -95,8 +93,8 @@ public class Namespace extends BaseEntityImpl<String> {
    * The description of the namespace.
    */
   @Schema(
-      title = "i18n:namespace.title.description",
-      description = "i18n:namespace.description.description",
+      title = "i18n:namespaces.title.description",
+      description = "i18n:namespaces.description.description",
       example = "Namespace for United States",
       extensions = {
           @Extension(name = "x-ui",
@@ -111,8 +109,8 @@ public class Namespace extends BaseEntityImpl<String> {
    * The module associated with the namespace.
    */
   @Schema(
-      title = "i18n:namespace.title.module",
-      description = "i18n:namespace.description.module",
+      title = "i18n:namespaces.title.module",
+      description = "i18n:namespaces.description.module",
       example = "core",
       extensions = {
           @Extension(name = "x-ui",
@@ -122,4 +120,15 @@ public class Namespace extends BaseEntityImpl<String> {
       }
   )
   private String module;
+
+  /**
+   * Constructor for Namespace.
+   *
+   * @param name the name of the namespace
+   * @param code the code of the namespace
+   */
+  public Namespace(String name, String code) {
+    this.name = name;
+    this.code = code;
+  }
 }

@@ -29,7 +29,7 @@ import org.springframework.core.annotation.Order;
 @Data
 @Entity
 @Table(name = "i18n_messages", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"ns", "key", "locale"})
+    @UniqueConstraint(columnNames = {"namespace", "code", "locale"})
 })
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
@@ -104,7 +104,7 @@ public class Message extends BaseEntityImpl<String> {
   private String message;
 
   @Order(4)
-  @Column(nullable = false, length = 2048)
+  @Column(length = 2048)
   @Schema(title = "i18n:messages.title.description", description = "i18n:messages.description.description", maxLength = 2048, minLength = 1)
   private String description;
 

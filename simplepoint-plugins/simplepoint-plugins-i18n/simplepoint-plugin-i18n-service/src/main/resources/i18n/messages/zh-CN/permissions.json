@@ -1,0 +1,14 @@
+{
+  "permissions.title.name": "权限名称",
+  "permissions.description.name": "权限的显示名称",
+  "permissions.title.description": "描述",
+  "permissions.description.description": "该权限的简要说明",
+  "permissions.title.authority": "权限标识",
+  "permissions.description.authority": "权限字符串，例如 system:user:read",
+  "permissions.title.method": "HTTP 方法",
+  "permissions.description.method": "HTTP 方法，如 GET/POST",
+  "permissions.title.resource": "资源路径",
+  "permissions.description.resource": "受保护的资源路径",
+  "permissions.title.permissionName": "权限名称",
+  "permissions.description.permissionName": "权限的显示名称"
+}

@@ -1,0 +1,14 @@
+{
+  "messages.title.code": "消息键",
+  "messages.description.code": "国际化消息的键名",
+  "messages.title.description": "描述",
+  "messages.description.description": "该消息键的说明",
+  "messages.title.global": "全局键",
+  "messages.description.global": "是否为全局可见的消息键",
+  "messages.title.locale": "语言",
+  "messages.description.locale": "消息所属的语言",
+  "messages.title.message": "消息内容",
+  "messages.description.message": "国际化消息的具体内容",
+  "messages.title.namespace": "命名空间",
+  "messages.description.namespace": "消息键所属的命名空间"
+}

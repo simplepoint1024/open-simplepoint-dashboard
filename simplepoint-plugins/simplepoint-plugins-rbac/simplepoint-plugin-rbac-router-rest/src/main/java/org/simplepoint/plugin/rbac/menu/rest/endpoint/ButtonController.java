@@ -70,7 +70,7 @@ public class ButtonController extends BaseController<ButtonService, Button, Stri
   @PostMapping
   @Operation(summary = "添加新按钮", description = "将新的按钮添加到系统中")
   public Response<Button> add(@RequestBody Button data) throws Exception {
-    return ok(service.add(data));
+    return ok(service.persist(data));
   }
 
   /**

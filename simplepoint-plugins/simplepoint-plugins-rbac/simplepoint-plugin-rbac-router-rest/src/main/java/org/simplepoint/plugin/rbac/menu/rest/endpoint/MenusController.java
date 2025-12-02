@@ -97,7 +97,7 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
   @PreAuthorize("hasRole('SYSTEM') or hasAuthority('menus.create')")
   @Operation(summary = "添加新菜单", description = "将新的菜单添加到系统中")
   public Response<Menu> add(@RequestBody Menu data) throws Exception {
-    return ok(service.add(data));
+    return ok(service.persist(data));
   }
 
   /**

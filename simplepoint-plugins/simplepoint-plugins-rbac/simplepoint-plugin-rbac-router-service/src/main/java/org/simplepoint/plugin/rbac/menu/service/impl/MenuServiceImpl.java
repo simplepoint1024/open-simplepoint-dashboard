@@ -105,11 +105,11 @@ public class MenuServiceImpl
    */
   @Override
   @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
-  public <S extends Menu> S add(S entity) {
+  public <S extends Menu> S persist(S entity) {
     if (entity.getAuthority() == null || entity.getAuthority().isEmpty()) {
       entity.setAuthority(entity.getPath().replace("/", ":"));
     }
-    var saved = super.add(entity);
+    var saved = super.persist(entity);
 
     var parent = saved.getParent();
 
@@ -204,13 +204,13 @@ public class MenuServiceImpl
         String realId;
         if (existing == null || existing.isEmpty()) {
           // Not exists -> persist; add() will also build ancestors using resolved parent id
-          Menu saved = this.add(menu);
+          Menu saved = this.persist(menu);
           realId = saved.getId();
           Set<Permissions> permissions = current.getPermissions();
           if (permissions != null && !permissions.isEmpty()) {
             for (Permissions permission : permissions) {
               try {
-                this.permissionsService.add(permission);
+                this.permissionsService.persist(permission);
                 this.menuPermissionsRelevanceRepository.saveAll(Set.of(
                     new MenuPermissionsRelevance(current.getAuthority(), permission.getAuthority())
                 ));

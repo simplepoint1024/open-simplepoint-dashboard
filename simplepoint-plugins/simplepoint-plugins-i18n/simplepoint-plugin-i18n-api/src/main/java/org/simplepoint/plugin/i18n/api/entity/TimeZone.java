@@ -65,8 +65,8 @@ public class TimeZone extends BaseEntityImpl<String> {
    * The IANA time zone code (e.g., "Asia/Shanghai").
    */
   @Schema(
-      title = "i18n:timezone.title.timezoneCode",
-      description = "i18n:timezone.description.timezoneCode",
+      title = "i18n:timezones.title.timezoneCode",
+      description = "i18n:timezones.description.timezoneCode",
       example = "Asia/Shanghai",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -79,8 +79,8 @@ public class TimeZone extends BaseEntityImpl<String> {
    * The English name of the time zone.
    */
   @Schema(
-      title = "i18n:timezone.title.nameEnglish",
-      description = "i18n:timezone.description.nameEnglish",
+      title = "i18n:timezones.title.nameEnglish",
+      description = "i18n:timezones.description.nameEnglish",
       example = "China Standard Time",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -93,8 +93,8 @@ public class TimeZone extends BaseEntityImpl<String> {
    * The native name of the time zone.
    */
   @Schema(
-      title = "i18n:timezone.title.nameNative",
-      description = "i18n:timezone.description.nameNative",
+      title = "i18n:timezones.title.nameNative",
+      description = "i18n:timezones.description.nameNative",
       example = "中国标准时间",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -107,8 +107,8 @@ public class TimeZone extends BaseEntityImpl<String> {
    * The UTC offset of the time zone (e.g., "+08:00", "-05:00").
    */
   @Schema(
-      title = "i18n:timezone.title.utcOffset",
-      description = "i18n:timezone.description.utcOffset",
+      title = "i18n:timezones.title.utcOffset",
+      description = "i18n:timezones.description.utcOffset",
       example = "+08:00",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -121,8 +121,8 @@ public class TimeZone extends BaseEntityImpl<String> {
    * The country code associated with the time zone.
    */
   @Schema(
-      title = "i18n:timezone.title.countryCode",
-      description = "i18n:timezone.description.countryCode",
+      title = "i18n:timezones.title.countryCode",
+      description = "i18n:timezones.description.countryCode",
       example = "CN",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -135,8 +135,8 @@ public class TimeZone extends BaseEntityImpl<String> {
    * Indicates whether the time zone observes Daylight Saving Time (DST).
    */
   @Schema(
-      title = "i18n:timezone.title.isDst",
-      description = "i18n:timezone.description.isDst",
+      title = "i18n:timezones.title.isDst",
+      description = "i18n:timezones.description.isDst",
       example = "true",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -150,8 +150,8 @@ public class TimeZone extends BaseEntityImpl<String> {
    * Indicates whether the time zone is enabled.
    */
   @Schema(
-      title = "i18n:timezone.title.enabled",
-      description = "i18n:timezone.description.enabled",
+      title = "i18n:timezones.title.enabled",
+      description = "i18n:timezones.description.enabled",
       example = "true",
       extensions = {
           @Extension(name = "x-ui", properties = {

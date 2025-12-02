@@ -47,7 +47,7 @@ public interface BaseService<T extends BaseEntity<I>, I extends Serializable> {
    * @param <S>    entity
    * @return list g
    */
-  <S extends T> S add(S entity);
+  <S extends T> S persist(S entity);
 
   /**
    * add.
@@ -55,7 +55,7 @@ public interface BaseService<T extends BaseEntity<I>, I extends Serializable> {
    * @param entities entity collection
    * @return list
    */
-  List<T> add(Collection<T> entities);
+  List<T> persist(Collection<T> entities);
 
   /**
    * modifyById.

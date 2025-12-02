@@ -242,7 +242,7 @@ public class BaseServiceImpl
    * @return the added entity
    */
   @Override
-  public <S extends T> S add(S entity) {
+  public <S extends T> S persist(S entity) {
     S save = repository.save(entity);
     getModifyDataAuditingServices().forEach(service -> service.save(Set.of(save), repository.getDomainClass()));
     return save;
@@ -255,7 +255,7 @@ public class BaseServiceImpl
    * @return the list of added entities
    */
   @Override
-  public List<T> add(Collection<T> entities) {
+  public List<T> persist(Collection<T> entities) {
     List<T> save = repository.saveAll(entities);
     getModifyDataAuditingServices().forEach(service -> service.save(save, repository.getDomainClass()));
     return save;

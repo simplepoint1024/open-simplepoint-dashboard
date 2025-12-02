@@ -18,8 +18,8 @@ import java.util.HashMap;
 import java.util.ServiceLoader;
 import org.simplepoint.api.environment.EnvironmentConfiguration;
 import org.simplepoint.core.properties.CoreProperties;
+import org.springframework.boot.EnvironmentPostProcessor;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
@@ -34,8 +34,10 @@ public class SimpleEnvironmentPostProcessor extends HashMap<String, Object>
       ServiceLoader.load(EnvironmentConfiguration.class);
 
   @Override
-  public void postProcessEnvironment(ConfigurableEnvironment environment,
-                                     SpringApplication application) {
+  public void postProcessEnvironment(
+      ConfigurableEnvironment environment,
+      SpringApplication application
+  ) {
 
     if (CoreProperties.containsKey(SIMPLEPOINT_ADDR)) {
       this.put("server.address", CoreProperties.getProperty(SIMPLEPOINT_ADDR));

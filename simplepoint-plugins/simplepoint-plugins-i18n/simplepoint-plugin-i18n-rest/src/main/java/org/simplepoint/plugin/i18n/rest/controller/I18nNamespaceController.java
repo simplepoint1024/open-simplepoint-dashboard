@@ -68,7 +68,7 @@ public class I18nNamespaceController extends BaseController<I18nNamespaceService
   @PreAuthorize("hasRole('SYSTEM') or hasAuthority('namespaces.create')")
   @Operation(summary = "添加命名空间", description = "添加一个新的命名空间到系统中")
   public Response<Namespace> add(@RequestBody Namespace data) {
-    return ok(service.add(data));
+    return ok(service.persist(data));
   }
 
   /**

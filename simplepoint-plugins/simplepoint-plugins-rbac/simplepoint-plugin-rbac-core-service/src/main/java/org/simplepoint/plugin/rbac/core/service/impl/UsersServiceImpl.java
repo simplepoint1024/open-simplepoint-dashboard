@@ -149,8 +149,8 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    * @return the added User object
    */
   @Override
-  public <S extends User> S add(S entity) {
-    return super.add(entity);
+  public <S extends User> S persist(S entity) {
+    return super.persist(entity);
   }
 
   @Override

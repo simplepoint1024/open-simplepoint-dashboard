@@ -18,12 +18,12 @@
       "code": "SH",
       "countryCode": "CN",
       "enabled": true,
-      "isDst": false,
       "nameEnglish": "Shanghai",
       "nameNative": "上海",
       "timezoneCode": "Asia/Shanghai",
       "level": "province-level municipality",
-      "utcOffset": "+08:00"
+      "postalCode": "200000",
+      "parentId": "CN"
     }
   ],
   "timezones": [
@@ -33,8 +33,9 @@
       "level": "province-level municipality",
       "nameEnglish": "Shanghai",
       "nameNative": "上海",
-      "parentId": "CN",
+      "utcOffset": "+08:00",
       "postalCode": "200000",
+      "isDst": false,
       "enabled": true
     }
   ],
