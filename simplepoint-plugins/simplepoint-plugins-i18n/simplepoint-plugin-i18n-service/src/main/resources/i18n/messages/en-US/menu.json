@@ -1,0 +1,37 @@
+{
+  "menu.dashboard": "Dashboard",
+  "menu.profile": "Profile",
+  "menu.billing": "Billing Information",
+  "menu.settings": "System Settings",
+  "menu.logout": "Log Out",
+
+  "menu.i18n": "Internationalization",
+  "menu.i18n.countryRange": "Countries & Regions",
+  "menu.i18n.message": "i18n Messages",
+  "menu.i18n.countries": "Country Management",
+  "menu.i18n.regions": "Region Management",
+  "menu.i18n.timezones": "Timezone Management",
+  "menu.i18n.languages": "Language Management",
+  "menu.i18n.namespace": "i18n Namespace",
+
+  "menu.monitoring": "Monitoring & Audit",
+  "menu.monitoring.loginLog": "Login Logs",
+  "menu.monitoring.operationLog": "Operation Logs",
+
+  "menu.ops": "System Maintenance",
+  "menu.ops.microService": "Microservice Management",
+  "menu.ops.microPlugin": "Plugin Marketplace",
+  "menu.ops.microApplication": "Micro Application Management",
+
+  "menu.system": "System Configuration",
+  "menu.system.permission": "Permission Management",
+  "menu.system.oauthClient": "OAuth Client Management",
+  "menu.system.client": "Application Management",
+  "menu.system.endpoints": "Endpoint Management",
+  "menu.system.role": "Role Management",
+  "menu.system.auth": "Authorization Management",
+  "menu.system.field": "Field Permissions",
+  "menu.system.data": "Data Permissions",
+  "menu.system.menu": "Menu Management",
+  "menu.system.user": "User Management"
+}
