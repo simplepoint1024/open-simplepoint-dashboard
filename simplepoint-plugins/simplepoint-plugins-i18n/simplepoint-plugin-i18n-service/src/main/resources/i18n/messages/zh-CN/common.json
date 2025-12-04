@@ -66,11 +66,7 @@
   "ok": "确定",
   "cancel": "取消",
   "loading.resources": "资源加载中，请稍候...",
-  "label.language": "语言",
-  "settings.theme": "主题",
-  "settings.light": "尺寸",
   "error.componentCrashed": "组件渲染出错",
   "error.reload": "重新加载",
-  "menu.externalLink": "外部链接",
-  "tooltip.size": "切换全局尺寸(小/中/大)"
+  "menu.externalLink": "外部链接"
 }

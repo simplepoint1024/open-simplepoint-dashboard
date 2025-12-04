@@ -17,6 +17,7 @@ import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.springframework.core.annotation.Order;
 
 /**
  * Represents a language with various attributes.
@@ -62,10 +63,43 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 @Tag(name = "语言对象", description = "用于管理系统中的语言")
 public class Language extends BaseEntityImpl<String> {
 
+  /**
+   * The English name of the language (e.g., "Chinese", "French").
+   */
+  @Order(0)
+  @Schema(
+      title = "i18n:languages.title.nameEnglish",
+      description = "i18n:languages.description.nameEnglish",
+      example = "Chinese",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  private String nameEnglish;
+
+  /**
+   * The native name of the language (e.g., "中文" for Chinese, "Français" for French).
+   */
+  @Order(1)
+  @Schema(
+      title = "i18n:languages.title.nameNative",
+      description = "i18n:languages.description.nameNative",
+      example = "中文",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  private String nameNative;
+
 
   /**
    * The language code ISO 639-1 (e.g., "en", "fr", "zh").
    */
+  @Order(2)
   @Schema(
       title = "i18n:languages.title.code",
       description = "i18n:languages.description.code",
@@ -90,37 +124,8 @@ public class Language extends BaseEntityImpl<String> {
           })
       }
   )
+  @Order(3)
   private String locale;
-
-  /**
-   * The English name of the language (e.g., "Chinese", "French").
-   */
-  @Schema(
-      title = "i18n:languages.title.nameEnglish",
-      description = "i18n:languages.description.nameEnglish",
-      example = "Chinese",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
-  private String nameEnglish;
-
-  /**
-   * The native name of the language (e.g., "中文" for Chinese, "Français" for French).
-   */
-  @Schema(
-      title = "i18n:languages.title.nameNative",
-      description = "i18n:languages.description.nameNative",
-      example = "中文",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
-  private String nameNative;
 
   /**
    * The text direction of the language (e.g., "LTR" for left-to-right, "RTL" for right-to-left).
@@ -135,6 +140,7 @@ public class Language extends BaseEntityImpl<String> {
           })
       }
   )
+  @Order(5)
   private String textDirection;
 
   @Schema(
@@ -147,6 +153,7 @@ public class Language extends BaseEntityImpl<String> {
           })
       }
   )
+  @Order(4)
   private String dateFormat;
 
   /**
@@ -162,6 +169,7 @@ public class Language extends BaseEntityImpl<String> {
           })
       }
   )
+  @Order(7)
   @Column
   private Boolean enabled;
 
@@ -178,6 +186,7 @@ public class Language extends BaseEntityImpl<String> {
           })
       }
   )
+  @Order(6)
   @Column
   private String description;
 

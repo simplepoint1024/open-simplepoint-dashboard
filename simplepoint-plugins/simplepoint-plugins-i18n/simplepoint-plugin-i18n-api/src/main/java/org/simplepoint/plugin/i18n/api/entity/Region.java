@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,11 +13,10 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.annotation.FormSchema;
-import org.simplepoint.core.annotation.GenericsType;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.springframework.core.annotation.Order;
 
 /**
  * Represents a region with various attributes.
@@ -65,37 +63,9 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 public class Region extends BaseEntityImpl<String> {
 
   /**
-   * The code of the region.
-   */
-  @Schema(
-      title = "i18n:regions.title.code",
-      description = "i18n:regions.description.code",
-      example = "BJ",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      })
-  private String code;
-
-  /**
-   * The country code of the region.
-   */
-  @Schema(
-      title = "i18n:regions.title.countryCode",
-      description = "i18n:regions.description.countryCode",
-      example = "CN",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      })
-  @Column(length = 32, nullable = false, unique = true)
-  private String countryCode;
-
-  /**
    * The English name of the region.
    */
+  @Order(0)
   @Schema(
       title = "i18n:regions.title.nameEnglish",
       description = "i18n:regions.description.nameEnglish",
@@ -111,6 +81,7 @@ public class Region extends BaseEntityImpl<String> {
   /**
    * The native name of the region.
    */
+  @Order(1)
   @Schema(
       title = "i18n:regions.title.nameNative",
       description = "i18n:regions.description.nameNative",
@@ -124,8 +95,40 @@ public class Region extends BaseEntityImpl<String> {
   private String nameNative;
 
   /**
+   * The code of the region.
+   */
+  @Order(2)
+  @Schema(
+      title = "i18n:regions.title.code",
+      description = "i18n:regions.description.code",
+      example = "BJ",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      })
+  private String code;
+
+  /**
+   * The country code of the region.
+   */
+  @Order(3)
+  @Schema(
+      title = "i18n:regions.title.countryCode",
+      description = "i18n:regions.description.countryCode",
+      example = "CN",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      })
+  @Column(length = 32, nullable = false, unique = true)
+  private String countryCode;
+
+  /**
    * The level of the region (e.g., province, city).
    */
+  @Order(4)
   @Schema(
       title = "i18n:regions.title.level",
       description = "i18n:regions.description.level",
@@ -141,6 +144,7 @@ public class Region extends BaseEntityImpl<String> {
   /**
    * The postal code of the region.
    */
+  @Order(5)
   @Schema(
       title = "i18n:regions.title.postalCode",
       description = "i18n:regions.description.postalCode",
@@ -156,14 +160,5 @@ public class Region extends BaseEntityImpl<String> {
   /**
    * The parent region identifier.
    */
-  @Schema(
-      title = "i18n:regions.title.parentCode",
-      description = "i18n:regions.description.parentCode",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
   private String parentId;
 }

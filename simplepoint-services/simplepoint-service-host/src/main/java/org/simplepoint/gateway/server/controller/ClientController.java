@@ -58,6 +58,17 @@ public class ClientController {
   }
 
   /**
+   * Provides the DevTools configuration file.
+   *
+   * @return redirect to the index.html
+   */
+  @Operation(summary = "DevTools 配置文件", description = "返回 DevTools 配置文件")
+  @GetMapping("/.well-known/appspecific/com.chrome.devtools.json")
+  public String devtools() {
+    return "redirect:index.html";
+  }
+
+  /**
    * Retrieves information about the currently logged-in user.
    *
    * @return the User object containing user details
