@@ -5,11 +5,16 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.EntityType;
+import jakarta.persistence.metamodel.Metamodel;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
@@ -40,6 +45,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializable>
     extends SimpleJpaRepository<T, I> implements BaseRepository<T, I> {
 
+  private final EntityManager entityManager;
+
   /**
    * Constructs a new BaseRepositoryImpl instance.
    * This constructor initializes the repository with entity information and an entity manager.
@@ -50,6 +57,7 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
   public BaseRepositoryImpl(JpaEntityInformation<T, ?> entityInformation,
                             EntityManager entityManager) {
     super(entityInformation, entityManager);
+    this.entityManager = entityManager;
   }
 
   /**
@@ -61,6 +69,7 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
    */
   public BaseRepositoryImpl(Class<T> domainClass, EntityManager em) {
     super(domainClass, em);
+    this.entityManager = em;
   }
 
   /**
@@ -144,16 +153,21 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
   }
 
   @SneakyThrows
-  private <S extends T> Predicate[] getPredicates(Map<String, String> attributes, Root<S> root,
-                                                  CriteriaQuery<?> query,
-                                                  CriteriaBuilder criteriaBuilder,
-                                                  EscapeCharacter character) {
-
+  private <S extends T> Predicate[] getPredicates(
+      Map<String, String> attributes,
+      Root<S> root,
+      CriteriaQuery<?> query,
+      CriteriaBuilder criteriaBuilder,
+      EscapeCharacter character
+  ) {
+    Metamodel metamodel = this.entityManager.getMetamodel();
+    EntityType<T> entityType = metamodel.entity(getDomainClass());
+    Set<String> entityAttribute = entityType.getAttributes().stream().map(Attribute::getName).collect(Collectors.toSet());
     List<Predicate> predicates = new ArrayList<>();
     if (attributes != null && !attributes.isEmpty()) {
       attributes.forEach((name, value) -> {
         try {
-          if (value != null) {
+          if (value != null & entityAttribute.contains(name)) {
             if (value.contains(":")) {
               String[] strings = StringUtil.splitLast(value, ":");
               AttributeMatcher attributeMatcher = AttributeMatchers.getAttributeMatcher(strings[0]);

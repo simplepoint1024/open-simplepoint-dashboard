@@ -23,7 +23,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 @EnableCaching
 @EnableRepository
 @EnableMethodSecurity
-@EnableSpringDataWebSupport
+@EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class Common {
 
   /**

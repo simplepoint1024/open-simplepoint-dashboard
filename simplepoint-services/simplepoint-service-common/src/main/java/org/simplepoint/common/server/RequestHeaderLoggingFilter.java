@@ -49,7 +49,7 @@ public class RequestHeaderLoggingFilter implements Filter {
         }
 
         // 输出日志
-        log.info("\n{}", sb);
+        log.debug("\n{}", sb);
       }
     }
     chain.doFilter(request, response);
