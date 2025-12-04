@@ -382,8 +382,6 @@ public class BaseServiceImpl
    */
   @Override
   public <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
-    attributes.remove("number");
-    attributes.remove("size");
     Page<S> limit = repository.limit(attributes, pageable);
     this.validate(limit.getContent());
     return limit;
