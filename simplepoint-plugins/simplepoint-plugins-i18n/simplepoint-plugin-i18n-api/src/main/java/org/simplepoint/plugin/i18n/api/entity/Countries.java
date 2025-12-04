@@ -17,6 +17,7 @@ import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.springframework.core.annotation.Order;
 
 /**
  * Represents a country with various attributes.
@@ -63,8 +64,41 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 public class Countries extends BaseEntityImpl<String> {
 
   /**
+   * The English name of the country.
+   */
+  @Order(0)
+  @Schema(
+      title = "i18n:countries.title.nameEnglish",
+      description = "i18n:countries.description.nameEnglish",
+      example = "United States",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      })
+  @Column(length = 32, nullable = false, unique = true)
+  private String nameEnglish;
+
+  /**
+   * The native name of the country.
+   */
+  @Order(1)
+  @Schema(
+      title = "i18n:countries.title.nameNative",
+      description = "i18n:countries.description.nameNative",
+      example = "United States",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      })
+  @Column(length = 32, nullable = false, unique = true)
+  private String nameNative;
+
+  /**
    * The ISO 3166-1 alpha-2 code of the country.
    */
+  @Order(2)
   @Schema(
       title = "i18n:countries.title.isoCode2",
       description = "i18n:countries.description.isoCode2",
@@ -81,6 +115,7 @@ public class Countries extends BaseEntityImpl<String> {
   /**
    * The ISO 3166-1 alpha-3 code of the country.
    */
+  @Order(3)
   @Schema(
       title = "i18n:countries.title.isoCode3",
       description = "i18n:countries.description.isoCode3",
@@ -95,8 +130,24 @@ public class Countries extends BaseEntityImpl<String> {
   private String isoCode3;
 
   /**
+   * The default timezone of the country.
+   */
+  @Order(4)
+  @Schema(
+      title = "i18n:countries.title.timezone",
+      description = "i18n:countries.description.timezone",
+      example = "America/New_York",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      })
+  private String defaultTimezone;
+
+  /**
    * The numeric code of the country.
    */
+  @Order(5)
   @Schema(
       title = "i18n:countries.title.numericCode",
       description = "i18n:countries.description.numericCode",
@@ -111,77 +162,24 @@ public class Countries extends BaseEntityImpl<String> {
   private Integer numericCode;
 
   /**
-   * The English name of the country.
-   */
-  @Schema(
-      title = "i18n:countries.title.nameEnglish",
-      description = "i18n:countries.description.nameEnglish",
-      example = "United States",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      })
-  @Column(length = 32, nullable = false, unique = true)
-  private String nameEnglish;
-
-  /**
-   * The native name of the country.
-   */
-  @Schema(
-      title = "i18n:countries.title.nameNative",
-      description = "i18n:countries.description.nameNative",
-      example = "United States",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      })
-  @Column(length = 32, nullable = false, unique = true)
-  private String nameNative;
-
-  /**
    * The currency code of the country.
    */
-  @Schema(
-      title = "i18n:countries.title.currencyCode",
-      description = "i18n:countries.description.currencyCode",
-      example = "USD",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
   private String currencyCode;
 
-  @Schema(
-      title = "i18n:countries.title.continent",
-      description = "i18n:countries.description.continent",
-      example = "North America",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
+  /**
+   * The continent where the country is located.
+   */
   private String continent;
 
-  @Schema(
-      title = "i18n:countries.title.subRegion",
-      description = "i18n:countries.description.subRegion",
-      example = "Northern America",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
+  /**
+   * The region where the country is located.
+   */
   private String subRegion;
 
   /**
    * The currency name of the country.
    */
+  @Order(6)
   @Schema(
       title = "i18n:countries.title.currencyName",
       description = "i18n:countries.description.currencyName",
@@ -196,46 +194,17 @@ public class Countries extends BaseEntityImpl<String> {
   /**
    * The currency symbol of the country.
    */
-  @Schema(
-      title = "i18n:countries.title.currencySymbol",
-      description = "i18n:countries.description.currencySymbol",
-      example = "$",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      })
   private String currencySymbol;
 
-  @Schema(
-      title = "i18n:countries.title.currencyNumeric",
-      description = "i18n:countries.description.currencyNumeric",
-      example = "840",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
-  private String currencyNumeric;
-
   /**
-   * The default timezone of the country.
+   * The numeric code of the currency.
    */
-  @Schema(
-      title = "i18n:countries.title.timezone",
-      description = "i18n:countries.description.timezone",
-      example = "America/New_York",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      })
-  private String defaultTimezone;
+  private String currencyNumeric;
 
   /**
    * The phone code of the country.
    */
+  @Order(7)
   @Schema(
       title = "i18n:countries.title.phoneCode",
       description = "i18n:countries.description.phoneCode",
@@ -251,21 +220,12 @@ public class Countries extends BaseEntityImpl<String> {
   /**
    * The flag icon URL of the country.
    */
-  @Schema(
-      title = "i18n:countries.title.flagIcon",
-      description = "i18n:countries.description.flagIcon",
-      example = "国旗图标地址",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
   private String flagIcon;
 
   /**
    * Indicates whether the country is enabled.
    */
+  @Order(8)
   @Schema(
       title = "i18n:countries.title.enabled",
       description = "i18n:countries.description.enabled",

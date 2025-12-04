@@ -109,14 +109,16 @@ public class I18nInitializeService implements ApplicationRunner {
   private void initI18nMessages() {
     initializeManager.execute(I18N_INIT_MSG_MODULE, () -> {
       Map<String, Map<String, Map<String, String>>> load = ClassPathResourceUtil.readJsonPathMap("/i18n/messages/");
+      Set<String> regNsCodes = new HashSet<>();
       Set<Namespace> namespaceSet = new HashSet<>();
       Set<Message> messageSet = new HashSet<>();
       for (String locale : load.keySet()) {
         Map<String, Map<String, String>> namespaceMessages = load.get(locale);
         Set<String> namespaceCodes = namespaceMessages.keySet();
         for (String namespaceCode : namespaceCodes) {
-          if (!namespaceMessages.containsKey(namespaceCode)) {
+          if (!regNsCodes.contains(namespaceCode)) {
             namespaceSet.add(new Namespace(namespaceCode, namespaceCode));
+            regNsCodes.add(namespaceCode);
           }
           Map<String, String> messages = namespaceMessages.get(namespaceCode);
           for (String messageKey : messages.keySet()) {

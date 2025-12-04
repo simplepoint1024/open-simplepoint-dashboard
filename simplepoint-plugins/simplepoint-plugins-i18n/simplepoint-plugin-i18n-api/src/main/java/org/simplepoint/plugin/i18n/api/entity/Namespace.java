@@ -15,6 +15,7 @@ import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.springframework.core.annotation.Order;
 
 /**
  * Represents a namespace with various attributes.
@@ -61,6 +62,7 @@ public class Namespace extends BaseEntityImpl<String> {
   /**
    * The name of the namespace.
    */
+  @Order(0)
   @Schema(
       title = "i18n:namespaces.title.name",
       description = "i18n:namespaces.description.name",
@@ -77,6 +79,7 @@ public class Namespace extends BaseEntityImpl<String> {
   /**
    * The code of the namespace.
    */
+  @Order(1)
   @Schema(
       title = "i18n:namespaces.title.code",
       description = "i18n:namespaces.description.code",
@@ -88,22 +91,6 @@ public class Namespace extends BaseEntityImpl<String> {
               })
       })
   private String code;
-
-  /**
-   * The description of the namespace.
-   */
-  @Schema(
-      title = "i18n:namespaces.title.description",
-      description = "i18n:namespaces.description.description",
-      example = "Namespace for United States",
-      extensions = {
-          @Extension(name = "x-ui",
-              properties = {
-                  @ExtensionProperty(name = "x-list-visible", value = "true"),
-              })
-      }
-  )
-  private String description;
 
   /**
    * The module associated with the namespace.
@@ -119,7 +106,25 @@ public class Namespace extends BaseEntityImpl<String> {
               })
       }
   )
+  @Order(2)
   private String module;
+
+  /**
+   * The description of the namespace.
+   */
+  @Order(3)
+  @Schema(
+      title = "i18n:namespaces.title.description",
+      description = "i18n:namespaces.description.description",
+      example = "Namespace for United States",
+      extensions = {
+          @Extension(name = "x-ui",
+              properties = {
+                  @ExtensionProperty(name = "x-list-visible", value = "true"),
+              })
+      }
+  )
+  private String description;
 
   /**
    * Constructor for Namespace.
