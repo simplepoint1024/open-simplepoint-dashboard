@@ -1,46 +1,56 @@
 package org.simplepoint.data.datasource;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import javax.sql.DataSource;
 import org.simplepoint.data.datasource.context.DataSourceContextHolder;
-import org.simplepoint.data.datasource.exception.DataSourceNotFoundException;
 import org.simplepoint.data.datasource.properties.SimpleDataSourceConfigProperties;
-import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+import org.springframework.jdbc.datasource.AbstractDataSource;
 
 /**
- * Custom implementation of AbstractRoutingDataSource for dynamic data source routing.
- * This class initializes the data sources based on the provided configuration properties
- * and determines the current lookup key for routing database operations.
+ * A simple routing DataSource that routes to different DataSources
+ * based on the current context held in DataSourceContextHolder.
+ * It initializes by registering all data source configurations
+ * without creating actual DataSource instances.
  */
-public class SimpleRoutingDataSource extends AbstractRoutingDataSource {
+public class SimpleRoutingDataSource extends AbstractDataSource {
+
+  private final SimpleDataSourceConfigProperties properties;
 
   /**
-   * Constructs a new SimpleRoutingDataSource instance with the given data source configuration properties.
-   * Initializes and registers the data sources and sets the default data source.
+   * Constructor that initializes the routing data source with the given configuration properties.
+   * It registers all data source configurations without creating actual DataSource instances.
    *
-   * @param properties the configuration properties containing data source information
-   * @throws DataSourceNotFoundException if no data source information is configured
+   * @param properties the configuration properties for the data sources
    */
   public SimpleRoutingDataSource(SimpleDataSourceConfigProperties properties) {
-    var propertiesDataSources = properties.getList();
-    if (propertiesDataSources == null) {
-      throw new DataSourceNotFoundException("The data source information is not configured!");
-    }
-    propertiesDataSources.forEach(propertiesDataSource ->
-        DataSourceContextHolder.putProperties(propertiesDataSource.getName(),
-            propertiesDataSource));
-    this.setDataSourceLookup(new SimpleDataSourceLookup());
-    super.setTargetDataSources(DataSourceContextHolder.getTargetDataSources());
-    super.setDefaultTargetDataSource(properties.getDefaultName());
-    super.afterPropertiesSet();
+    this.properties = properties;
+    DataSourceContextHolder.setDefaultDataSourceKey(properties.getDefaultName());
+    properties.getList().forEach(props ->
+        DataSourceContextHolder.putProperties(props.getName(), props)
+    );
   }
 
-  /**
-   * Determines the current lookup key for routing.
-   * This method retrieves the data source key from the DataSourceContextHolder.
-   *
-   * @return the current lookup key for data source routing
-   */
   @Override
-  protected Object determineCurrentLookupKey() {
-    return DataSourceContextHolder.get();
+  public Connection getConnection() throws SQLException {
+    return determineTargetDataSource().getConnection();
+  }
+
+  @Override
+  public Connection getConnection(String username, String password) throws SQLException {
+    return determineTargetDataSource().getConnection(username, password);
+  }
+
+  private DataSource determineTargetDataSource() {
+    String key = DataSourceContextHolder.get();
+    if (key != null) {
+      DataSource ds = DataSourceContextHolder.getDataSource(key);
+      if (ds != null) {
+        return ds;
+      }
+    }
+    // 默认数据源
+    return DataSourceContextHolder.getDefaultDataSource();
   }
 }
+
