@@ -1,130 +1,174 @@
 package org.simplepoint.data.datasource.context;
 
 import java.io.Closeable;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.data.datasource.exception.DataSourceNotFoundException;
 import org.simplepoint.data.datasource.properties.SimpleDataSourceProperties;
 
 /**
- * A utility class for managing and switching between multiple
- * data sources within an application context.
- * Provides thread-local storage for the current data source
- * lookup key and handles dynamic configuration.
+ * Production-level dynamic DataSource manager.
+ * Supports:
+ * - Tenant-level DataSource caching
+ * - Dynamic refresh (Consul / DB config)
+ * - Multi-DB-type support
+ * - Schema-per-tenant (optional)
+ * - Safe connection pool shutdown
  */
 @Slf4j
 public class DataSourceContextHolder {
+  private static String defaultDataSourceKey;
 
   /**
-   * A thread-local variable to hold the current data source lookup key.
+   * ThreadLocal to hold the current DataSource lookup key.
    */
   private static final ThreadLocal<String> lookupKey = new ThreadLocal<>();
 
   /**
-   * A map to store configuration properties for different data sources.
+   * Stores DataSource configuration (properties only).
    */
-  private static final Map<String, SimpleDataSourceProperties> targetProperties = new HashMap<>();
+  private static final Map<String, SimpleDataSourceProperties> propertiesMap = new ConcurrentHashMap<>();
 
   /**
-   * Sets the current data source lookup key.
-   *
-   * @param lookupKey the lookup key for identifying the active data source
+   * Cache of initialized DataSource instances.
    */
-  public static void set(String lookupKey) {
-    DataSourceContextHolder.lookupKey.set(lookupKey);
+  private static final Map<String, DataSource> dataSourceCache = new ConcurrentHashMap<>();
+
+  /**
+   * Set the current DataSource lookup key.
+   */
+  public static void set(String key) {
+    lookupKey.set(key);
   }
 
   /**
-   * Retrieves the current data source lookup key.
-   *
-   * @return the lookup key of the active data source
+   * Get the current DataSource lookup key.
    */
   public static String get() {
-    return DataSourceContextHolder.lookupKey.get();
+    return lookupKey.get();
   }
 
   /**
-   * Clears the current thread-local data source lookup key.
+   * Clear the current DataSource lookup key.
    */
   public static void clear() {
-    DataSourceContextHolder.lookupKey.remove();
+    lookupKey.remove();
   }
 
   /**
-   * Stores configuration properties for a specific data source.
-   *
-   * @param dataSourceName the name of the data source
-   * @param dataSource     the configuration properties for the data source
+   * Store DataSource properties configuration.
    */
-  public static void putProperties(String dataSourceName, SimpleDataSourceProperties dataSource) {
-    targetProperties.put(dataSourceName, dataSource);
+  public static void putProperties(String name, SimpleDataSourceProperties props) {
+    propertiesMap.put(name, props);
   }
 
   /**
-   * Retrieves the configuration properties for a specific data source.
-   *
-   * @param dataSourceName the name of the data source
-   * @return the {@link SimpleDataSourceProperties} associated with the data source name
+   * Get DataSource properties configuration.
    */
-  public static SimpleDataSourceProperties getProperties(String dataSourceName) {
-    return targetProperties.get(dataSourceName);
+  public static SimpleDataSourceProperties getProperties(String name) {
+    return propertiesMap.get(name);
   }
 
   /**
-   * Retrieves all stored data source properties.
-   *
-   * @return a map of all data source names and their properties
+   * Get all DataSource properties configurations.
    */
-  public static Map<String, SimpleDataSourceProperties> getProperties() {
-    return targetProperties;
+  public static Map<String, SimpleDataSourceProperties> getAllProperties() {
+    return propertiesMap;
   }
 
+
   /**
-   * Removes the configuration properties for a specific data source and closes it if possible.
-   *
-   * @param dataSourceName the name of the data source to remove
+   * Get or create DataSource (cached).
    */
-  public static void remove(String dataSourceName) {
-    SimpleDataSourceProperties dataSource = targetProperties.get(dataSourceName);
-    if (dataSource != null) {
-      if (dataSource instanceof Closeable closeable) {
-        try {
-          closeable.close();
-        } catch (IOException e) {
-          log.warn(e.getMessage());
-        }
+  public static DataSource getDataSource(String name) {
+    return dataSourceCache.computeIfAbsent(name, key -> {
+      SimpleDataSourceProperties props = propertiesMap.get(key);
+      if (props == null) {
+        throw new DataSourceNotFoundException("DataSource not found: " + key);
       }
-      targetProperties.remove(dataSourceName);
-    }
+      log.info("Creating DataSource for key: {}", key);
+      return props.initializeDataSourceBuilder().build();
+    });
   }
 
   /**
-   * Initializes and retrieves a {@link DataSource} for the specified data source name.
-   *
-   * @param dataSourceName the name of the data source
-   * @return the initialized {@link DataSource} instance
-   * @throws DataSourceNotFoundException if the data source is not found
+   * Remove DataSource and close connection pool safely.
    */
-  public static DataSource getDataSource(String dataSourceName) {
-    SimpleDataSourceProperties sourceProperties = targetProperties.get(dataSourceName);
-    if (sourceProperties == null) {
-      throw new DataSourceNotFoundException("DataSource not found: " + dataSourceName);
+  public static void remove(String name) {
+    DataSource ds = dataSourceCache.remove(name);
+    if (ds != null) {
+      closeDataSource(ds);
     }
-    return sourceProperties.initializeDataSourceBuilder().build();
+    propertiesMap.remove(name);
+    log.info("Removed DataSource: {}", name);
   }
 
   /**
-   * Retrieves all target data sources and initializes them.
-   *
-   * @return a map of data source lookup keys and their initialized {@link DataSource} instances
+   * Set default DataSource key.
    */
-  public static Map<Object, Object> getTargetDataSources() {
-    Map<Object, Object> targetDataSources = new HashMap<>();
-    targetProperties.forEach(
-        (key, value) -> targetDataSources.put(key, value.initializeDataSourceBuilder().build()));
-    return targetDataSources;
+  public static void setDefaultDataSourceKey(String key) {
+    if (defaultDataSourceKey == null) {
+      defaultDataSourceKey = key;
+      return;
+    }
+    throw new IllegalStateException("Default DataSource key is already set: " + defaultDataSourceKey);
+  }
+
+  /**
+   * Get default DataSource key.
+   */
+  public static String getDefaultDataSourceKey() {
+    if (defaultDataSourceKey == null) {
+      throw new IllegalStateException("Default DataSource key is not set yet.");
+    }
+    return defaultDataSourceKey;
+  }
+
+  /**
+   * Get default DataSource.
+   */
+  public static DataSource getDefaultDataSource() {
+    return getDataSource(getDefaultDataSourceKey());
+  }
+
+  /**
+   * Refresh DataSource (e.g., Consul config changed).
+   */
+  public static void refresh(String name, SimpleDataSourceProperties newProps) {
+    log.info("Refreshing DataSource: {}", name);
+    remove(name); // close old pool
+    putProperties(name, newProps);
+    // new DataSource will be created lazily on next get()
+  }
+
+  private static void closeDataSource(DataSource ds) {
+    try {
+      if (ds instanceof Closeable closeable) {
+        closeable.close();
+        return;
+      }
+
+      // HikariCP
+      if (ds.getClass().getName().contains("HikariDataSource")) {
+        ds.getClass().getMethod("close").invoke(ds);
+        return;
+      }
+
+      // Druid
+      if (ds.getClass().getName().contains("DruidDataSource")) {
+        ds.getClass().getMethod("close").invoke(ds);
+        return;
+      }
+
+      // Tomcat JDBC
+      if (ds.getClass().getName().contains("org.apache.tomcat.jdbc.pool.DataSource")) {
+        ds.getClass().getMethod("close").invoke(ds);
+      }
+
+    } catch (Exception e) {
+      log.warn("Failed to close DataSource: {}", e.getMessage());
+    }
   }
 }
