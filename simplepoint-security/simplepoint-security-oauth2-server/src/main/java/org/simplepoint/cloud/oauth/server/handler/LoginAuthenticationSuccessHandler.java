@@ -23,15 +23,16 @@ public final class LoginAuthenticationSuccessHandler implements AuthenticationSu
   private final AuthenticationSuccessHandler delegate = new SavedRequestAwareAuthenticationSuccessHandler();
 
   /**
-   * Constructs a LoginAuthenticationSuccessHandler with the specified
-   * AuthorizationContextCacheable.
+   * Constructs a LoginAuthenticationSuccessHandler with the specified dependencies.
    *
-   * <p>使用指定的 AuthorizationContextCacheable 构造 LoginAuthenticationSuccessHandler</p>
+   * <p>使用指定的依赖项构造 LoginAuthenticationSuccessHandler</p>
    *
    * @param authorizationContextCacheable the authorization context cacheable
-   *                                      授权上下文缓存接口
+   *                                      授权上下文缓存
    */
-  public LoginAuthenticationSuccessHandler(AuthorizationContextCacheable authorizationContextCacheable) {
+  public LoginAuthenticationSuccessHandler(
+      AuthorizationContextCacheable authorizationContextCacheable
+  ) {
     this.authorizationContextCacheable = authorizationContextCacheable;
   }
 
@@ -74,8 +75,6 @@ public final class LoginAuthenticationSuccessHandler implements AuthenticationSu
     if (details != null) {
       if (details instanceof User currentUser) {
         String username = currentUser.getUsername();
-        // Cache the authorization context for the authenticated user
-        // 缓存已认证用户的授权上下文
         this.authorizationContextCacheable.cacheUserPermission(username, currentUser.getPermissions());
 
         this.authorizationContextCacheable.cacheUserContext(username, currentUser);
