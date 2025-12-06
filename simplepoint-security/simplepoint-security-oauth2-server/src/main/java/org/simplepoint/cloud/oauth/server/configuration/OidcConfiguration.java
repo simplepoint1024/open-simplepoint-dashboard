@@ -8,16 +8,22 @@
 
 package org.simplepoint.cloud.oauth.server.configuration;
 
+import java.util.Map;
+import java.util.Set;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcUserInfoAuthenticationExpansion;
 import org.simplepoint.cloud.oauth.server.oidc.DefaultOidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.oidc.DefaultOidcUserInfoAuthentication;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.cache.AuthorizationContextCacheable;
+import org.simplepoint.security.decorator.TokenDecorator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 
 /**
  * Configuration class for OpenID Connect (OIDC) settings.
@@ -52,7 +58,8 @@ public class OidcConfiguration {
   @ConditionalOnMissingBean(OidcUserInfoAuthenticationExpansion.class)
   public OidcUserInfoAuthenticationExpansion oidcUserInfoAuthentication(
       final UsersService usersService,
-      @Autowired(required = false) final AuthorizationContextCacheable authorizationContextCacheable
+      @Autowired(required = false) final AuthorizationContextCacheable authorizationContextCacheable,
+      Set<TokenDecorator> accessTokenDecorators
   ) {
     /*
      * Uses {@link UsersService} as a dependency for user info authentication.
@@ -65,4 +72,29 @@ public class OidcConfiguration {
      */
     return new DefaultOidcUserInfoAuthentication(usersService, authorizationContextCacheable);
   }
+
+  /**
+   * Customizes the JWT token claims.
+   * 定制 JWT 令牌声明
+   *
+   * @return the OAuth2 token customizer OAuth2 令牌定制器
+   */
+  @Bean
+  public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer(
+      final Set<TokenDecorator> tokenDecorator
+  ) {
+    return context -> {
+      for (TokenDecorator decorator : tokenDecorator) {
+        // 获取认证主体
+        Authentication principal = context.getPrincipal();
+        // 装饰令牌声明
+        Map<String, Object> claims = decorator.resolveTokenClaims(principal, context.getTokenType().getValue());
+        if (claims != null) {
+          // 将装饰的声明添加到令牌上下文中
+          claims.forEach((key, value) -> context.getClaims().claim(key, value));
+        }
+      }
+    };
+  }
+
 }

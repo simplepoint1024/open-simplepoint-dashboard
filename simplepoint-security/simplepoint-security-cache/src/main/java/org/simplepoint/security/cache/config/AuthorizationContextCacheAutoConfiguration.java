@@ -1,8 +1,10 @@
 package org.simplepoint.security.cache.config;
 
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.security.cache.AuthorizationContextCacheable;
 import org.simplepoint.security.cache.RedisAuthorizationContextCacheable;
+import org.simplepoint.security.decorator.UserLoginDecorator;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -25,8 +27,11 @@ public class AuthorizationContextCacheAutoConfiguration {
   @Bean
   @ConditionalOnClass(StringRedisTemplate.class)
   @ConditionalOnMissingBean(AuthorizationContextCacheable.class)
-  public AuthorizationContextCacheable authorizationContextCacheable(StringRedisTemplate stringRedisTemplate) {
+  public AuthorizationContextCacheable authorizationContextCacheable(
+      final StringRedisTemplate stringRedisTemplate,
+      final Set<UserLoginDecorator> userLoginDecorators
+  ) {
     log.info("init authorizationContextCacheable by RedisAuthorizationContextCacheable");
-    return new RedisAuthorizationContextCacheable(stringRedisTemplate);
+    return new RedisAuthorizationContextCacheable(stringRedisTemplate, userLoginDecorators);
   }
 }

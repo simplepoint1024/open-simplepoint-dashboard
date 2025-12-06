@@ -9,13 +9,18 @@
 package org.simplepoint.security.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Converter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
+import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
@@ -33,9 +38,9 @@ import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.simplepoint.core.convert.JsonNodeConverter;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
  * Represents the User entity in the RBAC (Role-Based Access Control) system.
@@ -423,9 +428,21 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   @Transient
   private Collection<GrantedAuthority> authorities;
 
+  /**
+   * 用户的权限集合，存储该用户的权限信息
+   * A collection of permissions assigned to the user.
+   */
   @Transient
   @Schema(hidden = true)
   private Collection<String> permissions;
+
+  /**
+   * 租户标识，用于多租户环境中区分不同租户的用户
+   * Tenant identifier used to distinguish users from different tenants in a multi-tenant environment.
+   */
+  @Lob
+  @Convert(converter = JsonNodeConverter.class)
+  private ObjectNode decorator;
 
   /**
    * 在实体持久化之前执行的回调方法

@@ -8,8 +8,10 @@
 
 package org.simplepoint.plugin.rbac.core.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,7 @@ import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.security.decorator.UserLoginDecorator;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,23 +58,33 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   private final PasswordEncoder passwordEncoder;
 
   /**
+   * Set of user login decorators for customizing the login process.
+   */
+  private final Set<UserLoginDecorator> userLoginDecorators;
+
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
+  /**
    * Constructs a UsersServiceImpl with the specified repository and optional metadata sync service.
    *
    * @param passwordEncoder             the optional PasswordEncoder for encrypting user passwords
    * @param usersRepository             the repository used for user operations
    * @param detailsProviderService      the access control service for managing permissions
    * @param userRoleRelevanceRepository the repository for managing UserRoleRelevance entities
+   * @param userLoginDecorators         the set of user login decorators
    */
   public UsersServiceImpl(
       @Autowired(required = false) final PasswordEncoder passwordEncoder,
       final UserRepository usersRepository,
       @Autowired(required = false) final UserContext<BaseUser> userContext,
       final DetailsProviderService detailsProviderService,
-      final UserRoleRelevanceRepository userRoleRelevanceRepository
+      final UserRoleRelevanceRepository userRoleRelevanceRepository,
+      final Set<UserLoginDecorator> userLoginDecorators
   ) {
     super(usersRepository, userContext, detailsProviderService);
     this.passwordEncoder = passwordEncoder;
     this.userRoleRelevanceRepository = userRoleRelevanceRepository;
+    this.userLoginDecorators = userLoginDecorators;
   }
 
 
@@ -86,18 +99,23 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    */
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    var users = findAll(Map.of(User.ACCOUNT_FIELD, username));
+    Map<String, String> ext = new HashMap<>();
+    String resolvedUsername = resolveUsername(username, ext);
+    var users = findAll(Map.of(User.ACCOUNT_FIELD, resolvedUsername));
     if (users.isEmpty()) {
-      log.warn("User not found: {}", username);
-      throw new UsernameNotFoundException("User not found: " + username);
+      log.warn("User not found: {}", resolvedUsername);
+      throw new UsernameNotFoundException("User not found: " + resolvedUsername);
     }
     if (users.size() > 1) {
-      log.error("Duplicate users found for username: {}", username);
-      throw new IllegalStateException("Duplicate users found: " + username);
+      log.error("Duplicate users found for resolvedUsername: {}", resolvedUsername);
+      throw new IllegalStateException("Duplicate users found: " + resolvedUsername);
     }
 
     var user = users.getFirst();
-    List<String> roles = loadRolesByUsername(username);
+    if (user.getDecorator() == null) {
+      user.setDecorator(objectMapper.createObjectNode());
+    }
+    List<String> roles = loadRolesByUsername(resolvedUsername);
     if (user.getSuperAdmin()) {
       roles.add("SYSTEM");
     }
@@ -112,7 +130,37 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     authorities.addAll(permissions.stream().map(SimpleGrantedAuthority::new).toList());
     user.setAuthorities(authorities);
     user.setPermissions(permissions);
-    return user;
+    return afterLogin(user, ext);
+  }
+
+  /**
+   * Resolves the username using the configured UserLoginDecorators.
+   *
+   * @param tenantUsername the username provided by the tenant
+   * @param ext            additional context information
+   * @return the resolved username
+   */
+  private String resolveUsername(String tenantUsername, Map<String, String> ext) {
+    String username = tenantUsername;
+    for (UserLoginDecorator decorator : userLoginDecorators) {
+      username = decorator.resolveUsername(username, ext);
+    }
+    return username;
+  }
+
+  /**
+   * Applies post-login decorations to the UserDetails using the configured UserLoginDecorators.
+   *
+   * @param userDetails the original UserDetails
+   * @param ext         additional context information
+   * @return the decorated UserDetails
+   */
+  private UserDetails afterLogin(UserDetails userDetails, Map<String, String> ext) {
+    UserDetails decorated = userDetails;
+    for (UserLoginDecorator decorator : userLoginDecorators) {
+      decorated = decorator.afterLogin(decorated, ext);
+    }
+    return decorated;
   }
 
 

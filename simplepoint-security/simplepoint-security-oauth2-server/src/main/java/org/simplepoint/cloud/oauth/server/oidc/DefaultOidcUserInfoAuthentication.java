@@ -13,11 +13,13 @@ import static org.springframework.security.oauth2.jwt.JwtClaimNames.SUB;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.AbstractOidcUserInfoAuthentication;
 import org.simplepoint.core.oidc.OidcScopes;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.cache.AuthorizationContextCacheable;
+import org.simplepoint.security.decorator.TokenDecorator;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -45,7 +47,10 @@ public class DefaultOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthe
    * @param usersService The service responsible for managing user information.
    *                     用户服务，负责管理用户信息
    */
-  public DefaultOidcUserInfoAuthentication(final UsersService usersService, AuthorizationContextCacheable authorizationContextCacheable) {
+  public DefaultOidcUserInfoAuthentication(
+      final UsersService usersService,
+      AuthorizationContextCacheable authorizationContextCacheable
+  ) {
     super(usersService);
     this.authorizationContextCacheable = authorizationContextCacheable;
   }
@@ -79,7 +84,7 @@ public class DefaultOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthe
           userContext.setAuthorities(permission.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toSet()));
         }
         setClaims(claims, userContext);
-      // 否则从用户服务中加载用户信息
+        // 否则从用户服务中加载用户信息
       } else {
         UserDetails userDetails = usersService.loadUserByUsername(principal.getName());
         if (userDetails instanceof User user) {
