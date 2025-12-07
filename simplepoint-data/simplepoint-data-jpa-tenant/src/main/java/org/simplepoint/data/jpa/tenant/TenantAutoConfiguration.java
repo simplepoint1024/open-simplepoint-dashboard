@@ -2,7 +2,6 @@ package org.simplepoint.data.jpa.tenant;
 
 import org.simplepoint.data.jpa.tenant.decorator.TenantTokenDecorator;
 import org.simplepoint.data.jpa.tenant.decorator.TenantUserLoginDecorator;
-import org.simplepoint.data.jpa.tenant.filter.TenantFilter;
 import org.simplepoint.security.decorator.TokenDecorator;
 import org.simplepoint.security.decorator.UserLoginDecorator;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -40,17 +39,5 @@ public class TenantAutoConfiguration {
   @Order(Ordered.HIGHEST_PRECEDENCE)
   public TokenDecorator tenantAccessTokenDecorator() {
     return new TenantTokenDecorator();
-  }
-
-  /**
-   * Provides the TenantFilter bean with the highest precedence order.
-   * 提供具有最高优先级顺序的 TenantFilter Bean
-   *
-   * @return the TenantFilter 租户过滤器
-   */
-  @Bean
-  @Order(Ordered.HIGHEST_PRECEDENCE)
-  public TenantFilter tenantFilter() {
-    return new TenantFilter();
   }
 }
