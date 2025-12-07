@@ -40,14 +40,14 @@ public class SecurityConfig {
     http.csrf(ServerHttpSecurity.CsrfSpec::disable);
     http.authorizeExchange(exchanges -> exchanges
             // Allow access to login page and OAuth2-related paths
-            .pathMatchers("/login", "/oauth2/**", "/actuator/**", "/static/**").permitAll()
+            .pathMatchers("/{registrationId}/authorize", "/{registrationId}/login", "/login", "/oauth2/**", "/actuator/**", "/static/**").permitAll()
             // Require authentication for all other requests
             .anyExchange().authenticated()
         )
 
         // Configure OAuth2 login with client registration repository and custom login page
         .oauth2Login(oauth2 -> oauth2.clientRegistrationRepository(clientRegistrationRepository)
-            .loginPage(loginPage))
+            .loginPage("/login"))
 
         // Configure logout handling using OIDC client-initiated logout success handler
         .logout(logout -> logout
