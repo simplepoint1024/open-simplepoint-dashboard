@@ -74,7 +74,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    * @param userLoginDecorators         the set of user login decorators
    */
   public UsersServiceImpl(
-      @Autowired(required = false) final PasswordEncoder passwordEncoder,
+      final PasswordEncoder passwordEncoder,
       final UserRepository usersRepository,
       @Autowired(required = false) final UserContext<BaseUser> userContext,
       final DetailsProviderService detailsProviderService,
@@ -198,6 +198,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    */
   @Override
   public <S extends User> S persist(S entity) {
+    entity.setPassword(passwordEncoder.encode(entity.getPassword()));
     return super.persist(entity);
   }
 

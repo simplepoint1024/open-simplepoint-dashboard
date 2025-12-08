@@ -34,7 +34,7 @@ import org.springframework.core.annotation.Order;
         sort = 0,
         argumentMaxSize = 1,
         argumentMinSize = 0,
-        authority = "countries.add"
+        authority = "countries.create"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
