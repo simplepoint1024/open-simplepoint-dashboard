@@ -8,7 +8,6 @@ dependencies {
     implementation(project(":simplepoint-data:simplepoint-data-cp"))
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
 //    implementation(project(":simplepoint-data:simplepoint-data-jpa-tenant"))
-    implementation(project(":simplepoint-data:simplepoint-data-redis"))
     implementation(project(":simplepoint-security:simplepoint-security-core"))
     implementation(project(":simplepoint-security:simplepoint-security-oauth2-resource"))
 

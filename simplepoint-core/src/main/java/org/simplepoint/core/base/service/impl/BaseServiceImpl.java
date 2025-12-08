@@ -191,7 +191,7 @@ public class BaseServiceImpl
         Set<Map<String, Object>> result = new HashSet<>();
         for (ButtonDeclaration buttonDeclaration : buttonDeclarations) {
           // 检查用户是否具有按钮声明所需的权限
-          if (permissions.contains(buttonDeclaration.authority())) {
+          if (permissions.contains(buttonDeclaration.authority()) || userContext.isSuperAdmin()) {
             result.add(extractAnnotationAttributes(buttonDeclaration));
           }
         }

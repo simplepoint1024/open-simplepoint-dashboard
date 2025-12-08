@@ -72,6 +72,7 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
    * @param registeredClientRepository the repository for retrieving registered clients
    * @throws IllegalArgumentException if any parameter is {@code null}
    */
+  @SuppressWarnings("all")
   public OidcAuthorizationServiceImpl(JpaAuthorizationRepository authorizationRepository,
                                       RegisteredClientRepository registeredClientRepository) {
     Assert.notNull(authorizationRepository, "authorizationRepository cannot be null");
