@@ -65,7 +65,7 @@ public class ClientController {
       @RegisteredOAuth2AuthorizedClient OAuth2AuthorizedClient authorizedClient
   ) {
     log.debug("Principal : {}", principal.toString());
-    log.debug("Access-Token : {}", authorizedClient.getAccessToken().getTokenValue());
+    log.info("Access-Token : {}", authorizedClient.getAccessToken().getTokenValue());
     log.debug("Refresh Token : {}", Objects.requireNonNull(authorizedClient.getRefreshToken()).getTokenValue());
     return "redirect:index.html";
   }
@@ -76,8 +76,8 @@ public class ClientController {
    * @return the login view name
    */
   @GetMapping("/login")
-    @Operation(summary = "登录页面", description = "返回登录页面")
-  public String login(){
+  @Operation(summary = "登录页面", description = "返回登录页面")
+  public String login() {
     return "login";
   }
 }

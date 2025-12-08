@@ -70,6 +70,18 @@ public class OidcScopes {
   public static final String PERMISSIONS = "permissions";
 
   /**
+   * Scope for accessing the tenant information.
+   * 访问租户信息的范围。
+   */
+  public static final String TENANT = "tenant";
+
+  /**
+   * Scope for accessing the user's organs information.
+   * 访问用户机构信息的范围。
+   */
+  public static final String ORGANS = "organs";
+
+  /**
    * Creates a SimpleGrantedAuthority object for the given scope.
    * 为指定的范围创建一个 SimpleGrantedAuthority 对象。
    *

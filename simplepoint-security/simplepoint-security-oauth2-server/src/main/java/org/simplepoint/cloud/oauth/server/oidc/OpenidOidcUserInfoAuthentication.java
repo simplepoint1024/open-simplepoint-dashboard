@@ -10,16 +10,15 @@ package org.simplepoint.cloud.oauth.server.oidc;
 
 import static org.springframework.security.oauth2.jwt.JwtClaimNames.SUB;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.AbstractOidcUserInfoAuthentication;
 import org.simplepoint.core.oidc.OidcScopes;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.cache.AuthorizationContextCacheable;
-import org.simplepoint.security.decorator.TokenDecorator;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -33,7 +32,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
  * Default implementation for OpenID Connect (OIDC) UserInfo authentication.
  * 默认的 OpenID Connect (OIDC) 用户信息认证实现
  */
-public class DefaultOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthentication {
+public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthentication {
 
   private final AuthorizationContextCacheable authorizationContextCacheable;
 
@@ -47,7 +46,7 @@ public class DefaultOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthe
    * @param usersService The service responsible for managing user information.
    *                     用户服务，负责管理用户信息
    */
-  public DefaultOidcUserInfoAuthentication(
+  public OpenidOidcUserInfoAuthentication(
       final UsersService usersService,
       AuthorizationContextCacheable authorizationContextCacheable
   ) {
@@ -72,26 +71,27 @@ public class DefaultOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthe
     // Extract JWT authentication token
     // 提取 JWT 认证令牌
     JwtAuthenticationToken principal = (JwtAuthenticationToken) authentication.getPrincipal();
-    claims.put(SUB, principal.getName());
-    Collection<GrantedAuthority> scopeAuthorities = principal.getAuthorities();
-    if (scopeAuthorities.contains(OidcScopes.getScopeAuthority(OidcScopes.PROFILE))) {
-      // 如果开启缓存，优先从缓存中获取用户信息
-      if (this.authorizationContextCacheable != null) {
-        User userContext = this.authorizationContextCacheable.getUserContext(principal.getName(), User.class);
-        Collection<String> permission = this.authorizationContextCacheable.getUserPermission(principal.getName());
-        if (permission != null) {
-          userContext.setPermissions(permission);
-          userContext.setAuthorities(permission.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toSet()));
-        }
-        setClaims(claims, userContext);
-        // 否则从用户服务中加载用户信息
-      } else {
-        UserDetails userDetails = usersService.loadUserByUsername(principal.getName());
-        if (userDetails instanceof User user) {
-          setClaims(claims, user);
+    if (principal != null) {
+      claims.put(SUB, principal.getName());
+      Collection<GrantedAuthority> scopeAuthorities = principal.getAuthorities();
+      if (scopeAuthorities.contains(OidcScopes.getScopeAuthority(OidcScopes.OPENID))) {
+        // 如果开启缓存，优先从缓存中获取用户信息
+        if (this.authorizationContextCacheable != null) {
+          User userContext = this.authorizationContextCacheable.getUserContext(principal.getName(), User.class);
+          Collection<String> permission = this.authorizationContextCacheable.getUserPermission(principal.getName());
+          if (permission != null) {
+            userContext.setPermissions(permission);
+            userContext.setAuthorities(permission.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toSet()));
+          }
+          setClaims(claims, userContext, principal);
+          // 否则从用户服务中加载用户信息
+        } else {
+          UserDetails userDetails = usersService.loadUserByUsername(principal.getName());
+          if (userDetails instanceof User user) {
+            setClaims(claims, user, principal);
+          }
         }
       }
-
     }
 
     // Construct OIDC user information from token claims
@@ -99,12 +99,44 @@ public class DefaultOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthe
     return new OidcUserInfo(claims);
   }
 
-  private void setClaims(Map<String, Object> claims, User user) {
-    claims.put("name", user.getName());
-    claims.put("picture", user.getPicture());
-    claims.put("locale", user.getLocale());
-    claims.put("zoneinfo", user.getZoneinfo());
-    claims.put("super_admin", user.getSuperAdmin());
-    claims.put("roles", user.getPermissions().stream().filter(ft -> ft.startsWith("ROLE_")).toList());
+  private void setClaims(Map<String, Object> claims, User user, JwtAuthenticationToken principal) {
+    Collection<GrantedAuthority> authorities = principal.getAuthorities();
+    if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.PROFILE))) {
+      claims.put("name", user.getName());
+      claims.put("given_name", user.getGivenName());
+      claims.put("family_name", user.getFamilyName());
+      claims.put("middle_name", user.getMiddleName());
+      claims.put("nickname", user.getNickname());
+      claims.put("preferred_username", user.getUsername());
+    }
+
+    if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.EMAIL))) {
+      claims.put(OidcScopes.EMAIL, user.getEmail());
+      claims.put("email_verified", user.getEmailVerified());
+    }
+
+    if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.ADDRESS))) {
+      claims.put(OidcScopes.ADDRESS, user.getAddress());
+    }
+
+    if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.PHONE))) {
+      claims.put("phone_number", user.getPhoneNumber());
+      claims.put("phone_number_verified", user.getPhoneNumberVerified());
+    }
+
+    if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.ROLES))) {
+      claims.put(OidcScopes.PERMISSIONS, user.getPermissions());
+      claims.put(OidcScopes.ROLES, user.getAuthorities());
+    }
+
+    ObjectNode decorator = user.getDecorator();
+    if (decorator != null) {
+      if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.TENANT))) {
+        claims.put(OidcScopes.TENANT, decorator.get(OidcScopes.TENANT));
+      }
+      if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.ORGANS))) {
+        claims.put(OidcScopes.ORGANS, decorator.get(OidcScopes.ORGANS));
+      }
+    }
   }
 }
