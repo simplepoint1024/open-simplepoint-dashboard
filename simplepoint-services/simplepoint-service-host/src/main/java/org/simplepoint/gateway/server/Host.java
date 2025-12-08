@@ -11,6 +11,7 @@ package org.simplepoint.gateway.server;
 import org.simplepoint.boot.starter.Boot;
 import org.simplepoint.data.amqp.rpc.annotation.EnableAmqpRemoteClients;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.session.data.redis.config.annotation.web.server.EnableRedisWebSession;
 
 /**
  * The main entry point for the Gateway application.
@@ -19,6 +20,7 @@ import org.springframework.cache.annotation.EnableCaching;
  */
 @Boot
 @EnableCaching
+@EnableRedisWebSession(redisNamespace = "simplepoint:sessions")
 @EnableAmqpRemoteClients(basePackages = "org.simplepoint")
 public class Host {
 

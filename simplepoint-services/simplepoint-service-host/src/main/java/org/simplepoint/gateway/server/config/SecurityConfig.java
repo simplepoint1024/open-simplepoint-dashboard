@@ -8,6 +8,7 @@
 
 package org.simplepoint.gateway.server.config;
 
+import org.simplepoint.gateway.server.handler.SessionServerAuthenticationSuccessHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,8 +38,7 @@ public class SecurityConfig {
   @Bean
   public SecurityWebFilterChain securityWebFilterChain(
       final ServerHttpSecurity http,
-      final ReactiveClientRegistrationRepository clientRegistrationRepository,
-      @Value("${spring.security.oauth2.client.login-page}") final String loginPage
+      final ReactiveClientRegistrationRepository clientRegistrationRepository
   ) {
     http.csrf(ServerHttpSecurity.CsrfSpec::disable);
     http.authorizeExchange(exchanges -> exchanges
@@ -57,6 +57,7 @@ public class SecurityConfig {
 
         // Configure OAuth2 login with client registration repository and custom login page
         .oauth2Login(oauth2 -> oauth2.clientRegistrationRepository(clientRegistrationRepository)
+            .authenticationSuccessHandler(new SessionServerAuthenticationSuccessHandler())
             .loginPage("/login"))
 
         // Configure logout handling using OIDC client-initiated logout success handler
