@@ -22,7 +22,16 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 public class JsonSchemaAutoConfiguration {
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
+
+  /**
+   * Constructor for JsonSchemaAutoConfiguration.
+   *
+   * @param objectMapper the ObjectMapper to be used for schema generation
+   */
+  public JsonSchemaAutoConfiguration(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   /**
    * Provides a Function bean that generates JSON schemas for given classes using the SchemaGenerator.

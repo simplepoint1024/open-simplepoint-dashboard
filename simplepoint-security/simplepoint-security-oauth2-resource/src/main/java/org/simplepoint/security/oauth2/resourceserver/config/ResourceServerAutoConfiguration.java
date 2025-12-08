@@ -24,7 +24,16 @@ import org.springframework.security.web.SecurityFilterChain;
  */
 @AutoConfiguration
 public class ResourceServerAutoConfiguration {
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
+
+  /**
+   * Constructor for ResourceServerAutoConfiguration.
+   *
+   * @param objectMapper the ObjectMapper used for JSON processing
+   */
+  public ResourceServerAutoConfiguration(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   /**
    * Creates a UserContext bean for the OAuth2 resource server.

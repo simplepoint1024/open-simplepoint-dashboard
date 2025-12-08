@@ -62,7 +62,10 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    */
   private final Set<UserLoginDecorator> userLoginDecorators;
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  /**
+   * ObjectMapper for JSON operations.
+   */
+  private final ObjectMapper objectMapper;
 
   /**
    * Constructs a UsersServiceImpl with the specified repository and optional metadata sync service.
@@ -72,6 +75,8 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    * @param detailsProviderService      the access control service for managing permissions
    * @param userRoleRelevanceRepository the repository for managing UserRoleRelevance entities
    * @param userLoginDecorators         the set of user login decorators
+   * @param objectMapper                the ObjectMapper for JSON operations
+   * @param userContext                 the optional user context for retrieving current user information
    */
   public UsersServiceImpl(
       final PasswordEncoder passwordEncoder,
@@ -79,12 +84,13 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
       @Autowired(required = false) final UserContext<BaseUser> userContext,
       final DetailsProviderService detailsProviderService,
       final UserRoleRelevanceRepository userRoleRelevanceRepository,
-      final Set<UserLoginDecorator> userLoginDecorators
+      final Set<UserLoginDecorator> userLoginDecorators, ObjectMapper objectMapper
   ) {
     super(usersRepository, userContext, detailsProviderService);
     this.passwordEncoder = passwordEncoder;
     this.userRoleRelevanceRepository = userRoleRelevanceRepository;
     this.userLoginDecorators = userLoginDecorators;
+    this.objectMapper = objectMapper;
   }
 
 

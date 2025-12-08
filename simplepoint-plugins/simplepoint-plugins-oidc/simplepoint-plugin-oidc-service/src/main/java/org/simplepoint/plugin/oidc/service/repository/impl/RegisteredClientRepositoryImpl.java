@@ -1,21 +1,19 @@
 package org.simplepoint.plugin.oidc.service.repository.impl;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.simplepoint.plugin.oidc.service.SecurityJacksonParse.parseMap;
+import static org.simplepoint.plugin.oidc.service.SecurityJacksonParse.writeMap;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.plugin.oidc.api.entity.Client;
 import org.simplepoint.plugin.oidc.service.repository.JpaClientRepository;
-import org.simplepoint.plugin.oidc.service.service.impl.OidcClientServiceImpl;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.jackson2.SecurityJackson2Modules;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.jackson2.OAuth2AuthorizationServerJackson2Module;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.stereotype.Component;
@@ -39,7 +37,6 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientRepositor
 
   private final PasswordEncoder passwordEncoder;
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   /**
    * Constructs a new RegisteredClientRepositoryImpl with the provided client repository.
@@ -54,10 +51,6 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientRepositor
     this.passwordEncoder = passwordEncoder;
     Assert.notNull(clientRepository, "clientRepository cannot be null");
     this.clientRepository = clientRepository;
-    ClassLoader classLoader = OidcClientServiceImpl.class.getClassLoader();
-    var securityModules = SecurityJackson2Modules.getModules(classLoader);
-    this.objectMapper.registerModules(securityModules);
-    this.objectMapper.registerModule(new OAuth2AuthorizationServerJackson2Module());
   }
 
   /**
@@ -180,41 +173,6 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientRepositor
     entity.setTokenSettings(writeMap(registeredClient.getTokenSettings().getSettings()));
 
     return entity;
-  }
-
-  /**
-   * Parses a JSON string into a Map.
-   * This method is used for deserializing JSON configurations, typically for OAuth2 client settings.
-   * If the provided JSON string is malformed, an {@code IllegalArgumentException} will be thrown.
-   *
-   * @param data the JSON string to parse
-   * @return a map representation of the JSON data
-   * @throws IllegalArgumentException if parsing fails
-   */
-  private Map<String, Object> parseMap(String data) {
-    try {
-      return this.objectMapper.readValue(data, new TypeReference<>() {
-      });
-    } catch (Exception ex) {
-      throw new IllegalArgumentException(ex.getMessage(), ex);
-    }
-  }
-
-  /**
-   * Serializes a Map into a JSON string representation.
-   * This method is used for converting OAuth2 client settings or token configurations
-   * into a JSON format that can be stored in a database.
-   *
-   * @param data the map containing the data to serialize
-   * @return a JSON string representation of the map
-   * @throws IllegalArgumentException if serialization fails
-   */
-  private String writeMap(Map<String, Object> data) {
-    try {
-      return this.objectMapper.writeValueAsString(data);
-    } catch (Exception ex) {
-      throw new IllegalArgumentException(ex.getMessage(), ex);
-    }
   }
 
   /**
