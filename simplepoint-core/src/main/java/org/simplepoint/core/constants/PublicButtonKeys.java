@@ -4,7 +4,7 @@ package org.simplepoint.core.constants;
  * Public button keys and titles used across the application.
  */
 public class PublicButtonKeys {
-  public static final String ADD_TITLE = "i18n:table.button.add";
+  public static final String ADD_TITLE = "i18n:table.button.create";
 
   public static final String ADD_KEY = "add";
 

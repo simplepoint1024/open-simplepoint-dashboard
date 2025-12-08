@@ -22,6 +22,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -77,7 +78,8 @@ public class ClientController {
    */
   @GetMapping("/login")
   @Operation(summary = "登录页面", description = "返回登录页面")
-  public String login() {
+  public String login(@RequestParam(value = "error", required = false) String error) {
+    System.out.println(error);
     return "login";
   }
 }

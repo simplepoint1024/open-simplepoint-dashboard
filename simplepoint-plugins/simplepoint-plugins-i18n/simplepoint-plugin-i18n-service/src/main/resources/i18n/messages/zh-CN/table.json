@@ -25,7 +25,7 @@
   "table.filter.lessOrEqual": "小于等于",
   "table.filter.null": "空",
   "table.filter.notNull": "非空",
-  "table.button.add": "新增",
+  "table.button.create": "新增",
   "table.button.edit": "编辑",
   "table.button.delete": "删除"
 }

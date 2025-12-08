@@ -129,8 +129,8 @@ public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthen
       claims.put(OidcScopes.ROLES, user.getAuthorities());
     }
 
-    ObjectNode decorator = user.getDecorator();
-    if (decorator != null) {
+    var decoratorObj = user.getDecorator();
+    if (decoratorObj instanceof ObjectNode decorator) {
       if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.TENANT))) {
         claims.put(OidcScopes.TENANT, decorator.get(OidcScopes.TENANT));
       }

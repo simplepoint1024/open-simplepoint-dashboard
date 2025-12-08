@@ -10,14 +10,12 @@ package org.simplepoint.security.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
-import jakarta.persistence.Converter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
@@ -63,7 +61,7 @@ import org.springframework.security.core.GrantedAuthority;
         sort = 0,
         argumentMaxSize = 1,
         argumentMinSize = 0,
-        authority = "users.add"
+        authority = "users.create"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -441,8 +439,9 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * Tenant identifier used to distinguish users from different tenants in a multi-tenant environment.
    */
   @Lob
+  @Schema(hidden = true)
   @Convert(converter = JsonNodeConverter.class)
-  private ObjectNode decorator;
+  private JsonNode decorator;
 
   /**
    * 在实体持久化之前执行的回调方法
@@ -504,6 +503,9 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
 
   @Override
   public Boolean superAdmin() {
+    if (this.superAdmin == null) {
+      return false;
+    }
     return this.superAdmin;
   }
 }

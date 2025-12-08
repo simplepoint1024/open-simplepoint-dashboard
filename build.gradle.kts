@@ -33,6 +33,7 @@ subprojects {
         implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
         implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
         implementation("org.jetbrains.kotlin:kotlin-reflect")
+
         implementation("jakarta.persistence:jakarta.persistence-api")
         implementation("cn.hutool:hutool-all:${rootProject.libs.versions.hutool.get()}")
 

@@ -19,19 +19,23 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 public class RedisAuthorizationContextCacheable implements AuthorizationContextCacheable {
   private final StringRedisTemplate stringRedisTemplate;
   private final Set<UserLoginDecorator> userLoginDecorators;
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
 
   /**
-   * Constructs a RedisAuthorizationContextCacheable with the specified dependencies.
+   * Constructor for RedisAuthorizationContextCacheable.
    *
-   * <p>使用指定的依赖项构造 RedisAuthorizationContextCacheable</p>
-   *
-   * @param stringRedisTemplate the StringRedisTemplate for Redis operations 用于 Redis 操作的 StringRedisTemplate
+   * @param stringRedisTemplate the StringRedisTemplate for Redis operations
+   * @param userLoginDecorators the set of UserLoginDecorators
+   * @param objectMapper        the ObjectMapper for JSON serialization/deserialization
    */
-  public RedisAuthorizationContextCacheable(StringRedisTemplate stringRedisTemplate,
-                                            Set<UserLoginDecorator> userLoginDecorators) {
+  public RedisAuthorizationContextCacheable(
+      StringRedisTemplate stringRedisTemplate,
+      Set<UserLoginDecorator> userLoginDecorators,
+      ObjectMapper objectMapper
+  ) {
     this.stringRedisTemplate = stringRedisTemplate;
     this.userLoginDecorators = userLoginDecorators;
+    this.objectMapper = objectMapper;
   }
 
   @Override

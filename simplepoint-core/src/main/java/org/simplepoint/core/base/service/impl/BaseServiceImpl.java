@@ -120,7 +120,7 @@ public class BaseServiceImpl
   public Map<String, Object> schema() {
     Class<T> domainClass = repository.getDomainClass();
     ObjectNode jsonSchema = getJsonSchema(domainClass);
-    Map<String, Object> schema = mapper.convertValue(jsonSchema, new TypeReference<Map<String, Object>>() {
+    Map<String, Object> schema = mapper.convertValue(jsonSchema, new TypeReference<>() {
     });
     Set<Map<String, Object>> buttonDeclarationsSchema = getButtonDeclarationsSchema(domainClass);
     return Map.of(
@@ -183,13 +183,17 @@ public class BaseServiceImpl
    */
   protected Set<Map<String, Object>> getButtonDeclarationsSchema(Class<T> domainClass) {
     boolean annotationPresent = domainClass.isAnnotationPresent(ButtonDeclarations.class);
+    Set<String> permissions = userContext.getPermissions();
     if (annotationPresent) {
       ButtonDeclarations annotation = domainClass.getAnnotation(ButtonDeclarations.class);
       ButtonDeclaration[] buttonDeclarations = annotation.value();
       if (buttonDeclarations.length > 0) {
         Set<Map<String, Object>> result = new HashSet<>();
         for (ButtonDeclaration buttonDeclaration : buttonDeclarations) {
-          result.add(extractAnnotationAttributes(buttonDeclaration));
+          // 检查用户是否具有按钮声明所需的权限
+          if (permissions.contains(buttonDeclaration.authority())) {
+            result.add(extractAnnotationAttributes(buttonDeclaration));
+          }
         }
         return result;
       }
