@@ -13,7 +13,7 @@ import java.util.Set;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcUserInfoAuthenticationExpansion;
 import org.simplepoint.cloud.oauth.server.oidc.DefaultOidcConfigurerExpansion;
-import org.simplepoint.cloud.oauth.server.oidc.DefaultOidcUserInfoAuthentication;
+import org.simplepoint.cloud.oauth.server.oidc.OpenidOidcUserInfoAuthentication;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.cache.AuthorizationContextCacheable;
 import org.simplepoint.security.decorator.TokenDecorator;
@@ -70,7 +70,7 @@ public class OidcConfiguration {
      * @return The default implementation of OIDC user info authentication expansion.
      *         默认的 OIDC 用户信息认证扩展实现
      */
-    return new DefaultOidcUserInfoAuthentication(usersService, authorizationContextCacheable);
+    return new OpenidOidcUserInfoAuthentication(usersService, authorizationContextCacheable);
   }
 
   /**

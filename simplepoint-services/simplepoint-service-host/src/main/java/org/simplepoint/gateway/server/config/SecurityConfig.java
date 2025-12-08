@@ -40,7 +40,14 @@ public class SecurityConfig {
     http.csrf(ServerHttpSecurity.CsrfSpec::disable);
     http.authorizeExchange(exchanges -> exchanges
             // Allow access to login page and OAuth2-related paths
-            .pathMatchers("/{registrationId}/authorize", "/{registrationId}/login", "/login", "/oauth2/**", "/actuator/**", "/static/**").permitAll()
+            .pathMatchers(
+                "/{registrationId}/authorize",
+                "/{registrationId}/login",
+                "/login",
+                "/authorization/**",
+                "/actuator/**",
+                "/static/**"
+            ).permitAll()
             // Require authentication for all other requests
             .anyExchange().authenticated()
         )

@@ -169,8 +169,6 @@ public class BaseServiceImpl
 
     // 替换原来的 properties
     schema.set("properties", sortedProperties);
-    BaseUser details = userContext.getDetails();
-    System.out.println(details);
     //BaseUser details = userContext.getDetails();
     //Set<SimpleFieldPermissions> fields = formSchemaGenerator.loadCurrentUserSchemaPropertiesPermissions(details, domainClass.getName());
 
