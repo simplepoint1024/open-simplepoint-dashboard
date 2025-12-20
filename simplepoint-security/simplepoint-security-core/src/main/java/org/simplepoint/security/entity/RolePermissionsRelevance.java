@@ -9,6 +9,7 @@
 package org.simplepoint.security.entity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
@@ -36,6 +37,7 @@ public class RolePermissionsRelevance implements BaseRolePermissionsRelevance {
    * This field specifies the unique identifier or scope of the role.
    */
   @Id
+  @Column(unique = true, nullable = false)
   @Schema(title = "角色标识", description = "与角色关联的标识，通常用于定义角色的范围或权限")
   private String roleAuthority;
 
@@ -44,6 +46,7 @@ public class RolePermissionsRelevance implements BaseRolePermissionsRelevance {
    * This field specifies the unique identifier or scope of the permission.
    */
   @Id
+  @Column(unique = true, nullable = false)
   @Schema(title = "权限标识", description = "与权限关联的标识，通常用于定义权限的范围或角色")
   private String permissionAuthority;
 }

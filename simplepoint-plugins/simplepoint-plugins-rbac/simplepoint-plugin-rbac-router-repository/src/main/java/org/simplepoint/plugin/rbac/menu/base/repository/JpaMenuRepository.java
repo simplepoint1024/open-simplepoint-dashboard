@@ -11,9 +11,9 @@ package org.simplepoint.plugin.rbac.menu.base.repository;
 import java.util.Collection;
 import java.util.List;
 import org.simplepoint.data.jpa.base.BaseRepository;
-import org.simplepoint.plugin.rbac.menu.api.entity.MenuPermissionsRelevance;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
 import org.simplepoint.security.entity.Menu;
+import org.simplepoint.security.entity.ResourcesPermissionsRelevance;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -27,8 +27,8 @@ import org.springframework.stereotype.Repository;
 public interface JpaMenuRepository extends BaseRepository<Menu, String>, MenuRepository {
 
   @Override
-  @Query("SELECT mpr FROM MenuPermissionsRelevance mpr WHERE mpr.permissionAuthority IN :permissionAuthorities")
-  Collection<MenuPermissionsRelevance> loadPermissionsByPermissionAuthorities(
+  @Query("SELECT mpr FROM ResourcesPermissionsRelevance mpr WHERE mpr.permissionAuthority IN :permissionAuthorities")
+  Collection<ResourcesPermissionsRelevance> loadPermissionsByPermissionAuthorities(
       @Param("permissionAuthorities") Collection<String> permissionAuthorities
   );
 

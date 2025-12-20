@@ -8,15 +8,12 @@
 
 package org.simplepoint.plugin.rbac.core.base.repository;
 
-import java.util.Collection;
-import java.util.Set;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.PermissionsRepository;
 import org.simplepoint.security.entity.Permissions;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 

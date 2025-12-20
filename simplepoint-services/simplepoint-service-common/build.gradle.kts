@@ -10,6 +10,7 @@ dependencies {
 //    implementation(project(":simplepoint-data:simplepoint-data-jpa-tenant"))
     implementation(project(":simplepoint-security:simplepoint-security-core"))
     implementation(project(":simplepoint-security:simplepoint-security-oauth2-resource"))
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
     implementation(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))
     implementation(project(":simplepoint-data:simplepoint-data-json:simplepoint-data-json-schema"))

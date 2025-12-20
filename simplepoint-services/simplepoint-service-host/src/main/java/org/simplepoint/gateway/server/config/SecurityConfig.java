@@ -57,7 +57,7 @@ public class SecurityConfig {
 
         // Configure OAuth2 login with client registration repository and custom login page
         .oauth2Login(oauth2 -> oauth2.clientRegistrationRepository(clientRegistrationRepository)
-            .authenticationSuccessHandler(new SessionServerAuthenticationSuccessHandler())
+//            .authenticationSuccessHandler(new SessionServerAuthenticationSuccessHandler())
             .loginPage("/login"))
 
         // Configure logout handling using OIDC client-initiated logout success handler
