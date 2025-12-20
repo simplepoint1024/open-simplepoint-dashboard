@@ -79,7 +79,6 @@ public class ClientController {
   @GetMapping("/login")
   @Operation(summary = "登录页面", description = "返回登录页面")
   public String login(@RequestParam(value = "error", required = false) String error) {
-    System.out.println(error);
     return "login";
   }
 }

@@ -30,10 +30,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
  */
 @Data
 @Entity
-@Table(name = "security_roles", indexes = {
-    @Index(name = "idx_role_name", columnList = "role_name"),
-    @Index(name = "idx_authority", columnList = "authority")
-})
+@Table
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
     @ButtonDeclaration(
