@@ -11,7 +11,9 @@ doc/
 ├── architecture/          # 系统架构设计文档
 │   ├── system_overview.md  # 系统概览
 │   ├── component_design.md  # 组件设计说明
-│   └── deployment_diagram.md # 部署架构图
+│   ├── deployment_diagram.md # 部署架构图
+│   └── project_structure_diagram.md # 项目结构图
+│   └── amqprpc_design_usage.md  # AMQP RPC 设计与使用说明
 ├── design_patterns/      # 设计模式与最佳实践
 │   ├── singleton_pattern.md # 单例模式
 │   ├── factory_pattern.md   # 工厂模式
