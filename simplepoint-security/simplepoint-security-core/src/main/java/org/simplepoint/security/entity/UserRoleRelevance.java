@@ -26,7 +26,7 @@ import org.simplepoint.security.entity.id.UserRoleRelevanceId;
  */
 @Data
 @Entity
-@Table(name = "security_user_role_rel", indexes = {
+@Table(name = "auth_user_role_rel", indexes = {
     @Index(name = "username", columnList = "username"),
     @Index(name = "authority", columnList = "authority")
 })

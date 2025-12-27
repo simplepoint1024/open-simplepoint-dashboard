@@ -15,12 +15,9 @@ import jakarta.persistence.MappedSuperclass;
 import java.io.Serializable;
 import java.time.Instant;
 import lombok.Data;
-import org.hibernate.annotations.IdGeneratorType;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.simplepoint.api.base.BaseEntity;
-import org.simplepoint.core.annotation.FormSchema;
 import org.simplepoint.core.annotation.UuidStringGenerator;
-import org.simplepoint.core.base.generator.UuidStringIdentifierGenerator;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -34,7 +31,6 @@ import org.springframework.data.annotation.LastModifiedDate;
  * @param <I> the type of the ID field, which must be serializable
  */
 @Data
-@FormSchema
 @JacksonStdImpl
 @MappedSuperclass
 public class BaseEntityImpl<I extends Serializable> implements BaseEntity<I> {

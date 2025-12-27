@@ -30,7 +30,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
  */
 @Data
 @Entity
-@Table
+@Table(name = "auth_roles")
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
     @ButtonDeclaration(

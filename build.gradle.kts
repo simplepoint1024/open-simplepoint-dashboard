@@ -66,4 +66,5 @@ tasks.named("build") {
     dependsOn("installGitHooks")
 }
 
+tasks.withType<JavaCompile> { options.encoding = "UTF-8" }
 apply(from = rootProject.file("buildSrc/build.gradle.kts"))

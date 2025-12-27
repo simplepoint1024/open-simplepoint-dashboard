@@ -18,7 +18,7 @@ import org.simplepoint.security.entity.id.ResourcesPermissionsRelevanceId;
 @Data
 @Entity
 @IdClass(ResourcesPermissionsRelevanceId.class)
-@Table(name = "security_resources_relevance")
+@Table(name = "auth_resources_rel")
 public class ResourcesPermissionsRelevance implements BaseRolePermissionsRelevance {
 
   /**
@@ -37,10 +37,19 @@ public class ResourcesPermissionsRelevance implements BaseRolePermissionsRelevan
   @Column(unique = true, nullable = false)
   private String resourceAuthority;
 
-
+  /**
+   * Default constructor.
+   */
   public ResourcesPermissionsRelevance() {
   }
 
+  /**
+   * Parameterized constructor to create a ResourcesPermissionsRelevance
+   * with specified resource and permission authorities.
+   *
+   * @param resourceAuthority   the authority of the resource
+   * @param permissionAuthority the authority of the permission
+   */
   public ResourcesPermissionsRelevance(String resourceAuthority, String permissionAuthority) {
     this.resourceAuthority = resourceAuthority;
     this.permissionAuthority = permissionAuthority;

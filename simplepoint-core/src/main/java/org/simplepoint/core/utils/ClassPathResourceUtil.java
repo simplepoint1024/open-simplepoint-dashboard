@@ -5,15 +5,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 /**
- * Utility class to load resources from the classpath.
+ * Utility class for reading JSON resources from the classpath.
  */
 public class ClassPathResourceUtil {
+
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
   static {
@@ -22,67 +24,86 @@ public class ClassPathResourceUtil {
   }
 
   /**
-   * Loads properties from JSON files located in the specified directory within the classpath.
+   * Reads all JSON files from the specified directory in the classpath
+   * and deserializes them into objects of the specified class.
    *
-   * @param dir   The directory path within the classpath.
-   * @param clazz The class type to which the JSON files will be mapped.
-   * @param <T>   The type of the properties to be loaded.
-   * @return A map of file names (without .json extension) to their corresponding properties.
-   * @throws IOException If an I/O error occurs while reading the files.
+   * @param dir   the directory in the classpath to scan for JSON files
+   * @param clazz the class to deserialize the JSON files into
+   * @param <T>   the type of the deserialized objects
+   * @return a map where the keys are filenames (without .json extension)
+   *         and the values are the deserialized objects
+   * @throws IOException if an I/O error occurs during reading
    */
   public static <T> Map<String, T> readJson(String dir, Class<T> clazz) throws IOException {
-    Map<String, T> properties = new HashMap<>();
+    Map<String, T> result = new HashMap<>();
     PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
-    // 扫描 classpath 下的目录
-    Resource[] resources = resolver.getResources("classpath:" + dir + "/*.json");
-
-    for (Resource resource : resources) {
-      String fileName = resource.getFilename();
-      if (fileName != null && fileName.endsWith(".json")) {
-        T prop = objectMapper.readValue(resource.getInputStream(), clazz);
-        properties.put(fileName.replace(".json", ""), prop);
-      }
-    }
-    return properties;
-  }
-
-  /**
-   * 读取多语言目录下的 JSON 文件，返回嵌套 Map 结构.
-   *
-   * @param dir 目录路径
-   * @return 嵌套 Map 结构，第一层键为语言目录名，第二层键为文件名（不含 .json），第三层为文件内容的键值对
-   * @throws IOException 如果读取文件时发生 I/O 错误
-   */
-  public static Map<String, Map<String, Map<String, String>>> readJsonPathMap(String dir) throws IOException {
-    Map<String, Map<String, Map<String, String>>> result = new HashMap<>();
-    PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-
-    // 扫描所有语言目录下的 json 文件
-    Resource[] resources = resolver.getResources("classpath:" + dir + "/**/*.json");
+    // 使用 classpath*: 兼容 JAR 内扫描
+    Resource[] resources = resolver.getResources("classpath*:" + dir + "/*.json");
 
     for (Resource resource : resources) {
       String filename = resource.getFilename();
-      if (filename == null || !filename.endsWith(".json")) {
+      if (filename == null || !filename.toLowerCase().endsWith(".json")) {
         continue;
       }
 
-      // 解析语言目录名，例如 zh-CN
-      String desc = resource.getDescription(); // 更稳妥，避免 JAR 内路径问题
-      String[] parts = desc.split("/");
-      String lang = parts[parts.length - 2]; // 倒数第二层目录作为语言
-
-      // 反序列化 JSON 为 Map<String,String>
-      Map<String, String> obj = objectMapper.readValue(resource.getInputStream(),
-          new TypeReference<>() {
-          });
-
-      // 放入结果 Map
-      result.computeIfAbsent(lang, k -> new HashMap<>())
-          .put(filename.replace(".json", ""), obj);
+      T obj = objectMapper.readValue(resource.getInputStream(), clazz);
+      String key = filename.substring(0, filename.length() - 5); // 去掉 .json
+      result.put(key, obj);
     }
 
     return result;
   }
 
+
+  /**
+   * Reads all JSON files from the specified directory in the classpath,
+   * organized by language subdirectories, and deserializes them into maps.
+   *
+   * @param dir the directory in the classpath to scan for JSON files
+   * @return a nested map where the first key is the language,
+   *         the second key is the filename (without .json extension),
+   *         and the value is the deserialized map from the JSON file
+   * @throws IOException if an I/O error occurs during reading
+   */
+  public static Map<String, Map<String, Map<String, String>>> readJsonPathMap(String dir) throws IOException {
+    Map<String, Map<String, Map<String, String>>> result = new HashMap<>();
+    PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+
+    // classpath*: 兼容 JAR 内扫描
+    Resource[] resources = resolver.getResources("classpath*:" + dir + "/**/*.json");
+
+    for (Resource resource : resources) {
+      String filename = resource.getFilename();
+      if (filename == null || !filename.toLowerCase().endsWith(".json")) {
+        continue;
+      }
+
+      // 使用 URI + Paths 解析目录名（跨平台 + JAR 兼容）
+      URI uri = resource.getURI();
+      String path = uri.toString(); // 统一格式，不受 OS 影响
+
+      // 解析语言目录名：倒数第二层目录
+      String[] parts = path.split("/");
+      if (parts.length < 2) {
+        continue;
+      }
+      String lang = parts[parts.length - 2];
+
+      // 反序列化 JSON
+      Map<String, String> obj = objectMapper.readValue(
+          resource.getInputStream(),
+          new TypeReference<>() {
+          }
+      );
+
+      // 去掉 .json
+      String key = filename.substring(0, filename.length() - 5);
+
+      result.computeIfAbsent(lang, k -> new HashMap<>())
+          .put(key, obj);
+    }
+
+    return result;
+  }
 }

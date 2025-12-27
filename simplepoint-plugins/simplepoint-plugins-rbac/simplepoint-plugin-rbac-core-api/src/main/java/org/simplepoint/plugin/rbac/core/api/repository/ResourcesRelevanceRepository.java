@@ -14,16 +14,16 @@ public interface ResourcesRelevanceRepository {
   /**
    * Removes all resources of a specific type associated with a given authority.
    *
-   * @param authority    the authority associated with the resources
+   * @param authority the authority associated with the resources
    */
   void removeAllByAuthority(String authority);
 
   /**
    * Removes all resources of a specific type associated with a collection of authorities.
    *
-   * @param authorities  the collection of authorities associated with the resources
+   * @param authorities the collection of authorities associated with the resources
    */
-  void removeAllByAuthorities( Collection<String> authorities);
+  void removeAllByAuthorities(Collection<String> authorities);
 
   /**
    * Revokes a specific authority from resources of a given type.
@@ -50,8 +50,9 @@ public interface ResourcesRelevanceRepository {
   Collection<String> loadAllResourceAuthorities(Collection<String> resourceAuthorities);
 
   /**
+   * Authorizes a collection of ResourcesPermissionsRelevance entities.
    *
-   * @param collection
+   * @param collection the collection of ResourcesPermissionsRelevance entities to be authorized
    */
   void authorize(Collection<ResourcesPermissionsRelevance> collection);
 }
