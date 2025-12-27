@@ -28,7 +28,7 @@ import org.simplepoint.security.entity.id.RolePermissionsRelevanceId;
 @Data
 @Entity
 @IdClass(RolePermissionsRelevanceId.class)
-@Table(name = "security_permissions_role_rel")
+@Table(name = "auth_permissions_role_rel")
 @Schema(title = "角色权限关联实体", description = "表示RBAC系统中角色与权限之间的关联关系")
 public class RolePermissionsRelevance implements BaseRolePermissionsRelevance {
 

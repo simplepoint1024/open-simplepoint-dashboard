@@ -1,37 +1,35 @@
-/*
- * Copyright (c) 2025 Jinxu Liu or Organization
- * Licensed under the Apache License, Version 2.0 (the "License");
- * You may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * https://www.apache.org/licenses/LICENSE-2.0
- */
+package org.simplepoint.plugin.rbac.menu.api.entity;
 
-package org.simplepoint.security.entity;
 
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.simplepoint.api.security.base.BasePermissions;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.springframework.core.annotation.Order;
 
 /**
- * Represents the Permissions entity in the RBAC (Role-Based Access Control) system.
- * This entity is mapped to the `rbac_permissions` table and defines access control
- * attributes such as permission name, authority, and description.
+ * Represents a route domain entity in the RBAC (Role-Based Access Control) system.
+ *
+ * <p>This class serves as a placeholder for route domain attributes and is mapped to the
+ * corresponding database table.</p>
+ *
+ * @author JinxuLiu
+ * @since 1.0
  */
 @Data
 @Entity
+@Table(name = "auth_route_domains")
 @EqualsAndHashCode(callSuper = true)
-@Table(name = "auth_permissions")
 @ButtonDeclarations({
     @ButtonDeclaration(
         title = PublicButtonKeys.ADD_TITLE,
@@ -40,7 +38,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         sort = 0,
         argumentMaxSize = 1,
         argumentMinSize = 0,
-        authority = "permissions.create"
+        authority = "route.domain.create"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -50,7 +48,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         sort = 1,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "permissions.edit"
+        authority = "route.domain.edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -61,61 +59,75 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         argumentMinSize = 1,
         argumentMaxSize = 10,
         danger = true,
-        authority = "permissions.delete"
+        authority = "route.domain.delete"
     )
 })
-@Schema(title = "权限实体", description = "表示RBAC系统中的权限实体")
-public class Permissions extends BaseEntityImpl<String> implements BasePermissions {
-  public static final String AUTHORITY_FIELD = "authority";
-
+@Schema(name = "路由域对象", description = "用于管理系统中的路由域信息")
+public class RouteDomain extends BaseEntityImpl<String> {
+  @Order(1)
+  @Column(nullable = false, length = 100)
   @Schema(
-      title = "i18n:permissions.title.name",
-      description = "i18n:permissions.description.name",
-      example = "查看用户列表",
+      title = "i18n:route.domain.title.message",
+      description = "i18n:route.domain.description.message",
+      maxLength = 100,
+      minLength = 1,
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
           })
       }
   )
-  @Column(length = 100, nullable = false)
-  private String name;
+  private String domainName;
 
+  @Order(2)
+  @Column(nullable = false, length = 100)
   @Schema(
-      title = "i18n:permissions.title.authority",
-      description = "i18n:permissions.description.authority",
-      example = "ROLE_ADMIN",
+      title = "i18n:route.domain.title.displayName",
+      description = "i18n:route.domain.description.displayName",
+      maxLength = 100,
+      minLength = 1,
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
           })
       }
   )
-  @Column(length = 100, nullable = false, unique = true)
-  private String authority;
+  private String displayName;
 
-  @Column(length = 100, nullable = false)
+  @Order(3)
+  @Column(unique = true)
   @Schema(
-      title = "i18n:permissions.title.resource",
-      description = "i18n:permissions.description.resource",
-      example = "/system/menu",
+      title = "i18n:route.domain.title.moduleName",
+      description = "i18n:route.domain.description.moduleName",
+      maxLength = 255,
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true")
-          })}
-  )
-  private String resource;
-
-  @Schema(
-      title = "i18n:permissions.title.description",
-      description = "i18n:permissions.description.description",
-      example = "系统管理员角色，拥有所有权限",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
           })
       }
   )
-  @Column(length = 100, nullable = false)
+  private String moduleName;
+
+  @Column(length = 100)
+  @Schema(
+      title = "i18n:route.domain.title.region",
+      description = "i18n:route.domain.description.region",
+      maxLength = 100
+  )
+  private String region;
+
+  @Lob
+  @Order(4)
+  @Column(length = 500)
+  @Schema(
+      title = "i18n:route.domain.title.description",
+      description = "i18n:route.domain.description.description",
+      maxLength = 500,
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "false")
+          })
+      }
+  )
   private String description;
 }

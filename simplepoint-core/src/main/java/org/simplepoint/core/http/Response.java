@@ -10,7 +10,6 @@ package org.simplepoint.core.http;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Collection;
-import org.simplepoint.core.annotation.FormSchema;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -94,18 +93,8 @@ public class Response<T> extends ResponseEntity<T> {
    * @return Return a unified request result.
    */
   public static <T> Response<Page<T>> limit(Page<T> pageable, Class<T> resource) {
-    String name = "none";
-    if (resource != null) {
-      if (resource.isAnnotationPresent(FormSchema.class)) {
-        name = resource.getAnnotation(FormSchema.class).value();
-        if (name == null || name.isEmpty()) {
-          name = resource.getSimpleName();
-        }
-      }
-    }
     return of(
         ok().contentType(MediaType.APPLICATION_JSON)
-            .header("X-Resource", name)
             .body(pageable)
     );
   }

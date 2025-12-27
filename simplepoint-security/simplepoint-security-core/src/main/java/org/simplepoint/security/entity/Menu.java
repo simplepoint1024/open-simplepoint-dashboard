@@ -39,7 +39,7 @@ import org.springframework.core.annotation.Order;
 @Data
 @Entity
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Table(name = "security_menus")
+@Table(name = "auth_menus")
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
     @ButtonDeclaration(

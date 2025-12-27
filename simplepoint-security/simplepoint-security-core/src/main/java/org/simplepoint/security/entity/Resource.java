@@ -2,6 +2,7 @@ package org.simplepoint.security.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
@@ -13,6 +14,7 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
  */
 @Data
 @Entity
+@Table(name = "auth_resources")
 @EqualsAndHashCode(callSuper = true)
 public class Resource extends BaseEntityImpl<String> {
   /**

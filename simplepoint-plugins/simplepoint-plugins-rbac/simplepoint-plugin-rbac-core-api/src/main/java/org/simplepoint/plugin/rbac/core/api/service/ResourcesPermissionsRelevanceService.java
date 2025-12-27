@@ -13,18 +13,22 @@ public interface ResourcesPermissionsRelevanceService {
   /**
    * Removes all resources of a specific type associated with a given authority.
    *
-   * @param authority    the authority associated with the resources
+   * @param authority the authority associated with the resources
    */
   void removeAllByAuthority(String authority);
 
   /**
    * Removes all resources of a specific type associated with a collection of authorities.
    *
-   * @param authorities  the collection of authorities associated with the resources
+   * @param authorities the collection of authorities associated with the resources
    */
   void removeAllByAuthorities(Collection<String> authorities);
 
-
+  /**
+   * Authorizes a collection of ResourcesPermissionsRelevance entities.
+   *
+   * @param collection the collection of ResourcesPermissionsRelevance entities to be authorized
+   */
   void authorize(Collection<ResourcesPermissionsRelevance> collection);
 
   /**

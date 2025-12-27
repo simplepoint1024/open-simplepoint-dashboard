@@ -1,7 +1,7 @@
 package org.simplepoint.plugin.rbac.menu.api.repository;
 
 import org.simplepoint.api.base.BaseRepository;
-import org.simplepoint.security.entity.RemoteModule;
+import org.simplepoint.security.entity.MicroModule;
 
 /**
  * Repository interface for managing remote modules in the RBAC (Role-Based Access Control) system.
@@ -11,5 +11,5 @@ import org.simplepoint.security.entity.RemoteModule;
  *
  * @since 1.0
  */
-public interface RemoteModuleRepository extends BaseRepository<RemoteModule, String> {
+public interface RemoteModuleRepository extends BaseRepository<MicroModule, String> {
 }

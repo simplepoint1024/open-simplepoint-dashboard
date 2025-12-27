@@ -14,7 +14,7 @@ import org.simplepoint.security.entity.id.MenuAncestorId;
 @Data
 @Entity
 @IdClass(MenuAncestorId.class)
-@Table(name = "security_menu_ancestors_rel")
+@Table(name = "auth_menu_ancestors_rel")
 public class MenuAncestor implements Serializable {
 
   @Id

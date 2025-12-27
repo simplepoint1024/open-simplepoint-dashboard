@@ -7,7 +7,7 @@ import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.rbac.menu.api.repository.RemoteModuleRepository;
 import org.simplepoint.security.entity.Menu;
-import org.simplepoint.security.entity.RemoteModule;
+import org.simplepoint.security.entity.MicroModule;
 import org.simplepoint.security.service.MenuService;
 import org.simplepoint.security.service.RemoteModuleService;
 
@@ -22,7 +22,7 @@ import org.simplepoint.security.service.RemoteModuleService;
  */
 @AmqpRemoteService
 public class RemoteModuleServiceImpl
-    extends BaseServiceImpl<RemoteModuleRepository, RemoteModule, String>
+    extends BaseServiceImpl<RemoteModuleRepository, MicroModule, String>
     implements RemoteModuleService {
 
   private final MenuService menuService;
@@ -49,7 +49,7 @@ public class RemoteModuleServiceImpl
    */
   @Override
   @Transactional(rollbackOn = Exception.class)
-  public void register(RemoteModule module, Set<Menu> menus) {
+  public void register(MicroModule module, Set<Menu> menus) {
     try {
       if (module == null) {
         return;
