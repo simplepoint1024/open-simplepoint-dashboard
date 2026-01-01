@@ -38,6 +38,7 @@ import org.simplepoint.security.entity.ResourcesPermissionsRelevance;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.TreeMenu;
 import org.simplepoint.security.pojo.dto.MenuPermissionsRelevanceDto;
+import org.simplepoint.security.pojo.dto.ServiceMenuResult;
 import org.simplepoint.security.service.MenuService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
@@ -237,14 +238,18 @@ public class MenuServiceImpl
    * @return a collection of {@link TreeMenu} entities available to the user
    */
   @Override
-  public Collection<TreeMenu> routes() {
+  public ServiceMenuResult routes() {
     UserContext<BaseUser> userContext = getUserContext();
+    Set<ServiceMenuResult.ServiceEntry> services = new HashSet<>();
     if (userContext == null) {
       throw new IllegalArgumentException("User context is null or not logged in");
     }
 
     if (userContext.isSuperAdmin()) {
-      return buildMenuTree(getRepository().loadAll(), true);
+      return ServiceMenuResult.of(
+          services,
+          buildMenuTree(getRepository().loadAll(), services, true)
+      );
     }
     // Extract roles from granted authorities
     Set<String> permissionsSet = userContext.getPermissions();
@@ -270,10 +275,13 @@ public class MenuServiceImpl
         // Load menus by collected authorities
         Collection<Menu> menus = getRepository().loadByIds(authorizedMenuIds);
         // Build and return menu tree
-        return buildMenuTree(menus, true);
+        return ServiceMenuResult.of(
+            services,
+            buildMenuTree(menus, services, true)
+        );
       }
     }
-    throw new IllegalArgumentException("Invalid user context");
+    return ServiceMenuResult.EMPTY;
   }
 
   /**
@@ -294,7 +302,7 @@ public class MenuServiceImpl
             .stream().sorted(Comparator.comparing(Menu::getSort, Comparator.nullsLast(Integer::compareTo))).toList());
     ancestorMenus.addAll(limit.getContent());
     return new PageImpl<>(
-        buildMenuTree(ancestorMenus, false)
+        buildMenuTree(ancestorMenus, new HashSet<>(), false)
             .stream().toList(),
         pageable,
         limit.getTotalElements()
@@ -345,54 +353,68 @@ public class MenuServiceImpl
   /**
    * Builds a tree structure of menus from a flat collection.
    *
-   * @param menus the flat collection of {@link Menu} entities
+   * @param menus                  the flat collection of {@link Menu} entities
+   * @param services               the set of services to consider
+   * @param clearUnnecessaryFields whether to clear unnecessary fields from the Menu entities
    * @return a collection of {@link TreeMenu} representing the hierarchical menu structure
    */
-  protected Collection<TreeMenu> buildMenuTree(Collection<Menu> menus, boolean clearUnnecessaryFields) {
-    // 1) Create TreeMenu nodes map keyed by uuid
-    final Map<String, TreeMenu> nodeMap = new HashMap<>();
+  protected List<TreeMenu> buildMenuTree(Collection<Menu> menus, Set<ServiceMenuResult.ServiceEntry> services, boolean clearUnnecessaryFields) {
+    // 1) Build node map
+    final Map<String, TreeMenu> nodeMap = new HashMap<>(menus.size());
     for (Menu m : menus) {
+      // 添加服务
+      services.add(ServiceMenuResult.ServiceEntry.of(getServiceName(m.getComponent())));
+
       TreeMenu node = new TreeMenu();
-      BeanUtils.copyProperties(m, node); // copy common fields
-      if (node.getChildren() == null) {
-        node.setChildren(new ArrayList<>());
-      } else {
-        node.getChildren().clear(); // ensure rebuilding tree from scratch
-      }
+      BeanUtils.copyProperties(m, node);
+      node.setChildren(new ArrayList<>()); // always init
+
       nodeMap.put(m.getId(), node);
     }
-
-    // 2) Link children to parent and collect roots
+    // 2) Build tree
     final List<TreeMenu> roots = new ArrayList<>();
     for (Menu m : menus) {
-      String parentId = m.getParent();
+
       TreeMenu current = nodeMap.get(m.getId());
-      if (parentId == null || parentId.isBlank()) {
-        if (clearUnnecessaryFields) {
-          clearUnnecessaryFields(current);
-        }
-        roots.add(current);
-        continue;
+      String parentId = m.getParent();
+
+      boolean isRoot = (parentId == null || parentId.isBlank());
+      TreeMenu parent = isRoot ? null : nodeMap.get(parentId);
+
+      if (clearUnnecessaryFields) {
+        clearUnnecessaryFields(current);
       }
-      TreeMenu parent = nodeMap.get(parentId);
-      if (parent != null) {
-        if (parent.getChildren() == null) {
-          parent.setChildren(new ArrayList<>());
-        }
-        if (clearUnnecessaryFields) {
-          clearUnnecessaryFields(current);
-        }
-        parent.getChildren().add(current);
-      } else {
-        // Orphan node, treat as root
-        if (clearUnnecessaryFields) {
-          clearUnnecessaryFields(current);
-        }
+
+      if (parent == null) {
         roots.add(current);
+      } else {
+        parent.getChildren().add(current);
       }
     }
+
     return roots;
   }
+
+
+  private String getServiceName(String path) {
+    if (path == null || path.isEmpty()) {
+      return null;
+    }
+
+    int start = 0;
+    // 跳过开头的 '/'
+    if (path.charAt(0) == '/') {
+      start = 1;
+    }
+
+    int end = path.indexOf('/', start);
+    if (end == -1) {
+      return path.substring(start);
+    }
+
+    return path.substring(start, end);
+  }
+
 
   /**
    * Clears unnecessary fields from the Menu entity before returning it to the client.

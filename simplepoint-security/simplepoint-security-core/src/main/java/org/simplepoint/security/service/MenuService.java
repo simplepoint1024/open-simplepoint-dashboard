@@ -17,6 +17,7 @@ import org.simplepoint.security.MenuChildren;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.TreeMenu;
 import org.simplepoint.security.pojo.dto.MenuPermissionsRelevanceDto;
+import org.simplepoint.security.pojo.dto.ServiceMenuResult;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -43,7 +44,7 @@ public interface MenuService extends BaseService<Menu, String> {
    *
    * @return a collection of {@link TreeMenu} entities available to the user
    */
-  Collection<TreeMenu> routes();
+  ServiceMenuResult routes();
 
   /**
    * Retrieves a paginated list of tree-structured menus based on the specified filter attributes.
