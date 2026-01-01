@@ -10,6 +10,7 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
@@ -20,6 +21,7 @@ import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
+import org.simplepoint.security.cache.AuthorizationContextCacheable;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,9 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
 
   private final RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository;
 
+
+  private final AuthorizationContextCacheable authorizationContextCacheable;
+
   /**
    * Constructs a new RolesServiceImpl with the specified repository, user context, and details provider service.
    *
@@ -46,16 +51,19 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
    * @param userContext                        the user context for retrieving current user information
    * @param detailsProviderService             the service for providing user details
    * @param rolePermissionsRelevanceRepository the RolePermissionsRelevanceRepository for role-permission relations
+   * @param authorizationContextCacheable      the AuthorizationContextCacheable for caching authorization contexts
    */
   public RolesServiceImpl(
       RoleRepository repository,
       @Autowired(required = false) UserContext<BaseUser> userContext,
       DetailsProviderService detailsProviderService,
-      RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository
+      RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository,
+      AuthorizationContextCacheable authorizationContextCacheable
   ) {
     super(repository, userContext, detailsProviderService);
     this.rolePermissionsRelevanceRepository = rolePermissionsRelevanceRepository;
 
+    this.authorizationContextCacheable = authorizationContextCacheable;
   }
 
   @Override
@@ -115,6 +123,13 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       relevance.setPermissionAuthority(permissionAuthority);
       permissionRelevantAuthorities.add(relevance);
     }
-    return this.rolePermissionsRelevanceRepository.saveAll(permissionRelevantAuthorities);
+    List<RolePermissionsRelevance> saved = this.rolePermissionsRelevanceRepository.saveAll(permissionRelevantAuthorities);
+    // 缓存角色对应的权限
+    Collection<String> authorized = authorized(dto.getRoleAuthority());
+    authorizationContextCacheable.cachePermission(
+        dto.getRoleAuthority(),
+        authorized
+    );
+    return saved;
   }
 }

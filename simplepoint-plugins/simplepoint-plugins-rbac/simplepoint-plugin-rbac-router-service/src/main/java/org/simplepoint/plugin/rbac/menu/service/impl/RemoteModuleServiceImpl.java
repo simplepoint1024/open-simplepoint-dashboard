@@ -3,16 +3,20 @@ package org.simplepoint.plugin.rbac.menu.service.impl;
 import jakarta.transaction.Transactional;
 import java.util.Set;
 import org.hibernate.service.spi.ServiceException;
+import org.simplepoint.api.security.base.BaseUser;
+import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.core.context.UserContext;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.rbac.menu.api.repository.RemoteModuleRepository;
+import org.simplepoint.plugin.rbac.menu.api.service.MicroAppService;
+import org.simplepoint.plugin.rbac.menu.api.vo.MicroModuleItemVo;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.MicroModule;
 import org.simplepoint.security.service.MenuService;
-import org.simplepoint.security.service.RemoteModuleService;
 
 /**
- * Implementation of {@link RemoteModuleService} providing business logic for remote module management.
+ * Implementation of {@link MicroAppService} providing business logic for remote module management.
  *
  * <p>This service handles CRUD operations for remote modules by interacting with {@link RemoteModuleRepository}.
  * It extends {@link BaseServiceImpl} to inherit standard data operations.</p>
@@ -23,43 +27,35 @@ import org.simplepoint.security.service.RemoteModuleService;
 @AmqpRemoteService
 public class RemoteModuleServiceImpl
     extends BaseServiceImpl<RemoteModuleRepository, MicroModule, String>
-    implements RemoteModuleService {
+    implements MicroAppService {
 
   private final MenuService menuService;
 
   /**
-   * Constructs a new instance of {@link RemoteModuleServiceImpl}.
+   * Constructor initializing the service with required dependencies.
    *
-   * @param repository  the repository for remote module data access
-   * @param menuService the service for managing menus associated with remote modules
+   * @param repository             the remote module repository
+   * @param userContext            the user context
+   * @param detailsProviderService the details provider service
+   * @param menuService            the menu service
    */
   public RemoteModuleServiceImpl(
-      final RemoteModuleRepository repository,
-      final MenuService menuService
+      RemoteModuleRepository repository,
+      UserContext<BaseUser> userContext,
+      DetailsProviderService detailsProviderService,
+      MenuService menuService
   ) {
-    super(repository);
+    super(repository, userContext, detailsProviderService);
     this.menuService = menuService;
   }
 
   /**
-   * Registers a remote module along with its associated menus.
+   * Loads all registered remote modules.
    *
-   * @param module the remote module to register
-   * @param menus  the set of menus associated with the remote module
+   * @return a set of {@link MicroModuleItemVo} representing the loaded remote modules
    */
   @Override
-  @Transactional(rollbackOn = Exception.class)
-  public void register(MicroModule module, Set<Menu> menus) {
-    try {
-      if (module == null) {
-        return;
-      }
-      persist(module);
-      if (menus != null && !menus.isEmpty()) {
-        menuService.persist(menus);
-      }
-    } catch (Exception e) {
-      throw new ServiceException("Failed to register remote module", e);
-    }
+  public Set<MicroModuleItemVo> loadApps() {
+    return Set.of();
   }
 }

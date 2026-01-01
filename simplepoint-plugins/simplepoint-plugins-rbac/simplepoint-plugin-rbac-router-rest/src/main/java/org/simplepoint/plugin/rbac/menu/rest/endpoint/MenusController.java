@@ -16,6 +16,7 @@ import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
+import org.simplepoint.security.pojo.dto.ServiceMenuResult;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.TreeMenu;
 import org.simplepoint.security.pojo.dto.MenuPermissionsRelevanceDto;
@@ -80,11 +81,12 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    *
    * @return a collection of menu records accessible to the current user wrapped in {@link Response}
    */
-  @GetMapping("/routes")
+  @GetMapping("/service-routes")
   @Operation(summary = "获取用户菜单", description = "获取当前登录用户的菜单列表")
-  public Response<Page<TreeMenu>> routes() {
-    return Response.okay(new PageImpl<>(service.routes().stream().toList(), Pageable.unpaged(), service.routes().size()));
+  public Response<ServiceMenuResult> routes() {
+    return Response.okay(service.routes());
   }
+
 
   /**
    * Adds a new menu record.

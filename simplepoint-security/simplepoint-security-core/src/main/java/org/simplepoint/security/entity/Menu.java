@@ -208,8 +208,11 @@ public class Menu extends BaseEntityImpl<String> {
   @Column(nullable = false)
   private Boolean disabled;
 
-  @PrePersist
-  private void preInsert() {
+  /**
+   * Lifecycle callback to set default values before persisting the entity.
+   */
+  @Order
+  public void prePersist() {
     if (this.authority == null || this.authority.isEmpty()) {
       // Generate authority from path by replacing "/" with ":"
       this.authority = this.path.toLowerCase().replaceAll("/", ":");
@@ -217,5 +220,6 @@ public class Menu extends BaseEntityImpl<String> {
     if (this.disabled == null) {
       this.disabled = false;
     }
+    super.prePersist();
   }
 }

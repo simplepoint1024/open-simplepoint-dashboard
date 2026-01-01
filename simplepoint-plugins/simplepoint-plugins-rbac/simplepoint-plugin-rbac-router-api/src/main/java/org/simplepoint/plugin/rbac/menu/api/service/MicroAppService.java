@@ -1,8 +1,9 @@
-package org.simplepoint.security.service;
+package org.simplepoint.plugin.rbac.menu.api.service;
 
 import java.util.Set;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
+import org.simplepoint.plugin.rbac.menu.api.vo.MicroModuleItemVo;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.MicroModule;
 
@@ -14,14 +15,12 @@ import org.simplepoint.security.entity.MicroModule;
  * @author JinxuLiu
  * @since 1.0
  */
-@AmqpRemoteClient(to = "remote.module")
-public interface RemoteModuleService extends BaseService<MicroModule, String> {
+public interface MicroAppService extends BaseService<MicroModule, String> {
 
   /**
-   * Registers a remote module along with its associated menus.
+   * Loads all registered remote modules.
    *
-   * @param module the remote module to register
-   * @param menus  the set of menus associated with the remote module
+   * @return a set of {@link MicroModuleItemVo} representing the loaded remote modules
    */
-  void register(MicroModule module, Set<Menu> menus);
+  Set<MicroModuleItemVo> loadApps();
 }

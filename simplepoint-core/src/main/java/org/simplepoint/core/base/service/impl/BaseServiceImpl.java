@@ -84,17 +84,6 @@ public class BaseServiceImpl
   }
 
   /**
-   * Constructs a BaseServiceImpl with the specified repository.
-   *
-   * @param repository the repository to be used for entity operations
-   */
-  public BaseServiceImpl(
-      final R repository
-  ) {
-    this(repository, null, null);
-  }
-
-  /**
    * Returns a collection of ModifyDataAuditingService instances.
    * These services are used for auditing modifications to data.
    *
