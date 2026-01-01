@@ -11,8 +11,10 @@ package org.simplepoint.security.entity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import lombok.Data;
 import org.simplepoint.api.security.base.BaseRolePermissionsRelevance;
@@ -21,7 +23,7 @@ import org.simplepoint.security.entity.id.RolePermissionsRelevanceId;
 /**
  * Represents the relationship between roles and permissions in the
  * RBAC (Role-Based Access Control) system.
- * This entity is mapped to the `security_permissions_role_rel`
+ * This entity is mapped to the `auth_permissions_role_rel`
  * table and defines the association between
  * role authorities and permission authorities.
  */
@@ -37,8 +39,9 @@ public class RolePermissionsRelevance implements BaseRolePermissionsRelevance {
    * This field specifies the unique identifier or scope of the role.
    */
   @Id
-  @Column(unique = true, nullable = false)
+  @Column(nullable = false)
   @Schema(title = "角色标识", description = "与角色关联的标识，通常用于定义角色的范围或权限")
+  @JoinColumn(name = "role_authority", referencedColumnName = "authority", foreignKey = @ForeignKey(name = "fk_role_permission_role"))
   private String roleAuthority;
 
   /**
@@ -46,7 +49,8 @@ public class RolePermissionsRelevance implements BaseRolePermissionsRelevance {
    * This field specifies the unique identifier or scope of the permission.
    */
   @Id
-  @Column(unique = true, nullable = false)
+  @Column(nullable = false)
   @Schema(title = "权限标识", description = "与权限关联的标识，通常用于定义权限的范围或角色")
+  @JoinColumn(name = "permission_authority", referencedColumnName = "authority", foreignKey = @ForeignKey(name = "fk_role_permission_permission"))
   private String permissionAuthority;
 }

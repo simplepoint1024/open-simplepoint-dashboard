@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Session;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.data.jpa.AttributeMatcher;
@@ -123,6 +124,8 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
   @Override
   @SuppressWarnings("unchecked")
   public <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
+//    Session session = entityManager.unwrap(Session.class);
+//    session.enableFilter("tenantFilter").setParameter("tenantId","0000");
     Specification<S> spec = this.readSpecification(attributes);
     Class<S> domainClass = (Class<S>) super.getDomainClass();
     var typedQuery = this.getQuery(spec, domainClass, pageable);

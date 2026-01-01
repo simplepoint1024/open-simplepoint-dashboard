@@ -427,16 +427,8 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   private Collection<GrantedAuthority> authorities;
 
   /**
-   * 用户的权限集合，存储该用户的权限信息
-   * A collection of permissions assigned to the user.
-   */
-  @Transient
-  @Schema(hidden = true)
-  private Collection<String> permissions;
-
-  /**
-   * 租户标识，用于多租户环境中区分不同租户的用户
-   * Tenant identifier used to distinguish users from different tenants in a multi-tenant environment.
+   * 装饰器字段，存储额外的用户信息或元数据
+   * Decorator field to store additional user information or metadata.
    */
   @Lob
   @Schema(hidden = true)
@@ -447,7 +439,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * 在实体持久化之前执行的回调方法
    * Callback method executed before persisting the entity.
    */
-  @PrePersist
+  @Override
   public void prePersist() {
     /*
      * 如果 enabled 为空，默认设置为 true
@@ -488,6 +480,8 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
     if (this.superAdmin == null) {
       this.superAdmin = false;
     }
+
+    super.prePersist();
   }
 
   /**

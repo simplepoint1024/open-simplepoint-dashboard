@@ -69,7 +69,7 @@ import org.springframework.core.annotation.Order;
         authority = "menu:clients:delete"
     )
 })
-@Table(name = "security_oauth2_client")
+@Table(name = "auth_oauth2_client")
 @Tag(name = "OAuth2客户端对象", description = "用于管理系统中的OAuth2客户端")
 public class Client extends BaseEntityImpl<String> {
 

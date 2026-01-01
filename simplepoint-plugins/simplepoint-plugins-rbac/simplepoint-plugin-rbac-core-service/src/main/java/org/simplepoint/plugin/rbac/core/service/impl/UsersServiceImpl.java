@@ -26,6 +26,8 @@ import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.decorator.UserLoginDecorator;
+import org.simplepoint.security.entity.PermissionGrantedAuthority;
+import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,17 +127,17 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     if (user.getSuperAdmin()) {
       roles.add("SYSTEM");
     }
-    List<String> permissions = loadPermissionsInRoleAuthorities(roles);
     List<GrantedAuthority> authorities = new ArrayList<>();
     for (String role : roles) {
       var permission = "ROLE_" + role;
       authorities.add(new SimpleGrantedAuthority(permission));
-      permissions.add(permission);
     }
     // 将额外的权限提供者的权限添加到用户权限中
-    authorities.addAll(permissions.stream().map(SimpleGrantedAuthority::new).toList());
+    List<RolePermissionsRelevance> permissions = loadPermissionsInRoleAuthorities(roles);
+    if (!permissions.isEmpty()) {
+      authorities.addAll(permissions.stream().map(pm -> new PermissionGrantedAuthority(pm.getRoleAuthority(), pm.getPermissionAuthority())).toList());
+    }
     user.setAuthorities(authorities);
-    user.setPermissions(permissions);
     return afterLogin(user, ext);
   }
 
@@ -188,7 +190,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    * @return a list of RolePermissionsRelevance entities representing permissions assigned to the specified roles
    */
   @Override
-  public List<String> loadPermissionsInRoleAuthorities(List<String> roleAuthorities) {
+  public List<RolePermissionsRelevance> loadPermissionsInRoleAuthorities(List<String> roleAuthorities) {
     return getRepository().loadPermissionsInRoleAuthorities(roleAuthorities);
   }
 

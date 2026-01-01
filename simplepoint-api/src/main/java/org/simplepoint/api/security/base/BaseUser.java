@@ -21,11 +21,4 @@ public interface BaseUser extends UserDetails {
    * @return true if the user is an admin, false otherwise.
    */
   Boolean superAdmin();
-
-  /**
-   * Get the permissions associated with the user.
-   *
-   * @return a collection of permission strings.
-   */
-  Collection<String> getPermissions();
 }

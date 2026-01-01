@@ -10,9 +10,11 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -160,10 +162,15 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
   @Override
   public Set<String> getPermissionsByUsername(String username) {
     if (this.authorizationContextCacheable != null) {
-      Collection<String> permission = this.authorizationContextCacheable.getUserPermission(username);
-      if (permission != null) {
-        return Set.copyOf(permission);
+      Set<String> roles = getRolesByUsername(username);
+      Set<String> permissions = new HashSet<>(roles.stream().map(m -> "ROLE_" + m).toList());
+      for (String role : roles) {
+        Collection<String> permission = this.authorizationContextCacheable.getPermission(role);
+        if (permission != null) {
+          permissions.addAll(permission);
+        }
       }
+      return permissions;
     }
     throw new IllegalStateException("Not implemented yet.");
   }
@@ -183,6 +190,29 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
       }
     }
     throw new IllegalStateException("Not implemented yet.");
+  }
+
+  /**
+   * 获取当前用户的角色集合
+   * Retrieves the set of roles for the currently authenticated user.
+   *
+   * @return 角色集合
+   */
+  @Override
+  public Set<String> getRoles() {
+    return this.getRolesByUsername(this.getName());
+  }
+
+  /**
+   * 根据用户名获取用户的角色集合
+   * Retrieves the set of roles associated with the given username.
+   *
+   * @param username 用户名
+   * @return 角色集合
+   */
+  @Override
+  public Set<String> getRolesByUsername(String username) {
+    return this.authorizationContextCacheable.getRoles(username);
   }
 
   /**
@@ -207,6 +237,12 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
     return SecurityContextHolder.getContext().getAuthentication();
   }
 
+  /**
+   * 检查当前用户是否为超级管理员
+   * Checks if the current user has super admin privileges.
+   *
+   * @return 如果是超级管理员则返回 true，否则返回 false
+   */
   @Override
   public boolean isSuperAdmin() {
     User details = getDetails();
@@ -218,6 +254,22 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
       return false;
     }
     return superAdmin;
+  }
+
+  /**
+   * 获取当前用户的租户 ID
+   * Retrieves the tenant ID of the currently authenticated user.
+   *
+   * @return 租户 ID
+   * @throws UserPrincipalNotFoundException 如果找不到租户 ID
+   */
+  @Override
+  public String getTenantId() throws UserPrincipalNotFoundException {
+    User details = getDetails();
+    if (details != null) {
+      return details.getTenantId();
+    }
+    throw new UserPrincipalNotFoundException("Tenant ID not found for current user");
   }
 
   /**

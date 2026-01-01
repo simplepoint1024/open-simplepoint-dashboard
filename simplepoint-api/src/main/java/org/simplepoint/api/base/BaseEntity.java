@@ -83,4 +83,28 @@ public interface BaseEntity<I extends Serializable> extends Serializable {
    */
 
   void setUpdatedAt(Instant updatedAt);
+
+  /**
+   * getter delete time.
+   *
+   * @return delete time
+   */
+  Instant getDeletedAt();
+
+  /**
+   * setter delete time.
+   */
+  void setDeletedAt(Instant deletedAt);
+
+  /**
+   * getter org department id.
+   *
+   * @return org department id
+   */
+  String getCreateOrgDeptId();
+
+  /**
+   * setter org department id.
+   */
+  void setCreateOrgDeptId(String createOrgDeptId);
 }

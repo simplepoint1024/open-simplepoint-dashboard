@@ -1,25 +1,23 @@
 [versions]
 kotlin = "2.2.20"
-spring-boot = "4.0.0"
+spring-boot = "4.0.1"
 spring-dependency-management = "1.1.2"
-spring-security = "7.0.0"
+spring-security = "7.0.2"
 spring-cloud = "2025.1.0"
-spring-authorization-server = "7.0.0"
+spring-authorization-server = "7.0.2"
 oauth2-oidc-sdk = "11.30.1"
 jackson = "2.20.1"
 junit = "5.10.0"
 lombok = "1.18.42"
-hutool = "5.8.41"
+hutool = "5.8.42"
 openapi = "2.8.13"
-jsonschema-generator="4.28.0"
-swagger="2.2.36"
-redisson-spring-boot-starter="3.52.0"
+jsonschema-generator="4.38.0"
+swagger="2.2.41"
 
 [libraries]
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations", version.ref = "swagger" }
 oauth2-oidc-sdk = { module = "com.nimbusds:oauth2-oidc-sdk", version.ref = "oauth2-oidc-sdk" }
 spring-authorization-server = { module = "org.springframework.security:spring-security-oauth2-authorization-server", version.ref = "spring-authorization-server" }
-redisson-spring-boot-starter = { module = "org.redisson:redisson-spring-boot-starter", version.ref = "redisson-spring-boot-starter" }
 
 [bundles]
 

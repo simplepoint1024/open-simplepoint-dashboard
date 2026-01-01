@@ -44,12 +44,7 @@ public class RedisAuthorizationContextCacheable implements AuthorizationContextC
     try {
       // Clear permissions and authorities before caching the user context
       // 在缓存用户上下文之前清除权限和权限列表
-      if (user.getPermissions() != null) {
-        user.getPermissions().clear();
-      }
-      if (user.getPermissions() != null) {
-        user.getAuthorities().clear();
-      }
+      user.getAuthorities().clear();
       String json = objectMapper.writeValueAsString(user);
       stringRedisTemplate.opsForValue().set(USER_CONTEXT_CACHE_NAME + cacheKey, json);
       log.debug("Cached user [{}] context: {}", cacheKey, json);
@@ -74,11 +69,23 @@ public class RedisAuthorizationContextCacheable implements AuthorizationContextC
   }
 
   @Override
-  public void cacheUserPermission(String username, Collection<String> permissions) {
+  public void cacheRoles(String username, Set<String> roles) {
     String cacheKey = resolveCacheKey(username);
     try {
+      String json = objectMapper.writeValueAsString(roles);
+      stringRedisTemplate.opsForValue().set(ROLE_CACHE_NAME + cacheKey, json);
+      log.debug("Cached user [{}] roles: {}", cacheKey, json);
+    } catch (JsonProcessingException e) {
+      log.error("Failed to serialize user [{}] roles", cacheKey, e);
+    }
+  }
+
+  @Override
+  public void cachePermission(String role, Collection<String> permissions) {
+    String cacheKey = resolveCacheKey(role);
+    try {
       String json = objectMapper.writeValueAsString(permissions);
-      stringRedisTemplate.opsForValue().set(USER_PERMISSION_CACHE_NAME + cacheKey, json);
+      stringRedisTemplate.opsForValue().set(PERMISSION_CACHE_NAME + cacheKey, json);
       log.debug("Cached user [{}] permissions: {}", cacheKey, json);
     } catch (JsonProcessingException e) {
       log.error("Failed to serialize user [{}] permissions", cacheKey, e);
@@ -86,9 +93,9 @@ public class RedisAuthorizationContextCacheable implements AuthorizationContextC
   }
 
   @Override
-  public Collection<String> getUserPermission(String username) {
-    String cacheKey = resolveCacheKey(username);
-    String json = stringRedisTemplate.opsForValue().get(USER_PERMISSION_CACHE_NAME + cacheKey);
+  public Collection<String> getPermission(String role) {
+    String cacheKey = resolveCacheKey(role);
+    String json = stringRedisTemplate.opsForValue().get(PERMISSION_CACHE_NAME + cacheKey);
     if (json == null) {
       return null;
     }
@@ -97,6 +104,22 @@ public class RedisAuthorizationContextCacheable implements AuthorizationContextC
       });
     } catch (Exception e) {
       log.error("Failed to deserialize user [{}] permissions", cacheKey, e);
+      return null;
+    }
+  }
+
+  @Override
+  public Set<String> getRoles(String username) {
+    String cacheKey = resolveCacheKey(username);
+    String json = stringRedisTemplate.opsForValue().get(ROLE_CACHE_NAME + cacheKey);
+    if (json == null) {
+      return null;
+    }
+    try {
+      return objectMapper.readValue(json, new TypeReference<>() {
+      });
+    } catch (Exception e) {
+      log.error("Failed to deserialize user [{}] role", cacheKey, e);
       return null;
     }
   }
