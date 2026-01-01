@@ -4,10 +4,16 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.security.cache.AuthorizationContextCacheable;
+import org.simplepoint.security.entity.PermissionGrantedAuthority;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -75,8 +81,31 @@ public final class LoginAuthenticationSuccessHandler implements AuthenticationSu
     if (details != null) {
       if (details instanceof User currentUser) {
         String username = currentUser.getUsername();
-        this.authorizationContextCacheable.cacheUserPermission(username, currentUser.getPermissions());
+        Map<String, Set<String>> rolePermissions = new HashMap<>();
+        Set<String> roles = new HashSet<>();
+        // 根据用户角色缓存权限
+        for (GrantedAuthority authority : currentUser.getAuthorities()) {
+          if (authority instanceof PermissionGrantedAuthority permissionGrantedAuthority) {
+            String role = permissionGrantedAuthority.getRole();
+            rolePermissions.computeIfAbsent(role, k -> new HashSet<>());
+            rolePermissions.get(role).add(permissionGrantedAuthority.getAuthority());
+          } else {
+            String authorityKey = authority.getAuthority();
+            if (authorityKey != null) {
+              if (authorityKey.startsWith("ROLE_")) {
+                roles.add(authorityKey.replace("ROLE_", ""));
+              }
+            }
+          }
+        }
 
+        // 缓存用户角色
+        this.authorizationContextCacheable.cacheRoles(username, roles);
+
+        // 缓存用户权限
+        rolePermissions.forEach(this.authorizationContextCacheable::cachePermission);
+
+        // 缓存用户上下文
         this.authorizationContextCacheable.cacheUserContext(username, currentUser);
         log.debug("Cached authorization context for user [{}]", username);
       }

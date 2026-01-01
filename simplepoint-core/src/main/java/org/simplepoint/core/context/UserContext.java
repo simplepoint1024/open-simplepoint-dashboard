@@ -8,6 +8,7 @@
 
 package org.simplepoint.core.context;
 
+import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.util.Set;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -73,6 +74,23 @@ public interface UserContext<T extends UserDetails> {
   Set<String> getPermissions();
 
   /**
+   * 获取当前用户的角色集合
+   * Retrieves the set of roles for the currently authenticated user.
+   *
+   * @return 角色集合 The set of roles.
+   */
+  Set<String> getRoles();
+
+  /**
+   * 根据用户名获取用户的角色集合
+   * Retrieves the set of roles associated with the given username.
+   *
+   * @param username 用户名 The username.
+   * @return 角色集合 The set of roles.
+   */
+  Set<String> getRolesByUsername(String username);
+
+  /**
    * 获取当前的身份验证对象
    * Retrieves the current authentication object.
    *
@@ -88,5 +106,13 @@ public interface UserContext<T extends UserDetails> {
    *         Returns true if the user is a super administrator, false otherwise.
    */
   boolean isSuperAdmin();
+
+  /**
+   * 获取当前用户的租户ID
+   * Retrieves the tenant ID of the current user.
+   *
+   * @return 租户ID The tenant ID.
+   */
+  String getTenantId() throws UserPrincipalNotFoundException;
 }
 

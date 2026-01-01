@@ -11,13 +11,13 @@ import org.simplepoint.plugin.rbac.menu.api.entity.id.MenuPermissionsRelevanceId
 /**
  * Represents the relationship between menus and permissions in the
  * RBAC (Role-Based Access Control) system.
- * This entity is mapped to the `security_role_permissions_rel` table
+ * This entity is mapped to the `auth_role_permissions_rel` table
  * and defines the association between menu authorities and permission authorities.
  */
 @Data
 @Entity
 @IdClass(MenuPermissionsRelevanceId.class)
-@Table(name = "security_permissions_menu_rel")
+@Table(name = "auth_permissions_menu_rel")
 @Schema(title = "角色权限关联实体", description = "表示RBAC系统中角色与权限之间的关联关系")
 public class MenuPermissionsRelevance {
 

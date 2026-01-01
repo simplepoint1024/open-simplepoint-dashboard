@@ -64,12 +64,6 @@ public class OidcScopes {
   public static final String GROUPS = "groups";
 
   /**
-   * Scope for accessing the user's permissions.
-   * 访问用户权限的范围。
-   */
-  public static final String PERMISSIONS = "permissions";
-
-  /**
    * Scope for accessing the tenant information.
    * 访问租户信息的范围。
    */

@@ -59,6 +59,7 @@ public class BaseServiceImpl
     implements BaseService<T, I> {
 
   private final ObjectMapper mapper = new ObjectMapper();
+
   private final R repository;
 
   private final UserContext<BaseUser> userContext;

@@ -14,6 +14,7 @@ allprojects {
         configFile = rootProject.file("checkstyle/google_checks.xml")
         maxWarnings = 0
     }
+
 }
 
 subprojects {

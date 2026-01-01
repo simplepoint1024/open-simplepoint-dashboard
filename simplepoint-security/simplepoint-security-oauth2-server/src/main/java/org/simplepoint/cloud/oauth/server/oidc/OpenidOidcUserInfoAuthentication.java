@@ -14,14 +14,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Objects;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.AbstractOidcUserInfoAuthentication;
 import org.simplepoint.core.oidc.OidcScopes;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.cache.AuthorizationContextCacheable;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationContext;
@@ -78,11 +77,6 @@ public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthen
         // 如果开启缓存，优先从缓存中获取用户信息
         if (this.authorizationContextCacheable != null) {
           User userContext = this.authorizationContextCacheable.getUserContext(principal.getName(), User.class);
-          Collection<String> permission = this.authorizationContextCacheable.getUserPermission(principal.getName());
-          if (permission != null) {
-            userContext.setPermissions(permission);
-            userContext.setAuthorities(permission.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toSet()));
-          }
           setClaims(claims, userContext, principal);
           // 否则从用户服务中加载用户信息
         } else {
@@ -125,8 +119,7 @@ public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthen
     }
 
     if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.ROLES))) {
-      claims.put(OidcScopes.PERMISSIONS, user.getPermissions());
-      claims.put(OidcScopes.ROLES, user.getAuthorities());
+      claims.put(OidcScopes.ROLES, user.getAuthorities().stream().filter(ft -> Objects.requireNonNull(ft.getAuthority()).startsWith("ROLE_")));
     }
 
     var decoratorObj = user.getDecorator();

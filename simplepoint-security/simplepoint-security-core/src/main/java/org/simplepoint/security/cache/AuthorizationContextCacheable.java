@@ -23,7 +23,8 @@ public interface AuthorizationContextCacheable {
    *
    * <p>用于存储用户权限的缓存名称</p>
    */
-  String USER_PERMISSION_CACHE_NAME = "simplepoint:authorization:user_permission:";
+  String PERMISSION_CACHE_NAME = "simplepoint:authorization:permission:";
+  String ROLE_CACHE_NAME = "simplepoint:authorization:role:";
 
   /**
    * Caches the user context for the specified username.
@@ -49,22 +50,42 @@ public interface AuthorizationContextCacheable {
   <T extends BaseUser> T getUserContext(String username, Class<T> clazz);
 
   /**
-   * Caches the permissions for the specified username.
+   * Caches the roles for the specified username.
    *
-   * <p>缓存指定用户名的权限</p>
+   * <p>缓存指定用户名的角色</p>
    *
-   * @param username    the username associated with the permissions 关联权限的用户名
-   * @param permissions the set of permissions to be cached 要缓存的权限集合
+   * @param username the username associated with the roles 关联角色的用户名
+   * @param roles    the set of roles to be cached 要缓存的角色集合
    */
-  void cacheUserPermission(String username, Collection<String> permissions);
+  void cacheRoles(String username, Set<String> roles);
 
   /**
-   * Retrieves the cached permissions for the specified username.
+   * Caches the permissions for the specified role.
    *
-   * <p>检索指定用户名的缓存权限</p>
+   * <p>缓存指定角色的权限</p>
    *
-   * @param username the username associated with the permissions 关联权限的用户名
-   * @return the cached set of permissions, or null if not found 缓存的权限集合，如果未找到则返回 null
+   * @param role        the role associated with the permissions 关联权限的角色
+   * @param permissions the collection of permissions to be cached 要缓存的权限集合
    */
-  Collection<String> getUserPermission(String username);
+  void cachePermission(String role, Collection<String> permissions);
+
+  /**
+   * Retrieves the cached permissions for the specified role.
+   *
+   * <p>检索指定角色的缓存权限</p>
+   *
+   * @param role the role associated with the permissions 关联权限的角色
+   * @return the collection of cached permissions, or null if not found 缓存的权限集合，如果未找到则返回 null
+   */
+  Collection<String> getPermission(String role);
+
+  /**
+   * Retrieves the roles associated with the specified username.
+   *
+   * <p>检索与指定用户名关联的角色</p>
+   *
+   * @param username the username whose roles are to be retrieved 要检索其角色的用户名
+   * @return the set of roles associated with the username 关联用户名的角色集合
+   */
+  Set<String> getRoles(String username);
 }

@@ -8,19 +8,29 @@
 
 package org.simplepoint.core.base.entity.impl;
 
+import cn.hutool.core.lang.TypeReference;
+import cn.hutool.extra.spring.SpringUtil;
 import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreRemove;
+import jakarta.persistence.PreUpdate;
 import java.io.Serializable;
 import java.time.Instant;
 import lombok.Data;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLDeleteAll;
 import org.simplepoint.api.base.BaseEntity;
+import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.core.annotation.UuidStringGenerator;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.simplepoint.core.context.UserContext;
 
 /**
  * A base entity class for database models.
@@ -30,9 +40,16 @@ import org.springframework.data.annotation.LastModifiedDate;
  *
  * @param <I> the type of the ID field, which must be serializable
  */
+@Slf4j
 @Data
 @JacksonStdImpl
 @MappedSuperclass
+@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenantId", type = String.class))
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
+@FilterDef(name = "softDeleteFilter")
+@Filter(name = "softDeleteFilter", condition = "deleted_at IS NULL")
+@SQLDelete(sql = "UPDATE ${TABLE_NAME} SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLDeleteAll(sql = "UPDATE ${TABLE_NAME} SET deleted_at = CURRENT_TIMESTAMP WHERE id in (?)")
 public class BaseEntityImpl<I extends Serializable> implements BaseEntity<I> {
 
   /**
@@ -43,6 +60,25 @@ public class BaseEntityImpl<I extends Serializable> implements BaseEntity<I> {
   @UuidStringGenerator
   @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
   private I id;
+
+  /**
+   * The timestamp indicating when the entity was deleted.
+   */
+  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
+  private Instant deletedAt;
+
+  /**
+   * The tenant ID associated with the entity.
+   */
+  @Column(name = "tenant_id", updatable = false, nullable = false)
+  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
+  private String tenantId;
+
+  /**
+   * The organization department ID associated with the entity.
+   */
+  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
+  private String createOrgDeptId;
 
   /**
    * The user who created the entity.
@@ -90,7 +126,6 @@ public class BaseEntityImpl<I extends Serializable> implements BaseEntity<I> {
    * @return the creation timestamp of the entity
    */
   @Override
-  @LastModifiedDate
   public Instant getCreatedAt() {
     return this.createdAt;
   }
@@ -102,7 +137,6 @@ public class BaseEntityImpl<I extends Serializable> implements BaseEntity<I> {
    * @return the last update timestamp of the entity
    */
   @Override
-  @UpdateTimestamp
   public Instant getUpdatedAt() {
     return this.updatedAt;
   }
@@ -114,7 +148,6 @@ public class BaseEntityImpl<I extends Serializable> implements BaseEntity<I> {
    * @return the creator of the entity
    */
   @Override
-  @CreatedBy
   public String getCreatedBy() {
     return this.createdBy;
   }
@@ -126,8 +159,58 @@ public class BaseEntityImpl<I extends Serializable> implements BaseEntity<I> {
    * @return the last updater of the entity
    */
   @Override
-  @LastModifiedBy
   public String getUpdatedBy() {
     return this.updatedBy;
+  }
+
+  /**
+   * Pre-persist lifecycle callback to perform actions before the entity is persisted.
+   */
+  @PrePersist
+  public void prePersist() {
+    try {
+      UserContext<BaseUser> userContext = SpringUtil.getBean(new TypeReference<>() {
+      });
+      if (this.createdBy == null) {
+        if (userContext != null) {
+          this.setCreatedBy(userContext.getDetails().getUsername());
+        }
+      }
+      if (this.updatedBy == null) {
+        if (userContext != null) {
+          this.setUpdatedBy(userContext.getDetails().getUsername());
+        }
+      }
+    } catch (Exception ex) {
+      log.warn("Failed to set createdBy or updatedBy in prePersist: {}", ex.getMessage());
+    }
+
+    if (this.createdAt == null) {
+      this.setCreatedAt(Instant.now());
+    }
+    if (this.updatedAt == null) {
+      this.setUpdatedAt(Instant.now());
+    }
+  }
+
+  /**
+   * Pre-update lifecycle callback to perform actions before the entity is updated.
+   */
+  @PreUpdate
+  public void preUpdate() {
+    UserContext<BaseUser> userContext = SpringUtil.getBean(new TypeReference<>() {
+    });
+    if (userContext != null) {
+      this.setUpdatedBy(userContext.getDetails().getUsername());
+    }
+    this.setUpdatedAt(Instant.now());
+  }
+
+  /**
+   * Pre-remove lifecycle callback to perform actions before the entity is removed.
+   */
+  @PreRemove
+  public void preRemove() {
+    this.setDeletedAt(Instant.now());
   }
 }

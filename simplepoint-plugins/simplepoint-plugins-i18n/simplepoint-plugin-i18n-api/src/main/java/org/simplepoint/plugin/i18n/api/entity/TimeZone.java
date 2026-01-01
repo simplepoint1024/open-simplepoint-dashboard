@@ -173,11 +173,12 @@ public class TimeZone extends BaseEntityImpl<String> {
   /**
    * Pre-persist lifecycle callback to set default values.
    */
-  @PrePersist
+  @Override
   public void prePersist() {
     if (enabled == null) {
       enabled = true;
     }
+    super.prePersist();
   }
 
 }

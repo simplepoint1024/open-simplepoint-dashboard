@@ -132,6 +132,7 @@ graph LR
 - 系统概览：`doc/architecture/system_overview.md`
 - 组件设计：`doc/architecture/component_design.md`
 - 部署架构：`doc/architecture/deployment_diagram.md`
+- 前端微前端指引：`doc/architecture/frontend_microfrontend.md`
 - 权限模型：`doc/permission/`
 - 数据库设计：`doc/database/`
 - API 契约：`doc/api/`

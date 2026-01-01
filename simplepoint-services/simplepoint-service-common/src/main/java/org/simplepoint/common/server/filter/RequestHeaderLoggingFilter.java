@@ -1,4 +1,4 @@
-package org.simplepoint.common.server;
+package org.simplepoint.common.server.filter;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;

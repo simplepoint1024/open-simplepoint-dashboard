@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
+import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -40,7 +41,7 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
    * @param roleAuthorities a list of role authorities for which to load permissions
    * @return a list of RolePermissionsRelevance associated with the specified role authorities
    */
-  List<String> loadPermissionsInRoleAuthorities(List<String> roleAuthorities);
+  List<RolePermissionsRelevance> loadPermissionsInRoleAuthorities(List<String> roleAuthorities);
 
   /**
    * Retrieve a collection of role authorities associated with a specific username.

@@ -40,8 +40,7 @@ import org.springframework.core.annotation.Order;
         sort = 0,
         argumentMaxSize = 1,
         argumentMinSize = 0,
-        authority = "messages.create"
-    ),
+        authority = "messages.create"),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
         key = PublicButtonKeys.EDIT_KEY,
@@ -50,8 +49,7 @@ import org.springframework.core.annotation.Order;
         sort = 1,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "messages.edit"
-    ),
+        authority = "messages.edit"),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
         key = PublicButtonKeys.DELETE_KEY,
