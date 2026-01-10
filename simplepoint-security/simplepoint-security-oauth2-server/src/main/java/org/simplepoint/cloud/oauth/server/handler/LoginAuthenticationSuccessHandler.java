@@ -6,11 +6,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.simplepoint.core.authority.PermissionGrantedAuthority;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.security.cache.AuthorizationContextCacheable;
-import org.simplepoint.security.entity.PermissionGrantedAuthority;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -81,21 +81,16 @@ public final class LoginAuthenticationSuccessHandler implements AuthenticationSu
     if (details != null) {
       if (details instanceof User currentUser) {
         String username = currentUser.getUsername();
-        Map<String, Set<String>> rolePermissions = new HashMap<>();
-        Set<String> roles = new HashSet<>();
+        var roles = new HashSet<RoleGrantedAuthority>();
+        var rolePermissions = new HashMap<String, Set<PermissionGrantedAuthority>>();
         // 根据用户角色缓存权限
         for (GrantedAuthority authority : currentUser.getAuthorities()) {
           if (authority instanceof PermissionGrantedAuthority permissionGrantedAuthority) {
-            String role = permissionGrantedAuthority.getRole();
+            String role = permissionGrantedAuthority.getRoleAuthority();
             rolePermissions.computeIfAbsent(role, k -> new HashSet<>());
-            rolePermissions.get(role).add(permissionGrantedAuthority.getAuthority());
-          } else {
-            String authorityKey = authority.getAuthority();
-            if (authorityKey != null) {
-              if (authorityKey.startsWith("ROLE_")) {
-                roles.add(authorityKey.replace("ROLE_", ""));
-              }
-            }
+            rolePermissions.get(role).add(permissionGrantedAuthority);
+          } else if (authority instanceof RoleGrantedAuthority roleGrantedAutority) {
+            roles.add(roleGrantedAutority);
           }
         }
 

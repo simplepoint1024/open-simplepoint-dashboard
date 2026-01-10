@@ -58,10 +58,10 @@ public interface MenuService extends BaseService<Menu, String> {
   /**
    * Retrieves the collection of authorized menu identifiers based on the provided menu authority.
    *
-   * @param menuAuthority the menu authority string
+   * @param menuId the menu authority string
    * @return a collection of authorized menu identifiers
    */
-  Collection<String> authorized(String menuAuthority);
+  Collection<String> authorized(String menuId);
 
   /**
    * Authorizes the menu with the specified permissions based on the provided DTO.

@@ -21,15 +21,15 @@ public interface RolePermissionsRelevanceRepository {
   /**
    * Delete all RolePermissionsRelevance entities associated with the specified role authority.
    *
-   * @param roleAuthority the role authority whose associated RolePermissionsRelevance entities are to be deleted
+   * @param roleId the role authority whose associated RolePermissionsRelevance entities are to be deleted
    */
-  void deleteAllByRoleAuthority(String roleAuthority);
+  void deleteAllByroleId(String roleId);
 
   /**
    * Remove specific authorities from a role identified by role authority.
    *
-   * @param roleAuthority the role authority of the role
+   * @param roleId the role authority of the role
    * @param authorities   a set of authorities to be removed from the role
    */
-  void unauthorized(String roleAuthority, Set<String> authorities);
+  void unauthorized(String roleId, Set<String> authorities);
 }

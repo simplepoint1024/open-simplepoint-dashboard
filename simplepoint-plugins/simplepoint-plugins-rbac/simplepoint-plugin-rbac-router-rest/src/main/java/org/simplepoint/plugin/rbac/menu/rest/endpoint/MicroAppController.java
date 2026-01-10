@@ -52,7 +52,7 @@ public class MicroAppController
    * @return a paginated list of remote module records wrapped in {@link Response}
    */
   @GetMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('microapp.view')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('microapp.view')")
   @Operation(summary = "分页查询远程模块", description = "根据提供的属性和分页参数，检索远程模块的分页列表")
   public Response<Page<MicroModule>> limit(
       @RequestParam Map<String, String> attributes,

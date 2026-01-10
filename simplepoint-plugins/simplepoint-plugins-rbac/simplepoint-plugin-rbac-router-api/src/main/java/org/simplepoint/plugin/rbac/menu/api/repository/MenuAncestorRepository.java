@@ -48,7 +48,7 @@ public interface MenuAncestorRepository {
    * @param ids the UUID of the child menu
    * @return a collection of Ancestors
    */
-  Collection<String> findAncestorIdsByChildIds(Collection<String> ids);
+  Collection<String> findAncestorIdsByChildIdIn(Collection<String> ids);
 
   /**
    * Finds children by ancestor UUID.

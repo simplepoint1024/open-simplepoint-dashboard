@@ -34,8 +34,8 @@ public class DefaultJsonSchemaDetailsService implements JsonSchemaDetailsService
     String jpql = """
             SELECT new org.simplepoint.api.security.simple.SimpleFieldPermissions(sp.authority, sp.resource, srpr.action)
             FROM Permissions sp
-            JOIN RolePermissionsRelevance srpr ON sp.authority = srpr.permissionAuthority
-            WHERE srpr.roleAuthority IN :roles
+            JOIN RolePermissionsRelevance srpr ON sp.authority = srpr.permissionId
+            WHERE srpr.roleId IN :roles
               AND sp.resource LIKE :resourcePrefix
         """;
     List<SimpleFieldPermissions> resultList = entityManager.createQuery(

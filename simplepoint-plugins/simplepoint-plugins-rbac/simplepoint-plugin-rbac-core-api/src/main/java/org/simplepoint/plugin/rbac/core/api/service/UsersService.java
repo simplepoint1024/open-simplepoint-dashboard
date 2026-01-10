@@ -11,8 +11,9 @@ package org.simplepoint.plugin.rbac.core.api.service;
 import java.util.Collection;
 import java.util.List;
 import org.simplepoint.api.base.BaseService;
+import org.simplepoint.core.authority.PermissionGrantedAuthority;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -28,28 +29,28 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
    * Loads the roles associated with the given username.
    * This method retrieves a list of role authorities assigned to the specified user.
    *
-   * @param username the username of the user whose roles are to be loaded
+   * @param userId the username of the user whose roles are to be loaded
    * @return a list of role authorities associated with the user
    */
-  List<String> loadRolesByUsername(String username);
+  Collection<RoleGrantedAuthority> loadRolesByUserId(String userId);
 
   /**
    * Loads permissions associated with the given role authorities.
    * This method retrieves a list of RolePermissionsRelevance entities that represent
    * the permissions assigned to the specified roles.
    *
-   * @param roleAuthorities a list of role authorities for which to load permissions
+   * @param roleIds a list of role authorities for which to load permissions
    * @return a list of RolePermissionsRelevance associated with the specified role authorities
    */
-  List<RolePermissionsRelevance> loadPermissionsInRoleAuthorities(List<String> roleAuthorities);
+  Collection<PermissionGrantedAuthority> loadPermissionsInRoleIds(List<String> roleIds);
 
   /**
-   * Retrieve a collection of role authorities associated with a specific username.
+   * Retrieve a collection of role authorities associated with a specific userId.
    *
-   * @param username The username to filter the role authorities.
-   * @return A collection of role authorities for the given username.
+   * @param userId The userId to filter the role authorities.
+   * @return A collection of role authorities for the given userId.
    */
-  Collection<String> authorized(String username);
+  Collection<String> authorized(String userId);
 
 
   /**

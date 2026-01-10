@@ -15,30 +15,30 @@ import java.io.Serializable;
  */
 public interface BaseUserRoleRelevance extends Serializable {
   /**
-   * username.
+   * userId.
    *
-   * @return username.
+   * @return userId.
    */
-  String getUsername();
+  String getUserId();
 
   /**
-   * username.
+   * userId.
    *
-   * @param username username.
+   * @param userId userId.
    */
-  void setUsername(String username);
+  void setUserId(String userId);
 
   /**
-   * authority.
+   * roleId.
    *
-   * @return authority.
+   * @return roleId.
    */
-  String getAuthority();
+  String getRoleId();
 
   /**
-   * authority.
+   * roleId.
    *
-   * @param authority authority
+   * @param roleId roleId
    */
-  void setAuthority(String authority);
+  void setRoleId(String roleId);
 }

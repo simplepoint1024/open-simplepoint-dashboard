@@ -11,7 +11,7 @@ import lombok.Data;
 @Data
 public class MenuPermissionsRelevanceId implements Serializable {
 
-  private String menuAuthority;
+  private String menuId;
 
-  private String permissionAuthority;
+  private String permissionId;
 }

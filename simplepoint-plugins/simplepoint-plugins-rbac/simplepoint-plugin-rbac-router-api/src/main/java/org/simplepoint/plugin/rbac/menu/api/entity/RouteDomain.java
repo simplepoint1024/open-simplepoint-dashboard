@@ -12,7 +12,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
@@ -63,7 +63,7 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Schema(name = "路由域对象", description = "用于管理系统中的路由域信息")
-public class RouteDomain extends BaseEntityImpl<String> {
+public class RouteDomain extends TenantBaseEntityImpl<String> {
   @Order(1)
   @Column(nullable = false, length = 100)
   @Schema(

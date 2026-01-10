@@ -27,6 +27,6 @@ public interface JpaPermissionsRepository extends BaseRepository<Permissions, St
     PermissionsRepository {
 
   @Override
-  @Query("select new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.name,p.authority,p.description) from Permissions p ")
+  @Query("select new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.id,p.name,p.authority,p.description) from Permissions p ")
   Page<PermissionsRelevanceVo> permissionItems(Pageable pageable);
 }

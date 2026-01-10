@@ -53,7 +53,7 @@ public class I18nTimeZonesController extends BaseController<I18nTimeZoneService,
    * @return a paginated response containing time zones that match the given attributes 包含符合给定属性的时区的分页响应
    */
   @GetMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('timezones.view')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('timezones.view')")
   @Operation(summary = "分页查询时区", description = "根据提供的属性和分页参数，检索时区的分页列表")
   public Response<Page<TimeZone>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), TimeZone.class);
@@ -69,10 +69,10 @@ public class I18nTimeZonesController extends BaseController<I18nTimeZoneService,
    *                   如果添加过程中发生错误
    */
   @PostMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('timezones.create')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('timezones.create')")
   @Operation(summary = "添加时区", description = "添加一个新的时区到系统中")
   public Response<TimeZone> add(@RequestBody TimeZone data) throws Exception {
-    return ok(service.persist(data));
+    return ok(service.create(data));
   }
 
   /**
@@ -83,7 +83,7 @@ public class I18nTimeZonesController extends BaseController<I18nTimeZoneService,
    * @return a response containing the modified time zone 包含已修改时区的响应
    */
   @PutMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('timezones.edit')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('timezones.edit')")
   @Operation(summary = "修改时区", description = "修改一个已存在的时区信息")
   public Response<TimeZone> modify(@RequestBody TimeZone data) {
     return ok(service.modifyById(data));
@@ -97,7 +97,7 @@ public class I18nTimeZonesController extends BaseController<I18nTimeZoneService,
    * @return a response containing the set of deleted time zone IDs 包含已删除时区ID集合的响应
    */
   @DeleteMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('timezones.delete')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('timezones.delete')")
   @Operation(summary = "删除时区", description = "根据提供的时区ID集合，删除一个或多个时区")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);

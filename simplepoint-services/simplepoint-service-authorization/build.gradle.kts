@@ -1,3 +1,6 @@
+plugins{
+    id("org.springframework.boot") version libs.versions.spring.boot.get() apply false
+}
 dependencies {
     implementation(project(":simplepoint-core"))
     implementation(project(":simplepoint-security:simplepoint-security-cache"))

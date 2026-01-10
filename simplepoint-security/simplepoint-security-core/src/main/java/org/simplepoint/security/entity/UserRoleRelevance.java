@@ -10,13 +10,11 @@ package org.simplepoint.security.entity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.simplepoint.api.security.base.BaseUserRoleRelevance;
-import org.simplepoint.security.entity.id.UserRoleRelevanceId;
+import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 
 /**
  * Represents the relationship between users and roles
@@ -26,27 +24,22 @@ import org.simplepoint.security.entity.id.UserRoleRelevanceId;
  */
 @Data
 @Entity
-@Table(name = "auth_user_role_rel", indexes = {
-    @Index(name = "username", columnList = "username"),
-    @Index(name = "authority", columnList = "authority")
-})
-@IdClass(UserRoleRelevanceId.class)
+@Table(name = "auth_user_role_rel")
+@EqualsAndHashCode(callSuper = true)
 @Schema(title = "用户角色关联对象", description = "用于定义用户与角色之间的关联关系")
-public class UserRoleRelevance implements BaseUserRoleRelevance {
+public class UserRoleRelevance extends TenantBaseEntityImpl<String> implements BaseUserRoleRelevance {
 
   /**
    * The username of the user associated with the role.
    * This field specifies the user's unique identifier in the system.
    */
-  @Id
   @Schema(title = "用户名", description = "关联的用户名")
-  private String username;
+  private String userId;
 
   /**
    * The authority associated with the user.
    * This field represents the role or permission assigned to the user.
    */
-  @Id
   @Schema(title = "角色权限", description = "关联的角色权限标识")
-  private String authority;
+  private String roleId;
 }

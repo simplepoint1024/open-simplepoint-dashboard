@@ -44,9 +44,6 @@ import org.simplepoint.core.context.UserContext;
 @Data
 @JacksonStdImpl
 @MappedSuperclass
-@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenantId", type = String.class))
-@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
-@FilterDef(name = "softDeleteFilter")
 @Filter(name = "softDeleteFilter", condition = "deleted_at IS NULL")
 @SQLDelete(sql = "UPDATE ${TABLE_NAME} SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
 @SQLDeleteAll(sql = "UPDATE ${TABLE_NAME} SET deleted_at = CURRENT_TIMESTAMP WHERE id in (?)")
@@ -66,13 +63,6 @@ public class BaseEntityImpl<I extends Serializable> implements BaseEntity<I> {
    */
   @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
   private Instant deletedAt;
-
-  /**
-   * The tenant ID associated with the entity.
-   */
-  @Column(name = "tenant_id", updatable = false, nullable = false)
-  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
-  private String tenantId;
 
   /**
    * The organization department ID associated with the entity.

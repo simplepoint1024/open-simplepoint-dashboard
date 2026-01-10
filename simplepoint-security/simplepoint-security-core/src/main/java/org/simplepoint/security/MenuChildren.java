@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.Permissions;
+import org.springframework.beans.BeanUtils;
 
 /**
  * Represents a menu entity that is initialized with a hierarchical structure.
@@ -18,4 +19,15 @@ import org.simplepoint.security.entity.Permissions;
 public class MenuChildren extends Menu {
   private Set<MenuChildren> children;
   private Set<Permissions> permissions;
+
+  /**
+   * Converts this MenuChildren instance to a Menu instance.
+   *
+   * @return the Menu instance
+   */
+  public Menu toMenu() {
+    Menu menu = new Menu();
+    BeanUtils.copyProperties(this, menu);
+    return menu;
+  }
 }

@@ -59,7 +59,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @GetMapping
   @Operation(summary = "分页查询用户", description = "根据提供的属性和分页参数，检索用户的分页列表")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('users.view')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('users.view')")
   public Response<Page<User>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), User.class);
   }
@@ -73,9 +73,9 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @PostMapping
   @Operation(summary = "添加用户", description = "添加一个新的用户到系统中")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('users.create')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('users.create')")
   public Response<User> add(@RequestBody User data) throws Exception {
-    return ok(service.persist(data));
+    return ok(service.create(data));
   }
 
   /**
@@ -86,7 +86,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @PutMapping
   @Operation(summary = "修改用户", description = "修改一个已存在的用户信息")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('users.edit')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('users.edit')")
   public Response<User> modify(@RequestBody User data) {
     return ok(service.modifyById(data));
   }
@@ -99,7 +99,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @DeleteMapping
   @Operation(summary = "删除用户", description = "根据提供的用户ID集合，删除一个或多个用户")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('users.delete')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('users.delete')")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
@@ -107,16 +107,16 @@ public class UsersController extends BaseController<UsersService, User, String> 
   }
 
   /**
-   * Retrieves a collection of role authorities associated with a specific username.
+   * Retrieves a collection of role authorities associated with a specific userId.
    *
-   * @param username The username to filter the role authorities.
-   * @return A response containing a collection of role authorities for the given username.
+   * @param userId The userId to filter the role authorities.
+   * @return A response containing a collection of role authorities for the given userId.
    */
   @GetMapping("/authorized")
   @Operation(summary = "获取用户角色权限", description = "根据用户名获取该用户")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('users.config.role')")
-  public Response<Collection<String>> authorized(@RequestParam("username") String username) {
-    return ok(service.authorized(username));
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('users.config.role')")
+  public Response<Collection<String>> authorized(@RequestParam("userId") String userId) {
+    return ok(service.authorized(userId));
   }
 
   /**
@@ -127,7 +127,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @PostMapping("/authorize")
   @Operation(summary = "授权角色用户关联关系", description = "根据一组角色")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('users.config.role')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('users.config.role')")
   public Response<Collection<UserRoleRelevance>> authorize(@RequestBody UserRoleRelevanceDto dto) {
     return ok(service.authorize(dto));
   }
@@ -140,7 +140,7 @@ public class UsersController extends BaseController<UsersService, User, String> 
    */
   @PostMapping("/unauthorized")
   @Operation(summary = "取消授权角色用户关联关系", description = "根据角色用户关联关系取消授权")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('users.config.role')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('users.config.role')")
   public Response<Void> unauthorized(@RequestBody UserRoleRelevanceDto dto) {
     service.unauthorized(dto);
     return Response.okay();

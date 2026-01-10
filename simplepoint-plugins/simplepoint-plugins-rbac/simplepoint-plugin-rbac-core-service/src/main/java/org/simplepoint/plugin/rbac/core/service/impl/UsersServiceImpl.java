@@ -19,6 +19,9 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.authority.AdministratorAuthority;
+import org.simplepoint.core.authority.PermissionGrantedAuthority;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.core.context.UserContext;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
@@ -26,13 +29,10 @@ import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.decorator.UserLoginDecorator;
-import org.simplepoint.security.entity.PermissionGrantedAuthority;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -123,19 +123,30 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     if (user.getDecorator() == null) {
       user.setDecorator(objectMapper.createObjectNode());
     }
-    List<String> roles = loadRolesByUsername(resolvedUsername);
-    if (user.getSuperAdmin()) {
-      roles.add("SYSTEM");
-    }
+    var roleAuthorityVos = loadRolesByUserId(user.getId());
     List<GrantedAuthority> authorities = new ArrayList<>();
-    for (String role : roles) {
-      var permission = "ROLE_" + role;
-      authorities.add(new SimpleGrantedAuthority(permission));
+    Map<String, RoleGrantedAuthority> roleMap = new HashMap<>();
+    for (var roleAuthority : roleAuthorityVos) {
+      authorities.add(new RoleGrantedAuthority(roleAuthority.getId(), roleAuthority.getAuthority()));
+      roleMap.put(roleAuthority.getId(), roleAuthority);
+    }
+    if (user.superAdmin()) {
+      authorities.add(new AdministratorAuthority(null));
     }
     // 将额外的权限提供者的权限添加到用户权限中
-    List<RolePermissionsRelevance> permissions = loadPermissionsInRoleAuthorities(roles);
+    var permissions = loadPermissionsInRoleIds(roleAuthorityVos.stream().map(RoleGrantedAuthority::getId).toList());
     if (!permissions.isEmpty()) {
-      authorities.addAll(permissions.stream().map(pm -> new PermissionGrantedAuthority(pm.getRoleAuthority(), pm.getPermissionAuthority())).toList());
+      authorities.addAll(permissions.stream().map(pm -> {
+            var roleId = pm.getRoleId();
+            RoleGrantedAuthority roleAuthorityRecord = roleMap.get(roleId);
+            return new PermissionGrantedAuthority(
+                pm.getId(),
+                pm.getAuthority(),
+                roleAuthorityRecord != null ? roleAuthorityRecord.getId() : null,
+                roleAuthorityRecord != null ? roleAuthorityRecord.getAuthority() : null
+            );
+          }
+      ).toList());
     }
     user.setAuthorities(authorities);
     return afterLogin(user, ext);
@@ -175,23 +186,23 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   /**
    * Loads roles associated with the given username.
    *
-   * @param username the username of the user
+   * @param userId the username of the user
    * @return a list of role authorities assigned to the user
    */
   @Override
-  public List<String> loadRolesByUsername(String username) {
-    return getRepository().loadRolesByUsername(username);
+  public Collection<RoleGrantedAuthority> loadRolesByUserId(String userId) {
+    return getRepository().loadRolesByUserId(userId);
   }
 
   /**
    * Loads permissions associated with the given role authorities.
    *
-   * @param roleAuthorities a list of role authorities
+   * @param roleIds a list of role authorities
    * @return a list of RolePermissionsRelevance entities representing permissions assigned to the specified roles
    */
   @Override
-  public List<RolePermissionsRelevance> loadPermissionsInRoleAuthorities(List<String> roleAuthorities) {
-    return getRepository().loadPermissionsInRoleAuthorities(roleAuthorities);
+  public Collection<PermissionGrantedAuthority> loadPermissionsInRoleIds(List<String> roleIds) {
+    return getRepository().loadPermissionsInRoleIds(roleIds);
   }
 
   /**
@@ -205,9 +216,9 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    * @return the added User object
    */
   @Override
-  public <S extends User> S persist(S entity) {
+  public <S extends User> S create(S entity) {
     entity.setPassword(passwordEncoder.encode(entity.getPassword()));
-    return super.persist(entity);
+    return super.create(entity);
   }
 
   @Override
@@ -224,25 +235,25 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   }
 
   /**
-   * Retrieves a collection of role authorities associated with a specific username.
+   * Retrieves a collection of role authorities associated with a specific userId.
    *
-   * @param username The username to filter the role authorities.
-   * @return A collection of role authorities for the given username.
+   * @param userId The userId to filter the role authorities.
+   * @return A collection of role authorities for the given userId.
    */
   @Override
-  public Collection<String> authorized(String username) {
-    return getRepository().authorized(username);
+  public Collection<String> authorized(String userId) {
+    return getRepository().authorized(userId);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Collection<UserRoleRelevance> authorize(UserRoleRelevanceDto dto) {
-    Set<String> roleAuthorities = dto.getRoleAuthorities();
-    Set<UserRoleRelevance> authorities = new HashSet<>(roleAuthorities.size());
-    for (String roleAuthority : roleAuthorities) {
+    Set<String> roleIds = dto.getRoleIds();
+    Set<UserRoleRelevance> authorities = new HashSet<>(roleIds.size());
+    for (String roleId : roleIds) {
       UserRoleRelevance relevance = new UserRoleRelevance();
-      relevance.setUsername(dto.getUsername());
-      relevance.setAuthority(roleAuthority);
+      relevance.setUserId(dto.getUserId());
+      relevance.setRoleId(roleId);
       authorities.add(relevance);
     }
     return userRoleRelevanceRepository.saveAll(authorities);
@@ -251,7 +262,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void unauthorized(UserRoleRelevanceDto dto) {
-    userRoleRelevanceRepository.unauthorized(dto.getUsername(), dto.getRoleAuthorities());
+    userRoleRelevanceRepository.unauthorized(dto.getUserId(), dto.getRoleIds());
   }
 
 }

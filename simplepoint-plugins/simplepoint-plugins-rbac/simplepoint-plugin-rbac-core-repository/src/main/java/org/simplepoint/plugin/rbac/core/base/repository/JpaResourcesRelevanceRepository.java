@@ -19,26 +19,26 @@ import org.springframework.stereotype.Repository;
 public interface JpaResourcesRelevanceRepository extends JpaRepository<ResourcesPermissionsRelevance, String>, ResourcesRelevanceRepository {
   @Override
   @Modifying
-  @Query("DELETE FROM ResourcesPermissionsRelevance rpr WHERE rpr.resourceAuthority IN ?1")
-  void removeAllByAuthorities(Collection<String> resourceAuthorities);
+  @Query("DELETE FROM ResourcesPermissionsRelevance rpr WHERE rpr.resourceId IN ?1")
+  void removeAllByAuthorities(Collection<String> resourceIds);
 
   @Override
   @Modifying
-  @Query("DELETE FROM ResourcesPermissionsRelevance rpr WHERE rpr.resourceAuthority = ?1")
-  void removeAllByAuthority(String resourceAuthority);
+  @Query("DELETE FROM ResourcesPermissionsRelevance rpr WHERE rpr.resourceId = ?1")
+  void removeAllByAuthority(String resourceId);
 
   @Override
   @Modifying
-  @Query("DELETE FROM ResourcesPermissionsRelevance rpr WHERE rpr.resourceAuthority = ?1 AND rpr.permissionAuthority IN ?2")
-  void unauthorize(String authority, Collection<String> permissionAuthority);
+  @Query("DELETE FROM ResourcesPermissionsRelevance rpr WHERE rpr.resourceId = ?1 AND rpr.permissionId IN ?2")
+  void unauthorize(String resourceId, Collection<String> permissionIds);
 
   @Override
-  @Query("SELECT permissionAuthority FROM ResourcesPermissionsRelevance WHERE resourceAuthority = ?1")
-  Collection<String> authorized(String resourceAuthority);
+  @Query("SELECT permissionId FROM ResourcesPermissionsRelevance WHERE resourceId = ?1")
+  Collection<String> authorized(String resourceId);
 
   @Override
-  @Query("SELECT resourceAuthority FROM ResourcesPermissionsRelevance where permissionAuthority in ?1")
-  Collection<String> loadAllResourceAuthorities(Collection<String> resourceAuthorities);
+  @Query("SELECT resourceId FROM ResourcesPermissionsRelevance where permissionId in ?1")
+  Collection<String> loadAllResourceAuthorities(Collection<String> resourceIds);
 
   @Override
   default void authorize(Collection<ResourcesPermissionsRelevance> collection) {

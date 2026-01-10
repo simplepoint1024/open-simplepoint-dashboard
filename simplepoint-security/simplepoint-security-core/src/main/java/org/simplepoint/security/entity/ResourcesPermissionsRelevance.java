@@ -2,12 +2,11 @@ package org.simplepoint.security.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.simplepoint.api.security.base.BaseRolePermissionsRelevance;
-import org.simplepoint.security.entity.id.ResourcesPermissionsRelevanceId;
+import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 
 /**
  * Represents the relationship between resources and permissions in the
@@ -17,25 +16,23 @@ import org.simplepoint.security.entity.id.ResourcesPermissionsRelevanceId;
  */
 @Data
 @Entity
-@IdClass(ResourcesPermissionsRelevanceId.class)
 @Table(name = "auth_resources_rel")
-public class ResourcesPermissionsRelevance implements BaseRolePermissionsRelevance {
+@EqualsAndHashCode(callSuper = true)
+public class ResourcesPermissionsRelevance extends BaseEntityImpl<String> implements BaseRolePermissionsRelevance {
 
   /**
    * The authority of the permission associated with the relationship.
    * This field specifies the unique identifier or scope of the permission.
    */
-  @Id
   @Column(nullable = false)
-  private String permissionAuthority;
+  private String permissionId;
 
   /**
    * The authority of the resource associated with the relationship.
    * This field specifies the unique identifier or scope of the resource.
    */
-  @Id
   @Column(nullable = false)
-  private String resourceAuthority;
+  private String resourceId;
 
   /**
    * Default constructor.
@@ -47,11 +44,11 @@ public class ResourcesPermissionsRelevance implements BaseRolePermissionsRelevan
    * Parameterized constructor to create a ResourcesPermissionsRelevance
    * with specified resource and permission authorities.
    *
-   * @param resourceAuthority   the authority of the resource
-   * @param permissionAuthority the authority of the permission
+   * @param permissionId the authority of the resource
+   * @param resourceId   the authority of the permission
    */
-  public ResourcesPermissionsRelevance(String resourceAuthority, String permissionAuthority) {
-    this.resourceAuthority = resourceAuthority;
-    this.permissionAuthority = permissionAuthority;
+  public ResourcesPermissionsRelevance(String permissionId, String resourceId) {
+    this.permissionId = permissionId;
+    this.resourceId = resourceId;
   }
 }

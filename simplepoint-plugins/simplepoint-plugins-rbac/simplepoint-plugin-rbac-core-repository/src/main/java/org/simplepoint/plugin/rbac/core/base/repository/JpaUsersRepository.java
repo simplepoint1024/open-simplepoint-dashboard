@@ -10,9 +10,10 @@ package org.simplepoint.plugin.rbac.core.base.repository;
 
 import java.util.Collection;
 import java.util.List;
+import org.simplepoint.core.authority.PermissionGrantedAuthority;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.simplepoint.security.entity.User;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,18 +32,30 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
    * Loads the roles associated with the given username.
    * This custom query retrieves the role authorities for the specified user.
    *
-   * @param username the username of the user whose roles are to be loaded
+   * @param userId the username of the user whose roles are to be loaded
    * @return a list of role authorities associated with the specified username
    */
   @Override
-  @Query("select urr.authority from UserRoleRelevance urr where urr.username = :username")
-  List<String> loadRolesByUsername(@Param("username") String username);
+  @Query("""
+      select
+        new org.simplepoint.core.authority.RoleGrantedAuthority(rl.id,rl.authority)
+      from UserRoleRelevance urr
+      join Role rl on urr.roleId=rl.id
+      where urr.userId = :userId
+      """)
+  Collection<RoleGrantedAuthority> loadRolesByUserId(@Param("userId") String userId);
 
   @Override
-  @Query("select pr from RolePermissionsRelevance pr where pr.roleAuthority in :roleAuthorities")
-  List<RolePermissionsRelevance> loadPermissionsInRoleAuthorities(@Param("roleAuthorities") List<String> roleAuthorities);
+  @Query("""
+      select
+        new org.simplepoint.core.authority.PermissionGrantedAuthority(ps.id,ps.authority,pr.roleId,null)
+      from RolePermissionsRelevance pr
+      join Permissions ps on pr.permissionId = ps.id
+      where pr.roleId in :roleIds
+      """)
+  Collection<PermissionGrantedAuthority> loadPermissionsInRoleIds(@Param("roleIds") List<String> roleIds);
 
   @Override
-  @Query("select authority from UserRoleRelevance where username = :username")
-  Collection<String> authorized(@Param("username") String username);
+  @Query("select roleId from UserRoleRelevance where userId = :userId")
+  Collection<String> authorized(@Param("userId") String userId);
 }

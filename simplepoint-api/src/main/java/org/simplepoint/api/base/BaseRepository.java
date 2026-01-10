@@ -30,6 +30,11 @@ public interface BaseRepository<T extends BaseEntity<I>, I extends Serializable>
   Class<T> getDomainClass();
 
   /**
+   * flush.
+   */
+  void flush();
+
+  /**
    * add.
    *
    * @param entity entity.

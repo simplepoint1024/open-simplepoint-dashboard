@@ -1,7 +1,6 @@
 package org.simplepoint.security.oauth2.resourceserver.delegate;
 
 import java.util.Collection;
-import java.util.Set;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.core.context.UserContext;
 import org.springframework.core.convert.converter.Converter;
@@ -37,10 +36,9 @@ public class JwtGrantedAuthoritiesConverterDelegate implements Converter<Jwt, Co
   public Collection<GrantedAuthority> convert(Jwt source) {
     Collection<GrantedAuthority> authorities = delegate.convert(source);
     String subject = source.getSubject();
-    Set<String> permissions = userContext.getPermissionsByUsername(subject);
-    for (String permission : permissions) {
-      authorities.add(new SimpleGrantedAuthority(permission));
-    }
+    userContext.getRolesByUsername(subject).forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getAuthority())));
+    var permissions = userContext.getPermissionsByUsername(subject);
+    permissions.forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission.getAuthority())));
     return authorities;
   }
 }

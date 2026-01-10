@@ -51,7 +51,7 @@ public class I18nNamespaceController extends BaseController<I18nNamespaceService
    * @return a paginated response containing namespaces that match the given attributes 包含符合给定属性的命名空间的分页响应
    */
   @GetMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('namespaces.view')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('namespaces.view')")
   @Operation(summary = "分页查询命名空间", description = "根据提供的属性和分页参数，检索命名空间的分页列表")
   public Response<Page<Namespace>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), Namespace.class);
@@ -65,10 +65,10 @@ public class I18nNamespaceController extends BaseController<I18nNamespaceService
    * @return a response containing the added namespace 包含已添加命名空间的响应
    */
   @PostMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('namespaces.create')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('namespaces.create')")
   @Operation(summary = "添加命名空间", description = "添加一个新的命名空间到系统中")
   public Response<Namespace> add(@RequestBody Namespace data) {
-    return ok(service.persist(data));
+    return ok(service.create(data));
   }
 
   /**
@@ -79,7 +79,7 @@ public class I18nNamespaceController extends BaseController<I18nNamespaceService
    * @return a response containing the modified namespace 包含已修改命名空间的响应
    */
   @PutMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('namespaces.edit')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('namespaces.edit')")
   @Operation(summary = "修改命名空间", description = "修改一个已存在的命名空间信息")
   public Response<Namespace> modify(@RequestBody Namespace data) {
     return ok(service.modifyById(data));
@@ -93,7 +93,7 @@ public class I18nNamespaceController extends BaseController<I18nNamespaceService
    * @return a response containing the set of deleted namespace IDs 包含已删除命名空间ID集合的响应
    */
   @DeleteMapping
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('namespaces.delete')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('namespaces.delete')")
   @Operation(summary = "删除命名空间", description = "根据提供的命名空间ID集合，删除一个或多个命名空间")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
