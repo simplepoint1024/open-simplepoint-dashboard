@@ -27,7 +27,7 @@ public interface JpaMenuAncestorRepository extends JpaRepository<MenuAncestor, S
 
   @Override
   @Query("SELECT ma.ancestorId FROM MenuAncestor ma WHERE ma.childId in ?1")
-  Collection<String> findAncestorIdsByChildIds(Collection<String> childUuid);
+  Collection<String> findAncestorIdsByChildIdIn(Collection<String> childUuid);
 
   @Override
   @Query("SELECT ma.childId FROM MenuAncestor ma WHERE ma.ancestorId in ?1")

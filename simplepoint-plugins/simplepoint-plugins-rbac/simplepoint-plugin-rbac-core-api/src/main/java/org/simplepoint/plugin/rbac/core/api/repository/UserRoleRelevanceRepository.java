@@ -20,13 +20,6 @@ public interface UserRoleRelevanceRepository {
   <S extends UserRoleRelevance> List<S> saveAll(Iterable<S> entities);
 
   /**
-   * Delete all UserRoleRelevance entities associated with the specified username.
-   *
-   * @param username the username whose associated UserRoleRelevance entities are to be deleted
-   */
-  void deleteAllByUsername(String username);
-
-  /**
    * Remove specific authorities from a user identified by username.
    *
    * @param username    the username of the user

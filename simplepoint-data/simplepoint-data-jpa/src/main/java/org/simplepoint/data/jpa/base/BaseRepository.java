@@ -2,6 +2,7 @@ package org.simplepoint.data.jpa.base;
 
 import java.io.Serializable;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.Repository;
 

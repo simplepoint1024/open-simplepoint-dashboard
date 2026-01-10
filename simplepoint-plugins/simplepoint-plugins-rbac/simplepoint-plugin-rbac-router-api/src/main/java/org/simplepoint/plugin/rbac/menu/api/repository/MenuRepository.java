@@ -1,10 +1,8 @@
 package org.simplepoint.plugin.rbac.menu.api.repository;
 
 import java.util.Collection;
-import java.util.List;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.security.entity.Menu;
-import org.simplepoint.security.entity.ResourcesPermissionsRelevance;
 
 /**
  * Repository interface for {@link Menu} entity.
@@ -16,14 +14,6 @@ import org.simplepoint.security.entity.ResourcesPermissionsRelevance;
  * @since 1.0
  */
 public interface MenuRepository extends BaseRepository<Menu, String> {
-  /**
-   * Load menu-permission relevances by a collection of permission authorities.
-   *
-   * @param permissionAuthorities collection of permission authorities
-   * @return collection of {@link ResourcesPermissionsRelevance} entities
-   */
-  Collection<ResourcesPermissionsRelevance> loadPermissionsByPermissionAuthorities(Collection<String> permissionAuthorities);
-
   /**
    * Load menus by a collection of menu IDs.
    *
@@ -38,20 +28,4 @@ public interface MenuRepository extends BaseRepository<Menu, String> {
    * @return SQL Connection containing all {@link Menu} entities
    */
   Collection<Menu> loadAll();
-
-  /**
-   * Load menu IDs by a list of menu authorities.
-   *
-   * @param menuAuthorities list of menu authorities
-   * @return list of menu IDs
-   */
-  List<String> loadMenuIdsByAuthorities(List<String> menuAuthorities);
-
-  /**
-   * Load menu authorities by a list of menu IDs.
-   *
-   * @param menuIds list of menu IDs
-   * @return list of menu authorities
-   */
-  List<String> loadAuthoritiesByMenuIds(Collection<String> menuIds);
 }

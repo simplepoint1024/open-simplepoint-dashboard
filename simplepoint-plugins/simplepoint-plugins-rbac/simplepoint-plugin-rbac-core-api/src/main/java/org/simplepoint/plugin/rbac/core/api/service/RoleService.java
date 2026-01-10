@@ -12,12 +12,9 @@ import java.util.Collection;
 import java.util.Set;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
-import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
-import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -29,16 +26,6 @@ import org.springframework.data.domain.Pageable;
 public interface RoleService extends BaseService<Role, String> {
 
   /**
-   * Load role-permission relationships based on a collection of role authorities.
-   *
-   * @param roleAuthorities A collection of role authorities to filter the relationships.
-   * @return A collection of RolePermissionsRelevance entities associated with the given role authorities.
-   */
-  Collection<RolePermissionsRelevance> loadPermissionsByRoleAuthorities(
-      Collection<String> roleAuthorities
-  );
-
-  /**
    * Retrieve a paginated list of RoleSelectDto for role selection purposes.
    *
    * @param pageable Pagination information.
@@ -48,20 +35,20 @@ public interface RoleService extends BaseService<Role, String> {
 
 
   /**
-   * Removes the specified authorities from the given role authority.
+   * Removes the specified permissionIds from the given role authority.
    *
-   * @param roleAuthority the authority of the role
-   * @param authorities   the set of permission authorities to be removed
+   * @param roleId        the authority of the role
+   * @param permissionIds the set of permission permissionIds to be removed
    */
-  void unauthorized(String roleAuthority, Set<String> authorities);
+  void unauthorized(String roleId, Set<String> permissionIds);
 
   /**
    * Retrieves a collection of authorized permission strings for the specified role authority.
    *
-   * @param roleAuthority the authority of the role
+   * @param roleId the authority of the role
    * @return a collection of authorized permission strings
    */
-  Collection<String> authorized(String roleAuthority);
+  Collection<String> authorized(String roleId);
 
   /**
    * Authorizes permissions based on the provided RolePermissionsRelevanceDto.

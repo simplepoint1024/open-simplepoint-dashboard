@@ -1,4 +1,4 @@
-package org.simplepoint.security.entity;
+package org.simplepoint.core.authority;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -7,26 +7,25 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 
 /**
- * Permission Granted Authority.
+ * Role Granted Authority.
  */
-public class PermissionGrantedAuthority implements GrantedAuthority {
+public class RoleGrantedAuthority implements GrantedAuthority {
   @Getter
-  private final String role;
-
+  private final String id;
   private final String authority;
 
   /**
-   * Constructs a PermissionGrantedAuthority with the specified role and permission.
+   * Constructs a RoleGrantedAuthority with the specified parameters.
    *
-   * @param role       the role associated with the permission
-   * @param authority the permission string
+   * @param id        the unique identifier of the role
+   * @param authority the authority string of the role
    */
   @JsonCreator
-  public PermissionGrantedAuthority(
-      @JsonProperty("role") String role,
+  public RoleGrantedAuthority(
+      @JsonProperty("id") String id,
       @JsonProperty("authority") String authority
   ) {
-    this.role = role;
+    this.id = id;
     this.authority = authority;
   }
 

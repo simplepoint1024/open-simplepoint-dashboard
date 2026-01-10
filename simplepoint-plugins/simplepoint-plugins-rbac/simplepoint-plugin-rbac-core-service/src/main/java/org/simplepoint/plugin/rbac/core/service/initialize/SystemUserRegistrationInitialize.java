@@ -80,7 +80,7 @@ public class SystemUserRegistrationInitialize implements ApplicationRunner {
         // User does not exist
       }
       if (!exists) {
-        usersService.persist(user);
+        usersService.create(user);
       }
     });
 

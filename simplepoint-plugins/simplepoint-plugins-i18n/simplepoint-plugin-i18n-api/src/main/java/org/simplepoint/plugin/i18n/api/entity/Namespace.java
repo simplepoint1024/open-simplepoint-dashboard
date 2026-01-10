@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
@@ -58,7 +58,7 @@ import org.springframework.core.annotation.Order;
 })
 @NoArgsConstructor
 @Tag(name = "命名空间对象", description = "用于管理系统中的命名空间")
-public class Namespace extends BaseEntityImpl<String> {
+public class Namespace extends TenantBaseEntityImpl<String> {
   /**
    * The name of the namespace.
    */

@@ -10,6 +10,8 @@ package org.simplepoint.core.context;
 
 import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.util.Set;
+import org.simplepoint.core.authority.PermissionGrantedAuthority;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -63,7 +65,7 @@ public interface UserContext<T extends UserDetails> {
    * @param username 用户名 The username.
    * @return 权限集合 The set of permissions.
    */
-  Set<String> getPermissionsByUsername(String username);
+  Set<PermissionGrantedAuthority> getPermissionsByUsername(String username);
 
   /**
    * 获取当前用户的权限集合
@@ -71,7 +73,7 @@ public interface UserContext<T extends UserDetails> {
    *
    * @return 权限集合 The set of permissions.
    */
-  Set<String> getPermissions();
+  Set<PermissionGrantedAuthority> getPermissions();
 
   /**
    * 获取当前用户的角色集合
@@ -79,7 +81,7 @@ public interface UserContext<T extends UserDetails> {
    *
    * @return 角色集合 The set of roles.
    */
-  Set<String> getRoles();
+  Set<RoleGrantedAuthority> getRoles();
 
   /**
    * 根据用户名获取用户的角色集合
@@ -88,7 +90,7 @@ public interface UserContext<T extends UserDetails> {
    * @param username 用户名 The username.
    * @return 角色集合 The set of roles.
    */
-  Set<String> getRolesByUsername(String username);
+  Set<RoleGrantedAuthority> getRolesByUsername(String username);
 
   /**
    * 获取当前的身份验证对象

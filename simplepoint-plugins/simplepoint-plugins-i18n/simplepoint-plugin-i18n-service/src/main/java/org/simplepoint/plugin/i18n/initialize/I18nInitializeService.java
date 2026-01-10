@@ -82,18 +82,18 @@ public class I18nInitializeService implements ApplicationRunner {
       data.values().forEach(item -> {
         Countries countries = new Countries();
         BeanUtils.copyProperties(item, countries);
-        countriesService.persist(countries);
+        countriesService.create(countries);
         Set<Language> languages = item.getLanguages();
         if (languages != null && !languages.isEmpty()) {
-          languageService.persist(languages);
+          languageService.create(languages);
         }
         Set<Region> regions = item.getRegions();
         if (regions != null && !regions.isEmpty()) {
-          regionService.persist(regions);
+          regionService.create(regions);
         }
         Set<TimeZone> timeZones = item.getTimezones();
         if (timeZones != null && !timeZones.isEmpty()) {
-          timeZoneService.persist(timeZones);
+          timeZoneService.create(timeZones);
         }
       });
     });
@@ -133,10 +133,10 @@ public class I18nInitializeService implements ApplicationRunner {
         }
       }
       if (!namespaceSet.isEmpty()) {
-        namespaceService.persist(namespaceSet);
+        namespaceService.create(namespaceSet);
       }
       if (!messageSet.isEmpty()) {
-        messageService.persist(messageSet);
+        messageService.create(messageSet);
       }
     });
   }

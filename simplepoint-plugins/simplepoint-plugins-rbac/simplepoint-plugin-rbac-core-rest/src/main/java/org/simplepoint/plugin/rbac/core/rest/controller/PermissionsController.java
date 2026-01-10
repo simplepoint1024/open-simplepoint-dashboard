@@ -76,7 +76,7 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
    */
   @GetMapping
   @Operation(summary = "获取权限的分页列表", description = "根据查询参数和分页信息获取权限的分页列表")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('permissions.view')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('permissions.view')")
   public Response<Page<Permissions>> limit(
       @RequestParam Map<String, String> attributes,
       Pageable pageable
@@ -96,9 +96,9 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
    */
   @PostMapping
   @Operation(summary = "添加新的权限", description = "添加一个新的权限到系统中")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('permissions.create')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('permissions.create')")
   public Response<Permissions> add(@RequestBody Permissions data) throws Exception {
-    return ok(service.persist(data));
+    return ok(service.create(data));
   }
 
   /**
@@ -110,7 +110,7 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
    */
   @PutMapping
   @Operation(summary = "修改现有权限", description = "根据提供的数据修改一个现有的权限")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('permissions.edit')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('permissions.edit')")
   public Response<Permissions> modify(@RequestBody Permissions data) {
     return ok(service.modifyById(data));
   }
@@ -124,7 +124,7 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
    */
   @DeleteMapping
   @Operation(summary = "删除指定的权限 ID", description = "根据提供的权限 ID 集合删除对应的权限")
-  @PreAuthorize("hasRole('SYSTEM') or hasAuthority('permissions.delete')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('permissions.delete')")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) {
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
@@ -142,7 +142,7 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
   @Operation(summary = "获取权限下拉列表数据", description = "检索用于权限选择的权限下拉列表数据")
   @PreAuthorize(
       """
-      hasRole('SYSTEM') or hasAuthority('menus.config.permission') or hasAuthority('roles.config.permission')
+      hasRole('Administrator') or hasAuthority('menus.config.permission') or hasAuthority('roles.config.permission')
       """
   )
   public Response<Page<PermissionsRelevanceVo>> items(Pageable pageable) {

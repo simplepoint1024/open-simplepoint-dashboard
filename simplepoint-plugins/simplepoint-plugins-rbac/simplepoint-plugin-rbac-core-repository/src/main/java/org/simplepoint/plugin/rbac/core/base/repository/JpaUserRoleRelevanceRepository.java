@@ -19,10 +19,7 @@ import org.springframework.stereotype.Repository;
 public interface JpaUserRoleRelevanceRepository extends JpaRepository<UserRoleRelevance, String>, UserRoleRelevanceRepository {
 
   @Override
-  void deleteAllByUsername(String username);
-
-  @Override
   @Modifying
-  @Query("delete from UserRoleRelevance urr where urr.username = :username and urr.authority in :authority")
-  void unauthorized(@Param("username") String username, @Param("authority") Set<String> authorities);
+  @Query("delete from UserRoleRelevance urr where urr.userId = :userId and urr.roleId in :roleIds")
+  void unauthorized(@Param("userId") String userId, @Param("roleIds") Set<String> roleIds);
 }

@@ -19,7 +19,7 @@ import lombok.EqualsAndHashCode;
 import org.simplepoint.api.security.base.BasePermissions;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 
@@ -65,7 +65,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
     )
 })
 @Schema(title = "权限实体", description = "表示RBAC系统中的权限实体")
-public class Permissions extends BaseEntityImpl<String> implements BasePermissions {
+public class Permissions extends TenantBaseEntityImpl<String> implements BasePermissions {
   public static final String AUTHORITY_FIELD = "authority";
 
   @Schema(

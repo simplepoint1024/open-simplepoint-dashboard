@@ -6,6 +6,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.simplepoint.plugin.rbac.menu.api.entity.id.MenuPermissionsRelevanceId;
 
 /**
@@ -14,28 +16,26 @@ import org.simplepoint.plugin.rbac.menu.api.entity.id.MenuPermissionsRelevanceId
  * This entity is mapped to the `auth_role_permissions_rel` table
  * and defines the association between menu authorities and permission authorities.
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Entity
-@IdClass(MenuPermissionsRelevanceId.class)
 @Table(name = "auth_permissions_menu_rel")
 @Schema(title = "角色权限关联实体", description = "表示RBAC系统中角色与权限之间的关联关系")
-public class MenuPermissionsRelevance {
+public class MenuPermissionsRelevance extends TenantBaseEntityImpl<String> {
 
-  @Id
-  private String menuAuthority;
+  private String menuId;
 
-  @Id
-  private String permissionAuthority;
+  private String permissionId;
 
   /**
    * Constructs a new MenuPermissionsRelevance with the specified menu and permission authorities.
    *
-   * @param menuAuthority       the authority string of the menu
-   * @param permissionAuthority the authority string of the permission
+   * @param menuId       the authority string of the menu
+   * @param permissionId the authority string of the permission
    */
-  public MenuPermissionsRelevance(String menuAuthority, String permissionAuthority) {
-    this.menuAuthority = menuAuthority;
-    this.permissionAuthority = permissionAuthority;
+  public MenuPermissionsRelevance(String menuId, String permissionId) {
+    this.menuId = menuId;
+    this.permissionId = permissionId;
   }
 
   /**

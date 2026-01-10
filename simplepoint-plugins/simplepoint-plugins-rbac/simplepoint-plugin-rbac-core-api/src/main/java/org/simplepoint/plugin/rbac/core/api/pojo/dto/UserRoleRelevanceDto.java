@@ -10,6 +10,6 @@ import lombok.Data;
  */
 @Data
 public class UserRoleRelevanceDto implements Serializable {
-  private String username;
-  private Set<String> roleAuthorities;
+  private String userId;
+  private Set<String> roleIds;
 }

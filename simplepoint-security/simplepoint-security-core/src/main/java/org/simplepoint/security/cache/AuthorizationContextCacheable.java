@@ -3,6 +3,8 @@ package org.simplepoint.security.cache;
 import java.util.Collection;
 import java.util.Set;
 import org.simplepoint.api.security.base.BaseUser;
+import org.simplepoint.core.authority.PermissionGrantedAuthority;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
 
 /**
  * Marker interface indicating that an implementing class
@@ -57,7 +59,7 @@ public interface AuthorizationContextCacheable {
    * @param username the username associated with the roles 关联角色的用户名
    * @param roles    the set of roles to be cached 要缓存的角色集合
    */
-  void cacheRoles(String username, Set<String> roles);
+  void cacheRoles(String username, Set<RoleGrantedAuthority> roles);
 
   /**
    * Caches the permissions for the specified role.
@@ -67,7 +69,7 @@ public interface AuthorizationContextCacheable {
    * @param role        the role associated with the permissions 关联权限的角色
    * @param permissions the collection of permissions to be cached 要缓存的权限集合
    */
-  void cachePermission(String role, Collection<String> permissions);
+  void cachePermission(String role, Collection<PermissionGrantedAuthority> permissions);
 
   /**
    * Retrieves the cached permissions for the specified role.
@@ -77,7 +79,7 @@ public interface AuthorizationContextCacheable {
    * @param role the role associated with the permissions 关联权限的角色
    * @return the collection of cached permissions, or null if not found 缓存的权限集合，如果未找到则返回 null
    */
-  Collection<String> getPermission(String role);
+  Collection<PermissionGrantedAuthority> getPermission(String role);
 
   /**
    * Retrieves the roles associated with the specified username.
@@ -87,5 +89,5 @@ public interface AuthorizationContextCacheable {
    * @param username the username whose roles are to be retrieved 要检索其角色的用户名
    * @return the set of roles associated with the username 关联用户名的角色集合
    */
-  Set<String> getRoles(String username);
+  Set<RoleGrantedAuthority> getRoles(String username);
 }

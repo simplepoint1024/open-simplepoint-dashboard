@@ -36,6 +36,7 @@ import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.api.security.service.JsonSchemaDetailsService;
+import org.simplepoint.core.authority.PermissionGrantedAuthority;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.context.UserContext;
@@ -173,7 +174,8 @@ public class BaseServiceImpl
    */
   protected Set<Map<String, Object>> getButtonDeclarationsSchema(Class<T> domainClass) {
     boolean annotationPresent = domainClass.isAnnotationPresent(ButtonDeclarations.class);
-    Set<String> permissions = userContext.getPermissions();
+    Set<PermissionGrantedAuthority> permissionAuthorityRecords = userContext.getPermissions();
+    List<String> permissions = permissionAuthorityRecords.stream().map(PermissionGrantedAuthority::getAuthority).toList();
     if (annotationPresent) {
       ButtonDeclarations annotation = domainClass.getAnnotation(ButtonDeclarations.class);
       ButtonDeclaration[] buttonDeclarations = annotation.value();
@@ -235,7 +237,7 @@ public class BaseServiceImpl
    * @return the added entity
    */
   @Override
-  public <S extends T> S persist(S entity) {
+  public <S extends T> S create(S entity) {
     S save = repository.save(entity);
     getModifyDataAuditingServices().forEach(service -> service.save(Set.of(save), repository.getDomainClass()));
     return save;
@@ -248,10 +250,15 @@ public class BaseServiceImpl
    * @return the list of added entities
    */
   @Override
-  public List<T> persist(Collection<T> entities) {
+  public List<T> create(Collection<T> entities) {
     List<T> save = repository.saveAll(entities);
     getModifyDataAuditingServices().forEach(service -> service.save(save, repository.getDomainClass()));
     return save;
+  }
+
+  @Override
+  public void flush() {
+    repository.flush();
   }
 
   /**

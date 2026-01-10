@@ -25,14 +25,14 @@ public interface MenuPermissionsRelevanceRepository {
    *
    * @param menuAuthority the menu authority whose associated MenuPermissionsRelevance entities are to be deleted
    */
-  void deleteAllByPermissionAuthority(String menuAuthority);
+  void deleteAllByPermissionId(String menuAuthority);
 
   /**
    * Delete all MenuPermissionsRelevance entities associated with the specified collection of menu authorities.
    *
-   * @param menuAuthorities a collection of menu authorities whose associated MenuPermissionsRelevance entities are to be deleted
+   * @param menuIds a collection of menu authorities whose associated MenuPermissionsRelevance entities are to be deleted
    */
-  void deleteAllByMenuAuthorities(Collection<String> menuAuthorities);
+  void deleteAllByMenuIds(Collection<String> menuIds);
 
   /**
    * Remove specific authorities from a menu identified by menu authority.
@@ -53,8 +53,15 @@ public interface MenuPermissionsRelevanceRepository {
   /**
    * Get all menu permissions authorities associated with the given permission authorities.
    *
-   * @param permissionAuthorities a collection of permission authorities
+   * @param permissionIds a collection of permission permissionIds
    * @return a collection of menu permissions authorities associated with the given permission authorities
    */
-  Collection<String> loadAllMenuAuthorities(Collection<String> permissionAuthorities);
+  Collection<String> findAllMenuIdByPermissionIds(Collection<String> permissionIds);
+
+  /**
+   * Authorize a set of MenuPermissionsRelevance entities.
+   *
+   * @param menuPermissionsRelevances a set of MenuPermissionsRelevance entities to be authorized
+   */
+  void authorize(Collection<MenuPermissionsRelevance> menuPermissionsRelevances);
 }

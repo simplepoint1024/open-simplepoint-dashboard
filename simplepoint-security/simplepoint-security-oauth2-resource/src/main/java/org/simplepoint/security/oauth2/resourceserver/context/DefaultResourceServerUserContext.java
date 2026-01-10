@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.api.security.base.BaseUser;
+import org.simplepoint.core.authority.PermissionGrantedAuthority;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.core.context.UserContext;
 import org.simplepoint.core.oidc.OidcScopes;
 import org.simplepoint.security.cache.AuthorizationContextCacheable;
@@ -160,17 +162,17 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
    * @return 权限集合
    */
   @Override
-  public Set<String> getPermissionsByUsername(String username) {
+  public Set<PermissionGrantedAuthority> getPermissionsByUsername(String username) {
     if (this.authorizationContextCacheable != null) {
-      Set<String> roles = getRolesByUsername(username);
-      Set<String> permissions = new HashSet<>(roles.stream().map(m -> "ROLE_" + m).toList());
-      for (String role : roles) {
-        Collection<String> permission = this.authorizationContextCacheable.getPermission(role);
+      var roles = getRolesByUsername(username);
+      var permissions = new HashSet<PermissionGrantedAuthority>();
+      for (var role : roles) {
+        var permission = this.authorizationContextCacheable.getPermission(role.getAuthority());
         if (permission != null) {
           permissions.addAll(permission);
         }
       }
-      return permissions;
+      return new HashSet<>(permissions);
     }
     throw new IllegalStateException("Not implemented yet.");
   }
@@ -182,9 +184,9 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
    * @return 权限集合
    */
   @Override
-  public Set<String> getPermissions() {
+  public Set<PermissionGrantedAuthority> getPermissions() {
     if (this.authorizationContextCacheable != null) {
-      Set<String> permissions = getPermissionsByUsername(getName());
+      var permissions = getPermissionsByUsername(getName());
       if (permissions != null) {
         return permissions;
       }
@@ -199,7 +201,7 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
    * @return 角色集合
    */
   @Override
-  public Set<String> getRoles() {
+  public Set<RoleGrantedAuthority> getRoles() {
     return this.getRolesByUsername(this.getName());
   }
 
@@ -211,7 +213,7 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
    * @return 角色集合
    */
   @Override
-  public Set<String> getRolesByUsername(String username) {
+  public Set<RoleGrantedAuthority> getRolesByUsername(String username) {
     return this.authorizationContextCacheable.getRoles(username);
   }
 

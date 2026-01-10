@@ -8,6 +8,7 @@
 
 package org.simplepoint.security.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.extensions.Extension;
@@ -33,7 +34,7 @@ import org.hibernate.validator.constraints.URL;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.simplepoint.core.convert.JsonNodeConverter;
@@ -98,7 +99,7 @@ import org.springframework.security.core.GrantedAuthority;
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "用户对象", description = "用于管理系统中的用户")
-public class User extends BaseEntityImpl<String> implements BaseUser {
+public class User extends TenantBaseEntityImpl<String> implements BaseUser {
 
   /**
    * The constant field name for the account identifier.

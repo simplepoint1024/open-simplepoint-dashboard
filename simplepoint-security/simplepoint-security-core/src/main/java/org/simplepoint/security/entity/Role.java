@@ -19,7 +19,7 @@ import lombok.EqualsAndHashCode;
 import org.simplepoint.api.security.base.BaseRole;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 
@@ -75,7 +75,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
     )
 })
 @Schema(title = "角色对象", description = "用于定义系统中的角色及其权限")
-public class Role extends BaseEntityImpl<String> implements BaseRole {
+public class Role extends TenantBaseEntityImpl<String> implements BaseRole {
 
   /**
    * The name of the role.

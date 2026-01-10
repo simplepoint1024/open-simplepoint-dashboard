@@ -13,7 +13,6 @@ import java.util.List;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
 import org.simplepoint.security.entity.Menu;
-import org.simplepoint.security.entity.ResourcesPermissionsRelevance;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -27,24 +26,10 @@ import org.springframework.stereotype.Repository;
 public interface JpaMenuRepository extends BaseRepository<Menu, String>, MenuRepository {
 
   @Override
-  @Query("SELECT mpr FROM ResourcesPermissionsRelevance mpr WHERE mpr.permissionAuthority IN :permissionAuthorities")
-  Collection<ResourcesPermissionsRelevance> loadPermissionsByPermissionAuthorities(
-      @Param("permissionAuthorities") Collection<String> permissionAuthorities
-  );
-
-  @Override
   @Query("SELECT m FROM Menu m WHERE m.id IN :ids order by m.sort asc")
   Collection<Menu> loadByIds(@Param("ids") Collection<String> ids);
 
   @Override
   @Query("SELECT m FROM Menu m order by m.sort asc")
   Collection<Menu> loadAll();
-
-  @Override
-  @Query("SELECT m.id FROM Menu m WHERE m.authority IN :menuAuthorities")
-  List<String> loadMenuIdsByAuthorities(@Param("menuAuthorities") List<String> menuAuthorities);
-
-  @Override
-  @Query("SELECT m.authority FROM Menu m WHERE m.id IN :menuIds")
-  List<String> loadAuthoritiesByMenuIds(@Param("menuIds") Collection<String> menuIds);
 }

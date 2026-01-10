@@ -7,6 +7,8 @@ import java.util.Collection;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.base.BaseUser;
+import org.simplepoint.core.authority.PermissionGrantedAuthority;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.security.decorator.UserLoginDecorator;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
@@ -69,7 +71,7 @@ public class RedisAuthorizationContextCacheable implements AuthorizationContextC
   }
 
   @Override
-  public void cacheRoles(String username, Set<String> roles) {
+  public void cacheRoles(String username, Set<RoleGrantedAuthority> roles) {
     String cacheKey = resolveCacheKey(username);
     try {
       String json = objectMapper.writeValueAsString(roles);
@@ -81,7 +83,7 @@ public class RedisAuthorizationContextCacheable implements AuthorizationContextC
   }
 
   @Override
-  public void cachePermission(String role, Collection<String> permissions) {
+  public void cachePermission(String role, Collection<PermissionGrantedAuthority> permissions) {
     String cacheKey = resolveCacheKey(role);
     try {
       String json = objectMapper.writeValueAsString(permissions);
@@ -93,7 +95,7 @@ public class RedisAuthorizationContextCacheable implements AuthorizationContextC
   }
 
   @Override
-  public Collection<String> getPermission(String role) {
+  public Collection<PermissionGrantedAuthority> getPermission(String role) {
     String cacheKey = resolveCacheKey(role);
     String json = stringRedisTemplate.opsForValue().get(PERMISSION_CACHE_NAME + cacheKey);
     if (json == null) {
@@ -109,7 +111,7 @@ public class RedisAuthorizationContextCacheable implements AuthorizationContextC
   }
 
   @Override
-  public Set<String> getRoles(String username) {
+  public Set<RoleGrantedAuthority> getRoles(String username) {
     String cacheKey = resolveCacheKey(username);
     String json = stringRedisTemplate.opsForValue().get(ROLE_CACHE_NAME + cacheKey);
     if (json == null) {
