@@ -1,109 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <title>Sign in</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background-color: #f2f2f2;
-            font-family: 'Roboto', sans-serif;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+            background: radial-gradient(circle at 20% 20%, #eef4ff 0, #f8f9fb 45%, #e7f2ff 100%);
+            overflow: hidden;
         }
 
-        .card {
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
+        *, *::before, *::after {
             box-sizing: border-box;
         }
 
-        .form-group {
-            margin-bottom: 20px;
+        /* 彩虹柔光光斑 */
+        .blob {
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            filter: blur(120px);
+            opacity: 0.55;
+            animation: float 14s ease-in-out infinite;
+        }
+        .blob:nth-child(1) {
+            background: radial-gradient(circle, #8ec5ff 0%, rgba(255,255,255,0) 70%);
+            top: -120px; left: -80px;
+        }
+        .blob:nth-child(2) {
+            background: radial-gradient(circle, #b5e3ff 0%, rgba(255,255,255,0) 70%);
+            bottom: -140px; right: -60px;
+            animation-delay: -4s;
+        }
+        .blob:nth-child(3) {
+            background: radial-gradient(circle, #c7b8ff 0%, rgba(255,255,255,0) 70%);
+            top: 40%; left: 60%;
+            animation-delay: -8s;
         }
 
+        @keyframes float {
+            0% { transform: translate(0,0); }
+            50% { transform: translate(30px, 40px); }
+            100% { transform: translate(0,0); }
+        }
+
+        /* 毛玻璃卡片 */
+        .card {
+            position: relative;
+            width: 400px;
+            padding: 42px 38px 54px;
+            border-radius: 36px;
+            background: rgba(255, 255, 255, 0.48);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            box-shadow:
+                    0 16px 36px rgba(0,0,0,0.10),
+                    inset 0 0 1px rgba(255,255,255,0.85);
+            border: 1px solid rgba(255,255,255,0.65);
+            text-align: center;
+        }
+
+        h2 {
+            margin: 0 0 8px 0;
+            font-weight: 500;
+            font-size: 24px;
+            color: #1f1f1f;
+        }
+
+        .subtitle {
+            font-size: 15px;
+            color: #6d6d6d;
+            margin-bottom: 24px;
+        }
+
+        /* 输入框 */
         input[type="text"], input[type="password"] {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.55);
+            backdrop-filter: blur(18px) saturate(180%);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            font-size: 15px;
+            color: #1f1f1f;
+            outline: none;
+            transition: all 0.25s ease;
+            box-shadow:
+                    inset 0 1px 2px rgba(255,255,255,0.9),
+                    0 2px 6px rgba(0,0,0,0.06);
+            margin: 0 0 16px 0;
         }
 
-        button, .oauth-btn {
-            padding: 12px;
-            margin-top: 12px;
-            font-size: 16px;
-            border: none;
-            border-radius: 6px;
+        input::placeholder {
+            color: rgba(0,0,0,0.35);
         }
 
+        input:focus {
+            background: rgba(255,255,255,0.85);
+            border-color: rgba(79,124,255,0.45);
+            box-shadow:
+                    0 0 0 6px rgba(79,124,255,0.15),
+                    inset 0 1px 2px rgba(255,255,255,1),
+                    0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-1px);
+        }
+
+        /* 主按钮 */
+        .sign-in-btn {
+            display: block;
+            width: 100%;
+            padding: 14px 0;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #ffffff, #f3f3f3);
+            color: #1e1f26;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 16px 0 0 0;
+            box-shadow:
+                    0 4px 12px rgba(0,0,0,0.08),
+                    inset 0 1px 2px rgba(255,255,255,0.9);
+            transition: all 0.25s ease;
+        }
+
+        .sign-in-btn:hover {
+            background: #ffffff;
+            transform: translateY(-2px);
+            box-shadow:
+                    0 6px 18px rgba(0,0,0,0.12),
+                    inset 0 1px 2px rgba(255,255,255,1);
+        }
+
+        /* OAuth 按钮 */
         .oauth-btn {
-            background-color: white;
-            border: 1px solid #ccc;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 12px;
+            margin: 12px 0 0 0;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.7);
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow:
+                    0 2px 8px rgba(0,0,0,0.06),
+                    inset 0 1px 2px rgba(255,255,255,0.8);
+            font-size: 15px;
+            color: #333;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
+        .oauth-btn:hover {
+            background: rgba(255,255,255,0.9);
+            transform: translateY(-2px);
         }
 
         .oauth-btn img {
-            height: 20px;
-            margin-right: 8px;
+            height: 24px;
+            margin-right: 10px;
         }
 
-        .sign-in-btn {
-            background-color: #1a73e8;
-            color: white;
+        .alert {
+            margin-bottom: 16px;
+            font-size: 14px;
         }
     </style>
-    <title></title>
 </head>
+
 <body>
+
+<div class="blob"></div>
+<div class="blob"></div>
+<div class="blob"></div>
+
 <div class="card">
     <form method="post" th:action="@{/login}">
-        <div style="text-align: center; margin-bottom: 24px;">
-            <h2 style="margin: 0 0 8px 0; font-weight: 400; font-size: 24px; color: #202124;">Sign in</h2>
-            <div style="font-size: 16px; color: #5f6368;">Use your Simplepoint Account</div>
-        </div>
-        <div class="form-group" style="margin-bottom: 16px;">
-            <label>
-                <input type="text" name="username" placeholder="Email or phone" required autofocus
-                       style="width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px;"/>
-            </label>
-        </div>
-        <div class="form-group" style="margin-bottom: 16px;">
-            <label>
-                <input type="password" name="password" placeholder="Enter your password" required
-                       style="width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px;"/>
-            </label>
-        </div>
-        <div th:if="${param.error}" class="alert alert-danger" role="alert"
-             style="color: #d93025; font-size: 14px; margin-bottom: 16px;">
+        <h2>Sign in</h2>
+        <div class="subtitle">Sign in with your Simple·point account</div>
+
+        <label>
+            <input type="text" name="username" placeholder="Email or phone" required autofocus />
+        </label>
+        <label>
+            <input type="password" name="password" placeholder="Enter your password" required />
+        </label>
+
+        <div th:if="${param.error}" class="alert" style="color:#d93025;">
             Invalid username or password.
         </div>
-        <div th:if="${param.logout}" class="alert alert-success" role="alert"
-             style="color: #188038; font-size: 14px; margin-bottom: 16px;">
+
+        <div th:if="${param.logout}" class="alert" style="color:#188038;">
             You have been logged out.
         </div>
-        <a class="oauth-btn sign-in-btn" href="#" onclick="document.querySelector('form').submit()"
-           style="text-decoration: none; text-align: center; background-color: #1a73e8; color: white; padding: 12px; border-radius: 4px; font-size: 14px; display: block;">
+
+        <a class="sign-in-btn" href="#" onclick="document.querySelector('form').submit()">
             Sign in
         </a>
+
         <a class="oauth-btn" href="/oauth2/authorization/google-idp">
             <img src="/assets/img/google.png" th:src="@{/assets/img/google.png}" alt="Google logo">
             Sign in with Google
         </a>
+
         <a class="oauth-btn" href="/oauth2/authorization/github-idp">
             <img src="/assets/img/github.png" th:src="@{/assets/img/github.png}" alt="Github logo">
             Sign in with Github
         </a>
     </form>
 </div>
+
 </body>
 </html>

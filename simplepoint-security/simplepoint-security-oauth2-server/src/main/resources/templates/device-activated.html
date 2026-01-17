@@ -4,22 +4,156 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Spring Authorization Server sample</title>
-    <link rel="stylesheet" href="/assets/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+            background: radial-gradient(circle at 20% 20%, #eef4ff 0, #f8f9fb 45%, #eef6ff 100%);
+            overflow: hidden;
+        }
+
+        .blob {
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            filter: blur(120px);
+            opacity: 0.55;
+            animation: float 14s ease-in-out infinite;
+        }
+        .blob:nth-child(1) { background: radial-gradient(circle, #8ec5ff 0%, rgba(255,255,255,0) 70%); top: -120px; left: -80px; }
+        .blob:nth-child(2) { background: radial-gradient(circle, #b5e3ff 0%, rgba(255,255,255,0) 70%); bottom: -140px; right: -60px; animation-delay: -4s; }
+        .blob:nth-child(3) { background: radial-gradient(circle, #c7b8ff 0%, rgba(255,255,255,0) 70%); top: 40%; left: 60%; animation-delay: -8s; }
+
+        @keyframes float {
+            0% { transform: translate(0,0); }
+            50% { transform: translate(30px, 40px); }
+            100% { transform: translate(0,0); }
+        }
+
+        .layout {
+            display: flex;
+            gap: 60px;
+            align-items: center;
+            max-width: 1080px;
+            padding: 32px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card {
+            position: relative;
+            width: 460px;
+            padding: 42px 38px 46px;
+            border-radius: 36px;
+            background: rgba(255, 255, 255, 0.48);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            box-shadow:
+                    0 16px 36px rgba(0,0,0,0.10),
+                    inset 0 0 1px rgba(255,255,255,0.85);
+            border: 1px solid rgba(255,255,255,0.65);
+        }
+
+        h2 {
+            font-size: 26px;
+            font-weight: 600;
+            margin: 0 0 12px 0;
+            color: #1f1f1f;
+            text-align: center;
+        }
+
+        p {
+            font-size: 15px;
+            color: #555;
+            text-align: center;
+            margin: 0 0 22px 0;
+            line-height: 1.6;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 16px;
+            background: rgba(29, 185, 84, 0.12);
+            color: #0f7b3d;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+            margin-bottom: 18px;
+            justify-content: center;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #1db954;
+            border-radius: 50%;
+            box-shadow: 0 0 0 6px rgba(29,185,84,0.15);
+        }
+
+        .btn-primary-ios {
+            width: 100%;
+            padding: 14px 0;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #ffffff, #f3f3f3);
+            color: #1e1f26;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            box-shadow:
+                    0 4px 12px rgba(0,0,0,0.08),
+                    inset 0 1px 2px rgba(255,255,255,0.9);
+            transition: all 0.25s ease;
+            cursor: pointer;
+        }
+
+        .btn-primary-ios:hover {
+            background: #ffffff;
+            transform: translateY(-2px);
+            box-shadow:
+                    0 6px 18px rgba(0,0,0,0.12),
+                    inset 0 1px 2px rgba(255,255,255,1);
+        }
+
+        .device-img {
+            width: 100%;
+            max-width: 480px;
+            opacity: 0.9;
+            filter: drop-shadow(0 8px 20px rgba(0,0,0,0.15));
+            position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 900px) {
+            .layout { flex-direction: column; gap: 40px; padding: 24px; }
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-    <div class="row py-5">
-        <div class="col-md-5">
-            <h2 class="text-success">Success!</h2>
-            <p>
-                You have successfully activated your device.<br/>
-                Please return to your device to continue.
-            </p>
-        </div>
-        <div class="col-md-7">
-            <img src="/assets/img/devices.png" th:src="@{/assets/img/devices.png}" class="img-responsive" alt="Devices">
-        </div>
+<div class="blob"></div>
+<div class="blob"></div>
+<div class="blob"></div>
+
+<div class="layout">
+    <div class="card">
+        <div class="status-pill"><span class="status-dot"></span>Success</div>
+        <h2>设备已激活</h2>
+        <p>设备激活成功，您可以返回设备继续后续操作。</p>
+        <button class="btn-primary-ios" onclick="window.close();">关闭</button>
     </div>
+
+    <img src="/assets/img/devices.png" th:src="@{/assets/img/devices.png}" class="device-img" alt="Devices">
+
 </div>
 </body>
 </html>
