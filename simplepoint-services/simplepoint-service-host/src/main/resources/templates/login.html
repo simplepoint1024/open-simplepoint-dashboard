@@ -1,10 +1,128 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
+    <meta charset="UTF-8" />
     <title>Login</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto;
+            background: #f8f9fb;
+            overflow: hidden;
+        }
+
+        /* 彩虹柔光光斑（iOS 26 风格） */
+        .blob {
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            filter: blur(120px);
+            opacity: 0.55;
+            animation: float 14s ease-in-out infinite;
+        }
+        .blob:nth-child(1) {
+            background: radial-gradient(circle, #ff9a9e 0%, rgba(255,255,255,0) 70%);
+            top: -120px; left: -80px;
+        }
+        .blob:nth-child(2) {
+            background: radial-gradient(circle, #fad0c4 0%, rgba(255,255,255,0) 70%);
+            bottom: -140px; right: -60px;
+            animation-delay: -4s;
+        }
+        .blob:nth-child(3) {
+            background: radial-gradient(circle, #a18cd1 0%, rgba(255,255,255,0) 70%);
+            top: 40%; left: 60%;
+            animation-delay: -8s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0,0); }
+            50% { transform: translate(30px, 40px); }
+            100% { transform: translate(0,0); }
+        }
+
+        /* 毛玻璃卡片 */
+        .card {
+            position: relative;
+            width: 360px;
+            padding: 40px 40px 50px;
+            border-radius: 32px;
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            box-shadow:
+                    0 12px 28px rgba(0,0,0,0.08),
+                    inset 0 0 1px rgba(255,255,255,0.8);
+            text-align: center;
+        }
+
+        /* iOS 图标框（白色 + 微光泽） */
+        .logo {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 30px;
+            border-radius: 22px;
+            background: linear-gradient(145deg, #ffffff, #f2f2f2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow:
+                    inset 0 1px 2px rgba(255,255,255,0.9),
+                    0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .logo img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            opacity: 0.9;
+        }
+
+        /* iOS 按钮（白色 + 内发光） */
+        .login-btn {
+            display: block;
+            width: 100%;
+            padding: 14px 0;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #ffffff, #f3f3f3);
+            color: #1e1f26;
+            text-decoration: none;
+            font-size: 17px;
+            font-weight: 600;
+            box-shadow:
+                    0 4px 12px rgba(0,0,0,0.08),
+                    inset 0 1px 2px rgba(255,255,255,0.9);
+            transition: all 0.25s ease;
+        }
+
+        .login-btn:hover {
+            background: #ffffff;
+            transform: translateY(-2px);
+            box-shadow:
+                    0 6px 18px rgba(0,0,0,0.12),
+                    inset 0 1px 2px rgba(255,255,255,1);
+        }
+    </style>
 </head>
 <body>
-<h1>Login</h1>
-<a href="/oauth2/authorization/simplepoint-client">SimplePoint</a>
+
+<div class="blob"></div>
+<div class="blob"></div>
+<div class="blob"></div>
+
+<div class="card">
+    <div class="logo">
+        <img src="/svg.svg" alt="logo" />
+    </div>
+    <a class="login-btn" href="/oauth2/authorization/simplepoint-client">
+        使用 SimplePoint 登录
+    </a>
+</div>
+
 </body>
 </html>

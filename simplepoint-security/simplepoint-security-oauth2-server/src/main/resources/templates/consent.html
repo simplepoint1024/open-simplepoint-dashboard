@@ -3,8 +3,149 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Custom consent page - Consent required</title>
-    <link rel="stylesheet" href="/assets/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <title>App Permissions</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+            background: #f8f9fb;
+            overflow: hidden;
+        }
+
+        /* 蓝色系彩虹柔光光斑 */
+        .blob {
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            filter: blur(120px);
+            opacity: 0.55;
+            animation: float 14s ease-in-out infinite;
+        }
+        .blob:nth-child(1) {
+            background: radial-gradient(circle, #8ec5ff 0%, rgba(255,255,255,0) 70%);
+            top: -120px; left: -80px;
+        }
+        .blob:nth-child(2) {
+            background: radial-gradient(circle, #b5e3ff 0%, rgba(255,255,255,0) 70%);
+            bottom: -140px; right: -60px;
+            animation-delay: -4s;
+        }
+        .blob:nth-child(3) {
+            background: radial-gradient(circle, #c7b8ff 0%, rgba(255,255,255,0) 70%);
+            top: 40%; left: 60%;
+            animation-delay: -8s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0,0); }
+            50% { transform: translate(30px, 40px); }
+            100% { transform: translate(0,0); }
+        }
+
+        /* 毛玻璃卡片 */
+        .card {
+            position: relative;
+            width: 480px;
+            padding: 40px 36px 50px;
+            border-radius: 36px;
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            box-shadow:
+                    0 12px 28px rgba(0,0,0,0.08),
+                    inset 0 0 1px rgba(255,255,255,0.8);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1f1f1f;
+        }
+
+        p {
+            font-size: 15px;
+            color: #444;
+            line-height: 1.6;
+        }
+
+        /* 权限项 */
+        .scope-item {
+            padding: 14px 0;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(12px);
+            margin-bottom: 12px;
+            box-shadow:
+                    inset 0 1px 2px rgba(255,255,255,0.9),
+                    0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        .scope-item label {
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+
+        .scope-item p {
+            margin: 4px 0 0 0;
+            color: #4f7cff;
+            font-size: 14px;
+        }
+
+        /* 主按钮（iOS 风格） */
+        .btn-primary-ios {
+            width: 100%;
+            padding: 14px 0;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #ffffff, #f3f3f3);
+            color: #1e1f26;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            box-shadow:
+                    0 4px 12px rgba(0,0,0,0.08),
+                    inset 0 1px 2px rgba(255,255,255,0.9);
+            transition: all 0.25s ease;
+        }
+
+        .btn-primary-ios:hover {
+            background: #ffffff;
+            transform: translateY(-2px);
+            box-shadow:
+                    0 6px 18px rgba(0,0,0,0.12),
+                    inset 0 1px 2px rgba(255,255,255,1);
+        }
+
+        /* Cancel 按钮 */
+        .btn-cancel {
+            margin-top: 16px;
+            background: none;
+            border: none;
+            color: #4f7cff;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* 用户代码提示 */
+        .alert-warning {
+            border-radius: 18px;
+            background: rgba(255, 243, 205, 0.7);
+            border: none;
+            padding: 12px;
+            font-size: 14px;
+            color: #8a6d3b;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+
     <script>
         function cancelConsent() {
             document.consent_form.reset();
@@ -12,93 +153,53 @@
         }
     </script>
 </head>
+
 <body>
-<div class="container">
-    <div class="row py-5">
-        <h1 class="text-center text-primary">App permissions</h1>
-    </div>
-    <div class="row">
-        <div class="col text-center">
-            <p>
-                The application
-                <span class="fw-bold text-primary" th:text="${clientId}"></span>
-                wants to access your account
-                <span class="fw-bold" th:text="${principalName}"></span>
-            </p>
-        </div>
-    </div>
-    <div th:if="${userCode}" class="row">
-        <div class="col text-center">
-            <p class="alert alert-warning">
-                You have provided the code
-                <span class="fw-bold" th:text="${userCode}"></span>.
-                Verify that this code matches what is shown on your device.
-            </p>
-        </div>
-    </div>
-    <div class="row pb-3">
-        <div class="col text-center">
-            <p>
-                The following permissions are requested by the above app.<br/>
-                Please review these and consent if you approve.
-            </p>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col text-center">
-            <form name="consent_form" method="post" th:action="${requestURI}">
-                <input type="hidden" name="client_id" th:value="${clientId}">
-                <input type="hidden" name="state" th:value="${state}">
-                <input th:if="${userCode}" type="hidden" name="user_code" th:value="${userCode}">
 
-                <div th:each="scope: ${scopes}" class="form-check py-1">
-                    <input class="form-check-input"
-                           style="float: none"
-                           type="checkbox"
-                           name="scope"
-                           th:value="${scope.scope}"
-                           th:id="${scope.scope}">
-                    <label class="form-check-label fw-bold px-2" th:for="${scope.scope}" th:text="${scope.scope}"></label>
-                    <p class="text-primary" th:text="${scope.description}"></p>
-                </div>
+<div class="blob"></div>
+<div class="blob"></div>
+<div class="blob"></div>
 
-                <p th:if="${not #lists.isEmpty(previouslyApprovedScopes)}">
-                    You have already granted the following permissions to the above app:
-                </p>
-                <div th:each="scope: ${previouslyApprovedScopes}" class="form-check py-1">
-                    <input class="form-check-input"
-                           style="float: none"
-                           type="checkbox"
-                           th:id="${scope.scope}"
-                           disabled
-                           checked>
-                    <label class="form-check-label fw-bold px-2" th:for="${scope.scope}" th:text="${scope.scope}"></label>
-                    <p class="text-primary" th:text="${scope.description}"></p>
-                </div>
+<div class="card">
+    <h1>App Permissions</h1>
 
-                <div class="pt-3">
-                    <button class="btn btn-primary btn-lg" type="submit" id="submit-consent">
-                        Submit Consent
-                    </button>
-                </div>
-                <div class="pt-3">
-                    <button class="btn btn-link regular" type="button" id="cancel-consent" onclick="cancelConsent();">
-                        Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
+    <p>
+        The application <span class="fw-bold" th:text="${clientId}"></span>
+        wants to access your account
+        <span class="fw-bold" th:text="${principalName}"></span>
+    </p>
+
+    <div th:if="${userCode}">
+        <p class="alert-warning">
+            You have provided the code <span class="fw-bold" th:text="${userCode}"></span>.
+            Verify that this code matches what is shown on your device.
+        </p>
     </div>
-    <div class="row pt-4">
-        <div class="col text-center">
-            <p>
-                <small>
-                    Your consent to provide access is required.<br/>
-                    If you do not approve, click Cancel, in which case no information will be shared with the app.
-                </small>
-            </p>
+
+    <p>
+        The following permissions are requested by the above app.<br/>
+        Please review these and consent if you approve.
+    </p>
+
+    <form name="consent_form" method="post" th:action="${requestURI}">
+        <input type="hidden" name="client_id" th:value="${clientId}">
+        <input type="hidden" name="state" th:value="${state}">
+        <input th:if="${userCode}" type="hidden" name="user_code" th:value="${userCode}">
+
+        <div th:each="scope: ${scopes}" class="scope-item">
+            <input type="checkbox" name="scope" th:value="${scope.scope}" th:id="${scope.scope}">
+            <label th:for="${scope.scope}" th:text="${scope.scope}"></label>
+            <p th:text="${scope.description}"></p>
         </div>
-    </div>
-</div>
-</body>
-</html>
+
+        <p th:if="${not #lists.isEmpty(previouslyApprovedScopes)}">
+            You have already granted the following permissions:
+        </p>
+
+        <div th:each="scope: ${previouslyApprovedScopes}" class="scope-item">
+            <input type="checkbox" disabled checked th:id="${scope.scope}">
+            <label th:for="${scope.scope}" th:text="${scope.scope}"></label>
+            <p th:text="${scope.description}"></p>
+        </div>
+
+        <button class="btn-primary-ios" type="submit">

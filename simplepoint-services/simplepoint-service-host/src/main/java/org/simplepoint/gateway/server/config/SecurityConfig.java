@@ -44,7 +44,9 @@ public class SecurityConfig {
                 "/login",
                 "/authorization/**",
                 "/actuator/**",
-                "/static/**"
+                "/static/**",
+                "/svg.svg",
+                "/.well-known/appspecific/**"
             ).permitAll()
             // Require authentication for all other requests
             .anyExchange().authenticated()
