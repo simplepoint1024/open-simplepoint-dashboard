@@ -67,4 +67,12 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
    * @param dto The RoleSelectDto containing unauthorization criteria.
    */
   void unauthorized(UserRoleRelevanceDto dto);
+
+  /**
+   * Loads a user by their phone number or email address.
+   *
+   * @param phoneOrEmail the phone number or email address of the user to load
+   * @return the User entity corresponding to the provided phone number or email address
+   */
+  User loadUserByPhoneOrEmail(String phoneOrEmail);
 }

@@ -69,7 +69,8 @@
             "authority": "users.delete",
             "resource": "/system/user",
             "description": "允许删除用户"
-          },{
+          },
+          {
             "name": "User Permission Assign",
             "authority": "users.config.role",
             "resource": "/system/user",
@@ -478,6 +479,187 @@
             "description": "允许删除国际化消息"
           }
         ]
+      }
+    ]
+  },
+  {
+    "label": "组织管理",
+    "title": "menu.organization",
+    "icon": "ApartmentOutlined",
+    "path": "/organization",
+    "authority": "organization.view",
+    "type": "item",
+    "sort": 3,
+    "disabled": false,
+    "permissions": [
+      {
+        "name": "Organization View",
+        "authority": "organization.view",
+        "resource": "/organization",
+        "description": "允许访问组织管理菜单"
+      }
+    ],
+    "children": [
+      {
+        "label": "租户管理",
+        "title": "menu.organization.tenant",
+        "icon": "TeamOutlined",
+        "path": "/organization/tenant",
+        "authority": "tenants.view",
+        "sort": 0,
+        "component": "common/organization/tenant",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Tenant View",
+            "authority": "tenants.view",
+            "resource": "/organization/tenant",
+            "description": "允许访问租户管理页面"
+          },
+          {
+            "name": "Tenant Create",
+            "authority": "tenants.create",
+            "resource": "/organization/tenant",
+            "description": "允许创建租户"
+          },
+          {
+            "name": "Tenant Edit",
+            "authority": "tenants.edit",
+            "resource": "/organization/tenant",
+            "description": "允许编辑租户"
+          },
+          {
+            "name": "Tenant Delete",
+            "authority": "tenants.delete",
+            "resource": "/organization/tenant",
+            "description": "允许删除租户"
+          }
+        ]
+      },
+      {
+        "label": "应用包管理",
+        "title": "menu.organization.appPackage",
+        "icon": "AppstoreOutlined",
+        "path": "/organization/app-package",
+        "authority": "appPackages.view",
+        "sort": 1,
+        "component": "common/organization/AppPackage",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "App Package View",
+            "authority": "appPackages.view",
+            "resource": "/organization/app-package",
+            "description": "允许访问应用包管理页面"
+          },
+          {
+            "name": "App Package Create",
+            "authority": "appPackages.create",
+            "resource": "/organization/app-package",
+            "description": "允许创建应用包"
+          },
+          {
+            "name": "App Package Edit",
+            "authority": "appPackages.edit",
+            "resource": "/organization/app-package",
+            "description": "允许编辑应用包"
+          },
+          {
+            "name": "App Package Delete",
+            "authority": "appPackages.delete",
+            "resource": "/organization/app-package",
+            "description": "允许删除应用包"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "支持与帮助",
+    "title": "menu.support",
+    "icon": "QuestionCircleOutlined",
+    "path": "/support",
+    "authority": "support.view",
+    "sort": 99,
+    "disabled": false,
+    "permissions": [
+      {
+        "name": "Support View",
+        "authority": "support.view",
+        "resource": "/support",
+        "description": "允许访问支持与帮助菜单"
+      },
+      {
+        "name": "Ant Design View",
+        "authority": "antdesign.view",
+        "resource": "/support/antdesign",
+        "description": "允许访问 Ant Design 页面"
+      },
+      {
+        "name": "Module Federation View",
+        "authority": "modulefederation.view",
+        "resource": "/support/module-federation",
+        "description": "允许访问 Module Federation 页面"
+      },
+      {
+        "name": "GitHub SPM View",
+        "authority": "githubspm.view",
+        "resource": "/support/githubspm",
+        "description": "允许访问 GitHub SPM 页面"
+      },
+      {
+        "name": "GitHub SPR View",
+        "authority": "githubspr.view",
+        "resource": "/support/githubspr",
+        "description": "允许访问 GitHub SPR 页面"
+      }
+    ],
+    "children": [
+      {
+        "label": "AntDesign 官网",
+        "title": "menu.antdesign",
+        "icon": "AntDesignOutlined",
+        "authority": "antdesign.view",
+        "disabled": false,
+        "sort": 1,
+        "type": "item",
+        "path": "/support/antdesign",
+        "component": "external:https://ant.design"
+      },
+      {
+        "label": "Module Federation 官网",
+        "icon": "AppstoreOutlined",
+        "title": "menu.modulefederation",
+        "disabled": false,
+        "sort": 2,
+        "authority": "modulefederation.view",
+        "type": "item",
+        "path": "/support/module-federation",
+        "component": "external:https://module-federation.github.io"
+      },
+      {
+        "label": "GitHub 项目地址(后端)",
+        "icon": "GithubOutlined",
+        "title": "menu.githubspm",
+        "disabled": false,
+        "sort": 3,
+        "authority": "githubspm.view",
+        "type": "item",
+        "path": "/support/githubspm",
+        "component": "iframe:https://github.com/simplepoint1024/open-simplepoint-dashboard"
+      },
+      {
+        "label": "GitHub 项目地址(前端)",
+        "title": "menu.githubspr",
+        "icon": "GithubOutlined",
+        "disabled": false,
+        "sort": 4,
+        "authority": "githubspr.view",
+        "type": "item",
+        "path": "/support/githubspr",
+        "component": "iframe:https://github.com/simplepoint1024/simplepoint-react"
       }
     ]
   }

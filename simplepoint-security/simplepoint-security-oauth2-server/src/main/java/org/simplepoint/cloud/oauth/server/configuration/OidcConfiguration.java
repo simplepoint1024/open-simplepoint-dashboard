@@ -8,6 +8,8 @@
 
 package org.simplepoint.cloud.oauth.server.configuration;
 
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.proc.SecurityContext;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion;
@@ -21,7 +23,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 
@@ -83,7 +88,9 @@ public class OidcConfiguration {
   public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer(
       final Set<TokenDecorator> tokenDecorator
   ) {
+
     return context -> {
+      context.getJwsHeader().algorithm(SignatureAlgorithm.PS256);
       for (TokenDecorator decorator : tokenDecorator) {
         // 获取认证主体
         Authentication principal = context.getPrincipal();
@@ -97,4 +104,15 @@ public class OidcConfiguration {
     };
   }
 
+  /**
+   * Bean for JwtDecoder that uses the JWKSource.
+   *
+   * @param jwkSource the JWKSource bean
+   * @return JwtDecoder for decoding JWTs
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
+    return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
+  }
 }

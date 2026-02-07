@@ -5,10 +5,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.simplepoint.api.data.DataInitializeManager;
 import org.simplepoint.core.entity.Message;
 import org.simplepoint.core.locale.I18nMessageService;
 import org.simplepoint.core.utils.ClassPathResourceUtil;
-import org.simplepoint.data.initialize.DataInitializeManager;
+import org.simplepoint.data.initialize.DefaultDataInitializeManager;
 import org.simplepoint.plugin.i18n.api.entity.Countries;
 import org.simplepoint.plugin.i18n.api.entity.Language;
 import org.simplepoint.plugin.i18n.api.entity.Namespace;
@@ -59,7 +60,7 @@ public class I18nInitializeService implements ApplicationRunner {
    *
    * @param initializeManager the DataInitializeManager to be used
    */
-  public I18nInitializeService(DataInitializeManager initializeManager, I18nCountriesService countriesService, I18nLanguageService languageService,
+  public I18nInitializeService(DefaultDataInitializeManager initializeManager, I18nCountriesService countriesService, I18nLanguageService languageService,
                                I18nRegionService regionService, I18nTimeZoneService timeZoneService, I18nNamespaceService namespaceService,
                                I18nMessageService messageService) {
     this.initializeManager = initializeManager;

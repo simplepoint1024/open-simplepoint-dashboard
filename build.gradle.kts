@@ -46,7 +46,7 @@ subprojects {
         compileOnly("org.projectlombok:lombok:${rootProject.libs.versions.lombok.get()}")
         annotationProcessor("org.projectlombok:lombok:${rootProject.libs.versions.lombok.get()}")
 
-        testImplementation(platform("org.junit:junit-bom:${rootProject.libs.versions.junit.get()}"))
+        testImplementation(enforcedPlatform("org.junit:junit-bom:${rootProject.libs.versions.junit.get()}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
         testCompileOnly("org.projectlombok:lombok:${rootProject.libs.versions.lombok.get()}")
         testAnnotationProcessor("org.projectlombok:lombok:${rootProject.libs.versions.lombok.get()}")

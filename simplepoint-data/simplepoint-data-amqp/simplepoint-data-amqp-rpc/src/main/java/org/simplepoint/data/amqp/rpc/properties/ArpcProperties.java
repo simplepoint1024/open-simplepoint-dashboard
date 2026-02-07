@@ -2,12 +2,9 @@ package org.simplepoint.data.amqp.rpc.properties;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Properties;
 import lombok.Data;
-import org.simplepoint.api.environment.EnvironmentConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.ConfigurableEnvironment;
 
 /**
  * Configuration properties for AMQP RPC (Remote Procedure Call) settings.
@@ -17,7 +14,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 @Data
 @Configuration
 @ConfigurationProperties(prefix = ArpcProperties.PREFIX)
-public class ArpcProperties implements EnvironmentConfiguration {
+public class ArpcProperties {
 
   /**
    * The prefix used for AMQP RPC properties.
@@ -60,24 +57,5 @@ public class ArpcProperties implements EnvironmentConfiguration {
    */
   public String prefix(String key) {
     return prefix + key;
-  }
-
-  /**
-   * Applies the AMQP RPC properties to the provided properties map.
-   * This method iterates through the properties and adds those that start with "amqp.rpc."
-   * to the simplepoint properties map.
-   *
-   * @param properties  the properties to apply
-   * @param simplepoint the map to which properties will be added
-   * @param environment the configurable environment
-   */
-  @Override
-  public void apply(Properties properties, Map<String, Object> simplepoint,
-                    ConfigurableEnvironment environment) {
-    properties.forEach((key, value) -> {
-      if (String.valueOf(key).startsWith("amqp.rpc.")) {
-        simplepoint.put("simplepoint." + key, value);
-      }
-    });
   }
 }

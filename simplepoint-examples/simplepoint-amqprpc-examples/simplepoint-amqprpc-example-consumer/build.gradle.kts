@@ -3,10 +3,13 @@ subprojects {
 }
 
 dependencies{
-    api(project(":simplepoint-core"))
-    api(project(":simplepoint-boot:simplepoint-boot-starter-web"))
-    api(project(":simplepoint-cloud:simplepoint-cloud-consul"))
-    api(project(":simplepoint-cloud:simplepoint-cloud-loadbalancer"))
+    implementation(project(":simplepoint-boot:simplepoint-boot-config-consul-starter"))
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+
+    implementation("org.springframework.cloud:spring-cloud-starter-consul-discovery")
+    implementation("org.springframework.cloud:spring-cloud-starter-loadbalancer")
+
     api(project(":simplepoint-plugin:simplepoint-plugin-webmvc"))
 
     api(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))

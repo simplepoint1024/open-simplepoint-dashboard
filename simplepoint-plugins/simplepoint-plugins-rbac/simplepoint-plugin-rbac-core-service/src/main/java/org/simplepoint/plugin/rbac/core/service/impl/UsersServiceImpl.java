@@ -100,26 +100,21 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    * Loads a user by their username for authentication purposes.
    * This method retrieves the user from the repository and sets their roles as authorities.
    *
-   * @param username the username of the user to load
+   * @param subject the email/phone of the user to load
    * @return the User object with populated authorities
    * @throws UsernameNotFoundException if no user or multiple
    *                                   users are found with the given username
    */
   @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+  public UserDetails loadUserByUsername(String subject) throws UsernameNotFoundException {
     Map<String, String> ext = new HashMap<>();
-    String resolvedUsername = resolveUsername(username, ext);
-    var users = findAll(Map.of(User.ACCOUNT_FIELD, resolvedUsername));
-    if (users.isEmpty()) {
+    String resolvedUsername = resolveUsername(subject, ext);
+    var user = loadUserByPhoneOrEmail(subject);
+    if (user == null) {
       log.warn("User not found: {}", resolvedUsername);
       throw new UsernameNotFoundException("User not found: " + resolvedUsername);
     }
-    if (users.size() > 1) {
-      log.error("Duplicate users found for resolvedUsername: {}", resolvedUsername);
-      throw new IllegalStateException("Duplicate users found: " + resolvedUsername);
-    }
 
-    var user = users.getFirst();
     if (user.getDecorator() == null) {
       user.setDecorator(objectMapper.createObjectNode());
     }
@@ -263,6 +258,11 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   @Transactional(rollbackFor = Exception.class)
   public void unauthorized(UserRoleRelevanceDto dto) {
     userRoleRelevanceRepository.unauthorized(dto.getUserId(), dto.getRoleIds());
+  }
+
+  @Override
+  public User loadUserByPhoneOrEmail(String phoneOrEmail) {
+    return userRoleRelevanceRepository.loadUserByPhoneOrEmail(phoneOrEmail);
   }
 
 }

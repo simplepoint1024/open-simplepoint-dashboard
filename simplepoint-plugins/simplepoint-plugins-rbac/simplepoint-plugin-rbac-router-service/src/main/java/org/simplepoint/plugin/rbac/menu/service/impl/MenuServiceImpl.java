@@ -24,7 +24,7 @@ import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.core.context.UserContext;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
-import org.simplepoint.data.initialize.DataInitializeManager;
+import org.simplepoint.data.initialize.DefaultDataInitializeManager;
 import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.plugin.rbac.menu.api.entity.MenuPermissionsRelevance;
@@ -69,7 +69,7 @@ public class MenuServiceImpl
 
   private final MenuPermissionsRelevanceRepository menuPermissionsRelevanceRepository;
 
-  private final DataInitializeManager dataInitializeManager;
+  private final DefaultDataInitializeManager dataInitializeManager;
 
   /**
    * Constructs a new {@code MenuServiceImpl} with the specified repository.
@@ -81,7 +81,7 @@ public class MenuServiceImpl
    * @param roleService                        the {@link RoleService} instance for role operations
    * @param permissionsService                 the {@link PermissionsService} instance for permission operations
    * @param menuPermissionsRelevanceRepository the {@link MenuPermissionsRelevanceRepository} instance for menu-permission relevance operations
-   * @param dataInitializeManager              the {@link DataInitializeManager} instance for data initialization operations
+   * @param dataInitializeManager              the {@link DefaultDataInitializeManager} instance for data initialization operations
    */
   public MenuServiceImpl(
       final MenuRepository repository,
@@ -91,7 +91,7 @@ public class MenuServiceImpl
       final RoleService roleService,
       final PermissionsService permissionsService,
       final MenuPermissionsRelevanceRepository menuPermissionsRelevanceRepository,
-      final DataInitializeManager dataInitializeManager
+      final DefaultDataInitializeManager dataInitializeManager
   ) {
     super(repository, userContext, detailsProviderService);
     this.menuAncestorRepository = menuAncestorRepository;

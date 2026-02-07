@@ -8,7 +8,6 @@
 
 package org.simplepoint.api.security.base;
 
-import java.util.Collection;
 import org.springframework.security.core.userdetails.UserDetails;
 
 /**

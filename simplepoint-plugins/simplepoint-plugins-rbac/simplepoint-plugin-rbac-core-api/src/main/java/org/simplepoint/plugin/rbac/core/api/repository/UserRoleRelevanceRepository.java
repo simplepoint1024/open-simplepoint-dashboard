@@ -2,6 +2,7 @@ package org.simplepoint.plugin.rbac.core.api.repository;
 
 import java.util.List;
 import java.util.Set;
+import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 
 /**
@@ -22,8 +23,16 @@ public interface UserRoleRelevanceRepository {
   /**
    * Remove specific authorities from a user identified by username.
    *
-   * @param username    the username of the user
+   * @param userId    the username of the user
    * @param authorities a set of authorities to be removed from the user
    */
-  void unauthorized(String username, Set<String> authorities);
+  void unauthorized(String userId, Set<String> authorities);
+
+  /**
+   * Load a user by their phone number or email address.
+   *
+   * @param phoneOrEmail the phone number or email address of the user to be loaded
+   * @return the User entity corresponding to the provided phone number or email address
+   */
+  User loadUserByPhoneOrEmail(String phoneOrEmail);
 }

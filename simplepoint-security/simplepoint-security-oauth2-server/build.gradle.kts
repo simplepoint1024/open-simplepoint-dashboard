@@ -13,11 +13,5 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine:2.9.2")
     implementation("org.apache.tomcat.embed:tomcat-embed-core")
     implementation("commons-codec:commons-codec:1.16.0")
-
-    // Spring Vault（核心）
-    api("org.springframework.vault:spring-vault-core")
-    // Spring Cloud Vault（自动配置）
     api("org.springframework.cloud:spring-cloud-starter-vault-config")
-    // K8s
-    //implementation("org.springframework.cloud:spring-cloud-starter-vault-config-kubernetes")
 }

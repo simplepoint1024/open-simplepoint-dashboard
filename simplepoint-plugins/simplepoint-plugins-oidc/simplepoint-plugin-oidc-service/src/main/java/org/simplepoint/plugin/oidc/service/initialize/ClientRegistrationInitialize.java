@@ -134,7 +134,7 @@ public class ClientRegistrationInitialize implements ApplicationRunner {
     if (provider != null) {
       ClientSettings.Builder clientSettingsBuilder = ClientSettings.builder()
           .requireProofKey(true)
-          .tokenEndpointAuthenticationSigningAlgorithm(SignatureAlgorithm.RS256)
+          .tokenEndpointAuthenticationSigningAlgorithm(SignatureAlgorithm.PS256)
           .requireAuthorizationConsent(true);
       if (provider.getJwkSetUri() != null) {
         clientSettingsBuilder.jwkSetUrl(provider.getJwkSetUri());
@@ -146,7 +146,7 @@ public class ClientRegistrationInitialize implements ApplicationRunner {
           // 是否启用 X.509 证书绑定的 Access Token
           .x509CertificateBoundAccessTokens(false)
           // ID Token 签名算法
-          .idTokenSignatureAlgorithm(SignatureAlgorithm.RS256)
+          .idTokenSignatureAlgorithm(SignatureAlgorithm.PS256)
           // Access Token 有效期 (300 秒 = 5 分钟)
           .accessTokenTimeToLive(Duration.ofSeconds(300))
           // Access Token 格式 (self-contained = JWT)

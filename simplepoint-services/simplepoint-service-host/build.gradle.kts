@@ -1,11 +1,14 @@
 dependencies {
-    implementation(project(":simplepoint-core"))
-    implementation(project(":simplepoint-boot:simplepoint-boot-starter-webflux"))
-    implementation(project(":simplepoint-cloud:simplepoint-cloud-consul"))
-    implementation(project(":simplepoint-cloud:simplepoint-cloud-loadbalancer"))
+    implementation(project(":simplepoint-boot:simplepoint-boot-starter"))
+    implementation(project(":simplepoint-boot:simplepoint-boot-config-consul-starter"))
+
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+
     implementation("org.springframework.cloud:spring-cloud-gateway-server-webflux")
-    implementation(project(":simplepoint-security:simplepoint-security-oauth2-client"))
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+
 //    implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.session:spring-session-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
