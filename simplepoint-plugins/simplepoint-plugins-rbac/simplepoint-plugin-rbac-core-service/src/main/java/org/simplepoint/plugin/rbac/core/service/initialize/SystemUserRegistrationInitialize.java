@@ -9,10 +9,15 @@
 package org.simplepoint.plugin.rbac.core.service.initialize;
 
 import lombok.extern.slf4j.Slf4j;
+import org.simplepoint.api.data.DataInitializeManager;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.core.service.properties.UserRegistrationProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -26,9 +31,9 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@Import(UserRegistrationProperties.class)
 public class SystemUserRegistrationInitialize implements ApplicationRunner {
 
+  private final DataInitializeManager initializeManager;
   /**
    * User registration properties containing predefined system users.
    */
@@ -47,9 +52,11 @@ public class SystemUserRegistrationInitialize implements ApplicationRunner {
    * @throws IllegalArgumentException if any parameter is {@code null}
    */
   public SystemUserRegistrationInitialize(
+      DataInitializeManager initializeManager,
       UserRegistrationProperties properties,
       UsersService usersService
   ) {
+    this.initializeManager = initializeManager;
     this.properties = properties;
     this.usersService = usersService;
   }
@@ -65,8 +72,11 @@ public class SystemUserRegistrationInitialize implements ApplicationRunner {
   @Override
   public void run(ApplicationArguments args) {
     log.info("Initialize system user registration");
-
-    properties.getUsers().values().forEach(user -> {
+    if (initializeManager == null) {
+      log.info("DataInitializeManager is not available, skipping system user registration initialization");
+      return;
+    }
+    initializeManager.execute("system-user-initialiation", () -> properties.getUsers().forEach(user -> {
       boolean exists = false;
       try {
         log.info("Initialize system user {}", user.getUsername());
@@ -82,8 +92,7 @@ public class SystemUserRegistrationInitialize implements ApplicationRunner {
       if (!exists) {
         usersService.create(user);
       }
-    });
-
+    }));
     log.info("Initialize system user registration completed");
   }
 }

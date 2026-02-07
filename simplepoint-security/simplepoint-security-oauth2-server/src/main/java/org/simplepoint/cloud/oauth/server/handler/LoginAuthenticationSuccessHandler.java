@@ -80,7 +80,6 @@ public final class LoginAuthenticationSuccessHandler implements AuthenticationSu
     Object details = authentication.getPrincipal();
     if (details != null) {
       if (details instanceof User currentUser) {
-        String username = currentUser.getUsername();
         var roles = new HashSet<RoleGrantedAuthority>();
         var rolePermissions = new HashMap<String, Set<PermissionGrantedAuthority>>();
         // 根据用户角色缓存权限
@@ -94,15 +93,16 @@ public final class LoginAuthenticationSuccessHandler implements AuthenticationSu
           }
         }
 
+        String userId = currentUser.getId();
         // 缓存用户角色
-        this.authorizationContextCacheable.cacheRoles(username, roles);
+        this.authorizationContextCacheable.cacheRoles(userId, roles);
 
         // 缓存用户权限
         rolePermissions.forEach(this.authorizationContextCacheable::cachePermission);
 
         // 缓存用户上下文
-        this.authorizationContextCacheable.cacheUserContext(username, currentUser);
-        log.debug("Cached authorization context for user [{}]", username);
+        this.authorizationContextCacheable.cacheUserContext(userId, currentUser);
+        log.debug("Cached authorization context for user [{}]", userId);
       }
     }
     this.delegate.onAuthenticationSuccess(request, response, authentication);

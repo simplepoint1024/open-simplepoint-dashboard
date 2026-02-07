@@ -12,7 +12,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.client.oidc.web.server.logout.OidcClientInitiatedServerLogoutSuccessHandler;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoderFactory;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
 /**
@@ -53,8 +57,10 @@ public class SecurityConfig {
         )
 
         // Configure OAuth2 login with client registration repository and custom login page
-        .oauth2Login(oauth2 -> oauth2.clientRegistrationRepository(clientRegistrationRepository)
+        .oauth2Login(oauth2 -> oauth2
+            .clientRegistrationRepository(clientRegistrationRepository)
             //.authenticationSuccessHandler(new SessionServerAuthenticationSuccessHandler())
+
             .loginPage("/login"))
 
         // Configure logout handling using OIDC client-initiated logout success handler
@@ -64,6 +70,21 @@ public class SecurityConfig {
         );
 
     return http.build();
+  }
+
+  /**
+   * Configures a ReactiveJwtDecoderFactory to create JWT decoders
+   * that support the PS256 signature algorithm for OIDC clients.
+   *
+   * @return ReactiveJwtDecoderFactory instance
+   */
+  @Bean
+  public ReactiveJwtDecoderFactory<ClientRegistration> oidcDecoderFactory() {
+
+    return clientRegistration -> NimbusReactiveJwtDecoder
+        .withJwkSetUri(clientRegistration.getProviderDetails().getJwkSetUri())
+        .jwsAlgorithms(algorithms -> algorithms.add(SignatureAlgorithm.PS256))
+        .build();
   }
 
 }

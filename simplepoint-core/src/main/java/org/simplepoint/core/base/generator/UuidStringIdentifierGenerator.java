@@ -5,7 +5,6 @@ import java.util.UUID;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.EventType;
-import org.simplepoint.core.annotation.SnowflakeId;
 
 /**
  * UUID-based identifier generator for JPA entities.

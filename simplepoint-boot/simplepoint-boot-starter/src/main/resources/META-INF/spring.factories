@@ -1,1 +1,0 @@
-org.springframework.boot.EnvironmentPostProcessor=org.simplepoint.boot.starter.config.SimpleEnvironmentPostProcessor

@@ -1,9 +1,11 @@
 dependencies {
-    implementation(project(":simplepoint-core"))
+    implementation(project(":simplepoint-boot:simplepoint-boot-starter"))
+    implementation(project(":simplepoint-boot:simplepoint-boot-config-consul-starter"))
     implementation(project(":simplepoint-security:simplepoint-security-cache"))
-    implementation(project(":simplepoint-boot:simplepoint-boot-starter-web"))
-    implementation(project(":simplepoint-cloud:simplepoint-cloud-consul"))
-    implementation(project(":simplepoint-cloud:simplepoint-cloud-loadbalancer"))
+
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+
     implementation(project(":simplepoint-plugin:simplepoint-plugin-webmvc"))
     implementation(project(":simplepoint-data:simplepoint-data-cp"))
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))

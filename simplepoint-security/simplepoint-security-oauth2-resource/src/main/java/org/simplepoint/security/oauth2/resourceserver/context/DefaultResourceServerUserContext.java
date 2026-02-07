@@ -267,10 +267,6 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
    */
   @Override
   public String getTenantId() throws UserPrincipalNotFoundException {
-    User details = getDetails();
-    if (details != null) {
-      return details.getTenantId();
-    }
     throw new UserPrincipalNotFoundException("Tenant ID not found for current user");
   }
 
@@ -307,7 +303,6 @@ public class DefaultResourceServerUserContext implements ResourceServerUserConte
    */
   protected User createUser(Map<String, Object> userInfo) {
     var user = new User();
-    user.setUsername((String) userInfo.get(StandardClaimNames.SUB));
     user.setName((String) userInfo.get(StandardClaimNames.NAME));
     user.setPicture((String) userInfo.get(StandardClaimNames.PICTURE));
     user.setGender((String) userInfo.get(StandardClaimNames.GENDER));

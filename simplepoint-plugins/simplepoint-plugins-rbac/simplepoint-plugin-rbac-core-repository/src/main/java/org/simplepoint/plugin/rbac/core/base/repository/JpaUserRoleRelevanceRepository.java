@@ -2,6 +2,7 @@ package org.simplepoint.plugin.rbac.core.base.repository;
 
 import java.util.Set;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
+import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -22,4 +23,8 @@ public interface JpaUserRoleRelevanceRepository extends JpaRepository<UserRoleRe
   @Modifying
   @Query("delete from UserRoleRelevance urr where urr.userId = :userId and urr.roleId in :roleIds")
   void unauthorized(@Param("userId") String userId, @Param("roleIds") Set<String> roleIds);
+
+  @Override
+  @Query("select u from User u where u.phoneNumber = :phoneOrEmail or u.email = :phoneOrEmail")
+  User loadUserByPhoneOrEmail(@Param("phoneOrEmail") String phoneOrEmail);
 }

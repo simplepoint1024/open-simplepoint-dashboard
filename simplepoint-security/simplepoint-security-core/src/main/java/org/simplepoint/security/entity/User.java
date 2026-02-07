@@ -8,7 +8,6 @@
 
 package org.simplepoint.security.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.extensions.Extension;
@@ -20,7 +19,6 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.Email;
@@ -34,7 +32,7 @@ import org.hibernate.validator.constraints.URL;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.simplepoint.core.convert.JsonNodeConverter;
@@ -49,7 +47,6 @@ import org.springframework.security.core.GrantedAuthority;
 @Data
 @Entity
 @Table(name = "auth_users", indexes = {
-    @Index(name = "idx_username", columnList = "username"),
     @Index(name = "idx_email", columnList = "email"),
     @Index(name = "idx_phone", columnList = "phone_number")
 })
@@ -99,25 +96,10 @@ import org.springframework.security.core.GrantedAuthority;
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "用户对象", description = "用于管理系统中的用户")
-public class User extends TenantBaseEntityImpl<String> implements BaseUser {
+public class User extends BaseEntityImpl<String> implements BaseUser {
 
-  /**
-   * The constant field name for the account identifier.
-   * This is typically used for querying or identifying the user by their username.
-   */
-  public static final String ACCOUNT_FIELD = "username";
-
-  /**
-   * The username of the user.
-   * This field uniquely identifies the user within the system.
-   */
-  @Order(1)
-  @Schema(title = "i18n:users.title.username", description = "i18n:users.description.username", extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
-      })
-  })
-  private String username;
+  @Transient
+  private String username = getId();
 
   /**
    * The password of the user.
@@ -493,7 +475,7 @@ public class User extends TenantBaseEntityImpl<String> implements BaseUser {
    */
   @Override
   public String getUsername() {
-    return username;
+    return getId();
   }
 
   @Override
