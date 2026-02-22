@@ -10,5 +10,5 @@ import lombok.Data;
 @Data
 public class RolePermissionsRelevanceDto {
   private String roleId;
-  private Set<String> permissionIds;
+  private Set<String> permissionAuthority;
 }

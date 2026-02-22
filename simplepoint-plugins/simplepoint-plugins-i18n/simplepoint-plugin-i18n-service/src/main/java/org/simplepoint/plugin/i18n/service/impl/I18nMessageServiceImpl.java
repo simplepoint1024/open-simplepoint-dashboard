@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.core.context.UserContext;
+import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.entity.Message;
 import org.simplepoint.core.locale.I18nMessageService;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
@@ -25,14 +25,14 @@ public class I18nMessageServiceImpl extends BaseServiceImpl<I18nMessageRepositor
    * Constructs a BaseServiceImpl with the specified repository, user context, and details provider service.
    *
    * @param repository             the repository to be used for entity operations
-   * @param userContext            the user context for accessing user-related information
+   * @param authorizationContextHolder            用于访问与用户相关信息的用户上下文
    * @param detailsProviderService the service providing additional details
    */
   public I18nMessageServiceImpl(
       I18nMessageRepository repository,
-      @Autowired(required = false) UserContext<BaseUser> userContext,
+      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       DetailsProviderService detailsProviderService) {
-    super(repository, userContext, detailsProviderService);
+    super(repository, authorizationContextHolder, detailsProviderService);
   }
 
   /**

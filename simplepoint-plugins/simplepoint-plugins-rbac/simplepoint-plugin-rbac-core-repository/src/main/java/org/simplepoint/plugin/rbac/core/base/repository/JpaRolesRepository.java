@@ -36,10 +36,10 @@ public interface JpaRolesRepository extends BaseRepository<Role, String>, RoleRe
 
   @Override
   @Modifying
-  @Query("delete from RolePermissionsRelevance p where p.roleId = ?1 and p.permissionId in ?2")
-  void unauthorized(String roleId, Set<String> permissionId);
+  @Query("delete from RolePermissionsRelevance p where p.roleId = ?1 and p.permissionAuthority in ?2")
+  void unauthorized(String roleId, Set<String> permissionAuthority);
 
   @Override
-  @Query("select permissionId from RolePermissionsRelevance where roleId = ?1")
+  @Query("select permissionAuthority from RolePermissionsRelevance where roleId = ?1")
   Collection<String> authorized(String roleId);
 }

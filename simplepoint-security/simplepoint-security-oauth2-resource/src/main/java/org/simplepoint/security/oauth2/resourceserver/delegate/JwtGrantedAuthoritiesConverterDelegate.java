@@ -1,11 +1,11 @@
 package org.simplepoint.security.oauth2.resourceserver.delegate;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import org.simplepoint.api.security.base.BaseUser;
-import org.simplepoint.core.context.UserContext;
+import java.util.Map;
+import org.simplepoint.core.AuthorizationGrantedAuthorityLoader;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 
@@ -15,15 +15,16 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 public class JwtGrantedAuthoritiesConverterDelegate implements Converter<Jwt, Collection<GrantedAuthority>> {
   private final JwtGrantedAuthoritiesConverter delegate = new JwtGrantedAuthoritiesConverter();
 
-  private final UserContext<BaseUser> userContext;
+  private final AuthorizationGrantedAuthorityLoader authorizationGrantedAuthorityLoader;
 
   /**
-   * Constructs a JwtGrantedAuthoritiesConverterDelegate with a custom UserContext.
+   * Constructs a JwtGrantedAuthoritiesConverterDelegate with the specified custom authorities converter.
    *
-   * @param userContext the UserContext to be used for authority conversion
+   * @param authorizationGrantedAuthorityLoader a function that converts JWT claims into a collection of granted authorities
    */
-  public JwtGrantedAuthoritiesConverterDelegate(UserContext<BaseUser> userContext) {
-    this.userContext = userContext;
+  public JwtGrantedAuthoritiesConverterDelegate(
+      AuthorizationGrantedAuthorityLoader authorizationGrantedAuthorityLoader) {
+    this.authorizationGrantedAuthorityLoader = authorizationGrantedAuthorityLoader;
   }
 
   /**
@@ -34,11 +35,11 @@ public class JwtGrantedAuthoritiesConverterDelegate implements Converter<Jwt, Co
    */
   @Override
   public Collection<GrantedAuthority> convert(Jwt source) {
-    Collection<GrantedAuthority> authorities = delegate.convert(source);
-    String subject = source.getSubject();
-    userContext.getRolesByUsername(subject).forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getAuthority())));
-    var permissions = userContext.getPermissionsByUsername(subject);
-    permissions.forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission.getAuthority())));
+    Collection<GrantedAuthority> authorities = new ArrayList<>(delegate.convert(source));
+    Map<String, Object> claims = source.getClaims();
+    if (this.authorizationGrantedAuthorityLoader != null) {
+      authorities.addAll(authorizationGrantedAuthorityLoader.load(claims));
+    }
     return authorities;
   }
 }

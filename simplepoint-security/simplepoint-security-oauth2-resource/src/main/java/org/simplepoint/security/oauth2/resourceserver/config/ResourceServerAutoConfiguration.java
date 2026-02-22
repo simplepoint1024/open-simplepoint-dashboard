@@ -1,21 +1,18 @@
 package org.simplepoint.security.oauth2.resourceserver.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.oauth2.sdk.GeneralException;
-import java.io.IOException;
-import org.simplepoint.api.security.base.BaseUser;
-import org.simplepoint.core.context.UserContext;
-import org.simplepoint.security.cache.AuthorizationContextCacheable;
-import org.simplepoint.security.oauth2.resourceserver.ResourceServerUserContext;
-import org.simplepoint.security.oauth2.resourceserver.context.DefaultResourceServerUserContext;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Collections;
+import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.AuthorizationContextHolder;
+import org.simplepoint.core.AuthorizationGrantedAuthorityLoader;
+import org.simplepoint.security.context.AuthorizationContextResolver;
+import org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilter;
 import org.simplepoint.security.oauth2.resourceserver.delegate.JwtAuthenticationConverterDelegate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -24,37 +21,6 @@ import org.springframework.security.web.SecurityFilterChain;
  */
 @AutoConfiguration
 public class ResourceServerAutoConfiguration {
-  private final ObjectMapper objectMapper;
-
-  /**
-   * Constructor for ResourceServerAutoConfiguration.
-   *
-   * @param objectMapper the ObjectMapper used for JSON processing
-   */
-  public ResourceServerAutoConfiguration(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
-
-  /**
-   * Creates a UserContext bean for the OAuth2 resource server.
-   * 创建 OAuth2 资源服务器的 UserContext Bean
-   *
-   * @param resourceServerProperties the properties of the OAuth2 resource server
-   *                                 OAuth2 资源服务器的属性
-   * @return a UserContext instance for handling authentication 处理身份验证的 UserContext 实例
-   * @throws GeneralException if an unexpected error occurs
-   *                          如果发生未预期的错误
-   * @throws IOException      if there is an issue reading provider metadata
-   *                          如果读取提供者元数据时出现问题
-   */
-  @Bean("resourceServerUserContext")
-  @ConditionalOnMissingBean(ResourceServerUserContext.class)
-  public ResourceServerUserContext<BaseUser> resourceServerUserContext(
-      final OAuth2ResourceServerProperties resourceServerProperties,
-      @Autowired(required = false) final AuthorizationContextCacheable authorizationContextCacheable
-  ) throws GeneralException, IOException {
-    return new DefaultResourceServerUserContext(objectMapper, resourceServerProperties, authorizationContextCacheable);
-  }
 
   /**
    * Configures the security filter chain for the application, enforcing authentication
@@ -70,9 +36,12 @@ public class ResourceServerAutoConfiguration {
   @Bean
   public SecurityFilterChain securityWebFilterChain(
       HttpSecurity http,
-      UserContext<BaseUser> userContext
+      AuthorizationGrantedAuthorityLoader authorizationGrantedAuthorityLoader,
+      AuthorizationContextResolver authorizationContextResolver,
+      HttpServletRequest servletRequest
   ) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable);
+    http.addFilterBefore(new AuthorizationContextFilter(authorizationContextResolver, servletRequest), BearerTokenAuthenticationFilter.class);
     return http
         .authorizeHttpRequests(request -> request
             .requestMatchers("/actuator/**", "/static/**", "/v3/api-docs/**", "/swagger-ui/**", "/error", "/css/**", "/js/**", "/images/**")
@@ -81,10 +50,31 @@ public class ResourceServerAutoConfiguration {
         )
         .oauth2ResourceServer(configurer ->
             configurer.jwt(
-                jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(new JwtAuthenticationConverterDelegate(userContext))
+                jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(new JwtAuthenticationConverterDelegate(authorizationGrantedAuthorityLoader))
             )
         )
         .build();
   }
-}
 
+  /**
+   * Defines a bean for the {@link AuthorizationGrantedAuthorityLoader}, which is responsible for
+   * loading granted authorities based on JWT claims.
+   *
+   * <p>This implementation currently returns an empty list, but it can be customized to extract
+   * authorities from JWT claims or other sources as needed.</p>
+   *
+   * @return a new instance of {@link AuthorizationGrantedAuthorityLoader}
+   */
+  @Bean
+  public AuthorizationGrantedAuthorityLoader authorizationGrantedAuthorityLoader(
+      AuthorizationContextHolder contextHolder
+  ) {
+    return claims -> {
+      AuthorizationContext authorizationContext = contextHolder.getAuthorizationContext();
+      if (authorizationContext == null) {
+        return Collections.emptyList();
+      }
+      return authorizationContext.asAuthorities();
+    };
+  }
+}

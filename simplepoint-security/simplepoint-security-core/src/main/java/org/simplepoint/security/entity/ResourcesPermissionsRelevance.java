@@ -25,7 +25,7 @@ public class ResourcesPermissionsRelevance extends BaseEntityImpl<String> implem
    * This field specifies the unique identifier or scope of the permission.
    */
   @Column(nullable = false)
-  private String permissionId;
+  private String permissionAuthority;
 
   /**
    * The authority of the resource associated with the relationship.
@@ -44,11 +44,11 @@ public class ResourcesPermissionsRelevance extends BaseEntityImpl<String> implem
    * Parameterized constructor to create a ResourcesPermissionsRelevance
    * with specified resource and permission authorities.
    *
-   * @param permissionId the authority of the resource
+   * @param permissionAuthority the authority of the resource
    * @param resourceId   the authority of the permission
    */
-  public ResourcesPermissionsRelevance(String permissionId, String resourceId) {
-    this.permissionId = permissionId;
+  public ResourcesPermissionsRelevance(String permissionAuthority, String resourceId) {
+    this.permissionAuthority = permissionAuthority;
     this.resourceId = resourceId;
   }
 }

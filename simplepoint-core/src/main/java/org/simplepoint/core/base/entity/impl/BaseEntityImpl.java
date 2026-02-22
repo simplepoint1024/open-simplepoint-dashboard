@@ -8,11 +8,8 @@
 
 package org.simplepoint.core.base.entity.impl;
 
-import cn.hutool.core.lang.TypeReference;
-import cn.hutool.extra.spring.SpringUtil;
 import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
@@ -23,14 +20,10 @@ import java.time.Instant;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Filter;
-import org.hibernate.annotations.FilterDef;
-import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLDeleteAll;
 import org.simplepoint.api.base.BaseEntity;
-import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.core.annotation.UuidStringGenerator;
-import org.simplepoint.core.context.UserContext;
 
 /**
  * A base entity class for database models.
@@ -158,23 +151,6 @@ public class BaseEntityImpl<I extends Serializable> implements BaseEntity<I> {
    */
   @PrePersist
   public void prePersist() {
-    try {
-      UserContext<BaseUser> userContext = SpringUtil.getBean(new TypeReference<>() {
-      });
-      if (this.createdBy == null) {
-        if (userContext != null) {
-          this.setCreatedBy(userContext.getDetails().getUsername());
-        }
-      }
-      if (this.updatedBy == null) {
-        if (userContext != null) {
-          this.setUpdatedBy(userContext.getDetails().getUsername());
-        }
-      }
-    } catch (Exception ex) {
-      log.warn("Failed to set createdBy or updatedBy in prePersist: {}", ex.getMessage());
-    }
-
     if (this.createdAt == null) {
       this.setCreatedAt(Instant.now());
     }
@@ -188,11 +164,6 @@ public class BaseEntityImpl<I extends Serializable> implements BaseEntity<I> {
    */
   @PreUpdate
   public void preUpdate() {
-    UserContext<BaseUser> userContext = SpringUtil.getBean(new TypeReference<>() {
-    });
-    if (userContext != null) {
-      this.setUpdatedBy(userContext.getDetails().getUsername());
-    }
     this.setUpdatedAt(Instant.now());
   }
 

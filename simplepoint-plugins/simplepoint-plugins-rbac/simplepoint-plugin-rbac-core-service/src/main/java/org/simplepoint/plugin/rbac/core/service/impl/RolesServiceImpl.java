@@ -10,21 +10,16 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
-import org.simplepoint.core.authority.PermissionGrantedAuthority;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.core.context.UserContext;
+import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
-import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
-import org.simplepoint.security.cache.AuthorizationContextCacheable;
-import org.simplepoint.security.entity.Permissions;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,33 +37,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, String>
     implements RoleService {
 
-  private final PermissionsService permissionsService;
-
   private final RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository;
-
-  private final AuthorizationContextCacheable authorizationContextCacheable;
 
   /**
    * Constructs a new RolesServiceImpl with the specified repository, user context, and details provider service.
    *
    * @param repository                         the RoleRepository instance for data access
-   * @param userContext                        the user context for retrieving current user information
    * @param detailsProviderService             the service for providing user details
    * @param rolePermissionsRelevanceRepository the RolePermissionsRelevanceRepository for role-permission relations
-   * @param authorizationContextCacheable      the AuthorizationContextCacheable for caching authorization contexts
    */
   public RolesServiceImpl(
       RoleRepository repository,
-      @Autowired(required = false) UserContext<BaseUser> userContext,
-      DetailsProviderService detailsProviderService, PermissionsService permissionsService,
-      RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository,
-      AuthorizationContextCacheable authorizationContextCacheable
+      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
+      DetailsProviderService detailsProviderService,
+      RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository
   ) {
-    super(repository, userContext, detailsProviderService);
-    this.permissionsService = permissionsService;
+    super(repository, authorizationContextHolder, detailsProviderService);
     this.rolePermissionsRelevanceRepository = rolePermissionsRelevanceRepository;
-
-    this.authorizationContextCacheable = authorizationContextCacheable;
   }
 
   /**
@@ -87,19 +72,19 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
    * Removes the authorization of specified permissions from a role.
    *
    * @param roleId        the authority of the role
-   * @param permissionIds the set of permission permissionIds to be unauthorized
+   * @param permissionAuthority the set of permission permissionAuthority to be unauthorized
    */
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public void unauthorized(String roleId, Set<String> permissionIds) {
-    this.getRepository().unauthorized(roleId, permissionIds);
+  public void unauthorized(String roleId, Set<String> permissionAuthority) {
+    this.getRepository().unauthorized(roleId, permissionAuthority);
   }
 
   /**
-   * Retrieves a collection of authorized permission permissionIds for a given role authority.
+   * Retrieves a collection of authorized permission permissionAuthority for a given role authority.
    *
    * @param roleId the authority of the role
-   * @return a collection of authorized permission permissionIds
+   * @return a collection of authorized permission permissionAuthority
    */
   @Override
   public Collection<String> authorized(String roleId) {
@@ -115,27 +100,15 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Collection<RolePermissionsRelevance> authorize(RolePermissionsRelevanceDto dto) {
-    Set<String> permissionIds = dto.getPermissionIds();
+    Set<String> pms = dto.getPermissionAuthority();
     Set<RolePermissionsRelevance> rels = new HashSet<>();
     String roleId = dto.getRoleId();
-    for (String permissionId : permissionIds) {
+    for (String pm : pms) {
       RolePermissionsRelevance relevance = new RolePermissionsRelevance();
       relevance.setRoleId(roleId);
-      relevance.setPermissionId(permissionId);
+      relevance.setPermissionAuthority(pm);
       rels.add(relevance);
     }
-    List<RolePermissionsRelevance> saved = this.rolePermissionsRelevanceRepository.saveAll(rels);
-
-    Role role = findById(roleId).get();
-
-    List<Permissions> permissions = permissionsService.findAllByIds(permissionIds);
-    List<PermissionGrantedAuthority> permissionGrantedAuthorities =
-        permissions.stream().map(pm -> new PermissionGrantedAuthority(pm.getId(), pm.getAuthority(), role.getId(), role.getAuthority())).toList();
-    // 缓存角色对应的权限
-    authorizationContextCacheable.cachePermission(
-        dto.getRoleId(),
-        permissionGrantedAuthorities
-    );
-    return saved;
+    return this.rolePermissionsRelevanceRepository.saveAll(rels);
   }
 }

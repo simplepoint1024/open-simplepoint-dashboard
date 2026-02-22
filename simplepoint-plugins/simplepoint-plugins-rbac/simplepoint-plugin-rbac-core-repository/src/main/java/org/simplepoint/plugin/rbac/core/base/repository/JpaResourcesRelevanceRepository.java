@@ -29,15 +29,15 @@ public interface JpaResourcesRelevanceRepository extends JpaRepository<Resources
 
   @Override
   @Modifying
-  @Query("DELETE FROM ResourcesPermissionsRelevance rpr WHERE rpr.resourceId = ?1 AND rpr.permissionId IN ?2")
-  void unauthorize(String resourceId, Collection<String> permissionIds);
+  @Query("DELETE FROM ResourcesPermissionsRelevance rpr WHERE rpr.resourceId = ?1 AND rpr.permissionAuthority IN ?2")
+  void unauthorize(String resourceId, Collection<String> permissionAuthority);
 
   @Override
-  @Query("SELECT permissionId FROM ResourcesPermissionsRelevance WHERE resourceId = ?1")
+  @Query("SELECT permissionAuthority FROM ResourcesPermissionsRelevance WHERE resourceId = ?1")
   Collection<String> authorized(String resourceId);
 
   @Override
-  @Query("SELECT resourceId FROM ResourcesPermissionsRelevance where permissionId in ?1")
+  @Query("SELECT resourceId FROM ResourcesPermissionsRelevance where permissionAuthority in ?1")
   Collection<String> loadAllResourceAuthorities(Collection<String> resourceIds);
 
   @Override

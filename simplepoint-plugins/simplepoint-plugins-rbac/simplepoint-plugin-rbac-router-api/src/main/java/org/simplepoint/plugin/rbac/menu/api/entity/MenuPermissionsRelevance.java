@@ -2,13 +2,10 @@ package org.simplepoint.plugin.rbac.menu.api.entity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
-import org.simplepoint.plugin.rbac.menu.api.entity.id.MenuPermissionsRelevanceId;
 
 /**
  * Represents the relationship between menus and permissions in the
@@ -25,21 +22,22 @@ public class MenuPermissionsRelevance extends TenantBaseEntityImpl<String> {
 
   private String menuId;
 
-  private String permissionId;
+  private String permissionAuthority;
 
   /**
    * Constructs a new MenuPermissionsRelevance with the specified menu and permission authorities.
    *
-   * @param menuId       the authority string of the menu
-   * @param permissionId the authority string of the permission
+   * @param menuId              the authority string of the menu
+   * @param permissionAuthority the authority string of the permission
    */
-  public MenuPermissionsRelevance(String menuId, String permissionId) {
+  public MenuPermissionsRelevance(String menuId, String permissionAuthority) {
     this.menuId = menuId;
-    this.permissionId = permissionId;
+    this.permissionAuthority = permissionAuthority;
   }
 
   /**
    * Default constructor for MenuPermissionsRelevance.
    */
-  public MenuPermissionsRelevance() {}
+  public MenuPermissionsRelevance() {
+  }
 }

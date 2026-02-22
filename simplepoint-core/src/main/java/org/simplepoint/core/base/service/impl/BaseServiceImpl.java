@@ -32,14 +32,13 @@ import org.simplepoint.api.base.BaseEntity;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.api.base.audit.ModifyDataAuditingService;
-import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.api.security.service.JsonSchemaDetailsService;
+import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.authority.PermissionGrantedAuthority;
-import org.simplepoint.core.context.UserContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -63,24 +62,26 @@ public class BaseServiceImpl
 
   private final R repository;
 
-  private final UserContext<BaseUser> userContext;
+  private final AuthorizationContextHolder authorizationContextHolder;
 
   private final DetailsProviderService detailsProviderService;
 
+
   /**
-   * Constructs a BaseServiceImpl with the specified repository and form schema generator.
+   * Constructs a new BaseServiceImpl instance with the specified repository,
+   * authorization context holder, and details provider service.
    *
-   * @param repository             the repository to be used for entity operations
-   * @param userContext            the user context for accessing user information
-   * @param detailsProviderService the access control service for managing permissions
+   * @param repository                 the repository for managing entities
+   * @param authorizationContextHolder the holder for authorization context (optional)
+   * @param detailsProviderService     the service for providing details such as JSON schema generation
    */
   public BaseServiceImpl(
       final R repository,
-      @Autowired(required = false) final UserContext<BaseUser> userContext,
+      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       final DetailsProviderService detailsProviderService
   ) {
     this.repository = repository;
-    this.userContext = userContext;
+    this.authorizationContextHolder = authorizationContextHolder;
     this.detailsProviderService = detailsProviderService;
   }
 
@@ -174,8 +175,8 @@ public class BaseServiceImpl
    */
   protected Set<Map<String, Object>> getButtonDeclarationsSchema(Class<T> domainClass) {
     boolean annotationPresent = domainClass.isAnnotationPresent(ButtonDeclarations.class);
-    Set<PermissionGrantedAuthority> permissionAuthorityRecords = userContext.getPermissions();
-    List<String> permissions = permissionAuthorityRecords.stream().map(PermissionGrantedAuthority::getAuthority).toList();
+    AuthorizationContext authorizationContext = getAuthorizationContext();
+    Collection<String> permissions = authorizationContext.getPermissions();
     if (annotationPresent) {
       ButtonDeclarations annotation = domainClass.getAnnotation(ButtonDeclarations.class);
       ButtonDeclaration[] buttonDeclarations = annotation.value();
@@ -183,7 +184,7 @@ public class BaseServiceImpl
         Set<Map<String, Object>> result = new HashSet<>();
         for (ButtonDeclaration buttonDeclaration : buttonDeclarations) {
           // 检查用户是否具有按钮声明所需的权限
-          if (permissions.contains(buttonDeclaration.authority()) || userContext.isSuperAdmin()) {
+          if (permissions.contains(buttonDeclaration.authority()) || authorizationContext.getIsAdministrator()) {
             result.add(extractAnnotationAttributes(buttonDeclaration));
           }
         }
@@ -397,10 +398,6 @@ public class BaseServiceImpl
   @Override
   public <S extends T> void validate(Collection<S> data) {
     JsonSchemaDetailsService dialect = detailsProviderService.getDialect(JsonSchemaDetailsService.class);
-    BaseUser details = userContext.getDetails();
-    if (details.superAdmin()) {
-      return;
-    }
     // 验证字段权限 ，如果没有改字段权限，则设置为 null
   }
 
@@ -437,5 +434,18 @@ public class BaseServiceImpl
   @Override
   public <S extends T> long count(S example) {
     return repository.count(example);
+  }
+
+  /**
+   * Retrieves the current authorization context.
+   *
+   * @return the current AuthorizationContext
+   * @throws IllegalStateException if the AuthorizationContextHolder is null
+   */
+  public AuthorizationContext getAuthorizationContext() {
+    if (authorizationContextHolder == null) {
+      throw new IllegalStateException("AuthorizationContextHolder is null");
+    }
+    return authorizationContextHolder.getAuthorizationContext();
   }
 }

@@ -52,7 +52,6 @@ public class SecurityJacksonParse {
   public static String writeMap(Map<String, Object> data) {
     try {
       String s = SecurityJacksonParse.jsonMapper.writeValueAsString(data);
-      System.out.println(s);
       return s;
     } catch (Exception ex) {
       throw new IllegalArgumentException(ex.getMessage(), ex);

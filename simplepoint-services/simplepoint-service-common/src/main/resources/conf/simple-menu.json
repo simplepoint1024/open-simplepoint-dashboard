@@ -483,94 +483,168 @@
     ]
   },
   {
-    "label": "组织管理",
-    "title": "menu.organization",
+    "label": "平台管理",
+    "title": "menu.platform",
     "icon": "ApartmentOutlined",
-    "path": "/organization",
-    "authority": "organization.view",
+    "path": "/platform",
+    "authority": "platform.view",
     "type": "item",
     "sort": 3,
     "disabled": false,
     "permissions": [
       {
-        "name": "Organization View",
-        "authority": "organization.view",
-        "resource": "/organization",
+        "name": "platform View",
+        "authority": "platform.view",
+        "resource": "/platform",
         "description": "允许访问组织管理菜单"
       }
     ],
     "children": [
       {
         "label": "租户管理",
-        "title": "menu.organization.tenant",
+        "title": "menu.platform.tenant",
         "icon": "TeamOutlined",
-        "path": "/organization/tenant",
+        "path": "/platform/tenant",
         "authority": "tenants.view",
         "sort": 0,
-        "component": "common/organization/tenant",
+        "component": "common/platform/tenant",
         "type": "item",
         "disabled": false,
         "permissions": [
           {
             "name": "Tenant View",
             "authority": "tenants.view",
-            "resource": "/organization/tenant",
+            "resource": "/platform/tenant",
             "description": "允许访问租户管理页面"
           },
           {
             "name": "Tenant Create",
             "authority": "tenants.create",
-            "resource": "/organization/tenant",
+            "resource": "/platform/tenant",
             "description": "允许创建租户"
           },
           {
             "name": "Tenant Edit",
             "authority": "tenants.edit",
-            "resource": "/organization/tenant",
+            "resource": "/platform/tenant",
             "description": "允许编辑租户"
           },
           {
             "name": "Tenant Delete",
             "authority": "tenants.delete",
-            "resource": "/organization/tenant",
+            "resource": "/platform/tenant",
             "description": "允许删除租户"
           }
         ]
       },
       {
-        "label": "应用包管理",
-        "title": "menu.organization.appPackage",
+        "label": "功能管理",
+        "title": "menu.platform.feature",
         "icon": "AppstoreOutlined",
-        "path": "/organization/app-package",
-        "authority": "appPackages.view",
+        "path": "/platform/feature",
+        "authority": "features.view",
         "sort": 1,
-        "component": "common/organization/AppPackage",
+        "component": "common/platform/feature",
         "type": "item",
         "disabled": false,
         "permissions": [
           {
-            "name": "App Package View",
-            "authority": "appPackages.view",
-            "resource": "/organization/app-package",
-            "description": "允许访问应用包管理页面"
+            "name": "Feature View",
+            "authority": "features.view",
+            "resource": "/platform/feature",
+            "description": "允许访问功能管理页面"
           },
           {
-            "name": "App Package Create",
-            "authority": "appPackages.create",
-            "resource": "/organization/app-package",
-            "description": "允许创建应用包"
+            "name": "Feature Create",
+            "authority": "features.create",
+            "resource": "/platform/feature",
+            "description": "允许创建功能"
           },
           {
-            "name": "App Package Edit",
-            "authority": "appPackages.edit",
-            "resource": "/organization/app-package",
-            "description": "允许编辑应用包"
+            "name": "Feature Edit",
+            "authority": "features.edit",
+            "resource": "/platform/feature",
+            "description": "允许编辑功能"
           },
           {
-            "name": "App Package Delete",
-            "authority": "appPackages.delete",
-            "resource": "/organization/app-package",
-            "description": "允许删除应用包"
+            "name": "Feature Delete",
+            "authority": "features.delete",
+            "resource": "/platform/feature",
+            "description": "允许删除功能"
+          }
+        ]
+      },
+      {
+        "label": "应用管理",
+        "title": "menu.platform.application",
+        "icon": "AppstoreOutlined",
+        "path": "/platform/application",
+        "authority": "applications.view",
+        "sort": 2,
+        "component": "common/platform/application",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Application View",
+            "authority": "applications.view",
+            "resource": "/platform/application",
+            "description": "允许访问应用管理页面"
+          },
+          {
+            "name": "Application Create",
+            "authority": "applications.create",
+            "resource": "/platform/application",
+            "description": "允许创建应用"
+          },
+          {
+            "name": "Application Edit",
+            "authority": "applications.edit",
+            "resource": "/platform/application",
+            "description": "允许编辑应用"
+          },
+          {
+            "name": "Application Delete",
+            "authority": "applications.delete",
+            "resource": "/platform/application",
+            "description": "允许删除应用"
+          }
+        ]
+      },
+      {
+        "label": "套餐包管理",
+        "title": "menu.platform.package",
+        "icon": "ShoppingOutlined",
+        "path": "/platform/package",
+        "authority": "packages.view",
+        "sort": 3,
+        "component": "common/platform/package",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Package View",
+            "authority": "packages.view",
+            "resource": "/platform/package",
+            "description": "允许访问套餐包管理页面"
+          },
+          {
+            "name": "Package Create",
+            "authority": "packages.create",
+            "resource": "/platform/package",
+            "description": "允许创建套餐包"
+          },
+          {
+            "name": "Package Edit",
+            "authority": "packages.edit",
+            "resource": "/platform/package",
+            "description": "允许编辑套餐包"
+          },
+          {
+            "name": "Package Delete",
+            "authority": "packages.delete",
+            "resource": "/platform/package",
+            "description": "允许删除套餐包"
           }
         ]
       }
@@ -590,30 +664,6 @@
         "authority": "support.view",
         "resource": "/support",
         "description": "允许访问支持与帮助菜单"
-      },
-      {
-        "name": "Ant Design View",
-        "authority": "antdesign.view",
-        "resource": "/support/antdesign",
-        "description": "允许访问 Ant Design 页面"
-      },
-      {
-        "name": "Module Federation View",
-        "authority": "modulefederation.view",
-        "resource": "/support/module-federation",
-        "description": "允许访问 Module Federation 页面"
-      },
-      {
-        "name": "GitHub SPM View",
-        "authority": "githubspm.view",
-        "resource": "/support/githubspm",
-        "description": "允许访问 GitHub SPM 页面"
-      },
-      {
-        "name": "GitHub SPR View",
-        "authority": "githubspr.view",
-        "resource": "/support/githubspr",
-        "description": "允许访问 GitHub SPR 页面"
       }
     ],
     "children": [
@@ -626,7 +676,15 @@
         "sort": 1,
         "type": "item",
         "path": "/support/antdesign",
-        "component": "external:https://ant.design"
+        "component": "external:https://ant.design",
+        "permissions": [
+          {
+            "name": "Ant Design View",
+            "authority": "antdesign.view",
+            "resource": "/support/antdesign",
+            "description": "允许访问 Ant Design 页面"
+          }
+        ]
       },
       {
         "label": "Module Federation 官网",
@@ -637,7 +695,15 @@
         "authority": "modulefederation.view",
         "type": "item",
         "path": "/support/module-federation",
-        "component": "external:https://module-federation.github.io"
+        "component": "external:https://module-federation.github.io",
+        "permissions": [
+          {
+            "name": "Module Federation View",
+            "authority": "modulefederation.view",
+            "resource": "/support/module-federation",
+            "description": "允许访问 Module Federation 页面"
+          }
+        ]
       },
       {
         "label": "GitHub 项目地址(后端)",
@@ -648,7 +714,15 @@
         "authority": "githubspm.view",
         "type": "item",
         "path": "/support/githubspm",
-        "component": "iframe:https://github.com/simplepoint1024/open-simplepoint-dashboard"
+        "component": "iframe:https://github.com/simplepoint1024/open-simplepoint-dashboard",
+        "permissions": [
+          {
+            "name": "GitHub SPM View",
+            "authority": "githubspm.view",
+            "resource": "/support/githubspm",
+            "description": "允许访问 GitHub SPM 页面"
+          }
+        ]
       },
       {
         "label": "GitHub 项目地址(前端)",
@@ -659,7 +733,15 @@
         "authority": "githubspr.view",
         "type": "item",
         "path": "/support/githubspr",
-        "component": "iframe:https://github.com/simplepoint1024/simplepoint-react"
+        "component": "iframe:https://github.com/simplepoint1024/simplepoint-react",
+        "permissions": [
+          {
+            "name": "GitHub SPR View",
+            "authority": "githubspr.view",
+            "resource": "/support/githubspr",
+            "description": "允许访问 GitHub SPR 页面"
+          }
+        ]
       }
     ]
   }

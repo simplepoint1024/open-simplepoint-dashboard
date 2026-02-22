@@ -21,13 +21,6 @@ public interface MenuPermissionsRelevanceRepository {
   <S extends MenuPermissionsRelevance> List<S> saveAll(Iterable<S> entities);
 
   /**
-   * Delete all MenuPermissionsRelevance entities associated with the specified menu authority.
-   *
-   * @param menuAuthority the menu authority whose associated MenuPermissionsRelevance entities are to be deleted
-   */
-  void deleteAllByPermissionId(String menuAuthority);
-
-  /**
    * Delete all MenuPermissionsRelevance entities associated with the specified collection of menu authorities.
    *
    * @param menuIds a collection of menu authorities whose associated MenuPermissionsRelevance entities are to be deleted
@@ -53,10 +46,10 @@ public interface MenuPermissionsRelevanceRepository {
   /**
    * Get all menu permissions authorities associated with the given permission authorities.
    *
-   * @param permissionIds a collection of permission permissionIds
+   * @param permissionAuthority a collection of permission permissionIds
    * @return a collection of menu permissions authorities associated with the given permission authorities
    */
-  Collection<String> findAllMenuIdByPermissionIds(Collection<String> permissionIds);
+  Collection<String> findAllMenuIdByPermissionAuthority(Collection<String> permissionAuthority);
 
   /**
    * Authorize a set of MenuPermissionsRelevance entities.

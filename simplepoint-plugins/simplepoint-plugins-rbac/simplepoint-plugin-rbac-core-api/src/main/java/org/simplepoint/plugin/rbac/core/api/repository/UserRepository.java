@@ -16,10 +16,11 @@ public interface UserRepository extends BaseRepository<User, String> {
   /**
    * Loads the roles associated with a given userId.
    *
+   * @param tenantId the tenant ID to which the user belongs
    * @param userId the userId for which to load roles
    * @return a list of role names associated with the specified userId
    */
-  Collection<RoleGrantedAuthority> loadRolesByUserId(String userId);
+  Collection<RoleGrantedAuthority> loadRolesByUserId(String tenantId, String userId);
 
   /**
    * Loads permissions associated with the given role authorities.
@@ -27,7 +28,7 @@ public interface UserRepository extends BaseRepository<User, String> {
    * @param roleIds a list of role authorities for which to load permissions
    * @return a list of SimplePermissions associated with the specified role authorities
    */
-  Collection<PermissionGrantedAuthority> loadPermissionsInRoleIds(List<String> roleIds);
+  Collection<String> loadPermissionsInRoleIds(List<String> roleIds);
 
   /**
    * Retrieve a collection of role authorities associated with a specific userId.

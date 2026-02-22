@@ -17,9 +17,7 @@ import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcUserInfoAuthenticat
 import org.simplepoint.cloud.oauth.server.oidc.DefaultOidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.oidc.OpenidOidcUserInfoAuthentication;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
-import org.simplepoint.security.cache.AuthorizationContextCacheable;
 import org.simplepoint.security.decorator.TokenDecorator;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -62,9 +60,7 @@ public class OidcConfiguration {
   @Bean
   @ConditionalOnMissingBean(OidcUserInfoAuthenticationExpansion.class)
   public OidcUserInfoAuthenticationExpansion oidcUserInfoAuthentication(
-      final UsersService usersService,
-      @Autowired(required = false) final AuthorizationContextCacheable authorizationContextCacheable,
-      Set<TokenDecorator> accessTokenDecorators
+      final UsersService usersService
   ) {
     /*
      * Uses {@link UsersService} as a dependency for user info authentication.
@@ -75,7 +71,7 @@ public class OidcConfiguration {
      * @return The default implementation of OIDC user info authentication expansion.
      *         默认的 OIDC 用户信息认证扩展实现
      */
-    return new OpenidOidcUserInfoAuthentication(usersService, authorizationContextCacheable);
+    return new OpenidOidcUserInfoAuthentication(usersService);
   }
 
   /**

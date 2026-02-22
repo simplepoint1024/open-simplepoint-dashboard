@@ -22,6 +22,6 @@ public interface JpaRolePermissionsRelevanceRepository extends JpaRepository<Rol
 
   @Override
   @Modifying
-  @Query("delete from RolePermissionsRelevance rpr where rpr.roleId = ?1 and rpr.permissionId in ?2")
+  @Query("delete from RolePermissionsRelevance rpr where rpr.roleId = ?1 and rpr.permissionAuthority in ?2")
   void unauthorized(String roleId, Set<String> authorities);
 }

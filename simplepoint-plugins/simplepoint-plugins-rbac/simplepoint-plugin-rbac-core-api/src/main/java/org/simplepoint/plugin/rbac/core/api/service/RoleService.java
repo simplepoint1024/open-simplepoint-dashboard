@@ -35,12 +35,12 @@ public interface RoleService extends BaseService<Role, String> {
 
 
   /**
-   * Removes the specified permissionIds from the given role authority.
+   * Removes the specified permissionAuthority from the given role authority.
    *
    * @param roleId        the authority of the role
-   * @param permissionIds the set of permission permissionIds to be removed
+   * @param permissionAuthority the set of permission permissionAuthority to be removed
    */
-  void unauthorized(String roleId, Set<String> permissionIds);
+  void unauthorized(String roleId, Set<String> permissionAuthority);
 
   /**
    * Retrieves a collection of authorized permission strings for the specified role authority.
