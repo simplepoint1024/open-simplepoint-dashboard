@@ -6,7 +6,6 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
-import com.nimbusds.jose.util.JSONObjectUtils;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
@@ -47,7 +46,6 @@ public class GenerateJWKTest {
     JWKSet jwkSet = new JWKSet(rsaKey);
     ImmutableJWKSet<SecurityContext> jwkSource = new ImmutableJWKSet<>(jwkSet);
     assertNotNull(jwkSource);
-    System.out.println(rsaKey.toJSONString());
   }
 
   /**

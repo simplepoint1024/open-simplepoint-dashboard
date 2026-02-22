@@ -8,10 +8,9 @@
 
 package org.simplepoint.plugin.rbac.core.service.impl;
 
-import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.core.context.UserContext;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.PermissionsRepository;
 import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
@@ -33,16 +32,16 @@ public class PermissionsServiceImpl
   /**
    * Constructs a PermissionsServiceImpl with the specified repository, user context, and details provider service.
    *
-   * @param repository             the PermissionsRepository for data access
-   * @param userContext            the UserContext for accessing user-related information
-   * @param detailsProviderService the DetailsProviderService for additional details
+   * @param repository                 the PermissionsRepository for data access
+   * @param authorizationContextHolder the UserContext for accessing user-related information
+   * @param detailsProviderService     the DetailsProviderService for additional details
    */
   public PermissionsServiceImpl(
       PermissionsRepository repository,
-      @Autowired(required = false) UserContext<BaseUser> userContext,
+      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       DetailsProviderService detailsProviderService
   ) {
-    super(repository, userContext, detailsProviderService);
+    super(repository, authorizationContextHolder, detailsProviderService);
   }
 
   /**

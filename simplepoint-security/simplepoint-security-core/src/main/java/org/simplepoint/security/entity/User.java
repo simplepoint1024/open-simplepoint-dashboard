@@ -24,6 +24,7 @@ import jakarta.persistence.Transient;
 import jakarta.validation.constraints.Email;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -407,7 +408,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    */
   @Schema(hidden = true)
   @Transient
-  private Collection<GrantedAuthority> authorities;
+  private Collection<GrantedAuthority> authorities = Collections.emptyList();
 
   /**
    * 装饰器字段，存储额外的用户信息或元数据

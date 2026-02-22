@@ -1,7 +1,6 @@
 dependencies {
     implementation(project(":simplepoint-boot:simplepoint-boot-starter"))
     implementation(project(":simplepoint-boot:simplepoint-boot-config-consul-starter"))
-    implementation(project(":simplepoint-security:simplepoint-security-cache"))
 
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -10,11 +9,14 @@ dependencies {
     implementation(project(":simplepoint-data:simplepoint-data-cp"))
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
     implementation(project(":simplepoint-security:simplepoint-security-core"))
+    implementation(project(":simplepoint-security:simplepoint-security-servlet"))
     implementation(project(":simplepoint-security:simplepoint-security-oauth2-resource"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
+    // 引入AMQP RPC支持
     implementation(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))
     implementation(project(":simplepoint-data:simplepoint-data-json:simplepoint-data-json-schema"))
+
     // 引入RBAC权限体系核心插件
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-repository"))
@@ -37,7 +39,15 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-service"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-rest"))
 
+    // 引入租户管理插件
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-repository"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-service"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-rest"))
+
+    // 引入初始化数据插件
     implementation(project(":simplepoint-data:simplepoint-data-initializer"))
 
+    // 引入API文档
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
 }

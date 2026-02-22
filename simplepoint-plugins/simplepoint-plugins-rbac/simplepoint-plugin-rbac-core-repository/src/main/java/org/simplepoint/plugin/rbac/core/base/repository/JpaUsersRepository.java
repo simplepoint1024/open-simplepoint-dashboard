@@ -10,7 +10,6 @@ package org.simplepoint.plugin.rbac.core.base.repository;
 
 import java.util.Collection;
 import java.util.List;
-import org.simplepoint.core.authority.PermissionGrantedAuthority;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
@@ -41,19 +40,19 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
         new org.simplepoint.core.authority.RoleGrantedAuthority(rl.id,rl.authority)
       from UserRoleRelevance urr
       join Role rl on urr.roleId=rl.id
-      where urr.userId = :userId
+      where urr.userId = :userId and rl.tenantId = :tenantId
       """)
-  Collection<RoleGrantedAuthority> loadRolesByUserId(@Param("userId") String userId);
+  Collection<RoleGrantedAuthority> loadRolesByUserId(@Param("tenantId") String tenantId, @Param("userId") String userId);
 
   @Override
   @Query("""
       select
-        new org.simplepoint.core.authority.PermissionGrantedAuthority(ps.id,ps.authority,pr.roleId,null)
+        ps.authority
       from RolePermissionsRelevance pr
-      join Permissions ps on pr.permissionId = ps.id
+      join Permissions ps on pr.permissionAuthority = ps.authority
       where pr.roleId in :roleIds
       """)
-  Collection<PermissionGrantedAuthority> loadPermissionsInRoleIds(@Param("roleIds") List<String> roleIds);
+  Collection<String> loadPermissionsInRoleIds(@Param("roleIds") List<String> roleIds);
 
   @Override
   @Query("select roleId from UserRoleRelevance where userId = :userId")

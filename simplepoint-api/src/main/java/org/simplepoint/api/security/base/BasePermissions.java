@@ -18,14 +18,14 @@ public interface BasePermissions {
    *
    * @return Permission identifier
    */
-  String getAuthority();
+  String getId();
 
   /**
    * Permission identifier.
    *
    * @param authority Permission identifier
    */
-  void setAuthority(String authority);
+  void setId(String authority);
 
   /**
    * Resource.

@@ -10,17 +10,17 @@ import lombok.Data;
 @Data
 public class MenuPermissionsRelevanceDto {
   private String menuId;
-  private Set<String> permissionIds;
+  private Set<String> permissionAuthority;
 
   /**
    * Constructs a new {@code MenuPermissionsRelevanceDto} with the specified menu ID and permission IDs.
    *
    * @param menuId        the ID of the menu
-   * @param permissionIds the set of associated permission IDs
+   * @param permissionAuthority the set of associated permission IDs
    */
-  public MenuPermissionsRelevanceDto(String menuId, Set<String> permissionIds) {
+  public MenuPermissionsRelevanceDto(String menuId, Set<String> permissionAuthority) {
     this.menuId = menuId;
-    this.permissionIds = permissionIds;
+    this.permissionAuthority = permissionAuthority;
   }
 
   /**

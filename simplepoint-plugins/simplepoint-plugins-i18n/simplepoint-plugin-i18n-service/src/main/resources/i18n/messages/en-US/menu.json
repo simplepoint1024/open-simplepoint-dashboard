@@ -33,5 +33,11 @@
   "menu.system.field": "Field Permissions",
   "menu.system.data": "Data Permissions",
   "menu.system.menu": "Menu Management",
-  "menu.system.user": "User Management"
+  "menu.system.user": "User Management",
+
+  "menu.platform": "Platform Management",
+  "menu.platform.tenant": "Tenant Management",
+  "menu.platform.feature": "Feature Management",
+  "menu.platform.application": "Application Management",
+  "menu.platform.package": "Package Management"
 }

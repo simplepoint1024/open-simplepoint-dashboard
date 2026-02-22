@@ -7,7 +7,6 @@ dependencies {
     // 引入Consul全局配置支持
     implementation(project(":simplepoint-boot:simplepoint-boot-config-consul-starter"))
     implementation(project(":simplepoint-boot:simplepoint-boot-config-vault-starter"))
-    implementation(project(":simplepoint-security:simplepoint-security-cache"))
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-web")
 

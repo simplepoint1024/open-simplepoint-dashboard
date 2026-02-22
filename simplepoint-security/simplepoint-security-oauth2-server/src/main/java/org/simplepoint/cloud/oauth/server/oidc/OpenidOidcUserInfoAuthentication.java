@@ -10,15 +10,12 @@ package org.simplepoint.cloud.oauth.server.oidc;
 
 import static org.springframework.security.oauth2.jwt.JwtClaimNames.SUB;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.AbstractOidcUserInfoAuthentication;
 import org.simplepoint.core.oidc.OidcScopes;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
-import org.simplepoint.security.cache.AuthorizationContextCacheable;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -33,7 +30,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
  */
 public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthentication {
 
-  private final AuthorizationContextCacheable authorizationContextCacheable;
 
   /**
    * Constructs a default implementation of OIDC user info authentication.
@@ -46,11 +42,9 @@ public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthen
    *                     用户服务，负责管理用户信息
    */
   public OpenidOidcUserInfoAuthentication(
-      final UsersService usersService,
-      AuthorizationContextCacheable authorizationContextCacheable
+      final UsersService usersService
   ) {
     super(usersService);
-    this.authorizationContextCacheable = authorizationContextCacheable;
   }
 
 
@@ -74,16 +68,9 @@ public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthen
       claims.put(SUB, principal.getName());
       Collection<GrantedAuthority> scopeAuthorities = principal.getAuthorities();
       if (scopeAuthorities.contains(OidcScopes.getScopeAuthority(OidcScopes.OPENID))) {
-        // 如果开启缓存，优先从缓存中获取用户信息
-        if (this.authorizationContextCacheable != null) {
-          User userContext = this.authorizationContextCacheable.getUserContext(principal.getName(), User.class);
-          setClaims(claims, userContext, principal);
-          // 否则从用户服务中加载用户信息
-        } else {
-          UserDetails userDetails = usersService.loadUserByUsername(principal.getName());
-          if (userDetails instanceof User user) {
-            setClaims(claims, user, principal);
-          }
+        UserDetails userDetails = usersService.loadUserByUsername(principal.getName());
+        if (userDetails instanceof User user) {
+          setClaims(claims, user, principal);
         }
       }
     }
@@ -116,20 +103,6 @@ public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthen
     if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.PHONE))) {
       claims.put("phone_number", user.getPhoneNumber());
       claims.put("phone_number_verified", user.getPhoneNumberVerified());
-    }
-
-    if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.ROLES))) {
-      claims.put(OidcScopes.ROLES, user.getAuthorities().stream().filter(ft -> Objects.requireNonNull(ft.getAuthority()).startsWith("ROLE_")));
-    }
-
-    var decoratorObj = user.getDecorator();
-    if (decoratorObj instanceof ObjectNode decorator) {
-      if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.TENANT))) {
-        claims.put(OidcScopes.TENANT, decorator.get(OidcScopes.TENANT));
-      }
-      if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.ORGANS))) {
-        claims.put(OidcScopes.ORGANS, decorator.get(OidcScopes.ORGANS));
-      }
     }
   }
 }

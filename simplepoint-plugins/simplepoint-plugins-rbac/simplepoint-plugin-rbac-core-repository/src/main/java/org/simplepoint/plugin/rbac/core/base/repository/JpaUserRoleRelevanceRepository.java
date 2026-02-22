@@ -25,6 +25,6 @@ public interface JpaUserRoleRelevanceRepository extends JpaRepository<UserRoleRe
   void unauthorized(@Param("userId") String userId, @Param("roleIds") Set<String> roleIds);
 
   @Override
-  @Query("select u from User u where u.phoneNumber = :phoneOrEmail or u.email = :phoneOrEmail")
+  @Query("select u from User u where u.phoneNumber = :phoneOrEmail or u.email = :phoneOrEmail or u.id = :phoneOrEmail")
   User loadUserByPhoneOrEmail(@Param("phoneOrEmail") String phoneOrEmail);
 }

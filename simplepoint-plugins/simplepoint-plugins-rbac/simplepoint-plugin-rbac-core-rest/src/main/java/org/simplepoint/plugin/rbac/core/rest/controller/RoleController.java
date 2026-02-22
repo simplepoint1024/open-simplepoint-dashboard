@@ -159,7 +159,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
   @Operation(summary = "取消授权角色权限关联关系", description = "根据角色权限关联关系取消授权")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.permission')")
   public Response<Void> unauthorized(@RequestBody RolePermissionsRelevanceDto dto) {
-    service.unauthorized(dto.getRoleId(), dto.getPermissionIds());
+    service.unauthorized(dto.getRoleId(), dto.getPermissionAuthority());
     return Response.okay();
   }
 }

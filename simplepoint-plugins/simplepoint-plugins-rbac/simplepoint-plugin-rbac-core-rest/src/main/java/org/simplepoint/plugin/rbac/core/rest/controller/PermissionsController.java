@@ -13,9 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.core.base.controller.BaseController;
-import org.simplepoint.core.context.UserContext;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
@@ -44,26 +42,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class PermissionsController extends BaseController<PermissionsService, Permissions, String> {
 
   /**
-   * 用户上下文对象，用于获取当前用户信息
-   * User context object used to retrieve current user information.
-   */
-  private final UserContext<BaseUser> userContext;
-
-  /**
    * 构造函数，初始化权限服务和用户上下文
    * Constructor initializing the permissions service and user context.
    *
-   * @param service     权限服务
-   *                    The permissions service.
-   * @param userContext 用户上下文
-   *                    The user context.
+   * @param service 权限服务
+   *                The permissions service.
    */
   public PermissionsController(
-      final PermissionsService service,
-      final UserContext<BaseUser> userContext
+      final PermissionsService service
   ) {
     super(service);
-    this.userContext = userContext;
   }
 
   /**
@@ -81,7 +69,6 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
       @RequestParam Map<String, String> attributes,
       Pageable pageable
   ) {
-    log.info("current login username: {}", userContext.getDetails().toString());
     return limit(service.limit(attributes, pageable), Permissions.class);
   }
 
@@ -142,8 +129,8 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
   @Operation(summary = "获取权限下拉列表数据", description = "检索用于权限选择的权限下拉列表数据")
   @PreAuthorize(
       """
-      hasRole('Administrator') or hasAuthority('menus.config.permission') or hasAuthority('roles.config.permission')
-      """
+          hasRole('Administrator') or hasAuthority('menus.config.permission') or hasAuthority('roles.config.permission')
+          """
   )
   public Response<Page<PermissionsRelevanceVo>> items(Pageable pageable) {
     return ok(service.permissionItems(pageable));

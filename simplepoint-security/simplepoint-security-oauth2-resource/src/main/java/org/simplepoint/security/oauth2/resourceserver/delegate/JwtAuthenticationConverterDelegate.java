@@ -1,7 +1,6 @@
 package org.simplepoint.security.oauth2.resourceserver.delegate;
 
-import org.simplepoint.api.security.base.BaseUser;
-import org.simplepoint.core.context.UserContext;
+import org.simplepoint.core.AuthorizationGrantedAuthorityLoader;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -17,12 +16,14 @@ public class JwtAuthenticationConverterDelegate implements Converter<Jwt, Abstra
   private final JwtAuthenticationConverter delegate = new JwtAuthenticationConverter();
 
   /**
-   * Constructs a JwtAuthenticationConverterDelegate with a custom UserContext.
+   * Constructs a JwtAuthenticationConverterDelegate with the specified custom authorities converter.
    *
-   * @param userContext the UserContext to be used for authority conversion
+   * @param authorizationGrantedAuthorityLoader a function that converts JWT claims into a collection of granted authorities
    */
-  public JwtAuthenticationConverterDelegate(UserContext<BaseUser> userContext) {
-    delegate.setJwtGrantedAuthoritiesConverter(new JwtGrantedAuthoritiesConverterDelegate(userContext));
+  public JwtAuthenticationConverterDelegate(
+      AuthorizationGrantedAuthorityLoader authorizationGrantedAuthorityLoader
+  ) {
+    delegate.setJwtGrantedAuthoritiesConverter(new JwtGrantedAuthoritiesConverterDelegate(authorizationGrantedAuthorityLoader));
   }
 
   @Override

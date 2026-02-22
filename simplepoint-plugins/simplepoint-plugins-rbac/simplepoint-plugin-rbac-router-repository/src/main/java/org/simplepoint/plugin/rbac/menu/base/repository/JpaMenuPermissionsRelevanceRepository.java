@@ -19,26 +19,21 @@ public interface JpaMenuPermissionsRelevanceRepository extends JpaRepository<Men
 
   @Override
   @Modifying
-  @Query("DELETE FROM MenuPermissionsRelevance mpr WHERE mpr.menuId = ?1")
-  void deleteAllByPermissionId(String menuId);
-
-  @Override
-  @Modifying
   @Query("DELETE FROM MenuPermissionsRelevance mpr WHERE mpr.menuId IN ?1")
   void deleteAllByMenuIds(Collection<String> menuId);
 
   @Override
   @Modifying
-  @Query("DELETE FROM MenuPermissionsRelevance mpr WHERE mpr.menuId = ?1 AND mpr.permissionId IN ?2")
+  @Query("DELETE FROM MenuPermissionsRelevance mpr WHERE mpr.menuId = ?1 AND mpr.permissionAuthority IN ?2")
   void unauthorized(String menuId, Set<String> authorities);
 
   @Override
-  @Query("SELECT permissionId FROM MenuPermissionsRelevance WHERE menuId = ?1")
+  @Query("SELECT permissionAuthority FROM MenuPermissionsRelevance WHERE menuId = ?1")
   Collection<String> authorized(String menuId);
 
   @Override
-  @Query("SELECT menuId FROM MenuPermissionsRelevance where permissionId in ?1")
-  Collection<String> findAllMenuIdByPermissionIds(Collection<String> permissionIds);
+  @Query("SELECT mpr.menuId FROM MenuPermissionsRelevance mpr where mpr.permissionAuthority in ?1")
+  Collection<String> findAllMenuIdByPermissionAuthority(Collection<String> permissionAuthority);
 
   @Override
   default void authorize(Collection<MenuPermissionsRelevance> menuPermissionsRelevances) {

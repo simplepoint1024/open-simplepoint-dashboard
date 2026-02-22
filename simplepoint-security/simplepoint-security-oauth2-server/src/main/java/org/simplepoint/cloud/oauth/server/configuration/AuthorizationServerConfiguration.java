@@ -11,7 +11,6 @@ package org.simplepoint.cloud.oauth.server.configuration;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationSuccessHandler;
-import org.simplepoint.security.cache.AuthorizationContextCacheable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,22 +35,6 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 @Configuration
 @EnableWebSecurity
 public class AuthorizationServerConfiguration {
-
-  private final AuthorizationContextCacheable authorizationContextCacheable;
-
-  /**
-   * Constructs the AuthorizationServerConfiguration with an optional
-   * AuthorizationContextCacheable dependency.
-   *
-   * @param authorizationContextCacheable the authorization context cacheable
-   *                                      授权上下文缓存接口
-   */
-  public AuthorizationServerConfiguration(
-      @Autowired(required = false)
-      AuthorizationContextCacheable authorizationContextCacheable
-  ) {
-    this.authorizationContextCacheable = authorizationContextCacheable;
-  }
 
   /**
    * Defines the security filter chain for the authorization server.
@@ -118,10 +101,7 @@ public class AuthorizationServerConfiguration {
                 .authenticated())
         .formLogin(configurer -> {
           configurer.loginPage("/login").permitAll();
-          if (authorizationContextCacheable != null) {
-            log.info("Lodding LoginAuthenticationSuccessHandler with AuthorizationContextCacheable");
-            configurer.successHandler(loginAuthenticationSuccessHandler);
-          }
+          configurer.successHandler(loginAuthenticationSuccessHandler);
         });
 
     return http.build();

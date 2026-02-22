@@ -11,7 +11,7 @@ package org.simplepoint.plugin.oidc.service.service.impl;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.core.context.UserContext;
+import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.plugin.oidc.api.entity.Client;
 import org.simplepoint.plugin.oidc.api.repository.OidcClientRepository;
 import org.simplepoint.plugin.oidc.api.service.OidcClientService;
@@ -39,9 +39,9 @@ public class OidcClientServiceImpl extends BaseServiceImpl<OidcClientRepository,
    */
   public OidcClientServiceImpl(
       OidcClientRepository repository,
-      @Autowired(required = false) UserContext<BaseUser> userContext,
+      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       DetailsProviderService detailsProviderService
   ) {
-    super(repository, userContext, detailsProviderService);
+    super(repository, authorizationContextHolder, detailsProviderService);
   }
 }

@@ -4,16 +4,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.simplepoint.core.authority.PermissionGrantedAuthority;
-import org.simplepoint.core.authority.RoleGrantedAuthority;
-import org.simplepoint.security.cache.AuthorizationContextCacheable;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -25,22 +18,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public final class LoginAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
-  private final AuthorizationContextCacheable authorizationContextCacheable;
   private final AuthenticationSuccessHandler delegate = new SavedRequestAwareAuthenticationSuccessHandler();
-
-  /**
-   * Constructs a LoginAuthenticationSuccessHandler with the specified dependencies.
-   *
-   * <p>使用指定的依赖项构造 LoginAuthenticationSuccessHandler</p>
-   *
-   * @param authorizationContextCacheable the authorization context cacheable
-   *                                      授权上下文缓存
-   */
-  public LoginAuthenticationSuccessHandler(
-      AuthorizationContextCacheable authorizationContextCacheable
-  ) {
-    this.authorizationContextCacheable = authorizationContextCacheable;
-  }
 
   @Override
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
@@ -77,34 +55,6 @@ public final class LoginAuthenticationSuccessHandler implements AuthenticationSu
    */
   public void onAuthenticationSuccessDelegate(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
       throws ServletException, IOException {
-    Object details = authentication.getPrincipal();
-    if (details != null) {
-      if (details instanceof User currentUser) {
-        var roles = new HashSet<RoleGrantedAuthority>();
-        var rolePermissions = new HashMap<String, Set<PermissionGrantedAuthority>>();
-        // 根据用户角色缓存权限
-        for (GrantedAuthority authority : currentUser.getAuthorities()) {
-          if (authority instanceof PermissionGrantedAuthority permissionGrantedAuthority) {
-            String role = permissionGrantedAuthority.getRoleAuthority();
-            rolePermissions.computeIfAbsent(role, k -> new HashSet<>());
-            rolePermissions.get(role).add(permissionGrantedAuthority);
-          } else if (authority instanceof RoleGrantedAuthority roleGrantedAutority) {
-            roles.add(roleGrantedAutority);
-          }
-        }
-
-        String userId = currentUser.getId();
-        // 缓存用户角色
-        this.authorizationContextCacheable.cacheRoles(userId, roles);
-
-        // 缓存用户权限
-        rolePermissions.forEach(this.authorizationContextCacheable::cachePermission);
-
-        // 缓存用户上下文
-        this.authorizationContextCacheable.cacheUserContext(userId, currentUser);
-        log.debug("Cached authorization context for user [{}]", userId);
-      }
-    }
     this.delegate.onAuthenticationSuccess(request, response, authentication);
 
   }

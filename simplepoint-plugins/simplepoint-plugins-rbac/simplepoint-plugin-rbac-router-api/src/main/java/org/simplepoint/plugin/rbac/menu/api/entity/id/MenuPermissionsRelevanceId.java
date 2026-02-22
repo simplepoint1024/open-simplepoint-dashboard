@@ -13,5 +13,5 @@ public class MenuPermissionsRelevanceId implements Serializable {
 
   private String menuId;
 
-  private String permissionId;
+  private String permissionAuthority;
 }

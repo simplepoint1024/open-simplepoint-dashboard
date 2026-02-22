@@ -48,8 +48,8 @@ public class RolePermissionsRelevance extends TenantBaseEntityImpl<String> imple
    */
   @Column(nullable = false)
   @Schema(title = "权限标识", description = "与权限关联的标识，通常用于定义权限的范围或角色")
-  @JoinColumn(name = "permission_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_role_permission_permission"))
-  private String permissionId;
+  @JoinColumn(name = "permission_authority", referencedColumnName = "authority", foreignKey = @ForeignKey(name = "fk_role_permission_permission"))
+  private String permissionAuthority;
 
   @Schema(title = "数据权限标识", description = "与数据权限关联的标识，通常用于定义数据权限的范围或角色")
   private String dataScopeId;

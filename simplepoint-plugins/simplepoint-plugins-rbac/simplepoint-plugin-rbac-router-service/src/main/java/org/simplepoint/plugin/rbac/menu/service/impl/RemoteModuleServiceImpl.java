@@ -5,8 +5,9 @@ import java.util.Set;
 import org.hibernate.service.spi.ServiceException;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.core.context.UserContext;
+import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.rbac.menu.api.repository.RemoteModuleRepository;
 import org.simplepoint.plugin.rbac.menu.api.service.MicroAppService;
@@ -14,6 +15,7 @@ import org.simplepoint.plugin.rbac.menu.api.vo.MicroModuleItemVo;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.MicroModule;
 import org.simplepoint.security.service.MenuService;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Implementation of {@link MicroAppService} providing business logic for remote module management.
@@ -29,24 +31,19 @@ public class RemoteModuleServiceImpl
     extends BaseServiceImpl<RemoteModuleRepository, MicroModule, String>
     implements MicroAppService {
 
-  private final MenuService menuService;
-
   /**
-   * Constructor initializing the service with required dependencies.
+   * Constructs a new RemoteModuleServiceImpl with the specified repository and authorization context holder.
    *
-   * @param repository             the remote module repository
-   * @param userContext            the user context
-   * @param detailsProviderService the details provider service
-   * @param menuService            the menu service
+   * @param repository                 the repository for remote module data access
+   * @param authorizationContextHolder the holder for authorization context, can be null if not required
+   * @param detailsProviderService     the service for providing user details, used for authorization checks
    */
   public RemoteModuleServiceImpl(
       RemoteModuleRepository repository,
-      UserContext<BaseUser> userContext,
-      DetailsProviderService detailsProviderService,
-      MenuService menuService
+      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
+      DetailsProviderService detailsProviderService
   ) {
-    super(repository, userContext, detailsProviderService);
-    this.menuService = menuService;
+    super(repository, authorizationContextHolder, detailsProviderService);
   }
 
   /**

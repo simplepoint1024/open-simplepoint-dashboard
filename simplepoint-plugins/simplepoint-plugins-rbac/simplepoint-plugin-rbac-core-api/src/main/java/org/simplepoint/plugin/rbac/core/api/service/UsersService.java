@@ -29,10 +29,11 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
    * Loads the roles associated with the given username.
    * This method retrieves a list of role authorities assigned to the specified user.
    *
-   * @param userId the username of the user whose roles are to be loaded
+   * @param tenantId the tenant ID to which the user belongs
+   * @param userId   the username of the user whose roles are to be loaded
    * @return a list of role authorities associated with the user
    */
-  Collection<RoleGrantedAuthority> loadRolesByUserId(String userId);
+  Collection<RoleGrantedAuthority> loadRolesByUserId(String tenantId, String userId);
 
   /**
    * Loads permissions associated with the given role authorities.
@@ -42,7 +43,7 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
    * @param roleIds a list of role authorities for which to load permissions
    * @return a list of RolePermissionsRelevance associated with the specified role authorities
    */
-  Collection<PermissionGrantedAuthority> loadPermissionsInRoleIds(List<String> roleIds);
+  Collection<String> loadPermissionsInRoleIds(List<String> roleIds);
 
   /**
    * Retrieve a collection of role authorities associated with a specific userId.

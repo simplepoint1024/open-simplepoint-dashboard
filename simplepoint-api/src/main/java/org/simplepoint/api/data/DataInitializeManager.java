@@ -11,17 +11,7 @@ public interface DataInitializeManager {
    * @param moduleName the name of the module to check
    * @return true if the module has been initialized, false otherwise
    */
-  boolean execute(String moduleName, Initializer initializer);
+  boolean execute(String moduleName, InitTask.Initializer initializer);
 
-  /**
-   * Functional interface for data initializers.
-   */
-  interface Initializer {
-    /**
-     * Run the initialization logic.
-     *
-     * @throws Exception if an error occurs during initialization
-     */
-    void run() throws Exception;
-  }
+
 }
