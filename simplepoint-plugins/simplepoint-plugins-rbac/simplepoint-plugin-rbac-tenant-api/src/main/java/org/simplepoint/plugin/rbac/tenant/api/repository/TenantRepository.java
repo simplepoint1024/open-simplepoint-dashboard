@@ -35,4 +35,13 @@ public interface TenantRepository extends BaseRepository<Tenant, String> {
    * @param tenantIds the tenant IDs to refresh
    */
   void increasePermissionVersion(Collection<String> tenantIds);
+
+  /**
+   * Checks whether the specified user belongs to the tenant.
+   *
+   * @param tenantId the tenant identifier
+   * @param userId the user identifier
+   * @return true when the user is the owner or a tenant member
+   */
+  boolean hasUser(String tenantId, String userId);
 }

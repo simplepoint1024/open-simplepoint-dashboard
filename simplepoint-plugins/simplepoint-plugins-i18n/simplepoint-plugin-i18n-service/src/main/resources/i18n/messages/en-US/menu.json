@@ -39,5 +39,7 @@
   "menu.platform.tenant": "Tenant Management",
   "menu.platform.feature": "Feature Management",
   "menu.platform.application": "Application Management",
-  "menu.platform.package": "Package Management"
+  "menu.platform.package": "Package Management",
+  "menu.platform.dictionaries": "Dictionary Management",
+  "menu.platform.organizations": "Organization Management"
 }

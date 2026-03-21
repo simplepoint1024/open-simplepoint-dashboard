@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,11 +20,19 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
 
 /**
- * Represents a feature entity.
+ * Represents a configurable dictionary item.
  */
 @Data
 @Entity
-@Table(name = "simpoint_saas_features")
+@Table(
+    name = "simpoint_saas_dictionary_items",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_simpoint_saas_dictionary_item_code_value",
+            columnNames = {"dictionary_code", "item_value"}
+        )
+    }
+)
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
     @ButtonDeclaration(
@@ -33,7 +42,7 @@ import org.springframework.core.annotation.Order;
         sort = 0,
         argumentMaxSize = 1,
         argumentMinSize = 0,
-        authority = "features.create"
+        authority = "dictionaries.create"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -43,7 +52,7 @@ import org.springframework.core.annotation.Order;
         sort = 1,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "features.edit"
+        authority = "dictionaries.edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -54,33 +63,36 @@ import org.springframework.core.annotation.Order;
         argumentMinSize = 1,
         argumentMaxSize = 10,
         danger = true,
-        authority = "features.delete"
-    ),
-    @ButtonDeclaration(
-        title = "配置权限",
-        key = "config.permission",
-        color = "orange",
-        icon = Icons.SAFETY_OUTLINED,
-        sort = 3,
-        argumentMinSize = 1,
-        argumentMaxSize = 1,
-        authority = "features.config.permission"
+        authority = "dictionaries.delete"
     )
 })
 @NoArgsConstructor
 @AllArgsConstructor
-@Tag(name = "功能对象", description = "用于管理系统中的功能特性")
-@Schema(title = "功能对象", description = "用于管理系统中的功能特性")
-public class Feature extends BaseEntityImpl<String> {
+@Tag(name = "字典项对象", description = "用于管理系统中的动态字典项")
+@Schema(title = "字典项对象", description = "用于管理系统中的动态字典项")
+public class DictionaryItem extends BaseEntityImpl<String> {
 
-  /**
-   * The display name of the feature.
-   */
   @Order(0)
   @Schema(
-      title = "i18n:features.title.name",
-      description = "i18n:features.description.name",
-      example = "RBAC",
+      title = "i18n:dictionaries.title.dictionaryCode",
+      description = "i18n:dictionaries.description.dictionaryCode",
+      example = "feature.type",
+      maxLength = 128,
+      minLength = 1,
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "false"),
+          })
+      }
+  )
+  @Column(name = "dictionary_code", length = 128, nullable = false)
+  private String dictionaryCode;
+
+  @Order(1)
+  @Schema(
+      title = "i18n:dictionaries.title.itemName",
+      description = "i18n:dictionaries.description.itemName",
+      example = "菜单",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -92,14 +104,27 @@ public class Feature extends BaseEntityImpl<String> {
   @Column(length = 128, nullable = false)
   private String name;
 
-  /**
-   * The description of the feature.
-   */
-  @Order(1)
+  @Order(2)
   @Schema(
-      title = "i18n:features.title.description",
-      description = "i18n:features.description.description",
-      example = "Role based access control feature",
+      title = "i18n:dictionaries.title.value",
+      description = "i18n:dictionaries.description.value",
+      example = "1",
+      maxLength = 128,
+      minLength = 1,
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  @Column(name = "item_value", length = 128, nullable = false)
+  private String value;
+
+  @Order(3)
+  @Schema(
+      title = "i18n:dictionaries.title.description",
+      description = "i18n:dictionaries.description.description",
+      example = "用于展示页面导航的功能",
       maxLength = 512,
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -110,51 +135,11 @@ public class Feature extends BaseEntityImpl<String> {
   @Column(length = 512)
   private String description;
 
-  /**
-   * Unique code of the feature.
-   */
-  @Order(2)
-  @Schema(
-      title = "i18n:features.title.code",
-      description = "i18n:features.description.code",
-      example = "rbac",
-      maxLength = 128,
-      minLength = 1,
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
-  @Column(length = 128, nullable = false, unique = true)
-  private String code;
-
-  /**
-   * Parent feature code.
-   */
-  @Order(3)
-  @Schema(
-      title = "i18n:features.title.parentCode",
-      description = "i18n:features.description.parentCode",
-      example = "system",
-      maxLength = 128,
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
-  @Column(length = 128)
-  private String parentCode;
-
-  /**
-   * Sort order of the feature.
-   */
   @Order(4)
   @Schema(
-      title = "i18n:features.title.sort",
-      description = "i18n:features.description.sort",
-      example = "0",
+      title = "i18n:dictionaries.title.sort",
+      description = "i18n:dictionaries.description.sort",
+      example = "10",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
@@ -163,38 +148,16 @@ public class Feature extends BaseEntityImpl<String> {
   )
   private Integer sort;
 
-  /**
-   * Type of the feature (e.g. menu/button/api).
-   */
   @Order(5)
   @Schema(
-      title = "i18n:features.title.type",
-      description = "i18n:features.description.type",
-      example = "0",
+      title = "i18n:dictionaries.title.enabled",
+      description = "i18n:dictionaries.description.enabled",
+      example = "true",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
-              @ExtensionProperty(name = "dictCode", value = "feature.type"),
           })
       }
   )
-  private Integer type;
-
-  /**
-   * Ancestor path of the feature.
-   */
-  @Order(6)
-  @Schema(
-      title = "i18n:features.title.ancestor",
-      description = "i18n:features.description.ancestor",
-      example = "system/rbac",
-      maxLength = 1024,
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "false"),
-          })
-      }
-  )
-  @Column(length = 1024)
-  private String ancestor;
+  private Boolean enabled;
 }

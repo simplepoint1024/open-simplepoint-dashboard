@@ -647,6 +647,86 @@
             "description": "允许删除套餐包"
           }
         ]
+      },
+      {
+        "label": "字典管理",
+        "title": "menu.platform.dictionaries",
+        "icon": "BookOutlined",
+        "path": "/platform/dictionaries",
+        "authority": "dictionaries.view",
+        "sort": 4,
+        "component": "common/platform/Dictionary",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Dictionary View",
+            "authority": "dictionaries.view",
+            "resource": "/platform/dictionaries",
+            "description": "允许访问字典管理页面"
+          },
+          {
+            "name": "Dictionary Create",
+            "authority": "dictionaries.create",
+            "resource": "/platform/dictionaries",
+            "description": "允许创建字典"
+          },
+          {
+            "name": "Dictionary Edit",
+            "authority": "dictionaries.edit",
+            "resource": "/platform/dictionaries",
+            "description": "允许编辑字典"
+          },
+          {
+            "name": "Dictionary Delete",
+            "authority": "dictionaries.delete",
+            "resource": "/platform/dictionaries",
+            "description": "允许删除字典"
+          },
+          {
+            "name": "Dictionary Config Item",
+            "authority": "dictionaries.config.item",
+            "resource": "/platform/dictionaries",
+            "description": "允许配置字典项"
+          }
+        ]
+      },
+      {
+        "label": "组织机构管理",
+        "title": "menu.platform.organizations",
+        "icon": "ApartmentOutlined",
+        "path": "/platform/organizations",
+        "authority": "organizations.view",
+        "sort": 5,
+        "component": "common/platform/Organization",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Organization View",
+            "authority": "organizations.view",
+            "resource": "/platform/organizations",
+            "description": "允许访问组织机构管理页面"
+          },
+          {
+            "name": "Organization Create",
+            "authority": "organizations.create",
+            "resource": "/platform/organizations",
+            "description": "允许创建组织机构"
+          },
+          {
+            "name": "Organization Edit",
+            "authority": "organizations.edit",
+            "resource": "/platform/organizations",
+            "description": "允许编辑组织机构"
+          },
+          {
+            "name": "Organization Delete",
+            "authority": "organizations.delete",
+            "resource": "/platform/organizations",
+            "description": "允许删除组织机构"
+          }
+        ]
       }
     ]
   },
