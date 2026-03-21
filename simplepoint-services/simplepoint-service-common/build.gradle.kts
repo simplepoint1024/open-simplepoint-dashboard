@@ -11,7 +11,7 @@ dependencies {
     implementation(project(":simplepoint-security:simplepoint-security-core"))
     implementation(project(":simplepoint-security:simplepoint-security-servlet"))
     implementation(project(":simplepoint-security:simplepoint-security-oauth2-resource"))
-    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation(project(":simplepoint-cache:simplepoint-cache-redis"))
 
     // 引入AMQP RPC支持
     implementation(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))

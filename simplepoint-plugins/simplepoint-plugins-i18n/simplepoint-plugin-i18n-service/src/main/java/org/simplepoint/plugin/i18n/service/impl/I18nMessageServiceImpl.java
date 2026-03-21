@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.entity.Message;
 import org.simplepoint.core.locale.I18nMessageService;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
@@ -30,9 +29,8 @@ public class I18nMessageServiceImpl extends BaseServiceImpl<I18nMessageRepositor
    */
   public I18nMessageServiceImpl(
       I18nMessageRepository repository,
-      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       DetailsProviderService detailsProviderService) {
-    super(repository, authorizationContextHolder, detailsProviderService);
+    super(repository, detailsProviderService);
   }
 
   /**

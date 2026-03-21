@@ -13,7 +13,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 
@@ -28,7 +28,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
  */
 @Data
 @Entity
-@Table(name = "auth_micro_services")
+@Table(name = "simpoint_ac_micro_services")
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
     @ButtonDeclaration(
@@ -63,7 +63,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
     )
 })
 @Schema(name = "微服务对象", description = "用于管理系统中的微服务信息")
-public class MicroService extends TenantBaseEntityImpl<String> {
+public class MicroService extends BaseEntityImpl<String> {
 
   @Schema(title = "i18n:micro.service.title.displayName",
       description = "i18n:micro.service.description.displayName",

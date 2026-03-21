@@ -11,7 +11,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
@@ -28,7 +28,7 @@ import org.springframework.core.annotation.Order;
  */
 @Data
 @Entity
-@Table(name = "i18n_messages", uniqueConstraints = {
+@Table(name = "simpoint_i18n_messages", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"namespace", "code", "locale"})
 })
 @EqualsAndHashCode(callSuper = true)
@@ -63,7 +63,7 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Schema(name = "I18n键值对象", description = "用于表示系统中的国际化键值项")
-public class Message extends TenantBaseEntityImpl<String> {
+public class Message extends BaseEntityImpl<String> {
 
   @Order(0)
   @Column(nullable = false, length = 128)

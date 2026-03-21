@@ -164,4 +164,5 @@ public interface BaseService<T extends BaseEntity<I>, I extends Serializable> {
    * @return COUNT
    */
   <S extends T> long count(S example);
+
 }

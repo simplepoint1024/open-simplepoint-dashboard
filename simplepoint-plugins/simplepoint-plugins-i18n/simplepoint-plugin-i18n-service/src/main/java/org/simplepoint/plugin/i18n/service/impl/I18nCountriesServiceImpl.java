@@ -1,7 +1,6 @@
 package org.simplepoint.plugin.i18n.service.impl;
 
 import org.simplepoint.api.security.service.DetailsProviderService;
-import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.i18n.api.entity.Countries;
 import org.simplepoint.plugin.i18n.api.repository.I18nCountriesRepository;
@@ -23,14 +22,12 @@ public class I18nCountriesServiceImpl extends BaseServiceImpl<I18nCountriesRepos
    * Constructor that constructs a BaseServiceImpl with the specified repository, user context, and details provider service.
    *
    * @param repository                 用于实体操作的存储库
-   * @param authorizationContextHolder 用于访问与用户相关信息的用户上下文
    * @param detailsProviderService     提供额外详细信息的服务
    */
   public I18nCountriesServiceImpl(
       I18nCountriesRepository repository,
-      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       DetailsProviderService detailsProviderService
   ) {
-    super(repository, authorizationContextHolder, detailsProviderService);
+    super(repository, detailsProviderService);
   }
 }

@@ -7,15 +7,15 @@ import lombok.EqualsAndHashCode;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 
 /**
- * UserTenantRelevance represents the relationship between users and tenants.
+ * TenantUserRelevance represents the relationship between users and tenants.
  * It extends BaseEntityImpl to inherit common entity properties such as ID, creation time, etc.
  * This entity is used to manage the associations between users and tenants in the system.
  */
 @Data
 @Entity
-@Table(name = "auth_user_tenant_rel")
+@Table(name = "simpoint_saas_tenant_user_rel")
 @EqualsAndHashCode(callSuper = true)
-public class UserTenantRelevance extends BaseEntityImpl<String> {
+public class TenantUserRelevance extends BaseEntityImpl<String> {
   private String userId;
   private String tenantId;
 }

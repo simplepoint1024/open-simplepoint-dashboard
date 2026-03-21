@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.service.DetailsProviderService;
-import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
@@ -23,7 +22,6 @@ import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceReposito
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -57,16 +55,14 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
    * @param usersRepository             the repository used for user operations
    * @param detailsProviderService      the access control service for managing permissions
    * @param userRoleRelevanceRepository the repository for managing UserRoleRelevance entities
-   * @param authorizationContextHolder  the optional user context for retrieving current user information
    */
   public UsersServiceImpl(
       final PasswordEncoder passwordEncoder,
       final UserRepository usersRepository,
-      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       final DetailsProviderService detailsProviderService,
       final UserRoleRelevanceRepository userRoleRelevanceRepository
   ) {
-    super(usersRepository, authorizationContextHolder, detailsProviderService);
+    super(usersRepository, detailsProviderService);
     this.passwordEncoder = passwordEncoder;
     this.userRoleRelevanceRepository = userRoleRelevanceRepository;
   }

@@ -138,4 +138,9 @@ public interface BaseRepository<T extends BaseEntity<I>, I extends Serializable>
    * @return count
    */
   <S extends T> long count(S example);
+
+  /**
+   * Enables the tenant filter for the current session, allowing queries to be filtered by the specified tenant ID.
+   */
+  void enableTenantFilter();
 }

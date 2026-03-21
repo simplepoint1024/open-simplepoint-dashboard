@@ -29,7 +29,7 @@ import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 @Data
 @Entity
 @EqualsAndHashCode(callSuper = true)
-@Table(name = "auth_permissions_role_rel")
+@Table(name = "simpoint_ac_permissions_role_rel")
 @Schema(title = "角色权限关联实体", description = "表示RBAC系统中角色与权限之间的关联关系")
 public class RolePermissionsRelevance extends TenantBaseEntityImpl<String> implements BaseRolePermissionsRelevance {
 

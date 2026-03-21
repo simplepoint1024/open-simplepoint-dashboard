@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,7 +13,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
@@ -25,11 +24,7 @@ import org.springframework.core.annotation.Order;
 @Data
 @Entity
 @Table(
-    name = "auth_applications",
-    indexes = {
-        @Index(name = "idx_auth_applications_code", columnList = "code"),
-        @Index(name = "idx_auth_applications_tenant_id", columnList = "tenant_id")
-    }
+    name = "simpoint_saas_applications"
 )
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
@@ -62,13 +57,23 @@ import org.springframework.core.annotation.Order;
         argumentMaxSize = 10,
         danger = true,
         authority = "applications.delete"
+    ),
+    @ButtonDeclaration(
+        title = "配置功能",
+        key = "config.feature",
+        color = "orange",
+        icon = Icons.SAFETY_OUTLINED,
+        sort = 3,
+        argumentMinSize = 1,
+        argumentMaxSize = 1,
+        authority = "applications.config.feature"
     )
 })
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "应用对象", description = "用于管理租户下的应用")
 @Schema(title = "应用对象", description = "用于管理租户下的应用")
-public class Application extends TenantBaseEntityImpl<String> {
+public class Application extends BaseEntityImpl<String> {
 
   /**
    * The display name of the application.

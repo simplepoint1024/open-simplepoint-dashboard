@@ -23,7 +23,7 @@ import org.springframework.core.annotation.Order;
  */
 @Data
 @Entity
-@Table(name = "auth_tenants")
+@Table(name = "simpoint_saas_tenants")
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
     @ButtonDeclaration(
@@ -55,6 +55,16 @@ import org.springframework.core.annotation.Order;
         argumentMaxSize = 10,
         danger = true,
         authority = "tenants.delete"
+    ),
+    @ButtonDeclaration(
+        title = "配置套餐",
+        key = "config.package",
+        color = "orange",
+        icon = Icons.SAFETY_OUTLINED,
+        sort = 3,
+        argumentMinSize = 1,
+        argumentMaxSize = 1,
+        authority = "tenants.config.package"
     )
 })
 @NoArgsConstructor
@@ -99,4 +109,28 @@ public class Tenant extends BaseEntityImpl<String> {
   )
   @Column(length = 512)
   private String description;
+
+  /**
+   * The version of the tenant's permissions.
+   * This field is used for optimistic locking to prevent concurrent modifications of permissions.
+   */
+  @Column(nullable = false)
+  @Schema(
+      title = "i18n:tenants.title.permissionVersion",
+      description = "i18n:tenants.description.permissionVersion",
+      example = "0",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "false"),
+          })
+      }
+  )
+  private Long permissionVersion;
+
+  /**
+   * The ID of the tenant owner.
+   * This field is used to identify the user who owns the tenant and has administrative privileges over it.
+   */
+  @Column(nullable = false)
+  private String ownerId;
 }

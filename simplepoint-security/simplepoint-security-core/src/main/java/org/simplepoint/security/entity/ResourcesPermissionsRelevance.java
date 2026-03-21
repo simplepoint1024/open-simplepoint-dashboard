@@ -16,7 +16,7 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
  */
 @Data
 @Entity
-@Table(name = "auth_resources_rel")
+@Table(name = "simpoint_ac_resources_rel")
 @EqualsAndHashCode(callSuper = true)
 public class ResourcesPermissionsRelevance extends BaseEntityImpl<String> implements BaseRolePermissionsRelevance {
 

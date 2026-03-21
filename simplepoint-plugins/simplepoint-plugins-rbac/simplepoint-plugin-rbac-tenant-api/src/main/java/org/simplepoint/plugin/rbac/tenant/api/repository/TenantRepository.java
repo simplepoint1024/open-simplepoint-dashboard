@@ -1,5 +1,6 @@
 package org.simplepoint.plugin.rbac.tenant.api.repository;
 
+import java.util.Collection;
 import java.util.Set;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
@@ -19,4 +20,19 @@ public interface TenantRepository extends BaseRepository<Tenant, String> {
    * @return a set of NamedTenantVo objects representing the tenants associated with the user
    */
   Set<NamedTenantVo> getTenantsByUserId(String userId);
+
+  /**
+   * Retrieves the permission version for a given tenant ID.
+   *
+   * @param tenantId the ID of the tenant for which to retrieve the permission version
+   * @return the permission version as a String
+   */
+  Long getTenantPermissionVersion(String tenantId);
+
+  /**
+   * Increments the permission version for the specified tenants.
+   *
+   * @param tenantIds the tenant IDs to refresh
+   */
+  void increasePermissionVersion(Collection<String> tenantIds);
 }

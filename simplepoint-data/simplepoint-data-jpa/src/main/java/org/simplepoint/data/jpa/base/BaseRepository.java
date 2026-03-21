@@ -16,4 +16,5 @@ import org.springframework.data.repository.Repository;
 @NoRepositoryBean
 public interface BaseRepository<T extends BaseEntityImpl<I>, I extends Serializable>
     extends org.simplepoint.api.base.BaseRepository<T, I>, Repository<T, I> {
+
 }

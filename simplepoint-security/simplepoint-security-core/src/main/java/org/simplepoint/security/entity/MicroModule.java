@@ -12,7 +12,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 
@@ -27,7 +27,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
  */
 @Data
 @Entity
-@Table(name = "auth_micro_modules")
+@Table(name = "simpoint_ac_micro_modules")
 @ButtonDeclarations({
     @ButtonDeclaration(
         title = PublicButtonKeys.ADD_TITLE,
@@ -63,7 +63,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(title = "微模块对象", description = "用于加载微前端远程模块")
-public class MicroModule extends TenantBaseEntityImpl<String> {
+public class MicroModule extends BaseEntityImpl<String> {
 
   @Column(nullable = false)
   @Schema(title = "i18n:micro.module.title.displayName",

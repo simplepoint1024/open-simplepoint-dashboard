@@ -9,7 +9,6 @@
 package org.simplepoint.plugin.rbac.core.service.impl;
 
 import org.simplepoint.api.security.service.DetailsProviderService;
-import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.PermissionsRepository;
@@ -38,10 +37,9 @@ public class PermissionsServiceImpl
    */
   public PermissionsServiceImpl(
       PermissionsRepository repository,
-      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       DetailsProviderService detailsProviderService
   ) {
-    super(repository, authorizationContextHolder, detailsProviderService);
+    super(repository, detailsProviderService);
   }
 
   /**

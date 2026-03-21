@@ -1,5 +1,6 @@
 package org.simplepoint.core;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -12,7 +13,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
  * An interface representing the authorization context, providing methods to retrieve authorization-related information for the current user.
  */
 @Getter
-public class AuthorizationContext {
+public class AuthorizationContext implements Serializable {
   private String contextId;
   private String userId;
   private Boolean isAdministrator;

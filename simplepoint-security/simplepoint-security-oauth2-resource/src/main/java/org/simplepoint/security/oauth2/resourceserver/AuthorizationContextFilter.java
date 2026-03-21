@@ -5,12 +5,12 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.RequestContextHolder;
 import org.simplepoint.security.context.AuthorizationContextResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -26,16 +26,13 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
 
   private final AuthorizationContextResolver authorizationContextResolver;
 
-  private final HttpServletRequest servletRequest;
-
   /**
    * Constructs an AuthorizationContextFilter with the specified AuthorizationContextResolver.
    *
    * @param authorizationContextResolver the AuthorizationContextResolver used to resolve the authorization context for incoming requests
    */
-  public AuthorizationContextFilter(AuthorizationContextResolver authorizationContextResolver, HttpServletRequest servletRequest) {
+  public AuthorizationContextFilter(AuthorizationContextResolver authorizationContextResolver) {
     this.authorizationContextResolver = authorizationContextResolver;
-    this.servletRequest = servletRequest;
   }
 
   /**
@@ -57,9 +54,9 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
     try {
       // 这里先给一个最小可工作的实现：如果没有 session 就不主动创建。
       // 真实场景建议：从 JWT claim / 远程权限缓存 / header 等解析出 userId、permissions。
-      HttpSession session = request.getSession();
-      String contextId = session != null ? session.getId() : null;
-      if (contextId != null && !contextId.isBlank()) {
+      String contextId = request.getHeader("X-Context-Id");
+      String tenantId = request.getHeader("X-Tenant-Id");
+      if ((contextId != null && !contextId.isBlank()) || (tenantId != null && !tenantId.isBlank())) {
         AuthorizationContext ctx = authorizationContextResolver.load(contextId);
         if (ctx == null) {
           Enumeration<String> headerNames = request.getHeaderNames();
@@ -68,17 +65,23 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
             String headerName = headerNames.nextElement();
             headers.put(headerName, request.getHeader(headerName));
           }
-          headers.put("X-Context-Id", contextId);
-          headers.put("X-Tenant-Id", "default");
+          if (contextId != null && !contextId.isBlank()) {
+            headers.put("X-Context-Id", contextId);
+          }
+          if (tenantId != null && !tenantId.isBlank()) {
+            headers.put("X-Tenant-Id", tenantId);
+          }
           ctx = authorizationContextResolver.resolve(headers);
         }
-        ServletAuthorizationContextHolder.set(ctx);
+        if (ctx != null) {
+          RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, ctx);
+        }
       }
 
       filterChain.doFilter(request, response);
     } finally {
       // 避免 request 重用/二次 dispatch 带来脏数据
-      ServletAuthorizationContextHolder.clear();
+      RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
     }
   }
 }

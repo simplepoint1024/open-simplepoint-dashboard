@@ -2,12 +2,15 @@ package org.simplepoint.plugin.rbac.tenant.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Package;
+import org.simplepoint.plugin.rbac.tenant.api.entity.PackageApplicationRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.PackageApplicationsRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.service.PackageService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * PackageController is a REST controller that handles HTTP requests related to packages.
  */
 @RestController
-@RequestMapping("/packages")
+@RequestMapping({"/packages", "/platform/packages"})
 @Tag(name = "套餐包管理", description = "用于管理租户下的套餐包")
 public class PackageController extends BaseController<PackageService, Package, String> {
 
@@ -78,5 +81,34 @@ public class PackageController extends BaseController<PackageService, Package, S
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);
+  }
+
+  @GetMapping("/items")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.config.package') or hasAuthority('packages.config.application')")
+  @Operation(summary = "获取套餐候选列表", description = "获取用于租户套餐配置的套餐候选列表")
+  public Response<Page<Package>> items(Pageable pageable) {
+    return ok(service.limit(Map.of(), pageable));
+  }
+
+  @GetMapping("/authorized")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('packages.config.application')")
+  @Operation(summary = "获取套餐已分配应用", description = "获取指定套餐已授权的应用编码列表")
+  public Response<Collection<String>> authorized(@RequestParam("packageCode") String packageCode) {
+    return ok(service.authorizedApplications(packageCode));
+  }
+
+  @PostMapping("/authorize")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('packages.config.application')")
+  @Operation(summary = "配置套餐应用", description = "为指定套餐分配应用编码")
+  public Response<Collection<PackageApplicationRelevance>> authorize(@RequestBody PackageApplicationsRelevanceDto dto) {
+    return ok(service.authorizeApplications(dto));
+  }
+
+  @PostMapping("/unauthorized")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('packages.config.application')")
+  @Operation(summary = "取消套餐应用", description = "取消指定套餐已分配的应用编码")
+  public Response<Void> unauthorized(@RequestBody PackageApplicationsRelevanceDto dto) {
+    service.unauthorizedApplications(dto.getPackageCode(), dto.getApplicationCodes());
+    return Response.okay();
   }
 }

@@ -2,12 +2,15 @@ package org.simplepoint.plugin.rbac.tenant.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Feature;
+import org.simplepoint.plugin.rbac.tenant.api.entity.FeaturePermissionRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.FeaturePermissionsRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.service.FeatureService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * FeatureController is a REST controller that handles HTTP requests related to features.
  */
 @RestController
-@RequestMapping("/features")
+@RequestMapping({"/features", "/platform/features"})
 @Tag(name = "功能管理", description = "用于管理系统中的功能特性")
 public class FeatureController extends BaseController<FeatureService, Feature, String> {
 
@@ -78,5 +81,34 @@ public class FeatureController extends BaseController<FeatureService, Feature, S
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);
+  }
+
+  @GetMapping("/items")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature') or hasAuthority('features.config.permission')")
+  @Operation(summary = "获取功能候选列表", description = "获取用于应用功能配置的功能候选列表")
+  public Response<Page<Feature>> items(Pageable pageable) {
+    return ok(service.limit(Map.of(), pageable));
+  }
+
+  @GetMapping("/authorized")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('features.config.permission')")
+  @Operation(summary = "获取功能已分配权限", description = "获取指定功能已授权的权限标识列表")
+  public Response<Collection<String>> authorized(@RequestParam("featureCode") String featureCode) {
+    return ok(service.authorizedPermissions(featureCode));
+  }
+
+  @PostMapping("/authorize")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('features.config.permission')")
+  @Operation(summary = "配置功能权限", description = "为指定功能分配权限标识")
+  public Response<Collection<FeaturePermissionRelevance>> authorize(@RequestBody FeaturePermissionsRelevanceDto dto) {
+    return ok(service.authorizePermissions(dto));
+  }
+
+  @PostMapping("/unauthorized")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('features.config.permission')")
+  @Operation(summary = "取消功能权限", description = "取消指定功能已分配的权限标识")
+  public Response<Void> unauthorized(@RequestBody FeaturePermissionsRelevanceDto dto) {
+    service.unauthorizedPermissions(dto.getFeatureCode(), dto.getPermissionAuthority());
+    return Response.okay();
   }
 }
