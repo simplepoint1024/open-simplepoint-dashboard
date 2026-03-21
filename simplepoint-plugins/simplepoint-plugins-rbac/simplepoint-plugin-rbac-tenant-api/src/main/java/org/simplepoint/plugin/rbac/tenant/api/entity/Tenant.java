@@ -131,6 +131,17 @@ public class Tenant extends BaseEntityImpl<String> {
    * The ID of the tenant owner.
    * This field is used to identify the user who owns the tenant and has administrative privileges over it.
    */
+  @Order(2)
+  @Schema(
+      title = "i18n:tenants.title.ownerId",
+      description = "i18n:tenants.description.ownerId",
+      example = "admin",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "false"),
+          })
+      }
+  )
   @Column(nullable = false)
   private String ownerId;
 }

@@ -5,8 +5,13 @@ import java.util.Set;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantPackagesRelevanceDto;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
+import org.simplepoint.plugin.rbac.tenant.api.vo.UserRelevanceVo;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * TenantService is an interface that defines methods for managing tenant-related operations.
@@ -62,4 +67,45 @@ public interface TenantService extends BaseService<Tenant, String> {
    * @param packageCodes package codes to remove
    */
   void unauthorizedPackages(String tenantId, Set<String> packageCodes);
+
+  /**
+   * Loads owner candidates for tenant forms.
+   *
+   * @param pageable pageable
+   * @return owner candidates
+   */
+  Page<UserRelevanceVo> ownerItems(Pageable pageable);
+
+  /**
+   * Loads user candidates for the specified tenant member configuration.
+   *
+   * @param tenantId tenant identifier
+   * @param pageable pageable
+   * @return tenant member candidates
+   */
+  Page<UserRelevanceVo> userItems(String tenantId, Pageable pageable);
+
+  /**
+   * Loads tenant members for the specified tenant.
+   *
+   * @param tenantId tenant identifier
+   * @return member user ids
+   */
+  Collection<String> authorizedUsers(String tenantId);
+
+  /**
+   * Adds tenant members.
+   *
+   * @param dto tenant user dto
+   * @return saved tenant user relations
+   */
+  Collection<TenantUserRelevance> authorizeUsers(TenantUsersRelevanceDto dto);
+
+  /**
+   * Removes tenant members.
+   *
+   * @param tenantId tenant identifier
+   * @param userIds user ids to remove
+   */
+  void unauthorizedUsers(String tenantId, Set<String> userIds);
 }

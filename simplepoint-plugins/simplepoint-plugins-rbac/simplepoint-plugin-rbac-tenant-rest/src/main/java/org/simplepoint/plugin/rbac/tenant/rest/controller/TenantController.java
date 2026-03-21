@@ -10,9 +10,12 @@ import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantPackagesRelevanceDto;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
+import org.simplepoint.plugin.rbac.tenant.api.vo.UserRelevanceVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -120,6 +123,42 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
   @Operation(summary = "计算权限上下文ID", description = "根据提供的租户ID，计算并返回权限上下文ID")
   public Response<String> calculatePermissionContextId(@RequestParam(name = "tenantId", required = false) String tenantId) {
     return ok(service.calculatePermissionContextId(tenantId));
+  }
+
+  @GetMapping("/owners/items")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.create') or hasAuthority('tenants.edit')")
+  @Operation(summary = "获取租户所有者候选项", description = "分页返回可用于选择租户所有者的用户列表")
+  public Response<Page<UserRelevanceVo>> ownerItems(Pageable pageable) {
+    return ok(service.ownerItems(pageable));
+  }
+
+  @GetMapping("/users/items")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "获取租户成员候选项", description = "分页返回指定租户可配置的成员候选用户列表")
+  public Response<Page<UserRelevanceVo>> userItems(@RequestParam("tenantId") String tenantId, Pageable pageable) {
+    return ok(service.userItems(tenantId, pageable));
+  }
+
+  @GetMapping("/users/authorized")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "获取租户已邀请成员", description = "获取指定租户当前已加入的成员用户ID列表")
+  public Response<Collection<String>> authorizedUsers(@RequestParam("tenantId") String tenantId) {
+    return ok(service.authorizedUsers(tenantId));
+  }
+
+  @PostMapping("/users/authorize")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "邀请用户加入租户", description = "向指定租户添加成员用户")
+  public Response<Collection<TenantUserRelevance>> authorizeUsers(@RequestBody TenantUsersRelevanceDto dto) {
+    return ok(service.authorizeUsers(dto));
+  }
+
+  @PostMapping("/users/unauthorized")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "移出租户成员", description = "从指定租户中移除成员用户")
+  public Response<Void> unauthorizedUsers(@RequestBody TenantUsersRelevanceDto dto) {
+    service.unauthorizedUsers(dto.getTenantId(), dto.getUserIds());
+    return Response.okay();
   }
 
   @GetMapping("/authorized")

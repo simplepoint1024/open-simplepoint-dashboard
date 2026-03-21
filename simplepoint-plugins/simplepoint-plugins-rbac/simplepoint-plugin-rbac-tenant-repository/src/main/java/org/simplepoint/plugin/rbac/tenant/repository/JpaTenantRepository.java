@@ -24,9 +24,13 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
   @Query("""
       select
           new org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo(t.id, t.name)
-      from TenantUserRelevance utr
-      join Tenant t on utr.tenantId = t.id
-      where utr.userId = :userId
+      from Tenant t
+      where t.ownerId = :userId
+         or exists (
+             select utr.id
+             from TenantUserRelevance utr
+             where utr.tenantId = t.id and utr.userId = :userId
+         )
       """)
   Set<NamedTenantVo> getTenantsByUserId(@Param("userId") String userId);
 
@@ -42,4 +46,20 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
       where t.id in :tenantIds
       """)
   void increasePermissionVersion(@Param("tenantIds") Collection<String> tenantIds);
+
+  @Override
+  @Query("""
+      select case when count(t) > 0 then true else false end
+      from Tenant t
+      where t.id = :tenantId
+        and (
+            t.ownerId = :userId
+            or exists (
+                select utr.id
+                from TenantUserRelevance utr
+                where utr.tenantId = t.id and utr.userId = :userId
+            )
+        )
+      """)
+  boolean hasUser(@Param("tenantId") String tenantId, @Param("userId") String userId);
 }
