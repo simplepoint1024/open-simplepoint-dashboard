@@ -5,7 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 
 /**
  * Represents the relationship between menus and permissions in the
@@ -16,9 +16,9 @@ import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Entity
-@Table(name = "auth_permissions_menu_rel")
+@Table(name = "simpoint_ac_permissions_menu_rel")
 @Schema(title = "角色权限关联实体", description = "表示RBAC系统中角色与权限之间的关联关系")
-public class MenuPermissionsRelevance extends TenantBaseEntityImpl<String> {
+public class MenuPermissionsRelevance extends BaseEntityImpl<String> {
 
   private String menuId;
 

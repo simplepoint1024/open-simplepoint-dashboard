@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
@@ -23,7 +23,7 @@ import org.springframework.core.annotation.Order;
  */
 @Data
 @Entity
-@Table(name = "i18n_regions")
+@Table(name = "simpoint_i18n_regions")
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
     @ButtonDeclaration(
@@ -60,7 +60,7 @@ import org.springframework.core.annotation.Order;
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "区域对象", description = "用于管理系统中的区域")
-public class Region extends TenantBaseEntityImpl<String> {
+public class Region extends BaseEntityImpl<String> {
 
   /**
    * The English name of the region.

@@ -39,7 +39,6 @@ import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -62,8 +61,6 @@ public class BaseServiceImpl
 
   private final R repository;
 
-  private final AuthorizationContextHolder authorizationContextHolder;
-
   private final DetailsProviderService detailsProviderService;
 
 
@@ -71,17 +68,14 @@ public class BaseServiceImpl
    * Constructs a new BaseServiceImpl instance with the specified repository,
    * authorization context holder, and details provider service.
    *
-   * @param repository                 the repository for managing entities
-   * @param authorizationContextHolder the holder for authorization context (optional)
-   * @param detailsProviderService     the service for providing details such as JSON schema generation
+   * @param repository             the repository for managing entities
+   * @param detailsProviderService the service for providing details such as JSON schema generation
    */
   public BaseServiceImpl(
       final R repository,
-      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       final DetailsProviderService detailsProviderService
   ) {
     this.repository = repository;
-    this.authorizationContextHolder = authorizationContextHolder;
     this.detailsProviderService = detailsProviderService;
   }
 
@@ -443,9 +437,6 @@ public class BaseServiceImpl
    * @throws IllegalStateException if the AuthorizationContextHolder is null
    */
   public AuthorizationContext getAuthorizationContext() {
-    if (authorizationContextHolder == null) {
-      throw new IllegalStateException("AuthorizationContextHolder is null");
-    }
-    return authorizationContextHolder.getAuthorizationContext();
+    return AuthorizationContextHolder.getContext();
   }
 }

@@ -15,7 +15,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
@@ -26,11 +26,7 @@ import org.springframework.core.annotation.Order;
 @Data
 @Entity
 @Table(
-    name = "auth_packages",
-    indexes = {
-        @Index(name = "idx_auth_packages_code", columnList = "code"),
-        @Index(name = "idx_auth_packages_tenant_id", columnList = "tenant_id")
-    }
+    name = "simpoint_saas_packages"
 )
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
@@ -63,13 +59,23 @@ import org.springframework.core.annotation.Order;
         argumentMaxSize = 10,
         danger = true,
         authority = "packages.delete"
+    ),
+    @ButtonDeclaration(
+        title = "配置应用",
+        key = "config.application",
+        color = "orange",
+        icon = Icons.SAFETY_OUTLINED,
+        sort = 3,
+        argumentMinSize = 1,
+        argumentMaxSize = 1,
+        authority = "packages.config.application"
     )
 })
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "套餐包对象", description = "用于管理租户下的套餐包")
 @Schema(title = "套餐包对象", description = "用于管理租户下的套餐包")
-public class Package extends TenantBaseEntityImpl<String> {
+public class Package extends BaseEntityImpl<String> {
 
   /**
    * The display name of the package.

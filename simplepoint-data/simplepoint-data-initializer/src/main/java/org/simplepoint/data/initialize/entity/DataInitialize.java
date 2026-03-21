@@ -3,6 +3,7 @@ package org.simplepoint.data.initialize.entity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
+import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import lombok.Data;
@@ -17,6 +18,7 @@ import org.simplepoint.data.initialize.entity.id.DataInitializeId;
 @Entity
 @DynamicUpdate
 @DynamicInsert
+@Table(name = "simpoint_infra_data_initialize")
 @IdClass(DataInitializeId.class)
 public class DataInitialize implements Serializable {
   public static final Integer STATUS_INIT = 0;

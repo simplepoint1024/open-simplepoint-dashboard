@@ -24,7 +24,7 @@ import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
  */
 @Data
 @Entity
-@Table(name = "auth_user_role_rel")
+@Table(name = "simpoint_ac_user_role_rel")
 @EqualsAndHashCode(callSuper = true)
 @Schema(title = "用户角色关联对象", description = "用于定义用户与角色之间的关联关系")
 public class UserRoleRelevance extends TenantBaseEntityImpl<String> implements BaseUserRoleRelevance {

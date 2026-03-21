@@ -47,7 +47,7 @@ import org.springframework.security.core.GrantedAuthority;
  */
 @Data
 @Entity
-@Table(name = "auth_users", indexes = {
+@Table(name = "simpoint_ac_users", indexes = {
     @Index(name = "idx_email", columnList = "email"),
     @Index(name = "idx_phone", columnList = "phone_number")
 })

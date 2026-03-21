@@ -14,7 +14,6 @@ import java.util.Set;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
@@ -48,11 +47,10 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
    */
   public RolesServiceImpl(
       RoleRepository repository,
-      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       DetailsProviderService detailsProviderService,
       RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository
   ) {
-    super(repository, authorizationContextHolder, detailsProviderService);
+    super(repository, detailsProviderService);
     this.rolePermissionsRelevanceRepository = rolePermissionsRelevanceRepository;
   }
 

@@ -2,12 +2,15 @@ package org.simplepoint.plugin.rbac.tenant.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantPackagesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.springframework.data.domain.Page;
@@ -26,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  * TenantController is a REST controller that handles HTTP requests related to tenants.
  */
 @RestController
-@RequestMapping("/tenants")
+@RequestMapping({"/tenants", "/platform/tenants"})
 @Tag(name = "租户管理", description = "用于管理系统中的租户")
 public class TenantController extends BaseController<TenantService, Tenant, String> {
 
@@ -94,10 +97,50 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
     return ok(idSet);
   }
 
+  /**
+   * Retrieves the tenants associated with the currently authenticated user.
+   *
+   * @return a set of NamedTenantVo representing the tenants associated with the current user
+   */
   @GetMapping("/current")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "获取当前用户的租户", description = "获取当前认证用户所属的租户列表")
   public Response<Set<NamedTenantVo>> getCurrentUserTenants() {
     return ok(service.getCurrentUserTenants());
+  }
+
+  /**
+   * Calculates the permission context ID for a given tenant ID.
+   *
+   * @param tenantId the ID of the tenant for which to calculate the permission context ID
+   * @return the calculated permission context ID as a String
+   */
+  @GetMapping("/permission-context-id")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "计算权限上下文ID", description = "根据提供的租户ID，计算并返回权限上下文ID")
+  public Response<String> calculatePermissionContextId(@RequestParam(name = "tenantId", required = false) String tenantId) {
+    return ok(service.calculatePermissionContextId(tenantId));
+  }
+
+  @GetMapping("/authorized")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.config.package')")
+  @Operation(summary = "获取租户已分配套餐", description = "获取指定租户已授权的套餐编码列表")
+  public Response<Collection<String>> authorized(@RequestParam("tenantId") String tenantId) {
+    return ok(service.authorizedPackages(tenantId));
+  }
+
+  @PostMapping("/authorize")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.config.package')")
+  @Operation(summary = "配置租户套餐", description = "为指定租户分配套餐编码")
+  public Response<Collection<TenantPackageRelevance>> authorize(@RequestBody TenantPackagesRelevanceDto dto) {
+    return ok(service.authorizePackages(dto));
+  }
+
+  @PostMapping("/unauthorized")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.config.package')")
+  @Operation(summary = "取消租户套餐", description = "取消指定租户已分配的套餐编码")
+  public Response<Void> unauthorized(@RequestBody TenantPackagesRelevanceDto dto) {
+    service.unauthorizedPackages(dto.getTenantId(), dto.getPackageCodes());
+    return Response.okay();
   }
 }

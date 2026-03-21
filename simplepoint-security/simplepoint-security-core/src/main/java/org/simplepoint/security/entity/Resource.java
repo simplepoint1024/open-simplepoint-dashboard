@@ -15,7 +15,7 @@ import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
  */
 @Data
 @Entity
-@Table(name = "auth_resources")
+@Table(name = "simpoint_ac_resources")
 @EqualsAndHashCode(callSuper = true)
 public class Resource extends BaseEntityImpl<String> {
   /**

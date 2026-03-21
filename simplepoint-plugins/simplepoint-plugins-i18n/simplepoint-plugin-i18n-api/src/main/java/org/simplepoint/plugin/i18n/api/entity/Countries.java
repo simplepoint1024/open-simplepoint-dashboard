@@ -14,7 +14,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
-import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
@@ -24,7 +24,7 @@ import org.springframework.core.annotation.Order;
  */
 @Data
 @Entity
-@Table(name = "i18n_countries")
+@Table(name = "simpoint_i18n_countries")
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
     @ButtonDeclaration(
@@ -61,7 +61,7 @@ import org.springframework.core.annotation.Order;
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "国家对象", description = "用于管理系统中的国家")
-public class Countries extends TenantBaseEntityImpl<String> {
+public class Countries extends BaseEntityImpl<String> {
 
   /**
    * The English name of the country.

@@ -3,7 +3,6 @@ package org.simplepoint.plugin.i18n.service.impl;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.plugin.i18n.api.entity.Namespace;
 import org.simplepoint.plugin.i18n.api.repository.I18nNamespaceRepository;
 import org.simplepoint.plugin.i18n.api.service.I18nNamespaceService;
@@ -27,8 +26,7 @@ public class I18nNamespaceServiceImpl extends BaseServiceImpl<I18nNamespaceRepos
    */
   public I18nNamespaceServiceImpl(
       I18nNamespaceRepository repository,
-      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       DetailsProviderService detailsProviderService) {
-    super(repository, authorizationContextHolder, detailsProviderService);
+    super(repository, detailsProviderService);
   }
 }

@@ -2,12 +2,15 @@ package org.simplepoint.plugin.rbac.tenant.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Application;
+import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationFeatureRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationFeaturesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.service.ApplicationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * ApplicationController is a REST controller that handles HTTP requests related to applications.
  */
 @RestController
-@RequestMapping("/applications")
+@RequestMapping({"/applications", "/platform/applications"})
 @Tag(name = "应用管理", description = "用于管理租户下的应用")
 public class ApplicationController extends BaseController<ApplicationService, Application, String> {
 
@@ -91,5 +94,34 @@ public class ApplicationController extends BaseController<ApplicationService, Ap
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);
+  }
+
+  @GetMapping("/items")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('packages.config.application') or hasAuthority('applications.config.feature')")
+  @Operation(summary = "获取应用候选列表", description = "获取用于套餐应用配置的应用候选列表")
+  public Response<Page<Application>> items(Pageable pageable) {
+    return ok(service.limit(Map.of(), pageable));
+  }
+
+  @GetMapping("/authorized")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature')")
+  @Operation(summary = "获取应用已分配功能", description = "获取指定应用已授权的功能编码列表")
+  public Response<Collection<String>> authorized(@RequestParam("applicationCode") String applicationCode) {
+    return ok(service.authorizedFeatures(applicationCode));
+  }
+
+  @PostMapping("/authorize")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature')")
+  @Operation(summary = "配置应用功能", description = "为指定应用分配功能编码")
+  public Response<Collection<ApplicationFeatureRelevance>> authorize(@RequestBody ApplicationFeaturesRelevanceDto dto) {
+    return ok(service.authorizeFeatures(dto));
+  }
+
+  @PostMapping("/unauthorized")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature')")
+  @Operation(summary = "取消应用功能", description = "取消指定应用已分配的功能编码")
+  public Response<Void> unauthorized(@RequestBody ApplicationFeaturesRelevanceDto dto) {
+    service.unauthorizedFeatures(dto.getApplicationCode(), dto.getFeatureCodes());
+    return Response.okay();
   }
 }

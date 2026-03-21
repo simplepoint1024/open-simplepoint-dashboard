@@ -130,11 +130,11 @@ public class PermissionsController extends BaseController<PermissionsService, Pe
   @PreAuthorize(
       """
           hasRole('Administrator') or hasAuthority('menus.config.permission') or hasAuthority('roles.config.permission')
+          or hasAuthority('features.config.permission')
           """
   )
   public Response<Page<PermissionsRelevanceVo>> items(Pageable pageable) {
     return ok(service.permissionItems(pageable));
   }
 }
-
 

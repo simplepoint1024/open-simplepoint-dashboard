@@ -23,7 +23,7 @@ import org.springframework.core.annotation.Order;
  */
 @Data
 @Entity
-@Table(name = "auth_features")
+@Table(name = "simpoint_saas_features")
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
     @ButtonDeclaration(
@@ -55,6 +55,16 @@ import org.springframework.core.annotation.Order;
         argumentMaxSize = 10,
         danger = true,
         authority = "features.delete"
+    ),
+    @ButtonDeclaration(
+        title = "配置权限",
+        key = "config.permission",
+        color = "orange",
+        icon = Icons.SAFETY_OUTLINED,
+        sort = 3,
+        argumentMinSize = 1,
+        argumentMaxSize = 1,
+        authority = "features.config.permission"
     )
 })
 @NoArgsConstructor

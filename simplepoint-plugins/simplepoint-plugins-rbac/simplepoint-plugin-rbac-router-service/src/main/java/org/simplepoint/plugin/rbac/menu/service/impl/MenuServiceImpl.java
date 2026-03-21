@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.service.DetailsProviderService;
-import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.data.initialize.DataInitializeExecutor;
@@ -71,7 +70,6 @@ public class MenuServiceImpl
    * Constructs a MenuServiceImpl with the specified dependencies.
    *
    * @param repository                         the MenuRepository for data access
-   * @param authorizationContextHolder         the AuthorizationContextHolder for security context management
    * @param detailsProviderService             the DetailsProviderService for user details retrieval
    * @param menuAncestorRepository             the MenuAncestorRepository for managing menu ancestor relationships
    * @param permissionsService                 the PermissionsService for managing permissions
@@ -80,14 +78,13 @@ public class MenuServiceImpl
    */
   public MenuServiceImpl(
       final MenuRepository repository,
-      final AuthorizationContextHolder authorizationContextHolder,
       final DetailsProviderService detailsProviderService,
       final MenuAncestorRepository menuAncestorRepository,
       final PermissionsService permissionsService,
       final MenuPermissionsRelevanceRepository menuPermissionsRelevanceRepository,
       final DataInitializeExecutor dataInitializeManager
   ) {
-    super(repository, authorizationContextHolder, detailsProviderService);
+    super(repository, detailsProviderService);
     this.menuAncestorRepository = menuAncestorRepository;
     this.permissionsService = permissionsService;
     this.menuPermissionsRelevanceRepository = menuPermissionsRelevanceRepository;

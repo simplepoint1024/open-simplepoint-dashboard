@@ -3,7 +3,6 @@ package org.simplepoint.plugin.i18n.service.impl;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
-import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.i18n.api.entity.Language;
 import org.simplepoint.plugin.i18n.api.repository.I18nLanguageRepository;
@@ -24,15 +23,13 @@ public class I18nLanguageServiceImpl extends BaseServiceImpl<I18nLanguageReposit
    * Constructs a BaseServiceImpl with the specified repository, user context, and details provider service.
    *
    * @param repository                 the repository to be used for entity operations
-   * @param authorizationContextHolder 用于访问与用户相关信息的用户上下文
    * @param detailsProviderService     the service providing additional details
    */
   public I18nLanguageServiceImpl(
       I18nLanguageRepository repository,
-      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       DetailsProviderService detailsProviderService
   ) {
-    super(repository, authorizationContextHolder, detailsProviderService);
+    super(repository, detailsProviderService);
   }
 
   @Override

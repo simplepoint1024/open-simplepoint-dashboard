@@ -25,7 +25,7 @@ import lombok.Data;
  */
 @Data
 @Entity
-@Table(name = "auth_oauth2_authorization")
+@Table(name = "simpoint_ac_oauth2_authorization")
 public class Authorization {
 
   /**

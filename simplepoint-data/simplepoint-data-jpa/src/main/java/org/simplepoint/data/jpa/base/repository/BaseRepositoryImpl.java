@@ -17,7 +17,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Session;
+import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.data.jpa.AttributeMatcher;
 import org.simplepoint.data.jpa.AttributeMatchers;
@@ -128,8 +132,6 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
   @Override
   @SuppressWarnings("unchecked")
   public <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
-//    Session session = entityManager.unwrap(Session.class);
-//    session.enableFilter("tenantFilter").setParameter("tenantId","0000");
     Specification<S> spec = this.readSpecification(attributes);
     Class<S> domainClass = (Class<S>) super.getDomainClass();
     var typedQuery = this.getQuery(spec, domainClass, pageable);
@@ -150,12 +152,14 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
    * @return the Specification object
    */
   protected <S extends T> Specification<S> readSpecification(Map<String, String> attributes) {
+    enableTenantFilter();
     return (root, query, criteriaBuilder) -> criteriaBuilder.and(
         getPredicates(attributes, root, query, criteriaBuilder, EscapeCharacter.DEFAULT));
   }
 
   @Override
   public <S extends T> long count(S example) {
+    enableTenantFilter();
     return super.count(Example.of(example));
   }
 
@@ -193,5 +197,21 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
       });
     }
     return predicates.toArray(new Predicate[0]);
+  }
+
+  @Override
+  public void enableTenantFilter() {
+    if (TenantBaseEntityImpl.class.isAssignableFrom(getDomainClass())) {
+      AuthorizationContext context = AuthorizationContextHolder.getContext();
+      if (context == null) {
+        return;
+      }
+      String tenantId = context.getAttribute("X-Tenant-Id");
+      if (tenantId == null || tenantId.isBlank()) {
+        return;
+      }
+      Session session = entityManager.unwrap(Session.class);
+      session.enableFilter("tenantFilter").setParameter("tenantId", tenantId);
+    }
   }
 }

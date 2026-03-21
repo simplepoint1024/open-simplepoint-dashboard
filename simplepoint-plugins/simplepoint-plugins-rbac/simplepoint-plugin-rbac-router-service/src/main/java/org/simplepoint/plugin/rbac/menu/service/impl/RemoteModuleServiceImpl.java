@@ -5,9 +5,7 @@ import java.util.Set;
 import org.hibernate.service.spi.ServiceException;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
-import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.rbac.menu.api.repository.RemoteModuleRepository;
 import org.simplepoint.plugin.rbac.menu.api.service.MicroAppService;
@@ -40,10 +38,9 @@ public class RemoteModuleServiceImpl
    */
   public RemoteModuleServiceImpl(
       RemoteModuleRepository repository,
-      @Autowired(required = false) final AuthorizationContextHolder authorizationContextHolder,
       DetailsProviderService detailsProviderService
   ) {
-    super(repository, authorizationContextHolder, detailsProviderService);
+    super(repository, detailsProviderService);
   }
 
   /**
