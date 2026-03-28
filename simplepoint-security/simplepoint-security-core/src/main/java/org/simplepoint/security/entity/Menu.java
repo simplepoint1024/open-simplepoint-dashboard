@@ -74,7 +74,7 @@ import org.springframework.core.annotation.Order;
         authority = "menus.delete"
     ),
     @ButtonDeclaration(
-        title = "i18n:menus.config.permission",
+        title = "i18n:menus.config.feature",
         key = "config.permission",
         color = "orange",
         icon = Icons.SAFETY_OUTLINED,

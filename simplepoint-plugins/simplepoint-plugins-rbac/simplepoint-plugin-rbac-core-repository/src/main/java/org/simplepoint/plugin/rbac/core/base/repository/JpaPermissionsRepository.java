@@ -15,7 +15,10 @@ import org.simplepoint.security.entity.Permissions;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.Collection;
 
 /**
  * Repository interface for managing Permissions entities.
@@ -24,9 +27,30 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface JpaPermissionsRepository extends BaseRepository<Permissions, String>,
-    PermissionsRepository {
+        PermissionsRepository {
 
-  @Override
-  @Query("select new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.id,p.name,p.authority,p.description) from Permissions p ")
-  Page<PermissionsRelevanceVo> permissionItems(Pageable pageable);
+    @Override
+    @Query("""
+                    select
+                    new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.id,p.name,p.authority,p.description,p.type)
+                    from Permissions p where p.authority in :permissions
+                    order by p.name asc, p.authority asc
+            """)
+    Collection<PermissionsRelevanceVo> permissionItems(@Param("permissions") Collection<String> permissions);
+
+    @Override
+    @Query("""
+                    select
+                    new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.id,p.name,p.authority,p.description,p.type)
+                    from Permissions p where p.authority in :permissions
+            """)
+    Page<PermissionsRelevanceVo> permissionItems(Pageable pageable, @Param("permissions") Collection<String> permissions);
+
+    @Override
+    @Query("""
+                    select
+                    new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.id,p.name,p.authority,p.description,p.type)
+                    from Permissions p
+            """)
+    Page<PermissionsRelevanceVo> permissionItemsAll(Pageable pageable);
 }

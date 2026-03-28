@@ -1,3 +1,11 @@
+plugins {
+    application
+}
+
+application {
+    mainClass.set("org.simplepoint.common.server.Common")
+}
+
 dependencies {
     implementation(project(":simplepoint-boot:simplepoint-boot-starter"))
     implementation(project(":simplepoint-boot:simplepoint-boot-config-consul-starter"))

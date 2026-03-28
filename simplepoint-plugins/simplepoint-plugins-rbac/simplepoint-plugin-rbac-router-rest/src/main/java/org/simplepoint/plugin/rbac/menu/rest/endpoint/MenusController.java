@@ -18,7 +18,7 @@ import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.TreeMenu;
-import org.simplepoint.security.pojo.dto.MenuPermissionsRelevanceDto;
+import org.simplepoint.security.pojo.dto.MenuFeaturesRelevanceDto;
 import org.simplepoint.security.pojo.dto.ServiceMenuResult;
 import org.simplepoint.security.service.MenuService;
 import org.springframework.data.domain.Page;
@@ -130,42 +130,41 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
   }
 
   /**
-   * Retrieves the authorized menu permissions based on the provided menu authority.
+   * Retrieves the feature codes bound to the specified menu.
    *
    * @param menuId the menu authority string
-   * @return a collection of authorized menu permission identifiers wrapped in {@link Response}
+   * @return a collection of feature codes wrapped in {@link Response}
    */
   @GetMapping("/authorized")
-  @Operation(summary = "获取已授权的菜单权限点", description = "获取指定角色已授权的菜单权限点")
+  @Operation(summary = "获取菜单已绑定功能", description = "获取指定菜单已绑定的功能编码列表")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('menus.config.permission')")
   public Response<Collection<String>> authorized(@RequestParam("menuId") String menuId) {
     return ok(service.authorized(menuId));
   }
 
   /**
-   * Assigns permissions to a menu.
+   * Assigns features to a menu.
    *
-   * @param dto the MenuPermissionsRelevanceDto containing menu and permissions information
-   * @return a collection of UserRoleRelevance representing the assigned permissions
+   * @param dto the MenuFeaturesRelevanceDto containing menu and feature information
    */
   @PostMapping("/authorize")
-  @Operation(summary = "为菜单分配权限", description = "为菜单分配权限点")
+  @Operation(summary = "为菜单绑定功能", description = "为菜单绑定功能编码")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('menus.config.permission')")
-  public Response<Void> authorize(@RequestBody MenuPermissionsRelevanceDto dto) {
+  public Response<Void> authorize(@RequestBody MenuFeaturesRelevanceDto dto) {
     service.authorize(dto);
     return Response.okay();
   }
 
   /**
-   * Revokes permissions from a menu.
+   * Removes features from a menu.
    *
-   * @param dto the MenuPermissionsRelevanceDto containing menu and permissions information
+   * @param dto the MenuFeaturesRelevanceDto containing menu and feature information
    * @return a success response indicating revocation completion
    */
   @PostMapping("/unauthorized")
-  @Operation(summary = "取消已授权的菜单权限", description = "取消菜单已分配的权限点")
+  @Operation(summary = "取消菜单功能绑定", description = "取消菜单已绑定的功能编码")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('menus.config.permission')")
-  public Response<Void> unauthorized(@RequestBody MenuPermissionsRelevanceDto dto) {
+  public Response<Void> unauthorized(@RequestBody MenuFeaturesRelevanceDto dto) {
     service.unauthorized(dto);
     return Response.okay();
   }

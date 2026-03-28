@@ -52,6 +52,15 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
   }
 
   @Override
+  public Collection<Feature> findAllByCodes(Collection<String> featureCodes) {
+    Set<String> normalizedCodes = normalizeCodes(featureCodes);
+    if (normalizedCodes.isEmpty()) {
+      return List.of();
+    }
+    return getRepository().findAllByCodes(normalizedCodes);
+  }
+
+  @Override
   @Transactional(rollbackFor = Exception.class)
   public Collection<FeaturePermissionRelevance> authorizePermissions(FeaturePermissionsRelevanceDto dto) {
     String featureCode = requireCode(dto.getFeatureCode(), "功能编码不能为空");

@@ -31,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.base.BaseEntity;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.api.base.BaseService;
+import org.simplepoint.api.base.TenantBaseEntity;
 import org.simplepoint.api.base.audit.ModifyDataAuditingService;
 import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.api.security.service.DetailsProviderService;
@@ -233,6 +234,7 @@ public class BaseServiceImpl
    */
   @Override
   public <S extends T> S create(S entity) {
+    applyCurrentTenantIdIfNecessary(entity);
     S save = repository.save(entity);
     getModifyDataAuditingServices().forEach(service -> service.save(Set.of(save), repository.getDomainClass()));
     return save;
@@ -246,6 +248,9 @@ public class BaseServiceImpl
    */
   @Override
   public List<T> create(Collection<T> entities) {
+    if (entities != null) {
+      entities.forEach(this::applyCurrentTenantIdIfNecessary);
+    }
     List<T> save = repository.saveAll(entities);
     getModifyDataAuditingServices().forEach(service -> service.save(save, repository.getDomainClass()));
     return save;
@@ -254,6 +259,29 @@ public class BaseServiceImpl
   @Override
   public void flush() {
     repository.flush();
+  }
+
+  protected void applyCurrentTenantIdIfNecessary(BaseEntity<?> entity) {
+    if (!(entity instanceof TenantBaseEntity<?> tenantEntity)) {
+      return;
+    }
+    String currentTenantId = currentTenantId();
+    if (currentTenantId != null && (tenantEntity.getTenantId() == null || tenantEntity.getTenantId().isBlank())) {
+      tenantEntity.setTenantId(currentTenantId);
+    }
+  }
+
+  protected String currentTenantId() {
+    AuthorizationContext authorizationContext = getAuthorizationContext();
+    if (authorizationContext == null) {
+      return null;
+    }
+    String tenantId = authorizationContext.getAttribute("X-Tenant-Id");
+    if (tenantId == null) {
+      return null;
+    }
+    String trimmed = tenantId.trim();
+    return trimmed.isEmpty() ? null : trimmed;
   }
 
   /**

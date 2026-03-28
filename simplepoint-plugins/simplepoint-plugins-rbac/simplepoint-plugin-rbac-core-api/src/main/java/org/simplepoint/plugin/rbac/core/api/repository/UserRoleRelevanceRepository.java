@@ -23,10 +23,11 @@ public interface UserRoleRelevanceRepository {
   /**
    * Remove specific authorities from a user identified by username.
    *
+   * @param tenantId    the tenant scope
    * @param userId    the username of the user
    * @param authorities a set of authorities to be removed from the user
    */
-  void unauthorized(String userId, Set<String> authorities);
+  void unauthorized(String tenantId, String userId, Set<String> authorities);
 
   /**
    * Load a user by their phone number or email address.

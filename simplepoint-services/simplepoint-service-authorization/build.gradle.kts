@@ -1,5 +1,9 @@
-plugins{
-    id("org.springframework.boot") version libs.versions.spring.boot.get() apply false
+plugins {
+    application
+}
+
+application {
+    mainClass.set("org.simplepoint.authorization.server.Authorization")
 }
 dependencies {
 
@@ -22,4 +26,7 @@ dependencies {
     // 加载路由菜单相关依赖，确保
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-repository"))
+
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-repository"))
 }

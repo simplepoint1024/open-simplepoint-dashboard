@@ -24,6 +24,14 @@ public interface FeatureService extends BaseService<Feature, String> {
   Collection<String> authorizedPermissions(String featureCode);
 
   /**
+   * Loads feature detail rows by codes.
+   *
+   * @param featureCodes feature codes
+   * @return matched feature rows
+   */
+  Collection<Feature> findAllByCodes(Collection<String> featureCodes);
+
+  /**
    * Assigns permissions to the feature.
    *
    * @param dto feature permission dto

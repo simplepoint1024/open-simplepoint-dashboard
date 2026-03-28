@@ -2,11 +2,13 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.repository.FeaturePermissionRelevanceRepository;
+import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.security.context.AuthorizationContextService;
 import org.simplepoint.security.entity.User;
@@ -25,6 +27,7 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
 
   private final UsersService usersService;
   private final ObjectProvider<FeaturePermissionRelevanceRepository> featurePermissionRelevanceRepositoryProvider;
+  private final ObjectProvider<TenantPackageRelevanceRepository> tenantPackageRelevanceRepositoryProvider;
   private final ObjectProvider<TenantRepository> tenantRepositoryProvider;
 
   /**
@@ -35,23 +38,31 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
   public AuthorizationContextServiceImpl(
       UsersService usersService,
       ObjectProvider<FeaturePermissionRelevanceRepository> featurePermissionRelevanceRepositoryProvider,
+      ObjectProvider<TenantPackageRelevanceRepository> tenantPackageRelevanceRepositoryProvider,
       ObjectProvider<TenantRepository> tenantRepositoryProvider
   ) {
     this.usersService = usersService;
     this.featurePermissionRelevanceRepositoryProvider = featurePermissionRelevanceRepositoryProvider;
+    this.tenantPackageRelevanceRepositoryProvider = tenantPackageRelevanceRepositoryProvider;
     this.tenantRepositoryProvider = tenantRepositoryProvider;
   }
 
   @Override
   public AuthorizationContext calculate(String tenantId, String userId, String contextId, Map<String, String> attributes) {
     User user = usersService.findById(userId).orElseThrow(() -> new RuntimeException("用户不存在"));
+    boolean tenantOwner = false;
     if (!Boolean.TRUE.equals(user.superAdmin())
         && tenantId != null
         && !tenantId.isBlank()
         && !"default".equals(tenantId)) {
       var tenantRepository = tenantRepositoryProvider.getIfAvailable();
-      if (tenantRepository != null && !tenantRepository.hasUser(tenantId, userId)) {
-        throw new AccessDeniedException("当前用户未加入指定租户");
+      if (tenantRepository != null) {
+        var tenant = tenantRepository.findById(tenantId)
+            .orElseThrow(() -> new AccessDeniedException("指定租户不存在"));
+        if (!tenantRepository.hasUser(tenantId, userId)) {
+          throw new AccessDeniedException("当前用户未加入指定租户");
+        }
+        tenantOwner = Objects.equals(tenant.getOwnerId(), userId);
       }
     }
     var roleAuthorityVos = usersService.loadRolesByUserId(tenantId, userId);
@@ -61,7 +72,22 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
       permissions.addAll(usersService.loadPermissionsInRoleIds(roleIds));
     }
     var featurePermissionRelevanceRepository = featurePermissionRelevanceRepositoryProvider.getIfAvailable();
-    if (featurePermissionRelevanceRepository != null && tenantId != null && !tenantId.isBlank()) {
+    if (featurePermissionRelevanceRepository != null && !permissions.isEmpty()) {
+      permissions.addAll(featurePermissionRelevanceRepository.findFeatureCodesByPermissionAuthorities(permissions));
+    }
+    var tenantPackageRelevanceRepository = tenantPackageRelevanceRepositoryProvider.getIfAvailable();
+    if (tenantPackageRelevanceRepository != null
+        && tenantId != null
+        && !tenantId.isBlank()
+        && tenantOwner
+        && !"default".equals(tenantId)) {
+      permissions.addAll(tenantPackageRelevanceRepository.findFeatureCodesByTenantId(tenantId));
+    }
+    if (featurePermissionRelevanceRepository != null
+        && tenantId != null
+        && !tenantId.isBlank()
+        && tenantOwner
+        && !"default".equals(tenantId)) {
       permissions.addAll(featurePermissionRelevanceRepository.findPermissionAuthoritiesByTenantId(tenantId));
     }
     AuthorizationContext authorizationContext = new AuthorizationContext();

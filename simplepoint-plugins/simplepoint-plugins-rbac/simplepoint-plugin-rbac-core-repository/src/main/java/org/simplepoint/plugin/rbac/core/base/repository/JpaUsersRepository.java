@@ -40,7 +40,7 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
         new org.simplepoint.core.authority.RoleGrantedAuthority(rl.id,rl.authority)
       from UserRoleRelevance urr
       join Role rl on urr.roleId=rl.id
-      where urr.userId = :userId and rl.tenantId = :tenantId
+      where urr.userId = :userId and urr.tenantId = :tenantId and rl.tenantId = :tenantId
       """)
   Collection<RoleGrantedAuthority> loadRolesByUserId(@Param("tenantId") String tenantId, @Param("userId") String userId);
 
@@ -55,6 +55,6 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
   Collection<String> loadPermissionsInRoleIds(@Param("roleIds") List<String> roleIds);
 
   @Override
-  @Query("select roleId from UserRoleRelevance where userId = :userId")
-  Collection<String> authorized(@Param("userId") String userId);
+  @Query("select roleId from UserRoleRelevance where tenantId = :tenantId and userId = :userId")
+  Collection<String> authorized(@Param("tenantId") String tenantId, @Param("userId") String userId);
 }

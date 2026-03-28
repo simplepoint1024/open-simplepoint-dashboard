@@ -1,0 +1,17 @@
+{
+  "features.title.name": "功能名称",
+  "features.description.name": "用于展示功能的名称",
+  "features.title.description": "描述",
+  "features.description.description": "功能的简要说明",
+  "features.title.code": "功能编码",
+  "features.description.code": "用于系统识别的唯一功能编码",
+  "features.title.parentCode": "上级功能编码",
+  "features.description.parentCode": "当前功能所属父级功能的编码",
+  "features.title.sort": "排序",
+  "features.description.sort": "数值越小越靠前展示",
+  "features.title.type": "功能类型",
+  "features.description.type": "功能类型，如目录、菜单、按钮或接口",
+  "features.title.ancestor": "祖级路径",
+  "features.description.ancestor": "当前功能的完整祖级路径",
+  "features.button.config.permission": "配置权限"
+}

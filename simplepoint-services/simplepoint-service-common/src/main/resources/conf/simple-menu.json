@@ -13,7 +13,13 @@
         "name": "Dashboard View",
         "authority": "dashboard.view",
         "resource": "/dashboard",
-        "description": "允许访问Dashboard页面"
+        "description": "允许访问Dashboard页面",
+        "type": 0,
+        "feature": {
+          "name": "Dashboard",
+          "description": "Dashboard Feature",
+          "code": "dashboard"
+        }
       }
     ]
   },
@@ -31,7 +37,8 @@
         "name": "System Config View",
         "authority": "system.view",
         "resource": "/system",
-        "description": "允许访问系统配置菜单"
+        "description": "允许访问系统配置菜单",
+        "type": 0
       }
     ],
     "children": [
@@ -50,31 +57,41 @@
             "name": "User View",
             "authority": "users.view",
             "resource": "/system/user",
-            "description": "允许访问用户管理页面"
+            "description": "允许访问用户管理页面",
+            "type": 0,
+            "feature": {
+              "name": "User Management",
+              "description": "User Management Feature",
+              "code": "user-management"
+            }
           },
           {
             "name": "User Create",
             "authority": "users.create",
             "resource": "/system/user",
-            "description": "允许创建用户"
+            "description": "允许创建用户",
+            "type": 1
           },
           {
             "name": "User Edit",
             "authority": "users.edit",
             "resource": "/system/user",
-            "description": "允许编辑用户"
+            "description": "允许编辑用户",
+            "type": 1
           },
           {
             "name": "User Delete",
             "authority": "users.delete",
             "resource": "/system/user",
-            "description": "允许删除用户"
+            "description": "允许删除用户",
+            "type": 1
           },
           {
             "name": "User Permission Assign",
             "authority": "users.config.role",
             "resource": "/system/user",
-            "description": "允许分配用户角色"
+            "description": "允许分配用户角色",
+            "type": 1
           }
         ]
       },
@@ -93,31 +110,41 @@
             "name": "Menu View",
             "authority": "menus.view",
             "resource": "/system/menu",
-            "description": "允许访问菜单管理页面"
+            "description": "允许访问菜单管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Menu Management",
+              "description": "Menu Management Feature",
+              "code": "menu-management"
+            }
           },
           {
             "name": "Menu Create",
             "authority": "menus.create",
             "resource": "/system/menu",
-            "description": "允许创建菜单"
+            "description": "允许创建菜单",
+            "type": 1
           },
           {
             "name": "Menu Edit",
             "authority": "menus.edit",
             "resource": "/system/menu",
-            "description": "允许编辑菜单"
+            "description": "允许编辑菜单",
+            "type": 1
           },
           {
             "name": "Menu Delete",
             "authority": "menus.delete",
             "resource": "/system/menu",
-            "description": "允许删除菜单"
+            "description": "允许删除菜单",
+            "type": 1
           },
           {
-            "name": "Menu Permission Assign",
+            "name": "Menu Feature Assign",
             "authority": "menus.config.permission",
             "resource": "/system/menu",
-            "description": "允许分配菜单权限"
+            "description": "允许配置菜单功能",
+            "type": 1
           }
         ]
       },
@@ -136,31 +163,41 @@
             "name": "Role View",
             "authority": "roles.view",
             "resource": "/system/role",
-            "description": "允许访问角色管理页面"
+            "description": "允许访问角色管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Role Management",
+              "description": "Role Management Feature",
+              "code": "role-management"
+            }
           },
           {
             "name": "Role Create",
             "authority": "roles.create",
             "resource": "/system/role",
-            "description": "允许创建角色"
+            "description": "允许创建角色",
+            "type": 1
           },
           {
             "name": "Role Edit",
             "authority": "roles.edit",
             "resource": "/system/role",
-            "description": "允许编辑角色"
+            "description": "允许编辑角色",
+            "type": 1
           },
           {
             "name": "Role Delete",
             "authority": "roles.delete",
             "resource": "/system/role",
-            "description": "允许删除角色"
+            "description": "允许删除角色",
+            "type": 1
           },
           {
             "name": "Role Permission Assign",
             "authority": "roles.config.permission",
             "resource": "/system/role",
-            "description": "允许分配角色权限"
+            "description": "允许分配角色权限",
+            "type": 1
           }
         ]
       },
@@ -179,25 +216,34 @@
             "name": "Permission View",
             "authority": "permissions.view",
             "resource": "/system/permission",
-            "description": "允许访问权限管理页面"
+            "description": "允许访问权限管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Permission Management",
+              "description": "Permission Management Feature",
+              "code": "permission-management"
+            }
           },
           {
             "name": "Permission Create",
             "authority": "permissions.create",
             "resource": "/system/permission",
-            "description": "允许创建权限"
+            "description": "允许创建权限",
+            "type": 1
           },
           {
             "name": "Permission Edit",
             "authority": "permissions.edit",
             "resource": "/system/permission",
-            "description": "允许编辑权限"
+            "description": "允许编辑权限",
+            "type": 1
           },
           {
             "name": "Permission Delete",
             "authority": "permissions.delete",
             "resource": "/system/permission",
-            "description": "允许删除权限"
+            "description": "允许删除权限",
+            "type": 1
           }
         ]
       },
@@ -216,25 +262,34 @@
             "name": "OAuth Client View",
             "authority": "oauthClients.view",
             "resource": "/system/oauth-client",
-            "description": "允许访问客户端管理页面"
+            "description": "允许访问客户端管理页面",
+            "type": 0,
+            "feature": {
+              "name": "OAuth Client Management",
+              "description": "OAuth Client Management Feature",
+              "code": "oauth-client-management"
+            }
           },
           {
             "name": "OAuth Client Create",
             "authority": "oauthClients.create",
             "resource": "/system/oauth-client",
-            "description": "允许创建客户端"
+            "description": "允许创建客户端",
+            "type": 1
           },
           {
             "name": "OAuth Client Edit",
             "authority": "oauthClients.edit",
             "resource": "/system/oauth-client",
-            "description": "允许编辑客户端"
+            "description": "允许编辑客户端",
+            "type": 1
           },
           {
             "name": "OAuth Client Delete",
             "authority": "oauthClients.delete",
             "resource": "/system/oauth-client",
-            "description": "允许删除客户端"
+            "description": "允许删除客户端",
+            "type": 1
           }
         ]
       }
@@ -254,7 +309,8 @@
         "name": "I18n View",
         "authority": "i18n.view",
         "resource": "/i18n",
-        "description": "允许访问国际化管理菜单"
+        "description": "允许访问国际化管理菜单",
+        "type": 0
       }
     ],
     "children": [
@@ -273,25 +329,34 @@
             "name": "Country View",
             "authority": "countries.view",
             "resource": "/i18n/countries",
-            "description": "允许访问国家管理页面"
+            "description": "允许访问国家管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Country Management",
+              "description": "Country Management Feature",
+              "code": "country-management"
+            }
           },
           {
             "name": "Country Create",
             "authority": "countries.create",
             "resource": "/i18n/countries",
-            "description": "允许创建国家"
+            "description": "允许创建国家",
+            "type": 1
           },
           {
             "name": "Country Edit",
             "authority": "countries.edit",
             "resource": "/i18n/countries",
-            "description": "允许编辑国家"
+            "description": "允许编辑国家",
+            "type": 1
           },
           {
             "name": "Country Delete",
             "authority": "countries.delete",
             "resource": "/i18n/countries",
-            "description": "允许删除国家"
+            "description": "允许删除国家",
+            "type": 1
           }
         ]
       },
@@ -310,25 +375,34 @@
             "name": "Region View",
             "authority": "regions.view",
             "resource": "/i18n/regions",
-            "description": "允许访问区域管理页面"
+            "description": "允许访问区域管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Region Management",
+              "description": "Region Management Feature",
+              "code": "region-management"
+            }
           },
           {
             "name": "Region Create",
             "authority": "regions.create",
             "resource": "/i18n/regions",
-            "description": "允许创建区域"
+            "description": "允许创建区域",
+            "type": 1
           },
           {
             "name": "Region Edit",
             "authority": "regions.edit",
             "resource": "/i18n/regions",
-            "description": "允许编辑区域"
+            "description": "允许编辑区域",
+            "type": 1
           },
           {
             "name": "Region Delete",
             "authority": "regions.delete",
             "resource": "/i18n/regions",
-            "description": "允许删除区域"
+            "description": "允许删除区域",
+            "type": 1
           }
         ]
       },
@@ -347,25 +421,34 @@
             "name": "Timezone View",
             "authority": "timezones.view",
             "resource": "/i18n/timezones",
-            "description": "允许访问时区管理页面"
+            "description": "允许访问时区管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Timezone Management",
+              "description": "Timezone Management Feature",
+              "code": "timezone-management"
+            }
           },
           {
             "name": "Timezone Create",
             "authority": "timezones.create",
             "resource": "/i18n/timezones",
-            "description": "允许创建时区"
+            "description": "允许创建时区",
+            "type": 1
           },
           {
             "name": "Timezone Edit",
             "authority": "timezones.edit",
             "resource": "/i18n/timezones",
-            "description": "允许编辑时区"
+            "description": "允许编辑时区",
+            "type": 1
           },
           {
             "name": "Timezone Delete",
             "authority": "timezones.delete",
             "resource": "/i18n/timezones",
-            "description": "允许删除时区"
+            "description": "允许删除时区",
+            "type": 1
           }
         ]
       },
@@ -384,25 +467,34 @@
             "name": "Language View",
             "authority": "languages.view",
             "resource": "/i18n/languages",
-            "description": "允许访问语言管理页面"
+            "description": "允许访问语言管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Language Management",
+              "description": "Language Management Feature",
+              "code": "language-management"
+            }
           },
           {
             "name": "Language Create",
             "authority": "languages.create",
             "resource": "/i18n/languages",
-            "description": "允许创建语言"
+            "description": "允许创建语言",
+            "type": 1
           },
           {
             "name": "Language Edit",
             "authority": "languages.edit",
             "resource": "/i18n/languages",
-            "description": "允许编辑语言"
+            "description": "允许编辑语言",
+            "type": 1
           },
           {
             "name": "Language Delete",
             "authority": "languages.delete",
             "resource": "/i18n/languages",
-            "description": "允许删除语言"
+            "description": "允许删除语言",
+            "type": 1
           }
         ]
       },
@@ -421,25 +513,34 @@
             "name": "Namespace View",
             "authority": "namespaces.view",
             "resource": "/i18n/namespace",
-            "description": "允许访问国际化命名空间页面"
+            "description": "允许访问国际化命名空间页面",
+            "type": 0,
+            "feature": {
+              "name": "i18n Namespace",
+              "description": "i18n Namespace Feature",
+              "code": "i18n-namespace"
+            }
           },
           {
             "name": "Namespace Create",
             "authority": "namespaces.create",
             "resource": "/i18n/namespace",
-            "description": "允许创建国际化命名空间"
+            "description": "允许创建国际化命名空间",
+            "type": 1
           },
           {
             "name": "Namespace Edit",
             "authority": "namespaces.edit",
             "resource": "/i18n/namespace",
-            "description": "允许编辑国际化命名空间"
+            "description": "允许编辑国际化命名空间",
+            "type": 1
           },
           {
             "name": "Namespace Delete",
             "authority": "namespaces.delete",
             "resource": "/i18n/namespace",
-            "description": "允许删除国际化命名空间"
+            "description": "允许删除国际化命名空间",
+            "type": 1
           }
         ]
       },
@@ -458,25 +559,34 @@
             "name": "Message View",
             "authority": "messages.view",
             "resource": "/i18n/message",
-            "description": "允许访问国际化消息页面"
+            "description": "允许访问国际化消息页面",
+            "type": 0,
+            "feature": {
+              "name": "i18n Messages",
+              "description": "i18n Messages Feature",
+              "code": "i18n-messages"
+            }
           },
           {
             "name": "Message Create",
             "authority": "messages.create",
             "resource": "/i18n/message",
-            "description": "允许创建国际化消息"
+            "description": "允许创建国际化消息",
+            "type": 1
           },
           {
             "name": "Message Edit",
             "authority": "messages.edit",
             "resource": "/i18n/message",
-            "description": "允许编辑国际化消息"
+            "description": "允许编辑国际化消息",
+            "type": 1
           },
           {
             "name": "Message Delete",
             "authority": "messages.delete",
             "resource": "/i18n/message",
-            "description": "允许删除国际化消息"
+            "description": "允许删除国际化消息",
+            "type": 1
           }
         ]
       }
@@ -496,7 +606,8 @@
         "name": "platform View",
         "authority": "platform.view",
         "resource": "/platform",
-        "description": "允许访问组织管理菜单"
+        "description": "允许访问组织管理菜单",
+        "type": 0
       }
     ],
     "children": [
@@ -507,7 +618,7 @@
         "path": "/platform/tenant",
         "authority": "tenants.view",
         "sort": 0,
-        "component": "common/platform/tenant",
+        "component": "common/platform/Tenant",
         "type": "item",
         "disabled": false,
         "permissions": [
@@ -515,25 +626,34 @@
             "name": "Tenant View",
             "authority": "tenants.view",
             "resource": "/platform/tenant",
-            "description": "允许访问租户管理页面"
+            "description": "允许访问租户管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Tenant Management",
+              "description": "Tenant Management Feature",
+              "code": "tenant-management"
+            }
           },
           {
             "name": "Tenant Create",
             "authority": "tenants.create",
             "resource": "/platform/tenant",
-            "description": "允许创建租户"
+            "description": "允许创建租户",
+            "type": 1
           },
           {
             "name": "Tenant Edit",
             "authority": "tenants.edit",
             "resource": "/platform/tenant",
-            "description": "允许编辑租户"
+            "description": "允许编辑租户",
+            "type": 1
           },
           {
             "name": "Tenant Delete",
             "authority": "tenants.delete",
             "resource": "/platform/tenant",
-            "description": "允许删除租户"
+            "description": "允许删除租户",
+            "type": 1
           }
         ]
       },
@@ -544,7 +664,7 @@
         "path": "/platform/feature",
         "authority": "features.view",
         "sort": 1,
-        "component": "common/platform/feature",
+        "component": "common/platform/Feature",
         "type": "item",
         "disabled": false,
         "permissions": [
@@ -552,25 +672,34 @@
             "name": "Feature View",
             "authority": "features.view",
             "resource": "/platform/feature",
-            "description": "允许访问功能管理页面"
+            "description": "允许访问功能管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Feature Management",
+              "description": "Feature Management Feature",
+              "code": "feature-management"
+            }
           },
           {
             "name": "Feature Create",
             "authority": "features.create",
             "resource": "/platform/feature",
-            "description": "允许创建功能"
+            "description": "允许创建功能",
+            "type": 1
           },
           {
             "name": "Feature Edit",
             "authority": "features.edit",
             "resource": "/platform/feature",
-            "description": "允许编辑功能"
+            "description": "允许编辑功能",
+            "type": 1
           },
           {
             "name": "Feature Delete",
             "authority": "features.delete",
             "resource": "/platform/feature",
-            "description": "允许删除功能"
+            "description": "允许删除功能",
+            "type": 1
           }
         ]
       },
@@ -581,7 +710,7 @@
         "path": "/platform/application",
         "authority": "applications.view",
         "sort": 2,
-        "component": "common/platform/application",
+        "component": "common/platform/Application",
         "type": "item",
         "disabled": false,
         "permissions": [
@@ -589,25 +718,34 @@
             "name": "Application View",
             "authority": "applications.view",
             "resource": "/platform/application",
-            "description": "允许访问应用管理页面"
+            "description": "允许访问应用管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Application Management",
+              "description": "Application Management Feature",
+              "code": "application-management"
+            }
           },
           {
             "name": "Application Create",
             "authority": "applications.create",
             "resource": "/platform/application",
-            "description": "允许创建应用"
+            "description": "允许创建应用",
+            "type": 1
           },
           {
             "name": "Application Edit",
             "authority": "applications.edit",
             "resource": "/platform/application",
-            "description": "允许编辑应用"
+            "description": "允许编辑应用",
+            "type": 1
           },
           {
             "name": "Application Delete",
             "authority": "applications.delete",
             "resource": "/platform/application",
-            "description": "允许删除应用"
+            "description": "允许删除应用",
+            "type": 1
           }
         ]
       },
@@ -618,7 +756,7 @@
         "path": "/platform/package",
         "authority": "packages.view",
         "sort": 3,
-        "component": "common/platform/package",
+        "component": "common/platform/Package",
         "type": "item",
         "disabled": false,
         "permissions": [
@@ -626,25 +764,34 @@
             "name": "Package View",
             "authority": "packages.view",
             "resource": "/platform/package",
-            "description": "允许访问套餐包管理页面"
+            "description": "允许访问套餐包管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Package Management",
+              "description": "Package Management Feature",
+              "code": "package-management"
+            }
           },
           {
             "name": "Package Create",
             "authority": "packages.create",
             "resource": "/platform/package",
-            "description": "允许创建套餐包"
+            "description": "允许创建套餐包",
+            "type": 1
           },
           {
             "name": "Package Edit",
             "authority": "packages.edit",
             "resource": "/platform/package",
-            "description": "允许编辑套餐包"
+            "description": "允许编辑套餐包",
+            "type": 1
           },
           {
             "name": "Package Delete",
             "authority": "packages.delete",
             "resource": "/platform/package",
-            "description": "允许删除套餐包"
+            "description": "允许删除套餐包",
+            "type": 1
           }
         ]
       },
@@ -663,31 +810,41 @@
             "name": "Dictionary View",
             "authority": "dictionaries.view",
             "resource": "/platform/dictionaries",
-            "description": "允许访问字典管理页面"
+            "description": "允许访问字典管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Dictionary Management",
+              "description": "Dictionary Management Feature",
+              "code": "dictionary-management"
+            }
           },
           {
             "name": "Dictionary Create",
             "authority": "dictionaries.create",
             "resource": "/platform/dictionaries",
-            "description": "允许创建字典"
+            "description": "允许创建字典",
+            "type": 1
           },
           {
             "name": "Dictionary Edit",
             "authority": "dictionaries.edit",
             "resource": "/platform/dictionaries",
-            "description": "允许编辑字典"
+            "description": "允许编辑字典",
+            "type": 1
           },
           {
             "name": "Dictionary Delete",
             "authority": "dictionaries.delete",
             "resource": "/platform/dictionaries",
-            "description": "允许删除字典"
+            "description": "允许删除字典",
+            "type": 1
           },
           {
             "name": "Dictionary Config Item",
             "authority": "dictionaries.config.item",
             "resource": "/platform/dictionaries",
-            "description": "允许配置字典项"
+            "description": "允许配置字典项",
+            "type": 1
           }
         ]
       },
@@ -706,25 +863,34 @@
             "name": "Organization View",
             "authority": "organizations.view",
             "resource": "/platform/organizations",
-            "description": "允许访问组织机构管理页面"
+            "description": "允许访问组织机构管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Organization Management",
+              "description": "Organization Management Feature",
+              "code": "organization-management"
+            }
           },
           {
             "name": "Organization Create",
             "authority": "organizations.create",
             "resource": "/platform/organizations",
-            "description": "允许创建组织机构"
+            "description": "允许创建组织机构",
+            "type": 1
           },
           {
             "name": "Organization Edit",
             "authority": "organizations.edit",
             "resource": "/platform/organizations",
-            "description": "允许编辑组织机构"
+            "description": "允许编辑组织机构",
+            "type": 1
           },
           {
             "name": "Organization Delete",
             "authority": "organizations.delete",
             "resource": "/platform/organizations",
-            "description": "允许删除组织机构"
+            "description": "允许删除组织机构",
+            "type": 1
           }
         ]
       }
@@ -743,7 +909,8 @@
         "name": "Support View",
         "authority": "support.view",
         "resource": "/support",
-        "description": "允许访问支持与帮助菜单"
+        "description": "允许访问支持与帮助菜单",
+        "type": 0
       }
     ],
     "children": [
@@ -762,7 +929,13 @@
             "name": "Ant Design View",
             "authority": "antdesign.view",
             "resource": "/support/antdesign",
-            "description": "允许访问 Ant Design 页面"
+            "description": "允许访问 Ant Design 页面",
+            "type": 0,
+            "feature": {
+              "name": "Ant Design",
+              "description": "Ant Design Feature",
+              "code": "ant-design"
+            }
           }
         ]
       },
@@ -781,7 +954,13 @@
             "name": "Module Federation View",
             "authority": "modulefederation.view",
             "resource": "/support/module-federation",
-            "description": "允许访问 Module Federation 页面"
+            "description": "允许访问 Module Federation 页面",
+            "type": 0,
+            "feature": {
+              "name": "Module Federation",
+              "description": "Module Federation Feature",
+              "code": "module-federation"
+            }
           }
         ]
       },
@@ -800,7 +979,13 @@
             "name": "GitHub SPM View",
             "authority": "githubspm.view",
             "resource": "/support/githubspm",
-            "description": "允许访问 GitHub SPM 页面"
+            "description": "允许访问 GitHub SPM 页面",
+            "type": 0,
+            "feature": {
+              "name": "GitHub Backend Repository",
+              "description": "GitHub Backend Repository Feature",
+              "code": "github-backend-repository"
+            }
           }
         ]
       },
@@ -819,7 +1004,13 @@
             "name": "GitHub SPR View",
             "authority": "githubspr.view",
             "resource": "/support/githubspr",
-            "description": "允许访问 GitHub SPR 页面"
+            "description": "允许访问 GitHub SPR 页面",
+            "type": 0,
+            "feature": {
+              "name": "GitHub Frontend Repository",
+              "description": "GitHub Frontend Repository Feature",
+              "code": "github-frontend-repository"
+            }
           }
         ]
       }

@@ -130,24 +130,6 @@ public class Feature extends BaseEntityImpl<String> {
   private String code;
 
   /**
-   * Parent feature code.
-   */
-  @Order(3)
-  @Schema(
-      title = "i18n:features.title.parentCode",
-      description = "i18n:features.description.parentCode",
-      example = "system",
-      maxLength = 128,
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
-  @Column(length = 128)
-  private String parentCode;
-
-  /**
    * Sort order of the feature.
    */
   @Order(4)
@@ -162,39 +144,4 @@ public class Feature extends BaseEntityImpl<String> {
       }
   )
   private Integer sort;
-
-  /**
-   * Type of the feature (e.g. menu/button/api).
-   */
-  @Order(5)
-  @Schema(
-      title = "i18n:features.title.type",
-      description = "i18n:features.description.type",
-      example = "0",
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-              @ExtensionProperty(name = "dictCode", value = "feature.type"),
-          })
-      }
-  )
-  private Integer type;
-
-  /**
-   * Ancestor path of the feature.
-   */
-  @Order(6)
-  @Schema(
-      title = "i18n:features.title.ancestor",
-      description = "i18n:features.description.ancestor",
-      example = "system/rbac",
-      maxLength = 1024,
-      extensions = {
-          @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "false"),
-          })
-      }
-  )
-  @Column(length = 1024)
-  private String ancestor;
 }

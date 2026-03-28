@@ -1,0 +1,17 @@
+{
+  "packages.title.name": "套餐名称",
+  "packages.description.name": "用于展示套餐的名称",
+  "packages.title.code": "套餐编码",
+  "packages.description.code": "用于系统识别的唯一套餐编码",
+  "packages.title.description": "描述",
+  "packages.description.description": "套餐的简要说明",
+  "packages.title.price": "价格",
+  "packages.description.price": "套餐的销售价格",
+  "packages.title.durationDays": "有效天数",
+  "packages.description.durationDays": "套餐有效期天数，留空表示永久有效",
+  "packages.title.sort": "排序",
+  "packages.description.sort": "数值越小越靠前展示",
+  "packages.title.enabled": "启用",
+  "packages.description.enabled": "当前套餐是否启用",
+  "packages.button.config.application": "配置应用"
+}

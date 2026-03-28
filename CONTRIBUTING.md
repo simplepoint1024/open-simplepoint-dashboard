@@ -22,7 +22,8 @@ cd open-simplepoint-dashboard
 ```
 - 示例运行（如 AMQP RPC Provider）：
 ```shell
-./gradlew :simplepoint-examples:simplepoint-amqprpc-examples:simplepoint-amqprpc-example-provider:bootRun
+./gradlew :simplepoint-services:simplepoint-service-host:run
+./gradlew :simplepoint-examples:simplepoint-amqprpc-examples:simplepoint-amqprpc-example-provider:run
 ```
 
 ## 分支与提交流程

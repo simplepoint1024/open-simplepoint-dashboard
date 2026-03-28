@@ -18,10 +18,11 @@ public interface RoleRepository extends BaseRepository<Role, String> {
   /**
    * Retrieve a paginated list of RoleSelectDto for role selection purposes.
    *
+   * @param tenantId the tenant scope
    * @param pageable Pagination information.
    * @return A page of RoleSelectDto containing role selection data.
    */
-  Page<RoleRelevanceVo> roleSelectItems(Pageable pageable);
+  Page<RoleRelevanceVo> roleSelectItems(String tenantId, Pageable pageable);
 
   /**
    * Removes the specified permissionAuthority from the given role authority.
@@ -29,7 +30,7 @@ public interface RoleRepository extends BaseRepository<Role, String> {
    * @param roleId        the authority of the role
    * @param permissionAuthority the set of permission permissionAuthority to be removed
    */
-  void unauthorized(String roleId, Set<String> permissionAuthority);
+  void unauthorized(String tenantId, String roleId, Set<String> permissionAuthority);
 
   /**
    * Retrieve a collection of permission permissionAuthority associated with a specific roleId.
@@ -37,5 +38,5 @@ public interface RoleRepository extends BaseRepository<Role, String> {
    * @param roleId The roleId to filter the permission permissionAuthority.
    * @return A collection of permission permissionAuthority for the given roleId.
    */
-  Collection<String> authorized(String roleId);
+  Collection<String> authorized(String tenantId, String roleId);
 }

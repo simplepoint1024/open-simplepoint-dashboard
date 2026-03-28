@@ -35,7 +35,7 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
   Set<NamedTenantVo> getTenantsByUserId(@Param("userId") String userId);
 
   @Override
-  @Query("select t.permissionVersion from Tenant t where t.id = :tenantId")
+  @Query("select coalesce(t.permissionVersion, 0) from Tenant t where t.id = :tenantId")
   Long getTenantPermissionVersion(@Param("tenantId") String tenantId);
 
   @Override

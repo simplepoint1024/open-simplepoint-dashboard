@@ -1,3 +1,11 @@
+plugins {
+    application
+}
+
+application {
+    mainClass.set("org.simplepoint.example.plugin.PluginExampleApplication")
+}
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     api(project(":simplepoint-plugin:simplepoint-plugin-webmvc"))

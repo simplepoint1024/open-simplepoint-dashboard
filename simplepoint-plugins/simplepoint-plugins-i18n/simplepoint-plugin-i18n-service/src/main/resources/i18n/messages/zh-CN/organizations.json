@@ -1,0 +1,14 @@
+{
+  "organizations.title.name": "组织名称",
+  "organizations.description.name": "组织机构的展示名称",
+  "organizations.title.code": "组织编码",
+  "organizations.description.code": "组织机构在租户内的唯一业务编码",
+  "organizations.title.parentId": "上级组织",
+  "organizations.description.parentId": "当前组织所属的上级组织 ID",
+  "organizations.title.description": "描述",
+  "organizations.description.description": "组织机构的简要说明",
+  "organizations.title.sort": "排序",
+  "organizations.description.sort": "数值越小越靠前展示",
+  "organizations.title.enabled": "启用",
+  "organizations.description.enabled": "当前组织是否启用"
+}

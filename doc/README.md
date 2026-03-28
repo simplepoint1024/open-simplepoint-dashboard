@@ -44,6 +44,7 @@ doc/
 │   └── approval_workflow.md    # 审批流程设计
 ├── deployment/           # 部署文档
 │   ├── docker_deployment.md    # Docker 部署说明
+│   ├── docker_swarm_deployment.md # Docker Swarm 部署说明
 │   ├── k8s_deployment.md       # Kubernetes 部署说明
 │   └── ci_cd_pipeline.md       # CI/CD 流程说明
 ├── config/               # 配置文档
@@ -169,6 +170,7 @@ doc/
 ### **deployment/**
 部署相关文档，包括：
 - Docker 部署
+- Docker Swarm 部署
 - Kubernetes 部署
 - CI/CD 流程
 - 环境变量说明

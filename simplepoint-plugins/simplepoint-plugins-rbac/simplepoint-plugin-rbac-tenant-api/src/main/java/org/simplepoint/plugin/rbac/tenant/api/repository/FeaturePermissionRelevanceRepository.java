@@ -21,4 +21,6 @@ public interface FeaturePermissionRelevanceRepository {
   void updateFeatureCode(String oldCode, String newCode);
 
   Collection<String> findPermissionAuthoritiesByTenantId(String tenantId);
+
+  Collection<String> findFeatureCodesByPermissionAuthorities(Collection<String> permissionAuthorities);
 }

@@ -1,0 +1,19 @@
+{
+  "dictionaries.title.name": "字典名称",
+  "dictionaries.description.name": "用于区分该字典的展示名称",
+  "dictionaries.title.code": "字典编码",
+  "dictionaries.description.code": "用于字段绑定和程序识别的唯一编码",
+  "dictionaries.title.description": "描述",
+  "dictionaries.description.description": "字典或字典项的简要说明",
+  "dictionaries.title.sort": "排序",
+  "dictionaries.description.sort": "数值越小越靠前展示",
+  "dictionaries.title.enabled": "启用",
+  "dictionaries.description.enabled": "是否启用该字典或字典项",
+  "dictionaries.title.dictionaryCode": "所属字典",
+  "dictionaries.description.dictionaryCode": "该字典项所属的字典编码",
+  "dictionaries.title.itemName": "字典项名称",
+  "dictionaries.description.itemName": "字典项在界面上展示的名称",
+  "dictionaries.title.value": "字典项值",
+  "dictionaries.description.value": "保存到业务字段中的实际值",
+  "dictionaries.button.config.item": "配置字典项"
+}

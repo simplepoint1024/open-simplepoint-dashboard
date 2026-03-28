@@ -18,6 +18,7 @@ import org.springframework.beans.BeanUtils;
 @EqualsAndHashCode(callSuper = true)
 public class MenuChildren extends Menu {
   private Set<MenuChildren> children;
+  private Set<String> featureCodes;
   private Set<Permissions> permissions;
 
   /**
