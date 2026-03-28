@@ -1,0 +1,15 @@
+{
+  "applications.title.name": "Application Name",
+  "applications.description.name": "Display name of the application",
+  "applications.title.code": "Application Code",
+  "applications.description.code": "Unique application code used by the system",
+  "applications.title.description": "Description",
+  "applications.description.description": "Short description of the application",
+  "applications.title.homepage": "Homepage URL",
+  "applications.description.homepage": "Entry URL or homepage link of the application",
+  "applications.title.sort": "Sort Order",
+  "applications.description.sort": "Lower values appear earlier",
+  "applications.title.enabled": "Enabled",
+  "applications.description.enabled": "Whether the application is enabled",
+  "applications.button.config.feature": "Configure Features"
+}

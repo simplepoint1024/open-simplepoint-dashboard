@@ -27,5 +27,13 @@
   "table.filter.notNull": "非空",
   "table.button.create": "新增",
   "table.button.edit": "编辑",
-  "table.button.delete": "删除"
+  "table.button.delete": "删除",
+  "table.button.config.package": "配置套餐",
+  "table.button.config.application": "配置应用",
+  "table.button.config.feature": "配置功能",
+  "table.button.config.permission": "配置权限",
+  "table.button.config.user": "配置成员",
+  "table.apply": "应用",
+  "table.selectAll": "全选",
+  "table.resetColumns": "重置列"
 }

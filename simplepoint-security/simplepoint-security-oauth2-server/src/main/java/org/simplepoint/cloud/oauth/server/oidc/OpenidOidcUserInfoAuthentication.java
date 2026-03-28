@@ -89,6 +89,7 @@ public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthen
       claims.put("middle_name", user.getMiddleName());
       claims.put("nickname", user.getNickname());
       claims.put("preferred_username", user.getUsername());
+      claims.put("twoFactorEnabled", Boolean.TRUE.equals(user.getTwoFactorEnabled()));
     }
 
     if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.EMAIL))) {

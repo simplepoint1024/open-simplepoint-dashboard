@@ -33,8 +33,9 @@ public interface UserRepository extends BaseRepository<User, String> {
   /**
    * Retrieve a collection of role authorities associated with a specific userId.
    *
+   * @param tenantId The tenant scope.
    * @param userId The userId to filter the role authorities.
    * @return A collection of role authorities for the given userId.
    */
-  Collection<String> authorized(String userId);
+  Collection<String> authorized(String tenantId, String userId);
 }

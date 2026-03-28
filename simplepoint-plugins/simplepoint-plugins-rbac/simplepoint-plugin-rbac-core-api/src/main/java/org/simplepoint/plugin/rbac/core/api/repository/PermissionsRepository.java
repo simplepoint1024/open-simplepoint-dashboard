@@ -1,7 +1,6 @@
 package org.simplepoint.plugin.rbac.core.api.repository;
 
 import java.util.Collection;
-import java.util.Set;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
 import org.simplepoint.security.entity.Permissions;
@@ -20,5 +19,21 @@ public interface PermissionsRepository extends BaseRepository<Permissions, Strin
    * @param pageable the pagination information
    * @return a page of RolePermissionsRelevanceVo representing permission items
    */
-  Page<PermissionsRelevanceVo> permissionItems(Pageable pageable);
+  Page<PermissionsRelevanceVo> permissionItems(Pageable pageable, Collection<String> permissions);
+
+  /**
+   * Retrieves permission detail rows by authority.
+   *
+   * @param permissions permission authorities
+   * @return permission detail rows
+   */
+  Collection<PermissionsRelevanceVo> permissionItems(Collection<String> permissions);
+
+  /**
+   * Retrieves a paginated list of permission items.
+   *
+   * @param pageable the pagination information
+   * @return a page of RolePermissionsRelevanceVo representing permission items
+   */
+  Page<PermissionsRelevanceVo> permissionItemsAll(Pageable pageable);
 }

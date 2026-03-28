@@ -16,7 +16,7 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Entity
-@Table(name = "simpoint_ac_permissions_menu_rel")
+@Table(name = "simpoint_ac_permissions_menu_rel_dep")
 @Schema(title = "角色权限关联实体", description = "表示RBAC系统中角色与权限之间的关联关系")
 public class MenuPermissionsRelevance extends BaseEntityImpl<String> {
 

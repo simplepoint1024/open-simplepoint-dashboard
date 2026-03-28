@@ -1,0 +1,12 @@
+{
+  "tenants.title.name": "Tenant Name",
+  "tenants.description.name": "Unique name used to identify the tenant",
+  "tenants.title.description": "Description",
+  "tenants.description.description": "Short description of the tenant",
+  "tenants.title.permissionVersion": "Permission Version",
+  "tenants.description.permissionVersion": "Permission snapshot version used to keep tenant permission changes consistent",
+  "tenants.title.ownerId": "Tenant Owner",
+  "tenants.description.ownerId": "User ID of the current tenant owner",
+  "tenants.button.config.package": "Configure Packages",
+  "tenants.button.config.user": "Configure Members"
+}

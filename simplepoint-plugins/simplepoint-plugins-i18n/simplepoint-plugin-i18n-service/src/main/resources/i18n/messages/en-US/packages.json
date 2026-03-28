@@ -1,0 +1,17 @@
+{
+  "packages.title.name": "Package Name",
+  "packages.description.name": "Display name of the package",
+  "packages.title.code": "Package Code",
+  "packages.description.code": "Unique package code used by the system",
+  "packages.title.description": "Description",
+  "packages.description.description": "Short description of the package",
+  "packages.title.price": "Price",
+  "packages.description.price": "Selling price of the package",
+  "packages.title.durationDays": "Valid Days",
+  "packages.description.durationDays": "Number of days the package remains valid; empty means unlimited",
+  "packages.title.sort": "Sort Order",
+  "packages.description.sort": "Lower values appear earlier",
+  "packages.title.enabled": "Enabled",
+  "packages.description.enabled": "Whether the package is enabled",
+  "packages.button.config.application": "Configure Applications"
+}

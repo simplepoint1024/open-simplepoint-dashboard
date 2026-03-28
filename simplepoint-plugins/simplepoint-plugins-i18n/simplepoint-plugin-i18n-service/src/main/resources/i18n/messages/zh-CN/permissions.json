@@ -9,6 +9,8 @@
   "permissions.description.method": "HTTP 方法，如 GET/POST",
   "permissions.title.resource": "资源路径",
   "permissions.description.resource": "受保护的资源路径",
+  "permissions.title.type": "权限类型",
+  "permissions.description.type": "权限类型，0 表示访问权限，1 表示操作权限",
   "permissions.title.permissionName": "权限名称",
   "permissions.description.permissionName": "权限的显示名称"
 }

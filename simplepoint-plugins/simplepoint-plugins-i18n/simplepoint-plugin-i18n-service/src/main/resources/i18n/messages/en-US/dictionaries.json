@@ -1,0 +1,19 @@
+{
+  "dictionaries.title.name": "Dictionary Name",
+  "dictionaries.description.name": "Display name used to identify the dictionary",
+  "dictionaries.title.code": "Dictionary Code",
+  "dictionaries.description.code": "Unique code used for field binding and program lookup",
+  "dictionaries.title.description": "Description",
+  "dictionaries.description.description": "Short description for the dictionary or item",
+  "dictionaries.title.sort": "Sort Order",
+  "dictionaries.description.sort": "Lower values appear earlier",
+  "dictionaries.title.enabled": "Enabled",
+  "dictionaries.description.enabled": "Whether the dictionary or item is enabled",
+  "dictionaries.title.dictionaryCode": "Dictionary Code",
+  "dictionaries.description.dictionaryCode": "Dictionary code that owns this item",
+  "dictionaries.title.itemName": "Item Name",
+  "dictionaries.description.itemName": "Display label of the dictionary item",
+  "dictionaries.title.value": "Item Value",
+  "dictionaries.description.value": "Actual value stored in business fields",
+  "dictionaries.button.config.item": "Configure Items"
+}

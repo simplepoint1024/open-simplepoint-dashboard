@@ -8,6 +8,7 @@
 
 package org.simplepoint.plugin.rbac.core.api.service;
 
+import java.util.Collection;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
@@ -28,4 +29,12 @@ public interface PermissionsService extends BaseService<Permissions, String> {
    * @return a page of RolePermissionsRelevanceVo containing permission items
    */
   Page<PermissionsRelevanceVo> permissionItems(Pageable pageable);
+
+  /**
+   * Retrieves selected permission detail rows.
+   *
+   * @param authorities permission authorities
+   * @return permission detail rows
+   */
+  Collection<PermissionsRelevanceVo> permissionItems(Collection<String> authorities);
 }

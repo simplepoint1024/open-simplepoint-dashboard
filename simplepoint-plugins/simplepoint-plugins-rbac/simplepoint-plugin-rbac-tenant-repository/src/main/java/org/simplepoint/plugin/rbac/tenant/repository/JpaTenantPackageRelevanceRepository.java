@@ -62,4 +62,14 @@ public interface JpaTenantPackageRelevanceRepository
       where afr.featureCode in ?1
       """)
   Set<String> findTenantIdsByFeatureCodes(Collection<String> featureCodes);
+
+  @Override
+  @Query("""
+      select distinct afr.featureCode
+      from TenantPackageRelevance tpr
+      join PackageApplicationRelevance par on par.packageCode = tpr.packageCode
+      join ApplicationFeatureRelevance afr on afr.applicationCode = par.applicationCode
+      where tpr.tenantId = ?1
+      """)
+  Set<String> findFeatureCodesByTenantId(String tenantId);
 }

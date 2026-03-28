@@ -1,3 +1,11 @@
+plugins {
+    application
+}
+
+application {
+    mainClass.set("org.simplepoint.amqprpc.consumer.ConsumerApplication")
+}
+
 subprojects {
     group = "org.simplepoint.example.amqprpc.consumer"
 }

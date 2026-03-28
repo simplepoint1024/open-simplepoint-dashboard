@@ -40,4 +40,18 @@ public interface BasePermissions {
    * @param resource Resource.
    */
   void setResource(String resource);
+
+  /**
+   * Permission type.
+   *
+   * @return 0 for access permissions, 1 for operation permissions
+   */
+  Integer getType();
+
+  /**
+   * Permission type.
+   *
+   * @param type 0 for access permissions, 1 for operation permissions
+   */
+  void setType(Integer type);
 }

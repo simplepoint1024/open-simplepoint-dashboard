@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
@@ -61,7 +60,7 @@ import org.springframework.core.annotation.Order;
         authority = "packages.delete"
     ),
     @ButtonDeclaration(
-        title = "配置应用",
+        title = "i18n:packages.button.config.application",
         key = "config.application",
         color = "orange",
         icon = Icons.SAFETY_OUTLINED,

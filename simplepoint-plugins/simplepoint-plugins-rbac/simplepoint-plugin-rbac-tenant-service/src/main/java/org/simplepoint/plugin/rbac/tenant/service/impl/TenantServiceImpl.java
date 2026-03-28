@@ -65,9 +65,10 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   public String calculatePermissionContextId(String tenantId) {
     Authentication authentication = getRequiredAuthentication();
     String resolvedTenantId = resolveTenantId(tenantId, authentication.getName());
-    Long permissionVersion = "default".equals(resolvedTenantId)
-        ? 0L
-        : getRepository().getTenantPermissionVersion(resolvedTenantId);
+    Long permissionVersion = 0L;
+    if (!"default".equals(resolvedTenantId)) {
+      permissionVersion = getRepository().getTenantPermissionVersion(resolvedTenantId);
+    }
     if (permissionVersion == null) {
       permissionVersion = 0L;
     }

@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.api.security.base.BasePermissions;
@@ -22,6 +23,7 @@ import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.simplepoint.security.MenuFeatureDefinition;
 
 /**
  * Represents the Permissions entity in the RBAC (Role-Based Access Control) system.
@@ -67,6 +69,8 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 @Schema(title = "权限实体", description = "表示RBAC系统中的权限实体")
 public class Permissions extends BaseEntityImpl<String> implements BasePermissions {
   public static final String AUTHORITY_FIELD = "authority";
+  public static final int ACCESS_TYPE = 0;
+  public static final int OPERATION_TYPE = 1;
 
   @Schema(
       title = "i18n:permissions.title.name",
@@ -118,4 +122,23 @@ public class Permissions extends BaseEntityImpl<String> implements BasePermissio
   )
   @Column(length = 100, nullable = false)
   private String description;
+
+  @Schema(
+      title = "i18n:permissions.title.type",
+      description = "i18n:permissions.description.type",
+      example = "0",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  @Column
+  private Integer type;
+
+  /**
+   * Menu initialization metadata used to bootstrap feature entities and relations.
+   */
+  @Transient
+  private MenuFeatureDefinition feature;
 }

@@ -1,0 +1,12 @@
+{
+  "tenants.title.name": "租户名称",
+  "tenants.description.name": "用于标识租户的唯一名称",
+  "tenants.title.description": "描述",
+  "tenants.description.description": "租户的简要说明",
+  "tenants.title.permissionVersion": "权限版本",
+  "tenants.description.permissionVersion": "租户权限快照版本，用于权限变更一致性控制",
+  "tenants.title.ownerId": "租户所有者",
+  "tenants.description.ownerId": "当前租户的所有者用户 ID",
+  "tenants.button.config.package": "配置套餐",
+  "tenants.button.config.user": "配置成员"
+}

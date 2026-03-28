@@ -21,8 +21,11 @@ public interface JpaUserRoleRelevanceRepository extends JpaRepository<UserRoleRe
 
   @Override
   @Modifying
-  @Query("delete from UserRoleRelevance urr where urr.userId = :userId and urr.roleId in :roleIds")
-  void unauthorized(@Param("userId") String userId, @Param("roleIds") Set<String> roleIds);
+  @Query("""
+      delete from UserRoleRelevance urr
+      where urr.tenantId = :tenantId and urr.userId = :userId and urr.roleId in :roleIds
+      """)
+  void unauthorized(@Param("tenantId") String tenantId, @Param("userId") String userId, @Param("roleIds") Set<String> roleIds);
 
   @Override
   @Query("select u from User u where u.phoneNumber = :phoneOrEmail or u.email = :phoneOrEmail or u.id = :phoneOrEmail")

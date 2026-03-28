@@ -90,6 +90,13 @@ public class FeatureController extends BaseController<FeatureService, Feature, S
     return ok(service.limit(Map.of(), pageable));
   }
 
+  @GetMapping("/items/selected")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature') or hasAuthority('menus.config.permission') or hasAuthority('features.config.permission')")
+  @Operation(summary = "获取已选功能明细", description = "根据功能编码列表获取完整的功能明细，用于穿梭框右侧回显")
+  public Response<Collection<Feature>> selectedItems(@RequestParam("codes") Set<String> codes) {
+    return ok(service.findAllByCodes(codes));
+  }
+
   @GetMapping("/authorized")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('features.config.permission')")
   @Operation(summary = "获取功能已分配权限", description = "获取指定功能已授权的权限标识列表")

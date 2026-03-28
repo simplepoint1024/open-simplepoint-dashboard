@@ -10,8 +10,6 @@ package org.simplepoint.plugin.rbac.core.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.Map;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
@@ -22,14 +20,10 @@ import org.simplepoint.security.entity.Permissions;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+import java.util.Set;
 
 /**
  * 处理权限相关请求的控制器
@@ -41,100 +35,116 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "权限管理", description = "用于管理系统中的权限")
 public class PermissionsController extends BaseController<PermissionsService, Permissions, String> {
 
-  /**
-   * 构造函数，初始化权限服务和用户上下文
-   * Constructor initializing the permissions service and user context.
-   *
-   * @param service 权限服务
-   *                The permissions service.
-   */
-  public PermissionsController(
-      final PermissionsService service
-  ) {
-    super(service);
-  }
+    /**
+     * 构造函数，初始化权限服务和用户上下文
+     * Constructor initializing the permissions service and user context.
+     *
+     * @param service 权限服务
+     *                The permissions service.
+     */
+    public PermissionsController(
+            final PermissionsService service
+    ) {
+        super(service);
+    }
 
-  /**
-   * 获取权限的分页列表
-   * Retrieves a paginated list of permissions.
-   *
-   * @param attributes 查询参数 Query parameters.
-   * @param pageable   分页信息 Pagination details.
-   * @return 权限的分页响应 Response containing paginated permissions.
-   */
-  @GetMapping
-  @Operation(summary = "获取权限的分页列表", description = "根据查询参数和分页信息获取权限的分页列表")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('permissions.view')")
-  public Response<Page<Permissions>> limit(
-      @RequestParam Map<String, String> attributes,
-      Pageable pageable
-  ) {
-    return limit(service.limit(attributes, pageable), Permissions.class);
-  }
+    /**
+     * 获取权限的分页列表
+     * Retrieves a paginated list of permissions.
+     *
+     * @param attributes 查询参数 Query parameters.
+     * @param pageable   分页信息 Pagination details.
+     * @return 权限的分页响应 Response containing paginated permissions.
+     */
+    @GetMapping
+    @Operation(summary = "获取权限的分页列表", description = "根据查询参数和分页信息获取权限的分页列表")
+    @PreAuthorize("hasRole('Administrator') or hasAuthority('permissions.view')")
+    public Response<Page<Permissions>> limit(
+            @RequestParam Map<String, String> attributes,
+            Pageable pageable
+    ) {
+        return limit(service.limit(attributes, pageable), Permissions.class);
+    }
 
-  /**
-   * 添加新的权限
-   * Adds a new permission.
-   *
-   * @param data 权限数据 Permission data.
-   * @return 新增的权限响应 Response containing the newly added permission.
-   * @throws Exception 可能的异常
-   *                   Possible exceptions.
-   */
-  @PostMapping
-  @Operation(summary = "添加新的权限", description = "添加一个新的权限到系统中")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('permissions.create')")
-  public Response<Permissions> add(@RequestBody Permissions data) throws Exception {
-    return ok(service.create(data));
-  }
+    /**
+     * 添加新的权限
+     * Adds a new permission.
+     *
+     * @param data 权限数据 Permission data.
+     * @return 新增的权限响应 Response containing the newly added permission.
+     * @throws Exception 可能的异常
+     *                   Possible exceptions.
+     */
+    @PostMapping
+    @Operation(summary = "添加新的权限", description = "添加一个新的权限到系统中")
+    @PreAuthorize("hasRole('Administrator') or hasAuthority('permissions.create')")
+    public Response<Permissions> add(@RequestBody Permissions data) throws Exception {
+        return ok(service.create(data));
+    }
 
-  /**
-   * 修改现有权限
-   * Modifies an existing permission.
-   *
-   * @param data 权限数据  Permission data.
-   * @return 修改后的权限响应  Response containing the modified permission.
-   */
-  @PutMapping
-  @Operation(summary = "修改现有权限", description = "根据提供的数据修改一个现有的权限")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('permissions.edit')")
-  public Response<Permissions> modify(@RequestBody Permissions data) {
-    return ok(service.modifyById(data));
-  }
+    /**
+     * 修改现有权限
+     * Modifies an existing permission.
+     *
+     * @param data 权限数据  Permission data.
+     * @return 修改后的权限响应  Response containing the modified permission.
+     */
+    @PutMapping
+    @Operation(summary = "修改现有权限", description = "根据提供的数据修改一个现有的权限")
+    @PreAuthorize("hasRole('Administrator') or hasAuthority('permissions.edit')")
+    public Response<Permissions> modify(@RequestBody Permissions data) {
+        return ok(service.modifyById(data));
+    }
 
-  /**
-   * 删除指定的权限 ID
-   * Removes permissions with specified IDs.
-   *
-   * @param ids 权限 ID 集合 Collection of permission IDs.
-   * @return 删除操作的响应 Response confirming deletion.
-   */
-  @DeleteMapping
-  @Operation(summary = "删除指定的权限 ID", description = "根据提供的权限 ID 集合删除对应的权限")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('permissions.delete')")
-  public Response<Set<String>> remove(@RequestParam("ids") String ids) {
-    Set<String> idSet = StringUtil.stringToSet(ids);
-    service.removeByIds(idSet);
-    return ok(idSet);
-  }
+    /**
+     * 删除指定的权限 ID
+     * Removes permissions with specified IDs.
+     *
+     * @param ids 权限 ID 集合 Collection of permission IDs.
+     * @return 删除操作的响应 Response confirming deletion.
+     */
+    @DeleteMapping
+    @Operation(summary = "删除指定的权限 ID", description = "根据提供的权限 ID 集合删除对应的权限")
+    @PreAuthorize("hasRole('Administrator') or hasAuthority('permissions.delete')")
+    public Response<Set<String>> remove(@RequestParam("ids") String ids) {
+        Set<String> idSet = StringUtil.stringToSet(ids);
+        service.removeByIds(idSet);
+        return ok(idSet);
+    }
 
-  /**
-   * 获取权限下拉列表数据
-   * Retrieves permission dropdown list data.
-   *
-   * @param pageable 分页信息 Pagination details.
-   * @return 权限下拉列表数据响应 Response containing permission dropdown list data.
-   */
-  @GetMapping("/items")
-  @Operation(summary = "获取权限下拉列表数据", description = "检索用于权限选择的权限下拉列表数据")
-  @PreAuthorize(
-      """
-          hasRole('Administrator') or hasAuthority('menus.config.permission') or hasAuthority('roles.config.permission')
-          or hasAuthority('features.config.permission')
-          """
-  )
-  public Response<Page<PermissionsRelevanceVo>> items(Pageable pageable) {
-    return ok(service.permissionItems(pageable));
-  }
+    /**
+     * 获取权限下拉列表数据
+     * Retrieves permission dropdown list data.
+     *
+     * @param pageable 分页信息 Pagination details.
+     * @return 权限下拉列表数据响应 Response containing permission dropdown list data.
+     */
+    @GetMapping("/items")
+    @Operation(summary = "获取权限下拉列表数据", description = "检索用于权限选择的权限下拉列表数据")
+    @PreAuthorize(
+            """
+                    hasRole('Administrator')
+                    or hasAuthority('menus.config.permission')
+                    or hasAuthority('roles.config.permission')
+                    or hasAuthority('features.config.permission')
+                    """
+    )
+    public Response<Page<PermissionsRelevanceVo>> items(Pageable pageable) {
+        return ok(service.permissionItems(pageable));
+    }
+
+    @GetMapping("/items/selected")
+    @Operation(summary = "获取已选权限明细", description = "根据权限标识列表返回完整的权限明细，用于权限分配抽屉右侧回显")
+    @PreAuthorize(
+            """
+                    hasRole('Administrator')
+                    or hasAuthority('menus.config.permission')
+                    or hasAuthority('roles.config.permission')
+                    or hasAuthority('features.config.permission')
+                    """
+    )
+    public Response<java.util.Collection<PermissionsRelevanceVo>> selectedItems(@RequestParam("authorities") Set<String> authorities) {
+        return ok(service.permissionItems(authorities));
+    }
 }
 

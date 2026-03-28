@@ -16,7 +16,7 @@ import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.security.MenuChildren;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.TreeMenu;
-import org.simplepoint.security.pojo.dto.MenuPermissionsRelevanceDto;
+import org.simplepoint.security.pojo.dto.MenuFeaturesRelevanceDto;
 import org.simplepoint.security.pojo.dto.ServiceMenuResult;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -56,24 +56,24 @@ public interface MenuService extends BaseService<Menu, String> {
   Page<TreeMenu> limitTree(Map<String, String> attributes, Pageable pageable);
 
   /**
-   * Retrieves the collection of authorized menu identifiers based on the provided menu authority.
+   * Retrieves the collection of feature codes bound to the specified menu.
    *
    * @param menuId the menu authority string
-   * @return a collection of authorized menu identifiers
+   * @return a collection of bound feature codes
    */
   Collection<String> authorized(String menuId);
 
   /**
-   * Authorizes the menu with the specified permissions based on the provided DTO.
+   * Binds the menu with the specified features based on the provided DTO.
    *
-   * @param dto the data transfer object containing menu authority and permission authorities
+   * @param dto the data transfer object containing menu and feature codes
    */
-  void authorize(MenuPermissionsRelevanceDto dto);
+  void authorize(MenuFeaturesRelevanceDto dto);
 
   /**
-   * Revokes the authorization of the menu with the specified permissions based on the provided DTO.
+   * Removes feature bindings from the menu based on the provided DTO.
    *
-   * @param dto the data transfer object containing menu authority and permission authorities
+   * @param dto the data transfer object containing menu and feature codes
    */
-  void unauthorized(MenuPermissionsRelevanceDto dto);
+  void unauthorized(MenuFeaturesRelevanceDto dto);
 }

@@ -1,0 +1,17 @@
+{
+  "features.title.name": "Feature Name",
+  "features.description.name": "Display name of the feature",
+  "features.title.description": "Description",
+  "features.description.description": "Short description of the feature",
+  "features.title.code": "Feature Code",
+  "features.description.code": "Unique feature code used by the system",
+  "features.title.parentCode": "Parent Feature Code",
+  "features.description.parentCode": "Code of the parent feature",
+  "features.title.sort": "Sort Order",
+  "features.description.sort": "Lower values appear earlier",
+  "features.title.type": "Feature Type",
+  "features.description.type": "Feature type, such as catalog, menu, button, or API",
+  "features.title.ancestor": "Ancestor Path",
+  "features.description.ancestor": "Full ancestor path of the feature",
+  "features.button.config.permission": "Configure Permissions"
+}

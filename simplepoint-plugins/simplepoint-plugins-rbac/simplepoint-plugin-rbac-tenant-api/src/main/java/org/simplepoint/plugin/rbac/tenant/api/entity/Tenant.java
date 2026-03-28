@@ -57,7 +57,7 @@ import org.springframework.core.annotation.Order;
         authority = "tenants.delete"
     ),
     @ButtonDeclaration(
-        title = "配置套餐",
+        title = "i18n:tenants.button.config.package",
         key = "config.package",
         color = "orange",
         icon = Icons.SAFETY_OUTLINED,

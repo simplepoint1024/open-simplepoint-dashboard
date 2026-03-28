@@ -14,8 +14,11 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -24,16 +27,21 @@ import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.data.initialize.DataInitializeExecutor;
 import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
-import org.simplepoint.plugin.rbac.menu.api.entity.MenuPermissionsRelevance;
+import org.simplepoint.plugin.rbac.menu.api.entity.MenuFeatureRelevance;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuAncestorRepository;
-import org.simplepoint.plugin.rbac.menu.api.repository.MenuPermissionsRelevanceRepository;
+import org.simplepoint.plugin.rbac.menu.api.repository.MenuFeatureRelevanceRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
+import org.simplepoint.plugin.rbac.tenant.api.entity.Feature;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.FeaturePermissionsRelevanceDto;
+import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
+import org.simplepoint.plugin.rbac.tenant.api.service.FeatureService;
+import org.simplepoint.security.MenuFeatureDefinition;
 import org.simplepoint.security.MenuChildren;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.MenuAncestor;
 import org.simplepoint.security.entity.Permissions;
 import org.simplepoint.security.entity.TreeMenu;
-import org.simplepoint.security.pojo.dto.MenuPermissionsRelevanceDto;
+import org.simplepoint.security.pojo.dto.MenuFeaturesRelevanceDto;
 import org.simplepoint.security.pojo.dto.ServiceMenuResult;
 import org.simplepoint.security.service.MenuService;
 import org.springframework.beans.BeanUtils;
@@ -62,7 +70,11 @@ public class MenuServiceImpl
 
   private final PermissionsService permissionsService;
 
-  private final MenuPermissionsRelevanceRepository menuPermissionsRelevanceRepository;
+  private final FeatureService featureService;
+
+  private final MenuFeatureRelevanceRepository menuFeatureRelevanceRepository;
+
+  private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
 
   private final DataInitializeExecutor dataInitializeManager;
 
@@ -73,7 +85,8 @@ public class MenuServiceImpl
    * @param detailsProviderService             the DetailsProviderService for user details retrieval
    * @param menuAncestorRepository             the MenuAncestorRepository for managing menu ancestor relationships
    * @param permissionsService                 the PermissionsService for managing permissions
-   * @param menuPermissionsRelevanceRepository the MenuPermissionsRelevanceRepository for managing menu-permission relationships
+   * @param menuFeatureRelevanceRepository the MenuFeatureRelevanceRepository for managing menu-feature relationships
+   * @param tenantPackageRelevanceRepository the TenantPackageRelevanceRepository for resolving tenant features
    * @param dataInitializeManager              the DataInitializeExecutor for handling data initialization tasks
    */
   public MenuServiceImpl(
@@ -81,13 +94,17 @@ public class MenuServiceImpl
       final DetailsProviderService detailsProviderService,
       final MenuAncestorRepository menuAncestorRepository,
       final PermissionsService permissionsService,
-      final MenuPermissionsRelevanceRepository menuPermissionsRelevanceRepository,
+      final FeatureService featureService,
+      final MenuFeatureRelevanceRepository menuFeatureRelevanceRepository,
+      final TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
       final DataInitializeExecutor dataInitializeManager
   ) {
     super(repository, detailsProviderService);
     this.menuAncestorRepository = menuAncestorRepository;
     this.permissionsService = permissionsService;
-    this.menuPermissionsRelevanceRepository = menuPermissionsRelevanceRepository;
+    this.featureService = featureService;
+    this.menuFeatureRelevanceRepository = menuFeatureRelevanceRepository;
+    this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
     this.dataInitializeManager = dataInitializeManager;
   }
 
@@ -143,7 +160,7 @@ public class MenuServiceImpl
       Collection<String> child = menuAncestorRepository.findChildIdsByAncestorIds(ids);
       deleteIds.addAll(child);
       // 删除菜单关联的权限
-      menuPermissionsRelevanceRepository.deleteAllByMenuIds(deleteIds);
+      menuFeatureRelevanceRepository.deleteAllByMenuIds(deleteIds);
       super.removeByIds(deleteIds);
     }
   }
@@ -156,32 +173,234 @@ public class MenuServiceImpl
   @Override
   @Transactional(propagation = Propagation.SUPPORTS, rollbackFor = Exception.class)
   public void sync(Set<MenuChildren> data) {
-    dataInitializeManager.execute("menu-permission-initialize", () -> {
-      var blockingQueue = new ArrayDeque<>(data);
-      while (!blockingQueue.isEmpty()) {
-        MenuChildren current = blockingQueue.poll();
-        Menu currentMenu = current.toMenu();
-        this.create(currentMenu);
-        Set<Permissions> permissions = current.getPermissions();
-        if (permissions != null && !permissions.isEmpty()) {
-          permissionsService.create(permissions);
-          permissionsService.flush();
-          this.authorize(
-              new MenuPermissionsRelevanceDto(
-                  currentMenu.getId(),
-                  permissions.stream().map(Permissions::getAuthority).collect(Collectors.toSet())
-              )
-          );
-        }
-        Set<MenuChildren> children = current.getChildren();
-        if (children != null && !children.isEmpty()) {
-          for (MenuChildren child : children) {
-            child.setParent(currentMenu.getId());
-            blockingQueue.offer(child);
-          }
+    dataInitializeManager.execute("menu-permission-initialize", () -> initializeMenusAndPermissions(data));
+    dataInitializeManager.execute("menu-feature-initialize", () -> initializeFeaturesAndRelations(data));
+    synchronizePermissionTypes(data);
+  }
+
+  private void initializeMenusAndPermissions(Set<MenuChildren> data) {
+    var blockingQueue = new ArrayDeque<>(data);
+    while (!blockingQueue.isEmpty()) {
+      MenuChildren current = blockingQueue.poll();
+      Menu currentMenu = this.create(current.toMenu());
+      Set<Permissions> permissions = current.getPermissions();
+      if (permissions != null && !permissions.isEmpty()) {
+        permissionsService.create(permissions);
+        permissionsService.flush();
+      }
+      Set<MenuChildren> children = current.getChildren();
+      if (children != null && !children.isEmpty()) {
+        for (MenuChildren child : children) {
+          child.setParent(currentMenu.getId());
+          blockingQueue.offer(child);
         }
       }
-    });
+    }
+  }
+
+  private void initializeFeaturesAndRelations(Set<MenuChildren> data) {
+    Collection<Menu> initializedMenus = getRepository().loadAll();
+    Map<String, Menu> menusByAuthority = initializedMenus.stream()
+        .filter(menu -> menu.getAuthority() != null && !menu.getAuthority().isBlank())
+        .collect(Collectors.toMap(Menu::getAuthority, menu -> menu, (left, right) -> left, HashMap::new));
+    Map<String, Menu> menusByPath = initializedMenus.stream()
+        .filter(menu -> menu.getPath() != null && !menu.getPath().isBlank())
+        .collect(Collectors.toMap(Menu::getPath, menu -> menu, (left, right) -> left, HashMap::new));
+
+    var blockingQueue = new ArrayDeque<>(data);
+    while (!blockingQueue.isEmpty()) {
+      MenuChildren current = blockingQueue.poll();
+      Map<String, Feature> featureDefinitions = resolveFeatureDefinitions(current);
+      upsertFeatures(featureDefinitions.values());
+      initializeFeaturePermissionRelations(featureDefinitions.keySet(), current.getPermissions());
+
+      Set<String> featureCodes = resolveFeatureCodes(current.getFeatureCodes(), featureDefinitions.keySet());
+      Menu menu = resolveMenu(menusByAuthority, menusByPath, current);
+      if (menu != null && !featureCodes.isEmpty()) {
+        initializeMenuFeatureRelations(menu.getId(), featureCodes);
+      }
+
+      Set<MenuChildren> children = current.getChildren();
+      if (children != null && !children.isEmpty()) {
+        blockingQueue.addAll(children);
+      }
+    }
+  }
+
+  private void synchronizePermissionTypes(Set<MenuChildren> data) {
+    Map<String, Integer> configuredTypes = new LinkedHashMap<>();
+    collectPermissionTypes(data, configuredTypes);
+    if (configuredTypes.isEmpty()) {
+      return;
+    }
+
+    List<Permissions> updates = permissionsService.findAll(Map.of()).stream()
+        .filter(permission -> permission.getAuthority() != null && configuredTypes.containsKey(permission.getAuthority()))
+        .filter(permission -> !Objects.equals(permission.getType(), configuredTypes.get(permission.getAuthority())))
+        .map(permission -> {
+          Permissions update = new Permissions();
+          BeanUtils.copyProperties(permission, update);
+          update.setType(configuredTypes.get(permission.getAuthority()));
+          return update;
+        })
+        .toList();
+
+    if (updates.isEmpty()) {
+      return;
+    }
+
+    log.info("Synchronizing permission types for {} permissions from menu configuration", updates.size());
+    for (Permissions update : updates) {
+      permissionsService.modifyById(update);
+    }
+    permissionsService.flush();
+  }
+
+  private void collectPermissionTypes(Set<MenuChildren> menus, Map<String, Integer> configuredTypes) {
+    if (menus == null || menus.isEmpty()) {
+      return;
+    }
+    for (MenuChildren menu : menus) {
+      Set<Permissions> permissions = menu.getPermissions();
+      if (permissions != null && !permissions.isEmpty()) {
+        for (Permissions permission : permissions) {
+          if (permission.getAuthority() == null || permission.getAuthority().isBlank()) {
+            continue;
+          }
+          configuredTypes.put(permission.getAuthority(), permission.getType());
+        }
+      }
+      collectPermissionTypes(menu.getChildren(), configuredTypes);
+    }
+  }
+
+  private Map<String, Feature> resolveFeatureDefinitions(MenuChildren current) {
+    Map<String, Feature> definitions = new LinkedHashMap<>();
+    Set<Permissions> permissions = current.getPermissions();
+    if (permissions == null || permissions.isEmpty()) {
+      return definitions;
+    }
+    for (Permissions permission : permissions) {
+      MenuFeatureDefinition definition = permission.getFeature();
+      if (definition == null || definition.getCode() == null || definition.getCode().isBlank()) {
+        continue;
+      }
+      Feature feature = new Feature();
+      feature.setCode(definition.getCode());
+      feature.setName(definition.getName());
+      feature.setDescription(definition.getDescription());
+      feature.setSort(current.getSort());
+
+      Feature existing = definitions.putIfAbsent(feature.getCode(), feature);
+      if (existing != null && (!Objects.equals(existing.getName(), feature.getName())
+          || !Objects.equals(existing.getDescription(), feature.getDescription())
+          || !Objects.equals(existing.getSort(), feature.getSort()))) {
+        log.warn("Conflicting feature metadata found for code: {}, using the first definition", feature.getCode());
+      }
+    }
+    return definitions;
+  }
+
+  private void upsertFeatures(Collection<Feature> definitions) {
+    if (definitions == null || definitions.isEmpty()) {
+      return;
+    }
+
+    Map<String, Feature> existingByCode = featureService.findAll(Map.of()).stream()
+        .filter(feature -> feature.getCode() != null && !feature.getCode().isBlank())
+        .collect(Collectors.toMap(Feature::getCode, feature -> feature, (left, right) -> left, HashMap::new));
+
+    List<Feature> toCreate = new ArrayList<>();
+    for (Feature definition : definitions) {
+      Feature existing = existingByCode.get(definition.getCode());
+      if (existing == null) {
+        toCreate.add(definition);
+        continue;
+      }
+      if (Objects.equals(existing.getName(), definition.getName())
+          && Objects.equals(existing.getDescription(), definition.getDescription())
+          && Objects.equals(existing.getSort(), definition.getSort())) {
+        continue;
+      }
+      Feature update = new Feature();
+      update.setId(existing.getId());
+      update.setCode(definition.getCode());
+      update.setName(definition.getName());
+      update.setDescription(definition.getDescription());
+      update.setSort(definition.getSort());
+      featureService.modifyById(update);
+    }
+
+    if (!toCreate.isEmpty()) {
+      featureService.create(new ArrayList<>(toCreate));
+      featureService.flush();
+    }
+  }
+
+  private void initializeFeaturePermissionRelations(Set<String> featureCodes, Set<Permissions> permissions) {
+    if (featureCodes == null || featureCodes.isEmpty() || permissions == null || permissions.isEmpty()) {
+      return;
+    }
+
+    Set<String> permissionAuthorities = permissions.stream()
+        .map(Permissions::getAuthority)
+        .filter(authority -> authority != null && !authority.isBlank())
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+    if (permissionAuthorities.isEmpty()) {
+      return;
+    }
+
+    for (String featureCode : featureCodes) {
+      Set<String> missingAuthorities = new LinkedHashSet<>(permissionAuthorities);
+      missingAuthorities.removeAll(new HashSet<>(featureService.authorizedPermissions(featureCode)));
+      if (missingAuthorities.isEmpty()) {
+        continue;
+      }
+      FeaturePermissionsRelevanceDto dto = new FeaturePermissionsRelevanceDto();
+      dto.setFeatureCode(featureCode);
+      dto.setPermissionAuthority(missingAuthorities);
+      featureService.authorizePermissions(dto);
+    }
+  }
+
+  private void initializeMenuFeatureRelations(String menuId, Set<String> featureCodes) {
+    if (menuId == null || menuId.isBlank() || featureCodes == null || featureCodes.isEmpty()) {
+      return;
+    }
+    Set<String> missingFeatureCodes = new LinkedHashSet<>(featureCodes);
+    missingFeatureCodes.removeAll(new HashSet<>(this.authorized(menuId)));
+    if (missingFeatureCodes.isEmpty()) {
+      return;
+    }
+    this.authorize(new MenuFeaturesRelevanceDto(menuId, missingFeatureCodes));
+  }
+
+  private Set<String> resolveFeatureCodes(Set<String> configuredFeatureCodes, Set<String> featureCodesFromPermissions) {
+    Set<String> featureCodes = new LinkedHashSet<>();
+    if (configuredFeatureCodes != null) {
+      featureCodes.addAll(configuredFeatureCodes.stream()
+          .filter(code -> code != null && !code.isBlank())
+          .collect(Collectors.toSet()));
+    }
+    if (featureCodesFromPermissions != null) {
+      featureCodes.addAll(featureCodesFromPermissions.stream()
+          .filter(code -> code != null && !code.isBlank())
+          .collect(Collectors.toSet()));
+    }
+    return featureCodes;
+  }
+
+  private Menu resolveMenu(Map<String, Menu> menusByAuthority, Map<String, Menu> menusByPath, MenuChildren current) {
+    if (current.getAuthority() != null && !current.getAuthority().isBlank()) {
+      Menu menu = menusByAuthority.get(current.getAuthority());
+      if (menu != null) {
+        return menu;
+      }
+    }
+    if (current.getPath() != null && !current.getPath().isBlank()) {
+      return menusByPath.get(current.getPath());
+    }
+    return null;
   }
 
   /**
@@ -204,12 +423,12 @@ public class MenuServiceImpl
       );
     }
 
-    Set<String> pms = new HashSet<>(userContext.getPermissions());
-    if (!pms.isEmpty()) {
+    Set<String> featureCodes = new HashSet<>(userContext.getPermissions());
+    if (!featureCodes.isEmpty()) {
       // 查询全部已授权的菜单ID
       Set<String> authorizedMenuIds = new HashSet<>();
-      // 加载菜单权限关联
-      authorizedMenuIds.addAll(menuPermissionsRelevanceRepository.findAllMenuIdByPermissionAuthority(pms));
+      // 兼容历史数据：若上下文中仍为旧的权限编码，则沿用旧表物理字段承载的绑定关系
+      authorizedMenuIds.addAll(menuFeatureRelevanceRepository.findAllMenuIdByFeatureCodes(featureCodes));
       // 加载菜单祖先，确保完整的菜单树
       authorizedMenuIds.addAll(menuAncestorRepository.findAncestorIdsByChildIdIn(authorizedMenuIds));
       // Load menus by collected authorities
@@ -257,37 +476,44 @@ public class MenuServiceImpl
    */
   @Override
   public Collection<String> authorized(String menuId) {
-    return this.menuPermissionsRelevanceRepository.authorized(menuId);
+    return this.menuFeatureRelevanceRepository.authorized(menuId);
   }
 
   /**
-   * Authorizes the menu with the specified permissions based on the provided DTO.
+   * Authorizes the menu with the specified features based on the provided DTO.
    *
-   * @param dto the data transfer object containing menu authority and permission authorities
+   * @param dto the data transfer object containing menu identifier and feature codes
    */
   @Override
   @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
-  public void authorize(MenuPermissionsRelevanceDto dto) {
-    Set<String> authorities = dto.getPermissionAuthority();
-    Set<MenuPermissionsRelevance> saveAuthorities = new HashSet<>(authorities.size());
-    for (String roleId : authorities) {
-      MenuPermissionsRelevance relevance = new MenuPermissionsRelevance();
+  public void authorize(MenuFeaturesRelevanceDto dto) {
+    Set<String> featureCodes = dto.resolvedFeatureCodes();
+    if (featureCodes == null || featureCodes.isEmpty()) {
+      return;
+    }
+    Set<MenuFeatureRelevance> saveAuthorities = new HashSet<>(featureCodes.size());
+    for (String featureCode : featureCodes) {
+      MenuFeatureRelevance relevance = new MenuFeatureRelevance();
       relevance.setMenuId(dto.getMenuId());
-      relevance.setPermissionAuthority(roleId);
+      relevance.setFeatureCode(featureCode);
       saveAuthorities.add(relevance);
     }
-    menuPermissionsRelevanceRepository.authorize(saveAuthorities);
+    menuFeatureRelevanceRepository.authorize(saveAuthorities);
   }
 
   /**
-   * Revokes the authorization of the menu with the specified permissions based on the provided DTO.
+   * Revokes the authorization of the menu with the specified features based on the provided DTO.
    *
-   * @param dto the data transfer object containing menu authority and permission authorities
+   * @param dto the data transfer object containing menu identifier and feature codes
    */
   @Override
   @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
-  public void unauthorized(MenuPermissionsRelevanceDto dto) {
-    menuPermissionsRelevanceRepository.unauthorized(dto.getMenuId(), dto.getPermissionAuthority());
+  public void unauthorized(MenuFeaturesRelevanceDto dto) {
+    Set<String> featureCodes = dto.resolvedFeatureCodes();
+    if (featureCodes == null || featureCodes.isEmpty()) {
+      return;
+    }
+    menuFeatureRelevanceRepository.unauthorized(dto.getMenuId(), featureCodes);
   }
 
   /**

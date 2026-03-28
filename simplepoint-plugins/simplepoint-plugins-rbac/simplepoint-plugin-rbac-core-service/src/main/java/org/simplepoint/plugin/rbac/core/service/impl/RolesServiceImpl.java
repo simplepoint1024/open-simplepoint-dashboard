@@ -10,8 +10,8 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
-import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
@@ -19,11 +19,12 @@ import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
+import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     implements RoleService {
 
   private final RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository;
+  private final TenantRepository tenantRepository;
 
   /**
    * Constructs a new RolesServiceImpl with the specified repository, user context, and details provider service.
@@ -48,10 +50,12 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   public RolesServiceImpl(
       RoleRepository repository,
       DetailsProviderService detailsProviderService,
-      RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository
+      RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository,
+      TenantRepository tenantRepository
   ) {
     super(repository, detailsProviderService);
     this.rolePermissionsRelevanceRepository = rolePermissionsRelevanceRepository;
+    this.tenantRepository = tenantRepository;
   }
 
   /**
@@ -62,7 +66,8 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
    */
   @Override
   public Page<RoleRelevanceVo> roleSelectItems(Pageable pageable) {
-    return getRepository().roleSelectItems(pageable);
+    requireTenantOwnerOrAdministratorIfTenantScoped();
+    return getRepository().roleSelectItems(resolveCurrentTenantScope(), pageable);
   }
 
 
@@ -75,7 +80,11 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void unauthorized(String roleId, Set<String> permissionAuthority) {
-    this.getRepository().unauthorized(roleId, permissionAuthority);
+    requireTenantOwnerOrAdministratorIfTenantScoped();
+    validateRoleBelongsToCurrentTenant(roleId);
+    String tenantId = resolveCurrentTenantScope();
+    this.getRepository().unauthorized(tenantId, roleId, permissionAuthority);
+    refreshCurrentTenantPermissionVersion();
   }
 
   /**
@@ -86,7 +95,9 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
    */
   @Override
   public Collection<String> authorized(String roleId) {
-    return getRepository().authorized(roleId);
+    requireTenantOwnerOrAdministratorIfTenantScoped();
+    validateRoleBelongsToCurrentTenant(roleId);
+    return getRepository().authorized(resolveCurrentTenantScope(), roleId);
   }
 
   /**
@@ -98,6 +109,8 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Collection<RolePermissionsRelevance> authorize(RolePermissionsRelevanceDto dto) {
+    requireTenantOwnerOrAdministratorIfTenantScoped();
+    validateRoleBelongsToCurrentTenant(dto.getRoleId());
     Set<String> pms = dto.getPermissionAuthority();
     Set<RolePermissionsRelevance> rels = new HashSet<>();
     String roleId = dto.getRoleId();
@@ -105,8 +118,47 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       RolePermissionsRelevance relevance = new RolePermissionsRelevance();
       relevance.setRoleId(roleId);
       relevance.setPermissionAuthority(pm);
+      applyCurrentTenantIdIfNecessary(relevance);
       rels.add(relevance);
     }
-    return this.rolePermissionsRelevanceRepository.saveAll(rels);
+    Collection<RolePermissionsRelevance> saved = this.rolePermissionsRelevanceRepository.saveAll(rels);
+    refreshCurrentTenantPermissionVersion();
+    return saved;
+  }
+
+  private void requireTenantOwnerOrAdministratorIfTenantScoped() {
+    String tenantId = currentTenantId();
+    if (tenantId == null || tenantId.isBlank() || "default".equals(tenantId)) {
+      return;
+    }
+    if (Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())) {
+      return;
+    }
+    var tenant = tenantRepository.findById(tenantId)
+        .orElseThrow(() -> new IllegalArgumentException("租户不存在"));
+    if (!Objects.equals(tenant.getOwnerId(), getAuthorizationContext().getUserId())) {
+      throw new AccessDeniedException("仅租户所有者可以配置当前租户角色权限");
+    }
+  }
+
+  private String resolveCurrentTenantScope() {
+    String tenantId = currentTenantId();
+    return tenantId == null || tenantId.isBlank() ? "default" : tenantId;
+  }
+
+  private void validateRoleBelongsToCurrentTenant(String roleId) {
+    String tenantId = resolveCurrentTenantScope();
+    Role role = findById(roleId).orElseThrow(() -> new IllegalArgumentException("角色不存在"));
+    if (!Objects.equals(role.getTenantId(), tenantId)) {
+      throw new IllegalArgumentException("角色不存在或不属于当前租户");
+    }
+  }
+
+  private void refreshCurrentTenantPermissionVersion() {
+    String tenantId = currentTenantId();
+    if (tenantId == null || tenantId.isBlank() || "default".equals(tenantId)) {
+      return;
+    }
+    tenantRepository.increasePermissionVersion(Set.of(tenantId));
   }
 }

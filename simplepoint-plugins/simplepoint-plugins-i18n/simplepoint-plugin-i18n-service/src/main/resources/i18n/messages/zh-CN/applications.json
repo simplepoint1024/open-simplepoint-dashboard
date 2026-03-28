@@ -1,0 +1,15 @@
+{
+  "applications.title.name": "应用名称",
+  "applications.description.name": "用于展示应用的名称",
+  "applications.title.code": "应用编码",
+  "applications.description.code": "用于系统识别的唯一应用编码",
+  "applications.title.description": "描述",
+  "applications.description.description": "应用的简要说明",
+  "applications.title.homepage": "首页地址",
+  "applications.description.homepage": "应用入口地址或首页链接",
+  "applications.title.sort": "排序",
+  "applications.description.sort": "数值越小越靠前展示",
+  "applications.title.enabled": "启用",
+  "applications.description.enabled": "当前应用是否启用",
+  "applications.button.config.feature": "配置功能"
+}

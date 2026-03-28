@@ -45,4 +45,8 @@ public interface JpaFeaturePermissionRelevanceRepository
       where tpr.tenantId = ?1
       """)
   Collection<String> findPermissionAuthoritiesByTenantId(String tenantId);
+
+  @Override
+  @Query("select distinct fpr.featureCode from FeaturePermissionRelevance fpr where fpr.permissionAuthority in ?1")
+  Collection<String> findFeatureCodesByPermissionAuthorities(Collection<String> permissionAuthorities);
 }

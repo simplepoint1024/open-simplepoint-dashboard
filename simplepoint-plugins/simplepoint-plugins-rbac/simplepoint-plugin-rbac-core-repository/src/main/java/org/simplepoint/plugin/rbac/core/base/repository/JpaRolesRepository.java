@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -31,15 +32,23 @@ import org.springframework.stereotype.Repository;
 public interface JpaRolesRepository extends BaseRepository<Role, String>, RoleRepository {
 
   @Override
-  @Query("SELECT new org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo(r.id, r.roleName,r.authority, r.description) FROM Role r")
-  Page<RoleRelevanceVo> roleSelectItems(Pageable pageable);
+  @Query("""
+      SELECT new org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo(r.id, r.roleName,r.authority, r.description)
+      FROM Role r
+      WHERE r.tenantId = :tenantId
+      """)
+  Page<RoleRelevanceVo> roleSelectItems(@Param("tenantId") String tenantId, Pageable pageable);
 
   @Override
   @Modifying
-  @Query("delete from RolePermissionsRelevance p where p.roleId = ?1 and p.permissionAuthority in ?2")
-  void unauthorized(String roleId, Set<String> permissionAuthority);
+  @Query("""
+      delete from RolePermissionsRelevance p
+      where p.tenantId = :tenantId and p.roleId = :roleId and p.permissionAuthority in :permissionAuthority
+      """)
+  void unauthorized(@Param("tenantId") String tenantId, @Param("roleId") String roleId,
+                    @Param("permissionAuthority") Set<String> permissionAuthority);
 
   @Override
-  @Query("select permissionAuthority from RolePermissionsRelevance where roleId = ?1")
-  Collection<String> authorized(String roleId);
+  @Query("select permissionAuthority from RolePermissionsRelevance where tenantId = :tenantId and roleId = :roleId")
+  Collection<String> authorized(@Param("tenantId") String tenantId, @Param("roleId") String roleId);
 }

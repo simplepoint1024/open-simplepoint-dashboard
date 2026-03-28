@@ -1,3 +1,11 @@
+plugins {
+    application
+}
+
+application {
+    mainClass.set("org.simplepoint.gateway.server.Host")
+}
+
 dependencies {
     implementation(project(":simplepoint-boot:simplepoint-boot-starter"))
     implementation(project(":simplepoint-boot:simplepoint-boot-config-consul-starter"))
@@ -18,4 +26,5 @@ dependencies {
     api(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api"))
 
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

@@ -27,4 +27,6 @@ public interface TenantPackageRelevanceRepository {
   Set<String> findTenantIdsByApplicationCodes(Collection<String> applicationCodes);
 
   Set<String> findTenantIdsByFeatureCodes(Collection<String> featureCodes);
+
+  Set<String> findFeatureCodesByTenantId(String tenantId);
 }

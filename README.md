@@ -52,7 +52,6 @@ The project is organized into a multi-module Gradle structure:
 ### Prerequisites
 
 *   Java Development Kit (JDK) 17 or later
-*   Gradle
 *   Node.js (optional, if developing the frontend separately)
 *   Git
 
@@ -62,21 +61,31 @@ Clone the backend repository:
 
 ```bash
 git clone git@github.com:simplepoint1024/open-simplepoint-dashboard.git
-cd simplepoint-main
+cd open-simplepoint-dashboard
 ```
 
-Build the project using Gradle:
+Validate the backend workspace using the bundled Gradle wrapper:
 
 ```bash
-./gradlew build
+./gradlew test
 ```
 
 ### Running the Application
 
-Run the Spring Boot application:
+This repository contains multiple runnable application modules. Common entry points are:
 
 ```bash
-./gradlew bootRun
+./gradlew :simplepoint-services:simplepoint-service-host:run
+./gradlew :simplepoint-services:simplepoint-service-authorization:run
+./gradlew :simplepoint-services:simplepoint-service-common:run
+```
+
+Example applications can also be launched directly:
+
+```bash
+./gradlew :simplepoint-examples:simplepoint-amqprpc-examples:simplepoint-amqprpc-example-provider:run
+./gradlew :simplepoint-examples:simplepoint-amqprpc-examples:simplepoint-amqprpc-example-consumer:run
+./gradlew :simplepoint-examples:simplepoint-plugin-examples:simplepoint-plugin-example-app:run
 ```
 
 ### Frontend Setup
@@ -87,7 +96,7 @@ This repository contains the backend API. For the frontend dashboard, please ref
 # Clone the React frontend
 git clone https://github.com/simplepoint1024/open-simplepoint-dashboard-react.git
 cd open-simplepoint-dashboard-react
-# Follow the frontend README for installation and running instructions
+# Follow the root README for installation, type-check, and build instructions
 ```
 
 ## Documentation
@@ -98,6 +107,38 @@ Extensive documentation is available in the `doc/` directory. It covers:
 *   **Architecture**: Component design, deployment diagrams, and module responsibilities.
 *   **Development Guide**: Environment setup, code conventions, and contribution guidelines.
 *   **API Documentation**: Guidelines for API development and OpenAPI generation.
+
+## Docker Swarm
+
+If you want a one-command local Swarm deployment that brings up Consul, Vault, PostgreSQL, Redis, RabbitMQ, and the main SimplePoint services (`host`, `common`, `authorization`), use:
+
+```bash
+./scripts/shell/start_swarm.sh
+```
+
+The script will:
+
+*   initialize Docker Swarm if needed,
+*   build the required application/bootstrap images locally,
+*   deploy `docker/swarm/stack.yml`,
+*   seed Consul KV config and the Vault transit key automatically.
+
+The current implementation is designed for a local or single-node Swarm manager. If you want to spread services across multiple nodes, push the built images to a registry first and point the stack to those image tags.
+
+By default it detects the current node address and publishes the project on:
+
+*   `http://<node-ip>:8080` for the host UI,
+*   `http://<node-ip>:9000` for the authorization server,
+*   `http://<node-ip>:8500` for Consul,
+*   `http://<node-ip>:8200/ui` for Vault.
+
+You can override the externally reachable address before deployment:
+
+```bash
+SIMPLEPOINT_PUBLIC_HOST=192.168.1.10 ./scripts/shell/start_swarm.sh
+```
+
+For the complete step-by-step guide, see [`doc/deployment/docker_swarm_deployment.md`](doc/deployment/docker_swarm_deployment.md).
 
 ## Contributing
 

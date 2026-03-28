@@ -9,15 +9,18 @@
 package org.simplepoint.plugin.rbac.core.service.impl;
 
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.PermissionsRepository;
 import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
 import org.simplepoint.security.entity.Permissions;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.Collection;
 
 /**
  * PermissionsServiceImpl provides the implementation for PermissionsService.
@@ -25,31 +28,43 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class PermissionsServiceImpl
-    extends BaseServiceImpl<PermissionsRepository, Permissions, String>
-    implements PermissionsService {
+        extends BaseServiceImpl<PermissionsRepository, Permissions, String>
+        implements PermissionsService {
 
-  /**
-   * Constructs a PermissionsServiceImpl with the specified repository, user context, and details provider service.
-   *
-   * @param repository                 the PermissionsRepository for data access
-   * @param authorizationContextHolder the UserContext for accessing user-related information
-   * @param detailsProviderService     the DetailsProviderService for additional details
-   */
-  public PermissionsServiceImpl(
-      PermissionsRepository repository,
-      DetailsProviderService detailsProviderService
-  ) {
-    super(repository, detailsProviderService);
-  }
+    /**
+     * Constructs a PermissionsServiceImpl with the specified repository, user context, and details provider service.
+     *
+     * @param repository             the PermissionsRepository for data access
+     * @param detailsProviderService the DetailsProviderService for additional details
+     */
+    public PermissionsServiceImpl(
+            PermissionsRepository repository,
+            DetailsProviderService detailsProviderService
+    ) {
+        super(repository, detailsProviderService);
+    }
 
-  /**
-   * Retrieves a paginated list of permission items along with their associated roles.
-   *
-   * @param pageable the pagination information
-   * @return a page of RolePermissionsRelevanceVo containing permission items and their roles
-   */
-  @Override
-  public Page<PermissionsRelevanceVo> permissionItems(Pageable pageable) {
-    return getRepository().permissionItems(pageable);
-  }
+    /**
+     * Retrieves a paginated list of permission items along with their associated roles.
+     *
+     * @param pageable the pagination information
+     * @return a page of RolePermissionsRelevanceVo containing permission items and their roles
+     */
+    @Override
+    public Page<PermissionsRelevanceVo> permissionItems(Pageable pageable) {
+        AuthorizationContext context = AuthorizationContextHolder.getContext();
+        if (context.getIsAdministrator()) {
+            return getRepository().permissionItemsAll(pageable);
+        }
+        Collection<String> contextPermissions = context.getPermissions();
+        return getRepository().permissionItems(pageable, contextPermissions);
+    }
+
+    @Override
+    public Collection<PermissionsRelevanceVo> permissionItems(Collection<String> authorities) {
+        if (authorities == null || authorities.isEmpty()) {
+            return java.util.List.of();
+        }
+        return getRepository().permissionItems(authorities);
+    }
 }
