@@ -12,7 +12,7 @@ import javax.sql.DataSource;
  * This class provides a basic implementation for obtaining database connections
  * and wraps a delegate DataSource for customization or additional functionality.
  */
-public class SimpleDataSource implements DataSource {
+public class SimpleDataSource implements DataSource, AutoCloseable {
 
   private final DataSource delegate;
 
@@ -69,5 +69,16 @@ public class SimpleDataSource implements DataSource {
   @Override
   public boolean isWrapperFor(Class<?> iface) throws SQLException {
     return delegate.isWrapperFor(iface);
+  }
+
+  @Override
+  public void close() {
+    if (delegate instanceof AutoCloseable closeable) {
+      try {
+        closeable.close();
+      } catch (Exception ex) {
+        throw new IllegalStateException("关闭数据源失败: " + ex.getMessage(), ex);
+      }
+    }
   }
 }

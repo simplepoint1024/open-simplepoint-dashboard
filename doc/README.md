@@ -224,6 +224,14 @@ doc/
 
 ---
 
+## ⭐ 当前推荐优先阅读
+
+- DNA 联邦查询平台设计：`doc/design/dna_federated_query_platform.md`
+- 服务拓扑：`doc/architecture/service_topology.md`
+- 授权流程：`doc/design/authorization_flow.md`
+
+---
+
 ## 🧩 文档规范
 
 - 所有图表优先使用 **Mermaid**

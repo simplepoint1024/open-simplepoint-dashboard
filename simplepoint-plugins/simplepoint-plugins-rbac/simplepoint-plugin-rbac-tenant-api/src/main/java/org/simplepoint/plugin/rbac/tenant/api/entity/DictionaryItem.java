@@ -106,6 +106,21 @@ public class DictionaryItem extends BaseEntityImpl<String> {
 
   @Order(2)
   @Schema(
+      title = "i18n:dictionaries.title.i18nKey",
+      description = "i18n:dictionaries.description.i18nKey",
+      example = "organizations.type.group",
+      maxLength = 255,
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  @Column(name = "i18n_key", length = 255)
+  private String i18nKey;
+
+  @Order(3)
+  @Schema(
       title = "i18n:dictionaries.title.value",
       description = "i18n:dictionaries.description.value",
       example = "1",
@@ -120,7 +135,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
   @Column(name = "item_value", length = 128, nullable = false)
   private String value;
 
-  @Order(3)
+  @Order(4)
   @Schema(
       title = "i18n:dictionaries.title.description",
       description = "i18n:dictionaries.description.description",
@@ -135,7 +150,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
   @Column(length = 512)
   private String description;
 
-  @Order(4)
+  @Order(5)
   @Schema(
       title = "i18n:dictionaries.title.sort",
       description = "i18n:dictionaries.description.sort",
@@ -148,7 +163,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
   )
   private Integer sort;
 
-  @Order(5)
+  @Order(6)
   @Schema(
       title = "i18n:dictionaries.title.enabled",
       description = "i18n:dictionaries.description.enabled",

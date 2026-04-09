@@ -1,5 +1,6 @@
 package org.simplepoint.plugin.rbac.tenant.service.impl;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -7,7 +8,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChangeLogRecordCommand;
+import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Feature;
 import org.simplepoint.plugin.rbac.tenant.api.entity.FeaturePermissionRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.FeaturePermissionsRelevanceDto;
@@ -30,6 +34,7 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
   private final ApplicationFeatureRelevanceRepository applicationFeatureRelevanceRepository;
   private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
   private final TenantRepository tenantRepository;
+  private final PermissionChangeLogRemoteService permissionChangeLogRemoteService;
 
   public FeatureServiceImpl(
       FeatureRepository repository,
@@ -37,13 +42,15 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
       FeaturePermissionRelevanceRepository featurePermissionRelevanceRepository,
       ApplicationFeatureRelevanceRepository applicationFeatureRelevanceRepository,
       TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
-      TenantRepository tenantRepository
+      TenantRepository tenantRepository,
+      PermissionChangeLogRemoteService permissionChangeLogRemoteService
   ) {
     super(repository, detailsProviderService);
     this.featurePermissionRelevanceRepository = featurePermissionRelevanceRepository;
     this.applicationFeatureRelevanceRepository = applicationFeatureRelevanceRepository;
     this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
     this.tenantRepository = tenantRepository;
+    this.permissionChangeLogRemoteService = permissionChangeLogRemoteService;
   }
 
   @Override
@@ -79,6 +86,7 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
 
     Collection<FeaturePermissionRelevance> saved = featurePermissionRelevanceRepository.saveAll(relations);
     refreshTenantsByFeatureCodes(Set.of(featureCode));
+    recordPermissionChange("AUTHORIZE", featureCode, permissionAuthorities);
     return saved;
   }
 
@@ -92,6 +100,7 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
     String requiredFeatureCode = requireCode(featureCode, "功能编码不能为空");
     featurePermissionRelevanceRepository.unauthorized(requiredFeatureCode, normalizedAuthorities);
     refreshTenantsByFeatureCodes(Set.of(requiredFeatureCode));
+    recordPermissionChange("UNAUTHORIZE", requiredFeatureCode, normalizedAuthorities);
   }
 
   @Override
@@ -157,5 +166,65 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
       throw new IllegalArgumentException(message);
     }
     return code;
+  }
+
+  private void recordPermissionChange(String action, String featureCode, Set<String> permissionAuthorities) {
+    AuthorizationContext authorizationContext = getAuthorizationContext();
+    if (authorizationContext == null || authorizationContext.getUserId() == null || authorizationContext.getUserId().isBlank()) {
+      return;
+    }
+
+    Set<String> normalizedAuthorities = permissionAuthorities == null ? Set.of() : permissionAuthorities;
+    PermissionChangeLogRecordCommand command = new PermissionChangeLogRecordCommand();
+    command.setChangedAt(Instant.now());
+    command.setChangeType("FEATURE_PERMISSION");
+    command.setAction(action);
+    command.setSubjectType("FEATURE");
+    command.setSubjectId(featureCode);
+    command.setSubjectLabel(resolveFeatureLabel(featureCode));
+    command.setTargetType("PERMISSION");
+    command.setTargetSummary(joinValues(normalizedAuthorities));
+    command.setTargetCount(normalizedAuthorities.size());
+    command.setOperatorId(authorizationContext.getUserId());
+    command.setTenantId(resolveTenantScope());
+    command.setContextId(authorizationContext.getContextId());
+    command.setSourceService("common");
+    command.setDescription(action + " FEATURE_PERMISSION [" + command.getSubjectLabel() + "] -> [" + command.getTargetSummary() + "]");
+    permissionChangeLogRemoteService.record(command);
+  }
+
+  private String resolveFeatureLabel(String featureCode) {
+    return findAllByCodes(Set.of(featureCode)).stream()
+        .findFirst()
+        .map(feature -> firstNonBlank(feature.getCode(), feature.getName()))
+        .orElse(featureCode);
+  }
+
+  private String resolveTenantScope() {
+    String tenantId = currentTenantId();
+    return tenantId == null || tenantId.isBlank() ? "default" : tenantId;
+  }
+
+  private String joinValues(Set<String> values) {
+    if (values == null || values.isEmpty()) {
+      return "";
+    }
+    return values.stream()
+        .filter(value -> value != null && !value.isBlank())
+        .collect(Collectors.toCollection(LinkedHashSet::new))
+        .stream()
+        .collect(Collectors.joining(","));
+  }
+
+  private String firstNonBlank(String... values) {
+    if (values == null) {
+      return null;
+    }
+    for (String value : values) {
+      if (value != null && !value.isBlank()) {
+        return value;
+      }
+    }
+    return null;
   }
 }

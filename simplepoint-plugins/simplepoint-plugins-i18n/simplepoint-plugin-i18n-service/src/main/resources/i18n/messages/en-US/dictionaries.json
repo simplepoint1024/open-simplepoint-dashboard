@@ -13,6 +13,8 @@
   "dictionaries.description.dictionaryCode": "Dictionary code that owns this item",
   "dictionaries.title.itemName": "Item Name",
   "dictionaries.description.itemName": "Display label of the dictionary item",
+  "dictionaries.title.i18nKey": "I18n Key",
+  "dictionaries.description.i18nKey": "I18n message key for the item label; option rendering prefers this key when present",
   "dictionaries.title.value": "Item Value",
   "dictionaries.description.value": "Actual value stored in business fields",
   "dictionaries.button.config.item": "Configure Items"

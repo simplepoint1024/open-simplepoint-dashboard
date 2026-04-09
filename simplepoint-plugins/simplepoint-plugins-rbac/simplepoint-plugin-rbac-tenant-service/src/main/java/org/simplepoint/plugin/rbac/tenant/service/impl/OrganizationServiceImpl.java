@@ -9,9 +9,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.plugin.rbac.tenant.api.constants.TenantDictionaryCodes;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
+import org.simplepoint.plugin.rbac.tenant.api.repository.DictionaryItemRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.OrganizationService;
+import org.simplepoint.plugin.rbac.tenant.api.vo.DictionaryOptionVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,13 +28,23 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
     implements OrganizationService {
 
   private final OrganizationRepository organizationRepository;
+  private final DictionaryItemRepository dictionaryItemRepository;
 
+  /**
+   * Creates the organization service.
+   *
+   * @param repository               the organization repository
+   * @param detailsProviderService   the schema/details provider
+   * @param dictionaryItemRepository the dictionary item repository
+   */
   public OrganizationServiceImpl(
       OrganizationRepository repository,
-      DetailsProviderService detailsProviderService
+      DetailsProviderService detailsProviderService,
+      DictionaryItemRepository dictionaryItemRepository
   ) {
     super(repository, detailsProviderService);
     this.organizationRepository = repository;
+    this.dictionaryItemRepository = dictionaryItemRepository;
   }
 
   @Override
@@ -134,8 +147,21 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
   private void normalizeEntity(Organization entity) {
     entity.setName(requireText(entity.getName(), "组织名称不能为空"));
     entity.setCode(requireText(entity.getCode(), "组织编码不能为空"));
+    entity.setType(requireOrganizationType(entity.getType()));
     entity.setParentId(trimToNull(entity.getParentId()));
     entity.setDescription(trimToNull(entity.getDescription()));
+  }
+
+  private String requireOrganizationType(String type) {
+    String normalized = requireText(type, "组织类型不能为空");
+    boolean supported = dictionaryItemRepository.options(TenantDictionaryCodes.ORGANIZATION_TYPE)
+        .stream()
+        .map(DictionaryOptionVo::value)
+        .anyMatch(normalized::equals);
+    if (!supported) {
+      throw new IllegalArgumentException("组织类型无效");
+    }
+    return normalized;
   }
 
   private void validateUniqueCode(String tenantId, String code, String currentId) {

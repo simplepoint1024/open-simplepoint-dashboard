@@ -6,4 +6,5 @@ dependencies{
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-api"))
     implementation(project(":simplepoint-data:simplepoint-data-initializer"))
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-api"))
 }

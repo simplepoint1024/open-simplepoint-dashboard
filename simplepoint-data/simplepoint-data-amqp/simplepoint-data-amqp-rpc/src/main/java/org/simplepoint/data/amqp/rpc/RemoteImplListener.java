@@ -8,15 +8,22 @@
 
 package org.simplepoint.data.amqp.rpc;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.simplepoint.core.ApplicationContextHolder;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.data.amqp.rpc.properties.ArpcProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageProperties;
@@ -26,7 +33,6 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ClassUtils;
 
 /**
  * A listener component for processing incoming AMQP
@@ -57,12 +63,18 @@ class RemoteImplListener implements ApplicationContextAware {
 
   private final ArpcProperties properties;
 
+  private final MeterRegistry meterRegistry;
+
+  private volatile DispatchRegistry dispatchRegistry;
+
   RemoteImplListener(
       final RabbitTemplate rabbitTemplate,
-      final ArpcProperties properties
+      final ArpcProperties properties,
+      @Nullable final MeterRegistry meterRegistry
   ) {
     this.rabbitTemplate = rabbitTemplate;
     this.properties = properties;
+    this.meterRegistry = meterRegistry;
   }
 
   /**
@@ -71,76 +83,58 @@ class RemoteImplListener implements ApplicationContextAware {
    *
    * @param message the incoming AMQP {@link Message} to process
    */
-  @RabbitListener(queues = ArpcProperties.REQUEST_QUEUE_NAME_KEY)
+  @RabbitListener(
+      queues = ArpcProperties.REQUEST_QUEUE_NAME_KEY,
+      containerFactory = "arpcListenerContainerFactory"
+  )
   void process(Message message) {
+    MessageProperties requestMessageProps = message.getMessageProperties();
+    String correlationId = requestMessageProps.getCorrelationId();
+    String replyTo = requestMessageProps.getReplyTo();
+    RemoteProtocol.RemoteMethodDescriptor descriptor = RemoteProtocol.resolveDescriptor(requestMessageProps);
+    Object[] arguments = new Object[0];
+    long startedAt = System.nanoTime();
+    String outcome = "success";
     try {
-      MessageProperties requestMessageProps = message.getMessageProperties();
-      String correlationId = requestMessageProps.getCorrelationId();
-      String replyTo = requestMessageProps.getReplyTo();
-      String type = requestMessageProps.getType();
-      String to = properties.prefix(requestMessageProps.getHeader("to"));
+      RemoteProtocol.assertSupportedProtocolVersion(requestMessageProps);
+      Object decoded = RemoteProxyFactory.toObjectArray(message.getBody());
+      if (decoded instanceof Object[] payload) {
+        arguments = payload;
+      } else if (decoded != null) {
+        arguments = new Object[] {decoded};
+      }
+      String signature = RemoteProtocol.signature(
+          descriptor.interfaceName(),
+          descriptor.methodName(),
+          descriptor.parameterTypes()
+      );
+      log.debug("Received RPC request from {} correlationId:{} type:{}",
+          requestMessageProps.getAppId(), correlationId, signature);
 
-      log.info("Received a request from {} correlationId:{} type:{}",
-          requestMessageProps.getAppId(), correlationId, type);
+      RemoteServiceMethod serviceMethod = resolveServiceMethod(descriptor, arguments);
+      if (serviceMethod == null) {
+        throw new IllegalStateException("No remote service method registered for " + signature);
+      }
 
-      // Check if the message type is valid
-      if (type == null) {
-        log.warn("Message type is null, unable to process the message.");
+      Object invoke = serviceMethod.invoke(arguments);
+      if (replyTo == null || replyTo.isBlank()) {
+        log.debug("Processed one-way RPC call {}", signature);
         return;
       }
-
-      // Extract class and method information from the message type
-      int index = type.lastIndexOf('.');
-      String className = type.substring(0, index);
-      Map<String, ?> beans = applicationContext.getBeansOfType(
-          ClassUtils.forName(className, ApplicationContextHolder.getClassloader()));
-
-      for (Object bean : beans.values()) {
-        // Process the bean if annotated with @AmqpRemoteService
-        if (bean.getClass().isAnnotationPresent(AmqpRemoteService.class)) {
-          String methodName = type.substring(index + 1).replace("()", "");
-          List<Class<?>> classes = new ArrayList<>();
-
-          // Convert message body to payload array
-          Object[] payload = (Object[]) RemoteProxyFactory.toObjectArray(message.getBody());
-          for (Object object : payload) {
-            classes.add(object.getClass());
-          }
-
-          // Invoke the appropriate method on the bean
-          Method declaredMethod =
-              bean.getClass().getDeclaredMethod(methodName, classes.toArray(new Class<?>[0]));
-          declaredMethod.setAccessible(true);
-          Object invoke = declaredMethod.invoke(bean, payload);
-          Class<?> returnType = declaredMethod.getReturnType();
-          if (returnType == void.class) {
-            log.info("Method {} invoked successfully on bean {} with no return value.",
-                methodName, bean.getClass().getName());
-            return;
-          }
-          if (replyTo == null || replyTo.isEmpty()) {
-            log.warn("ReplyTo is null or empty, unable to send a reply for method {}.",
-                methodName);
-            return;
-          }
-          // Build the reply message
-          Message build = MessageBuilder
-              .withBody(RemoteProxyFactory.toByteArray(invoke))
-              .setCorrelationId(correlationId)
-              .setReplyTo(replyTo)
-              .setPriority(properties.getPriority())
-              .setHeader("to", to)
-              .setAppId(properties.prefix(properties.getAppId()))
-              .build();
-
-          log.info("Sending with CorrelationId:{} to:{} reply to:{}", correlationId, to, replyTo);
-          rabbitTemplate.send(replyTo, build);
-
-          return;
-        }
-      }
+      publishReply(replyTo, buildReply(correlationId, signature, invoke), signature);
+    } catch (AmqpRejectAndDontRequeueException deadLetterException) {
+      outcome = "error";
+      throw deadLetterException;
     } catch (Exception e) {
-      log.error(e.getMessage(), e);
+      outcome = "error";
+      String signature = RemoteProtocol.signature(
+          descriptor.interfaceName(),
+          descriptor.methodName(),
+          descriptor.parameterTypes()
+      );
+      handleFailure(replyTo, correlationId, signature, e);
+    } finally {
+      RemoteMetrics.recordServer(meterRegistry, descriptor, outcome, System.nanoTime() - startedAt);
     }
   }
 
@@ -153,5 +147,224 @@ class RemoteImplListener implements ApplicationContextAware {
   @Override
   public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
     this.applicationContext = applicationContext;
+  }
+
+  private Message buildReply(final String correlationId, final String signature, final Object value) {
+    return RemoteProtocol.withProtocolVersion(MessageBuilder
+        .withBody(RemoteProxyFactory.toByteArray(value))
+        .setCorrelationId(correlationId)
+        .setPriority(properties.getPriority())
+        .setType(signature)
+        .setAppId(properties.prefix(properties.getAppId())))
+        .build();
+  }
+
+  private Message buildErrorReply(final String correlationId, final String signature, final Exception exception) {
+    Throwable root = rootCause(exception);
+    RemoteInvocationError error = new RemoteInvocationError(root.getClass().getName(), root.getMessage());
+    return RemoteProtocol.withProtocolVersion(MessageBuilder
+        .withBody(RemoteProxyFactory.toByteArray(error))
+        .setCorrelationId(correlationId)
+        .setPriority(properties.getPriority())
+        .setType(signature)
+        .setHeader(RemoteProtocol.HEADER_REMOTE_ERROR, true)
+        .setAppId(properties.prefix(properties.getAppId())))
+        .build();
+  }
+
+  private void publishReply(final String replyTo, final Message reply, final String signature) {
+    try {
+      rabbitTemplate.send(replyTo, reply);
+    } catch (Exception exception) {
+      throw deadLetter(signature, "Failed to publish RPC reply for " + signature, exception);
+    }
+  }
+
+  private void handleFailure(final String replyTo, final String correlationId, final String signature,
+                             final Exception exception) {
+    log.error("Failed to process RPC request {}", signature, exception);
+    if (replyTo == null || replyTo.isBlank()) {
+      throw deadLetter(signature, "Failed RPC request with no replyTo for " + signature, exception);
+    }
+    try {
+      rabbitTemplate.send(replyTo, buildErrorReply(correlationId, signature, exception));
+    } catch (Exception replyError) {
+      log.error("Failed to publish RPC error reply for {}", signature, replyError);
+      throw deadLetter(signature, "Failed to publish RPC error reply for " + signature, replyError);
+    }
+  }
+
+  private AmqpRejectAndDontRequeueException deadLetter(final String signature, final String message,
+                                                       final Exception exception) {
+    log.error("{}; routing original message to DLQ", message, exception);
+    return new AmqpRejectAndDontRequeueException(message + " [signature=" + signature + "]", exception);
+  }
+
+  private Throwable rootCause(final Throwable throwable) {
+    Throwable current = throwable;
+    while (current.getCause() != null && current.getCause() != current) {
+      current = current.getCause();
+    }
+    return current;
+  }
+
+  private RemoteServiceMethod resolveServiceMethod(final RemoteProtocol.RemoteMethodDescriptor descriptor,
+                                                  final Object[] arguments) {
+    if (descriptor.interfaceName() == null || descriptor.methodName() == null) {
+      return null;
+    }
+    DispatchRegistry registry = dispatchRegistry();
+    RemoteMethodKey exactKey = new RemoteMethodKey(
+        descriptor.interfaceName(),
+        descriptor.methodName(),
+        descriptor.parameterTypes()
+    );
+    RemoteServiceMethod exact = registry.bySignature().get(exactKey);
+    if (exact != null) {
+      return exact;
+    }
+    List<RemoteServiceMethod> candidates = registry.byMethod().get(new RemoteMethodSelector(
+        descriptor.interfaceName(),
+        descriptor.methodName()
+    ));
+    if (candidates == null || candidates.isEmpty()) {
+      return null;
+    }
+    List<RemoteServiceMethod> matches = candidates.stream()
+        .filter(candidate -> candidate.matches(arguments))
+        .toList();
+    if (matches.isEmpty()) {
+      return null;
+    }
+    if (matches.size() > 1) {
+      throw new IllegalStateException("Ambiguous remote service method for "
+          + RemoteProtocol.signature(descriptor.interfaceName(), descriptor.methodName(), descriptor.parameterTypes()));
+    }
+    return matches.get(0);
+  }
+
+  private DispatchRegistry dispatchRegistry() {
+    DispatchRegistry current = dispatchRegistry;
+    if (current != null) {
+      return current;
+    }
+    synchronized (this) {
+      if (dispatchRegistry == null) {
+        dispatchRegistry = buildDispatchRegistry();
+      }
+      return dispatchRegistry;
+    }
+  }
+
+  private DispatchRegistry buildDispatchRegistry() {
+    Map<RemoteMethodKey, RemoteServiceMethod> exact = new LinkedHashMap<>();
+    Map<RemoteMethodSelector, List<RemoteServiceMethod>> grouped = new LinkedHashMap<>();
+    Map<String, Object> beans = applicationContext.getBeansWithAnnotation(AmqpRemoteService.class);
+    for (Map.Entry<String, Object> entry : beans.entrySet()) {
+      Object bean = entry.getValue();
+      Class<?> beanType = applicationContext.getType(entry.getKey());
+      if (beanType == null) {
+        beanType = bean.getClass();
+      }
+      for (Class<?> remoteInterface : collectRemoteInterfaces(beanType)) {
+        for (Method method : remoteInterface.getMethods()) {
+          RemoteServiceMethod serviceMethod = new RemoteServiceMethod(bean, method);
+          RemoteMethodKey key = new RemoteMethodKey(
+              remoteInterface.getName(),
+              method.getName(),
+              RemoteProtocol.parameterTypeNames(method)
+          );
+          exact.putIfAbsent(key, serviceMethod);
+          grouped.computeIfAbsent(new RemoteMethodSelector(remoteInterface.getName(), method.getName()),
+              ignored -> new ArrayList<>()).add(serviceMethod);
+        }
+      }
+    }
+    return new DispatchRegistry(Map.copyOf(exact), copyGrouped(grouped));
+  }
+
+  private Map<RemoteMethodSelector, List<RemoteServiceMethod>> copyGrouped(
+      final Map<RemoteMethodSelector, List<RemoteServiceMethod>> grouped) {
+    Map<RemoteMethodSelector, List<RemoteServiceMethod>> copied = new LinkedHashMap<>();
+    grouped.forEach((key, value) -> copied.put(key, List.copyOf(value)));
+    return Map.copyOf(copied);
+  }
+
+  private Collection<Class<?>> collectRemoteInterfaces(final Class<?> beanType) {
+    Map<String, Class<?>> interfaces = new LinkedHashMap<>();
+    ArrayDeque<Class<?>> queue = new ArrayDeque<>();
+    queue.add(beanType);
+    while (!queue.isEmpty()) {
+      Class<?> current = queue.poll();
+      if (current == null || Objects.equals(current, Object.class)) {
+        continue;
+      }
+      for (Class<?> currentInterface : current.getInterfaces()) {
+        if (currentInterface.isAnnotationPresent(AmqpRemoteClient.class)) {
+          interfaces.putIfAbsent(currentInterface.getName(), currentInterface);
+        }
+        queue.offer(currentInterface);
+      }
+      if (current.getSuperclass() != null) {
+        queue.offer(current.getSuperclass());
+      }
+    }
+    return interfaces.values();
+  }
+
+  private record DispatchRegistry(Map<RemoteMethodKey, RemoteServiceMethod> bySignature,
+                                  Map<RemoteMethodSelector, List<RemoteServiceMethod>> byMethod) {
+  }
+
+  private record RemoteMethodSelector(String interfaceName, String methodName) {
+  }
+
+  private record RemoteMethodKey(String interfaceName, String methodName, String[] parameterTypes) {
+
+    @Override
+    public boolean equals(final Object object) {
+      if (this == object) {
+        return true;
+      }
+      if (!(object instanceof RemoteMethodKey that)) {
+        return false;
+      }
+      return Objects.equals(interfaceName, that.interfaceName)
+          && Objects.equals(methodName, that.methodName)
+          && java.util.Arrays.equals(parameterTypes, that.parameterTypes);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(interfaceName, methodName, java.util.Arrays.hashCode(parameterTypes));
+    }
+  }
+
+  private record RemoteServiceMethod(Object bean, Method method) {
+
+    private Object invoke(final Object[] arguments) throws Exception {
+      return method.invoke(bean, arguments);
+    }
+
+    private boolean matches(final Object[] arguments) {
+      Class<?>[] parameterTypes = method.getParameterTypes();
+      if (parameterTypes.length != arguments.length) {
+        return false;
+      }
+      for (int i = 0; i < parameterTypes.length; i++) {
+        Object argument = arguments[i];
+        Class<?> parameterType = parameterTypes[i];
+        if (argument == null) {
+          if (parameterType.isPrimitive()) {
+            return false;
+          }
+          continue;
+        }
+        if (!RemoteProtocol.wrapPrimitive(parameterType).isAssignableFrom(argument.getClass())) {
+          return false;
+        }
+      }
+      return true;
+    }
   }
 }

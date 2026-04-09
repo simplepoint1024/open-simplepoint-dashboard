@@ -17,6 +17,7 @@ import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.simplepoint.plugin.rbac.tenant.api.constants.TenantDictionaryCodes;
 import org.springframework.core.annotation.Order;
 
 /**
@@ -118,6 +119,24 @@ public class Organization extends TenantBaseEntityImpl<String> {
 
   @Order(3)
   @Schema(
+      title = "i18n:organizations.title.type",
+      description = "i18n:organizations.description.type",
+      example = "group",
+      maxLength = 64,
+      minLength = 1,
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+              @ExtensionProperty(name = "widget", value = "select"),
+              @ExtensionProperty(name = "dictCode", value = TenantDictionaryCodes.ORGANIZATION_TYPE),
+          })
+      }
+  )
+  @Column(name = "organization_type", length = 64)
+  private String type;
+
+  @Order(4)
+  @Schema(
       title = "描述",
       description = "组织机构的简要说明",
       example = "集团总部组织",
@@ -131,7 +150,7 @@ public class Organization extends TenantBaseEntityImpl<String> {
   @Column(length = 512)
   private String description;
 
-  @Order(4)
+  @Order(5)
   @Schema(
       title = "排序",
       description = "数值越小越靠前展示",
@@ -144,7 +163,7 @@ public class Organization extends TenantBaseEntityImpl<String> {
   )
   private Integer sort;
 
-  @Order(5)
+  @Order(6)
   @Schema(
       title = "启用",
       description = "当前组织是否启用",

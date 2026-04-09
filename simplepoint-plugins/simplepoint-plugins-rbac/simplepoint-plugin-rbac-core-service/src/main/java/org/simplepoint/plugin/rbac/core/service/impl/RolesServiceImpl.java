@@ -8,12 +8,18 @@
 
 package org.simplepoint.plugin.rbac.core.service.impl;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChangeLogRecordCommand;
+import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
@@ -22,6 +28,7 @@ import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -39,6 +46,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
 
   private final RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository;
   private final TenantRepository tenantRepository;
+  private final PermissionChangeLogRemoteService permissionChangeLogRemoteService;
 
   /**
    * Constructs a new RolesServiceImpl with the specified repository, user context, and details provider service.
@@ -51,11 +59,14 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       RoleRepository repository,
       DetailsProviderService detailsProviderService,
       RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository,
-      TenantRepository tenantRepository
+      @Autowired(required = false)
+      TenantRepository tenantRepository,
+      PermissionChangeLogRemoteService permissionChangeLogRemoteService
   ) {
     super(repository, detailsProviderService);
     this.rolePermissionsRelevanceRepository = rolePermissionsRelevanceRepository;
     this.tenantRepository = tenantRepository;
+    this.permissionChangeLogRemoteService = permissionChangeLogRemoteService;
   }
 
   /**
@@ -85,6 +96,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     String tenantId = resolveCurrentTenantScope();
     this.getRepository().unauthorized(tenantId, roleId, permissionAuthority);
     refreshCurrentTenantPermissionVersion();
+    recordPermissionChange("UNAUTHORIZE", roleId, permissionAuthority);
   }
 
   /**
@@ -123,6 +135,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     }
     Collection<RolePermissionsRelevance> saved = this.rolePermissionsRelevanceRepository.saveAll(rels);
     refreshCurrentTenantPermissionVersion();
+    recordPermissionChange("AUTHORIZE", roleId, pms);
     return saved;
   }
 
@@ -160,5 +173,59 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       return;
     }
     tenantRepository.increasePermissionVersion(Set.of(tenantId));
+  }
+
+  private void recordPermissionChange(String action, String roleId, Set<String> permissionAuthorities) {
+    AuthorizationContext authorizationContext = getAuthorizationContext();
+    if (authorizationContext == null || authorizationContext.getUserId() == null || authorizationContext.getUserId().isBlank()) {
+      return;
+    }
+
+    Set<String> normalizedAuthorities = permissionAuthorities == null ? Set.of() : permissionAuthorities;
+    PermissionChangeLogRecordCommand command = new PermissionChangeLogRecordCommand();
+    command.setChangedAt(Instant.now());
+    command.setChangeType("ROLE_PERMISSION");
+    command.setAction(action);
+    command.setSubjectType("ROLE");
+    command.setSubjectId(roleId);
+    command.setSubjectLabel(resolveRoleLabel(roleId));
+    command.setTargetType("PERMISSION");
+    command.setTargetSummary(joinValues(normalizedAuthorities));
+    command.setTargetCount(normalizedAuthorities.size());
+    command.setOperatorId(authorizationContext.getUserId());
+    command.setTenantId(resolveCurrentTenantScope());
+    command.setContextId(authorizationContext.getContextId());
+    command.setSourceService("common");
+    command.setDescription(action + " ROLE_PERMISSION [" + command.getSubjectLabel() + "] -> [" + command.getTargetSummary() + "]");
+    permissionChangeLogRemoteService.record(command);
+  }
+
+  private String resolveRoleLabel(String roleId) {
+    return findById(roleId)
+        .map(role -> firstNonBlank(role.getAuthority(), role.getRoleName(), role.getId()))
+        .orElse(roleId);
+  }
+
+  private String joinValues(Set<String> values) {
+    if (values == null || values.isEmpty()) {
+      return "";
+    }
+    return values.stream()
+        .filter(value -> value != null && !value.isBlank())
+        .collect(Collectors.toCollection(LinkedHashSet::new))
+        .stream()
+        .collect(Collectors.joining(","));
+  }
+
+  private String firstNonBlank(String... values) {
+    if (values == null) {
+      return null;
+    }
+    for (String value : values) {
+      if (value != null && !value.isBlank()) {
+        return value;
+      }
+    }
+    return null;
   }
 }

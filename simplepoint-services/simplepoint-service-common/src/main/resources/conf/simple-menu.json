@@ -593,6 +593,240 @@
     ]
   },
   {
+    "label": "监控审计",
+    "title": "menu.monitoring",
+    "icon": "EyeOutlined",
+    "path": "/monitoring",
+    "authority": "monitoring.view",
+    "type": "item",
+    "sort": 4,
+    "disabled": false,
+    "permissions": [
+      {
+        "name": "Monitoring View",
+        "authority": "monitoring.view",
+        "resource": "/monitoring",
+        "description": "允许访问监控审计菜单",
+        "type": 0
+      }
+    ],
+    "children": [
+      {
+        "label": "登录日志",
+        "title": "menu.monitoring.loginLog",
+        "icon": "SendOutlined",
+        "path": "/monitoring/login-log",
+        "authority": "login.logs.view",
+        "sort": 0,
+        "component": "auditing/monitoring/LoginLog",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Login Log View",
+            "authority": "login.logs.view",
+            "resource": "/monitoring/login-log",
+            "description": "允许访问登录日志页面",
+            "type": 0,
+            "feature": {
+              "name": "Login Log Monitoring",
+              "description": "Login Log Monitoring Feature",
+              "code": "monitoring-login-log"
+            }
+          }
+        ]
+      },
+      {
+        "label": "权限变更记录",
+        "title": "menu.monitoring.permissionChangeLog",
+        "icon": "SafetyCertificateOutlined",
+        "path": "/monitoring/permission-change-log",
+        "authority": "permission.change.logs.view",
+        "sort": 1,
+        "component": "auditing/monitoring/PermissionChangeLog",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Permission Change Log View",
+            "authority": "permission.change.logs.view",
+            "resource": "/monitoring/permission-change-log",
+            "description": "允许访问权限变更记录页面",
+            "type": 0,
+            "feature": {
+              "name": "Permission Change Monitoring",
+              "description": "Permission Change Monitoring Feature",
+              "code": "monitoring-permission-change-log"
+            }
+          }
+        ]
+      },
+      {
+        "label": "错误日志",
+        "title": "menu.monitoring.errorLog",
+        "icon": "WarningOutlined",
+        "path": "/monitoring/error-log",
+        "authority": "error.logs.view",
+        "sort": 2,
+        "component": "auditing/monitoring/ErrorLog",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Error Log View",
+            "authority": "error.logs.view",
+            "resource": "/monitoring/error-log",
+            "description": "允许访问错误日志页面",
+            "type": 0,
+            "feature": {
+              "name": "Error Log Monitoring",
+              "description": "Error Log Monitoring Feature",
+              "code": "monitoring-error-log"
+            }
+          }
+        ]
+      },
+      {
+        "label": "服务限流",
+        "title": "menu.monitoring.serviceRateLimit",
+        "icon": "CloudServerOutlined",
+        "path": "/monitoring/service-rate-limit",
+        "authority": "service.rate.limit.rules.view",
+        "sort": 3,
+        "component": "auditing/monitoring/ServiceRateLimitRule",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Service Rate Limit View",
+            "authority": "service.rate.limit.rules.view",
+            "resource": "/monitoring/service-rate-limit",
+            "description": "允许访问服务限流规则页面",
+            "type": 0,
+            "feature": {
+              "name": "Service Rate Limit Monitoring",
+              "description": "Service Rate Limit Monitoring Feature",
+              "code": "monitoring-service-rate-limit"
+            }
+          },
+          {
+            "name": "Service Rate Limit Create",
+            "authority": "service.rate.limit.rules.create",
+            "resource": "/monitoring/service-rate-limit",
+            "description": "允许创建服务限流规则",
+            "type": 1
+          },
+          {
+            "name": "Service Rate Limit Edit",
+            "authority": "service.rate.limit.rules.edit",
+            "resource": "/monitoring/service-rate-limit",
+            "description": "允许编辑服务限流规则",
+            "type": 1
+          },
+          {
+            "name": "Service Rate Limit Delete",
+            "authority": "service.rate.limit.rules.delete",
+            "resource": "/monitoring/service-rate-limit",
+            "description": "允许删除服务限流规则",
+            "type": 1
+          }
+        ]
+      },
+      {
+        "label": "接口限流",
+        "title": "menu.monitoring.endpointRateLimit",
+        "icon": "ApiOutlined",
+        "path": "/monitoring/endpoint-rate-limit",
+        "authority": "endpoint.rate.limit.rules.view",
+        "sort": 4,
+        "component": "auditing/monitoring/EndpointRateLimitRule",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Endpoint Rate Limit View",
+            "authority": "endpoint.rate.limit.rules.view",
+            "resource": "/monitoring/endpoint-rate-limit",
+            "description": "允许访问接口限流规则页面",
+            "type": 0,
+            "feature": {
+              "name": "Endpoint Rate Limit Monitoring",
+              "description": "Endpoint Rate Limit Monitoring Feature",
+              "code": "monitoring-endpoint-rate-limit"
+            }
+          },
+          {
+            "name": "Endpoint Rate Limit Create",
+            "authority": "endpoint.rate.limit.rules.create",
+            "resource": "/monitoring/endpoint-rate-limit",
+            "description": "允许创建接口限流规则",
+            "type": 1
+          },
+          {
+            "name": "Endpoint Rate Limit Edit",
+            "authority": "endpoint.rate.limit.rules.edit",
+            "resource": "/monitoring/endpoint-rate-limit",
+            "description": "允许编辑接口限流规则",
+            "type": 1
+          },
+          {
+            "name": "Endpoint Rate Limit Delete",
+            "authority": "endpoint.rate.limit.rules.delete",
+            "resource": "/monitoring/endpoint-rate-limit",
+            "description": "允许删除接口限流规则",
+            "type": 1
+          }
+        ]
+      },
+      {
+        "label": "Redis管理",
+        "title": "menu.monitoring.redis",
+        "icon": "DatabaseOutlined",
+        "path": "/monitoring/redis",
+        "authority": "redis.entries.view",
+        "sort": 5,
+        "component": "auditing/monitoring/Redis",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Redis Entry View",
+            "authority": "redis.entries.view",
+            "resource": "/monitoring/redis",
+            "description": "允许访问 Redis 管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Redis Monitoring",
+              "description": "Redis Monitoring Feature",
+              "code": "monitoring-redis"
+            }
+          },
+          {
+            "name": "Redis Entry Create",
+            "authority": "redis.entries.create",
+            "resource": "/monitoring/redis",
+            "description": "允许新增 Redis 字符串键值对",
+            "type": 1
+          },
+          {
+            "name": "Redis Entry Edit",
+            "authority": "redis.entries.edit",
+            "resource": "/monitoring/redis",
+            "description": "允许编辑 Redis 字符串键值对",
+            "type": 1
+          },
+          {
+            "name": "Redis Entry Delete",
+            "authority": "redis.entries.delete",
+            "resource": "/monitoring/redis",
+            "description": "允许删除 Redis 键",
+            "type": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
     "label": "平台管理",
     "title": "menu.platform",
     "icon": "ApartmentOutlined",
@@ -890,6 +1124,73 @@
             "authority": "organizations.delete",
             "resource": "/platform/organizations",
             "description": "允许删除组织机构",
+            "type": 1
+          }
+        ]
+      },
+      {
+        "label": "对象存储",
+        "title": "menu.platform.objectStorage",
+        "icon": "CloudUploadOutlined",
+        "path": "/platform/object-storage",
+        "authority": "storage.objects.view",
+        "sort": 6,
+        "component": "common/platform/ObjectStorage",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Object Storage View",
+            "authority": "storage.objects.view",
+            "resource": "/platform/object-storage",
+            "description": "允许访问对象存储页面",
+            "type": 0,
+            "feature": {
+              "name": "Object Storage Management",
+              "description": "Object Storage Management Feature",
+              "code": "object-storage-management"
+            }
+          },
+          {
+            "name": "Object Storage Create",
+            "authority": "storage.objects.create",
+            "resource": "/platform/object-storage",
+            "description": "允许上传对象",
+            "type": 1
+          },
+          {
+            "name": "Object Storage Delete",
+            "authority": "storage.objects.delete",
+            "resource": "/platform/object-storage",
+            "description": "允许删除对象",
+            "type": 1
+          },
+          {
+            "name": "Object Storage Quota View",
+            "authority": "storage.quotas.view",
+            "resource": "/platform/object-storage",
+            "description": "允许查看租户对象存储配额",
+            "type": 1
+          },
+          {
+            "name": "Object Storage Quota Create",
+            "authority": "storage.quotas.create",
+            "resource": "/platform/object-storage",
+            "description": "允许新增租户对象存储配额",
+            "type": 1
+          },
+          {
+            "name": "Object Storage Quota Edit",
+            "authority": "storage.quotas.edit",
+            "resource": "/platform/object-storage",
+            "description": "允许编辑租户对象存储配额",
+            "type": 1
+          },
+          {
+            "name": "Object Storage Quota Delete",
+            "authority": "storage.quotas.delete",
+            "resource": "/platform/object-storage",
+            "description": "允许删除租户对象存储配额",
             "type": 1
           }
         ]

@@ -13,11 +13,13 @@ hutool = "5.8.42"
 openapi = "2.8.13"
 jsonschema-generator="4.38.0"
 swagger="2.2.41"
+aws-sdk = "2.42.27"
 
 [libraries]
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations", version.ref = "swagger" }
 oauth2-oidc-sdk = { module = "com.nimbusds:oauth2-oidc-sdk", version.ref = "oauth2-oidc-sdk" }
 spring-authorization-server = { module = "org.springframework.security:spring-security-oauth2-authorization-server", version.ref = "spring-authorization-server" }
+aws-sdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "aws-sdk" }
 
 [bundles]
 

@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
+import org.simplepoint.cloud.oauth.server.event.LoginAuditEventPublisher;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -19,6 +20,11 @@ import org.springframework.stereotype.Component;
 @Component
 public final class LoginAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
   private final AuthenticationSuccessHandler delegate = new SavedRequestAwareAuthenticationSuccessHandler();
+  private final LoginAuditEventPublisher loginAuditEventPublisher;
+
+  public LoginAuthenticationSuccessHandler(final LoginAuditEventPublisher loginAuditEventPublisher) {
+    this.loginAuditEventPublisher = loginAuditEventPublisher;
+  }
 
   @Override
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
@@ -55,7 +61,7 @@ public final class LoginAuthenticationSuccessHandler implements AuthenticationSu
    */
   public void onAuthenticationSuccessDelegate(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
       throws ServletException, IOException {
+    loginAuditEventPublisher.publishSuccess(request, authentication);
     this.delegate.onAuthenticationSuccess(request, response, authentication);
-
   }
 }

@@ -67,11 +67,19 @@ flowchart LR
 - 可扩展性：插件机制、配置中心、灰度开关、限流策略可配置。
 
 ## 8. 相关文档
+- 服务拓扑：`doc/architecture/service_topology.md`
+- 项目结构：`doc/architecture/project_structure_diagram.md`
+- 插件运行时：`doc/architecture/plugin_architecture.md`
+- 多租户模型：`doc/architecture/multi_tenant_model.md`
+- Schema 驱动 UI：`doc/architecture/schema_driven_ui.md`
+- 前端微前端：`doc/architecture/frontend_microfrontend.md`
+- 组件设计：`doc/architecture/component_design.md`
+- 部署视图：`doc/architecture/deployment_diagram.md`
+- 开发环境与规范：`doc/architecture/dev_environment.md`
 - 详细设计：`doc/design/`
+- 授权流程：`doc/design/authorization_flow.md`
 - 权限模型：`doc/permission/`
-- 资源与菜单：`doc/resource_model/`、`doc/menu_structure/`
 - 数据库：`doc/database/`
 - API：`doc/api/`
 - 部署：`doc/deployment/`
-- 故障排查：`doc/troubleshooting/`
-- 开发环境与规范：`doc/architecture/dev_environment.md`
+- 排障：`doc/troubleshooting/`

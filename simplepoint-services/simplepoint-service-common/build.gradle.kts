@@ -53,8 +53,17 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-service"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-rest"))
 
+    // 引入对象存储插件
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-repository"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-service"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-rest"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-s3"))
+
     // 引入初始化数据插件
     implementation(project(":simplepoint-data:simplepoint-data-initializer"))
+
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-monitor"))
 
     // 引入API文档
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")

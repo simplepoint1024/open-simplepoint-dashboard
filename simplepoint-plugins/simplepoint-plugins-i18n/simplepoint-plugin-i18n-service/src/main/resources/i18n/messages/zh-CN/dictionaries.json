@@ -13,6 +13,8 @@
   "dictionaries.description.dictionaryCode": "该字典项所属的字典编码",
   "dictionaries.title.itemName": "字典项名称",
   "dictionaries.description.itemName": "字典项在界面上展示的名称",
+  "dictionaries.title.i18nKey": "国际化键",
+  "dictionaries.description.i18nKey": "字典项名称对应的国际化消息键，选项展示时会优先使用该键",
   "dictionaries.title.value": "字典项值",
   "dictionaries.description.value": "保存到业务字段中的实际值",
   "dictionaries.button.config.item": "配置字典项"
