@@ -8,9 +8,6 @@
 
 package org.simplepoint.security.service;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.security.MenuChildren;
@@ -20,6 +17,10 @@ import org.simplepoint.security.pojo.dto.MenuFeaturesRelevanceDto;
 import org.simplepoint.security.pojo.dto.ServiceMenuResult;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Service interface for managing {@link Menu} entities.
@@ -32,48 +33,48 @@ import org.springframework.data.domain.Pageable;
  */
 @AmqpRemoteClient(to = "security.menu")
 public interface MenuService extends BaseService<Menu, String> {
-  /**
-   * Synchronizes the menu data with the provided set of {@link MenuChildren}.
-   *
-   * @param data the set of menu children to synchronize
-   */
-  void sync(Set<MenuChildren> data);
+    /**
+     * Synchronizes the menu data with the provided set of {@link MenuChildren}.
+     *
+     * @param data the set of menu children to synchronize
+     */
+    void sync(String serviceName, Set<MenuChildren> data);
 
-  /**
-   * Retrieves the collection of menus accessible to the current user.
-   *
-   * @return a collection of {@link TreeMenu} entities available to the user
-   */
-  ServiceMenuResult routes();
+    /**
+     * Retrieves the collection of menus accessible to the current user.
+     *
+     * @return a collection of {@link TreeMenu} entities available to the user
+     */
+    ServiceMenuResult routes();
 
-  /**
-   * Retrieves a paginated list of tree-structured menus based on the specified filter attributes.
-   *
-   * @param attributes a map of filtering attributes
-   * @param pageable   the pagination information
-   * @return a paginated list of {@link TreeMenu} entities matching the filters
-   */
-  Page<TreeMenu> limitTree(Map<String, String> attributes, Pageable pageable);
+    /**
+     * Retrieves a paginated list of tree-structured menus based on the specified filter attributes.
+     *
+     * @param attributes a map of filtering attributes
+     * @param pageable   the pagination information
+     * @return a paginated list of {@link TreeMenu} entities matching the filters
+     */
+    Page<TreeMenu> limitTree(Map<String, String> attributes, Pageable pageable);
 
-  /**
-   * Retrieves the collection of feature codes bound to the specified menu.
-   *
-   * @param menuId the menu authority string
-   * @return a collection of bound feature codes
-   */
-  Collection<String> authorized(String menuId);
+    /**
+     * Retrieves the collection of feature codes bound to the specified menu.
+     *
+     * @param menuId the menu authority string
+     * @return a collection of bound feature codes
+     */
+    Collection<String> authorized(String menuId);
 
-  /**
-   * Binds the menu with the specified features based on the provided DTO.
-   *
-   * @param dto the data transfer object containing menu and feature codes
-   */
-  void authorize(MenuFeaturesRelevanceDto dto);
+    /**
+     * Binds the menu with the specified features based on the provided DTO.
+     *
+     * @param dto the data transfer object containing menu and feature codes
+     */
+    void authorize(MenuFeaturesRelevanceDto dto);
 
-  /**
-   * Removes feature bindings from the menu based on the provided DTO.
-   *
-   * @param dto the data transfer object containing menu and feature codes
-   */
-  void unauthorized(MenuFeaturesRelevanceDto dto);
+    /**
+     * Removes feature bindings from the menu based on the provided DTO.
+     *
+     * @param dto the data transfer object containing menu and feature codes
+     */
+    void unauthorized(MenuFeaturesRelevanceDto dto);
 }

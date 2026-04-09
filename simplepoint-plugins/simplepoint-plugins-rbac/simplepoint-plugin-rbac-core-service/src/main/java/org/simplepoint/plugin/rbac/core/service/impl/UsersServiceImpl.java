@@ -8,10 +8,21 @@
 
 package org.simplepoint.plugin.rbac.core.service.impl;
 
+import java.time.Instant;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChangeLogRecordCommand;
+import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
@@ -21,14 +32,13 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
 
 /**
  * Service implementation class for managing User entities
@@ -45,6 +55,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     private final UserRoleRelevanceRepository userRoleRelevanceRepository;
     private final TenantRepository tenantRepository;
     private final RoleRepository roleRepository;
+    private final PermissionChangeLogRemoteService permissionChangeLogRemoteService;
 
     /**
      * Optional password encoder for encrypting user passwords.
@@ -65,14 +76,17 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
             final UserRepository usersRepository,
             final DetailsProviderService detailsProviderService,
             final UserRoleRelevanceRepository userRoleRelevanceRepository,
+            @Autowired(required = false)
             final TenantRepository tenantRepository,
-            final RoleRepository roleRepository
+            final RoleRepository roleRepository,
+            final PermissionChangeLogRemoteService permissionChangeLogRemoteService
     ) {
         super(usersRepository, detailsProviderService);
         this.passwordEncoder = passwordEncoder;
         this.userRoleRelevanceRepository = userRoleRelevanceRepository;
         this.tenantRepository = tenantRepository;
         this.roleRepository = roleRepository;
+        this.permissionChangeLogRemoteService = permissionChangeLogRemoteService;
     }
 
 
@@ -175,6 +189,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
         }
         Collection<UserRoleRelevance> saved = userRoleRelevanceRepository.saveAll(authorities);
         refreshCurrentTenantPermissionVersion();
+        recordPermissionChange("AUTHORIZE", dto);
         return saved;
     }
 
@@ -184,6 +199,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
         requireTenantOwnerOrAdministratorIfTenantScoped();
         userRoleRelevanceRepository.unauthorized(resolveCurrentTenantScope(), dto.getUserId(), dto.getRoleIds());
         refreshCurrentTenantPermissionVersion();
+        recordPermissionChange("UNAUTHORIZE", dto);
     }
 
     @Override
@@ -237,5 +253,62 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
         tenantRepository.increasePermissionVersion(Set.of(tenantId));
     }
 
-}
+    private void recordPermissionChange(String action, UserRoleRelevanceDto dto) {
+        AuthorizationContext authorizationContext = getAuthorizationContext();
+        if (authorizationContext == null || authorizationContext.getUserId() == null || authorizationContext.getUserId().isBlank()) {
+            return;
+        }
 
+        Set<String> roleIds = dto.getRoleIds() == null ? Set.of() : dto.getRoleIds();
+        PermissionChangeLogRecordCommand command = new PermissionChangeLogRecordCommand();
+        command.setChangedAt(Instant.now());
+        command.setChangeType("USER_ROLE");
+        command.setAction(action);
+        command.setSubjectType("USER");
+        command.setSubjectId(dto.getUserId());
+        command.setSubjectLabel(resolveUserLabel(dto.getUserId()));
+        command.setTargetType("ROLE");
+        command.setTargetSummary(resolveRoleSummary(roleIds));
+        command.setTargetCount(roleIds.size());
+        command.setOperatorId(authorizationContext.getUserId());
+        command.setTenantId(resolveCurrentTenantScope());
+        command.setContextId(authorizationContext.getContextId());
+        command.setSourceService("common");
+        command.setDescription(action + " USER_ROLE [" + command.getSubjectLabel() + "] -> [" + command.getTargetSummary() + "]");
+        permissionChangeLogRemoteService.record(command);
+    }
+
+    private String resolveUserLabel(String userId) {
+        return findById(userId)
+                .map(user -> firstNonBlank(user.getName(), user.getNickname(), user.getEmail(), user.getPhoneNumber(), user.getId()))
+                .orElse(userId);
+    }
+
+    private String resolveRoleSummary(Set<String> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return "";
+        }
+        LinkedHashSet<String> labels = roleRepository.findAllByIds(roleIds).stream()
+                .filter(Objects::nonNull)
+                .map(role -> firstNonBlank(role.getAuthority(), role.getRoleName(), role.getId()))
+                .filter(label -> label != null && !label.isBlank())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (labels.isEmpty()) {
+            labels.addAll(roleIds);
+        }
+        return String.join(",", labels);
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+}

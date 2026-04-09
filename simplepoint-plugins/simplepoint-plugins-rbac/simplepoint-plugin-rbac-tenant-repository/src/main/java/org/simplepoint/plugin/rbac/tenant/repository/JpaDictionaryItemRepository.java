@@ -32,7 +32,13 @@ public interface JpaDictionaryItemRepository extends BaseRepository<DictionaryIt
 
   @Override
   @Query("""
-      select new org.simplepoint.plugin.rbac.tenant.api.vo.DictionaryOptionVo(di.value, di.name)
+      select new org.simplepoint.plugin.rbac.tenant.api.vo.DictionaryOptionVo(
+        di.value,
+        case
+          when di.i18nKey is not null and di.i18nKey <> '' then concat('i18n:', di.i18nKey)
+          else di.name
+        end
+      )
       from DictionaryItem di
       join Dictionary d on d.code = di.dictionaryCode
       where di.dictionaryCode = :dictionaryCode

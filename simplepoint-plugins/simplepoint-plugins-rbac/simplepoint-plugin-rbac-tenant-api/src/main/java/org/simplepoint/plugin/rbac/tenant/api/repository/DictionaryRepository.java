@@ -8,5 +8,11 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.Dictionary;
  */
 public interface DictionaryRepository extends BaseRepository<Dictionary, String> {
 
+  /**
+   * Determines whether a dictionary exists for the supplied code.
+   *
+   * @param code the dictionary code
+   * @return {@code true} when the dictionary exists
+   */
   boolean existsByCode(String code);
 }

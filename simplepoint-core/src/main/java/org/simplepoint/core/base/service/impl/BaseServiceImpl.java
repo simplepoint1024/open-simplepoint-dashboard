@@ -139,8 +139,7 @@ public class BaseServiceImpl
     ObjectNode propertiesNode = (ObjectNode) schema.get("properties");
 
     // 收集字段和对应的 x-order
-    List<Map.Entry<String, JsonNode>> fields = new LinkedList<>();
-    propertiesNode.fields().forEachRemaining(fields::add);
+    List<Map.Entry<String, JsonNode>> fields = new LinkedList<>(propertiesNode.properties());
 
     // 按 x-order 排序
     fields.sort(Comparator.comparingInt(entry -> {
@@ -261,6 +260,11 @@ public class BaseServiceImpl
     repository.flush();
   }
 
+  /**
+   * Applies the current tenant ID to a tenant-aware entity when it is missing.
+   *
+   * @param entity the entity being created or updated
+   */
   protected void applyCurrentTenantIdIfNecessary(BaseEntity<?> entity) {
     if (!(entity instanceof TenantBaseEntity<?> tenantEntity)) {
       return;
@@ -271,6 +275,11 @@ public class BaseServiceImpl
     }
   }
 
+  /**
+   * Resolves the current tenant ID from the active authorization context.
+   *
+   * @return the trimmed tenant ID, or {@code null} when no tenant is available
+   */
   protected String currentTenantId() {
     AuthorizationContext authorizationContext = getAuthorizationContext();
     if (authorizationContext == null) {

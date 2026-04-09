@@ -130,7 +130,11 @@ graph LR
 
 ## 5. 关联文档
 - 系统概览：`doc/architecture/system_overview.md`
+- 服务拓扑：`doc/architecture/service_topology.md`
 - 组件设计：`doc/architecture/component_design.md`
+- 插件运行时：`doc/architecture/plugin_architecture.md`
+- 多租户模型：`doc/architecture/multi_tenant_model.md`
+- Schema 驱动 UI：`doc/architecture/schema_driven_ui.md`
 - 部署架构：`doc/architecture/deployment_diagram.md`
 - 前端微前端指引：`doc/architecture/frontend_microfrontend.md`
 - 权限模型：`doc/permission/`

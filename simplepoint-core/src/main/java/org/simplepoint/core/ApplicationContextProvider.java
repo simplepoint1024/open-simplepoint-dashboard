@@ -11,7 +11,6 @@ package org.simplepoint.core;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 /**
@@ -32,9 +31,9 @@ public class ApplicationContextProvider implements ApplicationContextAware {
    *
    * @param applicationContext the {@link ApplicationContext} to set
    * @throws BeansException if the context initialization fails
-   */
+  */
   @Override
-  public void setApplicationContext(@NonNull ApplicationContext applicationContext)
+  public void setApplicationContext(final ApplicationContext applicationContext)
       throws BeansException {
     ApplicationContextProvider.context = applicationContext;
   }

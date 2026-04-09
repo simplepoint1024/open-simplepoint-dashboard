@@ -11,18 +11,27 @@ package org.simplepoint.data.amqp.rpc;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.simplepoint.data.amqp.rpc.properties.ArpcProperties;
+import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageBuilderSupport;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -110,6 +119,8 @@ class RemoteProxyFactory {
 
     private static ArpcProperties properties;
 
+    private static MeterRegistry meterRegistry;
+
     /**
      * Constructs the invocation handler with the provided attributes.
      *
@@ -129,66 +140,156 @@ class RemoteProxyFactory {
      */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {
-      try {
-        String methodName = method.getName();
-        if (methodName.equals("hashCode")) {
-          return System.identityHashCode(proxy);
-        } else if (methodName.equals("toString")) {
-          return proxy.getClass().getName() + "@"
-              + Integer.toHexString(System.identityHashCode(proxy)) + ", with InvocationHandler "
-              + this;
-        }
+      long startedAt = System.nanoTime();
+      String outcome = "success";
+      String methodName = method.getName();
+      if (methodName.equals("hashCode")) {
+        return System.identityHashCode(proxy);
+      } else if (methodName.equals("equals") && method.getParameterCount() == 1) {
+        return proxy == args[0];
+      } else if (methodName.equals("toString")) {
+        return proxy.getClass().getName() + "@"
+            + Integer.toHexString(System.identityHashCode(proxy)) + ", with InvocationHandler "
+            + this;
+      }
 
-        String target = attributes.get("to").toString();
-        Map<String, String> providers = properties.getProviders();
-        boolean exist = providers.containsKey(target);
-        String to = properties.prefix(exist
-            ? providers.get(target) :
-            target);
+      String to = resolveTarget(method);
+      String typeName = RemoteProtocol.signature(method);
+      try {
         String correlationId = rabbitTemplate.getUUID();
-        String typeName = getTypeName(method);
+        Object[] arguments = RemoteProtocol.normalizeArguments(args);
+        String[] parameterTypes = RemoteProtocol.parameterTypeNames(method);
+        CorrelationData correlationData = new CorrelationData(correlationId);
+        String exchange = properties.exchange();
 
         MessageBuilderSupport<Message> messageBuilder = MessageBuilder
-            .withBody(toByteArray(args))
+            .withBody(toByteArray(arguments))
             .setAppId(properties.getAppId())
             .setPriority(properties.getPriority())
             .setCorrelationId(correlationId)
             .setType(typeName)
-            .setHeader("to", to);
+            .setHeader(RemoteProtocol.HEADER_INTERFACE_NAME, method.getDeclaringClass().getName())
+            .setHeader(RemoteProtocol.HEADER_METHOD_NAME, method.getName())
+            .setHeader(RemoteProtocol.HEADER_PARAMETER_TYPES, RemoteProtocol.encodeParameterTypes(parameterTypes));
+        RemoteProtocol.withProtocolVersion(messageBuilder);
 
         if (method.getReturnType() == void.class) {
-          rabbitTemplate.send(properties.prefix(properties.getExchangeName()), "",
-              messageBuilder.build());
+          rabbitTemplate.send(exchange, to, messageBuilder.build(), correlationData);
+          awaitPublisherConfirmForOneWay(to, typeName, correlationData);
           return null;
         }
 
-        Message build =
-            messageBuilder.setReplyTo(properties.prefix(properties.getResponseQueueName())).build();
-        log.info("Sending RPC to: {}, correlationId: {}, type: {}", to, correlationId, typeName);
+        Message build = messageBuilder.build();
+        log.debug("Sending RPC to: {}, correlationId: {}, type: {}", to, correlationId, typeName);
         Message messageResult =
-            rabbitTemplate.sendAndReceive(properties.prefix(properties.getExchangeName()), "",
-                build);
-        log.info("RPC response received: {}", messageResult);
+            rabbitTemplate.sendAndReceive(exchange, to, build, correlationData);
 
-        if (messageResult != null) {
-          return toObjectArray(messageResult.getBody());
+        if (messageResult == null) {
+          RemoteInvocationException confirmFailure = publisherConfirmFailureIfReady(to, typeName, correlationData);
+          if (confirmFailure != null) {
+            outcome = "error";
+            throw confirmFailure;
+          }
+          outcome = "timeout";
+          throw RemoteInvocationException.timeout(to, typeName);
         }
+        String protocolVersion = RemoteProtocol.resolveProtocolVersion(messageResult.getMessageProperties());
+        if (!RemoteProtocol.isSupportedProtocolVersion(protocolVersion)) {
+          throw RemoteInvocationException.protocol(to, typeName, protocolVersion);
+        }
+        if (RemoteProtocol.isRemoteError(messageResult.getMessageProperties())) {
+          outcome = "remote_error";
+          Object errorPayload = toObjectArray(messageResult.getBody());
+          RemoteInvocationError error = errorPayload instanceof RemoteInvocationError remoteError
+              ? remoteError
+              : new RemoteInvocationError(errorPayload == null ? RuntimeException.class.getName()
+              : errorPayload.getClass().getName(), Objects.toString(errorPayload, "Remote invocation failed"));
+          throw RemoteInvocationException.remote(to, typeName, error);
+        }
+        return toObjectArray(messageResult.getBody());
+      } catch (AmqpMessageReturnedException returnedException) {
+        outcome = "error";
+        throw RemoteInvocationException.unroutable(to, typeName, returnedException);
+      } catch (AmqpException amqpException) {
+        outcome = "error";
+        throw RemoteInvocationException.transport(to, typeName, amqpException);
       } catch (Exception e) {
+        if (e instanceof RemoteInvocationException remoteInvocationException) {
+          if ("success".equals(outcome)) {
+            outcome = "error";
+          }
+          throw remoteInvocationException;
+        }
+        outcome = "error";
         throw new RuntimeException(e);
+      } finally {
+        RemoteMetrics.recordClient(meterRegistry, to, method, outcome, System.nanoTime() - startedAt);
       }
-      return null;
     }
 
-    /**
-     * Constructs the fully qualified type name for a method.
-     *
-     * @param method the method to construct the name for
-     * @return the fully qualified name of the method
-     */
-    private String getTypeName(Method method) {
-      String className = method.getDeclaringClass().getName();
-      String methodName = method.getName();
-      return className + "." + methodName + "()";
+    private String resolveTarget(final Method method) {
+      String target = attributes.get("to").toString();
+      Map<String, String> providers = properties.getProviders();
+      boolean exist = providers.containsKey(target);
+      return properties.prefix(exist ? providers.get(target) : target);
+    }
+
+    private void awaitPublisherConfirmForOneWay(final String target, final String signature,
+                                                final CorrelationData correlationData) {
+      if (!supportsPublisherConfirms()) {
+        return;
+      }
+      long timeout = properties.getPublisher().getConfirmTimeout();
+      try {
+        CorrelationData.Confirm confirm = correlationData.getFuture().get(timeout, TimeUnit.MILLISECONDS);
+        if (confirm == null) {
+          log.warn("AMQP RPC publish to [{}] for {} completed without broker confirm result within {} ms",
+              target, signature, timeout);
+          return;
+        }
+        if (!confirm.ack()) {
+          throw RemoteInvocationException.publisherConfirmNack(target, signature, confirm.reason());
+        }
+      } catch (TimeoutException exception) {
+        log.warn("AMQP RPC publish to [{}] for {} did not receive a broker confirm within {} ms",
+            target, signature, timeout);
+      } catch (InterruptedException exception) {
+        Thread.currentThread().interrupt();
+        throw RemoteInvocationException.publisherConfirmFailure(target, signature, exception);
+      } catch (ExecutionException exception) {
+        Throwable cause = exception.getCause();
+        if (cause instanceof AmqpException amqpException) {
+          throw RemoteInvocationException.transport(target, signature, amqpException);
+        }
+        throw RemoteInvocationException.publisherConfirmFailure(target, signature,
+            cause == null ? exception : cause);
+      }
+    }
+
+    private RemoteInvocationException publisherConfirmFailureIfReady(final String target, final String signature,
+                                                                    final CorrelationData correlationData) {
+      if (!supportsPublisherConfirms() || !correlationData.getFuture().isDone()) {
+        return null;
+      }
+      try {
+        CorrelationData.Confirm confirm = correlationData.getFuture().getNow(null);
+        if (confirm != null && !confirm.ack()) {
+          return RemoteInvocationException.publisherConfirmNack(target, signature, confirm.reason());
+        }
+        return null;
+      } catch (Exception exception) {
+        Throwable cause = exception.getCause();
+        if (cause instanceof AmqpException amqpException) {
+          return RemoteInvocationException.transport(target, signature, amqpException);
+        }
+        return RemoteInvocationException.publisherConfirmFailure(target, signature,
+            cause == null ? exception : cause);
+      }
+    }
+
+    private boolean supportsPublisherConfirms() {
+      ConnectionFactory connectionFactory = rabbitTemplate.getConnectionFactory();
+      return connectionFactory != null && connectionFactory.isPublisherConfirms();
     }
 
     /**
@@ -214,6 +315,8 @@ class RemoteProxyFactory {
       public void setApplicationContext(@NotNull ApplicationContext applicationContext)
           throws BeansException {
         RemoteInvocationHandler.rabbitTemplate = applicationContext.getBean(RabbitTemplate.class);
+        RemoteInvocationHandler.meterRegistry =
+            applicationContext.getBeanProvider(MeterRegistry.class).getIfAvailable();
       }
     }
   }

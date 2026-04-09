@@ -16,6 +16,11 @@
 
   "menu.monitoring": "Monitoring & Audit",
   "menu.monitoring.loginLog": "Login Logs",
+  "menu.monitoring.errorLog": "Error Logs",
+  "menu.monitoring.serviceRateLimit": "Service Rate Limits",
+  "menu.monitoring.endpointRateLimit": "Endpoint Rate Limits",
+  "menu.monitoring.redis": "Redis Management",
+  "menu.monitoring.permissionChangeLog": "Permission Change Logs",
   "menu.monitoring.operationLog": "Operation Logs",
 
   "menu.ops": "System Maintenance",
@@ -41,5 +46,11 @@
   "menu.platform.application": "Application Management",
   "menu.platform.package": "Package Management",
   "menu.platform.dictionaries": "Dictionary Management",
-  "menu.platform.organizations": "Organization Management"
+  "menu.platform.organizations": "Organization Management",
+  "menu.platform.objectStorage": "Object Storage",
+  "menu.dna": "DNA Workbench",
+  "menu.dna.drivers": "Driver Management",
+  "menu.dna.dataSources": "Data Source Management",
+  "menu.dna.metadata": "Metadata Management",
+  "menu.dna.dialects": "Database Dialect Management"
 }

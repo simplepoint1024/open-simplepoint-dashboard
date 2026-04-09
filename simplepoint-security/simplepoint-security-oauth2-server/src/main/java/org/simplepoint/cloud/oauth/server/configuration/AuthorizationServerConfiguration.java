@@ -10,6 +10,7 @@ package org.simplepoint.cloud.oauth.server.configuration;
 
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion;
+import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationFailureHandler;
 import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationSuccessHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -88,7 +89,8 @@ public class AuthorizationServerConfiguration {
   @Order(2)
   public SecurityFilterChain defaultSecurityFilterChain(
       final HttpSecurity http,
-      final LoginAuthenticationSuccessHandler loginAuthenticationSuccessHandler
+      final LoginAuthenticationSuccessHandler loginAuthenticationSuccessHandler,
+      final LoginAuthenticationFailureHandler loginAuthenticationFailureHandler
   )
       throws Exception {
     http
@@ -102,6 +104,7 @@ public class AuthorizationServerConfiguration {
         .formLogin(configurer -> {
           configurer.loginPage("/login").permitAll();
           configurer.successHandler(loginAuthenticationSuccessHandler);
+          configurer.failureHandler(loginAuthenticationFailureHandler);
         });
 
     return http.build();

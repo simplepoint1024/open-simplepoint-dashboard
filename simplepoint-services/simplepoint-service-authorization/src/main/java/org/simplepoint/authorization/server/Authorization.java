@@ -9,6 +9,7 @@
 package org.simplepoint.authorization.server;
 
 import org.simplepoint.boot.starter.Boot;
+import org.simplepoint.data.amqp.rpc.annotation.EnableAmqpRemoteClients;
 import org.simplepoint.data.jpa.base.repository.EnableRepository;
 
 /**
@@ -18,6 +19,7 @@ import org.simplepoint.data.jpa.base.repository.EnableRepository;
  */
 @Boot
 @EnableRepository
+@EnableAmqpRemoteClients(basePackages = "org.simplepoint")
 public class Authorization {
 
   /**

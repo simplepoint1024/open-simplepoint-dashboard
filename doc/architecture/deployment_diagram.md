@@ -78,9 +78,9 @@ graph LR
 
 ## 6. 关联文档
 - 系统概览：`doc/architecture/system_overview.md`
+- 服务拓扑：`doc/architecture/service_topology.md`
 - 组件设计：`doc/architecture/component_design.md`
 - 部署指南：`doc/deployment/`
 - 权限模型：`doc/permission/`
 - 数据库：`doc/database/`
 - API：`doc/api/`
-

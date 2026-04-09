@@ -24,6 +24,8 @@ dependencies {
     api(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))
 
     api(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-monitor"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-rate-limit-gateway"))
 
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

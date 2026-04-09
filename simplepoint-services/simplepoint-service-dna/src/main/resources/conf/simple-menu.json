@@ -1,0 +1,539 @@
+[
+  {
+    "label": "DNA工作台",
+    "title": "menu.dna",
+    "icon": "DatabaseOutlined",
+    "path": "/dna",
+    "authority": "dna.view",
+    "type": "item",
+    "sort": 0,
+    "disabled": false,
+    "permissions": [
+      {
+        "name": "DNA View",
+        "authority": "dna.view",
+        "resource": "/dna",
+        "description": "允许访问 DNA 工作台菜单",
+        "type": 0
+      }
+    ],
+    "children": [
+      {
+        "label": "驱动管理",
+        "title": "menu.dna.drivers",
+        "icon": "CloudDownloadOutlined",
+        "path": "/dna/drivers",
+        "authority": "dna.drivers.view",
+        "sort": 0,
+        "component": "dna/platform/JdbcDriver",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "DNA Driver View",
+            "authority": "dna.drivers.view",
+            "resource": "/dna/drivers",
+            "description": "允许访问 JDBC 驱动管理页面",
+            "type": 0,
+            "feature": {
+              "name": "JDBC Driver Management",
+              "description": "JDBC Driver Management Feature",
+              "code": "dna-driver-management"
+            }
+          },
+          {
+            "name": "DNA Driver Create",
+            "authority": "dna.drivers.create",
+            "resource": "/dna/drivers",
+            "description": "允许新增 JDBC 驱动定义",
+            "type": 1
+          },
+          {
+            "name": "DNA Driver Edit",
+            "authority": "dna.drivers.edit",
+            "resource": "/dna/drivers",
+            "description": "允许修改 JDBC 驱动定义",
+            "type": 1
+          },
+          {
+            "name": "DNA Driver Delete",
+            "authority": "dna.drivers.delete",
+            "resource": "/dna/drivers",
+            "description": "允许删除 JDBC 驱动定义",
+            "type": 1
+          },
+          {
+            "name": "DNA Driver Download",
+            "authority": "dna.drivers.download",
+            "resource": "/dna/drivers",
+            "description": "允许远程下载 JDBC 驱动",
+            "type": 1
+          },
+          {
+            "name": "DNA Driver Upload",
+            "authority": "dna.drivers.upload",
+            "resource": "/dna/drivers",
+            "description": "允许手动上传 JDBC 驱动 JAR",
+            "type": 1
+          }
+        ]
+      },
+      {
+        "label": "数据源管理",
+        "title": "menu.dna.dataSources",
+        "icon": "ApiOutlined",
+        "path": "/dna/data-sources",
+        "authority": "dna.data-sources.view",
+        "sort": 1,
+        "component": "dna/platform/JdbcDataSource",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "DNA Data Source View",
+            "authority": "dna.data-sources.view",
+            "resource": "/dna/data-sources",
+            "description": "允许访问 JDBC 数据源管理页面",
+            "type": 0,
+            "feature": {
+              "name": "JDBC Data Source Management",
+              "description": "JDBC Data Source Management Feature",
+              "code": "dna-data-source-management"
+            }
+          },
+          {
+            "name": "DNA Data Source Create",
+            "authority": "dna.data-sources.create",
+            "resource": "/dna/data-sources",
+            "description": "允许新增 JDBC 数据源定义",
+            "type": 1
+          },
+          {
+            "name": "DNA Data Source Edit",
+            "authority": "dna.data-sources.edit",
+            "resource": "/dna/data-sources",
+            "description": "允许修改 JDBC 数据源定义",
+            "type": 1
+          },
+          {
+            "name": "DNA Data Source Delete",
+            "authority": "dna.data-sources.delete",
+            "resource": "/dna/data-sources",
+            "description": "允许删除 JDBC 数据源定义",
+            "type": 1
+          },
+          {
+            "name": "DNA Data Source Connect",
+            "authority": "dna.data-sources.connect",
+            "resource": "/dna/data-sources",
+            "description": "允许测试 JDBC 数据源连接",
+            "type": 1
+          }
+        ]
+      },
+      {
+        "label": "元数据管理",
+        "title": "menu.dna.metadata",
+        "icon": "ApartmentOutlined",
+        "path": "/dna/metadata",
+        "authority": "dna.metadata.view",
+        "sort": 2,
+        "component": "dna/platform/JdbcMetadata",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "DNA Metadata View",
+            "authority": "dna.metadata.view",
+            "resource": "/dna/metadata",
+            "description": "允许访问 DNA 元数据管理页面",
+            "type": 0,
+            "feature": {
+              "name": "DNA Metadata Management",
+              "description": "DNA Metadata Management Feature",
+              "code": "dna-metadata-management"
+            }
+          },
+          {
+            "name": "DNA Metadata Preview",
+            "authority": "dna.metadata.preview",
+            "resource": "/dna/metadata",
+            "description": "允许预览数据库表和视图数据",
+            "type": 1
+          },
+          {
+            "name": "DNA Metadata Create Namespace",
+            "authority": "dna.metadata.create-namespace",
+            "resource": "/dna/metadata",
+            "description": "允许创建数据库或 schema",
+            "type": 1
+          },
+          {
+            "name": "DNA Metadata Create Table",
+            "authority": "dna.metadata.create-table",
+            "resource": "/dna/metadata",
+            "description": "允许创建数据表",
+            "type": 1
+          },
+          {
+            "name": "DNA Metadata Create View",
+            "authority": "dna.metadata.create-view",
+            "resource": "/dna/metadata",
+            "description": "允许创建视图",
+            "type": 1
+          },
+          {
+            "name": "DNA Metadata Drop",
+            "authority": "dna.metadata.drop",
+            "resource": "/dna/metadata",
+            "description": "允许删除数据库对象",
+            "type": 1
+          },
+          {
+            "name": "DNA Metadata Alter Column",
+            "authority": "dna.metadata.alter-column",
+            "resource": "/dna/metadata",
+            "description": "允许新增或修改字段",
+            "type": 1
+          },
+          {
+            "name": "DNA Metadata Drop Column",
+            "authority": "dna.metadata.drop-column",
+            "resource": "/dna/metadata",
+            "description": "允许删除字段",
+            "type": 1
+          },
+          {
+            "name": "DNA Metadata Add Constraint",
+            "authority": "dna.metadata.add-constraint",
+            "resource": "/dna/metadata",
+            "description": "允许新增约束",
+            "type": 1
+          },
+          {
+            "name": "DNA Metadata Drop Constraint",
+            "authority": "dna.metadata.drop-constraint",
+            "resource": "/dna/metadata",
+            "description": "允许删除约束",
+            "type": 1
+          }
+        ]
+      },
+      {
+        "label": "数据库方言管理",
+        "title": "menu.dna.dialects",
+        "icon": "DeploymentUnitOutlined",
+        "path": "/dna/dialects",
+        "authority": "dna.dialects.view",
+        "sort": 3,
+        "component": "dna/platform/JdbcDialect",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "DNA Dialect View",
+            "authority": "dna.dialects.view",
+            "resource": "/dna/dialects",
+            "description": "允许访问 DNA 数据库方言管理页面",
+            "type": 0,
+            "feature": {
+              "name": "DNA Dialect Management",
+              "description": "DNA Dialect Management Feature",
+              "code": "dna-dialect-management"
+            }
+          },
+          {
+            "name": "DNA Dialect Create",
+            "authority": "dna.dialects.create",
+            "resource": "/dna/dialects",
+            "description": "允许新增 URL 方言源",
+            "type": 1
+          },
+          {
+            "name": "DNA Dialect Upload",
+            "authority": "dna.dialects.upload",
+            "resource": "/dna/dialects",
+            "description": "允许上传方言 JAR",
+            "type": 1
+          },
+          {
+            "name": "DNA Dialect Delete",
+            "authority": "dna.dialects.delete",
+            "resource": "/dna/dialects",
+            "description": "允许删除方言源",
+            "type": 1
+          }
+        ]
+      },
+      {
+        "label": "联邦查询",
+        "title": "menu.dna.federation",
+        "icon": "PartitionOutlined",
+        "path": "/dna/federation",
+        "authority": "dna.federation.view",
+        "sort": 4,
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "DNA Federation View",
+            "authority": "dna.federation.view",
+            "resource": "/dna/federation",
+            "description": "允许访问 DNA 联邦查询菜单",
+            "type": 0
+          }
+        ],
+        "children": [
+          {
+            "label": "联邦目录",
+            "title": "menu.dna.federation.catalogs",
+            "icon": "AppstoreOutlined",
+            "path": "/dna/federation/catalogs",
+            "authority": "dna.federation.catalogs.view",
+            "sort": 0,
+            "component": "dna/platform/FederationCatalog",
+            "type": "item",
+            "disabled": false,
+            "permissions": [
+              {
+                "name": "DNA Federation Catalog View",
+                "authority": "dna.federation.catalogs.view",
+                "resource": "/dna/federation/catalogs",
+                "description": "允许访问联邦目录页面",
+                "type": 0,
+                "feature": {
+                  "name": "DNA Federation Catalog Management",
+                  "description": "DNA Federation Catalog Management Feature",
+                  "code": "dna-federation-catalog-management"
+                }
+              },
+              {
+                "name": "DNA Federation Catalog Create",
+                "authority": "dna.federation.catalogs.create",
+                "resource": "/dna/federation/catalogs",
+                "description": "允许新增联邦目录",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation Catalog Edit",
+                "authority": "dna.federation.catalogs.edit",
+                "resource": "/dna/federation/catalogs",
+                "description": "允许修改联邦目录",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation Catalog Delete",
+                "authority": "dna.federation.catalogs.delete",
+                "resource": "/dna/federation/catalogs",
+                "description": "允许删除联邦目录",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "label": "逻辑 Schema",
+            "title": "menu.dna.federation.schemas",
+            "icon": "ClusterOutlined",
+            "path": "/dna/federation/schemas",
+            "authority": "dna.federation.schemas.view",
+            "sort": 1,
+            "component": "dna/platform/FederationSchema",
+            "type": "item",
+            "disabled": false,
+            "permissions": [
+              {
+                "name": "DNA Federation Schema View",
+                "authority": "dna.federation.schemas.view",
+                "resource": "/dna/federation/schemas",
+                "description": "允许访问逻辑 Schema 页面",
+                "type": 0,
+                "feature": {
+                  "name": "DNA Federation Schema Management",
+                  "description": "DNA Federation Schema Management Feature",
+                  "code": "dna-federation-schema-management"
+                }
+              },
+              {
+                "name": "DNA Federation Schema Create",
+                "authority": "dna.federation.schemas.create",
+                "resource": "/dna/federation/schemas",
+                "description": "允许新增逻辑 Schema",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation Schema Edit",
+                "authority": "dna.federation.schemas.edit",
+                "resource": "/dna/federation/schemas",
+                "description": "允许修改逻辑 Schema",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation Schema Delete",
+                "authority": "dna.federation.schemas.delete",
+                "resource": "/dna/federation/schemas",
+                "description": "允许删除逻辑 Schema",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "label": "逻辑视图",
+            "title": "menu.dna.federation.views",
+            "icon": "NodeIndexOutlined",
+            "path": "/dna/federation/views",
+            "authority": "dna.federation.views.view",
+            "sort": 2,
+            "component": "dna/platform/FederationView",
+            "type": "item",
+            "disabled": false,
+            "permissions": [
+              {
+                "name": "DNA Federation View View",
+                "authority": "dna.federation.views.view",
+                "resource": "/dna/federation/views",
+                "description": "允许访问逻辑视图页面",
+                "type": 0,
+                "feature": {
+                  "name": "DNA Federation View Management",
+                  "description": "DNA Federation View Management Feature",
+                  "code": "dna-federation-view-management"
+                }
+              },
+              {
+                "name": "DNA Federation View Create",
+                "authority": "dna.federation.views.create",
+                "resource": "/dna/federation/views",
+                "description": "允许新增逻辑视图",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation View Edit",
+                "authority": "dna.federation.views.edit",
+                "resource": "/dna/federation/views",
+                "description": "允许修改逻辑视图",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation View Delete",
+                "authority": "dna.federation.views.delete",
+                "resource": "/dna/federation/views",
+                "description": "允许删除逻辑视图",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "label": "SQL 控制台",
+            "title": "menu.dna.federation.sqlConsole",
+            "icon": "CodeOutlined",
+            "path": "/dna/federation/sql-console",
+            "authority": "dna.federation.sql-console.view",
+            "sort": 3,
+            "component": "dna/platform/SqlConsole",
+            "type": "item",
+            "disabled": false,
+            "permissions": [
+              {
+                "name": "DNA Federation SQL Console View",
+                "authority": "dna.federation.sql-console.view",
+                "resource": "/dna/federation/sql-console",
+                "description": "允许访问联邦 SQL 控制台页面",
+                "type": 0,
+                "feature": {
+                  "name": "DNA Federation SQL Console",
+                  "description": "DNA Federation SQL Console Feature",
+                  "code": "dna-federation-sql-console"
+                }
+              },
+              {
+                "name": "DNA Federation SQL Console Explain",
+                "authority": "dna.federation.sql-console.explain",
+                "resource": "/dna/federation/sql-console",
+                "description": "允许查看联邦 SQL 执行计划",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation SQL Console Execute",
+                "authority": "dna.federation.sql-console.execute",
+                "resource": "/dna/federation/sql-console",
+                "description": "允许执行联邦只读 SQL",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "label": "查询策略",
+            "title": "menu.dna.federation.queryPolicies",
+            "icon": "SafetyOutlined",
+            "path": "/dna/federation/query-policies",
+            "authority": "dna.federation.query-policies.view",
+            "sort": 4,
+            "component": "dna/platform/QueryPolicy",
+            "type": "item",
+            "disabled": false,
+            "permissions": [
+              {
+                "name": "DNA Federation Query Policy View",
+                "authority": "dna.federation.query-policies.view",
+                "resource": "/dna/federation/query-policies",
+                "description": "允许访问查询策略页面",
+                "type": 0,
+                "feature": {
+                  "name": "DNA Federation Query Policy Management",
+                  "description": "DNA Federation Query Policy Management Feature",
+                  "code": "dna-federation-query-policy-management"
+                }
+              },
+              {
+                "name": "DNA Federation Query Policy Create",
+                "authority": "dna.federation.query-policies.create",
+                "resource": "/dna/federation/query-policies",
+                "description": "允许新增查询策略",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation Query Policy Edit",
+                "authority": "dna.federation.query-policies.edit",
+                "resource": "/dna/federation/query-policies",
+                "description": "允许修改查询策略",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation Query Policy Delete",
+                "authority": "dna.federation.query-policies.delete",
+                "resource": "/dna/federation/query-policies",
+                "description": "允许删除查询策略",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "label": "查询审计",
+            "title": "menu.dna.federation.queryAudits",
+            "icon": "AuditOutlined",
+            "path": "/dna/federation/query-audits",
+            "authority": "dna.federation.query-audits.view",
+            "sort": 5,
+            "component": "dna/platform/QueryAudit",
+            "type": "item",
+            "disabled": false,
+            "permissions": [
+              {
+                "name": "DNA Federation Query Audit View",
+                "authority": "dna.federation.query-audits.view",
+                "resource": "/dna/federation/query-audits",
+                "description": "允许访问查询审计页面",
+                "type": 0,
+                "feature": {
+                  "name": "DNA Federation Query Audit Management",
+                  "description": "DNA Federation Query Audit Management Feature",
+                  "code": "dna-federation-query-audit-management"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

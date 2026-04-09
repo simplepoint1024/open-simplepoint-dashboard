@@ -109,7 +109,7 @@ public record MessageClient(RabbitTemplate rabbitTemplate) {
    */
   public <T> T sendAndReceive(String exchange, String routingKey, String replyTo, String type,
                               Object data, Class<T> returnType) {
-    return sendAndReceive(exchange, routingKey, type, replyTo, data, Collections.emptyMap(),
+    return sendAndReceive(exchange, routingKey, replyTo, type, data, Collections.emptyMap(),
         returnType);
   }
 

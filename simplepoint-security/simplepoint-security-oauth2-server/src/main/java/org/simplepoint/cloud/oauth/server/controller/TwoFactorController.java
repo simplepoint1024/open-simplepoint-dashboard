@@ -5,12 +5,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
+import org.simplepoint.cloud.oauth.server.event.LoginAuditEventPublisher;
 import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationSuccessHandler;
 import org.simplepoint.cloud.oauth.server.provider.TwoFactorAuthenticationProvider;
 import org.simplepoint.cloud.oauth.server.provider.TwoFactorAuthenticationToken;
 import org.simplepoint.cloud.oauth.server.service.TotpService;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -33,6 +35,7 @@ public class TwoFactorController {
   private final AuthenticationManager authenticationManager;
 
   private final LoginAuthenticationSuccessHandler authenticationSuccessHandler;
+  private final LoginAuditEventPublisher loginAuditEventPublisher;
 
   /**
    * Constructs the TwoFactorController and registers the TwoFactorAuthenticationProvider
@@ -44,10 +47,12 @@ public class TwoFactorController {
   public TwoFactorController(
       AuthenticationManager authenticationManager,
       TotpService totpService,
-      LoginAuthenticationSuccessHandler authenticationSuccessHandler
+      LoginAuthenticationSuccessHandler authenticationSuccessHandler,
+      LoginAuditEventPublisher loginAuditEventPublisher
   ) {
     this.authenticationManager = authenticationManager;
     this.authenticationSuccessHandler = authenticationSuccessHandler;
+    this.loginAuditEventPublisher = loginAuditEventPublisher;
     if (authenticationManager instanceof ProviderManager providerManager) {
       providerManager.getProviders().add(new TwoFactorAuthenticationProvider(totpService));
     }
@@ -84,6 +89,7 @@ public class TwoFactorController {
     }
 
     if (code == null || code.trim().isEmpty()) {
+      loginAuditEventPublisher.publishFailure(request, currentAuth, new BadCredentialsException("Two-factor code is required"));
       model.addAttribute("error", "Code is required");
       return "two-factor-verify";
     }
@@ -91,9 +97,10 @@ public class TwoFactorController {
     try {
       Authentication result = authenticationManager.authenticate(new TwoFactorAuthenticationToken(user, code.trim()));
       SecurityContextHolder.getContext().setAuthentication(result);
-      authenticationSuccessHandler.onAuthenticationSuccessDelegate(request, response, currentAuth);
+      authenticationSuccessHandler.onAuthenticationSuccessDelegate(request, response, result);
       return null;
     } catch (AuthenticationException ex) {
+      loginAuditEventPublisher.publishFailure(request, currentAuth, ex);
       log.error("AuthenticationException", ex);
       model.addAttribute("error", "Invalid authentication code");
       return "two-factor-verify";

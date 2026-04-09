@@ -11,8 +11,11 @@ package org.simplepoint.data.amqp.rpc.config;
 import org.simplepoint.data.amqp.rpc.properties.ArpcProperties;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.HeadersExchange;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,21 +44,44 @@ public class AmqpRpcQueueConfiguration {
   /**
    * Defines the direct exchange used for routing messages based on header conditions.
    *
-   * @return a {@link HeadersExchange} instance configured with the exchange name
+   * @return a {@link DirectExchange} instance configured with the exchange name
+  */
+  @Bean("simplepoint.queue.amqprpc.direct.exchange")
+  public DirectExchange directExchange() {
+    return new DirectExchange(properties.exchange(), true, false);
+  }
+
+  /**
+   * Defines the dead-letter exchange used for rejected RPC requests.
+   *
+   * @return the dead-letter exchange
    */
-  @Bean("rpcDirectExchange")
-  public HeadersExchange directExchange() {
-    return new HeadersExchange(properties.prefix(properties.getExchangeName()), true, false);
+  @Bean("simplepoint.queue.amqprpc.dead.letter.exchange")
+  public DirectExchange deadLetterExchange() {
+    return new DirectExchange(properties.deadLetterExchange(), true, false);
   }
 
   /**
    * Defines the request queue used for sending RPC requests.
    *
    * @return a {@link Queue} instance representing the request queue
-   */
-  @Bean("rpcRequestQueue")
+  */
+  @Bean("simplepoint.queue.amqprpc.request")
   public Queue requestQueue() {
-    return new Queue(properties.prefix(properties.getAppId()), true, false, false);
+    return QueueBuilder.durable(properties.requestQueue())
+        .deadLetterExchange(properties.deadLetterExchange())
+        .deadLetterRoutingKey(properties.deadLetterRoutingKey())
+        .build();
+  }
+
+  /**
+   * Defines the dead-letter queue used for rejected RPC requests.
+   *
+   * @return the dead-letter queue
+   */
+  @Bean("simplepoint.queue.amqprpc.dead.letter")
+  public Queue deadLetterQueue() {
+    return QueueBuilder.durable(properties.deadLetterQueue()).build();
   }
 
   /**
@@ -68,39 +94,46 @@ public class AmqpRpcQueueConfiguration {
    */
   @Bean
   public Binding requestBinding(
-      @Qualifier("rpcRequestQueue") Queue requestQueue,
-      @Qualifier("rpcDirectExchange") HeadersExchange directExchange) {
+      @Qualifier("simplepoint.queue.amqprpc.request") Queue requestQueue,
+      @Qualifier("simplepoint.queue.amqprpc.direct.exchange") DirectExchange directExchange) {
     return BindingBuilder.bind(requestQueue)
         .to(directExchange)
-        .where("to")
-        .matches(properties.prefix(properties.getAppId()));
+        .with(properties.requestRoutingKey());
   }
 
   /**
-   * Defines the reply-to queue used for receiving RPC responses.
+   * Creates a binding between the dead-letter queue and dead-letter exchange.
    *
-   * @return a {@link Queue} instance representing the reply-to queue
-   */
-  @Bean("rpcReplyToQueue")
-  public Queue replyToQueue() {
-    return new Queue(properties.prefix(properties.getResponseQueueName()), true, false, false);
-  }
-
-  /**
-   * Creates a binding between the reply-to queue and the direct exchange.
-   * Specifies routing conditions based on the "to" header.
-   *
-   * @param replyToQueue   the reply-to queue bean
-   * @param directExchange the direct exchange bean
-   * @return a {@link Binding} instance representing the queue-to-exchange binding for replies
+   * @param deadLetterQueue the dead-letter queue bean
+   * @param deadLetterExchange the dead-letter exchange bean
+   * @return the dead-letter binding
    */
   @Bean
-  public Binding replyToBinding(
-      @Qualifier("rpcReplyToQueue") Queue replyToQueue,
-      @Qualifier("rpcDirectExchange") HeadersExchange directExchange) {
-    return BindingBuilder.bind(replyToQueue)
-        .to(directExchange)
-        .where("to")
-        .matches(properties.prefix(properties.getAppId()));
+  public Binding deadLetterBinding(
+      @Qualifier("simplepoint.queue.amqprpc.dead.letter") final Queue deadLetterQueue,
+      @Qualifier("simplepoint.queue.amqprpc.dead.letter.exchange") final DirectExchange deadLetterExchange
+  ) {
+    return BindingBuilder.bind(deadLetterQueue)
+        .to(deadLetterExchange)
+        .with(properties.deadLetterRoutingKey());
+  }
+
+  /**
+   * Builds a dedicated listener container factory for RPC request consumers.
+   *
+   * @param connectionFactory the RabbitMQ connection factory
+   * @return the listener container factory
+   */
+  @Bean
+  public SimpleRabbitListenerContainerFactory arpcListenerContainerFactory(
+      final ConnectionFactory connectionFactory
+  ) {
+    SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+    factory.setConnectionFactory(connectionFactory);
+    factory.setConcurrentConsumers(properties.getListener().getConcurrency());
+    factory.setMaxConcurrentConsumers(properties.getListener().getMaxConcurrency());
+    factory.setPrefetchCount(properties.getListener().getPrefetch());
+    factory.setDefaultRequeueRejected(false);
+    return factory;
   }
 }

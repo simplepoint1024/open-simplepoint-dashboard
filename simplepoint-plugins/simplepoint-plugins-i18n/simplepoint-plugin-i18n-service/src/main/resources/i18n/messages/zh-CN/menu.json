@@ -14,6 +14,11 @@
   "menu.i18n.namespace": "国际化命名空间",
   "menu.monitoring": "监控审计",
   "menu.monitoring.loginLog": "登录日志",
+  "menu.monitoring.errorLog": "错误日志",
+  "menu.monitoring.serviceRateLimit": "服务限流",
+  "menu.monitoring.endpointRateLimit": "接口限流",
+  "menu.monitoring.redis": "Redis管理",
+  "menu.monitoring.permissionChangeLog": "权限变更记录",
   "menu.monitoring.operationLog": "操作日志",
   "menu.ops": "系统维护",
   "menu.ops.microService": "微服务管理",
@@ -36,5 +41,11 @@
   "menu.platform.application": "应用管理",
   "menu.platform.package": "套餐包管理",
   "menu.platform.dictionaries": "字典管理",
-  "menu.platform.organizations": "组织机构管理"
+  "menu.platform.organizations": "组织机构管理",
+  "menu.platform.objectStorage": "对象存储",
+  "menu.dna": "DNA工作台",
+  "menu.dna.drivers": "驱动管理",
+  "menu.dna.dataSources": "数据源管理",
+  "menu.dna.metadata": "元数据管理",
+  "menu.dna.dialects": "数据库方言管理"
 }

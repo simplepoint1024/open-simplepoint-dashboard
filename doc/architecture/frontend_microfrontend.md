@@ -51,8 +51,9 @@
 
 ## 8. 关联文档
 - 系统概览：`doc/architecture/system_overview.md`
+- 服务拓扑：`doc/architecture/service_topology.md`
 - 组件设计：`doc/architecture/component_design.md`
+- Schema 驱动 UI：`doc/architecture/schema_driven_ui.md`
 - 项目结构：`doc/architecture/project_structure_diagram.md`
 - 开发环境与规范：`doc/architecture/dev_environment.md`
 - 部署架构：`doc/architecture/deployment_diagram.md`
-

@@ -8,6 +8,11 @@
 - `webhook/`：Webhook 事件、回调规范。
 - `sdk/`：SDK 约定、示例请求。
 
+当前仓库已补充的 API 相关正文包括：
+
+- `doc/api/api_conventions.md`
+- `doc/api/schema_api.md`
+
 ## 2. 描述内容要点
 - 接口摘要：用途、所属服务/领域。
 - 请求定义：HTTP 方法、URL、Query/Header/Body 参数、示例请求。
@@ -51,6 +56,8 @@ curl http://localhost:8082/v3/api-docs > doc/api/openapi/permission.json
 - 需要时提供 Mock 数据或契约测试，保证前后端联调稳定。
 
 ## 7. 关联文档
+- API 约定：`doc/api/api_conventions.md`
+- Schema API：`doc/api/schema_api.md`
 - 系统概览：`doc/architecture/system_overview.md`
 - 组件设计：`doc/architecture/component_design.md`
 - 项目结构：`doc/architecture/project_structure_diagram.md`

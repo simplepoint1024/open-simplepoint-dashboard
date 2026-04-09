@@ -79,8 +79,12 @@ sequenceDiagram
 
 ## 8. 关联文档
 - 系统概览：`doc/architecture/system_overview.md`
+- 服务拓扑：`doc/architecture/service_topology.md`
 - 部署视图：`doc/architecture/deployment_diagram.md`
-- 权限与资源：`doc/permission/`、`doc/resource_model/`、`doc/menu_structure/`
+- 插件运行时：`doc/architecture/plugin_architecture.md`
+- 多租户模型：`doc/architecture/multi_tenant_model.md`
+- Schema 驱动 UI：`doc/architecture/schema_driven_ui.md`
+- 授权流程：`doc/design/authorization_flow.md`
+- 权限模型：`doc/permission/`
 - 数据库设计：`doc/database/`
 - API 契约：`doc/api/`
-

@@ -16,6 +16,7 @@ import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.PermissionsRepository;
 import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
 import org.simplepoint.security.entity.Permissions;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ import java.util.Collection;
  * PermissionsServiceImpl provides the implementation for PermissionsService.
  * It utilizes the repository to load permissions associated with a specific role authority.
  */
+@Primary
 @Service
 public class PermissionsServiceImpl
         extends BaseServiceImpl<PermissionsRepository, Permissions, String>
