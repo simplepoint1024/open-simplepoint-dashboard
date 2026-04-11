@@ -1,0 +1,1131 @@
+{
+  "id": "common",
+  "name": "common",
+  "metaData": {
+    "name": "common",
+    "type": "app",
+    "buildInfo": {
+      "buildVersion": "1.0.0",
+      "buildName": "@simplepoint/common"
+    },
+    "remoteEntry": {
+      "name": "common.js",
+      "path": "",
+      "type": "global"
+    },
+    "types": {
+      "path": "",
+      "name": "",
+      "zip": "@mf-types.zip",
+      "api": "@mf-types.d.ts"
+    },
+    "globalName": "common",
+    "pluginVersion": "0.13.1",
+    "prefetchInterface": false,
+    "publicPath": "/common/mf/"
+  },
+  "shared": [
+    {
+      "singleton": true,
+      "requiredVersion": "^19.0.0",
+      "shareScope": "default",
+      "strictVersion": false,
+      "eager": true,
+      "name": "react",
+      "version": "19.0.0",
+      "id": "common:react",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [
+        "./i18n/Timezone",
+        "./system/Role/config/permission",
+        "./Dashboard",
+        "./i18n/Countries",
+        "./i18n/Language",
+        "./i18n/Message",
+        "./i18n/Namespace",
+        "./i18n/Region",
+        "./ops/Microapp",
+        "./platform/Application/config/feature",
+        "./platform/Application",
+        "./platform/Dictionary/config/item",
+        "./platform/Dictionary",
+        "./platform/Feature/config/permission",
+        "./platform/Feature",
+        "./platform/ObjectStorage",
+        "./platform/Organization",
+        "./platform/Package/config/application",
+        "./platform/Package",
+        "./platform/Tenant/config/package",
+        "./platform/Tenant/config/user",
+        "./platform/Tenant",
+        "./system/Menu/config/permission",
+        "./system/Menu",
+        "./system/OAuthClient",
+        "./system/Permission",
+        "./system/Role",
+        "./system/User/config/role",
+        "./system/User"
+      ]
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^5.29.1",
+      "shareScope": "default",
+      "eager": true,
+      "name": "antd",
+      "version": "5.28.1",
+      "id": "common:antd",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [
+        "./Dashboard",
+        "./platform/Application",
+        "./platform/Dictionary",
+        "./platform/Feature",
+        "./platform/ObjectStorage",
+        "./platform/Package",
+        "./platform/Tenant",
+        "./system/Menu",
+        "./system/Role",
+        "./system/User"
+      ]
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^6.0.0",
+      "shareScope": "default",
+      "strictVersion": false,
+      "eager": true,
+      "name": "@ant-design/icons",
+      "version": "^6.0.0",
+      "id": "common:@ant-design/icons",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [
+        "./Dashboard",
+        "./platform/ObjectStorage"
+      ]
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^7.9.6",
+      "shareScope": "default",
+      "eager": true,
+      "name": "react-router-dom",
+      "version": "7.9.5",
+      "id": "common:react-router-dom",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [
+        "./Dashboard"
+      ]
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^5.90.11",
+      "shareScope": "default",
+      "eager": true,
+      "name": "@tanstack/react-query",
+      "version": "^5.90.7",
+      "id": "common:@tanstack/react-query",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": []
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^0.21.0",
+      "shareScope": "default",
+      "eager": true,
+      "name": "react-highlight-words",
+      "version": "0.21.0",
+      "id": "common:react-highlight-words",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": []
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^7.9.6",
+      "shareScope": "default",
+      "eager": true,
+      "name": "react-router",
+      "version": "7.9.6",
+      "id": "common:react-router",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": []
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^5.24.13",
+      "shareScope": "default",
+      "eager": true,
+      "name": "@rjsf/antd",
+      "version": "^5.24.13",
+      "id": "common:@rjsf/antd",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": []
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^5.24.13",
+      "shareScope": "default",
+      "eager": true,
+      "name": "@rjsf/validator-ajv8",
+      "version": "^5.24.13",
+      "id": "common:@rjsf/validator-ajv8",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": []
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^19.0.0",
+      "shareScope": "default",
+      "strictVersion": false,
+      "eager": true,
+      "name": "react-dom",
+      "version": "19.0.0",
+      "id": "common:react-dom",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": []
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^5.24.13",
+      "shareScope": "default",
+      "eager": true,
+      "name": "@rjsf/core",
+      "version": "^5.24.x",
+      "id": "common:@rjsf/core",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": []
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^5.24.13",
+      "shareScope": "default",
+      "eager": true,
+      "name": "@rjsf/utils",
+      "version": "^5.24.x",
+      "id": "common:@rjsf/utils",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": []
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^1.11.19",
+      "shareScope": "default",
+      "eager": true,
+      "name": "dayjs",
+      "version": "1.8.0",
+      "id": "common:dayjs",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": []
+    }
+  ],
+  "remotes": [],
+  "exposes": [
+    {
+      "path": "./Dashboard",
+      "id": "common:Dashboard",
+      "name": "Dashboard",
+      "requires": [
+        "react",
+        "antd",
+        "@ant-design/icons",
+        "react-router-dom"
+      ],
+      "file": "src/views/Dashboard/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "__federation_expose_Dashboard.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./i18n/Countries",
+      "id": "common:i18n/Countries",
+      "name": "i18n/Countries",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/i18n/Countries/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_i18n__Countries.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_i18n__Countries.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./i18n/Language",
+      "id": "common:i18n/Language",
+      "name": "i18n/Language",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/i18n/Language/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_i18n__Language.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_i18n__Language.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./i18n/Message",
+      "id": "common:i18n/Message",
+      "name": "i18n/Message",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/i18n/Message/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_i18n__Message.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_i18n__Message.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./i18n/Namespace",
+      "id": "common:i18n/Namespace",
+      "name": "i18n/Namespace",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/i18n/Namespace/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_i18n__Namespace.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_i18n__Namespace.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./i18n/Region",
+      "id": "common:i18n/Region",
+      "name": "i18n/Region",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/i18n/Region/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_i18n__Region.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_i18n__Region.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./i18n/Timezone",
+      "id": "common:i18n/Timezone",
+      "name": "i18n/Timezone",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/i18n/Timezone/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_i18n__Timezone.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_i18n__Timezone.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./ops/Microapp",
+      "id": "common:ops/Microapp",
+      "name": "ops/Microapp",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/ops/Microapp/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_ops__Microapp.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_ops__Microapp.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./ops/micro-service",
+      "id": "common:ops/micro-service",
+      "name": "ops/micro-service",
+      "requires": [],
+      "file": "src/views/ops/micro-service/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "__federation_expose_ops__micro_service.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/Application",
+      "id": "common:platform/Application",
+      "name": "platform/Application",
+      "requires": [
+        "react",
+        "antd"
+      ],
+      "file": "src/views/platform/Application/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Application.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Application.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/Application/config/feature",
+      "id": "common:platform/Application/config/feature",
+      "name": "platform/Application/config/feature",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/platform/Application/config/feature/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__Application__config__feature.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/Dictionary",
+      "id": "common:platform/Dictionary",
+      "name": "platform/Dictionary",
+      "requires": [
+        "react",
+        "antd"
+      ],
+      "file": "src/views/platform/Dictionary/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Dictionary.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Dictionary.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/Dictionary/config/item",
+      "id": "common:platform/Dictionary/config/item",
+      "name": "platform/Dictionary/config/item",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/platform/Dictionary/config/item/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Dictionary__config__item.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Dictionary__config__item.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/Feature",
+      "id": "common:platform/Feature",
+      "name": "platform/Feature",
+      "requires": [
+        "react",
+        "antd"
+      ],
+      "file": "src/views/platform/Feature/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Feature.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Feature.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/Feature/config/permission",
+      "id": "common:platform/Feature/config/permission",
+      "name": "platform/Feature/config/permission",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/platform/Feature/config/permission/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__Feature__config__permission.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/ObjectStorage",
+      "id": "common:platform/ObjectStorage",
+      "name": "platform/ObjectStorage",
+      "requires": [
+        "react",
+        "antd",
+        "@ant-design/icons"
+      ],
+      "file": "src/views/platform/ObjectStorage/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__ObjectStorage.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/Organization",
+      "id": "common:platform/Organization",
+      "name": "platform/Organization",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/platform/Organization/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Organization.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Organization.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/Package",
+      "id": "common:platform/Package",
+      "name": "platform/Package",
+      "requires": [
+        "react",
+        "antd"
+      ],
+      "file": "src/views/platform/Package/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Package.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Package.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/Package/config/application",
+      "id": "common:platform/Package/config/application",
+      "name": "platform/Package/config/application",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/platform/Package/config/application/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__Package__config__application.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/Tenant",
+      "id": "common:platform/Tenant",
+      "name": "platform/Tenant",
+      "requires": [
+        "react",
+        "antd"
+      ],
+      "file": "src/views/platform/Tenant/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Tenant.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Tenant.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/Tenant/config/package",
+      "id": "common:platform/Tenant/config/package",
+      "name": "platform/Tenant/config/package",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/platform/Tenant/config/package/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__Tenant__config__package.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./platform/Tenant/config/user",
+      "id": "common:platform/Tenant/config/user",
+      "name": "platform/Tenant/config/user",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/platform/Tenant/config/user/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__Tenant__config__user.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./system/Menu",
+      "id": "common:system/Menu",
+      "name": "system/Menu",
+      "requires": [
+        "react",
+        "antd"
+      ],
+      "file": "src/views/system/Menu/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_system__Menu.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__Menu.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./system/Menu/config/permission",
+      "id": "common:system/Menu/config/permission",
+      "name": "system/Menu/config/permission",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/system/Menu/config/permission/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_system__Menu__config__permission.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./system/OAuthClient",
+      "id": "common:system/OAuthClient",
+      "name": "system/OAuthClient",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/system/OAuthClient/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_system__OAuthClient.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__OAuthClient.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./system/Permission",
+      "id": "common:system/Permission",
+      "name": "system/Permission",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/system/Permission/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_system__Permission.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__Permission.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./system/Role",
+      "id": "common:system/Role",
+      "name": "system/Role",
+      "requires": [
+        "react",
+        "antd"
+      ],
+      "file": "src/views/system/Role/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_system__Role.js"
+          ],
+          "async": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Application.js",
+            "__federation_expose_platform__Application__config__feature.js",
+            "__federation_expose_platform__Feature.js",
+            "__federation_expose_platform__Feature__config__permission.js",
+            "__federation_expose_platform__Package.js",
+            "__federation_expose_platform__Package__config__application.js",
+            "__federation_expose_platform__Tenant.js",
+            "__federation_expose_platform__Tenant__config__package.js",
+            "__federation_expose_platform__Tenant__config__user.js",
+            "__federation_expose_system__Menu.js",
+            "__federation_expose_system__Menu__config__permission.js",
+            "__federation_expose_system__Role__config__permission.js",
+            "__federation_expose_system__User.js",
+            "__federation_expose_system__User__config__role.js",
+            "544.js"
+          ]
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__Role.css"
+          ],
+          "async": [
+            "__federation_expose_platform__Application.css",
+            "__federation_expose_platform__Feature.css",
+            "__federation_expose_platform__Package.css",
+            "__federation_expose_platform__Tenant.css",
+            "__federation_expose_system__Menu.css",
+            "__federation_expose_system__User.css"
+          ]
+        }
+      }
+    },
+    {
+      "path": "./system/Role/config/permission",
+      "id": "common:system/Role/config/permission",
+      "name": "system/Role/config/permission",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/system/Role/config/permission/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_system__Role__config__permission.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./system/User",
+      "id": "common:system/User",
+      "name": "system/User",
+      "requires": [
+        "react",
+        "antd"
+      ],
+      "file": "src/views/system/User/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_system__User.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__User.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./system/User/config/role",
+      "id": "common:system/User/config/role",
+      "name": "system/User/config/role",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/system/User/config/role/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_system__User__config__role.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      }
+    }
+  ]
+}

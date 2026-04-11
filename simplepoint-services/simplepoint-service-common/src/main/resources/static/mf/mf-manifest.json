@@ -1,0 +1,912 @@
+{
+  "id": "common",
+  "name": "common",
+  "metaData": {
+    "name": "common",
+    "type": "app",
+    "buildInfo": {
+      "buildVersion": "1.0.0",
+      "buildName": "@simplepoint/common"
+    },
+    "remoteEntry": {
+      "name": "common.js",
+      "path": "",
+      "type": "global"
+    },
+    "types": {
+      "path": "",
+      "name": "",
+      "zip": "@mf-types.zip",
+      "api": "@mf-types.d.ts"
+    },
+    "globalName": "common",
+    "pluginVersion": "0.13.1",
+    "prefetchInterface": false,
+    "publicPath": "/common/mf/"
+  },
+  "shared": [
+    {
+      "id": "common:react",
+      "name": "react",
+      "version": "19.0.0",
+      "singleton": true,
+      "requiredVersion": "^19.0.0",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "common:antd",
+      "name": "antd",
+      "version": "5.28.1",
+      "singleton": true,
+      "requiredVersion": "^5.29.1",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "common:@ant-design/icons",
+      "name": "@ant-design/icons",
+      "version": "^6.0.0",
+      "singleton": true,
+      "requiredVersion": "^6.0.0",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "common:react-router-dom",
+      "name": "react-router-dom",
+      "version": "7.9.5",
+      "singleton": true,
+      "requiredVersion": "^7.9.6",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "common:@tanstack/react-query",
+      "name": "@tanstack/react-query",
+      "version": "^5.90.7",
+      "singleton": true,
+      "requiredVersion": "^5.90.11",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "common:react-highlight-words",
+      "name": "react-highlight-words",
+      "version": "0.21.0",
+      "singleton": true,
+      "requiredVersion": "^0.21.0",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "common:react-router",
+      "name": "react-router",
+      "version": "7.9.6",
+      "singleton": true,
+      "requiredVersion": "^7.9.6",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "common:@rjsf/antd",
+      "name": "@rjsf/antd",
+      "version": "^5.24.13",
+      "singleton": true,
+      "requiredVersion": "^5.24.13",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "common:@rjsf/validator-ajv8",
+      "name": "@rjsf/validator-ajv8",
+      "version": "^5.24.13",
+      "singleton": true,
+      "requiredVersion": "^5.24.13",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "common:react-dom",
+      "name": "react-dom",
+      "version": "19.0.0",
+      "singleton": true,
+      "requiredVersion": "^19.0.0",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "common:@rjsf/core",
+      "name": "@rjsf/core",
+      "version": "^5.24.x",
+      "singleton": true,
+      "requiredVersion": "^5.24.13",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "common:@rjsf/utils",
+      "name": "@rjsf/utils",
+      "version": "^5.24.x",
+      "singleton": true,
+      "requiredVersion": "^5.24.13",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "common:dayjs",
+      "name": "dayjs",
+      "version": "1.8.0",
+      "singleton": true,
+      "requiredVersion": "^1.11.19",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "common.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    }
+  ],
+  "remotes": [],
+  "exposes": [
+    {
+      "id": "common:Dashboard",
+      "name": "Dashboard",
+      "assets": {
+        "js": {
+          "sync": [
+            "__federation_expose_Dashboard.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./Dashboard"
+    },
+    {
+      "id": "common:i18n/Countries",
+      "name": "i18n/Countries",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_i18n__Countries.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_i18n__Countries.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./i18n/Countries"
+    },
+    {
+      "id": "common:i18n/Language",
+      "name": "i18n/Language",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_i18n__Language.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_i18n__Language.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./i18n/Language"
+    },
+    {
+      "id": "common:i18n/Message",
+      "name": "i18n/Message",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_i18n__Message.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_i18n__Message.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./i18n/Message"
+    },
+    {
+      "id": "common:i18n/Namespace",
+      "name": "i18n/Namespace",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_i18n__Namespace.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_i18n__Namespace.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./i18n/Namespace"
+    },
+    {
+      "id": "common:i18n/Region",
+      "name": "i18n/Region",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_i18n__Region.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_i18n__Region.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./i18n/Region"
+    },
+    {
+      "id": "common:i18n/Timezone",
+      "name": "i18n/Timezone",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_i18n__Timezone.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_i18n__Timezone.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./i18n/Timezone"
+    },
+    {
+      "id": "common:ops/Microapp",
+      "name": "ops/Microapp",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_ops__Microapp.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_ops__Microapp.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./ops/Microapp"
+    },
+    {
+      "id": "common:ops/micro-service",
+      "name": "ops/micro-service",
+      "assets": {
+        "js": {
+          "sync": [
+            "__federation_expose_ops__micro_service.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./ops/micro-service"
+    },
+    {
+      "id": "common:platform/Application",
+      "name": "platform/Application",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Application.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Application.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/Application"
+    },
+    {
+      "id": "common:platform/Application/config/feature",
+      "name": "platform/Application/config/feature",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__Application__config__feature.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/Application/config/feature"
+    },
+    {
+      "id": "common:platform/Dictionary",
+      "name": "platform/Dictionary",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Dictionary.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Dictionary.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/Dictionary"
+    },
+    {
+      "id": "common:platform/Dictionary/config/item",
+      "name": "platform/Dictionary/config/item",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Dictionary__config__item.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Dictionary__config__item.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/Dictionary/config/item"
+    },
+    {
+      "id": "common:platform/Feature",
+      "name": "platform/Feature",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Feature.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Feature.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/Feature"
+    },
+    {
+      "id": "common:platform/Feature/config/permission",
+      "name": "platform/Feature/config/permission",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__Feature__config__permission.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/Feature/config/permission"
+    },
+    {
+      "id": "common:platform/ObjectStorage",
+      "name": "platform/ObjectStorage",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__ObjectStorage.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/ObjectStorage"
+    },
+    {
+      "id": "common:platform/Organization",
+      "name": "platform/Organization",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Organization.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Organization.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/Organization"
+    },
+    {
+      "id": "common:platform/Package",
+      "name": "platform/Package",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Package.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Package.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/Package"
+    },
+    {
+      "id": "common:platform/Package/config/application",
+      "name": "platform/Package/config/application",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__Package__config__application.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/Package/config/application"
+    },
+    {
+      "id": "common:platform/Tenant",
+      "name": "platform/Tenant",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Tenant.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__Tenant.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/Tenant"
+    },
+    {
+      "id": "common:platform/Tenant/config/package",
+      "name": "platform/Tenant/config/package",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__Tenant__config__package.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/Tenant/config/package"
+    },
+    {
+      "id": "common:platform/Tenant/config/user",
+      "name": "platform/Tenant/config/user",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__Tenant__config__user.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/Tenant/config/user"
+    },
+    {
+      "id": "common:system/Menu",
+      "name": "system/Menu",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_system__Menu.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__Menu.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./system/Menu"
+    },
+    {
+      "id": "common:system/Menu/config/permission",
+      "name": "system/Menu/config/permission",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_system__Menu__config__permission.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./system/Menu/config/permission"
+    },
+    {
+      "id": "common:system/OAuthClient",
+      "name": "system/OAuthClient",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_system__OAuthClient.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__OAuthClient.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./system/OAuthClient"
+    },
+    {
+      "id": "common:system/Permission",
+      "name": "system/Permission",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_system__Permission.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__Permission.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./system/Permission"
+    },
+    {
+      "id": "common:system/Role",
+      "name": "system/Role",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_system__Role.js"
+          ],
+          "async": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__Application.js",
+            "__federation_expose_platform__Application__config__feature.js",
+            "__federation_expose_platform__Feature.js",
+            "__federation_expose_platform__Feature__config__permission.js",
+            "__federation_expose_platform__Package.js",
+            "__federation_expose_platform__Package__config__application.js",
+            "__federation_expose_platform__Tenant.js",
+            "__federation_expose_platform__Tenant__config__package.js",
+            "__federation_expose_platform__Tenant__config__user.js",
+            "__federation_expose_system__Menu.js",
+            "__federation_expose_system__Menu__config__permission.js",
+            "__federation_expose_system__Role__config__permission.js",
+            "__federation_expose_system__User.js",
+            "__federation_expose_system__User__config__role.js",
+            "544.js"
+          ]
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__Role.css"
+          ],
+          "async": [
+            "__federation_expose_platform__Application.css",
+            "__federation_expose_platform__Feature.css",
+            "__federation_expose_platform__Package.css",
+            "__federation_expose_platform__Tenant.css",
+            "__federation_expose_system__Menu.css",
+            "__federation_expose_system__User.css"
+          ]
+        }
+      },
+      "path": "./system/Role"
+    },
+    {
+      "id": "common:system/Role/config/permission",
+      "name": "system/Role/config/permission",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_system__Role__config__permission.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./system/Role/config/permission"
+    },
+    {
+      "id": "common:system/User",
+      "name": "system/User",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_system__User.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__User.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./system/User"
+    },
+    {
+      "id": "common:system/User/config/role",
+      "name": "system/User/config/role",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_system__User__config__role.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./system/User/config/role"
+    }
+  ]
+}
