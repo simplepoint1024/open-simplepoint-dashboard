@@ -625,6 +625,22 @@
             "type": 1
           }
         ]
+      },
+      {
+        "sort": 7,
+        "icon": "CheckCircleOutlined",
+        "component": "dna/platform/DataQuality",
+        "permissions": [
+          "dna.data-quality.view"
+        ]
+      },
+      {
+        "sort": 8,
+        "icon": "ApartmentOutlined",
+        "component": "dna/platform/DataLineage",
+        "permissions": [
+          "dna.data-lineage.view"
+        ]
       }
     ]
   }
