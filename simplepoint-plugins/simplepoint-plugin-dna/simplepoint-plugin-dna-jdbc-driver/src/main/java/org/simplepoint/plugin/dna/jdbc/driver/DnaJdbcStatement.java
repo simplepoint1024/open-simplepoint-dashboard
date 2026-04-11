@@ -372,13 +372,18 @@ class DnaJdbcStatement implements Statement {
 
   @Override
   public boolean getMoreResults() throws SQLException {
-    ensureOpen();
-    return false;
+    return getMoreResults(CLOSE_CURRENT_RESULT);
   }
 
   @Override
   public boolean getMoreResults(final int current) throws SQLException {
     ensureOpen();
+    if (current == CLOSE_CURRENT_RESULT || current == CLOSE_ALL_RESULTS) {
+      closeCurrentResultSet();
+    }
+    // Signal "no more results" per JDBC spec: getMoreResults() == false && getUpdateCount() == -1
+    lastUpdateCount = -1;
+    lastExecuteWasQuery = false;
     return false;
   }
 
