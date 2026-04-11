@@ -16,6 +16,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.simplepoint.plugin.dna.federation.api.service.FederationJdbcDriverService;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcDriverModels;
@@ -61,6 +64,12 @@ public class FederationJdbcSocketServer implements DisposableBean {
   @Value("${simplepoint.dna.jdbc.socket.backlog:50}")
   private int backlog;
 
+  @Value("${simplepoint.dna.jdbc.socket.max-connections:200}")
+  private int maxConnections;
+
+  @Value("${simplepoint.dna.jdbc.socket.idle-timeout:300000}")
+  private int idleTimeoutMs;
+
   private volatile boolean running;
 
   private volatile ServerSocket serverSocket;
@@ -80,11 +89,19 @@ public class FederationJdbcSocketServer implements DisposableBean {
       thread.setDaemon(true);
       return thread;
     });
-    this.connectionExecutor = Executors.newCachedThreadPool(runnable -> {
-      Thread thread = new Thread(runnable, "dna-jdbc-socket-client");
-      thread.setDaemon(true);
-      return thread;
-    });
+    this.connectionExecutor = new ThreadPoolExecutor(
+        4,
+        200,
+        60L,
+        TimeUnit.SECONDS,
+        new LinkedBlockingQueue<>(64),
+        runnable -> {
+          Thread thread = new Thread(runnable, "dna-jdbc-socket-client");
+          thread.setDaemon(true);
+          return thread;
+        },
+        new ThreadPoolExecutor.CallerRunsPolicy()
+    );
     this.started = new AtomicBoolean(false);
   }
 
@@ -95,6 +112,9 @@ public class FederationJdbcSocketServer implements DisposableBean {
   public void start() {
     if (!enabled || !started.compareAndSet(false, true)) {
       return;
+    }
+    if (connectionExecutor instanceof ThreadPoolExecutor pool) {
+      pool.setMaximumPoolSize(maxConnections);
     }
     try {
       ServerSocket socket = new ServerSocket();
@@ -131,6 +151,7 @@ public class FederationJdbcSocketServer implements DisposableBean {
         DataInputStream inputStream = new DataInputStream(new BufferedInputStream(client.getInputStream()));
         DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(client.getOutputStream()))
     ) {
+      client.setSoTimeout(idleTimeoutMs);
       ConnectionSession session = null;
       try {
         while (running && !client.isClosed()) {

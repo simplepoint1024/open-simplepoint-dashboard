@@ -77,7 +77,8 @@ final class DnaJdbcUrlParser {
         trimToNull(catalogCode),
         trimToNull(tenantId),
         trimToNull(contextId),
-        trimToNull(schema)
+        trimToNull(schema),
+        properties
     );
   }
 

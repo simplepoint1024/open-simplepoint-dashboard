@@ -177,7 +177,7 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsResultSetHoldability(final int holdability) throws SQLException {
-    return true;
+    return holdability == java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
   }
 
   @Override
@@ -232,12 +232,13 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsResultSetType(final int type) throws SQLException {
-    return true;
+    return type == java.sql.ResultSet.TYPE_FORWARD_ONLY
+        || type == java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
   }
 
   @Override
   public boolean supportsResultSetConcurrency(final int type, final int concurrency) throws SQLException {
-    return true;
+    return concurrency == java.sql.ResultSet.CONCUR_READ_ONLY && supportsResultSetType(type);
   }
 
   @Override
@@ -266,7 +267,7 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean isReadOnly() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -301,7 +302,7 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean nullPlusNonNullIsNull() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -326,7 +327,7 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsColumnAliasing() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -415,12 +416,12 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsMinimumSQLGrammar() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
   public boolean supportsCoreSQLGrammar() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -430,7 +431,7 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsANSI92EntryLevelSQL() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -450,22 +451,22 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsOuterJoins() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
   public boolean supportsFullOuterJoins() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
   public boolean supportsLimitedOuterJoins() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
   public boolean isCatalogAtStart() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -485,37 +486,37 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsSubqueriesInComparisons() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
   public boolean supportsSubqueriesInExists() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
   public boolean supportsSubqueriesInIns() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
   public boolean supportsSubqueriesInQuantifieds() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
   public boolean supportsCorrelatedSubqueries() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
   public boolean supportsUnion() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
   public boolean supportsUnionAll() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override

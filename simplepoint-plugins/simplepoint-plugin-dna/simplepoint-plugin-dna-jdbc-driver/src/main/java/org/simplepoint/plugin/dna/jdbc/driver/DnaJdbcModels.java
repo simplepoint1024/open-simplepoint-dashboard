@@ -19,7 +19,8 @@ final class DnaJdbcModels {
       String catalogCode,
       String tenantId,
       String contextId,
-      String schema
+      String schema,
+      java.util.Properties properties
   ) {
   }
 

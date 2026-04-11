@@ -155,8 +155,7 @@ final class DnaJdbcConnection implements Connection {
   public PreparedStatement prepareStatement(final String sql) throws SQLException {
     ensureOpen();
     String normalizedSql = requireNonEmptySql(sql);
-    // TODO: replace with new DnaJdbcPreparedStatement(...) once that class is created
-    return DnaJdbcProxies.createPreparedStatementProxy(
+    return new DnaJdbcPreparedStatement(
         this, normalizedSql,
         ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY, ResultSet.CLOSE_CURSORS_AT_COMMIT
     );
@@ -169,8 +168,7 @@ final class DnaJdbcConnection implements Connection {
     ensureOpen();
     String normalizedSql = requireNonEmptySql(sql);
     validateResultSetOptions(resultSetType, resultSetConcurrency);
-    // TODO: replace with new DnaJdbcPreparedStatement(...) once that class is created
-    return DnaJdbcProxies.createPreparedStatementProxy(
+    return new DnaJdbcPreparedStatement(
         this, normalizedSql,
         resultSetType, resultSetConcurrency, ResultSet.CLOSE_CURSORS_AT_COMMIT
     );
@@ -183,8 +181,7 @@ final class DnaJdbcConnection implements Connection {
     ensureOpen();
     String normalizedSql = requireNonEmptySql(sql);
     validateResultSetOptions(resultSetType, resultSetConcurrency);
-    // TODO: replace with new DnaJdbcPreparedStatement(...) once that class is created
-    return DnaJdbcProxies.createPreparedStatementProxy(
+    return new DnaJdbcPreparedStatement(
         this, normalizedSql,
         resultSetType, resultSetConcurrency, resultSetHoldability
     );
@@ -256,9 +253,7 @@ final class DnaJdbcConnection implements Connection {
   @Override
   public void setReadOnly(final boolean readOnly) throws SQLException {
     ensureOpen();
-    if (!readOnly) {
-      throw unsupported("写入事务");
-    }
+    // DNA connections are always read-only; silently accept both true and false
   }
 
   @Override
@@ -270,9 +265,7 @@ final class DnaJdbcConnection implements Connection {
   @Override
   public void setAutoCommit(final boolean autoCommit) throws SQLException {
     ensureOpen();
-    if (!autoCommit) {
-      throw unsupported("事务控制");
-    }
+    // DNA connections are always auto-commit; silently accept both true and false
   }
 
   @Override
@@ -294,9 +287,7 @@ final class DnaJdbcConnection implements Connection {
   @Override
   public void setTransactionIsolation(final int level) throws SQLException {
     ensureOpen();
-    if (level != Connection.TRANSACTION_NONE) {
-      throw unsupported("事务隔离级别");
-    }
+    // DNA connections have no transaction support; silently accept any level
   }
 
   // ----------------------------------------------------------------
@@ -433,19 +424,19 @@ final class DnaJdbcConnection implements Connection {
   @Override
   public void commit() throws SQLException {
     ensureOpen();
-    throw unsupported("commit");
+    // auto-commit mode, no-op
   }
 
   @Override
   public void rollback() throws SQLException {
     ensureOpen();
-    throw unsupported("rollback");
+    // auto-commit mode, no-op
   }
 
   @Override
   public void rollback(final Savepoint savepoint) throws SQLException {
     ensureOpen();
-    throw unsupported("rollback");
+    // auto-commit mode, no-op
   }
 
   @Override

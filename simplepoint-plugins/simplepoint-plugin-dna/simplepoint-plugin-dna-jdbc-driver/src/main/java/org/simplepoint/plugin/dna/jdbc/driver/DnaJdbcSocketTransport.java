@@ -6,7 +6,6 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -20,9 +19,9 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
 
   private static final int DEFAULT_PORT = 15432;
 
-  private static final int CONNECT_TIMEOUT_MS = 5000;
+  private static final int DEFAULT_CONNECT_TIMEOUT_MS = 5000;
 
-  private static final int READ_TIMEOUT_MS = 30000;
+  private static final int DEFAULT_READ_TIMEOUT_MS = 30000;
 
   private static final Logger LOGGER = Logger.getLogger(DnaJdbcSocketTransport.class.getName());
 
@@ -63,17 +62,21 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
     this.tenantId = config.tenantId();
     this.configuredContextId = config.contextId();
     this.configuredSchema = config.schema();
+    int connectTimeout = resolveProperty(config, "connectTimeout", DEFAULT_CONNECT_TIMEOUT_MS);
+    int readTimeout = resolveProperty(config, "socketTimeout", DEFAULT_READ_TIMEOUT_MS);
     try {
       this.socket = new Socket();
+      this.socket.setKeepAlive(true);
+      this.socket.setTcpNoDelay(true);
       this.socket.connect(
           new InetSocketAddress(baseUri.getHost(), resolvePort(baseUri)),
-          CONNECT_TIMEOUT_MS
+          connectTimeout
       );
-      this.socket.setSoTimeout(READ_TIMEOUT_MS);
+      this.socket.setSoTimeout(readTimeout);
       this.inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
       this.outputStream = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
     } catch (IOException ex) {
-      throw new SQLException("DNA JDBC Socket 连接失败", ex);
+      throw new SQLException("DNA JDBC Socket 连接失败", "08001", ex);
     }
   }
 
@@ -424,6 +427,18 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
     return loginSubject;
   }
 
+  /**
+   * Temporarily adjusts the socket read timeout (e.g. for query timeout enforcement).
+   * Pass 0 to reset to the default configured timeout.
+   */
+  void setSocketTimeout(final int timeoutMs) throws SQLException {
+    try {
+      socket.setSoTimeout(timeoutMs);
+    } catch (IOException ex) {
+      throw new SQLException("设置 socket 超时失败", "HY000", ex);
+    }
+  }
+
   @Override
   public void close() throws SQLException {
     try {
@@ -468,26 +483,52 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
       outputStream.flush();
       int length = inputStream.readInt();
       if (length < 0) {
-        throw new SQLException("DNA JDBC Socket 响应长度不合法");
+        throw new SQLException("DNA JDBC Socket 响应长度不合法", "08006");
       }
       byte[] responseBytes = inputStream.readNBytes(length);
       if (responseBytes.length != length) {
-        throw new EOFException("DNA JDBC Socket 响应已中断");
+        throw new SQLException("DNA JDBC Socket 响应已中断 (期望 " + length + " 字节, 实际 "
+            + responseBytes.length + " 字节)", "08006");
       }
       return objectMapper.readValue(responseBytes, DnaJdbcModels.SocketResponse.class);
+    } catch (java.net.SocketTimeoutException ex) {
+      throw new SQLException("DNA JDBC Socket 通信超时", "08006", ex);
     } catch (IOException ex) {
-      throw new SQLException("DNA JDBC Socket 通信失败", ex);
+      throw new SQLException("DNA JDBC Socket 通信失败: " + ex.getMessage(), "08006", ex);
     }
   }
 
   private static DnaJdbcModels.SocketResponse requireSuccess(final DnaJdbcModels.SocketResponse response) throws SQLException {
     if (response == null || !Boolean.TRUE.equals(response.success())) {
-      throw new SQLException(response == null ? "DNA JDBC Socket 返回空响应" : response.errorMessage());
+      throw new SQLException(
+          response == null ? "DNA JDBC Socket 返回空响应" : response.errorMessage(),
+          "HY000"
+      );
     }
     return response;
   }
 
   private static int resolvePort(final URI uri) {
     return uri.getPort() > 0 ? uri.getPort() : DEFAULT_PORT;
+  }
+
+  private static int resolveProperty(
+      final DnaJdbcModels.ConnectionConfig config,
+      final String key,
+      final int defaultValue
+  ) {
+    if (config.properties() == null) {
+      return defaultValue;
+    }
+    String value = config.properties().getProperty(key);
+    if (value == null || value.isBlank()) {
+      return defaultValue;
+    }
+    try {
+      int parsed = Integer.parseInt(value.trim());
+      return parsed > 0 ? parsed : defaultValue;
+    } catch (NumberFormatException ex) {
+      return defaultValue;
+    }
   }
 }

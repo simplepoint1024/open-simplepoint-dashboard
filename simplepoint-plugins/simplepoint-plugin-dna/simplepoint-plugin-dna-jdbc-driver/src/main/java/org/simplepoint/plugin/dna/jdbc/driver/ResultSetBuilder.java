@@ -48,16 +48,17 @@ final class ResultSetBuilder {
     for (int index = 0; index < columns.size(); index++) {
       DnaJdbcModels.ColumnDef column = columns.get(index);
       int columnIndex = index + 1;
+      int jdbcType = resolveJdbcType(column);
       metaData.setColumnLabel(columnIndex, column.name());
       metaData.setColumnName(columnIndex, column.name());
-      metaData.setColumnType(columnIndex, resolveJdbcType(column));
+      metaData.setColumnType(columnIndex, jdbcType);
       metaData.setColumnTypeName(columnIndex, column.typeName() == null ? "VARCHAR" : column.typeName());
-      metaData.setNullable(columnIndex, ResultSetMetaDataConstant.NULLABLE_UNKNOWN);
+      metaData.setNullable(columnIndex, ResultSetMetaDataConstant.NULLABLE);
       metaData.setAutoIncrement(columnIndex, false);
-      metaData.setCaseSensitive(columnIndex, true);
+      metaData.setCaseSensitive(columnIndex, isTypeCaseSensitive(jdbcType));
       metaData.setCurrency(columnIndex, false);
       metaData.setSearchable(columnIndex, true);
-      metaData.setSigned(columnIndex, true);
+      metaData.setSigned(columnIndex, isTypeSigned(jdbcType));
     }
     rowSet.setMetaData(metaData);
     int limit = maxRows > 0 ? Math.min(maxRows, rows.size()) : rows.size();
@@ -147,8 +148,27 @@ final class ResultSetBuilder {
 
     private static final int NULLABLE_UNKNOWN = 2;
 
+    private static final int NULLABLE = 1;
+
     private ResultSetMetaDataConstant() {
     }
+  }
+
+  private static boolean isTypeSigned(final int jdbcType) {
+    return switch (jdbcType) {
+      case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIGINT,
+           Types.REAL, Types.FLOAT, Types.DOUBLE, Types.DECIMAL, Types.NUMERIC -> true;
+      default -> false;
+    };
+  }
+
+  private static boolean isTypeCaseSensitive(final int jdbcType) {
+    return switch (jdbcType) {
+      case Types.CHAR, Types.VARCHAR, Types.LONGVARCHAR,
+           Types.NCHAR, Types.NVARCHAR, Types.LONGNVARCHAR,
+           Types.CLOB, Types.NCLOB -> true;
+      default -> false;
+    };
   }
 
   private static final class ResultSetHandler implements InvocationHandler {

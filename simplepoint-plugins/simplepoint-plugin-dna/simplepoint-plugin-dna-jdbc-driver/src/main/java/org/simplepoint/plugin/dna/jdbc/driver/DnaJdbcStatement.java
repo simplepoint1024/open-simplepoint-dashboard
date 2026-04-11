@@ -67,10 +67,29 @@ class DnaJdbcStatement implements Statement {
    */
   protected ResultSet doExecuteQuery(final String sql) throws SQLException {
     closeCurrentResultSet();
-    DnaJdbcModels.QueryResult result =
-        connection.client().query(connection.currentCatalog(), sql, connection.currentSchema());
-    currentResultSet = ResultSetBuilder.fromQueryResult(result, maxRows);
-    return currentResultSet;
+    DnaJdbcClient client = connection.client();
+    int previousTimeout = 0;
+    boolean timeoutAdjusted = false;
+    if (queryTimeout > 0) {
+      previousTimeout = 0;
+      client.setSocketTimeout(queryTimeout * 1000);
+      timeoutAdjusted = true;
+    }
+    try {
+      DnaJdbcModels.QueryResult result =
+          client.query(connection.currentCatalog(), sql, connection.currentSchema());
+      currentResultSet = ResultSetBuilder.fromQueryResult(result, maxRows);
+      return currentResultSet;
+    } catch (SQLException ex) {
+      if (timeoutAdjusted && ex.getCause() instanceof java.net.SocketTimeoutException) {
+        throw new SQLException("查询超时 (" + queryTimeout + "s)", "HYT00", ex);
+      }
+      throw ex;
+    } finally {
+      if (timeoutAdjusted) {
+        client.setSocketTimeout(previousTimeout);
+      }
+    }
   }
 
   /**

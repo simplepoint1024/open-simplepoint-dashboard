@@ -98,6 +98,10 @@ final class DnaJdbcClient implements AutoCloseable {
     transport.flushCache();
   }
 
+  void setSocketTimeout(final int timeoutMs) throws SQLException {
+    transport.setSocketTimeout(timeoutMs);
+  }
+
   @Override
   public void close() throws SQLException {
     transport.close();

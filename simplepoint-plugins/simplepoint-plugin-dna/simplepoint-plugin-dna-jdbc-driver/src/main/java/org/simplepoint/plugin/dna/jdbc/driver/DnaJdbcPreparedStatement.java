@@ -435,6 +435,17 @@ final class DnaJdbcPreparedStatement extends DnaJdbcStatement implements Prepare
       builder.append('\'');
       return builder.toString();
     }
+    if (value instanceof java.util.UUID) {
+      return '\'' + value.toString() + '\'';
+    }
+    if (value instanceof java.time.LocalDate
+        || value instanceof java.time.LocalTime
+        || value instanceof java.time.LocalDateTime
+        || value instanceof java.time.OffsetDateTime
+        || value instanceof java.time.ZonedDateTime
+        || value instanceof java.time.Instant) {
+      return '\'' + value.toString() + '\'';
+    }
     if (value instanceof java.sql.Date
         || value instanceof java.sql.Time
         || value instanceof java.sql.Timestamp
@@ -443,8 +454,22 @@ final class DnaJdbcPreparedStatement extends DnaJdbcStatement implements Prepare
         || value instanceof BigDecimal
         || value instanceof Character
         || value instanceof String) {
-      return '\'' + value.toString().replace("'", "''") + '\'';
+      return '\'' + escapeSqlString(value.toString()) + '\'';
     }
     throw new SQLException("DNA JDBC PreparedStatement 暂不支持的参数类型: " + value.getClass().getName());
+  }
+
+  private static String escapeSqlString(final String raw) {
+    StringBuilder builder = new StringBuilder(raw.length() + 8);
+    for (int i = 0; i < raw.length(); i++) {
+      char current = raw.charAt(i);
+      switch (current) {
+        case '\'' -> builder.append("''");
+        case '\\' -> builder.append("\\\\");
+        case '\0' -> builder.append("\\0");
+        default -> builder.append(current);
+      }
+    }
+    return builder.toString();
   }
 }
