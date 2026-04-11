@@ -115,7 +115,9 @@ public class MenuServiceImpl
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
     public <S extends Menu> S create(S entity) {
         if (entity.getAuthority() == null || entity.getAuthority().isEmpty()) {
-            entity.setAuthority(entity.getPath().replace("/", "."));
+            if (entity.getPath() != null && !entity.getPath().isEmpty()) {
+                entity.setAuthority(entity.getPath().replace("/", "."));
+            }
         }
         var saved = super.create(entity);
 

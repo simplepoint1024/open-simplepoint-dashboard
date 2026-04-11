@@ -627,9 +627,15 @@
         ]
       },
       {
-        "sort": 7,
+        "label": "数据质量",
+        "title": "menu.dna.dataQuality",
         "icon": "CheckCircleOutlined",
+        "path": "/dna/data-quality",
+        "authority": "dna.data-quality.view",
+        "sort": 7,
         "component": "dna/platform/DataQuality",
+        "type": "item",
+        "disabled": false,
         "permissions": [
           {
             "name": "DNA Data Quality View",
@@ -641,9 +647,15 @@
         ]
       },
       {
-        "sort": 8,
+        "label": "数据血缘",
+        "title": "menu.dna.dataLineage",
         "icon": "ApartmentOutlined",
+        "path": "/dna/data-lineage",
+        "authority": "dna.data-lineage.view",
+        "sort": 8,
         "component": "dna/platform/DataLineage",
+        "type": "item",
+        "disabled": false,
         "permissions": [
           {
             "name": "DNA Data Lineage View",
