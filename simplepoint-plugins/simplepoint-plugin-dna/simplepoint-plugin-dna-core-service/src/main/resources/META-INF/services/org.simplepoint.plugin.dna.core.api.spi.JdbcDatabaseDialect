@@ -3,5 +3,8 @@ org.simplepoint.plugin.dna.core.service.dialect.OracleJdbcDatabaseDialect
 org.simplepoint.plugin.dna.core.service.dialect.SqlServerJdbcDatabaseDialect
 org.simplepoint.plugin.dna.core.service.dialect.DamengJdbcDatabaseDialect
 org.simplepoint.plugin.dna.core.service.dialect.ClickhouseJdbcDatabaseDialect
+org.simplepoint.plugin.dna.core.service.dialect.PrestoJdbcDatabaseDialect
+org.simplepoint.plugin.dna.core.service.dialect.TrinoJdbcDatabaseDialect
+org.simplepoint.plugin.dna.core.service.dialect.HiveJdbcDatabaseDialect
 org.simplepoint.plugin.dna.core.service.dialect.MysqlJdbcDatabaseDialect
 org.simplepoint.plugin.dna.core.service.dialect.GenericJdbcDatabaseDialect
