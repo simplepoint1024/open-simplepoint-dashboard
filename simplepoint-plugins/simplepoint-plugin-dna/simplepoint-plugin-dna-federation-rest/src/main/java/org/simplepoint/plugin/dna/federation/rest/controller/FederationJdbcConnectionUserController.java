@@ -174,7 +174,7 @@ public class FederationJdbcConnectionUserController
   public Response<?> unauthorized(@RequestBody final FederationJdbcUserDataSourceAssignDto dto) {
     try {
       service.unauthorized(dto);
-      return Response.okay();
+      return ok(true);
     } catch (IllegalArgumentException ex) {
       return badRequest(ex.getMessage());
     }
