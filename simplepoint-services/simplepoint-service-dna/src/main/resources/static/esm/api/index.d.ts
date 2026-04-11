@@ -19,6 +19,11 @@ declare const _default: {
         i18nNamespaces: string[];
         name: string;
     };
+    'platform.dna-federation-catalogs': {
+        baseUrl: string;
+        i18nNamespaces: string[];
+        name: string;
+    };
     'platform.dna-federation-jdbc-users': {
         baseUrl: string;
         i18nNamespaces: string[];

@@ -48,9 +48,10 @@
         }
       },
       "usedIn": [
-        "./i18n/Countries",
+        "./system/Permission",
         "./system/Role/config/permission",
         "./Dashboard",
+        "./i18n/Countries",
         "./i18n/Language",
         "./i18n/Message",
         "./i18n/Namespace",
@@ -73,7 +74,6 @@
         "./system/Menu/config/permission",
         "./system/Menu",
         "./system/OAuthClient",
-        "./system/Permission",
         "./system/Role",
         "./system/User/config/role",
         "./system/User"
@@ -101,8 +101,8 @@
         }
       },
       "usedIn": [
-        "./Dashboard",
         "./platform/Application",
+        "./Dashboard",
         "./platform/Dictionary",
         "./platform/Feature",
         "./platform/ObjectStorage",
