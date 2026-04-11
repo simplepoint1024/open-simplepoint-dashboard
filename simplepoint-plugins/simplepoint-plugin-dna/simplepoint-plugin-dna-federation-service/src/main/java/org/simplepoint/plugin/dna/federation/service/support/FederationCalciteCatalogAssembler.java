@@ -4,6 +4,7 @@ import static org.simplepoint.plugin.dna.federation.service.support.FederationSe
 import static org.simplepoint.plugin.dna.federation.service.support.FederationServiceSupport.trimToNull;
 
 import java.io.StringReader;
+import java.util.Collection;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -16,10 +17,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import org.apache.calcite.adapter.jdbc.JdbcSchema;
+import java.util.regex.Pattern;
+import org.apache.calcite.adapter.jdbc.SafeJdbcSchema;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.impl.AbstractSchema;
-import org.apache.calcite.schema.impl.ViewTable;
 import org.simplepoint.data.calcite.core.query.CalciteSchemaConfigurer;
 import org.simplepoint.data.datasource.jdbc.SimpleDataSource;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
@@ -28,18 +28,20 @@ import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionServi
 import org.simplepoint.plugin.dna.core.api.service.JdbcDialectManagementService;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDriverDefinitionService;
 import org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect;
-import org.simplepoint.plugin.dna.federation.api.entity.FederationCatalog;
-import org.simplepoint.plugin.dna.federation.api.entity.FederationSchema;
-import org.simplepoint.plugin.dna.federation.api.entity.FederationView;
-import org.simplepoint.plugin.dna.federation.api.repository.FederationSchemaRepository;
-import org.simplepoint.plugin.dna.federation.api.repository.FederationViewRepository;
 import org.springframework.stereotype.Component;
 
 /**
- * Assembles one federation catalog into a Calcite schema tree.
+ * Assembles physical datasource schemas into one Calcite root tree for query execution.
  */
 @Component
 public class FederationCalciteCatalogAssembler {
+
+  /**
+   * Pattern matching characters safe for Calcite convention/rule descriptions.
+   * Calcite {@code RelOptRule} validates rule descriptions with
+   * {@code [A-Za-z][-A-Za-z0-9_.(),\[\]\s:]*} — only ASCII is allowed.
+   */
+  private static final Pattern CALCITE_UNSAFE_CHAR = Pattern.compile("[^A-Za-z0-9_.]");
 
   private final JdbcDataSourceDefinitionService dataSourceService;
 
@@ -47,111 +49,88 @@ public class FederationCalciteCatalogAssembler {
 
   private final JdbcDialectManagementService dialectManagementService;
 
-  private final FederationSchemaRepository schemaRepository;
-
-  private final FederationViewRepository viewRepository;
-
   /**
    * Creates a Calcite catalog assembler.
    *
-   * @param dataSourceService         datasource service
-   * @param driverService             driver service
-   * @param dialectManagementService  dialect service
-   * @param schemaRepository          federation schema repository
-   * @param viewRepository            federation view repository
+   * @param dataSourceService datasource service
+   * @param driverService driver service
+   * @param dialectManagementService dialect service
    */
   public FederationCalciteCatalogAssembler(
       final JdbcDataSourceDefinitionService dataSourceService,
       final JdbcDriverDefinitionService driverService,
-      final JdbcDialectManagementService dialectManagementService,
-      final FederationSchemaRepository schemaRepository,
-      final FederationViewRepository viewRepository
+      final JdbcDialectManagementService dialectManagementService
   ) {
     this.dataSourceService = dataSourceService;
     this.driverService = driverService;
     this.dialectManagementService = dialectManagementService;
-    this.schemaRepository = schemaRepository;
-    this.viewRepository = viewRepository;
   }
 
   /**
-   * Builds a Calcite schema configuration for one federation catalog.
+   * Builds a Calcite schema configuration for the selected datasource scope.
    *
-   * @param catalog federation catalog
-   * @return assembled Calcite catalog
+   * @param catalogCode selected datasource code used as Calcite default schema
+   * @param dataSources datasources that should be mounted for the current query
+   * @return assembled Calcite root payload
    */
-  public FederationCalciteCatalogAssembly assemble(final FederationCatalog catalog) {
-    String catalogId = requireValue(catalog == null ? null : catalog.getId(), "联邦目录ID不能为空");
-    String catalogCode = requireValue(catalog == null ? null : catalog.getCode(), "联邦目录编码不能为空");
-    List<ResolvedJdbcSource> jdbcSources = dataSourceService.listEnabledDefinitions().stream()
-        .sorted(Comparator.comparing(
-            JdbcDataSourceDefinition::getCode,
-            Comparator.nullsLast(String::compareTo)
-        ))
-        .map(this::resolveJdbcSource)
-        .toList();
-    if (jdbcSources.isEmpty()) {
-      throw new IllegalStateException("当前没有可供联邦查询使用的已启用数据源");
-    }
-    List<FederationSchema> logicalSchemas = schemaRepository.findAllActiveByCatalogId(catalogId).stream()
-        .filter(schema -> Boolean.TRUE.equals(schema.getEnabled()))
-        .sorted(Comparator.comparing(FederationSchema::getCode, Comparator.nullsLast(String::compareTo)))
-        .toList();
-    List<String> schemaIds = logicalSchemas.stream()
-        .map(FederationSchema::getId)
-        .filter(value -> value != null && !value.isBlank())
-        .toList();
-    List<FederationView> logicalViews = schemaIds.isEmpty()
-        ? List.of()
-        : viewRepository.findAllActiveBySchemaIds(schemaIds).stream()
-            .filter(view -> Boolean.TRUE.equals(view.getEnabled()))
-            .sorted(Comparator.comparing(FederationView::getCode, Comparator.nullsLast(String::compareTo)))
-            .toList();
-    validateRegistrationNames(catalogCode, jdbcSources, logicalSchemas);
+  public FederationCalciteCatalogAssembly assemble(
+      final String catalogCode,
+      final Collection<JdbcDataSourceDefinition> dataSources
+  ) {
+    String normalizedCatalogCode = requireValue(catalogCode, "数据源编码不能为空");
+    List<ResolvedJdbcSource> jdbcSources = resolveJdbcSources(dataSources);
+    validateRegistrationNames(normalizedCatalogCode, jdbcSources);
     return new FederationCalciteCatalogAssembly(
-        catalogCode,
+        normalizedCatalogCode,
         jdbcSources.stream().map(source -> source.definition().getCode()).toList(),
-        rootSchema -> configureRootSchema(rootSchema, catalogCode, jdbcSources, logicalSchemas, logicalViews),
+        rootSchema -> configureQueryRootSchema(rootSchema, jdbcSources),
         jdbcSources.stream()
             .flatMap(source -> source.cleanupDataSources().stream())
             .toList()
     );
   }
 
-  private void configureRootSchema(
+  private List<ResolvedJdbcSource> resolveJdbcSources(final Collection<JdbcDataSourceDefinition> dataSources) {
+    if (dataSources == null || dataSources.isEmpty()) {
+      return List.of();
+    }
+    Map<String, JdbcDataSourceDefinition> definitionsByCode = new LinkedHashMap<>();
+    for (JdbcDataSourceDefinition dataSource : dataSources) {
+      if (dataSource == null) {
+        continue;
+      }
+      String dataSourceCode = requireValue(dataSource.getCode(), "数据源编码不能为空");
+      definitionsByCode.putIfAbsent(dataSourceCode.toLowerCase(Locale.ROOT), dataSource);
+    }
+    return definitionsByCode.values().stream()
+        .sorted(Comparator.comparing(JdbcDataSourceDefinition::getCode, Comparator.nullsLast(String::compareTo)))
+        .map(this::resolveJdbcSource)
+        .toList();
+  }
+
+  private void configureQueryRootSchema(
+      final SchemaPlus rootSchema,
+      final List<ResolvedJdbcSource> jdbcSources
+  ) {
+    for (ResolvedJdbcSource jdbcSource : jdbcSources) {
+      registerDataSourceCatalog(rootSchema, jdbcSource.definition().getCode(), jdbcSource);
+    }
+  }
+
+  private static void registerDataSourceCatalog(
       final SchemaPlus rootSchema,
       final String catalogCode,
-      final List<ResolvedJdbcSource> jdbcSources,
-      final List<FederationSchema> logicalSchemas,
-      final List<FederationView> logicalViews
+      final ResolvedJdbcSource jdbcSource
   ) {
-    SchemaPlus catalogSchema = rootSchema.add(catalogCode, new AbstractSchema());
-    for (ResolvedJdbcSource jdbcSource : jdbcSources) {
-      SchemaPlus dataSourceSchema = catalogSchema.add(
-          jdbcSource.definition().getCode(),
-          JdbcSchema.create(
-              catalogSchema,
-              jdbcSource.definition().getCode(),
-              jdbcSource.simpleDataSource(),
-              jdbcSource.metadataCatalog(),
-              jdbcSource.metadataSchema()
-          )
-      );
-      registerPhysicalNamespaces(dataSourceSchema, jdbcSource.physicalNamespaces());
-      registerCatalogNamespaces(dataSourceSchema, jdbcSource.catalogNamespaces());
-    }
-    Map<String, SchemaPlus> logicalSchemaMap = new java.util.LinkedHashMap<>();
-    for (FederationSchema logicalSchema : logicalSchemas) {
-      logicalSchemaMap.put(logicalSchema.getId(), catalogSchema.add(logicalSchema.getCode(), new AbstractSchema()));
-    }
-    for (FederationView logicalView : logicalViews) {
-      SchemaPlus viewSchema = logicalSchemaMap.get(logicalView.getSchemaId());
-      if (viewSchema == null) {
-        throw new IllegalStateException("逻辑视图关联的逻辑 Schema 不存在或已禁用: " + logicalView.getCode());
-      }
-      // View definitions resolve from the catalog root so they can reference physical datasource schemas directly.
-      viewSchema.add(logicalView.getCode(), ViewTable.viewMacro(rootSchema, logicalView.getDefinitionSql(), List.of(catalogCode)));
-    }
+    SchemaPlus catalogSchema = addJdbcSchema(
+        rootSchema,
+        catalogCode,
+        jdbcSource.simpleDataSource(),
+        jdbcSource.metadataCatalog(),
+        jdbcSource.metadataSchema()
+    );
+    registerPhysicalNamespaces(catalogSchema, jdbcSource.physicalNamespaces());
+    registerCatalogNamespaces(catalogSchema, jdbcSource.catalogNamespaces());
   }
 
   private ResolvedJdbcSource resolveJdbcSource(final JdbcDataSourceDefinition definition) {
@@ -314,15 +293,12 @@ public class FederationCalciteCatalogAssembler {
       return;
     }
     for (ResolvedJdbcCatalogNamespace catalogNamespace : catalogNamespaces) {
-      SchemaPlus catalogSchema = dataSourceSchema.add(
+      SchemaPlus catalogSchema = addJdbcSchema(
+          dataSourceSchema,
           catalogNamespace.name(),
-          JdbcSchema.create(
-              dataSourceSchema,
-              catalogNamespace.name(),
-              catalogNamespace.simpleDataSource(),
-              catalogNamespace.metadataCatalog(),
-              catalogNamespace.metadataSchema()
-          )
+          catalogNamespace.simpleDataSource(),
+          catalogNamespace.metadataCatalog(),
+          catalogNamespace.metadataSchema()
       );
       registerPhysicalNamespaces(catalogSchema, catalogNamespace.physicalNamespaces());
     }
@@ -336,17 +312,67 @@ public class FederationCalciteCatalogAssembler {
       return;
     }
     for (ResolvedJdbcNamespace physicalNamespace : physicalNamespaces) {
-      dataSourceSchema.add(
+      addJdbcSchema(
+          dataSourceSchema,
           physicalNamespace.name(),
-          JdbcSchema.create(
-              dataSourceSchema,
-              physicalNamespace.name(),
-              physicalNamespace.simpleDataSource(),
-              physicalNamespace.metadataCatalog(),
-              physicalNamespace.metadataSchema()
-          )
+          physicalNamespace.simpleDataSource(),
+          physicalNamespace.metadataCatalog(),
+          physicalNamespace.metadataSchema()
       );
     }
+  }
+
+  /**
+   * Creates a {@link JdbcSchema} with a sanitized convention name and registers it
+   * in the parent schema under the original name. If the original name contains
+   * non-ASCII characters (e.g. Chinese), Calcite's {@code RelOptRule} rejects the
+   * rule description; a sanitized alias is used for the internal convention while
+   * the real name stays in the schema tree so SQL can reference it.
+   */
+  private static SchemaPlus addJdbcSchema(
+      final SchemaPlus parentSchema,
+      final String name,
+      final SimpleDataSource dataSource,
+      final String catalog,
+      final String schema
+  ) {
+    String conventionName = sanitizeCalciteConventionName(name);
+    SafeJdbcSchema jdbcSchema = SafeJdbcSchema.create(
+        parentSchema, conventionName, dataSource, catalog, schema
+    );
+    // Register under the sanitized name first so the Linq4j expression resolves.
+    parentSchema.add(conventionName, jdbcSchema);
+    // If the original name differs, also register under it for SQL access.
+    if (!conventionName.equals(name)) {
+      return parentSchema.add(name, jdbcSchema);
+    }
+    return parentSchema.getSubSchema(conventionName);
+  }
+
+  /**
+   * Replaces characters unsafe for Calcite convention/rule descriptions with
+   * {@code _uXXXX} escape sequences. If the name is already ASCII-safe it is
+   * returned unchanged.
+   */
+  static String sanitizeCalciteConventionName(final String name) {
+    if (name == null || !CALCITE_UNSAFE_CHAR.matcher(name).find()) {
+      return name;
+    }
+    StringBuilder sb = new StringBuilder(name.length() * 2);
+    for (int i = 0; i < name.length(); i++) {
+      char c = name.charAt(i);
+      if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+          || (c >= '0' && c <= '9') || c == '_' || c == '.') {
+        sb.append(c);
+      } else {
+        sb.append("_u").append(String.format("%04X", (int) c));
+      }
+    }
+    // Calcite rule name must start with a letter
+    if (sb.length() > 0 && !Character.isLetter(sb.charAt(0))) {
+      sb.insert(0, "S");
+    }
+    return sb.toString();
   }
 
   private static List<ResolvedJdbcNamespace> resolvePhysicalNamespaces(
@@ -469,8 +495,7 @@ public class FederationCalciteCatalogAssembler {
 
   private static void validateRegistrationNames(
       final String catalogCode,
-      final List<ResolvedJdbcSource> jdbcSources,
-      final List<FederationSchema> logicalSchemas
+      final List<ResolvedJdbcSource> jdbcSources
   ) {
     Set<String> registeredNames = new LinkedHashSet<>();
     for (ResolvedJdbcSource jdbcSource : jdbcSources) {
@@ -479,12 +504,6 @@ public class FederationCalciteCatalogAssembler {
         throw new IllegalStateException("联邦目录 " + catalogCode + " 下存在重复数据源编码: " + sourceCode);
       }
       validatePhysicalNamespaceNames(catalogCode, sourceCode, jdbcSource.physicalNamespaces(), jdbcSource.catalogNamespaces());
-    }
-    for (FederationSchema logicalSchema : logicalSchemas) {
-      String schemaCode = requireValue(logicalSchema.getCode(), "逻辑 Schema 编码不能为空");
-      if (!registeredNames.add(schemaCode)) {
-        throw new IllegalStateException("联邦目录 " + catalogCode + " 下逻辑 Schema 编码与物理数据源编码冲突: " + schemaCode);
-      }
     }
   }
 
