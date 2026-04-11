@@ -111,7 +111,7 @@ public class FederationSchemaServiceImpl
     if (entity == null) {
       throw new IllegalArgumentException("逻辑 Schema 不能为空");
     }
-    entity.setCatalogId(requireValue(entity.getCatalogId(), "联邦目录不能为空"));
+    entity.setCatalogId(requireValue(entity.getCatalogId(), "数据目录不能为空"));
     entity.setName(requireValue(entity.getName(), "逻辑 Schema 名称不能为空"));
     entity.setCode(requireValue(entity.getCode(), "逻辑 Schema 编码不能为空"));
     entity.setDescription(trimToNull(entity.getDescription()));
@@ -162,7 +162,7 @@ public class FederationSchemaServiceImpl
 
   private FederationCatalog requireVirtualCatalog(final String catalogId) {
     FederationCatalog catalog = catalogService.findActiveById(catalogId)
-        .orElseThrow(() -> new IllegalArgumentException("联邦目录不存在: " + catalogId));
+        .orElseThrow(() -> new IllegalArgumentException("数据目录不存在: " + catalogId));
     if (!FederationCatalogTypes.isVirtual(catalog.getCatalogType())) {
       throw new IllegalArgumentException("仅虚拟目录支持创建逻辑 Schema");
     }

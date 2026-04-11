@@ -60,7 +60,7 @@ import org.springframework.core.annotation.Order;
         authority = "dna.federation.schemas.delete"
     )
 })
-@Tag(name = "逻辑 Schema", description = "用于管理联邦目录下的逻辑 Schema")
+@Tag(name = "逻辑 Schema", description = "用于管理数据目录下的逻辑 Schema")
 @Schema(title = "i18n:dna.federation.schemas.entity.title", description = "i18n:dna.federation.schemas.entity.description")
 public class FederationSchema extends BaseEntityImpl<String> {
 

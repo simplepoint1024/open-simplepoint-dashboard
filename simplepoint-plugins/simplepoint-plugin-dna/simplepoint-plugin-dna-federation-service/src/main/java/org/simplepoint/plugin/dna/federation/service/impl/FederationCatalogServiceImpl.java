@@ -162,7 +162,7 @@ public class FederationCatalogServiceImpl
     rejectReadOnlyCatalogId(currentId);
     FederationCatalog current = repository.findActiveById(currentId)
         .map(this::decoratePersistedCatalog)
-        .orElseThrow(() -> new IllegalArgumentException("联邦目录不存在: " + entity.getId()));
+        .orElseThrow(() -> new IllegalArgumentException("数据目录不存在: " + entity.getId()));
     normalizeAndValidate(entity, current.getId());
     if (entity.getEnabled() == null) {
       entity.setEnabled(current.getEnabled());
@@ -181,20 +181,20 @@ public class FederationCatalogServiceImpl
 
   private void normalizeAndValidate(final FederationCatalog entity, final String currentId) {
     if (entity == null) {
-      throw new IllegalArgumentException("联邦目录不能为空");
+      throw new IllegalArgumentException("数据目录不能为空");
     }
     String catalogType = FederationCatalogTypes.normalize(entity.getCatalogType());
     if (FederationCatalogTypes.isDataSource(catalogType)) {
       throw new IllegalArgumentException("数据源目录由系统根据启用数据源自动生成，不能手工新增或修改");
     }
     entity.setCatalogType(FederationCatalogTypes.VIRTUAL);
-    entity.setName(requireValue(entity.getName(), "联邦目录名称不能为空"));
-    entity.setCode(requireValue(entity.getCode(), "联邦目录编码不能为空"));
+    entity.setName(requireValue(entity.getName(), "数据目录名称不能为空"));
+    entity.setCode(requireValue(entity.getCode(), "数据目录编码不能为空"));
     entity.setDescription(trimToNull(entity.getDescription()));
     repository.findActiveByCode(entity.getCode())
         .filter(existing -> currentId == null || !existing.getId().equals(currentId))
         .ifPresent(existing -> {
-          throw new IllegalArgumentException("联邦目录编码已存在: " + entity.getCode());
+          throw new IllegalArgumentException("数据目录编码已存在: " + entity.getCode());
         });
     dataSourceService.findActiveByCode(entity.getCode())
         .ifPresent(definition -> {

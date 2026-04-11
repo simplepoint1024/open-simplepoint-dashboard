@@ -173,7 +173,7 @@ public class FederationViewServiceImpl
 
   private void requireVirtualCatalog(final String catalogId) {
     FederationCatalog catalog = catalogService.findActiveById(catalogId)
-        .orElseThrow(() -> new IllegalArgumentException("联邦目录不存在: " + catalogId));
+        .orElseThrow(() -> new IllegalArgumentException("数据目录不存在: " + catalogId));
     if (!FederationCatalogTypes.isVirtual(catalog.getCatalogType())) {
       throw new IllegalArgumentException("仅虚拟目录下的逻辑 Schema 支持创建逻辑视图");
     }

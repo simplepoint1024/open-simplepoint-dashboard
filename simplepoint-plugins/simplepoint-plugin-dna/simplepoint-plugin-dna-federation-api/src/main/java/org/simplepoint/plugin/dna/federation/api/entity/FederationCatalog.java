@@ -59,7 +59,7 @@ import org.springframework.core.annotation.Order;
         authority = "dna.federation.catalogs.delete"
     )
 })
-@Tag(name = "联邦目录", description = "用于管理 DNA 联邦查询目录")
+@Tag(name = "数据目录", description = "用于管理 DNA 联邦查询目录")
 @Schema(title = "i18n:dna.federation.catalogs.entity.title", description = "i18n:dna.federation.catalogs.entity.description")
 public class FederationCatalog extends BaseEntityImpl<String> {
 

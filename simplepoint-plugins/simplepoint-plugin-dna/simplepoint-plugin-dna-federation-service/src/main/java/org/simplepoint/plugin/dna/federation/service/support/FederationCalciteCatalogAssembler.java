@@ -501,7 +501,7 @@ public class FederationCalciteCatalogAssembler {
     for (ResolvedJdbcSource jdbcSource : jdbcSources) {
       String sourceCode = requireValue(jdbcSource.definition().getCode(), "数据源编码不能为空");
       if (!registeredNames.add(sourceCode)) {
-        throw new IllegalStateException("联邦目录 " + catalogCode + " 下存在重复数据源编码: " + sourceCode);
+        throw new IllegalStateException("数据目录 " + catalogCode + " 下存在重复数据源编码: " + sourceCode);
       }
       validatePhysicalNamespaceNames(catalogCode, sourceCode, jdbcSource.physicalNamespaces(), jdbcSource.catalogNamespaces());
     }
@@ -517,21 +517,21 @@ public class FederationCalciteCatalogAssembler {
     for (ResolvedJdbcNamespace physicalNamespace : physicalNamespaces) {
       String namespaceName = requireValue(physicalNamespace.name(), "物理 Schema 编码不能为空");
       if (!rootNames.add(namespaceName)) {
-        throw new IllegalStateException("联邦目录 " + catalogCode + " 下数据源 " + dataSourceCode
+        throw new IllegalStateException("数据目录 " + catalogCode + " 下数据源 " + dataSourceCode
             + " 存在重复物理命名空间: " + namespaceName);
       }
     }
     for (ResolvedJdbcCatalogNamespace catalogNamespace : catalogNamespaces) {
       String catalogName = requireValue(catalogNamespace.name(), "物理 Catalog 编码不能为空");
       if (!rootNames.add(catalogName)) {
-        throw new IllegalStateException("联邦目录 " + catalogCode + " 下数据源 " + dataSourceCode
+        throw new IllegalStateException("数据目录 " + catalogCode + " 下数据源 " + dataSourceCode
             + " 的 catalog 名称与 schema 名称冲突: " + catalogName);
       }
       Set<String> nestedNames = new LinkedHashSet<>();
       for (ResolvedJdbcNamespace physicalNamespace : catalogNamespace.physicalNamespaces()) {
         String namespaceName = requireValue(physicalNamespace.name(), "物理 Schema 编码不能为空");
         if (!nestedNames.add(namespaceName)) {
-          throw new IllegalStateException("联邦目录 " + catalogCode + " 下数据源 " + dataSourceCode
+          throw new IllegalStateException("数据目录 " + catalogCode + " 下数据源 " + dataSourceCode
               + " 的 catalog " + catalogName + " 存在重复 schema 名称: " + namespaceName);
         }
       }
@@ -584,7 +584,7 @@ public class FederationCalciteCatalogAssembler {
      * @param schemaConfigurer        Calcite schema registration callback
      */
     public FederationCalciteCatalogAssembly {
-      catalogCode = requireValue(catalogCode, "联邦目录编码不能为空");
+      catalogCode = requireValue(catalogCode, "数据目录编码不能为空");
       physicalDataSourceCodes = physicalDataSourceCodes == null ? List.of() : List.copyOf(physicalDataSourceCodes);
       if (schemaConfigurer == null) {
         throw new IllegalArgumentException("schemaConfigurer 不能为空");

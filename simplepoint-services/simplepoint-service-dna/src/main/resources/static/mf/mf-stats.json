@@ -48,13 +48,12 @@
         }
       },
       "usedIn": [
-        "./platform/FederationJdbcUser",
-        "./platform/Dashboard",
         "./platform/DataAsset",
+        "./platform/Dashboard",
         "./platform/DataLineage",
         "./platform/DataQuality",
         "./platform/FederationJdbcUser/config/dataSource",
-        "./platform/FederationSchema",
+        "./platform/FederationJdbcUser",
         "./platform/FederationView",
         "./platform/HealthMonitor",
         "./platform/JdbcDataSource",
@@ -89,13 +88,12 @@
         }
       },
       "usedIn": [
-        "./platform/DataAsset",
+        "./platform/FederationJdbcUser",
         "./platform/Dashboard",
+        "./platform/DataAsset",
         "./platform/DataLineage",
         "./platform/DataQuality",
         "./platform/FederationJdbcUser/config/dataSource",
-        "./platform/FederationJdbcUser",
-        "./platform/FederationSchema",
         "./platform/FederationView",
         "./platform/HealthMonitor",
         "./platform/JdbcDataSource",
@@ -156,11 +154,11 @@
         }
       },
       "usedIn": [
-        "./platform/FederationJdbcUser/config/dataSource",
+        "./platform/JdbcDriver",
         "./platform/DataLineage",
+        "./platform/FederationJdbcUser/config/dataSource",
         "./platform/FederationJdbcUser",
         "./platform/JdbcDialect",
-        "./platform/JdbcDriver",
         "./platform/JdbcMetadata",
         "./platform/SqlConsole"
       ]
@@ -366,7 +364,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "__federation_expose_platform__Dashboard.js"
           ],
           "async": []
@@ -389,7 +387,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "223.js",
             "__federation_expose_platform__DataAsset.js"
           ],
@@ -416,7 +414,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "223.js",
             "__federation_expose_platform__DataLineage.js"
           ],
@@ -442,7 +440,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "223.js",
             "__federation_expose_platform__DataQuality.js"
           ],
@@ -451,29 +449,6 @@
         "css": {
           "sync": [
             "__federation_expose_platform__DataQuality.css"
-          ],
-          "async": []
-        }
-      }
-    },
-    {
-      "path": "./platform/FederationCatalog",
-      "id": "dna:platform/FederationCatalog",
-      "name": "platform/FederationCatalog",
-      "requires": [],
-      "file": "src/views/platform/FederationCatalog/index.tsx",
-      "assets": {
-        "js": {
-          "sync": [
-            "950.js",
-            "223.js",
-            "__federation_expose_platform__FederationCatalog.js"
-          ],
-          "async": []
-        },
-        "css": {
-          "sync": [
-            "__federation_expose_platform__FederationCatalog.css"
           ],
           "async": []
         }
@@ -492,7 +467,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "__federation_expose_platform__FederationJdbcUser.js"
           ],
           "async": []
@@ -516,39 +491,13 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "__federation_expose_platform__FederationJdbcUser__config__dataSource.js"
           ],
           "async": []
         },
         "css": {
           "sync": [],
-          "async": []
-        }
-      }
-    },
-    {
-      "path": "./platform/FederationSchema",
-      "id": "dna:platform/FederationSchema",
-      "name": "platform/FederationSchema",
-      "requires": [
-        "react",
-        "antd"
-      ],
-      "file": "src/views/platform/FederationSchema/index.tsx",
-      "assets": {
-        "js": {
-          "sync": [
-            "950.js",
-            "223.js",
-            "__federation_expose_platform__FederationSchema.js"
-          ],
-          "async": []
-        },
-        "css": {
-          "sync": [
-            "__federation_expose_platform__FederationSchema.css"
-          ],
           "async": []
         }
       }
@@ -565,7 +514,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "223.js",
             "__federation_expose_platform__FederationView.js"
           ],
@@ -591,7 +540,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "__federation_expose_platform__HealthMonitor.js"
           ],
           "async": []
@@ -614,7 +563,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "223.js",
             "__federation_expose_platform__JdbcDataSource.js"
           ],
@@ -641,7 +590,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "__federation_expose_platform__JdbcDialect.js"
           ],
           "async": []
@@ -665,7 +614,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "223.js",
             "__federation_expose_platform__JdbcDriver.js"
           ],
@@ -692,7 +641,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "__federation_expose_platform__JdbcMetadata.js"
           ],
           "async": []
@@ -715,7 +664,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "223.js",
             "__federation_expose_platform__QueryAudit.js"
           ],
@@ -741,7 +690,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "223.js",
             "__federation_expose_platform__QueryPolicy.js"
           ],
@@ -767,7 +716,7 @@
       "assets": {
         "js": {
           "sync": [
-            "950.js",
+            "814.js",
             "223.js",
             "__federation_expose_platform__QueryTemplate.js"
           ],

@@ -305,6 +305,52 @@
         ],
         "children": [
           {
+            "label": "数据目录",
+            "title": "menu.dna.federation.dataCatalogs",
+            "icon": "FolderOpenOutlined",
+            "path": "/dna/federation/data-catalogs",
+            "authority": "dna.federation.data-catalogs.view",
+            "sort": -1,
+            "component": "dna/platform/DataCatalog",
+            "type": "item",
+            "disabled": false,
+            "permissions": [
+              {
+                "name": "DNA Data Catalog View",
+                "authority": "dna.federation.data-catalogs.view",
+                "resource": "/dna/federation/data-catalogs",
+                "description": "允许访问数据目录管理页面",
+                "type": 0,
+                "feature": {
+                  "name": "Data Catalog Management",
+                  "description": "Data Catalog Management Feature",
+                  "code": "dna-data-catalog-management"
+                }
+              },
+              {
+                "name": "DNA Data Catalog Create",
+                "authority": "dna.federation.data-catalogs.create",
+                "resource": "/dna/federation/data-catalogs",
+                "description": "允许新增数据目录定义",
+                "type": 1
+              },
+              {
+                "name": "DNA Data Catalog Edit",
+                "authority": "dna.federation.data-catalogs.edit",
+                "resource": "/dna/federation/data-catalogs",
+                "description": "允许修改数据目录定义",
+                "type": 1
+              },
+              {
+                "name": "DNA Data Catalog Delete",
+                "authority": "dna.federation.data-catalogs.delete",
+                "resource": "/dna/federation/data-catalogs",
+                "description": "允许删除数据目录定义",
+                "type": 1
+              }
+            ]
+          },
+          {
             "label": "JDBC连接用户",
             "title": "menu.dna.federation.jdbcUsers",
             "icon": "UserSwitchOutlined",

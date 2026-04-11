@@ -48,12 +48,12 @@
         }
       },
       "usedIn": [
-        "./monitoring/PermissionChangeLog",
+        "./monitoring/ServiceRateLimitRule",
         "./monitoring/EndpointRateLimitRule",
         "./monitoring/ErrorLog",
         "./monitoring/LoginLog",
-        "./monitoring/Redis",
-        "./monitoring/ServiceRateLimitRule"
+        "./monitoring/PermissionChangeLog",
+        "./monitoring/Redis"
       ]
     },
     {

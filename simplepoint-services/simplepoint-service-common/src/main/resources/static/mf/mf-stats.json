@@ -48,10 +48,9 @@
         }
       },
       "usedIn": [
-        "./platform/Organization",
+        "./i18n/Countries",
         "./system/Role/config/permission",
         "./Dashboard",
-        "./i18n/Countries",
         "./i18n/Language",
         "./i18n/Message",
         "./i18n/Namespace",
@@ -65,6 +64,7 @@
         "./platform/Feature/config/permission",
         "./platform/Feature",
         "./platform/ObjectStorage",
+        "./platform/Organization",
         "./platform/Package/config/application",
         "./platform/Package",
         "./platform/Tenant/config/package",
@@ -101,10 +101,10 @@
         }
       },
       "usedIn": [
-        "./platform/Feature",
         "./Dashboard",
         "./platform/Application",
         "./platform/Dictionary",
+        "./platform/Feature",
         "./platform/ObjectStorage",
         "./platform/Package",
         "./platform/Tenant",
