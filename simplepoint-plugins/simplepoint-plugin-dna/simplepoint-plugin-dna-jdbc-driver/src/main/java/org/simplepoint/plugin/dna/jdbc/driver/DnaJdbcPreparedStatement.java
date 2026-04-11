@@ -32,8 +32,8 @@ import java.util.Map;
  * the SQL template before execution, because the DNA gateway does not support
  * server-side prepared statements.
  *
- * <p>Only read queries are supported; update and batch operations throw
- * {@link SQLFeatureNotSupportedException}.
+ * <p>Supports read queries (SELECT), DML (INSERT, UPDATE, DELETE, MERGE/UPSERT),
+ * and DDL (CREATE, ALTER, DROP, TRUNCATE) statements.
  */
 final class DnaJdbcPreparedStatement extends DnaJdbcStatement implements PreparedStatement {
 
@@ -72,13 +72,21 @@ final class DnaJdbcPreparedStatement extends DnaJdbcStatement implements Prepare
   @Override
   public int executeUpdate() throws SQLException {
     ensureOpen();
-    return doExecuteUpdate(renderPreparedSql());
+    String sql = renderPreparedSql();
+    if (DDL_PATTERN.matcher(sql).lookingAt()) {
+      return doExecuteDdl(sql);
+    }
+    return doExecuteUpdate(sql);
   }
 
   @Override
   public long executeLargeUpdate() throws SQLException {
     ensureOpen();
-    return doExecuteUpdate(renderPreparedSql());
+    String sql = renderPreparedSql();
+    if (DDL_PATTERN.matcher(sql).lookingAt()) {
+      return doExecuteDdl(sql);
+    }
+    return doExecuteUpdate(sql);
   }
 
   // ------------------------------------------------------------------

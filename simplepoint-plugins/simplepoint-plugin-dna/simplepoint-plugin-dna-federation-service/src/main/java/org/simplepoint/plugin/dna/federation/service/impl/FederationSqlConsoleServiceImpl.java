@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -312,6 +313,180 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   }
 
   private record DmlTarget(JdbcDataSourceDefinition dataSource) {
+  }
+
+  /**
+   * Pattern that matches DDL keywords at the start of a SQL statement.
+   * Covers: CREATE, ALTER, DROP, TRUNCATE, RENAME, COMMENT ON.
+   */
+  private static final Pattern DDL_PREFIX_PATTERN = Pattern.compile(
+      "\\s*(CREATE|ALTER|DROP|TRUNCATE|RENAME|COMMENT\\s+ON)\\b",
+      Pattern.CASE_INSENSITIVE
+  );
+
+  /**
+   * Pattern that extracts a possibly-qualified table name from DDL statements.
+   * Matches: CREATE [TEMP/TEMPORARY/EXTERNAL/...] TABLE [IF NOT EXISTS] name
+   *          ALTER TABLE name
+   *          DROP TABLE [IF EXISTS] name
+   *          TRUNCATE [TABLE] name
+   *          RENAME TABLE name
+   * The name may be dotted: {@code datasource.schema.table} or {@code datasource.table}.
+   * Identifiers may be quoted with double-quotes, backticks, or square brackets.
+   */
+  private static final Pattern DDL_TABLE_NAME_PATTERN = Pattern.compile(
+      "(?i)(?:"
+          + "(?:CREATE\\s+(?:(?:TEMP(?:ORARY)?|EXTERNAL|GLOBAL|LOCAL|VIRTUAL|UNLOGGED|MATERIALIZED|OR\\s+REPLACE)\\s+)*"
+          + "(?:TABLE|VIEW|INDEX)\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?)"
+          + "|(?:ALTER\\s+TABLE\\s+(?:IF\\s+EXISTS\\s+)?)"
+          + "|(?:DROP\\s+(?:TABLE|VIEW|INDEX)\\s+(?:IF\\s+EXISTS\\s+)?)"
+          + "|(?:TRUNCATE\\s+(?:TABLE\\s+)?)"
+          + "|(?:RENAME\\s+TABLE\\s+)"
+          + ")"
+          + "((?:[\"\\[`]?[^\\s\"\\]`(),;]+[\"\\]`]?\\.)*[\"\\[`]?[^\\s\"\\]`(),;]+[\"\\]`]?)"
+  );
+
+  /** {@inheritDoc} */
+  @Override
+  public FederationQueryModels.SqlUpdateResult executeDdl(
+      final FederationQueryModels.SqlConsoleRequest request
+  ) {
+    return executeDdl((String) null, request);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public FederationQueryModels.SqlUpdateResult executeDdl(
+      final String dataSourceId,
+      final FederationQueryModels.SqlConsoleRequest request
+  ) {
+    String catalogCode = requireValue(request == null ? null : request.catalogCode(), "数据源编码不能为空");
+    String sql = requireValue(request == null ? null : request.sql(), "SQL 不能为空");
+    if (sql.length() > SQL_TEXT_MAX_LENGTH) {
+      throw new IllegalArgumentException("SQL 长度不能超过 " + SQL_TEXT_MAX_LENGTH + " 个字符");
+    }
+    JdbcDataSourceDefinition resolvedDataSource = resolveDataSource(dataSourceId, catalogCode);
+    DdlTarget ddlTarget = resolveDdlTarget(resolvedDataSource, sql);
+    SimpleDataSource simpleDataSource = dataSourceService.requireSimpleDataSource(
+        requireValue(ddlTarget.dataSource().getId(), "数据源ID不能为空")
+    );
+    String pushedSql = rewriteDdlForPhysicalDatabase(sql, ddlTarget.dataSource().getCode());
+    long startedAt = System.nanoTime();
+    try (Connection connection = simpleDataSource.getConnection();
+         java.sql.Statement statement = connection.createStatement()) {
+      int result = statement.executeUpdate(pushedSql);
+      long elapsed = toElapsedMs(startedAt);
+      persistAudit(
+          catalogCode,
+          sql,
+          "SUCCESS",
+          elapsed,
+          (long) result,
+          "DDL 直接下推到物理数据源: " + ddlTarget.dataSource().getCode(),
+          null
+      );
+      return new FederationQueryModels.SqlUpdateResult(
+          catalogCode,
+          ddlTarget.dataSource().getCode(),
+          result,
+          elapsed,
+          pushedSql
+      );
+    } catch (SQLException ex) {
+      long elapsed = toElapsedMs(startedAt);
+      persistAudit(
+          catalogCode,
+          sql,
+          "FAILED",
+          elapsed,
+          null,
+          "DDL 执行失败 - 目标数据源: " + ddlTarget.dataSource().getCode(),
+          resolveMessage(ex)
+      );
+      throw new IllegalStateException("DDL 执行失败: " + ex.getMessage(), ex);
+    }
+  }
+
+  /**
+   * Resolves the target physical datasource for a DDL statement.
+   * Uses regex-based identifier extraction since Calcite's standard parser
+   * does not support DDL.
+   */
+  private DdlTarget resolveDdlTarget(
+      final JdbcDataSourceDefinition selectedDataSource,
+      final String sql
+  ) {
+    Matcher matcher = DDL_TABLE_NAME_PATTERN.matcher(sql);
+    if (!matcher.find()) {
+      return new DdlTarget(selectedDataSource);
+    }
+    String qualifiedName = matcher.group(1);
+    if (qualifiedName == null || qualifiedName.isBlank()) {
+      return new DdlTarget(selectedDataSource);
+    }
+    // Split on dots, stripping any quotes
+    String[] segments = qualifiedName.split("\\.");
+    if (segments.length < 2) {
+      return new DdlTarget(selectedDataSource);
+    }
+    String candidateCode = stripQuotes(segments[0]);
+    List<JdbcDataSourceDefinition> enabledDataSources = dataSourceService.listEnabledDefinitions();
+    for (JdbcDataSourceDefinition definition : enabledDataSources) {
+      String code = trimToNull(definition.getCode());
+      if (code != null && code.equalsIgnoreCase(candidateCode)) {
+        return new DdlTarget(definition);
+      }
+    }
+    return new DdlTarget(selectedDataSource);
+  }
+
+  /**
+   * Rewrites DDL SQL by stripping the federation datasource code prefix from table names.
+   * Uses regex-based replacement since Calcite cannot parse DDL.
+   */
+  private static String rewriteDdlForPhysicalDatabase(
+      final String sql,
+      final String dataSourceCode
+  ) {
+    if (sql == null || dataSourceCode == null) {
+      return sql;
+    }
+    Matcher matcher = DDL_TABLE_NAME_PATTERN.matcher(sql);
+    if (!matcher.find()) {
+      return sql;
+    }
+    String qualifiedName = matcher.group(1);
+    if (qualifiedName == null || qualifiedName.isBlank()) {
+      return sql;
+    }
+    String[] segments = qualifiedName.split("\\.");
+    if (segments.length < 2) {
+      return sql;
+    }
+    String candidateCode = stripQuotes(segments[0]);
+    if (!candidateCode.equalsIgnoreCase(dataSourceCode)) {
+      return sql;
+    }
+    // Build native name from remaining segments
+    String nativeName = String.join(".", Arrays.copyOfRange(segments, 1, segments.length));
+    return sql.substring(0, matcher.start(1)) + nativeName + sql.substring(matcher.end(1));
+  }
+
+  private static String stripQuotes(final String identifier) {
+    if (identifier == null || identifier.length() < 2) {
+      return identifier;
+    }
+    char first = identifier.charAt(0);
+    char last = identifier.charAt(identifier.length() - 1);
+    if ((first == '"' && last == '"')
+        || (first == '`' && last == '`')
+        || (first == '[' && last == ']')) {
+      return identifier.substring(1, identifier.length() - 1);
+    }
+    return identifier;
+  }
+
+  private record DdlTarget(JdbcDataSourceDefinition dataSource) {
   }
 
   private PreparedExecution prepare(

@@ -470,6 +470,37 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
     });
   }
 
+  @Override
+  public FederationQueryModels.SqlUpdateResult executeDdl(
+      final FederationJdbcDriverModels.DriverRequest request,
+      final FederationJdbcDriverModels.QueryRequest queryRequest
+  ) {
+    try (FederationJdbcDriverService.DriverSession session = openSession(request)) {
+      return executeDdl(session, request == null ? null : request.contextId(), queryRequest);
+    }
+  }
+
+  @Override
+  public FederationQueryModels.SqlUpdateResult executeDdl(
+      final FederationJdbcDriverService.DriverSession session,
+      final String contextId,
+      final FederationJdbcDriverModels.QueryRequest queryRequest
+  ) {
+    JdbcConnectionSession requiredSession = requireSession(session);
+    AuthorizedDataSource ddlDataSource = requiredSession.requireDdlDataSource(
+        queryRequest == null ? null : queryRequest.catalogCode()
+    );
+    return withDriverContext(requiredSession, contextId, ddlDataSource.dataSource().getCode(), (resolvedSession, resolvedContextId) -> {
+      String sql = requireValue(queryRequest == null ? null : queryRequest.sql(), "SQL 不能为空");
+      String defaultSchema = trimToNull(queryRequest == null ? null : queryRequest.defaultSchema());
+      return sqlConsoleService.executeDdl(ddlDataSource.dataSource().getId(), new FederationQueryModels.SqlConsoleRequest(
+          ddlDataSource.dataSource().getCode(),
+          sql,
+          defaultSchema
+      ));
+    });
+  }
+
   private <T> T withDriverContext(
       final JdbcConnectionSession session,
       final String requestedContextId,
@@ -953,6 +984,10 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
 
     private AuthorizedDataSource requireDmlDataSource(final String requestedCatalogCode) {
       return requireOperationDataSource(requestedCatalogCode, FederationJdbcOperation.DML);
+    }
+
+    private AuthorizedDataSource requireDdlDataSource(final String requestedCatalogCode) {
+      return requireOperationDataSource(requestedCatalogCode, FederationJdbcOperation.DDL);
     }
 
     private AuthorizedDataSource requireOperationDataSource(

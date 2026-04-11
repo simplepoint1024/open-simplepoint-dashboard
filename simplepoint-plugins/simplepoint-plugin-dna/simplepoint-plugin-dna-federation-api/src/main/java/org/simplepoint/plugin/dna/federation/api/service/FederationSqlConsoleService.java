@@ -59,4 +59,28 @@ public interface FederationSqlConsoleService {
   ) {
     return executeUpdate(request);
   }
+
+  /**
+   * Executes a DDL statement (CREATE / ALTER / DROP / TRUNCATE / RENAME / COMMENT)
+   * against a single physical datasource. The statement is pushed directly to
+   * the target database without Calcite optimization.
+   *
+   * @param request SQL console request containing the DDL statement
+   * @return update result (affectedRows is typically 0 for DDL)
+   */
+  FederationQueryModels.SqlUpdateResult executeDdl(FederationQueryModels.SqlConsoleRequest request);
+
+  /**
+   * Executes a DDL statement with an already resolved datasource id.
+   *
+   * @param dataSourceId resolved datasource id
+   * @param request SQL console request containing the DDL statement
+   * @return update result
+   */
+  default FederationQueryModels.SqlUpdateResult executeDdl(
+      final String dataSourceId,
+      final FederationQueryModels.SqlConsoleRequest request
+  ) {
+    return executeDdl(request);
+  }
 }

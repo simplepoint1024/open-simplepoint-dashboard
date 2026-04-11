@@ -399,4 +399,30 @@ public interface FederationJdbcDriverService {
       String contextId,
       FederationJdbcDriverModels.QueryRequest queryRequest
   );
+
+  /**
+   * Executes a DDL statement (CREATE / ALTER / DROP / TRUNCATE) through a request-based call.
+   *
+   * @param request driver request
+   * @param queryRequest query request containing the DDL SQL
+   * @return update result
+   */
+  FederationQueryModels.SqlUpdateResult executeDdl(
+      FederationJdbcDriverModels.DriverRequest request,
+      FederationJdbcDriverModels.QueryRequest queryRequest
+  );
+
+  /**
+   * Executes a DDL statement for an existing driver session.
+   *
+   * @param session reusable driver session
+   * @param contextId optional permission context id
+   * @param queryRequest query request containing the DDL SQL
+   * @return update result
+   */
+  FederationQueryModels.SqlUpdateResult executeDdl(
+      DriverSession session,
+      String contextId,
+      FederationJdbcDriverModels.QueryRequest queryRequest
+  );
 }

@@ -307,6 +307,14 @@ public class FederationJdbcSocketServer implements DisposableBean {
               new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode())
           ))
       );
+      case "EXECUTE_DDL" -> new RequestOutcome(
+          requiredSession,
+          SocketResponse.update(driverService.executeDdl(
+              requiredSession.driverSession(),
+              contextId,
+              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode())
+          ))
+      );
       case "CLOSE" -> new RequestOutcome(requiredSession, SocketResponse.ok());
       case "FLUSH_CACHE" -> {
         driverService.flushCache(requiredSession.driverSession());

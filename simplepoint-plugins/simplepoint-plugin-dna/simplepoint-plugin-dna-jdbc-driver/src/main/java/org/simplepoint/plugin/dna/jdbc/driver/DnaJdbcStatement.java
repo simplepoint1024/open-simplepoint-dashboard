@@ -15,9 +15,10 @@ import java.sql.Statement;
  * <strong>not</strong> {@code final} so that {@code DnaJdbcPreparedStatement}
  * can extend it with parameter-binding logic.
  *
- * <p>Supports both read queries (SELECT) and DML statements (INSERT, UPDATE,
- * DELETE, MERGE/UPSERT). DML is pushed directly to the physical database
- * through the DNA gateway without Calcite optimization.
+ * <p>Supports both read queries (SELECT), DML statements (INSERT, UPDATE,
+ * DELETE, MERGE/UPSERT), and DDL statements (CREATE, ALTER, DROP, TRUNCATE).
+ * DML and DDL are pushed directly to the physical database through the DNA
+ * gateway without Calcite optimization.
  */
 class DnaJdbcStatement implements Statement {
 
@@ -133,6 +134,41 @@ class DnaJdbcStatement implements Statement {
   }
 
   /**
+   * Executes a DDL statement (CREATE, ALTER, DROP, TRUNCATE, etc.)
+   * by pushing it directly to the physical database through the gateway.
+   *
+   * @param sql the DDL SQL statement
+   * @return affected rows (typically 0 for DDL)
+   * @throws SQLException if execution fails
+   */
+  protected int doExecuteDdl(final String sql) throws SQLException {
+    closeCurrentResultSet();
+    DnaJdbcClient client = connection.client();
+    int previousTimeout = 0;
+    boolean timeoutAdjusted = false;
+    if (queryTimeout > 0) {
+      previousTimeout = 0;
+      client.setSocketTimeout(queryTimeout * 1000);
+      timeoutAdjusted = true;
+    }
+    try {
+      DnaJdbcModels.UpdateResult result =
+          client.executeDdl(connection.currentCatalog(), sql, connection.currentSchema());
+      lastUpdateCount = result != null && result.affectedRows() != null ? result.affectedRows().intValue() : 0;
+      return lastUpdateCount;
+    } catch (SQLException ex) {
+      if (timeoutAdjusted && ex.getCause() instanceof java.net.SocketTimeoutException) {
+        throw new SQLException("执行超时 (" + queryTimeout + "s)", "HYT00", ex);
+      }
+      throw ex;
+    } finally {
+      if (timeoutAdjusted) {
+        client.setSocketTimeout(previousTimeout);
+      }
+    }
+  }
+
+  /**
    * Closes the currently held result set, if any.
    *
    * @throws SQLException if closing the result set fails
@@ -191,6 +227,9 @@ class DnaJdbcStatement implements Statement {
   private static final java.util.regex.Pattern DML_PATTERN =
       java.util.regex.Pattern.compile("\\s*(INSERT|UPDATE|DELETE|MERGE|UPSERT)\\b", java.util.regex.Pattern.CASE_INSENSITIVE);
 
+  static final java.util.regex.Pattern DDL_PATTERN =
+      java.util.regex.Pattern.compile("\\s*(CREATE|ALTER|DROP|TRUNCATE|RENAME|COMMENT\\s+ON)\\b", java.util.regex.Pattern.CASE_INSENSITIVE);
+
   @Override
   public boolean execute(final String sql) throws SQLException {
     ensureOpen();
@@ -199,6 +238,11 @@ class DnaJdbcStatement implements Statement {
       connection.client().flushCache();
       lastExecuteWasQuery = false;
       lastUpdateCount = 0;
+      return false;
+    }
+    if (DDL_PATTERN.matcher(resolved).lookingAt()) {
+      doExecuteDdl(resolved);
+      lastExecuteWasQuery = false;
       return false;
     }
     if (DML_PATTERN.matcher(resolved).lookingAt()) {
@@ -231,6 +275,9 @@ class DnaJdbcStatement implements Statement {
   public int executeUpdate(final String sql) throws SQLException {
     ensureOpen();
     String resolved = resolveSql(sql);
+    if (DDL_PATTERN.matcher(resolved).lookingAt()) {
+      return doExecuteDdl(resolved);
+    }
     return doExecuteUpdate(resolved);
   }
 
@@ -253,6 +300,9 @@ class DnaJdbcStatement implements Statement {
   public long executeLargeUpdate(final String sql) throws SQLException {
     ensureOpen();
     String resolved = resolveSql(sql);
+    if (DDL_PATTERN.matcher(resolved).lookingAt()) {
+      return doExecuteDdl(resolved);
+    }
     return doExecuteUpdate(resolved);
   }
 
