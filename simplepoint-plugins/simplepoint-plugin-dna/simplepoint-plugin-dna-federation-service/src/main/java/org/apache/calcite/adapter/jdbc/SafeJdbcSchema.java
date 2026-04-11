@@ -163,15 +163,34 @@ public final class SafeJdbcSchema extends JdbcSchema {
     // When precision is 0 we treat it as "unspecified" and fall back to
     // DOUBLE (which most closely models Oracle's NUMBER semantics), or
     // to the system-default max-precision DECIMAL if scale is present.
-    if (precision == 0 && sqlTypeName == SqlTypeName.DECIMAL) {
-      if (scale != 0) {
+    if (sqlTypeName == SqlTypeName.DECIMAL) {
+      if (precision <= 0 && scale == 0) {
+        // Neither precision nor scale — treat as DOUBLE.
+        return typeFactory.createSqlType(SqlTypeName.DOUBLE);
+      }
+      if (precision <= 0 && scale != 0) {
         // Has a scale but no precision — use max system precision.
         int maxPrecision =
             typeFactory.getTypeSystem().getMaxNumericPrecision();
-        return typeFactory.createSqlType(sqlTypeName, maxPrecision, scale);
+        return typeFactory.createSqlType(sqlTypeName, maxPrecision,
+            Math.min(Math.abs(scale), maxPrecision));
       }
-      // Neither precision nor scale — treat as DOUBLE.
-      return typeFactory.createSqlType(SqlTypeName.DOUBLE);
+      if (scale < 0) {
+        // Negative scale (e.g. Oracle NUMBER(10,-2)) — clamp to 0.
+        return typeFactory.createSqlType(sqlTypeName, precision, 0);
+      }
+      if (scale > precision) {
+        // Scale exceeds precision — clamp scale to precision.
+        return typeFactory.createSqlType(sqlTypeName, precision, precision);
+      }
+    }
+
+    // ---- FIX: protect VARCHAR/CHAR with precision=0 ----
+    if (precision == 0
+        && (sqlTypeName == SqlTypeName.VARCHAR || sqlTypeName == SqlTypeName.CHAR
+            || sqlTypeName == SqlTypeName.VARBINARY || sqlTypeName == SqlTypeName.BINARY)) {
+      // Precision 0 for string types is meaningless — use no-precision form.
+      return typeFactory.createSqlType(sqlTypeName);
     }
 
     // Standard Calcite logic.

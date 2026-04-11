@@ -707,7 +707,9 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
   }
 
   // ----------------------------------------------------------------
-  // Max limits (0 = no limit or unknown)
+  // Max limits
+  // Non-zero values signal to tools like DataGrip that the driver
+  // supports catalog/schema/table identifiers.
   // ----------------------------------------------------------------
 
   @Override
@@ -722,7 +724,7 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxColumnNameLength() throws SQLException {
-    return 0;
+    return 128;
   }
 
   @Override
@@ -767,7 +769,7 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxSchemaNameLength() throws SQLException {
-    return 0;
+    return 128;
   }
 
   @Override
@@ -777,7 +779,7 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxCatalogNameLength() throws SQLException {
-    return 0;
+    return 128;
   }
 
   @Override
@@ -797,7 +799,7 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxTableNameLength() throws SQLException {
-    return 0;
+    return 128;
   }
 
   @Override
@@ -807,7 +809,7 @@ final class DnaJdbcDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxUserNameLength() throws SQLException {
-    return 0;
+    return 128;
   }
 
   @Override
