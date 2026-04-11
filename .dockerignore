@@ -1,0 +1,14 @@
+.git
+.github
+.gradle
+.idea
+.kotlin
+build
+**/build
+**/node_modules
+data
+infrastructure/.terraform
+infrastructure/terraform.tfstate
+infrastructure/terraform.tfstate.backup
+scripts/shell/logs
+

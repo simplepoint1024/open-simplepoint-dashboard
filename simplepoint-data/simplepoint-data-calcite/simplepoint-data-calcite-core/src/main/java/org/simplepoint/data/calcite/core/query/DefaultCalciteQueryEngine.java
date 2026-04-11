@@ -241,7 +241,8 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
       String label = trimToNull(metaData.getColumnLabel(index));
       columns.add(new CalciteQueryColumn(
           label == null ? metaData.getColumnName(index) : label,
-          trimToNull(metaData.getColumnTypeName(index))
+          trimToNull(metaData.getColumnTypeName(index)),
+          metaData.getColumnType(index)
       ));
     }
 

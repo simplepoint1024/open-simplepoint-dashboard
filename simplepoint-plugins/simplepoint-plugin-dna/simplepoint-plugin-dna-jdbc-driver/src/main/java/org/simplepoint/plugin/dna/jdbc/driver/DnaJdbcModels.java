@@ -89,7 +89,8 @@ final class DnaJdbcModels {
       String sql,
       String defaultSchema,
       Boolean unique,
-      Boolean approximate
+      Boolean approximate,
+      List<SocketRequest> batch
   ) {
   }
 
@@ -99,7 +100,8 @@ final class DnaJdbcModels {
       PingResult pingResult,
       TabularResult tabularResult,
       QueryResult queryResult,
-      UpdateResult updateResult
+      UpdateResult updateResult,
+      List<SocketResponse> batchResults
   ) {
   }
 }

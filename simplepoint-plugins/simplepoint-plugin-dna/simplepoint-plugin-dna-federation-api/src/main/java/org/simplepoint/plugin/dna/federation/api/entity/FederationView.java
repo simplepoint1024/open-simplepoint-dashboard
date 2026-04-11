@@ -61,18 +61,18 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Tag(name = "逻辑视图", description = "用于管理联邦查询逻辑视图")
-@Schema(title = "逻辑视图", description = "封装跨源查询语义的逻辑视图定义")
+@Schema(title = "i18n:dna.federation.views.entity.title", description = "i18n:dna.federation.views.entity.description")
 public class FederationView extends BaseEntityImpl<String> {
 
   @Order(0)
-  @Schema(title = "逻辑 Schema", description = "所属逻辑 Schema ID", maxLength = 64)
+  @Schema(title = "i18n:dna.federation.views.title.schemaId", description = "i18n:dna.federation.views.description.schemaId", maxLength = 64)
   @Column(length = 64, nullable = false)
   private String schemaId;
 
   @Transient
   @Schema(
-      title = "Schema 名称",
-      description = "所属逻辑 Schema 名称",
+      title = "i18n:dna.federation.views.title.schemaName",
+      description = "i18n:dna.federation.views.description.schemaName",
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -83,13 +83,13 @@ public class FederationView extends BaseEntityImpl<String> {
   private String schemaName;
 
   @Transient
-  @Schema(title = "Schema 编码", description = "所属逻辑 Schema 编码", accessMode = Schema.AccessMode.READ_ONLY)
+  @Schema(title = "i18n:dna.federation.views.title.schemaCode", description = "i18n:dna.federation.views.description.schemaCode", accessMode = Schema.AccessMode.READ_ONLY)
   private String schemaCode;
 
   @Order(1)
   @Schema(
-      title = "视图名称",
-      description = "用于展示的逻辑视图名称",
+      title = "i18n:dna.federation.views.title.name",
+      description = "i18n:dna.federation.views.description.name",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -103,8 +103,8 @@ public class FederationView extends BaseEntityImpl<String> {
 
   @Order(2)
   @Schema(
-      title = "视图编码",
-      description = "逻辑视图唯一业务编码",
+      title = "i18n:dna.federation.views.title.code",
+      description = "i18n:dna.federation.views.description.code",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -118,8 +118,8 @@ public class FederationView extends BaseEntityImpl<String> {
 
   @Order(3)
   @Schema(
-      title = "视图 SQL",
-      description = "逻辑视图的只读 SQL 定义",
+      title = "i18n:dna.federation.views.title.definitionSql",
+      description = "i18n:dna.federation.views.description.definitionSql",
       maxLength = 12000,
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -132,8 +132,8 @@ public class FederationView extends BaseEntityImpl<String> {
 
   @Order(4)
   @Schema(
-      title = "是否启用",
-      description = "是否允许该逻辑视图被 SQL 控制台和联邦查询使用",
+      title = "i18n:dna.federation.views.title.enabled",
+      description = "i18n:dna.federation.views.description.enabled",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true")
@@ -143,7 +143,7 @@ public class FederationView extends BaseEntityImpl<String> {
   private Boolean enabled;
 
   @Order(5)
-  @Schema(title = "描述", description = "逻辑视图备注说明", maxLength = 512)
+  @Schema(title = "i18n:dna.federation.views.title.description", description = "i18n:dna.federation.views.description.description", maxLength = 512)
   @Column(length = 512)
   private String description;
 }

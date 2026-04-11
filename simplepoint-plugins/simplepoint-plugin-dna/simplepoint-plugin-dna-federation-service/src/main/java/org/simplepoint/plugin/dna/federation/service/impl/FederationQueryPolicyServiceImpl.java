@@ -14,9 +14,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.plugin.dna.federation.api.entity.FederationCatalog;
+import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
+import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationQueryPolicy;
-import org.simplepoint.plugin.dna.federation.api.repository.FederationCatalogRepository;
 import org.simplepoint.plugin.dna.federation.api.repository.FederationQueryPolicyRepository;
 import org.simplepoint.plugin.dna.federation.api.service.FederationQueryPolicyService;
 import org.springframework.data.domain.Page;
@@ -33,23 +33,23 @@ public class FederationQueryPolicyServiceImpl
 
   private final FederationQueryPolicyRepository repository;
 
-  private final FederationCatalogRepository catalogRepository;
+  private final JdbcDataSourceDefinitionService dataSourceService;
 
   /**
    * Creates a federation query policy service implementation.
    *
-   * @param repository             policy repository
+   * @param repository policy repository
    * @param detailsProviderService details provider service
-   * @param catalogRepository      catalog repository
+   * @param dataSourceService datasource service
    */
   public FederationQueryPolicyServiceImpl(
       final FederationQueryPolicyRepository repository,
       final DetailsProviderService detailsProviderService,
-      final FederationCatalogRepository catalogRepository
+      final JdbcDataSourceDefinitionService dataSourceService
   ) {
     super(repository, detailsProviderService);
     this.repository = repository;
-    this.catalogRepository = catalogRepository;
+    this.dataSourceService = dataSourceService;
   }
 
   /** {@inheritDoc} */
@@ -82,10 +82,10 @@ public class FederationQueryPolicyServiceImpl
   /** {@inheritDoc} */
   @Override
   public <S extends FederationQueryPolicy> S create(final S entity) {
-    FederationCatalog catalog = normalizeAndValidate(entity, null);
+    JdbcDataSourceDefinition dataSource = normalizeAndValidate(entity, null);
     applyDefaults(entity);
     S saved = super.create(entity);
-    decorate(saved, catalog);
+    decorate(saved, dataSource);
     return saved;
   }
 
@@ -111,17 +111,17 @@ public class FederationQueryPolicyServiceImpl
       entity.setEnabled(current.getEnabled());
     }
     FederationQueryPolicy updated = (FederationQueryPolicy) super.modifyById(entity);
-    FederationCatalog catalog = catalogRepository.findActiveById(updated.getCatalogId())
-        .orElseThrow(() -> new IllegalArgumentException("联邦目录不存在: " + updated.getCatalogId()));
-    decorate(updated, catalog);
+    JdbcDataSourceDefinition dataSource = dataSourceService.findActiveById(updated.getCatalogId())
+        .orElseThrow(() -> new IllegalArgumentException("数据源不存在: " + updated.getCatalogId()));
+    decorate(updated, dataSource);
     return updated;
   }
 
-  private FederationCatalog normalizeAndValidate(final FederationQueryPolicy entity, final String currentId) {
+  private JdbcDataSourceDefinition normalizeAndValidate(final FederationQueryPolicy entity, final String currentId) {
     if (entity == null) {
       throw new IllegalArgumentException("查询策略不能为空");
     }
-    entity.setCatalogId(requireValue(entity.getCatalogId(), "联邦目录不能为空"));
+    entity.setCatalogId(requireValue(entity.getCatalogId(), "数据源不能为空"));
     entity.setName(requireValue(entity.getName(), "查询策略名称不能为空"));
     entity.setCode(requireValue(entity.getCode(), "查询策略编码不能为空"));
     entity.setDescription(trimToNull(entity.getDescription()));
@@ -136,9 +136,9 @@ public class FederationQueryPolicyServiceImpl
     if (entity.getTimeoutMs() != null && entity.getTimeoutMs() < 1) {
       throw new IllegalArgumentException("超时毫秒数必须大于 0");
     }
-    FederationCatalog catalog = catalogRepository.findActiveById(entity.getCatalogId())
-        .orElseThrow(() -> new IllegalArgumentException("联邦目录不存在: " + entity.getCatalogId()));
-    return catalog;
+    return dataSourceService.findActiveById(entity.getCatalogId())
+        .filter(dataSource -> Boolean.TRUE.equals(dataSource.getEnabled()))
+        .orElseThrow(() -> new IllegalArgumentException("数据源不存在或未启用: " + entity.getCatalogId()));
   }
 
   private void applyDefaults(final FederationQueryPolicy entity) {
@@ -163,16 +163,16 @@ public class FederationQueryPolicyServiceImpl
     if (item == null) {
       return null;
     }
-    catalogRepository.findActiveById(item.getCatalogId()).ifPresentOrElse(catalog -> decorate(item, catalog), () -> {
+    dataSourceService.findActiveById(item.getCatalogId()).ifPresentOrElse(dataSource -> decorate(item, dataSource), () -> {
       item.setCatalogCode(null);
       item.setCatalogName(null);
     });
     return item;
   }
 
-  private void decorate(final FederationQueryPolicy item, final FederationCatalog catalog) {
-    item.setCatalogCode(catalog.getCode());
-    item.setCatalogName(catalog.getName());
+  private void decorate(final FederationQueryPolicy item, final JdbcDataSourceDefinition dataSource) {
+    item.setCatalogCode(dataSource.getCode());
+    item.setCatalogName(dataSource.getName());
   }
 
   private <S extends FederationQueryPolicy> void decorate(final Collection<S> items) {
@@ -183,12 +183,14 @@ public class FederationQueryPolicyServiceImpl
         .map(FederationQueryPolicy::getCatalogId)
         .filter(Objects::nonNull)
         .collect(Collectors.toSet());
-    Map<String, FederationCatalog> catalogsById = catalogRepository.findAllByIds(catalogIds).stream()
-        .collect(Collectors.toMap(FederationCatalog::getId, catalog -> catalog, (left, right) -> left));
+    Map<String, JdbcDataSourceDefinition> dataSourcesById = catalogIds.stream()
+        .map(dataSourceService::findActiveById)
+        .flatMap(Optional::stream)
+        .collect(Collectors.toMap(JdbcDataSourceDefinition::getId, dataSource -> dataSource, (left, right) -> left));
     items.forEach(item -> {
-      FederationCatalog catalog = catalogsById.get(item.getCatalogId());
-      if (catalog != null) {
-        decorate(item, catalog);
+      JdbcDataSourceDefinition dataSource = dataSourcesById.get(item.getCatalogId());
+      if (dataSource != null) {
+        decorate(item, dataSource);
         return;
       }
       item.setCatalogCode(null);

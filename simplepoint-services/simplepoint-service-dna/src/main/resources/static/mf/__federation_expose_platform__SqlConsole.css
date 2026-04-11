@@ -1,0 +1,32 @@
+.dna-sql-console-tabs {
+  flex: auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.dna-sql-console-tabs > .ant-tabs-nav {
+  flex: none;
+  margin-bottom: 12px;
+}
+
+.dna-sql-console-tabs > .ant-tabs-content-holder, .dna-sql-console-tabs > .ant-tabs-content-holder > .ant-tabs-content, .dna-sql-console-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane-active {
+  flex-direction: column;
+  flex: auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.dna-sql-console-scroll-pane {
+  flex-direction: column;
+  flex: auto;
+  min-width: 0;
+  min-height: 0;
+  padding-right: 4px;
+  display: flex;
+  overflow: auto;
+}
+

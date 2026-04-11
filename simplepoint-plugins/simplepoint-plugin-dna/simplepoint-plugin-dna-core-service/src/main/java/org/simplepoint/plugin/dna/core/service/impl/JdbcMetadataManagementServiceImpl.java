@@ -12,12 +12,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
 import org.simplepoint.data.datasource.jdbc.SimpleDataSource;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDriverDefinition;
@@ -408,17 +407,30 @@ public class JdbcMetadataManagementServiceImpl implements JdbcMetadataManagement
   }
 
   private List<JdbcMetadataModels.TreeNode> rootChildren(final RuntimeContext context) throws SQLException {
-    List<String> catalogs = context.dialect().visibleCatalogs(loadCatalogs(context.metaData()), context.supportContext());
+    List<String> catalogs = extractStringValues(
+        context.dialect().loadCatalogs(
+            context.connection(),
+            context.metaData(),
+            context.supportContext(),
+            null
+        ),
+        "TABLE_CAT"
+    );
     if (!catalogs.isEmpty()) {
       return catalogs.stream()
           .map(name -> namespaceNode(context, List.of(), context.dialect().catalogNodeType(), name))
           .sorted(treeNodeComparator())
           .toList();
     }
-    List<String> schemas = context.dialect().visibleSchemas(
-        loadSchemas(context, context.supportContext().currentCatalog()),
-        context.supportContext().currentCatalog(),
-        context.supportContext()
+    List<String> schemas = extractStringValues(
+        context.dialect().loadSchemas(
+            context.connection(),
+            context.metaData(),
+            context.supportContext(),
+            context.supportContext().currentCatalog(),
+            null
+        ),
+        "TABLE_SCHEM"
     );
     if (!schemas.isEmpty()) {
       return schemas.stream()
@@ -441,7 +453,16 @@ public class JdbcMetadataManagementServiceImpl implements JdbcMetadataManagement
   ) throws SQLException {
     String catalog = firstNonBlank(parentPath.catalog(), context.supportContext().currentCatalog());
     if (allowSchemaChildren) {
-      List<String> schemas = context.dialect().visibleSchemas(loadSchemas(context, catalog), catalog, context.supportContext());
+      List<String> schemas = extractStringValues(
+          context.dialect().loadSchemas(
+              context.connection(),
+              context.metaData(),
+              context.supportContext(),
+              catalog,
+              null
+          ),
+          "TABLE_SCHEM"
+      );
       if (!schemas.isEmpty()) {
         return schemas.stream()
             .map(name -> namespaceNode(context, parentPath.path(), JdbcMetadataModels.NodeType.SCHEMA, name))
@@ -485,23 +506,28 @@ public class JdbcMetadataManagementServiceImpl implements JdbcMetadataManagement
       final String schema
   ) throws SQLException {
     List<JdbcMetadataModels.TreeNode> nodes = new ArrayList<>();
-    String metadataCatalog = context.dialect().metadataCatalog(catalog, context.supportContext());
-    String metadataSchema = context.dialect().metadataSchema(schema, context.supportContext());
-    try (ResultSet resultSet = context.metaData().getTables(
-        metadataCatalog,
-        metadataSchema,
+    JdbcDatabaseDialect.MetadataResult metadata = context.dialect().loadTables(
+        context.connection(),
+        context.metaData(),
+        context.supportContext(),
+        catalog,
+        exactMetadataPattern(context, schema),
         "%",
-        new String[]{"TABLE", "VIEW"}
-    )) {
-      while (resultSet.next()) {
-        String tableType = resultSet.getString("TABLE_TYPE");
-        JdbcMetadataModels.NodeType type = "VIEW".equalsIgnoreCase(tableType)
-            ? JdbcMetadataModels.NodeType.VIEW
-            : JdbcMetadataModels.NodeType.TABLE;
-        List<JdbcMetadataModels.PathSegment> path = append(parentPath, new JdbcMetadataModels.PathSegment(type, resultSet.getString("TABLE_NAME")));
+        List.of("TABLE", "VIEW")
+    );
+    for (List<Object> row : metadata.rows()) {
+      String tableName = stringValue(metadata, row, "TABLE_NAME");
+      if (tableName == null) {
+        continue;
+      }
+      String tableType = stringValue(metadata, row, "TABLE_TYPE");
+      JdbcMetadataModels.NodeType type = "VIEW".equalsIgnoreCase(tableType)
+          ? JdbcMetadataModels.NodeType.VIEW
+          : JdbcMetadataModels.NodeType.TABLE;
+      List<JdbcMetadataModels.PathSegment> path = append(parentPath, new JdbcMetadataModels.PathSegment(type, tableName));
         nodes.add(new JdbcMetadataModels.TreeNode(
             key(path),
-            resultSet.getString("TABLE_NAME"),
+            tableName,
             type,
             typeLabel(type),
             path,
@@ -510,9 +536,8 @@ public class JdbcMetadataManagementServiceImpl implements JdbcMetadataManagement
             null,
             null,
             null,
-            resultSet.getString("REMARKS")
+            stringValue(metadata, row, "REMARKS")
         ));
-      }
     }
     return nodes.stream().sorted(treeNodeComparator()).toList();
   }
@@ -571,66 +596,32 @@ public class JdbcMetadataManagementServiceImpl implements JdbcMetadataManagement
       final String tableName
   ) throws SQLException {
     List<JdbcMetadataModels.ColumnDefinition> columns = new ArrayList<>();
-    String metadataCatalog = context.dialect().metadataCatalog(catalog, context.supportContext());
-    String metadataSchema = context.dialect().metadataSchema(schema, context.supportContext());
-    try (ResultSet resultSet = context.metaData().getColumns(metadataCatalog, metadataSchema, tableName, "%")) {
-      while (resultSet.next()) {
-        columns.add(new JdbcMetadataModels.ColumnDefinition(
-            resultSet.getString("COLUMN_NAME"),
-            resultSet.getString("TYPE_NAME"),
-            getNullableInteger(resultSet, "COLUMN_SIZE"),
-            getNullableInteger(resultSet, "DECIMAL_DIGITS"),
-            toNullableBoolean(resultSet.getInt("NULLABLE"), resultSet.wasNull()),
-            resultSet.getString("COLUMN_DEF"),
-            parseYesNo(resultSet.getString("IS_AUTOINCREMENT")),
-            resultSet.getString("REMARKS")
-        ));
+    JdbcDatabaseDialect.MetadataResult metadata = context.dialect().loadColumns(
+        context.connection(),
+        context.metaData(),
+        context.supportContext(),
+        catalog,
+        exactMetadataPattern(context, schema),
+        exactMetadataPattern(context, tableName),
+        "%"
+    );
+    for (List<Object> row : metadata.rows()) {
+      String columnName = stringValue(metadata, row, "COLUMN_NAME");
+      if (columnName == null) {
+        continue;
       }
+      columns.add(new JdbcMetadataModels.ColumnDefinition(
+          columnName,
+          stringValue(metadata, row, "TYPE_NAME"),
+          integerValue(metadata, row, "COLUMN_SIZE"),
+          integerValue(metadata, row, "DECIMAL_DIGITS"),
+          nullableValue(metadata, row, "NULLABLE"),
+          stringValue(metadata, row, "COLUMN_DEF"),
+          parseYesNo(stringValue(metadata, row, "IS_AUTOINCREMENT")),
+          stringValue(metadata, row, "REMARKS")
+      ));
     }
     return columns;
-  }
-
-  private List<String> loadCatalogs(final DatabaseMetaData metaData) throws SQLException {
-    Set<String> catalogs = new LinkedHashSet<>();
-    try (ResultSet resultSet = metaData.getCatalogs()) {
-      while (resultSet.next()) {
-        String catalog = resultSet.getString("TABLE_CAT");
-        if (catalog != null && !catalog.isBlank()) {
-          catalogs.add(catalog);
-        }
-      }
-    } catch (SQLException ex) {
-      return List.of();
-    }
-    return List.copyOf(catalogs);
-  }
-
-  private List<String> loadSchemas(final RuntimeContext context, final String catalog) throws SQLException {
-    DatabaseMetaData metaData = context.metaData();
-    String metadataCatalog = context.dialect().metadataCatalog(catalog, context.supportContext());
-    Set<String> schemas = new LinkedHashSet<>();
-    try (ResultSet resultSet = metaData.getSchemas(metadataCatalog, null)) {
-      while (resultSet.next()) {
-        String schema = resultSet.getString("TABLE_SCHEM");
-        if (schema != null && !schema.isBlank()) {
-          schemas.add(schema);
-        }
-      }
-    } catch (SQLException ex) {
-      try (ResultSet resultSet = metaData.getSchemas()) {
-        while (resultSet.next()) {
-          String rowCatalog = resultSet.getString("TABLE_CATALOG");
-          String schema = resultSet.getString("TABLE_SCHEM");
-          if (schema == null || schema.isBlank()) {
-            continue;
-          }
-          if (metadataCatalog == null || metadataCatalog.isBlank() || metadataCatalog.equals(rowCatalog)) {
-            schemas.add(schema);
-          }
-        }
-      }
-    }
-    return List.copyOf(schemas);
   }
 
   private <T> T withContext(
@@ -930,9 +921,91 @@ public class JdbcMetadataManagementServiceImpl implements JdbcMetadataManagement
     return column.typeName() + "(" + column.size() + "," + column.scale() + ")";
   }
 
-  private static Integer getNullableInteger(final ResultSet resultSet, final String columnLabel) throws SQLException {
-    int value = resultSet.getInt(columnLabel);
-    return resultSet.wasNull() ? null : value;
+  private static String exactMetadataPattern(
+      final RuntimeContext context,
+      final String value
+  ) throws SQLException {
+    String normalized = trimToNull(value);
+    if (normalized == null || context == null || context.metaData() == null) {
+      return normalized;
+    }
+    String escape = trimToNull(context.metaData().getSearchStringEscape());
+    if (escape == null) {
+      return normalized;
+    }
+    return normalized
+        .replace(escape, escape + escape)
+        .replace("%", escape + "%")
+        .replace("_", escape + "_");
+  }
+
+  private static List<String> extractStringValues(
+      final JdbcDatabaseDialect.MetadataResult metadata,
+      final String columnName
+  ) {
+    int columnIndex = findColumnIndex(metadata, columnName);
+    if (columnIndex < 0 || metadata == null) {
+      return List.of();
+    }
+    return metadata.rows().stream()
+        .map(row -> columnIndex < row.size() ? trimToNull(Objects.toString(row.get(columnIndex), null)) : null)
+        .filter(Objects::nonNull)
+        .distinct()
+        .toList();
+  }
+
+  private static String stringValue(
+      final JdbcDatabaseDialect.MetadataResult metadata,
+      final List<Object> row,
+      final String columnName
+  ) {
+    int columnIndex = findColumnIndex(metadata, columnName);
+    return columnIndex >= 0 && row != null && columnIndex < row.size()
+        ? trimToNull(Objects.toString(row.get(columnIndex), null))
+        : null;
+  }
+
+  private static Integer integerValue(
+      final JdbcDatabaseDialect.MetadataResult metadata,
+      final List<Object> row,
+      final String columnName
+  ) {
+    int columnIndex = findColumnIndex(metadata, columnName);
+    if (columnIndex < 0 || row == null || columnIndex >= row.size()) {
+      return null;
+    }
+    Object value = row.get(columnIndex);
+    if (value instanceof Number number) {
+      return number.intValue();
+    }
+    String text = trimToNull(Objects.toString(value, null));
+    return text == null ? null : Integer.valueOf(text);
+  }
+
+  private static Boolean nullableValue(
+      final JdbcDatabaseDialect.MetadataResult metadata,
+      final List<Object> row,
+      final String columnName
+  ) {
+    Integer nullable = integerValue(metadata, row, columnName);
+    if (nullable == null) {
+      return null;
+    }
+    return nullable == DatabaseMetaData.columnNullable;
+  }
+
+  private static int findColumnIndex(
+      final JdbcDatabaseDialect.MetadataResult metadata,
+      final String columnName
+  ) {
+    List<JdbcDatabaseDialect.MetadataColumn> columns = metadata == null ? List.of() : metadata.columns();
+    for (int index = 0; index < columns.size(); index++) {
+      JdbcDatabaseDialect.MetadataColumn column = columns.get(index);
+      if (column != null && columnName.equalsIgnoreCase(column.name())) {
+        return index;
+      }
+    }
+    return -1;
   }
 
   private static Boolean parseYesNo(final String value) {
@@ -940,13 +1013,6 @@ public class JdbcMetadataManagementServiceImpl implements JdbcMetadataManagement
       return null;
     }
     return "YES".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value);
-  }
-
-  private static Boolean toNullableBoolean(final int nullable, final boolean wasNull) {
-    if (wasNull) {
-      return null;
-    }
-    return nullable == DatabaseMetaData.columnNullable;
   }
 
   private static Map<String, String> parseProperties(final String text) {

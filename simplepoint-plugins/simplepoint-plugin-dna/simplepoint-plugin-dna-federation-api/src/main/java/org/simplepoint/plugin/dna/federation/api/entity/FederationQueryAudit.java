@@ -25,13 +25,13 @@ import org.springframework.core.annotation.Order;
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "查询审计", description = "用于记录联邦查询执行情况")
-@Schema(title = "查询审计", description = "联邦查询执行摘要与结果规模审计记录")
+@Schema(title = "i18n:dna.federation.queryAudits.entity.title", description = "i18n:dna.federation.queryAudits.entity.description")
 public class FederationQueryAudit extends BaseEntityImpl<String> {
 
   @Order(0)
   @Schema(
-      title = "目录编码",
-      description = "本次查询命中的联邦目录编码",
+      title = "i18n:dna.federation.queryAudits.title.catalogCode",
+      description = "i18n:dna.federation.queryAudits.description.catalogCode",
       maxLength = 128,
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
@@ -45,8 +45,8 @@ public class FederationQueryAudit extends BaseEntityImpl<String> {
 
   @Order(1)
   @Schema(
-      title = "视图编码",
-      description = "本次查询命中的逻辑视图编码",
+      title = "i18n:dna.federation.queryAudits.title.viewCode",
+      description = "i18n:dna.federation.queryAudits.description.viewCode",
       maxLength = 128,
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
@@ -60,8 +60,8 @@ public class FederationQueryAudit extends BaseEntityImpl<String> {
 
   @Order(2)
   @Schema(
-      title = "执行状态",
-      description = "本次查询执行结果状态",
+      title = "i18n:dna.federation.queryAudits.title.status",
+      description = "i18n:dna.federation.queryAudits.description.status",
       maxLength = 32,
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
@@ -75,8 +75,8 @@ public class FederationQueryAudit extends BaseEntityImpl<String> {
 
   @Order(3)
   @Schema(
-      title = "执行时间",
-      description = "查询实际执行时间",
+      title = "i18n:dna.federation.queryAudits.title.executedAt",
+      description = "i18n:dna.federation.queryAudits.description.executedAt",
       type = "string",
       format = "date-time",
       accessMode = Schema.AccessMode.READ_ONLY,
@@ -90,8 +90,8 @@ public class FederationQueryAudit extends BaseEntityImpl<String> {
 
   @Order(4)
   @Schema(
-      title = "执行耗时(ms)",
-      description = "查询执行耗时毫秒数",
+      title = "i18n:dna.federation.queryAudits.title.executionTimeMs",
+      description = "i18n:dna.federation.queryAudits.description.executionTimeMs",
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -103,8 +103,8 @@ public class FederationQueryAudit extends BaseEntityImpl<String> {
 
   @Order(5)
   @Schema(
-      title = "结果行数",
-      description = "查询返回结果的总行数",
+      title = "i18n:dna.federation.queryAudits.title.resultRows",
+      description = "i18n:dna.federation.queryAudits.description.resultRows",
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -116,8 +116,8 @@ public class FederationQueryAudit extends BaseEntityImpl<String> {
 
   @Order(6)
   @Schema(
-      title = "执行人",
-      description = "提交本次查询的用户标识",
+      title = "i18n:dna.federation.queryAudits.title.executedBy",
+      description = "i18n:dna.federation.queryAudits.description.executedBy",
       maxLength = 128,
       accessMode = Schema.AccessMode.READ_ONLY
   )
@@ -126,8 +126,8 @@ public class FederationQueryAudit extends BaseEntityImpl<String> {
 
   @Order(7)
   @Schema(
-      title = "查询 SQL",
-      description = "本次联邦查询执行的 SQL 文本",
+      title = "i18n:dna.federation.queryAudits.title.queryText",
+      description = "i18n:dna.federation.queryAudits.description.queryText",
       maxLength = 12000,
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
@@ -142,8 +142,8 @@ public class FederationQueryAudit extends BaseEntityImpl<String> {
 
   @Order(8)
   @Schema(
-      title = "下推摘要",
-      description = "哪些谓词、投影或分页被下推到源库的摘要信息",
+      title = "i18n:dna.federation.queryAudits.title.pushdownSummary",
+      description = "i18n:dna.federation.queryAudits.description.pushdownSummary",
       maxLength = 4000,
       accessMode = Schema.AccessMode.READ_ONLY
   )
@@ -152,8 +152,8 @@ public class FederationQueryAudit extends BaseEntityImpl<String> {
 
   @Order(9)
   @Schema(
-      title = "错误信息",
-      description = "执行失败时记录的错误摘要",
+      title = "i18n:dna.federation.queryAudits.title.errorMessage",
+      description = "i18n:dna.federation.queryAudits.description.errorMessage",
       maxLength = 4000,
       accessMode = Schema.AccessMode.READ_ONLY
   )

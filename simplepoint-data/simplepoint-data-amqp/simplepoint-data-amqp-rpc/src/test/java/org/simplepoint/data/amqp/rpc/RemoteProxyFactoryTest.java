@@ -1,5 +1,6 @@
 package org.simplepoint.data.amqp.rpc;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -39,6 +40,9 @@ class RemoteProxyFactoryTest {
   private RabbitTemplate rabbitTemplate;
 
   @Mock
+  private RabbitTemplate auditRabbitTemplate;
+
+  @Mock
   private ConnectionFactory connectionFactory;
 
   private ArpcProperties properties;
@@ -55,15 +59,23 @@ class RemoteProxyFactoryTest {
     properties.setProviders(Map.of("sample", "common"));
     meterRegistry = new SimpleMeterRegistry();
     setStaticField("rabbitTemplate", rabbitTemplate);
+    setStaticField("auditRabbitTemplate", auditRabbitTemplate);
     setStaticField("properties", properties);
     setStaticField("meterRegistry", meterRegistry);
-    when(rabbitTemplate.getUUID()).thenReturn("corr-1");
+    lenient().when(rabbitTemplate.getUUID()).thenReturn("corr-1");
+    lenient().when(auditRabbitTemplate.getUUID()).thenReturn("corr-1");
     lenient().when(rabbitTemplate.getConnectionFactory()).thenReturn(connectionFactory);
+    lenient().when(auditRabbitTemplate.getConnectionFactory()).thenReturn(connectionFactory);
+    properties.setProviders(Map.of(
+        "sample", "common",
+        "auditing.login-log", "auditing"
+    ));
   }
 
   @AfterEach
   void tearDown() throws Exception {
     setStaticField("rabbitTemplate", null);
+    setStaticField("auditRabbitTemplate", null);
     setStaticField("properties", null);
     setStaticField("meterRegistry", null);
   }
@@ -255,6 +267,54 @@ class RemoteProxyFactoryTest {
   }
 
   @Test
+  void invokeShouldOnlyWarnForAuditVoidCallsWhenBrokerReturnsMessage() throws Throwable {
+    ReturnedMessage returnedMessage = new ReturnedMessage(
+        MessageBuilder.withBody(RemoteProxyFactory.toByteArray("pong")).build(),
+        312,
+        "NO_ROUTE",
+        properties.exchange(),
+        "simplepoint.arpc.auditing"
+    );
+    doAnswer(invocation -> {
+      throw new AmqpMessageReturnedException("returned", returnedMessage);
+    }).when(auditRabbitTemplate).send(any(), any(), any(Message.class), any(CorrelationData.class));
+    RemoteProxyFactory.RemoteInvocationHandler handler =
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "auditing.login-log"));
+    Method method = SampleApi.class.getMethod("fire");
+    Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
+
+    Object result = assertDoesNotThrow(() -> handler.invoke(proxy, method, null));
+
+    assertEquals(null, result);
+    verify(auditRabbitTemplate).send(eq(properties.exchange()), eq("simplepoint.arpc.auditing"),
+        any(Message.class), any(CorrelationData.class));
+  }
+
+  @Test
+  void invokeShouldStillThrowForNonAuditVoidCallsWhenBrokerReturnsMessage() throws Throwable {
+    ReturnedMessage returnedMessage = new ReturnedMessage(
+        MessageBuilder.withBody(RemoteProxyFactory.toByteArray("pong")).build(),
+        312,
+        "NO_ROUTE",
+        properties.exchange(),
+        "simplepoint.arpc.common"
+    );
+    doAnswer(invocation -> {
+      throw new AmqpMessageReturnedException("returned", returnedMessage);
+    }).when(rabbitTemplate).send(any(), any(), any(Message.class), any(CorrelationData.class));
+    RemoteProxyFactory.RemoteInvocationHandler handler =
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+    Method method = SampleApi.class.getMethod("fire");
+    Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
+
+    RemoteInvocationException exception = assertThrows(RemoteInvocationException.class,
+        () -> handler.invoke(proxy, method, null));
+
+    assertEquals("simplepoint.arpc.common", exception.getTarget());
+    assertEquals(AmqpMessageReturnedException.class.getName(), exception.getRemoteType());
+  }
+
+  @Test
   void invokeShouldNotBlockOnPublisherConfirmForRequestReplyCalls() throws Throwable {
     Message reply = MessageBuilder.withBody(RemoteProxyFactory.toByteArray("pong")).build();
     when(rabbitTemplate.sendAndReceive(any(), any(), any(Message.class), any(CorrelationData.class))).thenReturn(reply);
@@ -282,6 +342,34 @@ class RemoteProxyFactoryTest {
     assertEquals(null, result);
   }
 
+  @Test
+  void invokeShouldUseRemoteInterfaceNameForInheritedMethods() throws Throwable {
+    Message reply = MessageBuilder.withBody(RemoteProxyFactory.toByteArray("pong")).build();
+    when(rabbitTemplate.sendAndReceive(any(), any(), any(Message.class), any(CorrelationData.class))).thenReturn(reply);
+    RemoteProxyFactory.RemoteInvocationHandler handler =
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+    Method method = InheritedSampleApi.class.getMethod("ping");
+    Object proxy = Proxy.newProxyInstance(
+        getClass().getClassLoader(),
+        new Class[] {InheritedSampleApi.class},
+        handler
+    );
+
+    Object result = handler.invoke(proxy, method, null);
+
+    assertEquals("pong", result);
+    ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
+    verify(rabbitTemplate).sendAndReceive(eq(properties.exchange()), eq("simplepoint.arpc.common"),
+        captor.capture(), any(CorrelationData.class));
+    Message request = captor.getValue();
+    assertEquals(InheritedSampleApi.class.getName(),
+        request.getMessageProperties().getHeaders().get(RemoteProtocol.HEADER_INTERFACE_NAME));
+    assertEquals(
+        RemoteProtocol.signature(InheritedSampleApi.class.getName(), "ping", new String[0]),
+        request.getMessageProperties().getType()
+    );
+  }
+
   private void setStaticField(final String name, final Object value) throws Exception {
     Field field = RemoteProxyFactory.RemoteInvocationHandler.class.getDeclaredField(name);
     field.setAccessible(true);
@@ -292,5 +380,12 @@ class RemoteProxyFactoryTest {
     String ping();
 
     void fire();
+  }
+
+  interface ParentSampleApi {
+    String ping();
+  }
+
+  interface InheritedSampleApi extends ParentSampleApi {
   }
 }

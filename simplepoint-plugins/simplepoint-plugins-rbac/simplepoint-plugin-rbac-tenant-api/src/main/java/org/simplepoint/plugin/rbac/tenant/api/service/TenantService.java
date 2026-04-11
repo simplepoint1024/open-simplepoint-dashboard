@@ -3,6 +3,7 @@ package org.simplepoint.plugin.rbac.tenant.api.service;
 import java.util.Collection;
 import java.util.Set;
 import org.simplepoint.api.base.BaseService;
+import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Pageable;
  * This service will handle operations related to tenants, such as retrieving tenant information,
  * managing tenant data, and other related functionalities.
  */
+@AmqpRemoteClient(to = "saas.tenant")
 public interface TenantService extends BaseService<Tenant, String> {
 
   /**

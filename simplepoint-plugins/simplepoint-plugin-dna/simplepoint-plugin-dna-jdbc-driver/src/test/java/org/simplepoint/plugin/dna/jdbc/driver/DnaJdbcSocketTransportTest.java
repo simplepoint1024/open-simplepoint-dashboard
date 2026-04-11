@@ -56,6 +56,7 @@ class DnaJdbcSocketTransportTest {
                   ),
                   null,
                   null,
+                  null,
                   null
               );
               case "TABLE_TYPES" -> new DnaJdbcModels.SocketResponse(
@@ -67,9 +68,10 @@ class DnaJdbcSocketTransportTest {
                       List.of(List.of("TABLE"))
                   ),
                   null,
+                  null,
                   null
               );
-              case "CLOSE" -> new DnaJdbcModels.SocketResponse(true, null, null, null, null, null);
+              case "CLOSE" -> new DnaJdbcModels.SocketResponse(true, null, null, null, null, null, null);
               default -> throw new SQLException("unexpected action: " + request.action());
             };
             byte[] responsePayload = objectMapper.writeValueAsBytes(response);

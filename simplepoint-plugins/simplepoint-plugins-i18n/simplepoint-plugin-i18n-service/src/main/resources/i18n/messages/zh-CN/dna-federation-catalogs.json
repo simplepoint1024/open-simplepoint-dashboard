@@ -1,0 +1,16 @@
+{
+  "dna.federation.catalogs.entity.title": "联邦目录",
+  "dna.federation.catalogs.entity.description": "用于隔离不同联邦查询业务域的目录定义",
+  "dna.federation.catalogs.title.name": "目录名称",
+  "dna.federation.catalogs.description.name": "用于展示的联邦目录名称",
+  "dna.federation.catalogs.title.code": "目录编码",
+  "dna.federation.catalogs.description.code": "联邦目录的唯一业务编码",
+  "dna.federation.catalogs.title.catalogType": "目录类型",
+  "dna.federation.catalogs.description.catalogType": "目录类型：虚拟目录由平台维护，数据源目录按启用数据源自动生成",
+  "dna.federation.catalogs.title.enabled": "是否启用",
+  "dna.federation.catalogs.description.enabled": "是否允许该联邦目录参与查询规划",
+  "dna.federation.catalogs.title.description": "描述",
+  "dna.federation.catalogs.description.description": "联邦目录备注说明",
+  "dna.federation.catalogs.type.virtual": "虚拟目录",
+  "dna.federation.catalogs.type.dataSource": "数据源目录"
+}

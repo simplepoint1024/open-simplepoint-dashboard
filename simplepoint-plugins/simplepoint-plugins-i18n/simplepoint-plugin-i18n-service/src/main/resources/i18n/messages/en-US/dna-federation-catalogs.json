@@ -1,0 +1,16 @@
+{
+  "dna.federation.catalogs.entity.title": "Federation Catalog",
+  "dna.federation.catalogs.entity.description": "Catalog definition used to isolate different federation-query domains.",
+  "dna.federation.catalogs.title.name": "Catalog Name",
+  "dna.federation.catalogs.description.name": "Display name of the federation catalog",
+  "dna.federation.catalogs.title.code": "Catalog Code",
+  "dna.federation.catalogs.description.code": "Unique business code of the federation catalog",
+  "dna.federation.catalogs.title.catalogType": "Catalog Type",
+  "dna.federation.catalogs.description.catalogType": "Catalog type: virtual catalogs are managed by the platform, while datasource catalogs are generated from enabled datasources",
+  "dna.federation.catalogs.title.enabled": "Enabled",
+  "dna.federation.catalogs.description.enabled": "Whether the federation catalog can participate in query planning",
+  "dna.federation.catalogs.title.description": "Description",
+  "dna.federation.catalogs.description.description": "Federation catalog notes",
+  "dna.federation.catalogs.type.virtual": "Virtual Catalog",
+  "dna.federation.catalogs.type.dataSource": "Datasource Catalog"
+}

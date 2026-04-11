@@ -325,6 +325,24 @@ public class FederationJdbcSocketServer implements DisposableBean {
         driverService.flushCache(requiredSession.driverSession());
         yield new RequestOutcome(requiredSession, SocketResponse.ok());
       }
+      case "BATCH" -> {
+        List<SocketRequest> batchRequests = request.batch();
+        if (batchRequests == null || batchRequests.isEmpty()) {
+          yield new RequestOutcome(requiredSession, SocketResponse.batch(List.of()));
+        }
+        List<SocketResponse> batchResults = new java.util.ArrayList<>();
+        ConnectionSession currentSession = requiredSession;
+        for (SocketRequest subRequest : batchRequests) {
+          try {
+            RequestOutcome subOutcome = handleRequest(currentSession, subRequest);
+            currentSession = subOutcome.session();
+            batchResults.add(subOutcome.response());
+          } catch (Exception ex) {
+            batchResults.add(SocketResponse.error(rootMessage(ex)));
+          }
+        }
+        yield new RequestOutcome(currentSession, SocketResponse.batch(batchResults));
+      }
       default -> throw new IllegalArgumentException("不支持的 DNA JDBC Socket 操作: " + action);
     };
   }
@@ -449,7 +467,8 @@ public class FederationJdbcSocketServer implements DisposableBean {
       String sql,
       String defaultSchema,
       Boolean unique,
-      Boolean approximate
+      Boolean approximate,
+      List<SocketRequest> batch
   ) {
   }
 
@@ -459,31 +478,36 @@ public class FederationJdbcSocketServer implements DisposableBean {
       FederationJdbcDriverModels.PingResult pingResult,
       FederationJdbcDriverModels.TabularResult tabularResult,
       FederationQueryModels.SqlQueryResult queryResult,
-      FederationQueryModels.SqlUpdateResult updateResult
+      FederationQueryModels.SqlUpdateResult updateResult,
+      List<SocketResponse> batchResults
   ) {
 
     private static SocketResponse ok() {
-      return new SocketResponse(true, null, null, null, null, null);
+      return new SocketResponse(true, null, null, null, null, null, null);
     }
 
     private static SocketResponse error(final String errorMessage) {
-      return new SocketResponse(false, errorMessage, null, null, null, null);
+      return new SocketResponse(false, errorMessage, null, null, null, null, null);
     }
 
     private static SocketResponse ping(final FederationJdbcDriverModels.PingResult pingResult) {
-      return new SocketResponse(true, null, pingResult, null, null, null);
+      return new SocketResponse(true, null, pingResult, null, null, null, null);
     }
 
     private static SocketResponse tabular(final FederationJdbcDriverModels.TabularResult tabularResult) {
-      return new SocketResponse(true, null, null, tabularResult, null, null);
+      return new SocketResponse(true, null, null, tabularResult, null, null, null);
     }
 
     private static SocketResponse query(final FederationQueryModels.SqlQueryResult queryResult) {
-      return new SocketResponse(true, null, null, null, queryResult, null);
+      return new SocketResponse(true, null, null, null, queryResult, null, null);
     }
 
     private static SocketResponse update(final FederationQueryModels.SqlUpdateResult updateResult) {
-      return new SocketResponse(true, null, null, null, null, updateResult);
+      return new SocketResponse(true, null, null, null, null, updateResult, null);
+    }
+
+    private static SocketResponse batch(final List<SocketResponse> batchResults) {
+      return new SocketResponse(true, null, null, null, null, null, batchResults);
     }
   }
 }

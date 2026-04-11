@@ -12,7 +12,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.Nullable;
@@ -34,14 +33,15 @@ final class RemoteMetrics {
   }
 
   static void recordClient(@Nullable final MeterRegistry registry, final String target,
-                           final Method method, final String outcome, final long durationNanos) {
+                           final String interfaceName, final String methodName,
+                           final String outcome, final long durationNanos) {
     if (registry == null) {
       return;
     }
     List<Tag> tags = List.of(
         Tag.of("target", valueOrUnknown(target)),
-        Tag.of("interface", method.getDeclaringClass().getName()),
-        Tag.of("method", method.getName()),
+        Tag.of("interface", valueOrUnknown(interfaceName)),
+        Tag.of("method", valueOrUnknown(methodName)),
         Tag.of("outcome", valueOrUnknown(outcome))
     );
     Counter.builder(CLIENT_REQUESTS).tags(tags).register(registry).increment();

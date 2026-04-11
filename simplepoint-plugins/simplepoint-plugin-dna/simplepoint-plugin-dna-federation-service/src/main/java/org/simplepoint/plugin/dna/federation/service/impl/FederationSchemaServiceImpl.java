@@ -14,10 +14,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.plugin.dna.federation.api.constants.FederationCatalogTypes;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationCatalog;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationSchema;
-import org.simplepoint.plugin.dna.federation.api.repository.FederationCatalogRepository;
 import org.simplepoint.plugin.dna.federation.api.repository.FederationSchemaRepository;
+import org.simplepoint.plugin.dna.federation.api.service.FederationCatalogService;
 import org.simplepoint.plugin.dna.federation.api.service.FederationSchemaService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,7 +34,7 @@ public class FederationSchemaServiceImpl
 
   private final FederationSchemaRepository repository;
 
-  private final FederationCatalogRepository catalogRepository;
+  private final FederationCatalogService catalogService;
 
   /**
    * Creates a federation schema service implementation.
@@ -45,11 +46,11 @@ public class FederationSchemaServiceImpl
   public FederationSchemaServiceImpl(
       final FederationSchemaRepository repository,
       final DetailsProviderService detailsProviderService,
-      final FederationCatalogRepository catalogRepository
+      final FederationCatalogService catalogService
   ) {
     super(repository, detailsProviderService);
     this.repository = repository;
-    this.catalogRepository = catalogRepository;
+    this.catalogService = catalogService;
   }
 
   /** {@inheritDoc} */
@@ -101,8 +102,7 @@ public class FederationSchemaServiceImpl
       entity.setEnabled(current.getEnabled());
     }
     FederationSchema updated = (FederationSchema) super.modifyById(entity);
-    FederationCatalog catalog = catalogRepository.findActiveById(updated.getCatalogId())
-        .orElseThrow(() -> new IllegalArgumentException("联邦目录不存在: " + updated.getCatalogId()));
+    FederationCatalog catalog = requireVirtualCatalog(updated.getCatalogId());
     decorate(updated, catalog);
     return updated;
   }
@@ -120,16 +120,14 @@ public class FederationSchemaServiceImpl
         .ifPresent(existing -> {
           throw new IllegalArgumentException("逻辑 Schema 编码已存在: " + entity.getCode());
         });
-    FederationCatalog catalog = catalogRepository.findActiveById(entity.getCatalogId())
-        .orElseThrow(() -> new IllegalArgumentException("联邦目录不存在: " + entity.getCatalogId()));
-    return catalog;
+    return requireVirtualCatalog(entity.getCatalogId());
   }
 
   private FederationSchema decorate(final FederationSchema item) {
     if (item == null) {
       return null;
     }
-    catalogRepository.findActiveById(item.getCatalogId()).ifPresentOrElse(catalog -> decorate(item, catalog), () -> {
+    catalogService.findActiveById(item.getCatalogId()).ifPresentOrElse(catalog -> decorate(item, catalog), () -> {
       item.setCatalogCode(null);
       item.setCatalogName(null);
     });
@@ -149,7 +147,7 @@ public class FederationSchemaServiceImpl
         .map(FederationSchema::getCatalogId)
         .filter(Objects::nonNull)
         .collect(Collectors.toSet());
-    Map<String, FederationCatalog> catalogsById = catalogRepository.findAllByIds(catalogIds).stream()
+    Map<String, FederationCatalog> catalogsById = catalogService.findAllActiveByIds(catalogIds).stream()
         .collect(Collectors.toMap(FederationCatalog::getId, catalog -> catalog, (left, right) -> left));
     items.forEach(item -> {
       FederationCatalog catalog = catalogsById.get(item.getCatalogId());
@@ -160,5 +158,14 @@ public class FederationSchemaServiceImpl
       item.setCatalogCode(null);
       item.setCatalogName(null);
     });
+  }
+
+  private FederationCatalog requireVirtualCatalog(final String catalogId) {
+    FederationCatalog catalog = catalogService.findActiveById(catalogId)
+        .orElseThrow(() -> new IllegalArgumentException("联邦目录不存在: " + catalogId));
+    if (!FederationCatalogTypes.isVirtual(catalog.getCatalogType())) {
+      throw new IllegalArgumentException("仅虚拟目录支持创建逻辑 Schema");
+    }
+    return catalog;
   }
 }

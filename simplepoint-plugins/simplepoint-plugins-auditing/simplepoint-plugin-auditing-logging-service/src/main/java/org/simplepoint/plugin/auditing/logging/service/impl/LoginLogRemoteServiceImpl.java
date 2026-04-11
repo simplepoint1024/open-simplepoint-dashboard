@@ -14,6 +14,7 @@ import org.simplepoint.plugin.auditing.logging.api.entity.LoginLog;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.LoginLogRecordCommand;
 import org.simplepoint.plugin.auditing.logging.api.service.LoginLogRemoteService;
 import org.simplepoint.plugin.auditing.logging.api.service.LoginLogService;
+import org.springframework.context.annotation.Primary;
 
 /**
  * Remote provider for login log recording.

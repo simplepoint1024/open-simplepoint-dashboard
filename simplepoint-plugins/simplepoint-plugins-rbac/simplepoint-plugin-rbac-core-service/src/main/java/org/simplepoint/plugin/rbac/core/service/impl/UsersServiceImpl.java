@@ -8,19 +8,12 @@
 
 package org.simplepoint.plugin.rbac.core.service.impl;
 
-import java.time.Instant;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChangeLogRecordCommand;
 import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
@@ -40,6 +33,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
+
 /**
  * Service implementation class for managing User entities
  * in the RBAC (Role-Based Access Control) system.
@@ -48,7 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
  * authentication-related logic.
  */
 @Slf4j
-@Service
+@AmqpRemoteService
 public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, String>
         implements UsersService {
 
@@ -76,8 +73,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
             final UserRepository usersRepository,
             final DetailsProviderService detailsProviderService,
             final UserRoleRelevanceRepository userRoleRelevanceRepository,
-            @Autowired(required = false)
-            final TenantRepository tenantRepository,
+            @Autowired(required = false) final TenantRepository tenantRepository,
             final RoleRepository roleRepository,
             final PermissionChangeLogRemoteService permissionChangeLogRemoteService
     ) {

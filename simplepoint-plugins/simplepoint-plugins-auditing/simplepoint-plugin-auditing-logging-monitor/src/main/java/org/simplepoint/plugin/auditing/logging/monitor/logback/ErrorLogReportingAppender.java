@@ -10,21 +10,22 @@ package org.simplepoint.plugin.auditing.logging.monitor.logback;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.AppenderBase;
+import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.ErrorLogRecordCommand;
 import org.simplepoint.plugin.auditing.logging.api.service.ErrorLogRemoteService;
 import org.simplepoint.plugin.auditing.logging.monitor.support.ErrorLogCommandFactory;
 
-/**
- * Logback appender that reports warning and error log events to the auditing service.
- */
-public class ErrorLogReportingAppender extends AppenderBase<ILoggingEvent> {
+ /**
+  * Logback appender that reports warning and error log events to the auditing service.
+  */
+public class ErrorLogReportingAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
 
   private static final ThreadLocal<Boolean> REPORTING = ThreadLocal.withInitial(() -> false);
   private static final String MONITOR_PACKAGE_PREFIX = "org.simplepoint.plugin.auditing.logging.monitor";
 
   private final ErrorLogRemoteService errorLogRemoteService;
   private final ErrorLogCommandFactory commandFactory;
+  private volatile boolean reportingEnabled;
 
   /**
    * Creates the appender with the remote service and command factory it delegates to.
@@ -42,7 +43,11 @@ public class ErrorLogReportingAppender extends AppenderBase<ILoggingEvent> {
 
   @Override
   protected void append(final ILoggingEvent eventObject) {
-    if (eventObject == null || REPORTING.get() || !shouldCapture(eventObject) || shouldIgnore(eventObject)) {
+    if (eventObject == null
+        || !reportingEnabled
+        || REPORTING.get()
+        || !shouldCapture(eventObject)
+        || shouldIgnore(eventObject)) {
       return;
     }
     try {
@@ -62,6 +67,14 @@ public class ErrorLogReportingAppender extends AppenderBase<ILoggingEvent> {
   boolean shouldCapture(final ILoggingEvent eventObject) {
     return eventObject.getThrowableProxy() != null
         || (eventObject.getLevel() != null && eventObject.getLevel().levelInt >= Level.WARN_INT);
+  }
+
+  public void enableReporting() {
+    this.reportingEnabled = true;
+  }
+
+  public void disableReporting() {
+    this.reportingEnabled = false;
   }
 
   private boolean shouldIgnore(final ILoggingEvent eventObject) {

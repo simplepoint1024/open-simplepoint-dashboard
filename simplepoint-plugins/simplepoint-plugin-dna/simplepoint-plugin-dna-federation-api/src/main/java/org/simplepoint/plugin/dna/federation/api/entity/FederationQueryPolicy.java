@@ -61,18 +61,18 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Tag(name = "查询策略", description = "用于管理联邦查询策略")
-@Schema(title = "查询策略", description = "用于限制联邦 SQL 控制台和查询执行边界的策略定义")
+@Schema(title = "i18n:dna.federation.queryPolicies.entity.title", description = "i18n:dna.federation.queryPolicies.entity.description")
 public class FederationQueryPolicy extends BaseEntityImpl<String> {
 
   @Order(0)
-  @Schema(title = "联邦目录", description = "所属联邦目录 ID", maxLength = 64)
+  @Schema(title = "i18n:dna.federation.queryPolicies.title.catalogId", description = "i18n:dna.federation.queryPolicies.description.catalogId", maxLength = 64)
   @Column(length = 64, nullable = false)
   private String catalogId;
 
   @Transient
   @Schema(
-      title = "目录名称",
-      description = "所属联邦目录名称",
+      title = "i18n:dna.federation.queryPolicies.title.catalogName",
+      description = "i18n:dna.federation.queryPolicies.description.catalogName",
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -83,13 +83,13 @@ public class FederationQueryPolicy extends BaseEntityImpl<String> {
   private String catalogName;
 
   @Transient
-  @Schema(title = "目录编码", description = "所属联邦目录编码", accessMode = Schema.AccessMode.READ_ONLY)
+  @Schema(title = "i18n:dna.federation.queryPolicies.title.catalogCode", description = "i18n:dna.federation.queryPolicies.description.catalogCode", accessMode = Schema.AccessMode.READ_ONLY)
   private String catalogCode;
 
   @Order(1)
   @Schema(
-      title = "策略名称",
-      description = "用于展示的查询策略名称",
+      title = "i18n:dna.federation.queryPolicies.title.name",
+      description = "i18n:dna.federation.queryPolicies.description.name",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -103,8 +103,8 @@ public class FederationQueryPolicy extends BaseEntityImpl<String> {
 
   @Order(2)
   @Schema(
-      title = "策略编码",
-      description = "查询策略唯一业务编码",
+      title = "i18n:dna.federation.queryPolicies.title.code",
+      description = "i18n:dna.federation.queryPolicies.description.code",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -118,8 +118,8 @@ public class FederationQueryPolicy extends BaseEntityImpl<String> {
 
   @Order(3)
   @Schema(
-      title = "允许 SQL 控制台",
-      description = "是否允许该目录直接执行自由 SQL",
+      title = "i18n:dna.federation.queryPolicies.title.allowSqlConsole",
+      description = "i18n:dna.federation.queryPolicies.description.allowSqlConsole",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true")
@@ -130,8 +130,8 @@ public class FederationQueryPolicy extends BaseEntityImpl<String> {
 
   @Order(4)
   @Schema(
-      title = "允许跨源 Join",
-      description = "是否允许跨不同物理数据源执行联邦 Join",
+      title = "i18n:dna.federation.queryPolicies.title.allowCrossSourceJoin",
+      description = "i18n:dna.federation.queryPolicies.description.allowCrossSourceJoin",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true")
@@ -142,8 +142,8 @@ public class FederationQueryPolicy extends BaseEntityImpl<String> {
 
   @Order(5)
   @Schema(
-      title = "最大返回行数",
-      description = "单次查询允许返回的最大结果行数",
+      title = "i18n:dna.federation.queryPolicies.title.maxRows",
+      description = "i18n:dna.federation.queryPolicies.description.maxRows",
       minimum = "1",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -155,8 +155,8 @@ public class FederationQueryPolicy extends BaseEntityImpl<String> {
 
   @Order(6)
   @Schema(
-      title = "超时毫秒数",
-      description = "单次查询允许执行的最大时长",
+      title = "i18n:dna.federation.queryPolicies.title.timeoutMs",
+      description = "i18n:dna.federation.queryPolicies.description.timeoutMs",
       minimum = "1",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -168,8 +168,8 @@ public class FederationQueryPolicy extends BaseEntityImpl<String> {
 
   @Order(7)
   @Schema(
-      title = "是否启用",
-      description = "是否允许该策略参与联邦查询治理",
+      title = "i18n:dna.federation.queryPolicies.title.enabled",
+      description = "i18n:dna.federation.queryPolicies.description.enabled",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true")
@@ -179,7 +179,7 @@ public class FederationQueryPolicy extends BaseEntityImpl<String> {
   private Boolean enabled;
 
   @Order(8)
-  @Schema(title = "描述", description = "查询策略备注说明", maxLength = 512)
+  @Schema(title = "i18n:dna.federation.queryPolicies.title.description", description = "i18n:dna.federation.queryPolicies.description.description", maxLength = 512)
   @Column(length = 512)
   private String description;
 }

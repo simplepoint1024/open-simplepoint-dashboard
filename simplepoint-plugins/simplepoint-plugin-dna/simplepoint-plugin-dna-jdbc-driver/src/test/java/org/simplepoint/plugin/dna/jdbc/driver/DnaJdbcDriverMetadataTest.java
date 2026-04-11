@@ -57,6 +57,7 @@ class DnaJdbcDriverMetadataTest {
                   ),
                   null,
                   null,
+                  null,
                   null
               );
               case "TABLES" -> new DnaJdbcModels.SocketResponse(
@@ -73,9 +74,10 @@ class DnaJdbcDriverMetadataTest {
                       List.of(List.of("PG", "reporting", "orders", "TABLE"))
                   ),
                   null,
+                  null,
                   null
               );
-              case "CLOSE" -> new DnaJdbcModels.SocketResponse(true, null, null, null, null, null);
+              case "CLOSE" -> new DnaJdbcModels.SocketResponse(true, null, null, null, null, null, null);
               default -> throw new IllegalStateException("unexpected action: " + request.action());
             };
             byte[] responsePayload = objectMapper.writeValueAsBytes(response);

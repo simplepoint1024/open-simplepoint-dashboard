@@ -1,0 +1,143 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: simplepoint
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: any
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: any
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: simplepoint
+      RABBITMQ_DEFAULT_PASS: simplepoint
+    ports:
+      - target: 15672
+        published: 15672
+        protocol: tcp
+        mode: ingress
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: any
+
+  consul:
+    image: hashicorp/consul:1.20
+    command: ["agent", "-dev", "-client=0.0.0.0", "-ui"]
+    ports:
+      - target: 8500
+        published: 8500
+        protocol: tcp
+        mode: ingress
+      - target: 8600
+        published: 8600
+        protocol: tcp
+        mode: ingress
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: any
+
+  vault:
+    image: hashicorp/vault:1.19
+    command: ["server", "-dev", "-dev-root-token-id=root", "-dev-listen-address=0.0.0.0:8200"]
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: root
+      VAULT_ADDR: http://0.0.0.0:8200
+    ports:
+      - target: 8200
+        published: 8200
+        protocol: tcp
+        mode: ingress
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: any
+
+  bootstrap:
+    image: ${SIMPLEPOINT_BOOTSTRAP_IMAGE:-simplepoint/bootstrap:swarm}
+    environment:
+      CONSUL_ADDR: http://consul:8500
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: root
+      PUBLIC_HOST: ${SIMPLEPOINT_PUBLIC_HOST:?Set SIMPLEPOINT_PUBLIC_HOST before deploying the stack}
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: none
+
+  authorization:
+    image: ${SIMPLEPOINT_AUTH_IMAGE:-simplepoint/authorization:swarm}
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+    ports:
+      - target: 9000
+        published: 9000
+        protocol: tcp
+        mode: ingress
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: any
+
+  common:
+    image: ${SIMPLEPOINT_COMMON_IMAGE:-simplepoint/common:swarm}
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: any
+
+  host:
+    image: ${SIMPLEPOINT_HOST_IMAGE:-simplepoint/host:swarm}
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+    ports:
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: ingress
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: any
+
+networks:
+  simplepoint:
+    driver: overlay
+    attachable: true
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:

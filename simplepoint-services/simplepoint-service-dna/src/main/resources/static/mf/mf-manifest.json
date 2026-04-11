@@ -1,0 +1,628 @@
+{
+  "id": "dna",
+  "name": "dna",
+  "metaData": {
+    "name": "dna",
+    "type": "app",
+    "buildInfo": {
+      "buildVersion": "1.0.0",
+      "buildName": "@simplepoint/dna"
+    },
+    "remoteEntry": {
+      "name": "dna.js",
+      "path": "",
+      "type": "global"
+    },
+    "types": {
+      "path": "",
+      "name": "",
+      "zip": "@mf-types.zip",
+      "api": "@mf-types.d.ts"
+    },
+    "globalName": "dna",
+    "pluginVersion": "0.13.1",
+    "prefetchInterface": false,
+    "publicPath": "/dna/mf/"
+  },
+  "shared": [
+    {
+      "id": "dna:react",
+      "name": "react",
+      "version": "19.0.0",
+      "singleton": true,
+      "requiredVersion": "^19.0.0",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "dna:antd",
+      "name": "antd",
+      "version": "5.28.1",
+      "singleton": true,
+      "requiredVersion": "^5.29.1",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "dna:react-router-dom",
+      "name": "react-router-dom",
+      "version": "7.9.5",
+      "singleton": true,
+      "requiredVersion": "^7.9.6",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "dna:@ant-design/icons",
+      "name": "@ant-design/icons",
+      "version": "^6.0.0",
+      "singleton": true,
+      "requiredVersion": "^6.0.0",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "dna:@tanstack/react-query",
+      "name": "@tanstack/react-query",
+      "version": "^5.90.7",
+      "singleton": true,
+      "requiredVersion": "^5.90.11",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "dna:react-router",
+      "name": "react-router",
+      "version": "7.9.6",
+      "singleton": true,
+      "requiredVersion": "^7.9.6",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "dna:@rjsf/antd",
+      "name": "@rjsf/antd",
+      "version": "^5.24.13",
+      "singleton": true,
+      "requiredVersion": "^5.24.13",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "dna:@rjsf/validator-ajv8",
+      "name": "@rjsf/validator-ajv8",
+      "version": "^5.24.13",
+      "singleton": true,
+      "requiredVersion": "^5.24.13",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "dna:react-dom",
+      "name": "react-dom",
+      "version": "19.0.0",
+      "singleton": true,
+      "requiredVersion": "^19.0.0",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "dna:@rjsf/core",
+      "name": "@rjsf/core",
+      "version": "^5.24.x",
+      "singleton": true,
+      "requiredVersion": "^5.24.13",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "dna:@rjsf/utils",
+      "name": "@rjsf/utils",
+      "version": "^5.24.x",
+      "singleton": true,
+      "requiredVersion": "^5.24.13",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    },
+    {
+      "id": "dna:dayjs",
+      "name": "dayjs",
+      "version": "1.8.0",
+      "singleton": true,
+      "requiredVersion": "^1.11.19",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      }
+    }
+  ],
+  "remotes": [],
+  "exposes": [
+    {
+      "id": "dna:platform/Dashboard",
+      "name": "platform/Dashboard",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__Dashboard.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/Dashboard"
+    },
+    {
+      "id": "dna:platform/DataAsset",
+      "name": "platform/DataAsset",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__DataAsset.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__DataAsset.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/DataAsset"
+    },
+    {
+      "id": "dna:platform/DataLineage",
+      "name": "platform/DataLineage",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__DataLineage.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__DataLineage.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/DataLineage"
+    },
+    {
+      "id": "dna:platform/DataQuality",
+      "name": "platform/DataQuality",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__DataQuality.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__DataQuality.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/DataQuality"
+    },
+    {
+      "id": "dna:platform/FederationCatalog",
+      "name": "platform/FederationCatalog",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__FederationCatalog.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__FederationCatalog.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/FederationCatalog"
+    },
+    {
+      "id": "dna:platform/FederationJdbcUser",
+      "name": "platform/FederationJdbcUser",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__FederationJdbcUser.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/FederationJdbcUser"
+    },
+    {
+      "id": "dna:platform/FederationJdbcUser/config/dataSource",
+      "name": "platform/FederationJdbcUser/config/dataSource",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__FederationJdbcUser__config__dataSource.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/FederationJdbcUser/config/dataSource"
+    },
+    {
+      "id": "dna:platform/FederationSchema",
+      "name": "platform/FederationSchema",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__FederationSchema.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__FederationSchema.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/FederationSchema"
+    },
+    {
+      "id": "dna:platform/FederationView",
+      "name": "platform/FederationView",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__FederationView.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__FederationView.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/FederationView"
+    },
+    {
+      "id": "dna:platform/HealthMonitor",
+      "name": "platform/HealthMonitor",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__HealthMonitor.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/HealthMonitor"
+    },
+    {
+      "id": "dna:platform/JdbcDataSource",
+      "name": "platform/JdbcDataSource",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__JdbcDataSource.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__JdbcDataSource.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/JdbcDataSource"
+    },
+    {
+      "id": "dna:platform/JdbcDialect",
+      "name": "platform/JdbcDialect",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__JdbcDialect.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/JdbcDialect"
+    },
+    {
+      "id": "dna:platform/JdbcDriver",
+      "name": "platform/JdbcDriver",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__JdbcDriver.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__JdbcDriver.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/JdbcDriver"
+    },
+    {
+      "id": "dna:platform/JdbcMetadata",
+      "name": "platform/JdbcMetadata",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_platform__JdbcMetadata.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/JdbcMetadata"
+    },
+    {
+      "id": "dna:platform/QueryAudit",
+      "name": "platform/QueryAudit",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__QueryAudit.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__QueryAudit.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/QueryAudit"
+    },
+    {
+      "id": "dna:platform/QueryPolicy",
+      "name": "platform/QueryPolicy",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__QueryPolicy.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__QueryPolicy.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/QueryPolicy"
+    },
+    {
+      "id": "dna:platform/QueryTemplate",
+      "name": "platform/QueryTemplate",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "223.js",
+            "__federation_expose_platform__QueryTemplate.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_platform__QueryTemplate.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./platform/QueryTemplate"
+    },
+    {
+      "id": "dna:platform/SqlConsole",
+      "name": "platform/SqlConsole",
+      "assets": {
+        "js": {
+          "sync": [
+            "__federation_expose_platform__SqlConsole.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./platform/SqlConsole"
+    }
+  ]
+}

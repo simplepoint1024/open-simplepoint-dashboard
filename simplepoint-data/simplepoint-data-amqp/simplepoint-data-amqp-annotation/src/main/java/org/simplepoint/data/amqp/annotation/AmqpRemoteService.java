@@ -16,6 +16,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 /**
  * A custom annotation to mark a class as an AMQP
@@ -25,8 +26,7 @@ import org.springframework.stereotype.Component;
  * This annotation is inherited by subclasses and retained
  * at runtime for reflection-based processing.
  */
-@Primary
-@Component
+@Service
 @Inherited
 @Documented
 @Target(ElementType.TYPE)

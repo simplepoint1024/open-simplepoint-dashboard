@@ -7,22 +7,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.PrintWriter;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.SQLFeatureNotSupportedException;
-import java.sql.Types;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 import org.h2.jdbcx.JdbcDataSource;
-import org.h2.tools.SimpleResultSet;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.junit.jupiter.api.Test;
@@ -41,9 +37,6 @@ import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionServi
 import org.simplepoint.plugin.dna.core.api.service.JdbcDialectManagementService;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDriverDefinitionService;
 import org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect;
-import org.simplepoint.plugin.dna.federation.api.entity.FederationCatalog;
-import org.simplepoint.plugin.dna.federation.api.repository.FederationSchemaRepository;
-import org.simplepoint.plugin.dna.federation.api.repository.FederationViewRepository;
 
 @ExtendWith(MockitoExtension.class)
 class FederationCalciteCatalogAssemblerTest {
@@ -56,12 +49,6 @@ class FederationCalciteCatalogAssemblerTest {
 
   @Mock
   private JdbcDialectManagementService dialectManagementService;
-
-  @Mock
-  private FederationSchemaRepository schemaRepository;
-
-  @Mock
-  private FederationViewRepository viewRepository;
 
   @Test
   void assembleShouldExposeNestedPhysicalSchemas() throws Exception {
@@ -82,7 +69,7 @@ class FederationCalciteCatalogAssemblerTest {
 
     JdbcDataSourceDefinition definition = new JdbcDataSourceDefinition();
     definition.setId("ds-1");
-    definition.setCode("PG");
+    definition.setCode("ds1");
     definition.setDriverId("driver-1");
 
     JdbcDriverDefinition driver = new JdbcDriverDefinition();
@@ -96,41 +83,34 @@ class FederationCalciteCatalogAssemblerTest {
         .filter(schema -> schema != null && !"INFORMATION_SCHEMA".equalsIgnoreCase(schema))
         .toList());
 
-    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(definition));
     when(dataSourceService.requireSimpleDataSource("ds-1")).thenReturn(new SimpleDataSource(dataSource));
     when(driverService.findActiveById("driver-1")).thenReturn(Optional.of(driver));
     when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
-    when(schemaRepository.findAllActiveByCatalogId("catalog-1")).thenReturn(List.of());
 
     FederationCalciteCatalogAssembler assembler = new FederationCalciteCatalogAssembler(
         dataSourceService,
         driverService,
-        dialectManagementService,
-        schemaRepository,
-        viewRepository
+        dialectManagementService
     );
-    FederationCatalog catalog = new FederationCatalog();
-    catalog.setId("catalog-1");
-    catalog.setCode("demo");
 
     CalciteQueryEngine engine = new DefaultCalciteQueryEngine();
-    try (FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly = assembler.assemble(catalog)) {
+    try (FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly = assembler.assemble("ds1", List.of(definition))) {
       CalciteQueryResult result = engine.execute(
           new CalciteQueryRequest(
               """
                   select r.id, t.name
-                  from PG.root_table r
-                  join PG.tenant_a.tenants t on r.tenant_id = t.id
+                  from ds1.root_table r
+                  join ds1.tenant_a.tenants t on r.tenant_id = t.id
                   order by r.id
                   """,
-              "demo",
+              "ds1",
               100,
               5_000
           ),
           assembly.schemaConfigurer()
       );
 
-      assertEquals(List.of("PG"), assembly.physicalDataSourceCodes());
+      assertEquals(List.of("ds1"), assembly.physicalDataSourceCodes());
       assertEquals(1, result.returnedRows());
       assertEquals("Alice", result.rows().get(0).get(1));
     }
@@ -158,7 +138,7 @@ class FederationCalciteCatalogAssemblerTest {
 
     JdbcDataSourceDefinition definition = new JdbcDataSourceDefinition();
     definition.setId("ds-1");
-    definition.setCode("PG");
+    definition.setCode("ds1");
     definition.setDriverId("driver-1");
 
     JdbcDriverDefinition driver = new JdbcDriverDefinition();
@@ -167,7 +147,6 @@ class FederationCalciteCatalogAssemblerTest {
     driver.setDriverClassName("org.h2.Driver");
     JdbcDatabaseDialect dialect = postgresLikeDialect();
 
-    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(definition));
     when(dataSourceService.requireSimpleDataSource("ds-1")).thenReturn(new SimpleDataSource(
         wrapDataSource(mainDataSource, "main_db", List.of("main_db", "audit_db"))
     ));
@@ -176,100 +155,106 @@ class FederationCalciteCatalogAssemblerTest {
     );
     when(driverService.findActiveById("driver-1")).thenReturn(Optional.of(driver));
     when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
-    when(schemaRepository.findAllActiveByCatalogId("catalog-1")).thenReturn(List.of());
 
     FederationCalciteCatalogAssembler assembler = new FederationCalciteCatalogAssembler(
         dataSourceService,
         driverService,
-        dialectManagementService,
-        schemaRepository,
-        viewRepository
+        dialectManagementService
     );
-    FederationCatalog catalog = new FederationCatalog();
-    catalog.setId("catalog-1");
-    catalog.setCode("demo");
 
     CalciteQueryEngine engine = new DefaultCalciteQueryEngine();
-    try (FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly = assembler.assemble(catalog)) {
+    try (FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly = assembler.assemble("ds1", List.of(definition))) {
       CalciteQueryResult result = engine.execute(
           new CalciteQueryRequest(
               """
                   select t.id, t.name
-                  from PG.audit_db.tenant_a.tenants t
+                  from ds1.audit_db.tenant_a.tenants t
                   order by t.id
                   """,
-              "demo",
+              "ds1",
               100,
               5_000
           ),
           assembly.schemaConfigurer()
       );
 
-      assertEquals(List.of("PG"), assembly.physicalDataSourceCodes());
+      assertEquals(List.of("ds1"), assembly.physicalDataSourceCodes());
       assertEquals(1, result.returnedRows());
       assertEquals("Alice", result.rows().get(0).get(1));
+    }
+
+    try (FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly = assembler.assemble("ds1", List.of(definition))) {
+      SchemaPlus rootSchema = Frameworks.createRootSchema(true);
+      assembly.schemaConfigurer().configure(rootSchema);
+      SchemaPlus dataSourceSchema = rootSchema.getSubSchema("ds1");
+      assertNotNull(dataSourceSchema);
+      assertNotNull(dataSourceSchema.getSubSchema("main_db"));
+      assertNotNull(dataSourceSchema.getSubSchema("audit_db"));
     }
   }
 
   @Test
-  void assembleShouldExposeCurrentCatalogAsAliasNamespace() throws Exception {
-    JdbcDataSource mainDataSource = createDataSource();
-    initialize(mainDataSource, """
-        create schema if not exists tenant_a;
-        create table tenant_a.root_table (
+  void sanitizeCalciteConventionNameShouldHandleChineseCharacters() {
+    assertEquals("S_u6D4B_u8BD5", FederationCalciteCatalogAssembler.sanitizeCalciteConventionName("测试"));
+    assertEquals("abc", FederationCalciteCatalogAssembler.sanitizeCalciteConventionName("abc"));
+    assertEquals("abc_u002D123", FederationCalciteCatalogAssembler.sanitizeCalciteConventionName("abc-123"));
+    assertEquals(null, FederationCalciteCatalogAssembler.sanitizeCalciteConventionName(null));
+    assertEquals("my_u0020schema", FederationCalciteCatalogAssembler.sanitizeCalciteConventionName("my schema"));
+  }
+
+  @Test
+  void assembleShouldHandleChineseSchemaNames() throws Exception {
+    JdbcDataSource dataSource = createDataSource();
+    initialize(dataSource, """
+        create schema if not exists "\u6D4B\u8BD5";
+        create table "\u6D4B\u8BD5".items (
           id int primary key,
-          tenant_id int not null
+          name varchar(64) not null
         );
-        insert into tenant_a.root_table(id, tenant_id) values (1, 100);
+        insert into "\u6D4B\u8BD5".items(id, name) values (1, 'hello');
         """);
 
     JdbcDataSourceDefinition definition = new JdbcDataSourceDefinition();
-    definition.setId("ds-1");
-    definition.setCode("PG");
-    definition.setDriverId("driver-1");
+    definition.setId("ds-cn");
+    definition.setCode("ds_cn");
+    definition.setDriverId("driver-cn");
 
     JdbcDriverDefinition driver = new JdbcDriverDefinition();
-    driver.setId("driver-1");
+    driver.setId("driver-cn");
     driver.setDatabaseType("postgresql");
     driver.setDriverClassName("org.h2.Driver");
     JdbcDatabaseDialect dialect = mock(JdbcDatabaseDialect.class, Answers.CALLS_REAL_METHODS);
     when(dialect.metadataCatalog(any(), any())).thenReturn(null);
-    when(dialect.visibleCatalogs(any(), any())).thenReturn(List.of());
     when(dialect.visibleSchemas(any(), any(), any())).thenAnswer(invocation -> invocation.<List<String>>getArgument(0)
         .stream()
         .filter(schema -> schema != null && !"INFORMATION_SCHEMA".equalsIgnoreCase(schema))
         .toList());
 
-    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(definition));
-    when(dataSourceService.requireSimpleDataSource("ds-1")).thenReturn(new SimpleDataSource(
-        wrapDataSource(mainDataSource, "main_db", null, "TENANT_A")
-    ));
-    when(driverService.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    when(dataSourceService.requireSimpleDataSource("ds-cn")).thenReturn(new SimpleDataSource(dataSource));
+    when(driverService.findActiveById("driver-cn")).thenReturn(Optional.of(driver));
     when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
-    when(schemaRepository.findAllActiveByCatalogId("catalog-1")).thenReturn(List.of());
 
     FederationCalciteCatalogAssembler assembler = new FederationCalciteCatalogAssembler(
         dataSourceService,
         driverService,
-        dialectManagementService,
-        schemaRepository,
-        viewRepository
+        dialectManagementService
     );
-    FederationCatalog catalog = new FederationCatalog();
-    catalog.setId("catalog-1");
-    catalog.setCode("demo");
 
-    try (FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly = assembler.assemble(catalog)) {
-      SchemaPlus rootSchema = Frameworks.createRootSchema(true);
-      assembly.schemaConfigurer().configure(rootSchema);
-      SchemaPlus demoSchema = rootSchema.getSubSchema("demo");
-      assertNotNull(demoSchema);
-      SchemaPlus dataSourceSchema = demoSchema.getSubSchema("PG");
-      assertNotNull(dataSourceSchema);
-      SchemaPlus currentCatalogSchema = dataSourceSchema.getSubSchema("main_db");
-      assertNotNull(currentCatalogSchema);
-      assertNotNull(currentCatalogSchema.getSubSchema("TENANT_A"));
-      assertEquals(List.of("PG"), assembly.physicalDataSourceCodes());
+    CalciteQueryEngine engine = new DefaultCalciteQueryEngine();
+    try (FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly = assembler.assemble("ds_cn", List.of(definition))) {
+      // Chinese schema name should NOT crash Calcite convention/rule validation
+      CalciteQueryResult result = engine.execute(
+          new CalciteQueryRequest(
+              "select id, name from ds_cn.\"\u6D4B\u8BD5\".items order by id",
+              "ds_cn",
+              100,
+              5_000
+          ),
+          assembly.schemaConfigurer()
+      );
+
+      assertEquals(1, result.returnedRows());
+      assertEquals("hello", result.rows().get(0).get(1));
     }
   }
 
@@ -316,24 +301,15 @@ class FederationCalciteCatalogAssemblerTest {
       final String currentCatalog,
       final List<String> visibleCatalogs
   ) {
-    return wrapDataSource(delegate, currentCatalog, visibleCatalogs, null);
-  }
-
-  private static DataSource wrapDataSource(
-      final DataSource delegate,
-      final String currentCatalog,
-      final List<String> visibleCatalogs,
-      final String currentSchema
-  ) {
     return new DataSource() {
       @Override
       public Connection getConnection() throws java.sql.SQLException {
-        return wrapConnection(delegate.getConnection(), currentCatalog, visibleCatalogs, currentSchema);
+        return wrapConnection(delegate.getConnection(), currentCatalog, visibleCatalogs, null);
       }
 
       @Override
       public Connection getConnection(final String username, final String password) throws java.sql.SQLException {
-        return wrapConnection(delegate.getConnection(username, password), currentCatalog, visibleCatalogs, currentSchema);
+        return wrapConnection(delegate.getConnection(username, password), currentCatalog, visibleCatalogs, null);
       }
 
       @Override
@@ -376,14 +352,6 @@ class FederationCalciteCatalogAssemblerTest {
   private static Connection wrapConnection(
       final Connection delegate,
       final String currentCatalog,
-      final List<String> visibleCatalogs
-  ) {
-    return wrapConnection(delegate, currentCatalog, visibleCatalogs, null);
-  }
-
-  private static Connection wrapConnection(
-      final Connection delegate,
-      final String currentCatalog,
       final List<String> visibleCatalogs,
       final String currentSchema
   ) {
@@ -394,47 +362,42 @@ class FederationCalciteCatalogAssemblerTest {
           if ("getCatalog".equals(method.getName())) {
             return currentCatalog;
           }
-          if ("getSchema".equals(method.getName()) && currentSchema != null) {
+          if ("getSchema".equals(method.getName())) {
             return currentSchema;
           }
-          if ("getMetaData".equals(method.getName()) && visibleCatalogs != null) {
-            return wrapMetaData(delegate.getMetaData(), visibleCatalogs);
+          if ("getMetaData".equals(method.getName())) {
+            return wrapMetaData(delegate.getMetaData(), currentCatalog, visibleCatalogs, currentSchema);
           }
-          return invoke(delegate, method, args);
+          return method.invoke(delegate, args);
         }
     );
   }
 
   private static DatabaseMetaData wrapMetaData(
       final DatabaseMetaData delegate,
-      final List<String> visibleCatalogs
+      final String currentCatalog,
+      final List<String> visibleCatalogs,
+      final String currentSchema
   ) {
     return (DatabaseMetaData) Proxy.newProxyInstance(
         DatabaseMetaData.class.getClassLoader(),
         new Class<?>[]{DatabaseMetaData.class},
         (proxy, method, args) -> {
           if ("getCatalogs".equals(method.getName())) {
-            return catalogResultSet(visibleCatalogs);
+            org.h2.tools.SimpleResultSet resultSet = new org.h2.tools.SimpleResultSet();
+            resultSet.addColumn("TABLE_CAT", java.sql.Types.VARCHAR, 255, 0);
+            if (visibleCatalogs != null) {
+              for (String visibleCatalog : visibleCatalogs) {
+                resultSet.addRow(visibleCatalog);
+              }
+            }
+            return resultSet;
           }
-          return invoke(delegate, method, args);
+          if ("getConnection".equals(method.getName())) {
+            return wrapConnection(delegate.getConnection(), currentCatalog, visibleCatalogs, currentSchema);
+          }
+          return method.invoke(delegate, args);
         }
     );
-  }
-
-  private static ResultSet catalogResultSet(final List<String> visibleCatalogs) {
-    SimpleResultSet resultSet = new SimpleResultSet();
-    resultSet.addColumn("TABLE_CAT", Types.VARCHAR, 255, 0);
-    for (String visibleCatalog : visibleCatalogs) {
-      resultSet.addRow(visibleCatalog);
-    }
-    return resultSet;
-  }
-
-  private static Object invoke(final Object target, final Method method, final Object[] args) throws Throwable {
-    try {
-      return method.invoke(target, args);
-    } catch (InvocationTargetException ex) {
-      throw ex.getCause();
-    }
   }
 }

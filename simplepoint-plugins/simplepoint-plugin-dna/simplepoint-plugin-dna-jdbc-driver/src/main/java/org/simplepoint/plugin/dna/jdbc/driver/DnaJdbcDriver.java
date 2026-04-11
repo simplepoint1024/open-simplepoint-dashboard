@@ -34,7 +34,7 @@ public final class DnaJdbcDriver implements Driver {
       return null;
     }
     DnaJdbcModels.ConnectionConfig config = DnaJdbcUrlParser.parse(url, info == null ? new Properties() : info);
-    return DnaJdbcProxies.openConnection(config);
+    return DnaJdbcConnection.open(config);
   }
 
   @Override

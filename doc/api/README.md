@@ -11,6 +11,7 @@
 当前仓库已补充的 API 相关正文包括：
 
 - `doc/api/api_conventions.md`
+- `doc/api/dna_jdbc_driver.md`
 - `doc/api/schema_api.md`
 
 ## 2. 描述内容要点
@@ -57,6 +58,7 @@ curl http://localhost:8082/v3/api-docs > doc/api/openapi/permission.json
 
 ## 7. 关联文档
 - API 约定：`doc/api/api_conventions.md`
+- DNA JDBC 驱动：`doc/api/dna_jdbc_driver.md`
 - Schema API：`doc/api/schema_api.md`
 - 系统概览：`doc/architecture/system_overview.md`
 - 组件设计：`doc/architecture/component_design.md`

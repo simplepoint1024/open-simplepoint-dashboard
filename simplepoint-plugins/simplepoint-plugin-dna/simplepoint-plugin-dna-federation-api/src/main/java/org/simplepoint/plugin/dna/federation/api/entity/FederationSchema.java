@@ -61,18 +61,18 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Tag(name = "逻辑 Schema", description = "用于管理联邦目录下的逻辑 Schema")
-@Schema(title = "逻辑 Schema", description = "联邦目录下的逻辑命名空间定义")
+@Schema(title = "i18n:dna.federation.schemas.entity.title", description = "i18n:dna.federation.schemas.entity.description")
 public class FederationSchema extends BaseEntityImpl<String> {
 
   @Order(0)
-  @Schema(title = "联邦目录", description = "所属联邦目录 ID", maxLength = 64)
+  @Schema(title = "i18n:dna.federation.schemas.title.catalogId", description = "i18n:dna.federation.schemas.description.catalogId", maxLength = 64)
   @Column(length = 64, nullable = false)
   private String catalogId;
 
   @Transient
   @Schema(
-      title = "目录名称",
-      description = "所属联邦目录名称",
+      title = "i18n:dna.federation.schemas.title.catalogName",
+      description = "i18n:dna.federation.schemas.description.catalogName",
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -83,13 +83,13 @@ public class FederationSchema extends BaseEntityImpl<String> {
   private String catalogName;
 
   @Transient
-  @Schema(title = "目录编码", description = "所属联邦目录编码", accessMode = Schema.AccessMode.READ_ONLY)
+  @Schema(title = "i18n:dna.federation.schemas.title.catalogCode", description = "i18n:dna.federation.schemas.description.catalogCode", accessMode = Schema.AccessMode.READ_ONLY)
   private String catalogCode;
 
   @Order(1)
   @Schema(
-      title = "Schema 名称",
-      description = "用于展示的逻辑 Schema 名称",
+      title = "i18n:dna.federation.schemas.title.name",
+      description = "i18n:dna.federation.schemas.description.name",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -103,8 +103,8 @@ public class FederationSchema extends BaseEntityImpl<String> {
 
   @Order(2)
   @Schema(
-      title = "Schema 编码",
-      description = "逻辑 Schema 的唯一业务编码",
+      title = "i18n:dna.federation.schemas.title.code",
+      description = "i18n:dna.federation.schemas.description.code",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -118,8 +118,8 @@ public class FederationSchema extends BaseEntityImpl<String> {
 
   @Order(3)
   @Schema(
-      title = "是否启用",
-      description = "是否允许该逻辑 Schema 参与联邦建模",
+      title = "i18n:dna.federation.schemas.title.enabled",
+      description = "i18n:dna.federation.schemas.description.enabled",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true")
@@ -129,7 +129,7 @@ public class FederationSchema extends BaseEntityImpl<String> {
   private Boolean enabled;
 
   @Order(4)
-  @Schema(title = "描述", description = "逻辑 Schema 备注说明", maxLength = 512)
+  @Schema(title = "i18n:dna.federation.schemas.title.description", description = "i18n:dna.federation.schemas.description.description", maxLength = 512)
   @Column(length = 512)
   private String description;
 }

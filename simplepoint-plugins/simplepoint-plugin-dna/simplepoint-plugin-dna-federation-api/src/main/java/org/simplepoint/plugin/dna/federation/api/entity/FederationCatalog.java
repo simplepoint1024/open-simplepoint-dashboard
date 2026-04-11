@@ -60,13 +60,13 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Tag(name = "联邦目录", description = "用于管理 DNA 联邦查询目录")
-@Schema(title = "联邦目录", description = "用于隔离不同联邦查询业务域的目录定义")
+@Schema(title = "i18n:dna.federation.catalogs.entity.title", description = "i18n:dna.federation.catalogs.entity.description")
 public class FederationCatalog extends BaseEntityImpl<String> {
 
   @Order(0)
   @Schema(
-      title = "目录名称",
-      description = "用于展示的联邦目录名称",
+      title = "i18n:dna.federation.catalogs.title.name",
+      description = "i18n:dna.federation.catalogs.description.name",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -80,8 +80,8 @@ public class FederationCatalog extends BaseEntityImpl<String> {
 
   @Order(1)
   @Schema(
-      title = "目录编码",
-      description = "联邦目录的唯一业务编码",
+      title = "i18n:dna.federation.catalogs.title.code",
+      description = "i18n:dna.federation.catalogs.description.code",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -95,8 +95,22 @@ public class FederationCatalog extends BaseEntityImpl<String> {
 
   @Order(2)
   @Schema(
-      title = "是否启用",
-      description = "是否允许该联邦目录参与查询规划",
+      title = "i18n:dna.federation.catalogs.title.catalogType",
+      description = "i18n:dna.federation.catalogs.description.catalogType",
+      allowableValues = {"VIRTUAL", "DATA_SOURCE"},
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true")
+          })
+      }
+  )
+  @Column(length = 32)
+  private String catalogType;
+
+  @Order(3)
+  @Schema(
+      title = "i18n:dna.federation.catalogs.title.enabled",
+      description = "i18n:dna.federation.catalogs.description.enabled",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true")
@@ -105,8 +119,8 @@ public class FederationCatalog extends BaseEntityImpl<String> {
   )
   private Boolean enabled;
 
-  @Order(3)
-  @Schema(title = "描述", description = "联邦目录备注说明", maxLength = 512)
+  @Order(4)
+  @Schema(title = "i18n:dna.federation.catalogs.title.description", description = "i18n:dna.federation.catalogs.description.description", maxLength = 512)
   @Column(length = 512)
   private String description;
 }

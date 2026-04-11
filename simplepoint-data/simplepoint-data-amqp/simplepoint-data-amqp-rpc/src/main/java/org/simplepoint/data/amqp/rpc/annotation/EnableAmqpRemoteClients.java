@@ -13,6 +13,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.simplepoint.data.amqp.rpc.RemoteClientOverrideBeanFactoryPostProcessor;
 import org.simplepoint.data.amqp.rpc.RemoteClientsRegistrar;
 import org.springframework.context.annotation.Import;
 
@@ -25,7 +26,7 @@ import org.springframework.context.annotation.Import;
 @Documented
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Import({RemoteClientsRegistrar.class})
+@Import({RemoteClientsRegistrar.class, RemoteClientOverrideBeanFactoryPostProcessor.class})
 public @interface EnableAmqpRemoteClients {
 
   /**

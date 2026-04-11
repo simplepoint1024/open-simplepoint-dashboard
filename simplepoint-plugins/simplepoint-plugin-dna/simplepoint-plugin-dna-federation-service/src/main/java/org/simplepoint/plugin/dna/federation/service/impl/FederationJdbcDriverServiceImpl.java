@@ -289,8 +289,12 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalog), (resolvedSession, resolvedContextId) ->
-        aggregateTableMetadata(requiredSession, catalog,
-            ds -> jdbcMetadataSupport.primaryKeys(ds, catalog, schema, table))
+        requiredSession.cachedMetadata(
+            "primaryKeys:" + normalizedCacheValue(catalog) + ':' + normalizedCacheValue(schema) + ':' + normalizedCacheValue(table),
+            () -> aggregateTableMetadata(requiredSession, catalog,
+                ds -> jdbcMetadataSupport.primaryKeys(ds, catalog, schema, table)),
+            metadataCacheService
+        )
     );
   }
 
@@ -320,8 +324,13 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalog), (resolvedSession, resolvedContextId) ->
-        aggregateTableMetadata(requiredSession, catalog,
-            ds -> jdbcMetadataSupport.indexInfo(ds, catalog, schema, table, unique, approximate))
+        requiredSession.cachedMetadata(
+            "indexInfo:" + normalizedCacheValue(catalog) + ':' + normalizedCacheValue(schema) + ':'
+                + normalizedCacheValue(table) + ':' + unique + ':' + approximate,
+            () -> aggregateTableMetadata(requiredSession, catalog,
+                ds -> jdbcMetadataSupport.indexInfo(ds, catalog, schema, table, unique, approximate)),
+            metadataCacheService
+        )
     );
   }
 
@@ -347,8 +356,12 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalog), (resolvedSession, resolvedContextId) ->
-        aggregateTableMetadata(requiredSession, catalog,
-            ds -> jdbcMetadataSupport.importedKeys(ds, catalog, schema, table))
+        requiredSession.cachedMetadata(
+            "importedKeys:" + normalizedCacheValue(catalog) + ':' + normalizedCacheValue(schema) + ':' + normalizedCacheValue(table),
+            () -> aggregateTableMetadata(requiredSession, catalog,
+                ds -> jdbcMetadataSupport.importedKeys(ds, catalog, schema, table)),
+            metadataCacheService
+        )
     );
   }
 
@@ -374,8 +387,12 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalog), (resolvedSession, resolvedContextId) ->
-        aggregateTableMetadata(requiredSession, catalog,
-            ds -> jdbcMetadataSupport.exportedKeys(ds, catalog, schema, table))
+        requiredSession.cachedMetadata(
+            "exportedKeys:" + normalizedCacheValue(catalog) + ':' + normalizedCacheValue(schema) + ':' + normalizedCacheValue(table),
+            () -> aggregateTableMetadata(requiredSession, catalog,
+                ds -> jdbcMetadataSupport.exportedKeys(ds, catalog, schema, table)),
+            metadataCacheService
+        )
     );
   }
 
@@ -728,13 +745,17 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
   }
 
   /**
-   * 对多个数据源执行元数据操作并合并结果，单个数据源失败不影响整体。
+   * 对多个数据源并行执行元数据操作并合并结果，单个数据源失败不影响整体。
    */
   private FederationJdbcDriverModels.TabularResult safeAggregateFromSources(
       final List<AuthorizedDataSource> sources,
       final DataSourceMetadataAction action
   ) {
-    return mergeTabularResults(sources.stream()
+    if (sources.size() == 1) {
+      FederationJdbcDriverModels.TabularResult single = safeCollect(sources.get(0), action);
+      return single != null ? single : new FederationJdbcDriverModels.TabularResult(List.of(), List.of());
+    }
+    return mergeTabularResults(sources.parallelStream()
         .map(source -> safeCollect(source, action))
         .filter(Objects::nonNull)
         .toList());

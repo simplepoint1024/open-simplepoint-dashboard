@@ -14,10 +14,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.plugin.dna.federation.api.constants.FederationCatalogTypes;
+import org.simplepoint.plugin.dna.federation.api.entity.FederationCatalog;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationSchema;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationView;
 import org.simplepoint.plugin.dna.federation.api.repository.FederationSchemaRepository;
 import org.simplepoint.plugin.dna.federation.api.repository.FederationViewRepository;
+import org.simplepoint.plugin.dna.federation.api.service.FederationCatalogService;
 import org.simplepoint.plugin.dna.federation.api.service.FederationViewService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +38,8 @@ public class FederationViewServiceImpl
 
   private final FederationSchemaRepository schemaRepository;
 
+  private final FederationCatalogService catalogService;
+
   /**
    * Creates a federation view service implementation.
    *
@@ -45,11 +50,13 @@ public class FederationViewServiceImpl
   public FederationViewServiceImpl(
       final FederationViewRepository repository,
       final DetailsProviderService detailsProviderService,
-      final FederationSchemaRepository schemaRepository
+      final FederationSchemaRepository schemaRepository,
+      final FederationCatalogService catalogService
   ) {
     super(repository, detailsProviderService);
     this.repository = repository;
     this.schemaRepository = schemaRepository;
+    this.catalogService = catalogService;
   }
 
   /** {@inheritDoc} */
@@ -123,6 +130,7 @@ public class FederationViewServiceImpl
         });
     FederationSchema schema = schemaRepository.findActiveById(entity.getSchemaId())
         .orElseThrow(() -> new IllegalArgumentException("逻辑 Schema 不存在: " + entity.getSchemaId()));
+    requireVirtualCatalog(schema.getCatalogId());
     return schema;
   }
 
@@ -161,5 +169,13 @@ public class FederationViewServiceImpl
       item.setSchemaCode(null);
       item.setSchemaName(null);
     });
+  }
+
+  private void requireVirtualCatalog(final String catalogId) {
+    FederationCatalog catalog = catalogService.findActiveById(catalogId)
+        .orElseThrow(() -> new IllegalArgumentException("联邦目录不存在: " + catalogId));
+    if (!FederationCatalogTypes.isVirtual(catalog.getCatalogType())) {
+      throw new IllegalArgumentException("仅虚拟目录下的逻辑 Schema 支持创建逻辑视图");
+    }
   }
 }

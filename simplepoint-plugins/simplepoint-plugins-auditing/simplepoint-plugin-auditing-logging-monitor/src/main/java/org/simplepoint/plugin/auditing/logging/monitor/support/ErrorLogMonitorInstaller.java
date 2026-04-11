@@ -12,13 +12,16 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import org.simplepoint.plugin.auditing.logging.monitor.logback.ErrorLogReportingAppender;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.context.ApplicationListener;
 
 /**
  * Installs the reporting appender onto the Logback root logger.
  */
-public class ErrorLogMonitorInstaller implements SmartInitializingSingleton, DisposableBean {
+public class ErrorLogMonitorInstaller
+    implements SmartInitializingSingleton, ApplicationListener<ApplicationReadyEvent>, DisposableBean {
 
   static final String APPENDER_NAME = "simplepointAuditErrorLogAppender";
 
@@ -49,7 +52,13 @@ public class ErrorLogMonitorInstaller implements SmartInitializingSingleton, Dis
   }
 
   @Override
+  public void onApplicationEvent(final ApplicationReadyEvent event) {
+    errorLogReportingAppender.enableReporting();
+  }
+
+  @Override
   public void destroy() {
+    errorLogReportingAppender.disableReporting();
     if (LoggerFactory.getILoggerFactory() instanceof LoggerContext loggerContext) {
       Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
       rootLogger.detachAppender(APPENDER_NAME);

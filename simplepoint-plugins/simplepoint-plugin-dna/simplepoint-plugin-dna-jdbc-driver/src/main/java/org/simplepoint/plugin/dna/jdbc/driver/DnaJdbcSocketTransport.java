@@ -98,7 +98,8 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
           null,
           null,
           null,
-          null
+          null,
+        null
       ));
       DnaJdbcModels.PingResult result = requireSuccess(response).pingResult();
       this.connected = true;
@@ -114,6 +115,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         null,
         null,
         sessionContextId,
+        null,
         null,
         null,
         null,
@@ -149,6 +151,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         null,
         null,
         null,
+        null,
         null
     ))).tabularResult();
   }
@@ -173,6 +176,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         null,
         null,
         null,
+        null,
         null
     ))).tabularResult();
   }
@@ -185,6 +189,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         null,
         null,
         sessionContextId,
+        null,
         null,
         null,
         null,
@@ -220,6 +225,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         null,
         null,
         null,
+        null,
         null
     ))).tabularResult();
   }
@@ -246,6 +252,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         null,
         null,
         null,
+        null,
         null
     ))).tabularResult();
   }
@@ -266,6 +273,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         catalog,
         schema,
         table,
+        null,
         null,
         null,
         null,
@@ -298,7 +306,8 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         null,
         null,
         unique,
-        approximate
+        approximate,
+        null
     ))).tabularResult();
   }
 
@@ -318,6 +327,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         catalog,
         schema,
         table,
+        null,
         null,
         null,
         null,
@@ -348,6 +358,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         null,
         null,
         null,
+        null,
         null
     ))).tabularResult();
   }
@@ -360,6 +371,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         null,
         null,
         sessionContextId,
+        null,
         null,
         null,
         null,
@@ -394,6 +406,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         sql,
         defaultSchema,
         null,
+        null,
         null
     ))).queryResult();
   }
@@ -418,6 +431,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         null,
         sql,
         defaultSchema,
+        null,
         null,
         null
     ))).updateResult();
@@ -444,6 +458,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         sql,
         defaultSchema,
         null,
+        null,
         null
     ))).updateResult();
   }
@@ -465,8 +480,35 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         null,
         null,
         null,
+        null,
         null
     )));
+  }
+
+  /**
+   * Sends a batch of metadata requests in a single TCP round-trip.
+   */
+  List<DnaJdbcModels.SocketResponse> batch(final List<DnaJdbcModels.SocketRequest> requests) throws SQLException {
+    DnaJdbcModels.SocketResponse response = requireSuccess(send(new DnaJdbcModels.SocketRequest(
+        "BATCH",
+        null,
+        null,
+        null,
+        null,
+        sessionContextId,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        requests
+    )));
+    return response.batchResults() != null ? response.batchResults() : List.of();
   }
 
   String catalogCode() {
@@ -510,7 +552,8 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
               null,
               null,
               null,
-              null
+              null,
+        null
           ));
         } catch (SQLException ex) {
           LOGGER.log(Level.FINE, "Ignoring DNA JDBC Socket CLOSE handshake failure during shutdown", ex);
