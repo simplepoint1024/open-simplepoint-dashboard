@@ -2,7 +2,9 @@ package org.simplepoint.plugin.dna.core.service.dialect;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.simplepoint.plugin.dna.core.api.spi.JdbcTypeMapping;
 import org.simplepoint.plugin.dna.core.api.vo.JdbcMetadataModels;
+import org.simplepoint.plugin.dna.core.service.dialect.type.DamengJdbcTypeMapping;
 
 /**
  * JDBC dialect for Dameng (DM) databases.
@@ -27,6 +29,11 @@ public class DamengJdbcDatabaseDialect extends AbstractJdbcDatabaseDialect {
   @Override
   public int order() {
     return 18;
+  }
+
+  @Override
+  public JdbcTypeMapping typeMapping() {
+    return DamengJdbcTypeMapping.INSTANCE;
   }
 
   @Override

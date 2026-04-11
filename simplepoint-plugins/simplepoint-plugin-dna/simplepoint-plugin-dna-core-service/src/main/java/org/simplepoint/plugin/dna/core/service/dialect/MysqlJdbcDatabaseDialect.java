@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import org.simplepoint.plugin.dna.core.api.spi.JdbcTypeMapping;
 import org.simplepoint.plugin.dna.core.api.vo.JdbcMetadataModels;
+import org.simplepoint.plugin.dna.core.service.dialect.type.MysqlJdbcTypeMapping;
 
 /**
  * JDBC dialect for MySQL-compatible databases.
@@ -31,6 +33,11 @@ public class MysqlJdbcDatabaseDialect extends AbstractJdbcDatabaseDialect {
   @Override
   public int order() {
     return 20;
+  }
+
+  @Override
+  public JdbcTypeMapping typeMapping() {
+    return MysqlJdbcTypeMapping.INSTANCE;
   }
 
   @Override

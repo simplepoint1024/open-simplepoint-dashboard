@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import org.simplepoint.plugin.dna.core.api.spi.JdbcTypeMapping;
 import org.simplepoint.plugin.dna.core.api.vo.JdbcMetadataModels;
+import org.simplepoint.plugin.dna.core.service.dialect.type.PostgresqlJdbcTypeMapping;
 
 /**
  * JDBC dialect for PostgreSQL-compatible databases.
@@ -31,6 +33,11 @@ public class PostgresqlJdbcDatabaseDialect extends AbstractJdbcDatabaseDialect {
   @Override
   public int order() {
     return 10;
+  }
+
+  @Override
+  public JdbcTypeMapping typeMapping() {
+    return PostgresqlJdbcTypeMapping.INSTANCE;
   }
 
   @Override
@@ -200,7 +207,7 @@ public class PostgresqlJdbcDatabaseDialect extends AbstractJdbcDatabaseDialect {
     return value == null ? "" : value.trim().toLowerCase();
   }
 
-  private static String trimToNull(final String value) {
+  protected static String trimToNull(final String value) {
     if (value == null) {
       return null;
     }

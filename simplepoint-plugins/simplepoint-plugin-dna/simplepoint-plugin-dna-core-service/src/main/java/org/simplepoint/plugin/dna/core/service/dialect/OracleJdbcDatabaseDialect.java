@@ -2,7 +2,9 @@ package org.simplepoint.plugin.dna.core.service.dialect;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.simplepoint.plugin.dna.core.api.spi.JdbcTypeMapping;
 import org.simplepoint.plugin.dna.core.api.vo.JdbcMetadataModels;
+import org.simplepoint.plugin.dna.core.service.dialect.type.OracleJdbcTypeMapping;
 
 /**
  * JDBC dialect for Oracle databases.
@@ -27,6 +29,11 @@ public class OracleJdbcDatabaseDialect extends AbstractJdbcDatabaseDialect {
   @Override
   public int order() {
     return 15;
+  }
+
+  @Override
+  public JdbcTypeMapping typeMapping() {
+    return OracleJdbcTypeMapping.INSTANCE;
   }
 
   @Override

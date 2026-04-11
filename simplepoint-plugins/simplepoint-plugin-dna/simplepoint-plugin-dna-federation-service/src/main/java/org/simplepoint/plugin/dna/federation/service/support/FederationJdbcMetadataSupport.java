@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import org.simplepoint.data.datasource.jdbc.SimpleDataSource;
+import org.simplepoint.plugin.dna.core.api.spi.JdbcTypeMapping;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDriverDefinition;
 import org.simplepoint.plugin.dna.core.api.repository.JdbcDriverDefinitionRepository;
@@ -331,7 +332,8 @@ public class FederationJdbcMetadataSupport {
   public FederationJdbcDriverModels.TabularResult typeInfo(final JdbcDataSourceDefinition dataSource) {
     return withContext(dataSource, null, context -> {
       try (ResultSet rs = context.metaData().getTypeInfo()) {
-        return resultSetToTabularResult(rs, Map.of());
+        FederationJdbcDriverModels.TabularResult raw = resultSetToTabularResult(rs, Map.of());
+        return normalizeTypeInfoResult(raw, context.dialect().typeMapping());
       }
     });
   }
@@ -760,6 +762,47 @@ public class FederationJdbcMetadataSupport {
     }
     String message = trimToNull(current.getMessage());
     return message == null ? current.getClass().getSimpleName() : message;
+  }
+
+  /**
+   * Normalizes DATA_TYPE values in the TYPE_INFO result using the dialect's type mapping.
+   * The TYPE_NAME column provides the native type name and DATA_TYPE provides the vendor JDBC code.
+   */
+  private static FederationJdbcDriverModels.TabularResult normalizeTypeInfoResult(
+      final FederationJdbcDriverModels.TabularResult raw,
+      final JdbcTypeMapping typeMapping
+  ) {
+    if (raw == null || raw.rows().isEmpty() || typeMapping == null) {
+      return raw;
+    }
+    int typeNameIndex = findJdbcColumnIndex(raw.columns(), "TYPE_NAME");
+    int dataTypeIndex = findJdbcColumnIndex(raw.columns(), "DATA_TYPE");
+    if (typeNameIndex < 0 || dataTypeIndex < 0) {
+      return raw;
+    }
+    List<List<Object>> normalizedRows = new ArrayList<>(raw.rows().size());
+    for (List<Object> row : raw.rows()) {
+      List<Object> mutableRow = new ArrayList<>(row);
+      String typeName = dataTypeIndex < row.size() ? Objects.toString(row.get(typeNameIndex), null) : null;
+      Object rawDataType = dataTypeIndex < row.size() ? row.get(dataTypeIndex) : null;
+      int vendorJdbcType = rawDataType instanceof Number number ? number.intValue() : 0;
+      mutableRow.set(dataTypeIndex, typeMapping.resolveJdbcType(typeName, vendorJdbcType));
+      normalizedRows.add(mutableRow);
+    }
+    return new FederationJdbcDriverModels.TabularResult(raw.columns(), normalizedRows);
+  }
+
+  private static int findJdbcColumnIndex(
+      final List<FederationJdbcDriverModels.JdbcColumn> columns,
+      final String columnName
+  ) {
+    for (int index = 0; index < (columns == null ? List.<FederationJdbcDriverModels.JdbcColumn>of() : columns).size(); index++) {
+      FederationJdbcDriverModels.JdbcColumn column = columns.get(index);
+      if (column != null && columnName.equalsIgnoreCase(column.name())) {
+        return index;
+      }
+    }
+    return -1;
   }
 
   @FunctionalInterface

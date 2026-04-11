@@ -2,22 +2,214 @@ package org.simplepoint.plugin.dna.core.service.dialect;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.ResultSetMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import java.sql.Blob;
+import java.sql.Clob;
 import org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect;
+import org.simplepoint.plugin.dna.core.api.spi.JdbcTypeMapping;
 import org.simplepoint.plugin.dna.core.api.vo.JdbcMetadataModels;
 
 /**
  * Base JDBC dialect with reusable metadata and DDL helpers.
  */
 public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect {
+
+  @Override
+  public MetadataNamespaceSupport resolveMetadataNamespaceSupport(
+      final Connection connection,
+      final DatabaseMetaData metaData,
+      final SupportContext context
+  ) throws SQLException {
+    if (metaData == null) {
+      return new MetadataNamespaceSupport(false, false);
+    }
+    return new MetadataNamespaceSupport(
+        metaData.supportsCatalogsInTableDefinitions(),
+        metaData.supportsSchemasInTableDefinitions()
+    );
+  }
+
+  @Override
+  public MetadataResult loadCatalogs(
+      final Connection connection,
+      final DatabaseMetaData metaData,
+      final SupportContext context,
+      final String catalogPattern
+  ) throws SQLException {
+    MetadataNamespaceSupport namespaceSupport = resolveMetadataNamespaceSupport(connection, metaData, context);
+    if (!namespaceSupport.supportsCatalogsInTableDefinitions()) {
+      return emptyCatalogsResult();
+    }
+    LinkedHashSet<String> catalogs = new LinkedHashSet<>();
+    try (ResultSet resultSet = metaData.getCatalogs()) {
+      while (resultSet.next()) {
+        String catalog = trimToNull(resultSet.getString("TABLE_CAT"));
+        if (catalog != null) {
+          catalogs.add(catalog);
+        }
+      }
+    } catch (SQLException ex) {
+      return emptyCatalogsResult();
+    }
+    List<String> visibleCatalogs = visibleCatalogs(List.copyOf(catalogs), context).stream()
+        .map(AbstractJdbcDatabaseDialect::trimToNull)
+        .filter(Objects::nonNull)
+        .filter(catalog -> matchesPattern(catalog, catalogPattern))
+        .toList();
+    return new MetadataResult(
+        List.of(new MetadataColumn("TABLE_CAT", "VARCHAR", Types.VARCHAR)),
+        visibleCatalogs.stream().<List<Object>>map(catalog -> List.of(catalog)).toList()
+    );
+  }
+
+  @Override
+  public MetadataResult loadSchemas(
+      final Connection connection,
+      final DatabaseMetaData metaData,
+      final SupportContext context,
+      final String catalogPattern,
+      final String schemaPattern
+  ) throws SQLException {
+    MetadataNamespaceSupport namespaceSupport = resolveMetadataNamespaceSupport(connection, metaData, context);
+    if (!namespaceSupport.supportsSchemasInTableDefinitions()) {
+      return emptySchemasResult();
+    }
+    LinkedHashSet<SchemaMetadataRow> rows = new LinkedHashSet<>();
+    String metadataCatalog = namespaceSupport.supportsCatalogsInTableDefinitions()
+        ? metadataCatalog(trimToNull(catalogPattern), context)
+        : null;
+    try (ResultSet resultSet = metaData.getSchemas(metadataCatalog, trimToNull(schemaPattern))) {
+      while (resultSet.next()) {
+        rows.add(new SchemaMetadataRow(
+            trimToNull(resultSet.getString("TABLE_CATALOG")),
+            trimToNull(resultSet.getString("TABLE_SCHEM"))
+        ));
+      }
+    } catch (SQLException ex) {
+      try (ResultSet resultSet = metaData.getSchemas()) {
+        while (resultSet.next()) {
+          rows.add(new SchemaMetadataRow(
+              trimToNull(resultSet.getString("TABLE_CATALOG")),
+              trimToNull(resultSet.getString("TABLE_SCHEM"))
+          ));
+        }
+      }
+    }
+    LinkedHashMap<String, LinkedHashSet<String>> schemasByCatalog = new LinkedHashMap<>();
+    for (SchemaMetadataRow row : rows) {
+      if (row.schema() == null) {
+        continue;
+      }
+      if (namespaceSupport.supportsCatalogsInTableDefinitions() && !matchesPattern(row.catalog(), catalogPattern)) {
+        continue;
+      }
+      if (!matchesPattern(row.schema(), schemaPattern)) {
+        continue;
+      }
+      schemasByCatalog.computeIfAbsent(row.catalog(), ignored -> new LinkedHashSet<>()).add(row.schema());
+    }
+    List<List<Object>> resultRows = new ArrayList<>();
+    for (Map.Entry<String, LinkedHashSet<String>> entry : schemasByCatalog.entrySet()) {
+      List<String> visibleSchemas = visibleSchemas(List.copyOf(entry.getValue()), entry.getKey(), context);
+      for (String schema : visibleSchemas) {
+        String normalizedSchema = trimToNull(schema);
+        if (normalizedSchema != null) {
+          List<Object> row = new ArrayList<>(2);
+          row.add(normalizedSchema);
+          row.add(entry.getKey());
+          resultRows.add(row);
+        }
+      }
+    }
+    return new MetadataResult(
+        List.of(
+            new MetadataColumn("TABLE_SCHEM", "VARCHAR", Types.VARCHAR),
+            new MetadataColumn("TABLE_CATALOG", "VARCHAR", Types.VARCHAR)
+        ),
+        resultRows
+    );
+  }
+
+  @Override
+  public MetadataResult loadTableTypes(
+      final Connection connection,
+      final DatabaseMetaData metaData,
+      final SupportContext context
+  ) throws SQLException {
+    try (ResultSet resultSet = metaData.getTableTypes()) {
+      return normalizeTableTypeResult(serialize(resultSet));
+    }
+  }
+
+  @Override
+  public MetadataResult loadTables(
+      final Connection connection,
+      final DatabaseMetaData metaData,
+      final SupportContext context,
+      final String catalogPattern,
+      final String schemaPattern,
+      final String tablePattern,
+      final List<String> types
+  ) throws SQLException {
+    MetadataNamespaceSupport namespaceSupport = resolveMetadataNamespaceSupport(connection, metaData, context);
+    String metadataCatalog = namespaceSupport.supportsCatalogsInTableDefinitions()
+        ? metadataCatalog(trimToNull(catalogPattern), context)
+        : null;
+    String metadataSchema = namespaceSupport.supportsSchemasInTableDefinitions()
+        ? metadataSchema(trimToNull(schemaPattern), context)
+        : null;
+    try (ResultSet resultSet = metaData.getTables(
+        metadataCatalog,
+        metadataSchema,
+        trimToNull(tablePattern) == null ? "%" : tablePattern,
+        expandTableTypes(types)
+    )) {
+      return normalizeTableTypeResult(serialize(resultSet));
+    }
+  }
+
+  @Override
+  public MetadataResult loadColumns(
+      final Connection connection,
+      final DatabaseMetaData metaData,
+      final SupportContext context,
+      final String catalogPattern,
+      final String schemaPattern,
+      final String tablePattern,
+      final String columnPattern
+  ) throws SQLException {
+    MetadataNamespaceSupport namespaceSupport = resolveMetadataNamespaceSupport(connection, metaData, context);
+    String metadataCatalog = namespaceSupport.supportsCatalogsInTableDefinitions()
+        ? metadataCatalog(trimToNull(catalogPattern), context)
+        : null;
+    String metadataSchema = namespaceSupport.supportsSchemasInTableDefinitions()
+        ? metadataSchema(trimToNull(schemaPattern), context)
+        : null;
+    try (ResultSet resultSet = metaData.getColumns(
+        metadataCatalog,
+        metadataSchema,
+        trimToNull(tablePattern) == null ? "%" : tablePattern,
+        trimToNull(columnPattern) == null ? "%" : columnPattern
+    )) {
+      return serialize(resultSet);
+    }
+  }
 
   @Override
   public String buildCreateNamespaceSql(
@@ -395,6 +587,178 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     return List.copyOf(path);
   }
 
+  protected MetadataResult serialize(final ResultSet resultSet) throws SQLException {
+    try (ResultSet rows = resultSet) {
+      return new MetadataResult(toMetadataColumns(rows.getMetaData()), readRows(rows));
+    }
+  }
+
+  protected List<MetadataColumn> toMetadataColumns(final ResultSetMetaData metaData) throws SQLException {
+    int columnCount = metaData.getColumnCount();
+    List<MetadataColumn> columns = new ArrayList<>(columnCount);
+    JdbcTypeMapping mapping = typeMapping();
+    for (int index = 1; index <= columnCount; index++) {
+      String label = trimToNull(metaData.getColumnLabel(index));
+      String typeName = trimToNull(metaData.getColumnTypeName(index));
+      int vendorJdbcType = metaData.getColumnType(index);
+      int resolvedJdbcType = mapping.resolveJdbcType(typeName, vendorJdbcType);
+      columns.add(new MetadataColumn(
+          label == null ? metaData.getColumnName(index) : label,
+          typeName,
+          resolvedJdbcType
+      ));
+    }
+    return List.copyOf(columns);
+  }
+
+  protected List<List<Object>> readRows(final ResultSet resultSet) throws SQLException {
+    ResultSetMetaData metaData = resultSet.getMetaData();
+    int columnCount = metaData.getColumnCount();
+    List<List<Object>> rows = new ArrayList<>();
+    while (resultSet.next()) {
+      List<Object> row = new ArrayList<>(columnCount);
+      for (int index = 1; index <= columnCount; index++) {
+        row.add(normalizeMetadataCellValue(resultSet.getObject(index)));
+      }
+      rows.add(row);
+    }
+    return rows;
+  }
+
+  protected Object normalizeMetadataCellValue(final Object value) throws SQLException {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof Timestamp
+        || value instanceof java.sql.Date
+        || value instanceof Time
+        || value instanceof java.util.Date) {
+      return value.toString();
+    }
+    if (value instanceof Clob clob) {
+      return clob.getSubString(1L, (int) clob.length());
+    }
+    if (value instanceof Blob blob) {
+      return Base64.getEncoder().encodeToString(blob.getBytes(1L, (int) blob.length()));
+    }
+    if (value instanceof byte[] bytes) {
+      return Base64.getEncoder().encodeToString(bytes);
+    }
+    return value;
+  }
+
+  protected MetadataResult normalizeTableTypeResult(final MetadataResult result) {
+    if (result == null || result.rows().isEmpty()) {
+      return result == null ? new MetadataResult(List.of(), List.of()) : result;
+    }
+    int tableTypeColumnIndex = findColumnIndex(result.columns(), "TABLE_TYPE");
+    if (tableTypeColumnIndex < 0) {
+      return result;
+    }
+    List<List<Object>> rows = result.rows().stream()
+        .map(row -> {
+          List<Object> copy = new ArrayList<>(row);
+          if (tableTypeColumnIndex < copy.size()) {
+            Object value = copy.get(tableTypeColumnIndex);
+            copy.set(tableTypeColumnIndex, normalizeTableType(value == null ? null : value.toString()));
+          }
+          return copy;
+        })
+        .distinct()
+        .toList();
+    return new MetadataResult(result.columns(), rows);
+  }
+
+  protected String[] expandTableTypes(final List<String> types) {
+    if (types == null || types.isEmpty()) {
+      return null;
+    }
+    LinkedHashSet<String> normalized = new LinkedHashSet<>();
+    for (String type : types) {
+      String normalizedType = trimToNull(type);
+      if (normalizedType == null) {
+        continue;
+      }
+      normalized.add(normalizedType);
+      if ("TABLE".equalsIgnoreCase(normalizedType)) {
+        normalized.add("BASE TABLE");
+      }
+    }
+    return normalized.isEmpty() ? null : normalized.toArray(String[]::new);
+  }
+
+  protected String normalizeTableType(final String tableType) {
+    String normalized = trimToNull(tableType);
+    if (normalized == null) {
+      return null;
+    }
+    if ("BASE TABLE".equalsIgnoreCase(normalized)) {
+      return "TABLE";
+    }
+    return normalized;
+  }
+
+  protected MetadataResult emptyCatalogsResult() {
+    return new MetadataResult(
+        List.of(new MetadataColumn("TABLE_CAT", "VARCHAR", Types.VARCHAR)),
+        List.of()
+    );
+  }
+
+  protected MetadataResult emptySchemasResult() {
+    return new MetadataResult(
+        List.of(
+            new MetadataColumn("TABLE_SCHEM", "VARCHAR", Types.VARCHAR),
+            new MetadataColumn("TABLE_CATALOG", "VARCHAR", Types.VARCHAR)
+        ),
+        List.of()
+    );
+  }
+
+  protected int findColumnIndex(final List<MetadataColumn> columns, final String columnName) {
+    for (int index = 0; index < (columns == null ? List.<MetadataColumn>of() : columns).size(); index++) {
+      MetadataColumn column = columns.get(index);
+      if (column != null && columnName.equalsIgnoreCase(column.name())) {
+        return index;
+      }
+    }
+    return -1;
+  }
+
+  protected boolean matchesPattern(final String value, final String pattern) {
+    String normalizedPattern = trimToNull(pattern);
+    if (normalizedPattern == null) {
+      return true;
+    }
+    String normalizedValue = trimToNull(value);
+    if (normalizedValue == null) {
+      return false;
+    }
+    StringBuilder builder = new StringBuilder("^");
+    for (int index = 0; index < normalizedPattern.length(); index++) {
+      char current = normalizedPattern.charAt(index);
+      if (current == '%') {
+        builder.append(".*");
+      } else if (current == '_') {
+        builder.append('.');
+      } else if ("\\.[]{}()*+-?^$|".indexOf(current) >= 0) {
+        builder.append('\\').append(current);
+      } else {
+        builder.append(current);
+      }
+    }
+    builder.append('$');
+    return normalizedValue.toLowerCase(Locale.ROOT).matches(builder.toString().toLowerCase(Locale.ROOT));
+  }
+
+  protected static String trimToNull(final String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
+  }
+
   private List<JdbcMetadataModels.ConstraintDefinition> loadPrimaryKeys(
       final DatabaseMetaData metaData,
       final String catalog,
@@ -532,5 +896,11 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     ) {
       this(catalog, schema, table, new TreeMap<>(), new TreeMap<>());
     }
+  }
+
+  private record SchemaMetadataRow(
+      String catalog,
+      String schema
+  ) {
   }
 }

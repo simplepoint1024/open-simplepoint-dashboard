@@ -4,7 +4,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import org.simplepoint.plugin.dna.core.api.spi.JdbcTypeMapping;
 import org.simplepoint.plugin.dna.core.api.vo.JdbcMetadataModels;
+import org.simplepoint.plugin.dna.core.service.dialect.type.ClickhouseJdbcTypeMapping;
 
 /**
  * JDBC dialect for ClickHouse.
@@ -29,6 +31,11 @@ public class ClickhouseJdbcDatabaseDialect extends AbstractJdbcDatabaseDialect {
   @Override
   public int order() {
     return 12;
+  }
+
+  @Override
+  public JdbcTypeMapping typeMapping() {
+    return ClickhouseJdbcTypeMapping.INSTANCE;
   }
 
   @Override
@@ -294,7 +301,7 @@ public class ClickhouseJdbcDatabaseDialect extends AbstractJdbcDatabaseDialect {
     return value.trim();
   }
 
-  private static String trimToNull(final String value) {
+  protected static String trimToNull(final String value) {
     if (value == null) {
       return null;
     }

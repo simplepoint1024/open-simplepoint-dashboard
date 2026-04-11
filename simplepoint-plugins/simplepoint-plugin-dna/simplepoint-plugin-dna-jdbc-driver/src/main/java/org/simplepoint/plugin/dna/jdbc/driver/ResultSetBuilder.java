@@ -9,14 +9,92 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetMetaDataImpl;
 import javax.sql.rowset.RowSetProvider;
 
 /**
  * Builds cached JDBC result sets from DNA gateway responses.
+ * <p>
+ * The server side now performs authoritative type mapping via dialect-specific
+ * {@code JdbcTypeMapping} instances. The client side trusts the server-provided
+ * {@code jdbcType} and only applies a lightweight fallback when the server sends
+ * {@link Types#OTHER} or zero.
  */
 final class ResultSetBuilder {
+
+  /**
+   * Lightweight client-side type name → JDBC type fallback mapping.
+   * Used only when the server-provided jdbcType is missing or OTHER.
+   */
+  private static final Map<String, Integer> FALLBACK_TYPE_MAP = Map.ofEntries(
+      Map.entry("BOOLEAN", Types.BOOLEAN),
+      Map.entry("BIT", Types.BIT),
+      Map.entry("TINYINT", Types.TINYINT),
+      Map.entry("SMALLINT", Types.SMALLINT),
+      Map.entry("INT2", Types.SMALLINT),
+      Map.entry("INTEGER", Types.INTEGER),
+      Map.entry("INT", Types.INTEGER),
+      Map.entry("INT4", Types.INTEGER),
+      Map.entry("MEDIUMINT", Types.INTEGER),
+      Map.entry("BIGINT", Types.BIGINT),
+      Map.entry("INT8", Types.BIGINT),
+      Map.entry("SERIAL", Types.BIGINT),
+      Map.entry("BIGSERIAL", Types.BIGINT),
+      Map.entry("REAL", Types.REAL),
+      Map.entry("FLOAT4", Types.REAL),
+      Map.entry("FLOAT", Types.FLOAT),
+      Map.entry("FLOAT8", Types.FLOAT),
+      Map.entry("DOUBLE", Types.DOUBLE),
+      Map.entry("DOUBLE PRECISION", Types.DOUBLE),
+      Map.entry("DECIMAL", Types.DECIMAL),
+      Map.entry("NUMERIC", Types.NUMERIC),
+      Map.entry("NUMBER", Types.NUMERIC),
+      Map.entry("MONEY", Types.DECIMAL),
+      Map.entry("SMALLMONEY", Types.DECIMAL),
+      Map.entry("CHAR", Types.CHAR),
+      Map.entry("BPCHAR", Types.CHAR),
+      Map.entry("CHARACTER", Types.CHAR),
+      Map.entry("VARCHAR", Types.VARCHAR),
+      Map.entry("VARCHAR2", Types.VARCHAR),
+      Map.entry("CHARACTER VARYING", Types.VARCHAR),
+      Map.entry("NCHAR", Types.NCHAR),
+      Map.entry("NVARCHAR", Types.NVARCHAR),
+      Map.entry("NVARCHAR2", Types.NVARCHAR),
+      Map.entry("TEXT", Types.LONGVARCHAR),
+      Map.entry("MEDIUMTEXT", Types.LONGVARCHAR),
+      Map.entry("LONGTEXT", Types.LONGVARCHAR),
+      Map.entry("NTEXT", Types.LONGNVARCHAR),
+      Map.entry("CLOB", Types.CLOB),
+      Map.entry("NCLOB", Types.NCLOB),
+      Map.entry("BLOB", Types.BLOB),
+      Map.entry("BYTEA", Types.BLOB),
+      Map.entry("IMAGE", Types.BLOB),
+      Map.entry("BINARY", Types.BINARY),
+      Map.entry("VARBINARY", Types.VARBINARY),
+      Map.entry("RAW", Types.VARBINARY),
+      Map.entry("LONG RAW", Types.VARBINARY),
+      Map.entry("LONGVARBINARY", Types.LONGVARBINARY),
+      Map.entry("DATE", Types.DATE),
+      Map.entry("TIME", Types.TIME),
+      Map.entry("TIME WITH TIME ZONE", Types.TIME_WITH_TIMEZONE),
+      Map.entry("TIMETZ", Types.TIME_WITH_TIMEZONE),
+      Map.entry("TIMESTAMP", Types.TIMESTAMP),
+      Map.entry("DATETIME", Types.TIMESTAMP),
+      Map.entry("DATETIME2", Types.TIMESTAMP),
+      Map.entry("SMALLDATETIME", Types.TIMESTAMP),
+      Map.entry("TIMESTAMP WITH TIME ZONE", Types.TIMESTAMP_WITH_TIMEZONE),
+      Map.entry("TIMESTAMPTZ", Types.TIMESTAMP_WITH_TIMEZONE),
+      Map.entry("TIMESTAMP WITHOUT TIME ZONE", Types.TIMESTAMP),
+      Map.entry("ARRAY", Types.ARRAY),
+      Map.entry("STRUCT", Types.STRUCT),
+      Map.entry("REF", Types.REF),
+      Map.entry("XML", Types.SQLXML),
+      Map.entry("SQLXML", Types.SQLXML),
+      Map.entry("ROWID", Types.ROWID)
+  );
 
   private ResultSetBuilder() {
   }
@@ -83,50 +161,34 @@ final class ResultSetBuilder {
     );
   }
 
+  /**
+   * Resolves the JDBC type for a column. Trusts the server-provided jdbcType first;
+   * falls back to the lightweight client-side type name map when the server sends 0 or OTHER.
+   */
   private static int resolveJdbcType(final DnaJdbcModels.ColumnDef column) {
     if (column == null) {
       return Types.VARCHAR;
     }
-    if (column.jdbcType() != null) {
-      return column.jdbcType();
+    int serverType = column.jdbcType() != null ? column.jdbcType() : 0;
+    if (serverType != 0 && serverType != Types.OTHER) {
+      return serverType;
     }
-    String typeName = column.typeName() == null ? "" : column.typeName().toUpperCase();
-    return switch (typeName) {
-      case "BOOLEAN", "BIT" -> Types.BOOLEAN;
-      case "TINYINT" -> Types.TINYINT;
-      case "SMALLINT", "INT2" -> Types.SMALLINT;
-      case "INTEGER", "INT", "INT4", "MEDIUMINT" -> Types.INTEGER;
-      case "BIGINT", "INT8", "SERIAL", "BIGSERIAL" -> Types.BIGINT;
-      case "REAL", "FLOAT4" -> Types.REAL;
-      case "FLOAT", "FLOAT8" -> Types.FLOAT;
-      case "DOUBLE", "DOUBLE PRECISION" -> Types.DOUBLE;
-      case "DECIMAL", "NUMERIC", "NUMBER", "MONEY", "SMALLMONEY" -> Types.DECIMAL;
-      case "CHAR", "BPCHAR", "CHARACTER" -> Types.CHAR;
-      case "NCHAR", "NATIONAL CHAR", "NATIONAL CHARACTER" -> Types.NCHAR;
-      case "NVARCHAR", "NATIONAL VARCHAR", "NVARCHAR2", "NATIONAL CHARACTER VARYING" -> Types.NVARCHAR;
-      case "LONGVARCHAR", "MEDIUMTEXT", "LONGTEXT", "TEXT" -> Types.LONGVARCHAR;
-      case "LONGNVARCHAR", "NTEXT" -> Types.LONGNVARCHAR;
-      case "CLOB" -> Types.CLOB;
-      case "NCLOB" -> Types.NCLOB;
-      case "BLOB", "BYTEA", "IMAGE" -> Types.BLOB;
-      case "BINARY" -> Types.BINARY;
-      case "VARBINARY", "RAW", "LONG RAW" -> Types.VARBINARY;
-      case "LONGVARBINARY" -> Types.LONGVARBINARY;
-      case "DATE" -> Types.DATE;
-      case "TIME", "TIME_WITH_TIMEZONE" -> Types.TIME;
-      case "TIMESTAMP", "TIMESTAMP_WITH_TIMEZONE", "DATETIME", "DATETIME2", "SMALLDATETIME",
-          "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITHOUT TIME ZONE",
-          "TIMESTAMPTZ" -> Types.TIMESTAMP;
-      case "ARRAY" -> Types.ARRAY;
-      case "STRUCT" -> Types.STRUCT;
-      case "REF" -> Types.REF;
-      case "SQLXML", "XML" -> Types.SQLXML;
-      case "ROWID" -> Types.ROWID;
-      case "OTHER", "JSON", "JSONB", "UUID", "GEOMETRY", "GEOGRAPHY", "POINT",
-          "INTERVAL", "INET", "CIDR", "MACADDR", "ENUM", "SET",
-          "HSTORE", "TSVECTOR", "TSQUERY" -> Types.OTHER;
-      default -> Types.VARCHAR;
-    };
+    String typeName = column.typeName();
+    if (typeName == null || typeName.isBlank()) {
+      return serverType != 0 ? serverType : Types.VARCHAR;
+    }
+    String upper = typeName.toUpperCase(Locale.ROOT).trim();
+    // Strip size qualifiers: VARCHAR(255) → VARCHAR
+    int paren = upper.indexOf('(');
+    if (paren > 0) {
+      upper = upper.substring(0, paren).trim();
+    }
+    Integer mapped = FALLBACK_TYPE_MAP.get(upper);
+    if (mapped != null) {
+      return mapped;
+    }
+    // If server said OTHER, keep it; otherwise default to VARCHAR
+    return serverType != 0 ? serverType : Types.VARCHAR;
   }
 
   private static List<DnaJdbcModels.ColumnDef> safeColumns(final List<DnaJdbcModels.ColumnDef> values) {

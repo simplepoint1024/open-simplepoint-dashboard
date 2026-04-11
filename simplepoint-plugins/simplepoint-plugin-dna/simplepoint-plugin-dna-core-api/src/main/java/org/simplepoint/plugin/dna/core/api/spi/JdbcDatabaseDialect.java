@@ -1,7 +1,10 @@
 package org.simplepoint.plugin.dna.core.api.spi;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.simplepoint.plugin.dna.core.api.vo.JdbcMetadataModels;
@@ -54,6 +57,20 @@ public interface JdbcDatabaseDialect {
    */
   default int order() {
     return 100;
+  }
+
+  /**
+   * Returns the JDBC type mapping for this dialect.
+   *
+   * <p>The mapping normalizes vendor-specific native type names to standard
+   * {@link java.sql.Types} constants. Override this method to return a vendor-specific
+   * mapping that handles proprietary types such as MySQL {@code YEAR}, PostgreSQL
+   * {@code JSONB}, or Oracle {@code BINARY_FLOAT}.</p>
+   *
+   * @return type mapping, never null
+   */
+  default JdbcTypeMapping typeMapping() {
+    return StandardJdbcTypeMapping.INSTANCE;
   }
 
   /**
@@ -151,6 +168,277 @@ public interface JdbcDatabaseDialect {
   ) {
     return jdbcUrl;
   }
+
+  /**
+   * Describes which namespace layers the current JDBC metadata implementation supports.
+   *
+   * @param supportsCatalogsInTableDefinitions whether catalog arguments participate in table metadata APIs
+   * @param supportsSchemasInTableDefinitions whether schema arguments participate in table metadata APIs
+   */
+  record MetadataNamespaceSupport(
+      boolean supportsCatalogsInTableDefinitions,
+      boolean supportsSchemasInTableDefinitions
+  ) {
+  }
+
+  /**
+   * Generic metadata column definition used by dialect-driven metadata loading.
+   *
+   * @param name column label
+   * @param typeName JDBC type name
+   * @param jdbcType JDBC type code
+   */
+  record MetadataColumn(
+      String name,
+      String typeName,
+      int jdbcType
+  ) {
+  }
+
+  /**
+   * Generic tabular metadata payload used across catalog, schema, table, and column discovery.
+   *
+   * @param columns result columns
+   * @param rows result rows
+   */
+  record MetadataResult(
+      List<MetadataColumn> columns,
+      List<List<Object>> rows
+  ) {
+
+    /**
+     * Creates an immutable metadata result while preserving nullable cell values.
+     *
+     * @param columns result columns
+     * @param rows result rows
+     */
+    public MetadataResult {
+      columns = columns == null ? List.of() : List.copyOf(columns);
+      rows = rows == null ? List.of() : rows.stream()
+          .map(row -> row == null ? List.<Object>of() : Collections.unmodifiableList(new ArrayList<>(row)))
+          .toList();
+    }
+  }
+
+  /**
+   * Resolves namespace layering support for the current JDBC metadata implementation.
+   *
+   * @param metaData JDBC metadata
+   * @param context support context
+   * @return namespace layering support
+   * @throws SQLException on metadata failure
+   */
+  default MetadataNamespaceSupport resolveMetadataNamespaceSupport(
+      final DatabaseMetaData metaData,
+      final SupportContext context
+  ) throws SQLException {
+    return resolveMetadataNamespaceSupport(null, metaData, context);
+  }
+
+  /**
+   * Resolves namespace layering support for the current JDBC metadata implementation.
+   *
+   * @param connection current connection
+   * @param metaData JDBC metadata
+   * @param context support context
+   * @return namespace layering support
+   * @throws SQLException on metadata failure
+   */
+  MetadataNamespaceSupport resolveMetadataNamespaceSupport(
+      Connection connection,
+      DatabaseMetaData metaData,
+      SupportContext context
+  ) throws SQLException;
+
+  /**
+   * Loads catalog metadata.
+   *
+   * @param connection current connection
+   * @param metaData JDBC metadata
+   * @param context support context
+   * @return catalog metadata
+   * @throws SQLException on metadata failure
+   */
+  default MetadataResult loadCatalogs(
+      final Connection connection,
+      final DatabaseMetaData metaData,
+      final SupportContext context
+  ) throws SQLException {
+    return loadCatalogs(connection, metaData, context, null);
+  }
+
+  /**
+   * Loads catalog metadata.
+   *
+   * @param connection current connection
+   * @param metaData JDBC metadata
+   * @param context support context
+   * @param catalogPattern optional catalog pattern
+   * @return catalog metadata
+   * @throws SQLException on metadata failure
+   */
+  MetadataResult loadCatalogs(
+      Connection connection,
+      DatabaseMetaData metaData,
+      SupportContext context,
+      String catalogPattern
+  ) throws SQLException;
+
+  /**
+   * Loads schema metadata.
+   *
+   * @param connection current connection
+   * @param metaData JDBC metadata
+   * @param context support context
+   * @return schema metadata
+   * @throws SQLException on metadata failure
+   */
+  default MetadataResult loadSchemas(
+      final Connection connection,
+      final DatabaseMetaData metaData,
+      final SupportContext context
+  ) throws SQLException {
+    return loadSchemas(connection, metaData, context, null, null);
+  }
+
+  /**
+   * Loads schema metadata.
+   *
+   * @param connection current connection
+   * @param metaData JDBC metadata
+   * @param context support context
+   * @param catalogPattern optional catalog pattern
+   * @return schema metadata
+   * @throws SQLException on metadata failure
+   */
+  default MetadataResult loadSchemas(
+      final Connection connection,
+      final DatabaseMetaData metaData,
+      final SupportContext context,
+      final String catalogPattern
+  ) throws SQLException {
+    return loadSchemas(connection, metaData, context, catalogPattern, null);
+  }
+
+  /**
+   * Loads schema metadata.
+   *
+   * @param connection current connection
+   * @param metaData JDBC metadata
+   * @param context support context
+   * @param catalogPattern optional catalog pattern
+   * @param schemaPattern optional schema pattern
+   * @return schema metadata
+   * @throws SQLException on metadata failure
+   */
+  MetadataResult loadSchemas(
+      Connection connection,
+      DatabaseMetaData metaData,
+      SupportContext context,
+      String catalogPattern,
+      String schemaPattern
+  ) throws SQLException;
+
+  /**
+   * Loads supported table types.
+   *
+   * @param connection current connection
+   * @param metaData JDBC metadata
+   * @param context support context
+   * @return table-type metadata
+   * @throws SQLException on metadata failure
+   */
+  MetadataResult loadTableTypes(
+      Connection connection,
+      DatabaseMetaData metaData,
+      SupportContext context
+  ) throws SQLException;
+
+  /**
+   * Loads table metadata.
+   *
+   * @param connection current connection
+   * @param metaData JDBC metadata
+   * @param context support context
+   * @return table metadata
+   * @throws SQLException on metadata failure
+   */
+  default MetadataResult loadTables(
+      final Connection connection,
+      final DatabaseMetaData metaData,
+      final SupportContext context
+  ) throws SQLException {
+    return loadTables(connection, metaData, context, null, null, null, null);
+  }
+
+  /**
+   * Loads table metadata.
+   *
+   * @param connection current connection
+   * @param metaData JDBC metadata
+   * @param context support context
+   * @param catalogPattern optional catalog pattern
+   * @param schemaPattern optional schema pattern
+   * @param tablePattern optional table pattern
+   * @param types optional table types
+   * @return table metadata
+   * @throws SQLException on metadata failure
+   */
+  MetadataResult loadTables(
+      Connection connection,
+      DatabaseMetaData metaData,
+      SupportContext context,
+      String catalogPattern,
+      String schemaPattern,
+      String tablePattern,
+      List<String> types
+  ) throws SQLException;
+
+  /**
+   * Loads column metadata.
+   *
+   * @param connection current connection
+   * @param metaData JDBC metadata
+   * @param context support context
+   * @param catalogPattern optional catalog pattern
+   * @param schemaPattern optional schema pattern
+   * @param tablePattern optional table pattern
+   * @return column metadata
+   * @throws SQLException on metadata failure
+   */
+  default MetadataResult loadColumns(
+      final Connection connection,
+      final DatabaseMetaData metaData,
+      final SupportContext context,
+      final String catalogPattern,
+      final String schemaPattern,
+      final String tablePattern
+  ) throws SQLException {
+    return loadColumns(connection, metaData, context, catalogPattern, schemaPattern, tablePattern, null);
+  }
+
+  /**
+   * Loads column metadata.
+   *
+   * @param connection current connection
+   * @param metaData JDBC metadata
+   * @param context support context
+   * @param catalogPattern optional catalog pattern
+   * @param schemaPattern optional schema pattern
+   * @param tablePattern optional table pattern
+   * @param columnPattern optional column pattern
+   * @return column metadata
+   * @throws SQLException on metadata failure
+   */
+  MetadataResult loadColumns(
+      Connection connection,
+      DatabaseMetaData metaData,
+      SupportContext context,
+      String catalogPattern,
+      String schemaPattern,
+      String tablePattern,
+      String columnPattern
+  ) throws SQLException;
 
   /**
    * Returns whether the dialect supports creating the supplied namespace kind.
