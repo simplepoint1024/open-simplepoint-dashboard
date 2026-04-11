@@ -299,6 +299,14 @@ public class FederationJdbcSocketServer implements DisposableBean {
               new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode())
           ))
       );
+      case "EXECUTE_UPDATE" -> new RequestOutcome(
+          requiredSession,
+          SocketResponse.update(driverService.executeUpdate(
+              requiredSession.driverSession(),
+              contextId,
+              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode())
+          ))
+      );
       case "CLOSE" -> new RequestOutcome(requiredSession, SocketResponse.ok());
       case "FLUSH_CACHE" -> {
         driverService.flushCache(requiredSession.driverSession());
@@ -437,27 +445,32 @@ public class FederationJdbcSocketServer implements DisposableBean {
       String errorMessage,
       FederationJdbcDriverModels.PingResult pingResult,
       FederationJdbcDriverModels.TabularResult tabularResult,
-      FederationQueryModels.SqlQueryResult queryResult
+      FederationQueryModels.SqlQueryResult queryResult,
+      FederationQueryModels.SqlUpdateResult updateResult
   ) {
 
     private static SocketResponse ok() {
-      return new SocketResponse(true, null, null, null, null);
+      return new SocketResponse(true, null, null, null, null, null);
     }
 
     private static SocketResponse error(final String errorMessage) {
-      return new SocketResponse(false, errorMessage, null, null, null);
+      return new SocketResponse(false, errorMessage, null, null, null, null);
     }
 
     private static SocketResponse ping(final FederationJdbcDriverModels.PingResult pingResult) {
-      return new SocketResponse(true, null, pingResult, null, null);
+      return new SocketResponse(true, null, pingResult, null, null, null);
     }
 
     private static SocketResponse tabular(final FederationJdbcDriverModels.TabularResult tabularResult) {
-      return new SocketResponse(true, null, null, tabularResult, null);
+      return new SocketResponse(true, null, null, tabularResult, null, null);
     }
 
     private static SocketResponse query(final FederationQueryModels.SqlQueryResult queryResult) {
-      return new SocketResponse(true, null, null, null, queryResult);
+      return new SocketResponse(true, null, null, null, queryResult, null);
+    }
+
+    private static SocketResponse update(final FederationQueryModels.SqlUpdateResult updateResult) {
+      return new SocketResponse(true, null, null, null, null, updateResult);
     }
   }
 }

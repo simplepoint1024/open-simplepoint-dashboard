@@ -398,6 +398,31 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
     ))).queryResult();
   }
 
+  DnaJdbcModels.UpdateResult executeUpdate(
+      final String catalogCode,
+      final String sql,
+      final String defaultSchema
+  ) throws SQLException {
+    return requireSuccess(send(new DnaJdbcModels.SocketRequest(
+        "EXECUTE_UPDATE",
+        null,
+        null,
+        catalogCode,
+        null,
+        sessionContextId,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        sql,
+        defaultSchema,
+        null,
+        null
+    ))).updateResult();
+  }
+
   void flushCache() throws SQLException {
     requireSuccess(send(new DnaJdbcModels.SocketRequest(
         "FLUSH_CACHE",

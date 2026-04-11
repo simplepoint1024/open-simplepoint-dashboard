@@ -64,6 +64,15 @@ final class DnaJdbcModels {
   ) {
   }
 
+  record UpdateResult(
+      String catalogCode,
+      String dataSourceCode,
+      Long affectedRows,
+      Long executionTimeMs,
+      String pushedSql
+  ) {
+  }
+
   record SocketRequest(
       String action,
       String loginSubject,
@@ -89,7 +98,8 @@ final class DnaJdbcModels {
       String errorMessage,
       PingResult pingResult,
       TabularResult tabularResult,
-      QueryResult queryResult
+      QueryResult queryResult,
+      UpdateResult updateResult
   ) {
   }
 }

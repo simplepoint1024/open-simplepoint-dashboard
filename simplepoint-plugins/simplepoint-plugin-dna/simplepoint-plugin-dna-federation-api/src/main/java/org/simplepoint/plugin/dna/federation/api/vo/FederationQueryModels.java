@@ -17,11 +17,17 @@ public final class FederationQueryModels {
    *
    * @param catalogCode target federation catalog code
    * @param sql         SQL text
+   * @param defaultSchema optional default schema for unqualified identifiers
    */
   public record SqlConsoleRequest(
       String catalogCode,
-      String sql
+      String sql,
+      String defaultSchema
   ) {
+
+    public SqlConsoleRequest(final String catalogCode, final String sql) {
+      this(catalogCode, sql, null);
+    }
   }
 
   /**
@@ -29,11 +35,17 @@ public final class FederationQueryModels {
    *
    * @param name     column label
    * @param typeName JDBC type name
+   * @param jdbcType JDBC type code
    */
   public record SqlColumn(
       String name,
-      String typeName
+      String typeName,
+      Integer jdbcType
   ) {
+
+    public SqlColumn(final String name, final String typeName) {
+      this(name, typeName, null);
+    }
   }
 
   /**
@@ -82,6 +94,24 @@ public final class FederationQueryModels {
       planText = planText == null ? "" : planText;
       pushedSqls = pushedSqls == null ? List.of() : List.copyOf(pushedSqls);
     }
+  }
+
+  /**
+   * DML (INSERT / UPDATE / DELETE / UPSERT) execution response payload.
+   *
+   * @param catalogCode     target federation catalog code
+   * @param dataSourceCode  physical datasource code that executed the statement
+   * @param affectedRows    number of rows affected by the statement
+   * @param executionTimeMs execution time in milliseconds
+   * @param pushedSql       actual SQL pushed to the physical database
+   */
+  public record SqlUpdateResult(
+      String catalogCode,
+      String dataSourceCode,
+      long affectedRows,
+      long executionTimeMs,
+      String pushedSql
+  ) {
   }
 
   /**

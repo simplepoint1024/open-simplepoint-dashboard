@@ -439,6 +439,37 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
     });
   }
 
+  @Override
+  public FederationQueryModels.SqlUpdateResult executeUpdate(
+      final FederationJdbcDriverModels.DriverRequest request,
+      final FederationJdbcDriverModels.QueryRequest queryRequest
+  ) {
+    try (FederationJdbcDriverService.DriverSession session = openSession(request)) {
+      return executeUpdate(session, request == null ? null : request.contextId(), queryRequest);
+    }
+  }
+
+  @Override
+  public FederationQueryModels.SqlUpdateResult executeUpdate(
+      final FederationJdbcDriverService.DriverSession session,
+      final String contextId,
+      final FederationJdbcDriverModels.QueryRequest queryRequest
+  ) {
+    JdbcConnectionSession requiredSession = requireSession(session);
+    AuthorizedDataSource dmlDataSource = requiredSession.requireDmlDataSource(
+        queryRequest == null ? null : queryRequest.catalogCode()
+    );
+    return withDriverContext(requiredSession, contextId, dmlDataSource.dataSource().getCode(), (resolvedSession, resolvedContextId) -> {
+      String sql = requireValue(queryRequest == null ? null : queryRequest.sql(), "SQL 不能为空");
+      String defaultSchema = trimToNull(queryRequest == null ? null : queryRequest.defaultSchema());
+      return sqlConsoleService.executeUpdate(dmlDataSource.dataSource().getId(), new FederationQueryModels.SqlConsoleRequest(
+          dmlDataSource.dataSource().getCode(),
+          sql,
+          defaultSchema
+      ));
+    });
+  }
+
   private <T> T withDriverContext(
       final JdbcConnectionSession session,
       final String requestedContextId,
@@ -917,30 +948,41 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
     }
 
     private AuthorizedDataSource requireQueryDataSource(final String requestedCatalogCode) {
+      return requireOperationDataSource(requestedCatalogCode, FederationJdbcOperation.QUERY);
+    }
+
+    private AuthorizedDataSource requireDmlDataSource(final String requestedCatalogCode) {
+      return requireOperationDataSource(requestedCatalogCode, FederationJdbcOperation.DML);
+    }
+
+    private AuthorizedDataSource requireOperationDataSource(
+        final String requestedCatalogCode,
+        final FederationJdbcOperation operation
+    ) {
       String normalizedRequestedCatalogCode = trimToNull(requestedCatalogCode);
       if (normalizedRequestedCatalogCode != null) {
         AuthorizedDataSource authorizedDataSource = findAuthorizedDataSource(normalizedRequestedCatalogCode)
             .orElseThrow(() -> new AccessDeniedException("当前系统用户未被授权访问该数据源的 JDBC 连接"));
-        if (!authorizedDataSource.grant().getOperationPermissions().contains(FederationJdbcOperation.QUERY.name())) {
-          throw new AccessDeniedException("当前 JDBC 连接用户未授权操作: " + FederationJdbcOperation.QUERY.name());
+        if (!authorizedDataSource.grant().getOperationPermissions().contains(operation.name())) {
+          throw new AccessDeniedException("当前 JDBC 连接用户未授权操作: " + operation.name());
         }
         return authorizedDataSource;
       }
       String normalizedSelectedCatalogCode = trimToNull(selectedCatalogCode);
       if (normalizedSelectedCatalogCode != null) {
-        return requireQueryDataSource(normalizedSelectedCatalogCode);
+        return requireOperationDataSource(normalizedSelectedCatalogCode, operation);
       }
-      List<AuthorizedDataSource> queryDataSources = authorizedDataSources.values().stream()
-          .filter(source -> source.grant().getOperationPermissions().contains(FederationJdbcOperation.QUERY.name()))
+      List<AuthorizedDataSource> candidates = authorizedDataSources.values().stream()
+          .filter(source -> source.grant().getOperationPermissions().contains(operation.name()))
           .sorted(Comparator.comparing(
               source -> source.dataSource().getCode(),
               Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
           ))
           .toList();
-      if (queryDataSources.isEmpty()) {
-        throw new AccessDeniedException("当前 JDBC 连接用户未授权操作: " + FederationJdbcOperation.QUERY.name());
+      if (candidates.isEmpty()) {
+        throw new AccessDeniedException("当前 JDBC 连接用户未授权操作: " + operation.name());
       }
-      return queryDataSources.get(0);
+      return candidates.get(0);
     }
 
     @Override

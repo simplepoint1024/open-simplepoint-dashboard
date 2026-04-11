@@ -22,4 +22,41 @@ public interface FederationSqlConsoleService {
    * @return execution response
    */
   FederationQueryModels.SqlQueryResult execute(FederationQueryModels.SqlConsoleRequest request);
+
+  /**
+   * Executes a read-only federation SQL query with an already resolved datasource id.
+   *
+   * @param dataSourceId resolved datasource id
+   * @param request SQL console request
+   * @return execution response
+   */
+  default FederationQueryModels.SqlQueryResult execute(
+      final String dataSourceId,
+      final FederationQueryModels.SqlConsoleRequest request
+  ) {
+    return execute(request);
+  }
+
+  /**
+   * Executes a DML statement (INSERT / UPDATE / DELETE / UPSERT) against a single physical datasource.
+   * The statement is pushed directly to the target database without Calcite optimization.
+   *
+   * @param request SQL console request containing the DML statement
+   * @return update result with affected row count
+   */
+  FederationQueryModels.SqlUpdateResult executeUpdate(FederationQueryModels.SqlConsoleRequest request);
+
+  /**
+   * Executes a DML statement with an already resolved datasource id.
+   *
+   * @param dataSourceId resolved datasource id
+   * @param request SQL console request containing the DML statement
+   * @return update result with affected row count
+   */
+  default FederationQueryModels.SqlUpdateResult executeUpdate(
+      final String dataSourceId,
+      final FederationQueryModels.SqlConsoleRequest request
+  ) {
+    return executeUpdate(request);
+  }
 }

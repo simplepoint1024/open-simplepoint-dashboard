@@ -373,4 +373,30 @@ public interface FederationJdbcDriverService {
       String contextId,
       FederationJdbcDriverModels.QueryRequest queryRequest
   );
+
+  /**
+   * Executes a DML statement (INSERT / UPDATE / DELETE / UPSERT) through a request-based call.
+   *
+   * @param request driver request
+   * @param queryRequest query request containing the DML SQL
+   * @return update result with affected row count
+   */
+  FederationQueryModels.SqlUpdateResult executeUpdate(
+      FederationJdbcDriverModels.DriverRequest request,
+      FederationJdbcDriverModels.QueryRequest queryRequest
+  );
+
+  /**
+   * Executes a DML statement for an existing driver session.
+   *
+   * @param session reusable driver session
+   * @param contextId optional permission context id
+   * @param queryRequest query request containing the DML SQL
+   * @return update result with affected row count
+   */
+  FederationQueryModels.SqlUpdateResult executeUpdate(
+      DriverSession session,
+      String contextId,
+      FederationJdbcDriverModels.QueryRequest queryRequest
+  );
 }

@@ -65,20 +65,20 @@ final class DnaJdbcPreparedStatement extends DnaJdbcStatement implements Prepare
   @Override
   public boolean execute() throws SQLException {
     ensureOpen();
-    doExecuteQuery(renderPreparedSql());
-    return true;
+    String sql = renderPreparedSql();
+    return super.execute(sql);
   }
 
   @Override
   public int executeUpdate() throws SQLException {
     ensureOpen();
-    throw unsupported("更新语句");
+    return doExecuteUpdate(renderPreparedSql());
   }
 
   @Override
   public long executeLargeUpdate() throws SQLException {
     ensureOpen();
-    throw unsupported("更新语句");
+    return doExecuteUpdate(renderPreparedSql());
   }
 
   // ------------------------------------------------------------------

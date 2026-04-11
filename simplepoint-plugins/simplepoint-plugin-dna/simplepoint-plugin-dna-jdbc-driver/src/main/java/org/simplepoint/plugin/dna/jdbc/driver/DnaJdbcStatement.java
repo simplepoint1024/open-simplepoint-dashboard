@@ -15,8 +15,9 @@ import java.sql.Statement;
  * <strong>not</strong> {@code final} so that {@code DnaJdbcPreparedStatement}
  * can extend it with parameter-binding logic.
  *
- * <p>Only read queries are supported; any mutation or batch operation throws
- * {@link SQLFeatureNotSupportedException}.
+ * <p>Supports both read queries (SELECT) and DML statements (INSERT, UPDATE,
+ * DELETE, MERGE/UPSERT). DML is pushed directly to the physical database
+ * through the DNA gateway without Calcite optimization.
  */
 class DnaJdbcStatement implements Statement {
 
@@ -39,6 +40,10 @@ class DnaJdbcStatement implements Statement {
   private boolean closeOnCompletion;
 
   protected ResultSet currentResultSet;
+
+  private int lastUpdateCount = -1;
+
+  private boolean lastExecuteWasQuery;
 
   DnaJdbcStatement(
       final DnaJdbcConnection connection,
@@ -83,6 +88,41 @@ class DnaJdbcStatement implements Statement {
     } catch (SQLException ex) {
       if (timeoutAdjusted && ex.getCause() instanceof java.net.SocketTimeoutException) {
         throw new SQLException("查询超时 (" + queryTimeout + "s)", "HYT00", ex);
+      }
+      throw ex;
+    } finally {
+      if (timeoutAdjusted) {
+        client.setSocketTimeout(previousTimeout);
+      }
+    }
+  }
+
+  /**
+   * Executes the given DML SQL against the DNA gateway and returns the
+   * affected row count.
+   *
+   * @param sql the DML SQL to execute (INSERT / UPDATE / DELETE / MERGE)
+   * @return affected row count
+   * @throws SQLException if a database access error occurs
+   */
+  protected int doExecuteUpdate(final String sql) throws SQLException {
+    closeCurrentResultSet();
+    DnaJdbcClient client = connection.client();
+    int previousTimeout = 0;
+    boolean timeoutAdjusted = false;
+    if (queryTimeout > 0) {
+      previousTimeout = 0;
+      client.setSocketTimeout(queryTimeout * 1000);
+      timeoutAdjusted = true;
+    }
+    try {
+      DnaJdbcModels.UpdateResult result =
+          client.executeUpdate(connection.currentCatalog(), sql, connection.currentSchema());
+      lastUpdateCount = result != null && result.affectedRows() != null ? result.affectedRows().intValue() : 0;
+      return lastUpdateCount;
+    } catch (SQLException ex) {
+      if (timeoutAdjusted && ex.getCause() instanceof java.net.SocketTimeoutException) {
+        throw new SQLException("执行超时 (" + queryTimeout + "s)", "HYT00", ex);
       }
       throw ex;
     } finally {
@@ -148,15 +188,27 @@ class DnaJdbcStatement implements Statement {
   private static final java.util.regex.Pattern FLUSH_CACHE_PATTERN =
       java.util.regex.Pattern.compile("\\s*FLUSH\\s+CACHE\\s*", java.util.regex.Pattern.CASE_INSENSITIVE);
 
+  private static final java.util.regex.Pattern DML_PATTERN =
+      java.util.regex.Pattern.compile("\\s*(INSERT|UPDATE|DELETE|MERGE|UPSERT)\\b", java.util.regex.Pattern.CASE_INSENSITIVE);
+
   @Override
   public boolean execute(final String sql) throws SQLException {
     ensureOpen();
     String resolved = resolveSql(sql);
     if (FLUSH_CACHE_PATTERN.matcher(resolved).matches()) {
       connection.client().flushCache();
+      lastExecuteWasQuery = false;
+      lastUpdateCount = 0;
+      return false;
+    }
+    if (DML_PATTERN.matcher(resolved).lookingAt()) {
+      doExecuteUpdate(resolved);
+      lastExecuteWasQuery = false;
       return false;
     }
     doExecuteQuery(resolved);
+    lastExecuteWasQuery = true;
+    lastUpdateCount = -1;
     return true;
   }
 
@@ -178,7 +230,8 @@ class DnaJdbcStatement implements Statement {
   @Override
   public int executeUpdate(final String sql) throws SQLException {
     ensureOpen();
-    throw unsupported("更新语句");
+    String resolved = resolveSql(sql);
+    return doExecuteUpdate(resolved);
   }
 
   @Override
@@ -199,7 +252,8 @@ class DnaJdbcStatement implements Statement {
   @Override
   public long executeLargeUpdate(final String sql) throws SQLException {
     ensureOpen();
-    throw unsupported("更新语句");
+    String resolved = resolveSql(sql);
+    return doExecuteUpdate(resolved);
   }
 
   @Override
@@ -251,19 +305,19 @@ class DnaJdbcStatement implements Statement {
   @Override
   public ResultSet getResultSet() throws SQLException {
     ensureOpen();
-    return currentResultSet;
+    return lastExecuteWasQuery ? currentResultSet : null;
   }
 
   @Override
   public int getUpdateCount() throws SQLException {
     ensureOpen();
-    return -1;
+    return lastUpdateCount;
   }
 
   @Override
   public long getLargeUpdateCount() throws SQLException {
     ensureOpen();
-    return -1L;
+    return lastUpdateCount;
   }
 
   @Override
