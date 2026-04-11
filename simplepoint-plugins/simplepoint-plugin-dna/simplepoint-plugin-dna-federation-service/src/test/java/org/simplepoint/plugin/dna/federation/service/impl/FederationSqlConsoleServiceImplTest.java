@@ -5,26 +5,28 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.data.calcite.core.query.CalciteQueryAnalysis;
 import org.simplepoint.data.calcite.core.query.CalciteQueryColumn;
 import org.simplepoint.data.calcite.core.query.CalciteQueryEngine;
+import org.simplepoint.data.calcite.core.query.CalciteQueryRequest;
 import org.simplepoint.data.calcite.core.query.CalciteQueryResult;
-import org.simplepoint.plugin.dna.federation.api.entity.FederationCatalog;
+import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
+import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationQueryAudit;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationQueryPolicy;
 import org.simplepoint.plugin.dna.federation.api.repository.FederationQueryPolicyRepository;
-import org.simplepoint.plugin.dna.federation.api.service.FederationCatalogService;
 import org.simplepoint.plugin.dna.federation.api.service.FederationQueryAuditService;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationQueryModels;
 import org.simplepoint.plugin.dna.federation.service.support.FederationCalciteCatalogAssembler;
@@ -33,7 +35,7 @@ import org.simplepoint.plugin.dna.federation.service.support.FederationCalciteCa
 class FederationSqlConsoleServiceImplTest {
 
   @Mock
-  private FederationCatalogService catalogService;
+  private JdbcDataSourceDefinitionService dataSourceService;
 
   @Mock
   private FederationQueryPolicyRepository policyRepository;
@@ -48,12 +50,54 @@ class FederationSqlConsoleServiceImplTest {
   private CalciteQueryEngine queryEngine;
 
   @Test
-  void executeShouldRejectCrossSourceJoinWhenPolicyDisallowsIt() {
-    FederationCatalog catalog = enabledCatalog();
-    FederationQueryPolicy policy = enabledPolicy(false);
+  void executeShouldNotMountAnyDatasourceForLocalQuery() {
+    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "ds1");
+    FederationQueryPolicy policy = enabledPolicy("ds-1", true);
     FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly =
         new FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly(
-            "demo",
+            "ds1",
+            List.of(),
+            rootSchema -> {
+            }
+        );
+    CalciteQueryAnalysis analysis = new CalciteQueryAnalysis("EnumerableValues(tuples=[[{ 1 }]])", List.of(), false);
+    CalciteQueryResult queryResult = new CalciteQueryResult(
+        List.of(new CalciteQueryColumn("EXPR$0", "INTEGER")),
+        List.of(List.of(1)),
+        false,
+        1,
+        3L,
+        analysis
+    );
+    when(policyRepository.findAllActiveByCatalogId("ds-1")).thenReturn(List.of(policy));
+    when(catalogAssembler.assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty())))
+        .thenReturn(assembly);
+    when(queryEngine.explain(any(), any())).thenReturn(analysis);
+    when(queryEngine.execute(any(), any())).thenReturn(queryResult);
+    when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    FederationSqlConsoleServiceImpl service = service();
+
+    when(dataSourceService.findActiveById("ds-1")).thenReturn(java.util.Optional.of(dataSource));
+
+    FederationQueryModels.SqlQueryResult response = service.execute("ds-1", new FederationQueryModels.SqlConsoleRequest(
+        "ds1",
+        "select 1"
+    ));
+
+    assertEquals("ds1", response.catalogCode());
+    assertTrue(response.dataSources().isEmpty());
+    verify(dataSourceService, never()).listEnabledDefinitions();
+    verify(catalogAssembler).assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty()));
+  }
+
+  @Test
+  void executeShouldRejectCrossSourceJoinWhenPolicyDisallowsIt() {
+    JdbcDataSourceDefinition selected = enabledDataSource("ds-1", "ds1");
+    JdbcDataSourceDefinition other = enabledDataSource("ds-2", "ds2");
+    FederationQueryPolicy policy = enabledPolicy("ds-1", false);
+    FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly =
+        new FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly(
+            "ds1",
             List.of("ds1", "ds2"),
             rootSchema -> {
             }
@@ -61,28 +105,28 @@ class FederationSqlConsoleServiceImplTest {
     CalciteQueryAnalysis analysis = new CalciteQueryAnalysis(
         """
             EnumerableHashJoin(condition=[=($0, $2)], joinType=[inner])
-              JdbcTableScan(table=[[demo, ds1, PUBLIC, ORDERS]])
-              JdbcTableScan(table=[[demo, ds2, PUBLIC, CUSTOMERS]])
+              JdbcTableScan(table=[[ds1, PUBLIC, ORDERS]])
+              JdbcTableScan(table=[[ds2, PUBLIC, CUSTOMERS]])
             """,
         List.of("Filter"),
         true
     );
-    when(catalogService.findActiveByCode("demo")).thenReturn(Optional.of(catalog));
-    when(policyRepository.findAllActiveByCatalogId("catalog-1")).thenReturn(List.of(policy));
-    when(catalogAssembler.assemble(catalog)).thenReturn(assembly);
+    when(policyRepository.findAllActiveByCatalogId("ds-1")).thenReturn(List.of(policy));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(selected, other));
+    when(catalogAssembler.assemble(eq("ds1"), argThat(definitions ->
+        definitions.size() == 2
+            && definitions.stream().map(JdbcDataSourceDefinition::getCode).toList().containsAll(List.of("ds1", "ds2"))
+    ))).thenReturn(assembly);
     when(queryEngine.explain(any(), any())).thenReturn(analysis);
     when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    FederationSqlConsoleServiceImpl service = new FederationSqlConsoleServiceImpl(
-        catalogService,
-        policyRepository,
-        auditService,
-        catalogAssembler,
-        queryEngine
-    );
+    FederationSqlConsoleServiceImpl service = service();
+
+    when(dataSourceService.findActiveById("ds-1")).thenReturn(java.util.Optional.of(selected));
 
     IllegalStateException exception = assertThrows(IllegalStateException.class, () -> service.execute(
+        "ds-1",
         new FederationQueryModels.SqlConsoleRequest(
-            "demo",
+            "ds1",
             "select * from ds1.orders join ds2.customers on ds1.orders.customer_id = ds2.customers.id"
         )
     ));
@@ -91,18 +135,19 @@ class FederationSqlConsoleServiceImplTest {
     verify(queryEngine, never()).execute(any(), any());
     verify(auditService).create(argThat((FederationQueryAudit audit) ->
         "REJECTED".equals(audit.getStatus())
-            && "demo".equals(audit.getCatalogCode())
+            && "ds1".equals(audit.getCatalogCode())
             && audit.getErrorMessage() != null
     ));
   }
 
   @Test
   void executeShouldReturnResultAndWriteSuccessAudit() {
-    FederationCatalog catalog = enabledCatalog();
-    FederationQueryPolicy policy = enabledPolicy(true);
+    JdbcDataSourceDefinition selected = enabledDataSource("ds-1", "ds1");
+    JdbcDataSourceDefinition other = enabledDataSource("ds-2", "ds2");
+    FederationQueryPolicy policy = enabledPolicy("ds-1", true);
     FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly =
         new FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly(
-            "demo",
+            "ds1",
             List.of("ds1", "ds2"),
             rootSchema -> {
             }
@@ -111,8 +156,8 @@ class FederationSqlConsoleServiceImplTest {
         """
             EnumerableHashJoin(condition=[=($0, $2)], joinType=[inner])
               JdbcFilter(condition=[>($2, 0)])
-                JdbcTableScan(table=[[demo, ds1, PUBLIC, ORDERS]])
-              JdbcTableScan(table=[[demo, ds2, PUBLIC, CUSTOMERS]])
+                JdbcTableScan(table=[[ds1, PUBLIC, ORDERS]])
+              JdbcTableScan(table=[[ds2, PUBLIC, CUSTOMERS]])
             """,
         List.of("Filter"),
         true
@@ -128,32 +173,30 @@ class FederationSqlConsoleServiceImplTest {
         42L,
         analysis
     );
-    when(catalogService.findActiveByCode("demo")).thenReturn(Optional.of(catalog));
-    when(policyRepository.findAllActiveByCatalogId("catalog-1")).thenReturn(List.of(policy));
-    when(catalogAssembler.assemble(catalog)).thenReturn(assembly);
+    when(policyRepository.findAllActiveByCatalogId("ds-1")).thenReturn(List.of(policy));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(selected, other));
+    when(catalogAssembler.assemble(eq("ds1"), argThat(definitions ->
+        definitions.size() == 2
+            && definitions.stream().map(JdbcDataSourceDefinition::getCode).toList().containsAll(List.of("ds1", "ds2"))
+    ))).thenReturn(assembly);
     when(queryEngine.explain(any(), any())).thenReturn(analysis);
     when(queryEngine.execute(any(), any())).thenReturn(queryResult);
     when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    FederationSqlConsoleServiceImpl service = new FederationSqlConsoleServiceImpl(
-        catalogService,
-        policyRepository,
-        auditService,
-        catalogAssembler,
-        queryEngine
-    );
+    FederationSqlConsoleServiceImpl service = service();
 
-    FederationQueryModels.SqlQueryResult response = service.execute(new FederationQueryModels.SqlConsoleRequest(
-        "demo",
+    when(dataSourceService.findActiveById("ds-1")).thenReturn(java.util.Optional.of(selected));
+
+    FederationQueryModels.SqlQueryResult response = service.execute("ds-1", new FederationQueryModels.SqlConsoleRequest(
+        "ds1",
         "select o.id, c.name from ds1.orders o join ds2.customers c on o.customer_id = c.id"
     ));
 
-    assertEquals("demo", response.catalogCode());
+    assertEquals("ds1", response.catalogCode());
     assertEquals("policy-demo", response.policyCode());
     assertEquals(2, response.dataSources().size());
     assertTrue(response.crossSourceJoin());
     assertEquals(1, response.returnedRows());
     assertEquals("Alice", response.rows().get(0).get(1));
-    assertTrue(response.pushedSqls().isEmpty());
     assertTrue(response.pushdownSummary().contains("命中数据源"));
     verify(auditService).create(argThat((FederationQueryAudit audit) ->
         "SUCCESS".equals(audit.getStatus())
@@ -162,19 +205,84 @@ class FederationSqlConsoleServiceImplTest {
     ));
   }
 
-  private static FederationCatalog enabledCatalog() {
-    FederationCatalog catalog = new FederationCatalog();
-    catalog.setId("catalog-1");
-    catalog.setCode("demo");
-    catalog.setName("Demo");
-    catalog.setEnabled(true);
-    return catalog;
+  @Test
+  void executeShouldNormalizeQualifiedIdentifiersForJdbcQueries() {
+    JdbcDataSourceDefinition selected = enabledDataSource("pg-1", "pg");
+    FederationQueryPolicy policy = enabledPolicy("pg-1", true);
+    FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly =
+        new FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly(
+            "pg",
+            List.of("pg"),
+            rootSchema -> {
+            }
+        );
+    CalciteQueryAnalysis analysis = new CalciteQueryAnalysis(
+        """
+            JdbcTableScan(table=[[pg, reporting, ORDERS]])
+            """,
+        List.of(),
+        false
+    );
+    CalciteQueryResult queryResult = new CalciteQueryResult(
+        List.of(new CalciteQueryColumn("total", "INTEGER")),
+        List.of(List.of(1)),
+        false,
+        1,
+        8L,
+        analysis
+    );
+    when(policyRepository.findAllActiveByCatalogId("pg-1")).thenReturn(List.of(policy));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(selected));
+    when(catalogAssembler.assemble(eq("pg"), argThat(definitions ->
+        definitions.size() == 1
+            && definitions.stream().map(JdbcDataSourceDefinition::getCode).toList().contains("pg")
+    ))).thenReturn(assembly);
+    when(queryEngine.explain(any(), any())).thenReturn(analysis);
+    when(queryEngine.execute(any(), any())).thenReturn(queryResult);
+    when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    FederationSqlConsoleServiceImpl service = service();
+
+    when(dataSourceService.findActiveById("pg-1")).thenReturn(java.util.Optional.of(selected));
+
+    FederationQueryModels.SqlQueryResult response = service.execute("pg-1", new FederationQueryModels.SqlConsoleRequest(
+        "pg",
+        "select count(*) from pg.reporting.orders"
+    ));
+
+    ArgumentCaptor<CalciteQueryRequest> explainRequest = ArgumentCaptor.forClass(CalciteQueryRequest.class);
+    ArgumentCaptor<CalciteQueryRequest> executeRequest = ArgumentCaptor.forClass(CalciteQueryRequest.class);
+    assertEquals(1, response.returnedRows());
+    assertEquals(1, response.rows().get(0).get(0));
+    verify(queryEngine).explain(explainRequest.capture(), any());
+    verify(queryEngine).execute(executeRequest.capture(), any());
+    assertTrue(usesQuotedQualifiedName(explainRequest.getValue()), explainRequest.getValue().sql());
+    assertTrue(usesQuotedQualifiedName(executeRequest.getValue()), executeRequest.getValue().sql());
   }
 
-  private static FederationQueryPolicy enabledPolicy(final boolean allowCrossSourceJoin) {
+  private FederationSqlConsoleServiceImpl service() {
+    return new FederationSqlConsoleServiceImpl(
+        dataSourceService,
+        policyRepository,
+        auditService,
+        catalogAssembler,
+        queryEngine,
+        new org.simplepoint.plugin.dna.federation.service.support.FederationMetadataCacheService()
+    );
+  }
+
+  private static JdbcDataSourceDefinition enabledDataSource(final String id, final String code) {
+    JdbcDataSourceDefinition dataSource = new JdbcDataSourceDefinition();
+    dataSource.setId(id);
+    dataSource.setCode(code);
+    dataSource.setName(code.toUpperCase());
+    dataSource.setEnabled(true);
+    return dataSource;
+  }
+
+  private static FederationQueryPolicy enabledPolicy(final String dataSourceId, final boolean allowCrossSourceJoin) {
     FederationQueryPolicy policy = new FederationQueryPolicy();
     policy.setId("policy-1");
-    policy.setCatalogId("catalog-1");
+    policy.setCatalogId(dataSourceId);
     policy.setCode("policy-demo");
     policy.setName("Demo Policy");
     policy.setEnabled(true);
@@ -185,5 +293,11 @@ class FederationSqlConsoleServiceImplTest {
     policy.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
     policy.setUpdatedAt(Instant.parse("2026-01-02T00:00:00Z"));
     return policy;
+  }
+
+  private boolean usesQuotedQualifiedName(final CalciteQueryRequest request) {
+    return request != null
+        && request.sql() != null
+        && request.sql().contains("\"pg\".\"reporting\".\"orders\"");
   }
 }

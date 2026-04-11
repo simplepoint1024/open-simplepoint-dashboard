@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping({DnaFederationPaths.SQL_CONSOLE, DnaFederationPaths.PLATFORM_SQL_CONSOLE})
-@Tag(name = "联邦 SQL 控制台", description = "用于执行和分析联邦只读 SQL")
+@Tag(name = "联邦 SQL 控制台", description = "用于执行和分析联邦 SQL（支持 SELECT / DML / DDL / FLUSH CACHE）")
 public class FederationSqlConsoleController {
 
   private final FederationSqlConsoleService service;
@@ -51,7 +51,7 @@ public class FederationSqlConsoleController {
   }
 
   /**
-   * Executes a federation SQL query.
+   * Executes a read-only federation SQL query.
    *
    * @param request SQL console request
    * @return query response
@@ -62,6 +62,28 @@ public class FederationSqlConsoleController {
   public Response<?> query(@RequestBody final FederationQueryModels.SqlConsoleRequest request) {
     try {
       return Response.okay(service.execute(request));
+    } catch (IllegalArgumentException | IllegalStateException ex) {
+      return badRequest(ex.getMessage());
+    }
+  }
+
+  /**
+   * Unified smart-execute endpoint. Automatically detects the SQL statement type
+   * (SELECT / DML / DDL / FLUSH CACHE) and dispatches to the appropriate service
+   * method.
+   *
+   * @param request SQL console request
+   * @return unified execution result with a type discriminator
+   */
+  @PostMapping("/execute")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.federation.sql-console.execute')")
+  @Operation(
+      summary = "智能执行 SQL",
+      description = "自动识别 SQL 类型并执行: SELECT → 联邦查询, DML → 直接下推, DDL → 直接下推, FLUSH CACHE → 清理缓存"
+  )
+  public Response<?> execute(@RequestBody final FederationQueryModels.SqlConsoleRequest request) {
+    try {
+      return Response.okay(service.smartExecute(request));
     } catch (IllegalArgumentException | IllegalStateException ex) {
       return badRequest(ex.getMessage());
     }

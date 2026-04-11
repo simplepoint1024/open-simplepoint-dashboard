@@ -49,6 +49,7 @@ import org.simplepoint.plugin.dna.federation.api.service.FederationQueryAuditSer
 import org.simplepoint.plugin.dna.federation.api.service.FederationSqlConsoleService;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationQueryModels;
 import org.simplepoint.plugin.dna.federation.service.support.FederationCalciteCatalogAssembler;
+import org.simplepoint.plugin.dna.federation.service.support.FederationMetadataCacheService;
 import org.simplepoint.plugin.dna.federation.service.support.FederationSqlIdentifierNormalizer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -76,6 +77,8 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
 
   private final CalciteQueryEngine queryEngine;
 
+  private final FederationMetadataCacheService metadataCacheService;
+
   /**
    * Creates a SQL console service implementation.
    *
@@ -84,19 +87,22 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
    * @param auditService query audit service
    * @param catalogAssembler Calcite catalog assembler
    * @param queryEngine Calcite query engine
+   * @param metadataCacheService metadata cache service
    */
   public FederationSqlConsoleServiceImpl(
       final JdbcDataSourceDefinitionService dataSourceService,
       final FederationQueryPolicyRepository policyRepository,
       final FederationQueryAuditService auditService,
       final FederationCalciteCatalogAssembler catalogAssembler,
-      final CalciteQueryEngine queryEngine
+      final CalciteQueryEngine queryEngine,
+      final FederationMetadataCacheService metadataCacheService
   ) {
     this.dataSourceService = dataSourceService;
     this.policyRepository = policyRepository;
     this.auditService = auditService;
     this.catalogAssembler = catalogAssembler;
     this.queryEngine = queryEngine;
+    this.metadataCacheService = metadataCacheService;
   }
 
   /** {@inheritDoc} */
@@ -1137,6 +1143,41 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
         String replacement
     ) {
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Smart execute — auto-detect SQL type and dispatch
+  // ------------------------------------------------------------------
+
+  private static final Pattern SMART_DML_PATTERN = Pattern.compile(
+      "\\s*(INSERT|UPDATE|DELETE|MERGE|UPSERT)\\b", Pattern.CASE_INSENSITIVE
+  );
+
+  private static final Pattern SMART_FLUSH_CACHE_PATTERN = Pattern.compile(
+      "\\s*FLUSH\\s+CACHE\\s*", Pattern.CASE_INSENSITIVE
+  );
+
+  /** {@inheritDoc} */
+  @Override
+  public FederationQueryModels.SqlExecuteResult smartExecute(
+      final FederationQueryModels.SqlConsoleRequest request
+  ) {
+    String sql = requireValue(request == null ? null : request.sql(), "SQL 不能为空");
+    String trimmed = sql.strip();
+
+    if (SMART_FLUSH_CACHE_PATTERN.matcher(trimmed).matches()) {
+      long flushed = metadataCacheService.flushAll();
+      return FederationQueryModels.SqlExecuteResult.flushCache(
+          "缓存已刷新，共清除 " + flushed + " 条缓存记录"
+      );
+    }
+    if (DDL_PREFIX_PATTERN.matcher(trimmed).lookingAt()) {
+      return FederationQueryModels.SqlExecuteResult.ddl(executeDdl(request));
+    }
+    if (SMART_DML_PATTERN.matcher(trimmed).lookingAt()) {
+      return FederationQueryModels.SqlExecuteResult.dml(executeUpdate(request));
+    }
+    return FederationQueryModels.SqlExecuteResult.query(execute(request));
   }
 
   private static final class PolicyViolationException extends IllegalStateException {

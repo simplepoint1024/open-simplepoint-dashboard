@@ -115,6 +115,44 @@ public final class FederationQueryModels {
   }
 
   /**
+   * Unified execution response returned by the smart {@code /execute} endpoint.
+   * Wraps one of the concrete result types and exposes a {@code type} discriminator
+   * so the frontend can render the appropriate view.
+   *
+   * @param type         one of {@code QUERY}, {@code DML}, {@code DDL}, {@code FLUSH_CACHE}, {@code EXPLAIN}
+   * @param queryResult  present when type is QUERY
+   * @param updateResult present when type is DML or DDL
+   * @param message      present when type is FLUSH_CACHE (success message)
+   */
+  public record SqlExecuteResult(
+      String type,
+      SqlQueryResult queryResult,
+      SqlUpdateResult updateResult,
+      String message
+  ) {
+
+    /** Creates a QUERY result. */
+    public static SqlExecuteResult query(final SqlQueryResult result) {
+      return new SqlExecuteResult("QUERY", result, null, null);
+    }
+
+    /** Creates a DML result. */
+    public static SqlExecuteResult dml(final SqlUpdateResult result) {
+      return new SqlExecuteResult("DML", null, result, null);
+    }
+
+    /** Creates a DDL result. */
+    public static SqlExecuteResult ddl(final SqlUpdateResult result) {
+      return new SqlExecuteResult("DDL", null, result, null);
+    }
+
+    /** Creates a FLUSH_CACHE result. */
+    public static SqlExecuteResult flushCache(final String successMessage) {
+      return new SqlExecuteResult("FLUSH_CACHE", null, null, successMessage);
+    }
+  }
+
+  /**
    * Query execution response payload.
    *
    * @param catalogCode           target federation catalog code

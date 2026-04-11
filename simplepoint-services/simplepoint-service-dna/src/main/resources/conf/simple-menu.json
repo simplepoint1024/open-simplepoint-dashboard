@@ -266,7 +266,7 @@
         ]
       },
       {
-        "label": "联邦查询",
+        "label": "数据源查询",
         "title": "menu.dna.federation",
         "icon": "PartitionOutlined",
         "path": "/dna/federation",
@@ -285,139 +285,47 @@
         ],
         "children": [
           {
-            "label": "联邦目录",
-            "title": "menu.dna.federation.catalogs",
-            "icon": "AppstoreOutlined",
-            "path": "/dna/federation/catalogs",
-            "authority": "dna.federation.catalogs.view",
+            "label": "JDBC连接用户",
+            "title": "menu.dna.federation.jdbcUsers",
+            "icon": "UserSwitchOutlined",
+            "path": "/dna/federation/jdbc-users",
+            "authority": "dna.federation.jdbc-users.view",
             "sort": 0,
-            "component": "dna/platform/FederationCatalog",
+            "component": "dna/platform/FederationJdbcUser",
             "type": "item",
             "disabled": false,
             "permissions": [
               {
-                "name": "DNA Federation Catalog View",
-                "authority": "dna.federation.catalogs.view",
-                "resource": "/dna/federation/catalogs",
-                "description": "允许访问联邦目录页面",
+                "name": "DNA Federation JDBC User View",
+                "authority": "dna.federation.jdbc-users.view",
+                "resource": "/dna/federation/jdbc-users",
+                "description": "允许访问数据源 JDBC连接用户页面",
                 "type": 0,
                 "feature": {
-                  "name": "DNA Federation Catalog Management",
-                  "description": "DNA Federation Catalog Management Feature",
-                  "code": "dna-federation-catalog-management"
+                  "name": "DNA Federation JDBC User Management",
+                  "description": "DNA Federation JDBC User Management Feature",
+                  "code": "dna-federation-jdbc-user-management"
                 }
               },
               {
-                "name": "DNA Federation Catalog Create",
-                "authority": "dna.federation.catalogs.create",
-                "resource": "/dna/federation/catalogs",
-                "description": "允许新增联邦目录",
+                "name": "DNA Federation JDBC User Create",
+                "authority": "dna.federation.jdbc-users.create",
+                "resource": "/dna/federation/jdbc-users",
+                "description": "允许新增数据源 JDBC连接用户",
                 "type": 1
               },
               {
-                "name": "DNA Federation Catalog Edit",
-                "authority": "dna.federation.catalogs.edit",
-                "resource": "/dna/federation/catalogs",
-                "description": "允许修改联邦目录",
+                "name": "DNA Federation JDBC User Edit",
+                "authority": "dna.federation.jdbc-users.edit",
+                "resource": "/dna/federation/jdbc-users",
+                "description": "允许修改数据源 JDBC连接用户",
                 "type": 1
               },
               {
-                "name": "DNA Federation Catalog Delete",
-                "authority": "dna.federation.catalogs.delete",
-                "resource": "/dna/federation/catalogs",
-                "description": "允许删除联邦目录",
-                "type": 1
-              }
-            ]
-          },
-          {
-            "label": "逻辑 Schema",
-            "title": "menu.dna.federation.schemas",
-            "icon": "ClusterOutlined",
-            "path": "/dna/federation/schemas",
-            "authority": "dna.federation.schemas.view",
-            "sort": 1,
-            "component": "dna/platform/FederationSchema",
-            "type": "item",
-            "disabled": false,
-            "permissions": [
-              {
-                "name": "DNA Federation Schema View",
-                "authority": "dna.federation.schemas.view",
-                "resource": "/dna/federation/schemas",
-                "description": "允许访问逻辑 Schema 页面",
-                "type": 0,
-                "feature": {
-                  "name": "DNA Federation Schema Management",
-                  "description": "DNA Federation Schema Management Feature",
-                  "code": "dna-federation-schema-management"
-                }
-              },
-              {
-                "name": "DNA Federation Schema Create",
-                "authority": "dna.federation.schemas.create",
-                "resource": "/dna/federation/schemas",
-                "description": "允许新增逻辑 Schema",
-                "type": 1
-              },
-              {
-                "name": "DNA Federation Schema Edit",
-                "authority": "dna.federation.schemas.edit",
-                "resource": "/dna/federation/schemas",
-                "description": "允许修改逻辑 Schema",
-                "type": 1
-              },
-              {
-                "name": "DNA Federation Schema Delete",
-                "authority": "dna.federation.schemas.delete",
-                "resource": "/dna/federation/schemas",
-                "description": "允许删除逻辑 Schema",
-                "type": 1
-              }
-            ]
-          },
-          {
-            "label": "逻辑视图",
-            "title": "menu.dna.federation.views",
-            "icon": "NodeIndexOutlined",
-            "path": "/dna/federation/views",
-            "authority": "dna.federation.views.view",
-            "sort": 2,
-            "component": "dna/platform/FederationView",
-            "type": "item",
-            "disabled": false,
-            "permissions": [
-              {
-                "name": "DNA Federation View View",
-                "authority": "dna.federation.views.view",
-                "resource": "/dna/federation/views",
-                "description": "允许访问逻辑视图页面",
-                "type": 0,
-                "feature": {
-                  "name": "DNA Federation View Management",
-                  "description": "DNA Federation View Management Feature",
-                  "code": "dna-federation-view-management"
-                }
-              },
-              {
-                "name": "DNA Federation View Create",
-                "authority": "dna.federation.views.create",
-                "resource": "/dna/federation/views",
-                "description": "允许新增逻辑视图",
-                "type": 1
-              },
-              {
-                "name": "DNA Federation View Edit",
-                "authority": "dna.federation.views.edit",
-                "resource": "/dna/federation/views",
-                "description": "允许修改逻辑视图",
-                "type": 1
-              },
-              {
-                "name": "DNA Federation View Delete",
-                "authority": "dna.federation.views.delete",
-                "resource": "/dna/federation/views",
-                "description": "允许删除逻辑视图",
+                "name": "DNA Federation JDBC User Delete",
+                "authority": "dna.federation.jdbc-users.delete",
+                "resource": "/dna/federation/jdbc-users",
+                "description": "允许删除数据源 JDBC连接用户",
                 "type": 1
               }
             ]
@@ -428,7 +336,7 @@
             "icon": "CodeOutlined",
             "path": "/dna/federation/sql-console",
             "authority": "dna.federation.sql-console.view",
-            "sort": 3,
+            "sort": 1,
             "component": "dna/platform/SqlConsole",
             "type": "item",
             "disabled": false,
@@ -437,7 +345,7 @@
                 "name": "DNA Federation SQL Console View",
                 "authority": "dna.federation.sql-console.view",
                 "resource": "/dna/federation/sql-console",
-                "description": "允许访问联邦 SQL 控制台页面",
+                "description": "允许访问数据源 SQL 控制台页面",
                 "type": 0,
                 "feature": {
                   "name": "DNA Federation SQL Console",
@@ -449,14 +357,35 @@
                 "name": "DNA Federation SQL Console Explain",
                 "authority": "dna.federation.sql-console.explain",
                 "resource": "/dna/federation/sql-console",
-                "description": "允许查看联邦 SQL 执行计划",
+                "description": "允许查看数据源 SQL 执行计划",
                 "type": 1
               },
               {
                 "name": "DNA Federation SQL Console Execute",
                 "authority": "dna.federation.sql-console.execute",
                 "resource": "/dna/federation/sql-console",
-                "description": "允许执行联邦只读 SQL",
+                "description": "允许执行数据源只读 SQL",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation SQL Console DML",
+                "authority": "dna.federation.sql-console.dml",
+                "resource": "/dna/federation/sql-console",
+                "description": "允许执行 DML 语句（INSERT / UPDATE / DELETE / UPSERT）",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation SQL Console DDL",
+                "authority": "dna.federation.sql-console.ddl",
+                "resource": "/dna/federation/sql-console",
+                "description": "允许执行 DDL 语句（CREATE / ALTER / DROP / TRUNCATE）",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation SQL Console Flush Cache",
+                "authority": "dna.federation.sql-console.flush-cache",
+                "resource": "/dna/federation/sql-console",
+                "description": "允许执行 FLUSH CACHE 清理元数据缓存",
                 "type": 1
               }
             ]
@@ -467,7 +396,7 @@
             "icon": "SafetyOutlined",
             "path": "/dna/federation/query-policies",
             "authority": "dna.federation.query-policies.view",
-            "sort": 4,
+            "sort": 2,
             "component": "dna/platform/QueryPolicy",
             "type": "item",
             "disabled": false,
@@ -513,7 +442,7 @@
             "icon": "AuditOutlined",
             "path": "/dna/federation/query-audits",
             "authority": "dna.federation.query-audits.view",
-            "sort": 5,
+            "sort": 6,
             "component": "dna/platform/QueryAudit",
             "type": "item",
             "disabled": false,

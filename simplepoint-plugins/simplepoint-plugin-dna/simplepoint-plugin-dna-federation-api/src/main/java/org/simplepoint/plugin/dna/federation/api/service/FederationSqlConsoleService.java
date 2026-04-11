@@ -83,4 +83,18 @@ public interface FederationSqlConsoleService {
   ) {
     return executeDdl(request);
   }
+
+  /**
+   * Detects the SQL statement type and delegates to the appropriate execution method:
+   * <ul>
+   *   <li>SELECT / WITH → {@link #execute(FederationQueryModels.SqlConsoleRequest)}</li>
+   *   <li>INSERT / UPDATE / DELETE / MERGE / UPSERT → {@link #executeUpdate(FederationQueryModels.SqlConsoleRequest)}</li>
+   *   <li>CREATE / ALTER / DROP / TRUNCATE / RENAME / COMMENT ON → {@link #executeDdl(FederationQueryModels.SqlConsoleRequest)}</li>
+   *   <li>FLUSH CACHE → cache flush</li>
+   * </ul>
+   *
+   * @param request SQL console request
+   * @return a unified result wrapping the appropriate concrete type
+   */
+  FederationQueryModels.SqlExecuteResult smartExecute(FederationQueryModels.SqlConsoleRequest request);
 }
