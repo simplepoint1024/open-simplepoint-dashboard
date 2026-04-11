@@ -33,6 +33,26 @@ public final class DnaFederationPaths {
 
   public static final String PLATFORM_SQL_CONSOLE = PLATFORM_BASE + "/sql-console";
 
+  public static final String JDBC_USERS = BASE + "/jdbc-users";
+
+  public static final String PLATFORM_JDBC_USERS = PLATFORM_BASE + "/jdbc-users";
+
+  public static final String QUERY_TEMPLATES = BASE + "/query-templates";
+
+  public static final String PLATFORM_QUERY_TEMPLATES = PLATFORM_BASE + "/query-templates";
+
+  public static final String DATA_ASSETS = BASE + "/data-assets";
+
+  public static final String PLATFORM_DATA_ASSETS = PLATFORM_BASE + "/data-assets";
+
+  public static final String JDBC_DRIVER = BASE + "/jdbc-driver";
+
+  public static final String PLATFORM_JDBC_DRIVER = PLATFORM_BASE + "/jdbc-driver";
+
+  public static final String DASHBOARD = "/dna/dashboard";
+
+  public static final String PLATFORM_DASHBOARD = "/platform/dna/dashboard";
+
   private DnaFederationPaths() {
   }
 }

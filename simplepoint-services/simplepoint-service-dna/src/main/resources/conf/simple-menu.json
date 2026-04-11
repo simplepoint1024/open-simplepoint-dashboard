@@ -19,6 +19,26 @@
     ],
     "children": [
       {
+        "label": "仪表盘",
+        "title": "menu.dna.dashboard",
+        "icon": "DashboardOutlined",
+        "path": "/dna/dashboard",
+        "authority": "dna.dashboard.view",
+        "sort": -1,
+        "component": "dna/platform/Dashboard",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "DNA Dashboard View",
+            "authority": "dna.dashboard.view",
+            "resource": "/dna/dashboard",
+            "description": "允许访问 DNA 仪表盘",
+            "type": 0
+          }
+        ]
+      },
+      {
         "label": "驱动管理",
         "title": "menu.dna.drivers",
         "icon": "CloudDownloadOutlined",
@@ -460,6 +480,149 @@
                 }
               }
             ]
+          },
+          {
+            "label": "查询模板",
+            "title": "menu.dna.federation.queryTemplates",
+            "icon": "FileTextOutlined",
+            "path": "/dna/federation/query-templates",
+            "authority": "dna.federation.query-templates.view",
+            "sort": 3,
+            "component": "dna/platform/QueryTemplate",
+            "type": "item",
+            "disabled": false,
+            "permissions": [
+              {
+                "name": "DNA Query Template View",
+                "authority": "dna.federation.query-templates.view",
+                "resource": "/dna/federation/query-templates",
+                "description": "允许访问查询模板管理",
+                "type": 0
+              },
+              {
+                "name": "DNA Query Template Create",
+                "authority": "dna.federation.query-templates.create",
+                "resource": "/dna/federation/query-templates",
+                "description": "允许新增查询模板",
+                "type": 1
+              },
+              {
+                "name": "DNA Query Template Edit",
+                "authority": "dna.federation.query-templates.edit",
+                "resource": "/dna/federation/query-templates",
+                "description": "允许修改查询模板",
+                "type": 1
+              },
+              {
+                "name": "DNA Query Template Delete",
+                "authority": "dna.federation.query-templates.delete",
+                "resource": "/dna/federation/query-templates",
+                "description": "允许删除查询模板",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "label": "联邦视图",
+            "title": "menu.dna.federation.views",
+            "icon": "EyeOutlined",
+            "path": "/dna/federation/views",
+            "authority": "dna.federation.views.view",
+            "sort": 4,
+            "component": "dna/platform/FederationView",
+            "type": "item",
+            "disabled": false,
+            "permissions": [
+              {
+                "name": "DNA Federation View View",
+                "authority": "dna.federation.views.view",
+                "resource": "/dna/federation/views",
+                "description": "允许访问联邦视图管理",
+                "type": 0
+              },
+              {
+                "name": "DNA Federation View Create",
+                "authority": "dna.federation.views.create",
+                "resource": "/dna/federation/views",
+                "description": "允许新增联邦视图",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation View Edit",
+                "authority": "dna.federation.views.edit",
+                "resource": "/dna/federation/views",
+                "description": "允许修改联邦视图",
+                "type": 1
+              },
+              {
+                "name": "DNA Federation View Delete",
+                "authority": "dna.federation.views.delete",
+                "resource": "/dna/federation/views",
+                "description": "允许删除联邦视图",
+                "type": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "健康监控",
+        "title": "menu.dna.health",
+        "icon": "HeartOutlined",
+        "path": "/dna/health",
+        "authority": "dna.health.view",
+        "sort": 5,
+        "component": "dna/platform/HealthMonitor",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "DNA Health View",
+            "authority": "dna.health.view",
+            "resource": "/dna/health",
+            "description": "允许访问数据源健康监控",
+            "type": 0
+          }
+        ]
+      },
+      {
+        "label": "数据资产",
+        "title": "menu.dna.dataAssets",
+        "icon": "GoldOutlined",
+        "path": "/dna/data-assets",
+        "authority": "dna.data-assets.view",
+        "sort": 6,
+        "component": "dna/platform/DataAsset",
+        "type": "item",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "DNA Data Asset View",
+            "authority": "dna.data-assets.view",
+            "resource": "/dna/data-assets",
+            "description": "允许访问数据资产管理",
+            "type": 0
+          },
+          {
+            "name": "DNA Data Asset Create",
+            "authority": "dna.data-assets.create",
+            "resource": "/dna/data-assets",
+            "description": "允许新增数据资产",
+            "type": 1
+          },
+          {
+            "name": "DNA Data Asset Edit",
+            "authority": "dna.data-assets.edit",
+            "resource": "/dna/data-assets",
+            "description": "允许修改数据资产",
+            "type": 1
+          },
+          {
+            "name": "DNA Data Asset Delete",
+            "authority": "dna.data-assets.delete",
+            "resource": "/dna/data-assets",
+            "description": "允许删除数据资产",
+            "type": 1
           }
         ]
       }

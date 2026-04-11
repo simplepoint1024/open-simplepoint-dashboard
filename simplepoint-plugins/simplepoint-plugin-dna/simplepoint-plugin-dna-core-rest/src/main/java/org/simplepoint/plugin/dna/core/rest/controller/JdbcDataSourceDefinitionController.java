@@ -2,6 +2,9 @@ package org.simplepoint.plugin.dna.core.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
@@ -10,6 +13,7 @@ import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.dna.core.api.constants.DnaPaths;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
+import org.simplepoint.plugin.dna.core.api.vo.DataSourceHealthStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -128,6 +132,64 @@ public class JdbcDataSourceDefinitionController
     } catch (IllegalArgumentException | IllegalStateException ex) {
       return badRequest(ex.getMessage());
     }
+  }
+
+  /**
+   * Returns the health status of all enabled datasources.
+   *
+   * @return list of datasource health statuses
+   */
+  @GetMapping("/health")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.data-sources.view')")
+  @Operation(summary = "数据源健康检查", description = "检查所有已启用数据源的连接状态")
+  public Response<?> health() {
+    List<JdbcDataSourceDefinition> defs = service.listEnabledDefinitions();
+    List<DataSourceHealthStatus> results = new ArrayList<>(defs.size());
+    for (JdbcDataSourceDefinition def : defs) {
+      long start = System.currentTimeMillis();
+      String status;
+      String errorMessage = null;
+      try {
+        service.connect(def.getId());
+        status = "UP";
+      } catch (Exception ex) {
+        status = "DOWN";
+        errorMessage = ex.getMessage();
+      }
+      long elapsed = System.currentTimeMillis() - start;
+      results.add(new DataSourceHealthStatus(
+          def.getId(), def.getCode(), def.getName(),
+          def.getDriverName(), status, elapsed, errorMessage
+      ));
+    }
+    return ok(results);
+  }
+
+  /**
+   * Returns aggregated statistics for all datasources.
+   *
+   * @return statistics map
+   */
+  @GetMapping("/statistics")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.data-sources.view')")
+  @Operation(summary = "数据源统计", description = "获取数据源汇总统计信息")
+  public Response<?> statistics() {
+    List<JdbcDataSourceDefinition> defs = service.listEnabledDefinitions();
+    long total = defs.size();
+    long online = 0;
+    for (JdbcDataSourceDefinition def : defs) {
+      try {
+        service.getCachedSimpleDataSource(def.getId());
+        online++;
+      } catch (Exception ignored) {
+        // not connected
+      }
+    }
+    Map<String, Object> stats = new LinkedHashMap<>();
+    stats.put("total", total);
+    stats.put("online", online);
+    stats.put("offline", total - online);
+    return ok(stats);
   }
 
   /**

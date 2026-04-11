@@ -8,8 +8,8 @@ import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.dna.federation.api.constants.DnaFederationPaths;
-import org.simplepoint.plugin.dna.federation.api.entity.FederationView;
-import org.simplepoint.plugin.dna.federation.api.service.FederationViewService;
+import org.simplepoint.plugin.dna.federation.api.entity.DataAsset;
+import org.simplepoint.plugin.dna.federation.api.service.DataAssetService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -25,50 +25,50 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Federation logical view endpoints.
+ * Data asset management endpoints.
  */
 @RestController
-@RequestMapping({DnaFederationPaths.VIEWS, DnaFederationPaths.PLATFORM_VIEWS})
-@Tag(name = "联邦视图管理", description = "用于管理联邦查询逻辑视图")
-public class FederationViewController
-    extends BaseController<FederationViewService, FederationView, String> {
+@RequestMapping({DnaFederationPaths.DATA_ASSETS, DnaFederationPaths.PLATFORM_DATA_ASSETS})
+@Tag(name = "数据资产管理", description = "用于管理逻辑数据资产")
+public class DataAssetController
+    extends BaseController<DataAssetService, DataAsset, String> {
 
   /**
-   * Creates a federation view controller.
+   * Creates a data asset controller.
    *
-   * @param service view service
+   * @param service data asset service
    */
-  public FederationViewController(final FederationViewService service) {
+  public DataAssetController(final DataAssetService service) {
     super(service);
   }
 
   /**
-   * Pages federation views.
+   * Pages data assets.
    *
    * @param attributes filter attributes
    * @param pageable   paging arguments
-   * @return paged views
+   * @return paged data assets
    */
   @GetMapping
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.federation.views.view')")
-  @Operation(summary = "分页查询联邦视图", description = "根据条件分页查询联邦逻辑视图定义")
-  public Response<Page<FederationView>> limit(
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.data-assets.view')")
+  @Operation(summary = "分页查询数据资产", description = "根据条件分页查询数据资产定义")
+  public Response<Page<DataAsset>> limit(
       @RequestParam final Map<String, String> attributes,
       final Pageable pageable
   ) {
-    return limit(service.limit(attributes, pageable), FederationView.class);
+    return limit(service.limit(attributes, pageable), DataAsset.class);
   }
 
   /**
-   * Creates a federation view.
+   * Creates a data asset.
    *
-   * @param data view definition
-   * @return created view
+   * @param data asset definition
+   * @return created data asset
    */
   @PostMapping
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.federation.views.create')")
-  @Operation(summary = "新增联邦视图", description = "新增一个联邦逻辑视图定义")
-  public Response<?> add(@RequestBody final FederationView data) {
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.data-assets.create')")
+  @Operation(summary = "新增数据资产", description = "新增一个数据资产定义")
+  public Response<?> add(@RequestBody final DataAsset data) {
     try {
       return ok(service.create(data));
     } catch (IllegalArgumentException ex) {
@@ -77,15 +77,15 @@ public class FederationViewController
   }
 
   /**
-   * Updates a federation view.
+   * Updates a data asset.
    *
-   * @param data view definition
-   * @return updated view
+   * @param data asset definition
+   * @return updated data asset
    */
   @PutMapping
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.federation.views.edit')")
-  @Operation(summary = "修改联邦视图", description = "修改一个已存在的联邦逻辑视图定义")
-  public Response<?> modify(@RequestBody final FederationView data) {
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.data-assets.edit')")
+  @Operation(summary = "修改数据资产", description = "修改一个已存在的数据资产定义")
+  public Response<?> modify(@RequestBody final DataAsset data) {
     try {
       return ok(service.modifyById(data));
     } catch (IllegalArgumentException ex) {
@@ -94,14 +94,14 @@ public class FederationViewController
   }
 
   /**
-   * Deletes federation views by ids.
+   * Deletes data assets by ids.
    *
    * @param ids comma-separated ids
    * @return deleted ids
    */
   @DeleteMapping
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.federation.views.delete')")
-  @Operation(summary = "删除联邦视图", description = "根据 ID 集合删除联邦逻辑视图定义")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.data-assets.delete')")
+  @Operation(summary = "删除数据资产", description = "根据 ID 集合删除数据资产定义")
   public Response<?> remove(@RequestParam("ids") final String ids) {
     try {
       Set<String> idSet = StringUtil.stringToSet(ids);
