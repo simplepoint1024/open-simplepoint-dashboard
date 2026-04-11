@@ -161,7 +161,12 @@ public class FederationJdbcSocketServer implements DisposableBean {
           }
           SocketResponse response;
           try {
+            long startNanos = System.nanoTime();
             RequestOutcome outcome = handleRequest(session, request);
+            long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("DNA JDBC Socket [{}] completed in {}ms", request.action(), elapsedMs);
+            }
             closeReplacedSession(session, outcome.session());
             session = outcome.session();
             response = outcome.response();

@@ -6,6 +6,7 @@ import static org.simplepoint.plugin.dna.federation.service.support.FederationSe
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +52,8 @@ import org.simplepoint.plugin.dna.federation.api.vo.FederationQueryModels;
 import org.simplepoint.plugin.dna.federation.service.support.FederationCalciteCatalogAssembler;
 import org.simplepoint.plugin.dna.federation.service.support.FederationMetadataCacheService;
 import org.simplepoint.plugin.dna.federation.service.support.FederationSqlIdentifierNormalizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -61,9 +64,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleService {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(FederationSqlConsoleServiceImpl.class);
+
   private static final int SQL_TEXT_MAX_LENGTH = 12_000;
 
   private static final int AUDIT_MESSAGE_MAX_LENGTH = 4_000;
+
+  /** Default statement timeout (in seconds) for DDL and DML execution to prevent indefinite hangs. */
+  private static final int DDL_DML_STATEMENT_TIMEOUT_SECONDS = 60;
 
   private static final Pattern JDBC_TABLE_SCAN_PATTERN = Pattern.compile("JdbcTableScan\\(table=\\[\\[([^\\]]+)]]");
 
@@ -210,9 +218,11 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
         requireValue(dmlTarget.dataSource().getId(), "数据源ID不能为空")
     );
     String pushedSql = rewriteDmlForPhysicalDatabase(normalizedSql, dmlTarget.dataSource().getCode());
+    LOGGER.debug("DML 下推到物理数据源 [{}]: {}", dmlTarget.dataSource().getCode(), pushedSql);
     long startedAt = System.nanoTime();
     try (Connection connection = simpleDataSource.getConnection();
          PreparedStatement statement = connection.prepareStatement(pushedSql)) {
+      statement.setQueryTimeout(DDL_DML_STATEMENT_TIMEOUT_SECONDS);
       int affectedRows = statement.executeUpdate();
       long elapsed = toElapsedMs(startedAt);
       persistAudit(
@@ -377,9 +387,11 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
         requireValue(ddlTarget.dataSource().getId(), "数据源ID不能为空")
     );
     String pushedSql = rewriteDdlForPhysicalDatabase(sql, ddlTarget.dataSource().getCode());
+    LOGGER.debug("DDL 下推到物理数据源 [{}]: {}", ddlTarget.dataSource().getCode(), pushedSql);
     long startedAt = System.nanoTime();
     try (Connection connection = simpleDataSource.getConnection();
-         java.sql.Statement statement = connection.createStatement()) {
+         Statement statement = connection.createStatement()) {
+      statement.setQueryTimeout(DDL_DML_STATEMENT_TIMEOUT_SECONDS);
       int result = statement.executeUpdate(pushedSql);
       long elapsed = toElapsedMs(startedAt);
       persistAudit(
