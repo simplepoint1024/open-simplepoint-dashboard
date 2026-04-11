@@ -298,7 +298,8 @@ class FederationJdbcDriverServiceImplTest {
         usersService,
         passwordEncoder,
         tenantService,
-        authorizationContextService
+        authorizationContextService,
+        new org.simplepoint.plugin.dna.federation.service.support.FederationMetadataCacheService()
     );
   }
 

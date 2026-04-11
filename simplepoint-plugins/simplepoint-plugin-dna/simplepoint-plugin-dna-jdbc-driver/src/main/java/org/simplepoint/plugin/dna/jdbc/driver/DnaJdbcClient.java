@@ -94,6 +94,10 @@ final class DnaJdbcClient implements AutoCloseable {
     return transport.query(catalogCode, sql, defaultSchema);
   }
 
+  void flushCache() throws SQLException {
+    transport.flushCache();
+  }
+
   @Override
   public void close() throws SQLException {
     transport.close();

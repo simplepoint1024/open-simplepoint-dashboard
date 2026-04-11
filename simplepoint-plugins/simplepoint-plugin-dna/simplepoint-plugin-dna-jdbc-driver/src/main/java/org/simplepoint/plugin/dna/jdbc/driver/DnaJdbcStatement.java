@@ -10,8 +10,8 @@ import java.sql.Statement;
 /**
  * Concrete {@link Statement} implementation for the DNA JDBC driver.
  *
- * <p>This class replaces the former dynamic-proxy {@code StatementHandler} that
- * was generated inside {@link DnaJdbcProxies}.  It is intentionally
+ * <p>This class replaces the former dynamic-proxy {@code StatementHandler}.
+ * It is intentionally
  * <strong>not</strong> {@code final} so that {@code DnaJdbcPreparedStatement}
  * can extend it with parameter-binding logic.
  *
@@ -126,10 +126,18 @@ class DnaJdbcStatement implements Statement {
     return doExecuteQuery(resolveSql(sql));
   }
 
+  private static final java.util.regex.Pattern FLUSH_CACHE_PATTERN =
+      java.util.regex.Pattern.compile("\\s*FLUSH\\s+CACHE\\s*", java.util.regex.Pattern.CASE_INSENSITIVE);
+
   @Override
   public boolean execute(final String sql) throws SQLException {
     ensureOpen();
-    doExecuteQuery(resolveSql(sql));
+    String resolved = resolveSql(sql);
+    if (FLUSH_CACHE_PATTERN.matcher(resolved).matches()) {
+      connection.client().flushCache();
+      return false;
+    }
+    doExecuteQuery(resolved);
     return true;
   }
 
