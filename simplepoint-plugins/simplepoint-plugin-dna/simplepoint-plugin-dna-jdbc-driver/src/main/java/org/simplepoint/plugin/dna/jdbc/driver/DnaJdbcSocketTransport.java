@@ -69,21 +69,30 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
     boolean ssl = resolveBooleanProperty(config, "ssl", false);
     try {
       Socket rawSocket = new Socket();
-      rawSocket.setKeepAlive(true);
-      rawSocket.setTcpNoDelay(true);
-      rawSocket.connect(
-          new InetSocketAddress(baseUri.getHost(), resolvePort(baseUri)),
-          connectTimeout
-      );
-      if (ssl) {
-        SSLSocketFactory sslFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-        SSLSocket sslSocket = (SSLSocket) sslFactory.createSocket(
-            rawSocket, baseUri.getHost(), resolvePort(baseUri), true
+      try {
+        rawSocket.setKeepAlive(true);
+        rawSocket.setTcpNoDelay(true);
+        rawSocket.connect(
+            new InetSocketAddress(baseUri.getHost(), resolvePort(baseUri)),
+            connectTimeout
         );
-        sslSocket.startHandshake();
-        this.socket = sslSocket;
-      } else {
-        this.socket = rawSocket;
+        if (ssl) {
+          SSLSocketFactory sslFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+          SSLSocket sslSocket = (SSLSocket) sslFactory.createSocket(
+              rawSocket, baseUri.getHost(), resolvePort(baseUri), true
+          );
+          sslSocket.startHandshake();
+          this.socket = sslSocket;
+        } else {
+          this.socket = rawSocket;
+        }
+      } catch (IOException ex) {
+        try {
+          rawSocket.close();
+        } catch (IOException suppressed) {
+          ex.addSuppressed(suppressed);
+        }
+        throw ex;
       }
       this.socket.setSoTimeout(readTimeout);
       this.inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
