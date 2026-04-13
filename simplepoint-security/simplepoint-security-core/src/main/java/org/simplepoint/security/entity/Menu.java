@@ -214,9 +214,9 @@ public class Menu extends BaseEntityImpl<String> {
    */
   @Order
   public void prePersist() {
-    if (this.authority == null || this.authority.isEmpty()) {
-      // Generate authority from path by replacing "/" with ":"
-      this.authority = this.path.toLowerCase().replaceAll("/", ":");
+    if ((this.authority == null || this.authority.isEmpty())
+        && this.path != null && !this.path.isEmpty()) {
+      this.authority = this.path.toLowerCase().replace("/", ".");
     }
     if (this.disabled == null) {
       this.disabled = false;

@@ -92,12 +92,11 @@ public class MenusController extends BaseController<MenuService, Menu, String> {
    *
    * @param data the {@link Menu} instance to be added
    * @return the added menu record wrapped in {@link Response}
-   * @throws Exception if an error occurs during creation
    */
   @PostMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('menus.create')")
   @Operation(summary = "添加新菜单", description = "将新的菜单添加到系统中")
-  public Response<Menu> add(@RequestBody Menu data) throws Exception {
+  public Response<Menu> add(@RequestBody Menu data) {
     return ok(service.create(data));
   }
 
