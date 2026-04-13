@@ -3,6 +3,7 @@ package org.simplepoint.plugin.dna.federation.service.support;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.Nullable;
@@ -11,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -106,13 +109,25 @@ public class FederationMetadataCacheService {
       return -1;
     }
     try {
-      Set<String> keys = redisTemplate.keys(KEY_PREFIX + "*");
-      if (keys != null && !keys.isEmpty()) {
-        Long deleted = redisTemplate.delete(keys);
-        LOGGER.info("Flushed {} DNA JDBC metadata cache entries", deleted);
-        return deleted == null ? 0 : deleted;
+      ScanOptions options = ScanOptions.scanOptions().match(KEY_PREFIX + "*").count(200).build();
+      long total = 0;
+      try (Cursor<String> cursor = redisTemplate.scan(options)) {
+        Set<String> batch = new HashSet<>();
+        while (cursor.hasNext()) {
+          batch.add(cursor.next());
+          if (batch.size() >= 200) {
+            Long deleted = redisTemplate.delete(batch);
+            total += deleted == null ? 0 : deleted;
+            batch.clear();
+          }
+        }
+        if (!batch.isEmpty()) {
+          Long deleted = redisTemplate.delete(batch);
+          total += deleted == null ? 0 : deleted;
+        }
       }
-      return 0;
+      LOGGER.info("Flushed {} DNA JDBC metadata cache entries", total);
+      return total;
     } catch (RuntimeException ex) {
       LOGGER.warn("Redis metadata cache flush failed: {}", ex.getMessage());
       return -1;
