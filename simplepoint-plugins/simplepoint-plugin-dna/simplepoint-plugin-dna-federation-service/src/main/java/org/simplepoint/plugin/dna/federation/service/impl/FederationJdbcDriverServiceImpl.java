@@ -449,11 +449,13 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
       String sql = requireValue(queryRequest == null ? null : queryRequest.sql(), "SQL 不能为空");
       String defaultSchema = trimToNull(queryRequest == null ? null : queryRequest.defaultSchema());
       List<Object> parameters = queryRequest == null ? null : queryRequest.parameters();
+      Integer maxRows = queryRequest == null ? null : queryRequest.maxRows();
       return sqlConsoleService.execute(queryDataSource.dataSource().getId(), new FederationQueryModels.SqlConsoleRequest(
           queryDataSource.dataSource().getCode(),
           sql,
           defaultSchema,
-          parameters
+          parameters,
+          maxRows
       ));
     });
   }

@@ -42,14 +42,19 @@ public final class FederationJdbcDriverModels {
       String sql,
       String defaultSchema,
       String catalogCode,
-      List<Object> parameters
+      List<Object> parameters,
+      Integer maxRows
   ) {
     public QueryRequest(final String sql, final String defaultSchema) {
-      this(sql, defaultSchema, null, null);
+      this(sql, defaultSchema, null, null, null);
     }
 
     public QueryRequest(final String sql, final String defaultSchema, final String catalogCode) {
-      this(sql, defaultSchema, catalogCode, null);
+      this(sql, defaultSchema, catalogCode, null, null);
+    }
+
+    public QueryRequest(final String sql, final String defaultSchema, final String catalogCode, final List<Object> parameters) {
+      this(sql, defaultSchema, catalogCode, parameters, null);
     }
   }
 

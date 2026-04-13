@@ -79,9 +79,10 @@ class DnaJdbcStatement implements Statement {
    */
   protected ResultSet doExecuteQuery(final String sql, final List<Object> parameters) throws SQLException {
     closeCurrentResultSet();
+    Integer effectiveMaxRows = maxRows > 0 ? maxRows : null;
     return withTimeoutGuard("查询", () -> {
       DnaJdbcModels.QueryResult result =
-          connection.client().query(connection.currentCatalog(), sql, connection.currentSchema(), parameters);
+          connection.client().query(connection.currentCatalog(), sql, connection.currentSchema(), parameters, effectiveMaxRows);
       currentResultSet = ResultSetBuilder.fromQueryResult(result, maxRows);
       return currentResultSet;
     });

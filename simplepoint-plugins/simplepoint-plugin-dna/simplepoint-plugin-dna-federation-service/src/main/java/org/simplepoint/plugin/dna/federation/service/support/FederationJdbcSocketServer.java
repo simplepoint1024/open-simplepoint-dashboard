@@ -353,7 +353,7 @@ public class FederationJdbcSocketServer implements DisposableBean {
           SocketResponse.query(driverService.query(
               requiredSession.driverSession(),
               contextId,
-              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode(), request.parameters())
+              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode(), request.parameters(), request.maxRows())
           ))
       );
       case "EXECUTE_UPDATE" -> new RequestOutcome(
@@ -521,7 +521,8 @@ public class FederationJdbcSocketServer implements DisposableBean {
       Boolean unique,
       Boolean approximate,
       List<SocketRequest> batch,
-      List<Object> parameters
+      List<Object> parameters,
+      Integer maxRows
   ) {
   }
 

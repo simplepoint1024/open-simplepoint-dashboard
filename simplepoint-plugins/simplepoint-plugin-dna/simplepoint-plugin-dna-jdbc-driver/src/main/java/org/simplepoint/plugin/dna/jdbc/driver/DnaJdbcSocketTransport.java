@@ -239,7 +239,8 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
       final String catalogCode,
       final String sql,
       final String defaultSchema,
-      final List<Object> parameters
+      final List<Object> parameters,
+      final Integer maxRows
   ) throws SQLException {
     return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("QUERY")
         .catalogCode(catalogCode)
@@ -247,6 +248,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         .sql(sql)
         .defaultSchema(defaultSchema)
         .parameters(parameters)
+        .maxRows(maxRows)
         .build())).queryResult();
   }
 

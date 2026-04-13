@@ -91,7 +91,8 @@ final class DnaJdbcModels {
       Boolean unique,
       Boolean approximate,
       List<SocketRequest> batch,
-      List<Object> parameters
+      List<Object> parameters,
+      Integer maxRows
   ) {
 
     static Builder builder(final String action) {
@@ -118,6 +119,7 @@ final class DnaJdbcModels {
       private Boolean approximate;
       private List<SocketRequest> batch;
       private List<Object> parameters;
+      private Integer maxRows;
 
       private Builder(final String action) {
         this.action = action;
@@ -208,11 +210,17 @@ final class DnaJdbcModels {
         return this;
       }
 
+      Builder maxRows(final Integer value) {
+        this.maxRows = value;
+        return this;
+      }
+
       SocketRequest build() {
         return new SocketRequest(
             action, loginSubject, password, catalogCode, tenantId, contextId,
             schema, catalogPattern, schemaPattern, tablePattern, columnPattern,
-            types, sql, defaultSchema, unique, approximate, batch, parameters
+            types, sql, defaultSchema, unique, approximate, batch, parameters,
+            maxRows
         );
       }
     }

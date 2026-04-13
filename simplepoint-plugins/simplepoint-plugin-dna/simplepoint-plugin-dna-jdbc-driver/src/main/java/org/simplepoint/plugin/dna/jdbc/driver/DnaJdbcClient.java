@@ -115,9 +115,10 @@ final class DnaJdbcClient implements AutoCloseable {
       final String catalogCode,
       final String sql,
       final String defaultSchema,
-      final List<Object> parameters
+      final List<Object> parameters,
+      final Integer maxRows
   ) throws SQLException {
-    return transport.query(catalogCode, sql, defaultSchema, parameters);
+    return transport.query(catalogCode, sql, defaultSchema, parameters, maxRows);
   }
 
   DnaJdbcModels.UpdateResult executeUpdate(

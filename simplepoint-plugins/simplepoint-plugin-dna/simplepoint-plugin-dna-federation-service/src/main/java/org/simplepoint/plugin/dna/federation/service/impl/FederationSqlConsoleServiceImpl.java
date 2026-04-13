@@ -542,10 +542,14 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
         queryDataSources
     );
     try {
+      int effectiveMaxRows = policy.maxRows();
+      if (request != null && request.maxRows() != null && request.maxRows() > 0) {
+        effectiveMaxRows = Math.min(effectiveMaxRows, request.maxRows());
+      }
       CalciteQueryRequest queryRequest = new CalciteQueryRequest(
           normalizedSql,
           resolveDefaultSchema(request == null ? null : request.defaultSchema(), resolvedDataSource.getCode(), queryDataSources),
-          policy.maxRows(),
+          effectiveMaxRows,
           policy.timeoutMs(),
           request == null ? null : request.parameters()
       );

@@ -24,15 +24,20 @@ public final class FederationQueryModels {
       String catalogCode,
       String sql,
       String defaultSchema,
-      List<Object> parameters
+      List<Object> parameters,
+      Integer maxRows
   ) {
 
     public SqlConsoleRequest(final String catalogCode, final String sql) {
-      this(catalogCode, sql, null, null);
+      this(catalogCode, sql, null, null, null);
     }
 
     public SqlConsoleRequest(final String catalogCode, final String sql, final String defaultSchema) {
-      this(catalogCode, sql, defaultSchema, null);
+      this(catalogCode, sql, defaultSchema, null, null);
+    }
+
+    public SqlConsoleRequest(final String catalogCode, final String sql, final String defaultSchema, final List<Object> parameters) {
+      this(catalogCode, sql, defaultSchema, parameters, null);
     }
   }
 
