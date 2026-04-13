@@ -51,3 +51,7 @@ jobs:
       - name: Run type check
         working-directory: open-simplepoint-dashboard-react
         run: pnpm typecheck
+
+      - name: Build frontend
+        working-directory: open-simplepoint-dashboard-react
+        run: pnpm build
