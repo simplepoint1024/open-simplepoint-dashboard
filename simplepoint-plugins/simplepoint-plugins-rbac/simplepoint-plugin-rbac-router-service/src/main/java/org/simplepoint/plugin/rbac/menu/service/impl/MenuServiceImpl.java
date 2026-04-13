@@ -72,6 +72,10 @@ public class MenuServiceImpl
     private final DataInitializeExecutor dataInitializeManager;
     private final PermissionChangeLogRemoteService permissionChangeLogRemoteService;
 
+    /** Cached admin routes result with expiry timestamp. */
+    private volatile ServiceMenuResult adminRoutesCache;
+    private volatile long adminRoutesCacheExpiry;
+
     /**
      * Constructs a MenuServiceImpl with the specified dependencies.
      *
@@ -120,6 +124,7 @@ public class MenuServiceImpl
             }
         }
         var saved = super.create(entity);
+        adminRoutesCache = null;
 
         var parent = saved.getParent();
 
@@ -153,6 +158,7 @@ public class MenuServiceImpl
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
     public void removeByIds(Collection<String> ids) {
         if (ids != null && !ids.isEmpty()) {
+            adminRoutesCache = null;
             var deleteIds = new HashSet<>(ids);
             // 顺便删除子菜单
             Collection<String> child = menuAncestorRepository.findChildIdsByAncestorIds(ids);
@@ -172,6 +178,7 @@ public class MenuServiceImpl
     @Transactional(propagation = Propagation.SUPPORTS, rollbackFor = Exception.class)
     public void sync(String serviceName, Set<MenuChildren> data) {
         log.info("Menu sync started for service: {}", serviceName);
+        adminRoutesCache = null;
         dataInitializeManager.execute("menu-[" + serviceName + "]-permission-initialize", () -> initializeMenusAndPermissions(data));
         dataInitializeManager.execute("menu-[" + serviceName + "]feature-initialize", () -> initializeFeaturesAndRelations(data));
         synchronizePermissionTypes(data);
@@ -417,10 +424,18 @@ public class MenuServiceImpl
         }
 
         if (userContext.getIsAdministrator()) {
-            return ServiceMenuResult.of(
-                    services,
-                    buildMenuTree(getRepository().loadAll(), services, true)
+            ServiceMenuResult cached = adminRoutesCache;
+            if (cached != null && System.currentTimeMillis() < adminRoutesCacheExpiry) {
+                return cached;
+            }
+            Set<ServiceMenuResult.ServiceEntry> adminServices = new HashSet<>();
+            ServiceMenuResult result = ServiceMenuResult.of(
+                    adminServices,
+                    buildMenuTree(getRepository().loadAll(), adminServices, true)
             );
+            adminRoutesCache = result;
+            adminRoutesCacheExpiry = System.currentTimeMillis() + 30_000; // 30s TTL
+            return result;
         }
 
         Set<String> featureCodes = new HashSet<>(userContext.getPermissions());

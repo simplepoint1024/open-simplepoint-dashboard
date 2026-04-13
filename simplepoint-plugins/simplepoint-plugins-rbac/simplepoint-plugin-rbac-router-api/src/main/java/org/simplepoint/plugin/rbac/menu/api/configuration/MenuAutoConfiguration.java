@@ -30,7 +30,7 @@ public class MenuAutoConfiguration implements InitializingBean {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private final ClassPathResource resource = new ClassPathResource("conf/simple-menu.json");
+    private final ClassPathResource resource;
 
     private final String applicationName;
 
@@ -38,15 +38,20 @@ public class MenuAutoConfiguration implements InitializingBean {
      * Constructor for MenuAutoConfiguration.
      * This constructor initializes the MenuService that will be used for menu management.
      *
-     * @param menuService the service used for managing menus
+     * @param menuService     the service used for managing menus
+     * @param applicationName the application name
+     * @param menuConfigPath  the classpath location of the menu configuration JSON
      */
     public MenuAutoConfiguration(
             @Autowired(required = false) MenuService menuService,
             @Value("${spring.application.name}")
-            String applicationName
+            String applicationName,
+            @Value("${simplepoint.menu.config-path:conf/simple-menu.json}")
+            String menuConfigPath
     ) {
         this.menuService = menuService;
         this.applicationName = applicationName;
+        this.resource = new ClassPathResource(menuConfigPath);
     }
 
     private Set<MenuChildren> readConf() throws IOException {
@@ -58,6 +63,10 @@ public class MenuAutoConfiguration implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        if (!resource.exists()) {
+            log.debug("Menu config not found: {}, skipping menu initialization", resource.getPath());
+            return;
+        }
         var menus = readConf();
         if (menus != null && !menus.isEmpty()) {
             log.info("Initializing menu data from configuration file: {}", resource.getPath());
