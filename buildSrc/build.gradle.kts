@@ -1,5 +1,5 @@
 group = "org.simplepoint"
-version = "v0.0.1"
+version = "1.0.0"
 
 allprojects {
     repositories {

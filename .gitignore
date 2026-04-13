@@ -43,6 +43,11 @@ bin/
 
 ### Terraform ###
 .terraform/
+*.tfstate
+*.tfstate.backup
+
+### AI tool config ###
+.ai/
 
 ### Logs ###
 scripts/shell/logs/
