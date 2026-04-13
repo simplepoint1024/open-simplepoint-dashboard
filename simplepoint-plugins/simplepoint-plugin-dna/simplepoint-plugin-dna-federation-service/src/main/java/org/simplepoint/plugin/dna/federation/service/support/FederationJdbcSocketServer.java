@@ -8,11 +8,13 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,6 +22,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
 import org.simplepoint.plugin.dna.federation.api.service.FederationJdbcDriverService;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcDriverModels;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationQueryModels;
@@ -29,6 +35,8 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.Resource;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
@@ -69,6 +77,18 @@ public class FederationJdbcSocketServer implements DisposableBean {
 
   @Value("${simplepoint.dna.jdbc.socket.idle-timeout:300000}")
   private int idleTimeoutMs;
+
+  @Value("${simplepoint.dna.jdbc.socket.ssl.enabled:false}")
+  private boolean sslEnabled;
+
+  @Value("${simplepoint.dna.jdbc.socket.ssl.key-store:}")
+  private String sslKeyStore;
+
+  @Value("${simplepoint.dna.jdbc.socket.ssl.key-store-password:}")
+  private String sslKeyStorePassword;
+
+  @Value("${simplepoint.dna.jdbc.socket.ssl.key-store-type:PKCS12}")
+  private String sslKeyStoreType;
 
   private volatile boolean running;
 
@@ -117,15 +137,47 @@ public class FederationJdbcSocketServer implements DisposableBean {
       pool.setMaximumPoolSize(maxConnections);
     }
     try {
-      ServerSocket socket = new ServerSocket();
+      ServerSocket socket = createServerSocket();
       socket.bind(new InetSocketAddress(host, port), backlog);
       this.serverSocket = socket;
       this.running = true;
       this.acceptExecutor.execute(this::acceptLoop);
-      LOGGER.info("DNA JDBC socket server listening on {}:{}", host, port);
+      LOGGER.info("DNA JDBC socket server listening on {}:{} (TLS={})", host, port, sslEnabled);
     } catch (IOException ex) {
       this.started.set(false);
       throw new IllegalStateException("启动 DNA JDBC Socket 服务失败", ex);
+    }
+  }
+
+  private ServerSocket createServerSocket() throws IOException {
+    if (!sslEnabled) {
+      return new ServerSocket();
+    }
+    if (sslKeyStore == null || sslKeyStore.isBlank()) {
+      throw new IllegalStateException(
+          "SSL enabled but simplepoint.dna.jdbc.socket.ssl.key-store is not configured"
+      );
+    }
+    try {
+      KeyStore keyStore = KeyStore.getInstance(sslKeyStoreType);
+      Resource resource = new DefaultResourceLoader().getResource(sslKeyStore);
+      char[] passwordChars = sslKeyStorePassword == null
+          ? new char[0] : sslKeyStorePassword.toCharArray();
+      try (InputStream stream = resource.getInputStream()) {
+        keyStore.load(stream, passwordChars);
+      }
+      KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
+          KeyManagerFactory.getDefaultAlgorithm()
+      );
+      keyManagerFactory.init(keyStore, passwordChars);
+      SSLContext sslContext = SSLContext.getInstance("TLS");
+      sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+      SSLServerSocketFactory factory = sslContext.getServerSocketFactory();
+      SSLServerSocket sslSocket = (SSLServerSocket) factory.createServerSocket();
+      sslSocket.setNeedClientAuth(false);
+      return sslSocket;
+    } catch (Exception ex) {
+      throw new IOException("Failed to create SSL server socket", ex);
     }
   }
 

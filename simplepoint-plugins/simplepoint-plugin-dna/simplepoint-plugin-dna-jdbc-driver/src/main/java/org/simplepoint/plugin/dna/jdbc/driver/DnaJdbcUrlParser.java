@@ -69,6 +69,7 @@ final class DnaJdbcUrlParser {
     if (isBlank(password)) {
       throw new SQLException("DNA JDBC 连接缺少 password");
     }
+    Properties mergedProperties = mergeUrlProperties(properties, queryValues);
     return new DnaJdbcModels.ConnectionConfig(
         baseUri,
         url,
@@ -78,8 +79,28 @@ final class DnaJdbcUrlParser {
         trimToNull(tenantId),
         trimToNull(contextId),
         trimToNull(schema),
-        properties
+        mergedProperties
     );
+  }
+
+  /**
+   * Merges URL query parameters into the connection properties. Properties passed
+   * explicitly via {@link java.sql.DriverManager} take precedence over URL values.
+   */
+  private static Properties mergeUrlProperties(
+      final Properties driverProperties,
+      final Map<String, String> queryValues
+  ) {
+    Properties merged = new Properties();
+    for (Map.Entry<String, String> entry : queryValues.entrySet()) {
+      merged.setProperty(entry.getKey(), entry.getValue());
+    }
+    if (driverProperties != null) {
+      for (String name : driverProperties.stringPropertyNames()) {
+        merged.setProperty(name, driverProperties.getProperty(name));
+      }
+    }
+    return merged;
   }
 
   private static URI normalizeBaseUri(final URI uri) throws SQLException {

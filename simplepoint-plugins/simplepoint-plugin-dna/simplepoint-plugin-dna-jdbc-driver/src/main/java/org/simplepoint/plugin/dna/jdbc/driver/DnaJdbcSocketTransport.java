@@ -14,6 +14,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
 final class DnaJdbcSocketTransport implements AutoCloseable {
 
@@ -64,14 +66,25 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
     this.configuredSchema = config.schema();
     int connectTimeout = resolveProperty(config, "connectTimeout", DEFAULT_CONNECT_TIMEOUT_MS);
     int readTimeout = resolveProperty(config, "socketTimeout", DEFAULT_READ_TIMEOUT_MS);
+    boolean ssl = resolveBooleanProperty(config, "ssl", false);
     try {
-      this.socket = new Socket();
-      this.socket.setKeepAlive(true);
-      this.socket.setTcpNoDelay(true);
-      this.socket.connect(
+      Socket rawSocket = new Socket();
+      rawSocket.setKeepAlive(true);
+      rawSocket.setTcpNoDelay(true);
+      rawSocket.connect(
           new InetSocketAddress(baseUri.getHost(), resolvePort(baseUri)),
           connectTimeout
       );
+      if (ssl) {
+        SSLSocketFactory sslFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+        SSLSocket sslSocket = (SSLSocket) sslFactory.createSocket(
+            rawSocket, baseUri.getHost(), resolvePort(baseUri), true
+        );
+        sslSocket.startHandshake();
+        this.socket = sslSocket;
+      } else {
+        this.socket = rawSocket;
+      }
       this.socket.setSoTimeout(readTimeout);
       this.inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
       this.outputStream = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
@@ -380,5 +393,20 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
     } catch (NumberFormatException ex) {
       return defaultValue;
     }
+  }
+
+  private static boolean resolveBooleanProperty(
+      final DnaJdbcModels.ConnectionConfig config,
+      final String key,
+      final boolean defaultValue
+  ) {
+    if (config.properties() == null) {
+      return defaultValue;
+    }
+    String value = config.properties().getProperty(key);
+    if (value == null || value.isBlank()) {
+      return defaultValue;
+    }
+    return "true".equalsIgnoreCase(value.trim());
   }
 }
