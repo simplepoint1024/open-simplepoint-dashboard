@@ -223,6 +223,7 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
     try (Connection connection = simpleDataSource.getConnection();
          PreparedStatement statement = connection.prepareStatement(pushedSql)) {
       statement.setQueryTimeout(DDL_DML_STATEMENT_TIMEOUT_SECONDS);
+      bindParameters(statement, request == null ? null : request.parameters());
       int affectedRows = statement.executeUpdate();
       long elapsed = toElapsedMs(startedAt);
       persistAudit(
@@ -389,10 +390,22 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
     String pushedSql = rewriteDdlForPhysicalDatabase(sql, ddlTarget.dataSource().getCode());
     LOGGER.debug("DDL 下推到物理数据源 [{}]: {}", ddlTarget.dataSource().getCode(), pushedSql);
     long startedAt = System.nanoTime();
-    try (Connection connection = simpleDataSource.getConnection();
-         Statement statement = connection.createStatement()) {
-      statement.setQueryTimeout(DDL_DML_STATEMENT_TIMEOUT_SECONDS);
-      int result = statement.executeUpdate(pushedSql);
+    List<Object> params = request == null ? null : request.parameters();
+    boolean hasParams = params != null && !params.isEmpty();
+    try (Connection connection = simpleDataSource.getConnection()) {
+      int result;
+      if (hasParams) {
+        try (PreparedStatement ps = connection.prepareStatement(pushedSql)) {
+          ps.setQueryTimeout(DDL_DML_STATEMENT_TIMEOUT_SECONDS);
+          bindParameters(ps, params);
+          result = ps.executeUpdate();
+        }
+      } else {
+        try (Statement statement = connection.createStatement()) {
+          statement.setQueryTimeout(DDL_DML_STATEMENT_TIMEOUT_SECONDS);
+          result = statement.executeUpdate(pushedSql);
+        }
+      }
       long elapsed = toElapsedMs(startedAt);
       persistAudit(
           catalogCode,
@@ -529,7 +542,8 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           normalizedSql,
           resolveDefaultSchema(request == null ? null : request.defaultSchema(), resolvedDataSource.getCode(), queryDataSources),
           policy.maxRows(),
-          policy.timeoutMs()
+          policy.timeoutMs(),
+          request == null ? null : request.parameters()
       );
       CalciteQueryAnalysis analysis = queryEngine.explain(queryRequest, assembly.schemaConfigurer());
       List<String> dataSources = extractUsedDataSources(analysis.planText(), assembly.physicalDataSourceCodes());
@@ -1196,6 +1210,27 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
 
     private PolicyViolationException(final String message) {
       super(message);
+    }
+  }
+
+  /**
+   * Binds parameters to a prepared statement using {@code setObject}.
+   * If parameters is {@code null} or empty, this is a no-op.
+   */
+  private static void bindParameters(
+      final PreparedStatement statement,
+      final List<Object> parameters
+  ) throws SQLException {
+    if (parameters == null || parameters.isEmpty()) {
+      return;
+    }
+    for (int i = 0; i < parameters.size(); i++) {
+      Object value = parameters.get(i);
+      if (value == null) {
+        statement.setNull(i + 1, java.sql.Types.NULL);
+      } else {
+        statement.setObject(i + 1, value);
+      }
     }
   }
 }

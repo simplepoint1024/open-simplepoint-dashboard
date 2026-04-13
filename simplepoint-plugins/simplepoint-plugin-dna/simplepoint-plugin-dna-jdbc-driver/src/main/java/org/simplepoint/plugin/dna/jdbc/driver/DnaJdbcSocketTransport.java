@@ -225,39 +225,45 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
   DnaJdbcModels.QueryResult query(
       final String catalogCode,
       final String sql,
-      final String defaultSchema
+      final String defaultSchema,
+      final List<Object> parameters
   ) throws SQLException {
     return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("QUERY")
         .catalogCode(catalogCode)
         .contextId(sessionContextId)
         .sql(sql)
         .defaultSchema(defaultSchema)
+        .parameters(parameters)
         .build())).queryResult();
   }
 
   DnaJdbcModels.UpdateResult executeUpdate(
       final String catalogCode,
       final String sql,
-      final String defaultSchema
+      final String defaultSchema,
+      final List<Object> parameters
   ) throws SQLException {
     return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("EXECUTE_UPDATE")
         .catalogCode(catalogCode)
         .contextId(sessionContextId)
         .sql(sql)
         .defaultSchema(defaultSchema)
+        .parameters(parameters)
         .build())).updateResult();
   }
 
   DnaJdbcModels.UpdateResult executeDdl(
       final String catalogCode,
       final String sql,
-      final String defaultSchema
+      final String defaultSchema,
+      final List<Object> parameters
   ) throws SQLException {
     return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("EXECUTE_DDL")
         .catalogCode(catalogCode)
         .contextId(sessionContextId)
         .sql(sql)
         .defaultSchema(defaultSchema)
+        .parameters(parameters)
         .build())).updateResult();
   }
 

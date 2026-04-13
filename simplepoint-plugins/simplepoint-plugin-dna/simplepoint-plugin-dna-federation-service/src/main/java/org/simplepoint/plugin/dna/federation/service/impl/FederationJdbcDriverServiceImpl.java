@@ -448,10 +448,12 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
     return withDriverContext(requiredSession, contextId, queryDataSource.dataSource().getCode(), (resolvedSession, resolvedContextId) -> {
       String sql = requireValue(queryRequest == null ? null : queryRequest.sql(), "SQL 不能为空");
       String defaultSchema = trimToNull(queryRequest == null ? null : queryRequest.defaultSchema());
+      List<Object> parameters = queryRequest == null ? null : queryRequest.parameters();
       return sqlConsoleService.execute(queryDataSource.dataSource().getId(), new FederationQueryModels.SqlConsoleRequest(
           queryDataSource.dataSource().getCode(),
           sql,
-          defaultSchema
+          defaultSchema,
+          parameters
       ));
     });
   }
@@ -479,10 +481,12 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
     return withDriverContext(requiredSession, contextId, dmlDataSource.dataSource().getCode(), (resolvedSession, resolvedContextId) -> {
       String sql = requireValue(queryRequest == null ? null : queryRequest.sql(), "SQL 不能为空");
       String defaultSchema = trimToNull(queryRequest == null ? null : queryRequest.defaultSchema());
+      List<Object> parameters = queryRequest == null ? null : queryRequest.parameters();
       return sqlConsoleService.executeUpdate(dmlDataSource.dataSource().getId(), new FederationQueryModels.SqlConsoleRequest(
           dmlDataSource.dataSource().getCode(),
           sql,
-          defaultSchema
+          defaultSchema,
+          parameters
       ));
     });
   }
@@ -510,10 +514,12 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
     return withDriverContext(requiredSession, contextId, ddlDataSource.dataSource().getCode(), (resolvedSession, resolvedContextId) -> {
       String sql = requireValue(queryRequest == null ? null : queryRequest.sql(), "SQL 不能为空");
       String defaultSchema = trimToNull(queryRequest == null ? null : queryRequest.defaultSchema());
+      List<Object> parameters = queryRequest == null ? null : queryRequest.parameters();
       return sqlConsoleService.executeDdl(ddlDataSource.dataSource().getId(), new FederationQueryModels.SqlConsoleRequest(
           ddlDataSource.dataSource().getCode(),
           sql,
-          defaultSchema
+          defaultSchema,
+          parameters
       ));
     });
   }

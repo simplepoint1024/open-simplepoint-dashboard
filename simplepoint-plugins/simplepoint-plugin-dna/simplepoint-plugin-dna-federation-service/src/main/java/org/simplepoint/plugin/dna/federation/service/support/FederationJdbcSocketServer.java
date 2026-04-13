@@ -301,7 +301,7 @@ public class FederationJdbcSocketServer implements DisposableBean {
           SocketResponse.query(driverService.query(
               requiredSession.driverSession(),
               contextId,
-              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode())
+              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode(), request.parameters())
           ))
       );
       case "EXECUTE_UPDATE" -> new RequestOutcome(
@@ -309,7 +309,7 @@ public class FederationJdbcSocketServer implements DisposableBean {
           SocketResponse.update(driverService.executeUpdate(
               requiredSession.driverSession(),
               contextId,
-              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode())
+              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode(), request.parameters())
           ))
       );
       case "EXECUTE_DDL" -> new RequestOutcome(
@@ -317,7 +317,7 @@ public class FederationJdbcSocketServer implements DisposableBean {
           SocketResponse.update(driverService.executeDdl(
               requiredSession.driverSession(),
               contextId,
-              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode())
+              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode(), request.parameters())
           ))
       );
       case "CLOSE" -> new RequestOutcome(requiredSession, SocketResponse.ok());
@@ -468,7 +468,8 @@ public class FederationJdbcSocketServer implements DisposableBean {
       String defaultSchema,
       Boolean unique,
       Boolean approximate,
-      List<SocketRequest> batch
+      List<SocketRequest> batch,
+      List<Object> parameters
   ) {
   }
 

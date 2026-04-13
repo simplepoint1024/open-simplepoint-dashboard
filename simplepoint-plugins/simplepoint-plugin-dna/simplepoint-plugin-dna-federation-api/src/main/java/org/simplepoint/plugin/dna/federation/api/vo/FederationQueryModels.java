@@ -18,15 +18,21 @@ public final class FederationQueryModels {
    * @param catalogCode target federation catalog code
    * @param sql         SQL text
    * @param defaultSchema optional default schema for unqualified identifiers
+   * @param parameters optional bind parameters for server-side prepared execution
    */
   public record SqlConsoleRequest(
       String catalogCode,
       String sql,
-      String defaultSchema
+      String defaultSchema,
+      List<Object> parameters
   ) {
 
     public SqlConsoleRequest(final String catalogCode, final String sql) {
-      this(catalogCode, sql, null);
+      this(catalogCode, sql, null, null);
+    }
+
+    public SqlConsoleRequest(final String catalogCode, final String sql, final String defaultSchema) {
+      this(catalogCode, sql, defaultSchema, null);
     }
   }
 

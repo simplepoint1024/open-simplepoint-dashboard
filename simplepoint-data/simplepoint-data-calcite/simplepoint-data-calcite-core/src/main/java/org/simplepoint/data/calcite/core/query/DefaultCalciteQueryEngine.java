@@ -91,10 +91,33 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
             normalizedRequest.sql()
         );
         long startedAt = System.nanoTime();
-        try (Statement statement = session.connection().createStatement()) {
-          statement.setQueryTimeout(toQueryTimeoutSeconds(normalizedRequest.timeoutMs()));
-          statement.setMaxRows(toStatementMaxRows(normalizedRequest.maxRows()));
-          try (ResultSet resultSet = statement.executeQuery(normalizedRequest.sql())) {
+        List<Object> params = normalizedRequest.parameters();
+        boolean hasParams = params != null && !params.isEmpty();
+        try {
+          ResultSet resultSet;
+          Statement statement;
+          if (hasParams) {
+            java.sql.PreparedStatement ps = session.connection().prepareStatement(normalizedRequest.sql());
+            ps.setQueryTimeout(toQueryTimeoutSeconds(normalizedRequest.timeoutMs()));
+            ps.setMaxRows(toStatementMaxRows(normalizedRequest.maxRows()));
+            for (int i = 0; i < params.size(); i++) {
+              Object value = params.get(i);
+              if (value == null) {
+                ps.setNull(i + 1, java.sql.Types.NULL);
+              } else {
+                ps.setObject(i + 1, value);
+              }
+            }
+            resultSet = ps.executeQuery();
+            statement = ps;
+          } else {
+            Statement st = session.connection().createStatement();
+            st.setQueryTimeout(toQueryTimeoutSeconds(normalizedRequest.timeoutMs()));
+            st.setMaxRows(toStatementMaxRows(normalizedRequest.maxRows()));
+            resultSet = st.executeQuery(normalizedRequest.sql());
+            statement = st;
+          }
+          try (statement; resultSet) {
             ExtractedRows extracted = extractRows(resultSet, normalizedRequest.maxRows());
             return new ExecutionPayload(extracted, toElapsedMs(startedAt), analysis);
           }
@@ -133,7 +156,8 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
         sql,
         trimToNull(request.defaultSchema()),
         request.maxRows(),
-        request.timeoutMs()
+        request.timeoutMs(),
+        request.parameters()
     );
   }
 

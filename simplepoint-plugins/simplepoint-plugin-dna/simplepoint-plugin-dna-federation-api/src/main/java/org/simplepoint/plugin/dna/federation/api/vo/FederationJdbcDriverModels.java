@@ -36,14 +36,20 @@ public final class FederationJdbcDriverModels {
    * @param sql SQL text
    * @param defaultSchema optional default schema
    * @param catalogCode optional datasource catalog code used for this query
+   * @param parameters optional bind parameters for server-side prepared execution
    */
   public record QueryRequest(
       String sql,
       String defaultSchema,
-      String catalogCode
+      String catalogCode,
+      List<Object> parameters
   ) {
     public QueryRequest(final String sql, final String defaultSchema) {
-      this(sql, defaultSchema, null);
+      this(sql, defaultSchema, null, null);
+    }
+
+    public QueryRequest(final String sql, final String defaultSchema, final String catalogCode) {
+      this(sql, defaultSchema, catalogCode, null);
     }
   }
 

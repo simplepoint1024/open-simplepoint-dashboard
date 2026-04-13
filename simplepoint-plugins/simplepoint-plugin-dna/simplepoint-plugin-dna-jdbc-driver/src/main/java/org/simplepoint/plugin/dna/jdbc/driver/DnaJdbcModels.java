@@ -90,7 +90,8 @@ final class DnaJdbcModels {
       String defaultSchema,
       Boolean unique,
       Boolean approximate,
-      List<SocketRequest> batch
+      List<SocketRequest> batch,
+      List<Object> parameters
   ) {
 
     static Builder builder(final String action) {
@@ -116,6 +117,7 @@ final class DnaJdbcModels {
       private Boolean unique;
       private Boolean approximate;
       private List<SocketRequest> batch;
+      private List<Object> parameters;
 
       private Builder(final String action) {
         this.action = action;
@@ -201,11 +203,16 @@ final class DnaJdbcModels {
         return this;
       }
 
+      Builder parameters(final List<Object> value) {
+        this.parameters = value;
+        return this;
+      }
+
       SocketRequest build() {
         return new SocketRequest(
             action, loginSubject, password, catalogCode, tenantId, contextId,
             schema, catalogPattern, schemaPattern, tablePattern, columnPattern,
-            types, sql, defaultSchema, unique, approximate, batch
+            types, sql, defaultSchema, unique, approximate, batch, parameters
         );
       }
     }

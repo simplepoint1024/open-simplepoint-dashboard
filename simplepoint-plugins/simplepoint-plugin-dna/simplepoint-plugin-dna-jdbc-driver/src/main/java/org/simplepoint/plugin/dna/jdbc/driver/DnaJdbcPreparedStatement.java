@@ -22,15 +22,15 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Concrete {@link PreparedStatement} implementation for the DNA JDBC driver.
  *
  * <p>Extends {@link DnaJdbcStatement} with parameter-binding logic.  Parameters
- * are collected via the various {@code set*} methods and rendered inline into
- * the SQL template before execution, because the DNA gateway does not support
- * server-side prepared statements.
+ * are collected via the various {@code set*} methods and sent alongside the SQL
+ * template to the DNA gateway for server-side binding, preventing SQL injection.
  *
  * <p>Supports read queries (SELECT), DML (INSERT, UPDATE, DELETE, MERGE/UPSERT),
  * and DDL (CREATE, ALTER, DROP, TRUNCATE) statements.
@@ -59,34 +59,34 @@ final class DnaJdbcPreparedStatement extends DnaJdbcStatement implements Prepare
   @Override
   public ResultSet executeQuery() throws SQLException {
     ensureOpen();
-    return doExecuteQuery(renderPreparedSql());
+    return doExecuteQuery(sqlTemplate, collectParameters());
   }
 
   @Override
   public boolean execute() throws SQLException {
     ensureOpen();
-    String sql = renderPreparedSql();
-    return super.execute(sql);
+    List<Object> params = collectParameters();
+    return super.execute(sqlTemplate, params);
   }
 
   @Override
   public int executeUpdate() throws SQLException {
     ensureOpen();
-    String sql = renderPreparedSql();
-    if (DDL_PATTERN.matcher(sql).lookingAt()) {
-      return doExecuteDdl(sql);
+    List<Object> params = collectParameters();
+    if (DDL_PATTERN.matcher(sqlTemplate).lookingAt()) {
+      return doExecuteDdl(sqlTemplate, params);
     }
-    return doExecuteUpdate(sql);
+    return doExecuteUpdate(sqlTemplate, params);
   }
 
   @Override
   public long executeLargeUpdate() throws SQLException {
     ensureOpen();
-    String sql = renderPreparedSql();
-    if (DDL_PATTERN.matcher(sql).lookingAt()) {
-      return doExecuteDdl(sql);
+    List<Object> params = collectParameters();
+    if (DDL_PATTERN.matcher(sqlTemplate).lookingAt()) {
+      return doExecuteDdl(sqlTemplate, params);
     }
-    return doExecuteUpdate(sql);
+    return doExecuteUpdate(sqlTemplate, params);
   }
 
   // ------------------------------------------------------------------
@@ -378,106 +378,24 @@ final class DnaJdbcPreparedStatement extends DnaJdbcStatement implements Prepare
   // ------------------------------------------------------------------
 
   /**
-   * Renders the SQL template by replacing each {@code ?} placeholder with the
-   * corresponding parameter literal.  Quoted regions (single- and
-   * double-quoted) are left untouched so that question marks inside string
-   * literals are not treated as bind markers.
+   * Collects parameters into an ordered list, verifying all positional
+   * placeholders have been set.
    *
-   * @return the rendered SQL string with all parameters inlined
+   * @return ordered list of parameter values
    * @throws SQLException if a required parameter has not been set
    */
-  private String renderPreparedSql() throws SQLException {
-    StringBuilder builder = new StringBuilder(sqlTemplate.length() + 32);
-    boolean singleQuoted = false;
-    boolean doubleQuoted = false;
-    int parameterIndex = 1;
-    for (int index = 0; index < sqlTemplate.length(); index++) {
-      char current = sqlTemplate.charAt(index);
-      if (current == '\'' && !doubleQuoted) {
-        builder.append(current);
-        if (singleQuoted && index + 1 < sqlTemplate.length()
-            && sqlTemplate.charAt(index + 1) == '\'') {
-          builder.append(sqlTemplate.charAt(++index));
-        } else {
-          singleQuoted = !singleQuoted;
-        }
-        continue;
+  private List<Object> collectParameters() throws SQLException {
+    if (parameters.isEmpty()) {
+      return List.of();
+    }
+    int maxIndex = parameters.keySet().stream().mapToInt(Integer::intValue).max().orElse(0);
+    List<Object> result = new java.util.ArrayList<>(maxIndex);
+    for (int i = 1; i <= maxIndex; i++) {
+      if (!parameters.containsKey(i)) {
+        throw new SQLException("缺少 PreparedStatement 参数: " + i);
       }
-      if (current == '"' && !singleQuoted) {
-        doubleQuoted = !doubleQuoted;
-        builder.append(current);
-        continue;
-      }
-      if (current == '?' && !singleQuoted && !doubleQuoted) {
-        if (!parameters.containsKey(parameterIndex)) {
-          throw new SQLException("缺少 PreparedStatement 参数: " + parameterIndex);
-        }
-        builder.append(toSqlLiteral(parameters.get(parameterIndex)));
-        parameterIndex++;
-        continue;
-      }
-      builder.append(current);
+      result.add(parameters.get(i));
     }
-    return builder.toString();
-  }
-
-  /**
-   * Converts a parameter value to its SQL literal representation.
-   *
-   * @param value the parameter value (may be {@code null})
-   * @return the SQL literal string
-   * @throws SQLException if the value type is not supported
-   */
-  private static String toSqlLiteral(final Object value) throws SQLException {
-    if (value == null) {
-      return "NULL";
-    }
-    if (value instanceof Number || value instanceof Boolean) {
-      return value.toString();
-    }
-    if (value instanceof byte[] bytes) {
-      StringBuilder builder = new StringBuilder("X'");
-      for (byte current : bytes) {
-        builder.append(String.format("%02X", current));
-      }
-      builder.append('\'');
-      return builder.toString();
-    }
-    if (value instanceof java.util.UUID) {
-      return '\'' + value.toString() + '\'';
-    }
-    if (value instanceof java.time.LocalDate
-        || value instanceof java.time.LocalTime
-        || value instanceof java.time.LocalDateTime
-        || value instanceof java.time.OffsetDateTime
-        || value instanceof java.time.ZonedDateTime
-        || value instanceof java.time.Instant) {
-      return '\'' + value.toString() + '\'';
-    }
-    if (value instanceof java.sql.Date
-        || value instanceof java.sql.Time
-        || value instanceof java.sql.Timestamp
-        || value instanceof java.time.temporal.TemporalAccessor
-        || value instanceof java.util.Date
-        || value instanceof BigDecimal
-        || value instanceof Character
-        || value instanceof String) {
-      return '\'' + escapeSqlString(value.toString()) + '\'';
-    }
-    throw new SQLException("DNA JDBC PreparedStatement 暂不支持的参数类型: " + value.getClass().getName());
-  }
-
-  private static String escapeSqlString(final String raw) {
-    StringBuilder builder = new StringBuilder(raw.length() + 8);
-    for (int i = 0; i < raw.length(); i++) {
-      char current = raw.charAt(i);
-      switch (current) {
-        case '\'' -> builder.append("''");
-        case '\\' -> builder.append("\\\\");
-        case '\0' -> builder.append("\\0");
-        default -> builder.append(current);
-      }
-    }
-    return builder.toString();
+    return result;
   }
 }

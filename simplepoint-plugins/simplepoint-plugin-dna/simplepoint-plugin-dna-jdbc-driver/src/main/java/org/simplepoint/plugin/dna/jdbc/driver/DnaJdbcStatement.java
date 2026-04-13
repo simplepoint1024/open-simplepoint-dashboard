@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
+import java.util.List;
 
 /**
  * Concrete {@link Statement} implementation for the DNA JDBC driver.
@@ -62,16 +63,21 @@ class DnaJdbcStatement implements Statement {
   // Protected helpers for subclasses
   // ------------------------------------------------------------------
 
+  protected ResultSet doExecuteQuery(final String sql) throws SQLException {
+    return doExecuteQuery(sql, null);
+  }
+
   /**
    * Executes the given SQL query against the DNA gateway and returns the
    * resulting {@link ResultSet}.  Any previously open result set is closed
    * first.
    *
    * @param sql the SQL query to execute (must not be {@code null})
+   * @param parameters bind parameters for server-side prepared execution (may be {@code null})
    * @return the query result set
    * @throws SQLException if a database access error occurs
    */
-  protected ResultSet doExecuteQuery(final String sql) throws SQLException {
+  protected ResultSet doExecuteQuery(final String sql, final List<Object> parameters) throws SQLException {
     closeCurrentResultSet();
     DnaJdbcClient client = connection.client();
     int previousTimeout = 0;
@@ -83,7 +89,7 @@ class DnaJdbcStatement implements Statement {
     }
     try {
       DnaJdbcModels.QueryResult result =
-          client.query(connection.currentCatalog(), sql, connection.currentSchema());
+          client.query(connection.currentCatalog(), sql, connection.currentSchema(), parameters);
       currentResultSet = ResultSetBuilder.fromQueryResult(result, maxRows);
       return currentResultSet;
     } catch (SQLException ex) {
@@ -98,15 +104,20 @@ class DnaJdbcStatement implements Statement {
     }
   }
 
+  protected int doExecuteUpdate(final String sql) throws SQLException {
+    return doExecuteUpdate(sql, null);
+  }
+
   /**
    * Executes the given DML SQL against the DNA gateway and returns the
    * affected row count.
    *
    * @param sql the DML SQL to execute (INSERT / UPDATE / DELETE / MERGE)
+   * @param parameters bind parameters for server-side prepared execution (may be {@code null})
    * @return affected row count
    * @throws SQLException if a database access error occurs
    */
-  protected int doExecuteUpdate(final String sql) throws SQLException {
+  protected int doExecuteUpdate(final String sql, final List<Object> parameters) throws SQLException {
     closeCurrentResultSet();
     DnaJdbcClient client = connection.client();
     int previousTimeout = 0;
@@ -118,7 +129,7 @@ class DnaJdbcStatement implements Statement {
     }
     try {
       DnaJdbcModels.UpdateResult result =
-          client.executeUpdate(connection.currentCatalog(), sql, connection.currentSchema());
+          client.executeUpdate(connection.currentCatalog(), sql, connection.currentSchema(), parameters);
       lastUpdateCount = result != null && result.affectedRows() != null ? result.affectedRows().intValue() : 0;
       return lastUpdateCount;
     } catch (SQLException ex) {
@@ -133,15 +144,20 @@ class DnaJdbcStatement implements Statement {
     }
   }
 
+  protected int doExecuteDdl(final String sql) throws SQLException {
+    return doExecuteDdl(sql, null);
+  }
+
   /**
    * Executes a DDL statement (CREATE, ALTER, DROP, TRUNCATE, etc.)
    * by pushing it directly to the physical database through the gateway.
    *
    * @param sql the DDL SQL statement
+   * @param parameters bind parameters for server-side prepared execution (may be {@code null})
    * @return affected rows (typically 0 for DDL)
    * @throws SQLException if execution fails
    */
-  protected int doExecuteDdl(final String sql) throws SQLException {
+  protected int doExecuteDdl(final String sql, final List<Object> parameters) throws SQLException {
     closeCurrentResultSet();
     DnaJdbcClient client = connection.client();
     int previousTimeout = 0;
@@ -153,7 +169,7 @@ class DnaJdbcStatement implements Statement {
     }
     try {
       DnaJdbcModels.UpdateResult result =
-          client.executeDdl(connection.currentCatalog(), sql, connection.currentSchema());
+          client.executeDdl(connection.currentCatalog(), sql, connection.currentSchema(), parameters);
       lastUpdateCount = result != null && result.affectedRows() != null ? result.affectedRows().intValue() : 0;
       return lastUpdateCount;
     } catch (SQLException ex) {
@@ -232,6 +248,18 @@ class DnaJdbcStatement implements Statement {
 
   @Override
   public boolean execute(final String sql) throws SQLException {
+    return execute(sql, (List<Object>) null);
+  }
+
+  /**
+   * Executes the given SQL with optional server-side parameters.
+   *
+   * @param sql the SQL to execute
+   * @param parameters bind parameters (may be {@code null} for non-prepared execution)
+   * @return {@code true} if the first result is a ResultSet
+   * @throws SQLException if execution fails
+   */
+  boolean execute(final String sql, final List<Object> parameters) throws SQLException {
     ensureOpen();
     String resolved = resolveSql(sql);
     if (FLUSH_CACHE_PATTERN.matcher(resolved).matches()) {
@@ -241,16 +269,16 @@ class DnaJdbcStatement implements Statement {
       return false;
     }
     if (DDL_PATTERN.matcher(resolved).lookingAt()) {
-      doExecuteDdl(resolved);
+      doExecuteDdl(resolved, parameters);
       lastExecuteWasQuery = false;
       return false;
     }
     if (DML_PATTERN.matcher(resolved).lookingAt()) {
-      doExecuteUpdate(resolved);
+      doExecuteUpdate(resolved, parameters);
       lastExecuteWasQuery = false;
       return false;
     }
-    doExecuteQuery(resolved);
+    doExecuteQuery(resolved, parameters);
     lastExecuteWasQuery = true;
     lastUpdateCount = -1;
     return true;
