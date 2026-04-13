@@ -171,9 +171,11 @@ public class MenuServiceImpl
     @Override
     @Transactional(propagation = Propagation.SUPPORTS, rollbackFor = Exception.class)
     public void sync(String serviceName, Set<MenuChildren> data) {
+        log.info("Menu sync started for service: {}", serviceName);
         dataInitializeManager.execute("menu-[" + serviceName + "]-permission-initialize", () -> initializeMenusAndPermissions(data));
         dataInitializeManager.execute("menu-[" + serviceName + "]feature-initialize", () -> initializeFeaturesAndRelations(data));
         synchronizePermissionTypes(data);
+        log.info("Menu sync completed for service: {}", serviceName);
     }
 
     private void initializeMenusAndPermissions(Set<MenuChildren> data) {
@@ -487,6 +489,7 @@ public class MenuServiceImpl
     public void authorize(MenuFeaturesRelevanceDto dto) {
         Set<String> featureCodes = dto.resolvedFeatureCodes();
         if (featureCodes == null || featureCodes.isEmpty()) {
+            log.warn("authorize() skipped: no feature codes resolved for menuId={}", dto.getMenuId());
             return;
         }
         Set<MenuFeatureRelevance> saveAuthorities = new HashSet<>(featureCodes.size());
@@ -510,6 +513,7 @@ public class MenuServiceImpl
     public void unauthorized(MenuFeaturesRelevanceDto dto) {
         Set<String> featureCodes = dto.resolvedFeatureCodes();
         if (featureCodes == null || featureCodes.isEmpty()) {
+            log.warn("unauthorized() skipped: no feature codes resolved for menuId={}", dto.getMenuId());
             return;
         }
         menuFeatureRelevanceRepository.unauthorized(dto.getMenuId(), featureCodes);
