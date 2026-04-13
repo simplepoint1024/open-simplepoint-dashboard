@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -91,6 +92,11 @@ public class FederationJdbcSocketServer implements DisposableBean {
   @Value("${simplepoint.dna.jdbc.socket.ssl.key-store-type:PKCS12}")
   private String sslKeyStoreType;
 
+  @Value("${simplepoint.dna.jdbc.socket.max-concurrent-queries:50}")
+  private int maxConcurrentQueries;
+
+  private volatile Semaphore querySemaphore;
+
   private volatile boolean running;
 
   private volatile ServerSocket serverSocket;
@@ -134,6 +140,7 @@ public class FederationJdbcSocketServer implements DisposableBean {
     if (!enabled || !started.compareAndSet(false, true)) {
       return;
     }
+    this.querySemaphore = new Semaphore(maxConcurrentQueries, true);
     if (connectionExecutor instanceof ThreadPoolExecutor pool) {
       pool.setMaximumPoolSize(maxConnections);
     }
@@ -354,30 +361,30 @@ public class FederationJdbcSocketServer implements DisposableBean {
           requiredSession,
           SocketResponse.tabular(driverService.typeInfo(requiredSession.driverSession(), contextId))
       );
-      case "QUERY" -> new RequestOutcome(
+      case "QUERY" -> acquireAndExecute(() -> new RequestOutcome(
           requiredSession,
           SocketResponse.query(driverService.query(
               requiredSession.driverSession(),
               contextId,
               new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode(), request.parameters(), request.maxRows())
           ))
-      );
-      case "EXECUTE_UPDATE" -> new RequestOutcome(
+      ));
+      case "EXECUTE_UPDATE" -> acquireAndExecute(() -> new RequestOutcome(
           requiredSession,
           SocketResponse.update(driverService.executeUpdate(
               requiredSession.driverSession(),
               contextId,
               new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode(), request.parameters())
           ))
-      );
-      case "EXECUTE_DDL" -> new RequestOutcome(
+      ));
+      case "EXECUTE_DDL" -> acquireAndExecute(() -> new RequestOutcome(
           requiredSession,
           SocketResponse.update(driverService.executeDdl(
               requiredSession.driverSession(),
               contextId,
               new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode(), request.parameters())
           ))
-      );
+      ));
       case "CLOSE" -> new RequestOutcome(requiredSession, SocketResponse.ok());
       case "FLUSH_CACHE" -> {
         driverService.flushCache(requiredSession.driverSession());
@@ -403,6 +410,30 @@ public class FederationJdbcSocketServer implements DisposableBean {
       }
       default -> throw new IllegalArgumentException("不支持的 DNA JDBC Socket 操作: " + action);
     };
+  }
+
+  /**
+   * Acquires a query permit from the concurrency semaphore, executes the
+   * action, and releases the permit. Rejects immediately when the pool
+   * is exhausted to prevent queue buildup under heavy load.
+   */
+  private RequestOutcome acquireAndExecute(final QueryAction action) {
+    Semaphore sem = querySemaphore;
+    if (sem != null && !sem.tryAcquire()) {
+      throw new IllegalStateException("服务器查询并发数已达上限，请稍后重试");
+    }
+    try {
+      return action.execute();
+    } finally {
+      if (sem != null) {
+        sem.release();
+      }
+    }
+  }
+
+  @FunctionalInterface
+  private interface QueryAction {
+    RequestOutcome execute();
   }
 
   private SocketRequest readRequest(final DataInputStream inputStream) throws IOException {
