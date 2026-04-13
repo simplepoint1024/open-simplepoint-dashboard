@@ -533,7 +533,6 @@ public class MenuServiceImpl
 
             TreeMenu node = new TreeMenu();
             BeanUtils.copyProperties(m, node);
-            node.setChildren(new ArrayList<>()); // always init
 
             nodeMap.put(m.getId(), node);
         }
@@ -554,6 +553,9 @@ public class MenuServiceImpl
             if (parent == null) {
                 roots.add(current);
             } else {
+                if (parent.getChildren() == null) {
+                    parent.setChildren(new ArrayList<>());
+                }
                 parent.getChildren().add(current);
             }
         }
