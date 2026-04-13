@@ -16,4 +16,15 @@ public interface DataLineageNodeRepository extends BaseRepository<DataLineageNod
    * @return active node
    */
   Optional<DataLineageNode> findActiveById(String id);
+
+  /**
+   * Finds an active lineage node by its natural key: catalog, schema, and table.
+   *
+   * @param catalogId  datasource definition id
+   * @param schemaName schema name (nullable)
+   * @param tableName  table name
+   * @return matching node if exists
+   */
+  Optional<DataLineageNode> findActiveByCatalogIdAndSchemaNameAndTableName(
+      String catalogId, String schemaName, String tableName);
 }

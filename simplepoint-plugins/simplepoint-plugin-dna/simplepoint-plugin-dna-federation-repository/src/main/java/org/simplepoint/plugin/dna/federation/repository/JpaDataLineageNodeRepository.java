@@ -22,4 +22,18 @@ public interface JpaDataLineageNodeRepository
       where n.id = :id and n.deletedAt is null
       """)
   Optional<DataLineageNode> findActiveById(@Param("id") String id);
+
+  @Override
+  @Query("""
+      select n
+      from DataLineageNode n
+      where n.catalogId = :catalogId
+        and (:schemaName is null and n.schemaName is null or n.schemaName = :schemaName)
+        and n.tableName = :tableName
+        and n.deletedAt is null
+      """)
+  Optional<DataLineageNode> findActiveByCatalogIdAndSchemaNameAndTableName(
+      @Param("catalogId") String catalogId,
+      @Param("schemaName") String schemaName,
+      @Param("tableName") String tableName);
 }

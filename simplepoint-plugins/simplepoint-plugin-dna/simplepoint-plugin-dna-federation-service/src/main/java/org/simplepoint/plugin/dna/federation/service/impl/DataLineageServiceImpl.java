@@ -25,6 +25,9 @@ import org.simplepoint.plugin.dna.federation.api.entity.DataLineageNode;
 import org.simplepoint.plugin.dna.federation.api.repository.DataLineageEdgeRepository;
 import org.simplepoint.plugin.dna.federation.api.repository.DataLineageNodeRepository;
 import org.simplepoint.plugin.dna.federation.api.service.DataLineageService;
+import org.simplepoint.plugin.dna.federation.service.support.QueryLineageExtractor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,6 +40,8 @@ import org.springframework.stereotype.Service;
 public class DataLineageServiceImpl
     extends BaseServiceImpl<DataLineageNodeRepository, DataLineageNode, String>
     implements DataLineageService {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(DataLineageServiceImpl.class);
 
   private static final Set<String> VALID_NODE_TYPES = Set.of(
       "TABLE", "VIEW", "COLUMN", "ETL", "STREAM", "API", "FILE"
@@ -308,5 +313,97 @@ public class DataLineageServiceImpl
       e.setSourceNodeName(src != null ? src.getName() : null);
       e.setTargetNodeName(tgt != null ? tgt.getName() : null);
     });
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void recordQueryLineage(
+      final String sql,
+      final String planText,
+      final Map<String, String> dataSources,
+      final List<String> targetTable,
+      final String targetDsId
+  ) {
+    if (planText == null || planText.isBlank() || dataSources == null || dataSources.isEmpty()) {
+      return;
+    }
+    if (targetTable == null || targetTable.isEmpty() || targetDsId == null) {
+      return;
+    }
+    try {
+      List<QueryLineageExtractor.TableReference> sources =
+          QueryLineageExtractor.extractSourceTables(planText);
+      if (sources.isEmpty()) {
+        return;
+      }
+
+      // Resolve or create the target node
+      String targetSchema = targetTable.size() >= 2 ? targetTable.get(targetTable.size() - 2) : null;
+      String targetTableName = targetTable.get(targetTable.size() - 1);
+      DataLineageNode targetNode = findOrCreateNode(targetDsId, targetSchema, targetTableName, "TABLE");
+
+      // Resolve or create source nodes and create edges
+      for (QueryLineageExtractor.TableReference ref : sources) {
+        String dsId = dataSources.get(ref.datasourceCode());
+        if (dsId == null) {
+          continue;
+        }
+        DataLineageNode sourceNode = findOrCreateNode(dsId, ref.schemaName(), ref.tableName(), "TABLE");
+        if (sourceNode.getId().equals(targetNode.getId())) {
+          continue;
+        }
+        ensureEdge(sourceNode.getId(), targetNode.getId(), "DERIVED",
+            truncate(sql, 512));
+      }
+    } catch (Exception ex) {
+      LOGGER.warn("Failed to record auto-lineage for SQL: {}", truncate(sql, 200), ex);
+    }
+  }
+
+  private DataLineageNode findOrCreateNode(
+      final String catalogId,
+      final String schemaName,
+      final String tableName,
+      final String nodeType
+  ) {
+    return nodeRepository.findActiveByCatalogIdAndSchemaNameAndTableName(catalogId, schemaName, tableName)
+        .orElseGet(() -> {
+          DataLineageNode node = new DataLineageNode();
+          node.setCatalogId(catalogId);
+          node.setSchemaName(schemaName);
+          node.setTableName(tableName);
+          node.setNodeType(nodeType);
+          node.setName(buildNodeName(schemaName, tableName));
+          node.setTags("auto-lineage");
+          return nodeRepository.save(node);
+        });
+  }
+
+  private void ensureEdge(final String sourceId, final String targetId, final String edgeType, final String desc) {
+    List<DataLineageEdge> existing = edgeRepository.findActiveBySourceNodeId(sourceId);
+    boolean alreadyExists = existing.stream()
+        .anyMatch(e -> targetId.equals(e.getTargetNodeId()) && edgeType.equals(e.getEdgeType()));
+    if (!alreadyExists) {
+      DataLineageEdge edge = new DataLineageEdge();
+      edge.setSourceNodeId(sourceId);
+      edge.setTargetNodeId(targetId);
+      edge.setEdgeType(edgeType);
+      edge.setTransformDescription(desc);
+      edgeRepository.save(edge);
+    }
+  }
+
+  private static String buildNodeName(final String schema, final String table) {
+    if (schema != null && !schema.isBlank()) {
+      return schema + "." + table;
+    }
+    return table;
+  }
+
+  private static String truncate(final String text, final int maxLength) {
+    if (text == null) {
+      return null;
+    }
+    return text.length() <= maxLength ? text : text.substring(0, maxLength - 3) + "...";
   }
 }

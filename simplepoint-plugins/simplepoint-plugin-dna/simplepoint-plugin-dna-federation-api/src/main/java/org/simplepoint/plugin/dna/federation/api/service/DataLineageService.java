@@ -60,4 +60,22 @@ public interface DataLineageService extends BaseService<DataLineageNode, String>
    * @return graph containing "nodes" and "edges" lists
    */
   Map<String, Object> getLineageGraph(String nodeId, int depth);
+
+  /**
+   * Automatically records lineage from a SQL query execution. Extracts source
+   * table references from the Calcite EXPLAIN PLAN and creates lineage nodes
+   * and edges for any DML target table.
+   *
+   * @param sql           the executed SQL text
+   * @param planText      Calcite EXPLAIN PLAN output
+   * @param dataSources   map of datasource code → datasource definition id
+   * @param targetTable   DML target table reference (nullable for SELECT queries)
+   * @param targetDsId    DML target datasource definition id (nullable)
+   */
+  void recordQueryLineage(
+      String sql,
+      String planText,
+      Map<String, String> dataSources,
+      List<String> targetTable,
+      String targetDsId);
 }
