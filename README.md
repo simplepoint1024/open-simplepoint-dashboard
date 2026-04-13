@@ -1,5 +1,9 @@
 
 
+[![CI](https://github.com/simplepoint1024/open-simplepoint-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/simplepoint1024/open-simplepoint-dashboard/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)](https://github.com/simplepoint1024/open-simplepoint-dashboard/releases)
+
 # SimplePoint - Enterprise Application Framework
 
 SimplePoint is a modern, modular, and pluggable enterprise application framework built with **Java**, **Kotlin**, and **Spring Boot**. It provides a robust foundation for building scalable, secure, and multi-tenant applications.
