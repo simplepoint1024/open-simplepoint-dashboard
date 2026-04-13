@@ -81,15 +81,35 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
       final CalciteQueryRequest request,
       final CalciteSchemaConfigurer schemaConfigurer
   ) {
+    return executeInternal(request, schemaConfigurer, null);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public CalciteQueryResult execute(
+      final CalciteQueryRequest request,
+      final CalciteSchemaConfigurer schemaConfigurer,
+      final CalciteQueryAnalysis preComputedAnalysis
+  ) {
+    return executeInternal(request, schemaConfigurer, preComputedAnalysis);
+  }
+
+  private CalciteQueryResult executeInternal(
+      final CalciteQueryRequest request,
+      final CalciteSchemaConfigurer schemaConfigurer,
+      final CalciteQueryAnalysis preComputedAnalysis
+  ) {
     CalciteQueryRequest normalizedRequest = normalizeRequest(request);
     validateReadOnlyQuery(normalizedRequest.sql());
     return withSession(normalizedRequest.defaultSchema(), schemaConfigurer, session -> {
       CapturedValue<ExecutionPayload> captured = captureBackendQueries(() -> {
-        CalciteQueryAnalysis analysis = explainInternal(
-            session.connection(),
-            normalizedRequest.timeoutMs(),
-            normalizedRequest.sql()
-        );
+        CalciteQueryAnalysis analysis = preComputedAnalysis != null
+            ? preComputedAnalysis
+            : explainInternal(
+                session.connection(),
+                normalizedRequest.timeoutMs(),
+                normalizedRequest.sql()
+            );
         long startedAt = System.nanoTime();
         List<Object> params = normalizedRequest.parameters();
         boolean hasParams = params != null && !params.isEmpty();

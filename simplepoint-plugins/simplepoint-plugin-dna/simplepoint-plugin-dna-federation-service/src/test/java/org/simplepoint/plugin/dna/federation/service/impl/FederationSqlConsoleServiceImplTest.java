@@ -73,7 +73,7 @@ class FederationSqlConsoleServiceImplTest {
     when(catalogAssembler.assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty())))
         .thenReturn(assembly);
     when(queryEngine.explain(any(), any())).thenReturn(analysis);
-    when(queryEngine.execute(any(), any())).thenReturn(queryResult);
+    when(queryEngine.execute(any(), any(), any())).thenReturn(queryResult);
     when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
     FederationSqlConsoleServiceImpl service = service();
 
@@ -180,7 +180,7 @@ class FederationSqlConsoleServiceImplTest {
             && definitions.stream().map(JdbcDataSourceDefinition::getCode).toList().containsAll(List.of("ds1", "ds2"))
     ))).thenReturn(assembly);
     when(queryEngine.explain(any(), any())).thenReturn(analysis);
-    when(queryEngine.execute(any(), any())).thenReturn(queryResult);
+    when(queryEngine.execute(any(), any(), any())).thenReturn(queryResult);
     when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
     FederationSqlConsoleServiceImpl service = service();
 
@@ -238,7 +238,7 @@ class FederationSqlConsoleServiceImplTest {
             && definitions.stream().map(JdbcDataSourceDefinition::getCode).toList().contains("pg")
     ))).thenReturn(assembly);
     when(queryEngine.explain(any(), any())).thenReturn(analysis);
-    when(queryEngine.execute(any(), any())).thenReturn(queryResult);
+    when(queryEngine.execute(any(), any(), any())).thenReturn(queryResult);
     when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
     FederationSqlConsoleServiceImpl service = service();
 
@@ -254,7 +254,7 @@ class FederationSqlConsoleServiceImplTest {
     assertEquals(1, response.returnedRows());
     assertEquals(1, response.rows().get(0).get(0));
     verify(queryEngine).explain(explainRequest.capture(), any());
-    verify(queryEngine).execute(executeRequest.capture(), any());
+    verify(queryEngine).execute(executeRequest.capture(), any(), any());
     assertTrue(usesQuotedQualifiedName(explainRequest.getValue()), explainRequest.getValue().sql());
     assertTrue(usesQuotedQualifiedName(executeRequest.getValue()), executeRequest.getValue().sql());
   }

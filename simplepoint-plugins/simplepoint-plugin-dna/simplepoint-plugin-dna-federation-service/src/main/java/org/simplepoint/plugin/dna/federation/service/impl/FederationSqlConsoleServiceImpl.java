@@ -148,7 +148,11 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
     long startedAt = System.nanoTime();
     try {
       prepared = prepare(dataSourceId, request);
-      CalciteQueryResult result = queryEngine.execute(prepared.queryRequest(), prepared.assembly().schemaConfigurer());
+      CalciteQueryResult result = queryEngine.execute(
+          prepared.queryRequest(),
+          prepared.assembly().schemaConfigurer(),
+          prepared.analysis()
+      );
       List<String> resultSources = resolveResponseDataSources(prepared, result.analysis());
       String pushdownSummary = buildPushdownSummary(result.analysis(), resultSources);
       FederationQueryModels.SqlQueryResult response = new FederationQueryModels.SqlQueryResult(
