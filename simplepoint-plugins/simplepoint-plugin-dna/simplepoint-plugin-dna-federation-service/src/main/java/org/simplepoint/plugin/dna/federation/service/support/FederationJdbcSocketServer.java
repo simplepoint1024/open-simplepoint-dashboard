@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -120,7 +121,7 @@ public class FederationJdbcSocketServer implements DisposableBean {
           thread.setDaemon(true);
           return thread;
         },
-        new ThreadPoolExecutor.CallerRunsPolicy()
+        new ThreadPoolExecutor.AbortPolicy()
     );
     this.started = new AtomicBoolean(false);
   }
@@ -185,7 +186,12 @@ public class FederationJdbcSocketServer implements DisposableBean {
     while (running) {
       try {
         Socket socket = serverSocket.accept();
-        connectionExecutor.execute(() -> handleConnection(socket));
+        try {
+          connectionExecutor.execute(() -> handleConnection(socket));
+        } catch (RejectedExecutionException ex) {
+          LOGGER.warn("DNA JDBC Socket 连接池已满，拒绝新连接");
+          closeQuietly(socket);
+        }
       } catch (SocketException ex) {
         if (running) {
           LOGGER.error("DNA JDBC Socket accept 失败", ex);
@@ -462,6 +468,14 @@ public class FederationJdbcSocketServer implements DisposableBean {
       session.driverSession().close();
     } catch (RuntimeException ex) {
       LOGGER.debug("DNA JDBC Socket session cleanup failed: {}", rootMessage(ex));
+    }
+  }
+
+  private static void closeQuietly(final Socket socket) {
+    try {
+      socket.close();
+    } catch (IOException ignored) {
+      // best-effort close
     }
   }
 
