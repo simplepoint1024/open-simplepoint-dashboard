@@ -21,7 +21,8 @@ We will acknowledge receipt within **48 hours** and aim to provide an initial as
 
 | Version | Supported |
 |---------|-----------|
-| main branch (pre-release) | ✅ Active development |
+| 1.0.x   | ✅ Current stable release |
+| < 1.0   | ❌ No longer supported |
 
 ## Security Measures
 
