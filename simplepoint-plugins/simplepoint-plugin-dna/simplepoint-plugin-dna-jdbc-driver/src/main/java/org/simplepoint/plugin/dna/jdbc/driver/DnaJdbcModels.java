@@ -92,6 +92,123 @@ final class DnaJdbcModels {
       Boolean approximate,
       List<SocketRequest> batch
   ) {
+
+    static Builder builder(final String action) {
+      return new Builder(action);
+    }
+
+    static final class Builder {
+
+      private final String action;
+      private String loginSubject;
+      private String password;
+      private String catalogCode;
+      private String tenantId;
+      private String contextId;
+      private String schema;
+      private String catalogPattern;
+      private String schemaPattern;
+      private String tablePattern;
+      private String columnPattern;
+      private List<String> types;
+      private String sql;
+      private String defaultSchema;
+      private Boolean unique;
+      private Boolean approximate;
+      private List<SocketRequest> batch;
+
+      private Builder(final String action) {
+        this.action = action;
+      }
+
+      Builder loginSubject(final String value) {
+        this.loginSubject = value;
+        return this;
+      }
+
+      Builder password(final String value) {
+        this.password = value;
+        return this;
+      }
+
+      Builder catalogCode(final String value) {
+        this.catalogCode = value;
+        return this;
+      }
+
+      Builder tenantId(final String value) {
+        this.tenantId = value;
+        return this;
+      }
+
+      Builder contextId(final String value) {
+        this.contextId = value;
+        return this;
+      }
+
+      Builder schema(final String value) {
+        this.schema = value;
+        return this;
+      }
+
+      Builder catalogPattern(final String value) {
+        this.catalogPattern = value;
+        return this;
+      }
+
+      Builder schemaPattern(final String value) {
+        this.schemaPattern = value;
+        return this;
+      }
+
+      Builder tablePattern(final String value) {
+        this.tablePattern = value;
+        return this;
+      }
+
+      Builder columnPattern(final String value) {
+        this.columnPattern = value;
+        return this;
+      }
+
+      Builder types(final List<String> value) {
+        this.types = value;
+        return this;
+      }
+
+      Builder sql(final String value) {
+        this.sql = value;
+        return this;
+      }
+
+      Builder defaultSchema(final String value) {
+        this.defaultSchema = value;
+        return this;
+      }
+
+      Builder unique(final Boolean value) {
+        this.unique = value;
+        return this;
+      }
+
+      Builder approximate(final Boolean value) {
+        this.approximate = value;
+        return this;
+      }
+
+      Builder batch(final List<SocketRequest> value) {
+        this.batch = value;
+        return this;
+      }
+
+      SocketRequest build() {
+        return new SocketRequest(
+            action, loginSubject, password, catalogCode, tenantId, contextId,
+            schema, catalogPattern, schemaPattern, tablePattern, columnPattern,
+            types, sql, defaultSchema, unique, approximate, batch
+        );
+      }
+    }
   }
 
   record SocketResponse(
