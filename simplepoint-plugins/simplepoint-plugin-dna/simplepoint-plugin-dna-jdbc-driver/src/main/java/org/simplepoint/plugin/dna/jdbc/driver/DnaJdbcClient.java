@@ -1,23 +1,32 @@
 package org.simplepoint.plugin.dna.jdbc.driver;
 
 import java.sql.SQLException;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * Transport facade used by the standalone DNA JDBC driver.
  * Caches metadata results to avoid redundant TCP round-trips during IDE refresh cycles.
+ * Cached entries expire after a configurable TTL (default 300 s) so that schema
+ * changes are picked up without a manual cache flush.
  */
 final class DnaJdbcClient implements AutoCloseable {
 
+  private static final long DEFAULT_CACHE_TTL_SECONDS = 300;
+
   private final DnaJdbcSocketTransport transport;
 
-  private final ConcurrentMap<String, DnaJdbcModels.TabularResult> metadataCache;
+  private final ConcurrentMap<String, TimedEntry> metadataCache;
+
+  private final long cacheTtlMillis;
 
   DnaJdbcClient(final DnaJdbcModels.ConnectionConfig config) throws SQLException {
     this.transport = new DnaJdbcSocketTransport(config);
     this.metadataCache = new ConcurrentHashMap<>();
+    this.cacheTtlMillis = resolveCacheTtl(config) * 1_000L;
   }
 
   DnaJdbcModels.PingResult ping() throws SQLException {
@@ -148,19 +157,49 @@ final class DnaJdbcClient implements AutoCloseable {
       final String key,
       final MetadataSupplier supplier
   ) throws SQLException {
-    DnaJdbcModels.TabularResult cached = metadataCache.get(key);
-    if (cached != null) {
-      return cached;
+    long now = System.currentTimeMillis();
+    evictExpired(now);
+    TimedEntry entry = metadataCache.get(key);
+    if (entry != null && now - entry.timestamp < cacheTtlMillis) {
+      return entry.value;
     }
     DnaJdbcModels.TabularResult result = supplier.get();
     if (result != null) {
-      metadataCache.put(key, result);
+      metadataCache.put(key, new TimedEntry(result, now));
     }
     return result;
   }
 
+  private void evictExpired(final long now) {
+    Iterator<Map.Entry<String, TimedEntry>> it = metadataCache.entrySet().iterator();
+    while (it.hasNext()) {
+      if (now - it.next().getValue().timestamp >= cacheTtlMillis) {
+        it.remove();
+      }
+    }
+  }
+
+  private static long resolveCacheTtl(final DnaJdbcModels.ConnectionConfig config) {
+    if (config.properties() == null) {
+      return DEFAULT_CACHE_TTL_SECONDS;
+    }
+    String value = config.properties().getProperty("metadataCacheTtlSeconds");
+    if (value == null || value.isBlank()) {
+      return DEFAULT_CACHE_TTL_SECONDS;
+    }
+    try {
+      long ttl = Long.parseLong(value.trim());
+      return ttl > 0 ? ttl : DEFAULT_CACHE_TTL_SECONDS;
+    } catch (NumberFormatException e) {
+      return DEFAULT_CACHE_TTL_SECONDS;
+    }
+  }
+
   private static String norm(final String value) {
     return value == null || value.isBlank() ? "*" : value;
+  }
+
+  private record TimedEntry(DnaJdbcModels.TabularResult value, long timestamp) {
   }
 
   @FunctionalInterface
