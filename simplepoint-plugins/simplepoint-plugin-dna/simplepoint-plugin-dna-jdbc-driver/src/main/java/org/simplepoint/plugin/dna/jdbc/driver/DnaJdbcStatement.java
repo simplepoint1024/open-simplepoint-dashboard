@@ -79,29 +79,12 @@ class DnaJdbcStatement implements Statement {
    */
   protected ResultSet doExecuteQuery(final String sql, final List<Object> parameters) throws SQLException {
     closeCurrentResultSet();
-    DnaJdbcClient client = connection.client();
-    int previousTimeout = 0;
-    boolean timeoutAdjusted = false;
-    if (queryTimeout > 0) {
-      previousTimeout = 0;
-      client.setSocketTimeout(queryTimeout * 1000);
-      timeoutAdjusted = true;
-    }
-    try {
+    return withTimeoutGuard("查询", () -> {
       DnaJdbcModels.QueryResult result =
-          client.query(connection.currentCatalog(), sql, connection.currentSchema(), parameters);
+          connection.client().query(connection.currentCatalog(), sql, connection.currentSchema(), parameters);
       currentResultSet = ResultSetBuilder.fromQueryResult(result, maxRows);
       return currentResultSet;
-    } catch (SQLException ex) {
-      if (timeoutAdjusted && ex.getCause() instanceof java.net.SocketTimeoutException) {
-        throw new SQLException("查询超时 (" + queryTimeout + "s)", "HYT00", ex);
-      }
-      throw ex;
-    } finally {
-      if (timeoutAdjusted) {
-        client.setSocketTimeout(previousTimeout);
-      }
-    }
+    });
   }
 
   protected int doExecuteUpdate(final String sql) throws SQLException {
@@ -119,29 +102,12 @@ class DnaJdbcStatement implements Statement {
    */
   protected int doExecuteUpdate(final String sql, final List<Object> parameters) throws SQLException {
     closeCurrentResultSet();
-    DnaJdbcClient client = connection.client();
-    int previousTimeout = 0;
-    boolean timeoutAdjusted = false;
-    if (queryTimeout > 0) {
-      previousTimeout = 0;
-      client.setSocketTimeout(queryTimeout * 1000);
-      timeoutAdjusted = true;
-    }
-    try {
+    return withTimeoutGuard("执行", () -> {
       DnaJdbcModels.UpdateResult result =
-          client.executeUpdate(connection.currentCatalog(), sql, connection.currentSchema(), parameters);
+          connection.client().executeUpdate(connection.currentCatalog(), sql, connection.currentSchema(), parameters);
       lastUpdateCount = result != null && result.affectedRows() != null ? result.affectedRows().intValue() : 0;
       return lastUpdateCount;
-    } catch (SQLException ex) {
-      if (timeoutAdjusted && ex.getCause() instanceof java.net.SocketTimeoutException) {
-        throw new SQLException("执行超时 (" + queryTimeout + "s)", "HYT00", ex);
-      }
-      throw ex;
-    } finally {
-      if (timeoutAdjusted) {
-        client.setSocketTimeout(previousTimeout);
-      }
-    }
+    });
   }
 
   protected int doExecuteDdl(final String sql) throws SQLException {
@@ -159,29 +125,50 @@ class DnaJdbcStatement implements Statement {
    */
   protected int doExecuteDdl(final String sql, final List<Object> parameters) throws SQLException {
     closeCurrentResultSet();
+    return withTimeoutGuard("执行", () -> {
+      DnaJdbcModels.UpdateResult result =
+          connection.client().executeDdl(connection.currentCatalog(), sql, connection.currentSchema(), parameters);
+      lastUpdateCount = result != null && result.affectedRows() != null ? result.affectedRows().intValue() : 0;
+      return lastUpdateCount;
+    });
+  }
+
+  /**
+   * Applies the configured query timeout to the underlying socket, executes
+   * the action, and restores the original timeout on completion.
+   *
+   * @param operationLabel label used in the timeout error message
+   * @param action the callable to execute
+   * @return the result of the action
+   * @throws SQLException wrapping any timeout or execution error
+   */
+  private <T> T withTimeoutGuard(
+      final String operationLabel,
+      final SqlCallable<T> action
+  ) throws SQLException {
     DnaJdbcClient client = connection.client();
-    int previousTimeout = 0;
     boolean timeoutAdjusted = false;
     if (queryTimeout > 0) {
-      previousTimeout = 0;
       client.setSocketTimeout(queryTimeout * 1000);
       timeoutAdjusted = true;
     }
     try {
-      DnaJdbcModels.UpdateResult result =
-          client.executeDdl(connection.currentCatalog(), sql, connection.currentSchema(), parameters);
-      lastUpdateCount = result != null && result.affectedRows() != null ? result.affectedRows().intValue() : 0;
-      return lastUpdateCount;
+      return action.call();
     } catch (SQLException ex) {
       if (timeoutAdjusted && ex.getCause() instanceof java.net.SocketTimeoutException) {
-        throw new SQLException("执行超时 (" + queryTimeout + "s)", "HYT00", ex);
+        throw new SQLException(operationLabel + "超时 (" + queryTimeout + "s)", "HYT00", ex);
       }
       throw ex;
     } finally {
       if (timeoutAdjusted) {
-        client.setSocketTimeout(previousTimeout);
+        client.setSocketTimeout(0);
       }
     }
+  }
+
+  @FunctionalInterface
+  private interface SqlCallable<T> {
+    T call() throws SQLException;
   }
 
   /**
