@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
@@ -41,6 +42,13 @@ public class DataQualityRuleServiceImpl
   );
 
   private static final Set<String> VALID_SEVERITIES = Set.of("INFO", "WARNING", "ERROR", "CRITICAL");
+
+  private static final Set<String> COLUMN_REQUIRED_TYPES = Set.of(
+      "NOT_NULL", "UNIQUE", "RANGE", "REGEX"
+  );
+
+  /** Allows letters, digits, underscores, dots (for schema.table), and hyphens. */
+  private static final Pattern SAFE_IDENTIFIER = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_.\\-]*$");
 
   private final DataQualityRuleRepository repository;
 
@@ -157,7 +165,10 @@ public class DataQualityRuleServiceImpl
       rule.setLastRunMessage(passed
           ? "检查通过"
           : "检查未通过 - 实际结果不符合预期");
-    } catch (Exception ex) {
+    } catch (IllegalArgumentException ex) {
+      rule.setLastRunStatus("ERROR");
+      rule.setLastRunMessage(ex.getMessage());
+    } catch (RuntimeException ex) {
       rule.setLastRunStatus("ERROR");
       String msg = ex.getMessage();
       rule.setLastRunMessage(msg != null && msg.length() > 2000 ? msg.substring(0, 2000) : msg);
@@ -171,28 +182,59 @@ public class DataQualityRuleServiceImpl
     if ("CUSTOM_SQL".equals(rule.getRuleType())) {
       return rule.getCheckSql();
     }
-    String table = rule.getTargetTable();
+    String table = requireSafeIdentifier(rule.getTargetTable(), "目标表");
     String column = rule.getTargetColumn();
     return switch (rule.getRuleType()) {
-      case "NOT_NULL" -> "SELECT COUNT(*) AS cnt FROM " + table + " WHERE " + column + " IS NULL";
-      case "UNIQUE" -> "SELECT COUNT(*) - COUNT(DISTINCT " + column + ") AS cnt FROM " + table;
+      case "NOT_NULL" -> {
+        requireSafeIdentifier(column, "目标列");
+        yield "SELECT COUNT(*) AS cnt FROM " + table + " WHERE " + column + " IS NULL";
+      }
+      case "UNIQUE" -> {
+        requireSafeIdentifier(column, "目标列");
+        yield "SELECT COUNT(*) - COUNT(DISTINCT " + column + ") AS cnt FROM " + table;
+      }
       case "ROW_COUNT" -> "SELECT COUNT(*) AS cnt FROM " + table;
       case "RANGE" -> {
-        // expectedValue format: "min,max"
+        requireSafeIdentifier(column, "目标列");
         String expected = rule.getExpectedValue();
         if (expected != null && expected.contains(",")) {
           String[] parts = expected.split(",", 2);
+          double minVal = parseNumericBound(parts[0].trim(), "最小值");
+          double maxVal = parseNumericBound(parts[1].trim(), "最大值");
           yield "SELECT COUNT(*) AS cnt FROM " + table
-              + " WHERE " + column + " < " + parts[0].trim()
-              + " OR " + column + " > " + parts[1].trim();
+              + " WHERE " + column + " < " + minVal
+              + " OR " + column + " > " + maxVal;
         }
         yield "SELECT COUNT(*) AS cnt FROM " + table;
       }
-      case "REGEX" -> "SELECT COUNT(*) AS cnt FROM " + table
-          + " WHERE " + column + " NOT REGEXP '" + (rule.getExpectedValue() != null
-          ? rule.getExpectedValue().replace("'", "''") : "") + "'";
+      case "REGEX" -> {
+        requireSafeIdentifier(column, "目标列");
+        String pattern = rule.getExpectedValue() != null
+            ? rule.getExpectedValue().replace("'", "''") : "";
+        yield "SELECT COUNT(*) AS cnt FROM " + table
+            + " WHERE " + column + " NOT REGEXP '" + pattern + "'";
+      }
       default -> rule.getCheckSql();
     };
+  }
+
+  private static String requireSafeIdentifier(final String identifier, final String label) {
+    if (identifier == null || identifier.isBlank()) {
+      throw new IllegalArgumentException(label + "不能为空");
+    }
+    if (!SAFE_IDENTIFIER.matcher(identifier).matches()) {
+      throw new IllegalArgumentException(
+          label + "包含非法字符: " + identifier);
+    }
+    return identifier;
+  }
+
+  private static double parseNumericBound(final String value, final String label) {
+    try {
+      return Double.parseDouble(value);
+    } catch (NumberFormatException ex) {
+      throw new IllegalArgumentException(label + "必须为数值: " + value, ex);
+    }
   }
 
   private boolean evaluateResult(final DataQualityRule rule, final FederationQueryModels.SqlQueryResult result) {
@@ -261,6 +303,11 @@ public class DataQualityRuleServiceImpl
     if ("CUSTOM_SQL".equals(entity.getRuleType())
         && (entity.getCheckSql() == null || entity.getCheckSql().isBlank())) {
       throw new IllegalArgumentException("自定义 SQL 规则必须提供检查 SQL");
+    }
+    if (COLUMN_REQUIRED_TYPES.contains(entity.getRuleType())
+        && entity.getTargetColumn() == null) {
+      throw new IllegalArgumentException(
+          entity.getRuleType() + " 规则类型必须指定目标列");
     }
 
     repository.findActiveByCode(entity.getCode())
