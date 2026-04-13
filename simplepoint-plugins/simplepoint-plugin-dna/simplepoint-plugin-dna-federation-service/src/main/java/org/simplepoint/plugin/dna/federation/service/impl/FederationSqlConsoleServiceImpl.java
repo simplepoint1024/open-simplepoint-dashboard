@@ -715,10 +715,12 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       );
       return exception;
     } catch (RuntimeException auditException) {
-      return new IllegalStateException(
+      IllegalStateException combined = new IllegalStateException(
           resolveMessage(exception) + "；同时查询审计写入失败: " + resolveMessage(auditException),
           exception
       );
+      combined.addSuppressed(auditException);
+      return combined;
     }
   }
 
