@@ -14,15 +14,12 @@ import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
-import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.springframework.core.annotation.Order;
@@ -212,7 +209,7 @@ public class Menu extends BaseEntityImpl<String> {
   /**
    * Lifecycle callback to set default values before persisting the entity.
    */
-  @Order
+  @Override
   public void prePersist() {
     if ((this.authority == null || this.authority.isEmpty())
         && this.path != null && !this.path.isEmpty()) {

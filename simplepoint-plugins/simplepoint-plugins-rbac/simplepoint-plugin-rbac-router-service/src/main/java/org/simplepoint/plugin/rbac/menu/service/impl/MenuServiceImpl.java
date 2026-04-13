@@ -23,7 +23,6 @@ import org.simplepoint.plugin.rbac.menu.api.repository.MenuFeatureRelevanceRepos
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Feature;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.FeaturePermissionsRelevanceDto;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.FeatureService;
 import org.simplepoint.security.MenuChildren;
 import org.simplepoint.security.MenuFeatureDefinition;
@@ -67,8 +66,6 @@ public class MenuServiceImpl
 
     private final MenuFeatureRelevanceRepository menuFeatureRelevanceRepository;
 
-    private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
-
     private final DataInitializeExecutor dataInitializeManager;
     private final PermissionChangeLogRemoteService permissionChangeLogRemoteService;
 
@@ -84,7 +81,6 @@ public class MenuServiceImpl
      * @param menuAncestorRepository           the MenuAncestorRepository for managing menu ancestor relationships
      * @param permissionsService               the PermissionsService for managing permissions
      * @param menuFeatureRelevanceRepository   the MenuFeatureRelevanceRepository for managing menu-feature relationships
-     * @param tenantPackageRelevanceRepository the TenantPackageRelevanceRepository for resolving tenant features
      * @param dataInitializeManager            the DataInitializeExecutor for handling data initialization tasks
      */
     public MenuServiceImpl(
@@ -94,7 +90,6 @@ public class MenuServiceImpl
             final PermissionsService permissionsService,
             final FeatureService featureService,
             final MenuFeatureRelevanceRepository menuFeatureRelevanceRepository,
-            final TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
             final DataInitializeExecutor dataInitializeManager,
             final PermissionChangeLogRemoteService permissionChangeLogRemoteService
     ) {
@@ -103,7 +98,6 @@ public class MenuServiceImpl
         this.permissionsService = permissionsService;
         this.featureService = featureService;
         this.menuFeatureRelevanceRepository = menuFeatureRelevanceRepository;
-        this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
         this.dataInitializeManager = dataInitializeManager;
         this.permissionChangeLogRemoteService = permissionChangeLogRemoteService;
     }
