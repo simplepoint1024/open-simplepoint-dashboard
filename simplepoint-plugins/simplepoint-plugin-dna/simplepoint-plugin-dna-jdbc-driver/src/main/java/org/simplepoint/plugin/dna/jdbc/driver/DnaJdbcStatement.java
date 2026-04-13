@@ -41,6 +41,8 @@ class DnaJdbcStatement implements Statement {
 
   private boolean closeOnCompletion;
 
+  private final java.util.List<String> batchSqls = new java.util.ArrayList<>();
+
   protected ResultSet currentResultSet;
 
   private int lastUpdateCount = -1;
@@ -338,30 +340,62 @@ class DnaJdbcStatement implements Statement {
   }
 
   // ------------------------------------------------------------------
-  // java.sql.Statement — batch operations (unsupported)
+  // java.sql.Statement — batch operations
   // ------------------------------------------------------------------
 
   @Override
   public void addBatch(final String sql) throws SQLException {
     ensureOpen();
-    throw unsupported("addBatch");
+    if (sql == null || sql.isBlank()) {
+      throw new SQLException("batch SQL 不能为空");
+    }
+    batchSqls.add(sql);
   }
 
   @Override
   public int[] executeBatch() throws SQLException {
     ensureOpen();
-    throw unsupported("executeBatch");
+    if (batchSqls.isEmpty()) {
+      return new int[0];
+    }
+    try {
+      java.util.List<DnaJdbcModels.SocketRequest> requests = new java.util.ArrayList<>(batchSqls.size());
+      for (String sql : batchSqls) {
+        requests.add(DnaJdbcModels.SocketRequest.builder("EXECUTE_UPDATE")
+            .catalogCode(connection.currentCatalog())
+            .sql(sql)
+            .defaultSchema(connection.currentSchema())
+            .build());
+      }
+      java.util.List<DnaJdbcModels.SocketResponse> responses = connection.client().batch(requests);
+      int[] counts = new int[batchSqls.size()];
+      for (int i = 0; i < counts.length; i++) {
+        if (i < responses.size() && Boolean.TRUE.equals(responses.get(i).success())) {
+          DnaJdbcModels.UpdateResult ur = responses.get(i).updateResult();
+          counts[i] = (int) (ur != null && ur.affectedRows() != null ? ur.affectedRows() : SUCCESS_NO_INFO);
+        } else {
+          counts[i] = EXECUTE_FAILED;
+        }
+      }
+      return counts;
+    } finally {
+      batchSqls.clear();
+    }
   }
 
   @Override
   public long[] executeLargeBatch() throws SQLException {
-    ensureOpen();
-    throw unsupported("executeLargeBatch");
+    int[] counts = executeBatch();
+    long[] result = new long[counts.length];
+    for (int i = 0; i < counts.length; i++) {
+      result[i] = counts[i];
+    }
+    return result;
   }
 
   @Override
   public void clearBatch() throws SQLException {
-    // no-op
+    batchSqls.clear();
   }
 
   // ------------------------------------------------------------------

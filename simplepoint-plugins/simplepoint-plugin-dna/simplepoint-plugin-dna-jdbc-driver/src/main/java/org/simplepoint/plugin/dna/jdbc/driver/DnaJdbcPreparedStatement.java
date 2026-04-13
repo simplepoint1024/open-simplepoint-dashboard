@@ -41,6 +41,8 @@ final class DnaJdbcPreparedStatement extends DnaJdbcStatement implements Prepare
 
   private final Map<Integer, Object> parameters = new LinkedHashMap<>();
 
+  private final java.util.List<java.util.List<Object>> batchParameterSets = new java.util.ArrayList<>();
+
   DnaJdbcPreparedStatement(
       final DnaJdbcConnection connection,
       final String sqlTemplate,
@@ -220,13 +222,52 @@ final class DnaJdbcPreparedStatement extends DnaJdbcStatement implements Prepare
   }
 
   // ------------------------------------------------------------------
-  // PreparedStatement — batch (unsupported)
+  // PreparedStatement — batch
   // ------------------------------------------------------------------
 
   @Override
   public void addBatch() throws SQLException {
     ensureOpen();
-    throw unsupported("addBatch");
+    batchParameterSets.add(collectParameters());
+    parameters.clear();
+  }
+
+  @Override
+  public int[] executeBatch() throws SQLException {
+    ensureOpen();
+    if (batchParameterSets.isEmpty()) {
+      return new int[0];
+    }
+    try {
+      java.util.List<DnaJdbcModels.SocketRequest> requests = new java.util.ArrayList<>(batchParameterSets.size());
+      for (java.util.List<Object> params : batchParameterSets) {
+        requests.add(DnaJdbcModels.SocketRequest.builder("EXECUTE_UPDATE")
+            .catalogCode(connection.currentCatalog())
+            .sql(sqlTemplate)
+            .defaultSchema(connection.currentSchema())
+            .parameters(params)
+            .build());
+      }
+      java.util.List<DnaJdbcModels.SocketResponse> responses = connection.client().batch(requests);
+      int[] counts = new int[batchParameterSets.size()];
+      for (int i = 0; i < counts.length; i++) {
+        if (i < responses.size() && Boolean.TRUE.equals(responses.get(i).success())) {
+          DnaJdbcModels.UpdateResult ur = responses.get(i).updateResult();
+          counts[i] = (int) (ur != null && ur.affectedRows() != null ? ur.affectedRows() : SUCCESS_NO_INFO);
+        } else {
+          counts[i] = EXECUTE_FAILED;
+        }
+      }
+      return counts;
+    } finally {
+      batchParameterSets.clear();
+    }
+  }
+
+  @Override
+  public void clearBatch() throws SQLException {
+    batchParameterSets.clear();
+    parameters.clear();
   }
 
   // ------------------------------------------------------------------

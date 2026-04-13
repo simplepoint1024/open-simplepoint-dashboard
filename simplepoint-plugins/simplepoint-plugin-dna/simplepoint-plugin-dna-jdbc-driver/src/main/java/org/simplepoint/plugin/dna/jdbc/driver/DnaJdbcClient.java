@@ -139,6 +139,12 @@ final class DnaJdbcClient implements AutoCloseable {
     return transport.executeDdl(catalogCode, sql, defaultSchema, parameters);
   }
 
+  java.util.List<DnaJdbcModels.SocketResponse> batch(
+      final java.util.List<DnaJdbcModels.SocketRequest> requests
+  ) throws SQLException {
+    return transport.batch(requests);
+  }
+
   void flushCache() throws SQLException {
     metadataCache.clear();
     transport.flushCache();
