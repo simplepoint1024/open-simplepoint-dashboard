@@ -4,23 +4,30 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
+import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.User;
+import org.simplepoint.security.entity.UserRoleRelevance;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -57,6 +64,8 @@ class UsersServiceImplTest {
     @InjectMocks
     UsersServiceImpl service;
 
+    // ── loadUserByUsername ────────────────────────────────────────────────────
+
     @Test
     void loadUserByUsername_userFound_returnsUserDetails() {
         User user = new User();
@@ -76,6 +85,8 @@ class UsersServiceImplTest {
                 .isInstanceOf(UsernameNotFoundException.class);
     }
 
+    // ── loadRolesByUserId ─────────────────────────────────────────────────────
+
     @Test
     void loadRolesByUserId_delegatesToRepository() {
         RoleGrantedAuthority role = new RoleGrantedAuthority("r1", "ROLE_USER");
@@ -86,6 +97,8 @@ class UsersServiceImplTest {
         assertThat(result).containsExactly(role);
     }
 
+    // ── loadPermissionsInRoleIds ──────────────────────────────────────────────
+
     @Test
     void loadPermissionsInRoleIds_delegatesToRepository() {
         when(userRepository.loadPermissionsInRoleIds(List.of("r1"))).thenReturn(Set.of("perm1"));
@@ -94,6 +107,8 @@ class UsersServiceImplTest {
 
         assertThat(result).containsExactly("perm1");
     }
+
+    // ── create ────────────────────────────────────────────────────────────────
 
     @Test
     void create_encodesPassword() {
@@ -109,6 +124,8 @@ class UsersServiceImplTest {
         assertThat(user.getPassword()).isEqualTo("encodedPassword");
     }
 
+    // ── modifyById ────────────────────────────────────────────────────────────
+
     @Test
     void modifyById_nullPassword_doesNotEncode() {
         User user = new User();
@@ -123,10 +140,22 @@ class UsersServiceImplTest {
     }
 
     @Test
+    void modifyById_emptyPassword_doesNotEncode() {
+        User user = new User();
+        user.setId("u1");
+        user.setPassword("");
+        when(userRepository.findById("u1")).thenReturn(Optional.empty());
+        when(userRepository.updateById(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.modifyById(user);
+
+        verify(passwordEncoder, never()).encode(anyString());
+    }
+
+    @Test
     void modifyById_bcryptPassword_keepsAsIs() {
         User user = new User();
         user.setId("u1");
-        // Valid BCrypt hash
         user.setPassword("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
         when(userRepository.findById("u1")).thenReturn(Optional.empty());
         when(userRepository.updateById(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -152,6 +181,8 @@ class UsersServiceImplTest {
         assertThat(user.getPassword()).isEqualTo("hashed");
     }
 
+    // ── authorized ────────────────────────────────────────────────────────────
+
     @Test
     void authorized_defaultTenant_delegatesToRepository() {
         when(userRepository.authorized("default", "u1")).thenReturn(List.of("ROLE_USER"));
@@ -163,6 +194,21 @@ class UsersServiceImplTest {
     }
 
     @Test
+    void authorized_nonDefaultTenant_delegatesToRepository() {
+        AuthorizationContext ctx = buildCtx("admin", true, "tenant1");
+        try (MockedStatic<AuthorizationContextHolder> ctxMock = mockStatic(AuthorizationContextHolder.class)) {
+            ctxMock.when(AuthorizationContextHolder::getContext).thenReturn(ctx);
+            when(userRepository.authorized("tenant1", "u1")).thenReturn(List.of("ROLE_ADMIN"));
+
+            Collection<String> result = service.authorized("u1");
+
+            assertThat(result).containsExactly("ROLE_ADMIN");
+        }
+    }
+
+    // ── loadUserByPhoneOrEmail ────────────────────────────────────────────────
+
+    @Test
     void loadUserByPhoneOrEmail_delegatesToRepository() {
         User user = new User();
         when(userRoleRelevanceRepository.loadUserByPhoneOrEmail("test@test.com")).thenReturn(user);
@@ -172,8 +218,10 @@ class UsersServiceImplTest {
         assertThat(result).isEqualTo(user);
     }
 
+    // ── authorize ─────────────────────────────────────────────────────────────
+
     @Test
-    void authorize_emptyRoleIds_noSave() {
+    void authorize_emptyRoleIds_noValidation() {
         UserRoleRelevanceDto dto = new UserRoleRelevanceDto();
         dto.setUserId("u1");
         dto.setRoleIds(Set.of());
@@ -186,7 +234,61 @@ class UsersServiceImplTest {
     }
 
     @Test
-    void unauthorized_delegatesToUserRoleRelevanceRepository() {
+    void authorize_rolesInWrongTenant_throwsIllegalArgument() {
+        AuthorizationContext ctx = buildCtx("owner1", false, "tenant1");
+        Tenant tenant = new Tenant();
+        tenant.setId("tenant1");
+        tenant.setOwnerId("owner1");
+
+        try (MockedStatic<AuthorizationContextHolder> ctxMock = mockStatic(AuthorizationContextHolder.class)) {
+            ctxMock.when(AuthorizationContextHolder::getContext).thenReturn(ctx);
+            when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
+
+            Role roleInOtherTenant = new Role();
+            roleInOtherTenant.setId("r1");
+            roleInOtherTenant.setTenantId("other-tenant");
+            when(roleRepository.findAllByIds(Set.of("r1"))).thenReturn(List.of(roleInOtherTenant));
+
+            UserRoleRelevanceDto dto = new UserRoleRelevanceDto();
+            dto.setUserId("u1");
+            dto.setRoleIds(Set.of("r1"));
+
+            assertThatThrownBy(() -> service.authorize(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("r1");
+        }
+    }
+
+    @Test
+    void authorize_withValidRolesAsAdmin_savesAndRefreshesVersion() {
+        AuthorizationContext ctx = buildCtx("admin", true, "tenant1");
+
+        try (MockedStatic<AuthorizationContextHolder> ctxMock = mockStatic(AuthorizationContextHolder.class)) {
+            ctxMock.when(AuthorizationContextHolder::getContext).thenReturn(ctx);
+
+            Role role = new Role();
+            role.setId("r1");
+            role.setTenantId("tenant1");
+            when(roleRepository.findAllByIds(Set.of("r1"))).thenReturn(List.of(role));
+
+            UserRoleRelevance rel = new UserRoleRelevance();
+            when(userRoleRelevanceRepository.saveAll(any())).thenReturn(List.of(rel));
+
+            UserRoleRelevanceDto dto = new UserRoleRelevanceDto();
+            dto.setUserId("u1");
+            dto.setRoleIds(Set.of("r1"));
+
+            Collection<UserRoleRelevance> result = service.authorize(dto);
+
+            assertThat(result).containsExactly(rel);
+            verify(tenantRepository).increasePermissionVersion(Set.of("tenant1"));
+        }
+    }
+
+    // ── unauthorized ──────────────────────────────────────────────────────────
+
+    @Test
+    void unauthorized_defaultTenant_delegatesToRepository() {
         UserRoleRelevanceDto dto = new UserRoleRelevanceDto();
         dto.setUserId("u1");
         Set<String> roleIds = Set.of("r1", "r2");
@@ -195,5 +297,58 @@ class UsersServiceImplTest {
         service.unauthorized(dto);
 
         verify(userRoleRelevanceRepository).unauthorized("default", "u1", roleIds);
+    }
+
+    @Test
+    void unauthorized_withNonDefaultTenantAsOwner_refreshesPermissionVersion() {
+        AuthorizationContext ctx = buildCtx("owner1", false, "tenant1");
+        Tenant tenant = new Tenant();
+        tenant.setId("tenant1");
+        tenant.setOwnerId("owner1");
+
+        try (MockedStatic<AuthorizationContextHolder> ctxMock = mockStatic(AuthorizationContextHolder.class)) {
+            ctxMock.when(AuthorizationContextHolder::getContext).thenReturn(ctx);
+            when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
+
+            UserRoleRelevanceDto dto = new UserRoleRelevanceDto();
+            dto.setUserId("u1");
+            dto.setRoleIds(Set.of("r1"));
+
+            service.unauthorized(dto);
+
+            verify(tenantRepository).increasePermissionVersion(Set.of("tenant1"));
+        }
+    }
+
+    @Test
+    void unauthorized_withNonDefaultTenantNonOwnerNonAdmin_throwsAccessDenied() {
+        AuthorizationContext ctx = buildCtx("regular", false, "tenant1");
+        Tenant tenant = new Tenant();
+        tenant.setId("tenant1");
+        tenant.setOwnerId("owner1");
+
+        try (MockedStatic<AuthorizationContextHolder> ctxMock = mockStatic(AuthorizationContextHolder.class)) {
+            ctxMock.when(AuthorizationContextHolder::getContext).thenReturn(ctx);
+            when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
+
+            UserRoleRelevanceDto dto = new UserRoleRelevanceDto();
+            dto.setUserId("u1");
+            dto.setRoleIds(Set.of("r1"));
+
+            assertThatThrownBy(() -> service.unauthorized(dto))
+                    .isInstanceOf(AccessDeniedException.class);
+        }
+    }
+
+    // ── helpers ───────────────────────────────────────────────────────────────
+
+    private static AuthorizationContext buildCtx(String userId, boolean isAdmin, String tenantId) {
+        AuthorizationContext ctx = new AuthorizationContext();
+        ctx.setUserId(userId);
+        ctx.setIsAdministrator(isAdmin);
+        if (tenantId != null) {
+            ctx.setAttributes(Map.of("X-Tenant-Id", tenantId));
+        }
+        return ctx;
     }
 }
