@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -168,7 +169,7 @@ class JdbcMetadataBrowserServiceImplTest {
     when(metaData.getDatabaseProductName()).thenReturn("PostgreSQL");
     when(metaData.getDatabaseProductVersion()).thenReturn("16");
     when(metaData.getIdentifierQuoteString()).thenReturn("\"");
-    when(metaData.getSearchStringEscape()).thenReturn("\\");
+    lenient().when(metaData.getSearchStringEscape()).thenReturn("\\");
 
     return new JdbcMetadataBrowserServiceImpl(dataSourceService, driverRepository, dialectManagementService);
   }
