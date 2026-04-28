@@ -2,6 +2,7 @@ plugins {
     java
     idea
     checkstyle
+    jacoco
     id("org.springframework.boot") version libs.versions.spring.boot.get() apply false
     id("io.spring.dependency-management") version libs.versions.spring.dependency.management.get()
     kotlin("jvm") version libs.versions.kotlin.get()
@@ -21,6 +22,7 @@ subprojects {
     apply(plugin = "java")
     apply(plugin = "idea")
     apply(plugin = "kotlin")
+    apply(plugin = "jacoco")
     version = rootProject.version
 
     dependencies {
@@ -54,6 +56,49 @@ subprojects {
 
     tasks.test {
         useJUnitPlatform()
+        finalizedBy(tasks.named("jacocoTestReport"))
+    }
+
+    tasks.named<JacocoReport>("jacocoTestReport") {
+        reports {
+            xml.required.set(true)
+            html.required.set(true)
+        }
+        dependsOn(tasks.named("test"))
+    }
+}
+
+tasks.register<JacocoReport>("jacocoAggregatedReport") {
+    group = "verification"
+    description = "Aggregated JaCoCo coverage report for all subprojects"
+
+    val reportTasks = subprojects.mapNotNull { sub ->
+        sub.tasks.findByName("jacocoTestReport") as? JacocoReport
+    }
+    dependsOn(reportTasks)
+
+    val execFiles = subprojects.map { sub ->
+        sub.fileTree(sub.buildDir) { include("jacoco/*.exec") }
+    }
+    executionData.setFrom(execFiles)
+
+    val srcDirs = subprojects.flatMap { sub ->
+        listOf(sub.file("src/main/java"), sub.file("src/main/kotlin")).filter { it.exists() }
+    }
+    sourceDirectories.setFrom(files(srcDirs))
+
+    val classDirs = subprojects.map { sub ->
+        sub.fileTree(sub.buildDir) {
+            include("classes/java/main/**", "classes/kotlin/main/**")
+        }
+    }
+    classDirectories.setFrom(classDirs)
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/aggregated/html"))
+        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/aggregated/jacocoAggregated.xml"))
     }
 }
 

@@ -1,43 +1,115 @@
 services:
   simple_point_postgresql:
     container_name: sp_postgresql
-    image: postgres
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      - POSTGRES_USER=root
-      - POSTGRES_PASSWORD=root
-      - POSTGRES_DB=simplepoint
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: simplepoint
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d simplepoint"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   simple_point_mysql:
     container_name: sp_mysql
     image: mysql:8.0.41-debian
-    ports:
-      - "3306:3306"
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: simplepoint
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   simple_point_consul:
     container_name: sp_consul
     build:
       context: .
       dockerfile: ./consul/Dockerfile
-    command: ["consul","agent", "-dev","-client=0.0.0.0"]
+    restart: unless-stopped
+    command: ["consul", "agent", "-dev", "-client=0.0.0.0", "-ui"]
     ports:
-      - "8600:8600"
       - "8500:8500"
+      - "8600:8600"
       - "8301:8301"
       - "8302:8302"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8500/v1/status/leader >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  simple_point_vault:
+    container_name: sp_vault
+    image: hashicorp/vault:1.19
+    restart: unless-stopped
+    cap_add:
+      - IPC_LOCK
+    command: ["server", "-dev", "-dev-root-token-id=root", "-dev-listen-address=0.0.0.0:8200"]
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: root
+      VAULT_ADDR: http://127.0.0.1:8200
+    ports:
+      - "8200:8200"
+    healthcheck:
+      test: ["CMD-SHELL", "VAULT_ADDR=http://127.0.0.1:8200 vault status >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   simple_point_redis:
     container_name: sp_redis
-    image: redis:8.0-M03
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   simple_point_rabbitmq:
     container_name: sp_mq
-    image: rabbitmq:3.13.7-management-alpine
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit loopback_users []"
     ports:
       - "5672:5672"
       - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  postgres_data:
+  mysql_data:
+  redis_data:
+  rabbitmq_data:

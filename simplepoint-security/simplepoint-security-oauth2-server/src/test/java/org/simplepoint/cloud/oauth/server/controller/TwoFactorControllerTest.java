@@ -16,11 +16,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.cloud.oauth.server.event.LoginAuditEventPublisher;
 import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationSuccessHandler;
-import org.simplepoint.cloud.oauth.server.provider.TwoFactorAuthenticationProvider;
 import org.simplepoint.cloud.oauth.server.provider.TwoFactorAuthenticationToken;
+import org.simplepoint.cloud.oauth.server.service.TotpService;
 import org.simplepoint.security.entity.User;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -31,7 +32,10 @@ import org.springframework.ui.ExtendedModelMap;
 class TwoFactorControllerTest {
 
   @Mock
-  private TwoFactorAuthenticationProvider twoFactorAuthenticationProvider;
+  private AuthenticationManager authenticationManager;
+
+  @Mock
+  private TotpService totpService;
 
   @Mock
   private LoginAuthenticationSuccessHandler authenticationSuccessHandler;
@@ -44,7 +48,8 @@ class TwoFactorControllerTest {
   @BeforeEach
   void setUp() {
     controller = new TwoFactorController(
-        twoFactorAuthenticationProvider,
+        authenticationManager,
+        totpService,
         authenticationSuccessHandler,
         loginAuditEventPublisher
     );
@@ -56,7 +61,7 @@ class TwoFactorControllerTest {
   }
 
   @Test
-  void verifyDelegatesToDedicatedTwoFactorProvider() throws Exception {
+  void verifyDelegatesToAuthenticationManager() throws Exception {
     User user = twoFactorEnabledUser();
     Authentication currentAuthentication = new UsernamePasswordAuthenticationToken(
         user,
@@ -69,7 +74,7 @@ class TwoFactorControllerTest {
         user.getAuthorities()
     );
     SecurityContextHolder.getContext().setAuthentication(currentAuthentication);
-    when(twoFactorAuthenticationProvider.authenticate(any(TwoFactorAuthenticationToken.class)))
+    when(authenticationManager.authenticate(any(TwoFactorAuthenticationToken.class)))
         .thenReturn(verifiedAuthentication);
     MockHttpServletRequest request = new MockHttpServletRequest("POST", "/two-factor/verify");
     MockHttpServletResponse response = new MockHttpServletResponse();
@@ -79,7 +84,7 @@ class TwoFactorControllerTest {
 
     assertThat(view).isNull();
     assertThat(SecurityContextHolder.getContext().getAuthentication()).isSameAs(verifiedAuthentication);
-    verify(twoFactorAuthenticationProvider).authenticate(argThat(authentication ->
+    verify(authenticationManager).authenticate(argThat(authentication ->
         authentication instanceof TwoFactorAuthenticationToken token
             && token.getPrincipal() == user
             && "123456".equals(token.getCredentials())
@@ -89,7 +94,7 @@ class TwoFactorControllerTest {
   }
 
   @Test
-  void verifyRejectsUnavailableTwoFactorAuthentication() {
+  void verifyRejectsFailedAuthentication() {
     User user = twoFactorEnabledUser();
     Authentication currentAuthentication = new UsernamePasswordAuthenticationToken(
         user,
@@ -97,12 +102,13 @@ class TwoFactorControllerTest {
         user.getAuthorities()
     );
     SecurityContextHolder.getContext().setAuthentication(currentAuthentication);
-    when(twoFactorAuthenticationProvider.authenticate(any(TwoFactorAuthenticationToken.class))).thenReturn(null);
+    when(authenticationManager.authenticate(any(TwoFactorAuthenticationToken.class)))
+        .thenThrow(new BadCredentialsException("Invalid code"));
     MockHttpServletRequest request = new MockHttpServletRequest("POST", "/two-factor/verify");
     MockHttpServletResponse response = new MockHttpServletResponse();
     ExtendedModelMap model = new ExtendedModelMap();
 
-    String view = controller.verify("123456", model, request, response);
+    String view = controller.verify("000000", model, request, response);
 
     assertThat(view).isEqualTo("two-factor-verify");
     assertThat(model.getAttribute("error")).isEqualTo("Invalid authentication code");

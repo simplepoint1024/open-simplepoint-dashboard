@@ -294,7 +294,7 @@ class FederationJdbcDriverServiceImplTest {
         dataSourceService,
         jdbcConnectionUserService,
         sqlConsoleService,
-        jdbcMetadataSupport,
+        new FederationJdbcMetadataQueryServiceImpl(jdbcMetadataSupport),
         usersService,
         passwordEncoder,
         tenantService,

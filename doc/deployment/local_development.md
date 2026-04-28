@@ -69,60 +69,53 @@
 | Consul | `http://127.0.0.1:8500` | `application-consul-dev.properties` 指向本机。 |
 | Vault | `http://127.0.0.1:8200` | `application-vault-dev.properties` 指向本机，token 默认是 `root`。 |
 
-### 4.3 一个必须提前知道的差异
+### 4.3 一个必须提前知道的前提
 
-> `docker/docker-compose.yaml` 里的 PostgreSQL 默认账号是 `root/root`，但 `infrastructure/consul/config/simplepoint/config/application/application.properties` 里的默认开发数据源配置是 `postgres/postgres`。  
-> 如果你直接照仓库现状起 `docker-compose`，又不调整任意一侧，`authorization` / `common` 这类 JPA 服务会连库失败。
+当前的 `docker/docker-compose.yaml` 已经把本地开发常用依赖补齐到了：
 
-当前有两种处理方式：
+1. PostgreSQL 凭据与默认 Consul 开发配置对齐（`postgres/postgres`）。
+2. Compose 内已包含 Consul 与 Vault。
 
-1. 调整 PostgreSQL 容器账号，使其和 Consul 默认开发配置一致。
-2. 保持容器不变，但在执行 `init_profile.sh` 前，把 Consul 里的开发数据源用户名 / 密码改成当前数据库实际值。
-
-另外，`docker/docker-compose.yaml` **没有**包含 Vault；如果你不走 Swarm，本地仍然需要单独准备 Vault。
+但这**不等于**服务已经能直接启动。  
+本地服务仍然依赖 `init_profile.sh` 把 `infrastructure/consul/config/simplepoint/config/**/*` 写入 Consul，并在 Vault 里准备授权服务所需的 transit key。
 
 ## 5. 推荐启动路径
 
-### 5.1 启动数据库、Redis、RabbitMQ
+### 5.1 启动本地依赖容器
 
-当前仓库自带的 `docker/docker-compose.yaml` 可以直接用于拉起这些基础中间件：
+当前仓库自带的 `docker/docker-compose.yaml` 可以直接拉起本地开发需要的基础依赖：
 
 ```bash
-docker compose -f docker/docker-compose.yaml up -d \
-  simple_point_postgresql \
-  simple_point_redis \
-  simple_point_rabbitmq
+docker compose -f docker/docker-compose.yaml up -d
 ```
 
 说明：
 
 - `simple_point_mysql` 也在 compose 里，但默认开发配置并不使用它。
-- 如果你已经有本地 PostgreSQL / Redis / RabbitMQ，也可以直接复用现成实例，只要最终地址和凭据与 Consul 中配置保持一致即可。
+- 如果你已经有本地 PostgreSQL / Redis / RabbitMQ / Consul / Vault，也可以直接复用现成实例，只要最终地址、凭据和开发配置保持一致即可。
 
-### 5.2 启动 Consul、Vault，并初始化配置
+### 5.2 初始化配置中心与密钥服务
 
-当前最稳妥的开发态路径是直接使用仓库脚本：
+起完 compose 后，再执行：
+
+```bash
+./scripts/shell/init_profile.sh
+```
+
+这个脚本会：
+
+1. 等待 `127.0.0.1:8500` 的 Consul 可访问；
+2. 等待 `127.0.0.1:8200` 的 Vault 可访问；
+3. 通过 Terraform 把开发配置写入 Consul；
+4. 在 Vault 中准备授权服务依赖的 key。
+
+如果你更习惯完全走本机 CLI 的方式，而不是 compose 起 Consul / Vault，那么再使用：
 
 ```bash
 ./scripts/shell/start_developer.sh
 ```
 
-这个脚本会顺序执行：
-
-1. `./scripts/shell/start_dev_vault.sh`
-2. `./scripts/shell/start_dev_consul.sh`
-3. `./scripts/shell/init_profile.sh`
-
-也就是说，它不仅会启动 Vault / Consul，还会把开发配置写入 Consul，并在 Vault 中准备好授权服务依赖的密钥。
-
-如果你想用容器里的 Consul，而不是本机 `consul` CLI，可以单独启动 `simple_point_consul`，然后只执行：
-
-```bash
-./scripts/shell/start_dev_vault.sh
-./scripts/shell/init_profile.sh
-```
-
-不要同时再跑 `start_dev_consul.sh`，否则会和 `8500` 端口冲突。
+不要在 compose 已经占用 `8500` / `8200` 端口时，再执行 `start_dev_consul.sh` 或 `start_dev_vault.sh`，否则会发生端口冲突。
 
 ### 5.3 校验后端工程
 
@@ -215,7 +208,7 @@ pnpm dev:common
 
 ### 8.3 PostgreSQL 能连端口，但用户名 / 密码不一致
 
-这是当前最容易踩到的本地差异之一：`docker-compose.yaml` 和默认 Consul 开发配置里的 PostgreSQL 凭据并不一致。只要两边没有对齐，JPA 服务就会报认证失败。
+虽然当前 `docker-compose.yaml` 已经默认使用 `postgres/postgres`，但如果你复用了旧容器、旧数据卷，或直接连接了另一套本地 PostgreSQL，仍然可能和 Consul 开发配置不一致，进而导致 JPA 服务认证失败。
 
 ### 8.4 只开了 `authorization`，还没开 `common`
 

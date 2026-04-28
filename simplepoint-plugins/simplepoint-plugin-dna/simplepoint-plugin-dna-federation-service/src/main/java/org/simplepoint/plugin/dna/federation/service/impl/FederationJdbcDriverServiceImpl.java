@@ -24,7 +24,6 @@ import org.simplepoint.plugin.dna.federation.api.service.FederationJdbcDriverSer
 import org.simplepoint.plugin.dna.federation.api.service.FederationSqlConsoleService;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcDriverModels;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationQueryModels;
-import org.simplepoint.plugin.dna.federation.service.support.FederationJdbcMetadataSupport;
 import org.simplepoint.plugin.dna.federation.service.support.FederationMetadataCacheService;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
@@ -51,15 +50,13 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
   private static final Logger LOG = LoggerFactory.getLogger(FederationJdbcDriverServiceImpl.class);
   private static final String DATABASE_PRODUCT_NAME = "SimplePoint DNA Federation";
 
-  private static final String NO_MATCH_CATALOG_PATTERN = "__simplepoint_no_match__";
-
   private final JdbcDataSourceDefinitionService dataSourceService;
 
   private final FederationJdbcConnectionUserService jdbcConnectionUserService;
 
   private final FederationSqlConsoleService sqlConsoleService;
 
-  private final FederationJdbcMetadataSupport jdbcMetadataSupport;
+  private final FederationJdbcMetadataQueryService metadataQueryService;
 
   private final UsersService usersService;
 
@@ -77,7 +74,7 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
    * @param dataSourceService datasource service
    * @param jdbcConnectionUserService jdbc grant service
    * @param sqlConsoleService sql console service
-   * @param jdbcMetadataSupport metadata support
+   * @param metadataQueryService jdbc metadata query service
    * @param usersService users service
    * @param passwordEncoder password encoder
    * @param tenantService tenant service
@@ -88,7 +85,7 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
       final JdbcDataSourceDefinitionService dataSourceService,
       final FederationJdbcConnectionUserService jdbcConnectionUserService,
       final FederationSqlConsoleService sqlConsoleService,
-      final FederationJdbcMetadataSupport jdbcMetadataSupport,
+      final FederationJdbcMetadataQueryService metadataQueryService,
       final UsersService usersService,
       final PasswordEncoder passwordEncoder,
       final TenantService tenantService,
@@ -98,7 +95,7 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
     this.dataSourceService = dataSourceService;
     this.jdbcConnectionUserService = jdbcConnectionUserService;
     this.sqlConsoleService = sqlConsoleService;
-    this.jdbcMetadataSupport = jdbcMetadataSupport;
+    this.metadataQueryService = metadataQueryService;
     this.usersService = usersService;
     this.passwordEncoder = passwordEncoder;
     this.tenantService = tenantService;
@@ -147,7 +144,9 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
     return withDriverContext(requiredSession, contextId, requiredSession.selectedCatalogCode(), (resolvedSession, resolvedContextId) ->
-        requiredSession.cachedMetadata("catalogs", () -> buildCatalogsResult(requiredSession.requireMetadataDataSources()), metadataCacheService)
+        requiredSession.cachedMetadata("catalogs",
+            () -> metadataQueryService.catalogs(toDataSourceList(requiredSession.requireMetadataDataSources())),
+            metadataCacheService)
     );
   }
 
@@ -173,7 +172,8 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalogPattern), (resolvedSession, resolvedContextId) ->
         requiredSession.cachedMetadata(
             "schemas:" + normalizedCacheValue(catalogPattern) + ':' + normalizedCacheValue(schemaPattern),
-            () -> aggregateSchemas(requiredSession, catalogPattern, schemaPattern),
+            () -> metadataQueryService.schemas(
+                toDataSourceList(requiredSession.requireMetadataDataSources()), catalogPattern, schemaPattern),
             metadataCacheService
         )
     );
@@ -193,11 +193,9 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
     return withDriverContext(requiredSession, contextId, requiredSession.selectedCatalogCode(), (resolvedSession, resolvedContextId) ->
-        requiredSession.cachedMetadata("tableTypes", () -> deduplicateRows(mergeTabularResults(
-            requiredSession.requireMetadataDataSources().stream()
-                .map(source -> jdbcMetadataSupport.tableTypes(source.dataSource()))
-                .toList()
-        )), metadataCacheService)
+        requiredSession.cachedMetadata("tableTypes",
+            () -> metadataQueryService.tableTypes(toDataSourceList(requiredSession.requireMetadataDataSources())),
+            metadataCacheService)
     );
   }
 
@@ -228,7 +226,9 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
         requiredSession.cachedMetadata(
             "tables:" + normalizedCacheValue(catalogPattern) + ':' + normalizedCacheValue(schemaPattern) + ':'
                 + normalizedCacheValue(tablePattern) + ':' + normalizeTypeKey(types),
-            () -> aggregateTables(requiredSession, catalogPattern, schemaPattern, tablePattern, types),
+            () -> metadataQueryService.tables(
+                toDataSourceList(requiredSession.requireMetadataDataSources()),
+                catalogPattern, schemaPattern, tablePattern, types),
             metadataCacheService
         )
     );
@@ -261,7 +261,9 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
         requiredSession.cachedMetadata(
             "columns:" + normalizedCacheValue(catalogPattern) + ':' + normalizedCacheValue(schemaPattern) + ':'
                 + normalizedCacheValue(tablePattern) + ':' + normalizedCacheValue(columnPattern),
-            () -> aggregateColumns(requiredSession, catalogPattern, schemaPattern, tablePattern, columnPattern),
+            () -> metadataQueryService.columns(
+                toDataSourceList(requiredSession.requireMetadataDataSources()),
+                catalogPattern, schemaPattern, tablePattern, columnPattern),
             metadataCacheService
         )
     );
@@ -291,8 +293,8 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalog), (resolvedSession, resolvedContextId) ->
         requiredSession.cachedMetadata(
             "primaryKeys:" + normalizedCacheValue(catalog) + ':' + normalizedCacheValue(schema) + ':' + normalizedCacheValue(table),
-            () -> aggregateTableMetadata(requiredSession, catalog,
-                ds -> jdbcMetadataSupport.primaryKeys(ds, catalog, schema, table)),
+            () -> metadataQueryService.primaryKeys(
+                toDataSourceList(requiredSession.requireMetadataDataSources()), catalog, schema, table),
             metadataCacheService
         )
     );
@@ -327,8 +329,9 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
         requiredSession.cachedMetadata(
             "indexInfo:" + normalizedCacheValue(catalog) + ':' + normalizedCacheValue(schema) + ':'
                 + normalizedCacheValue(table) + ':' + unique + ':' + approximate,
-            () -> aggregateTableMetadata(requiredSession, catalog,
-                ds -> jdbcMetadataSupport.indexInfo(ds, catalog, schema, table, unique, approximate)),
+            () -> metadataQueryService.indexInfo(
+                toDataSourceList(requiredSession.requireMetadataDataSources()),
+                catalog, schema, table, unique, approximate),
             metadataCacheService
         )
     );
@@ -358,8 +361,8 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalog), (resolvedSession, resolvedContextId) ->
         requiredSession.cachedMetadata(
             "importedKeys:" + normalizedCacheValue(catalog) + ':' + normalizedCacheValue(schema) + ':' + normalizedCacheValue(table),
-            () -> aggregateTableMetadata(requiredSession, catalog,
-                ds -> jdbcMetadataSupport.importedKeys(ds, catalog, schema, table)),
+            () -> metadataQueryService.importedKeys(
+                toDataSourceList(requiredSession.requireMetadataDataSources()), catalog, schema, table),
             metadataCacheService
         )
     );
@@ -389,8 +392,8 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalog), (resolvedSession, resolvedContextId) ->
         requiredSession.cachedMetadata(
             "exportedKeys:" + normalizedCacheValue(catalog) + ':' + normalizedCacheValue(schema) + ':' + normalizedCacheValue(table),
-            () -> aggregateTableMetadata(requiredSession, catalog,
-                ds -> jdbcMetadataSupport.exportedKeys(ds, catalog, schema, table)),
+            () -> metadataQueryService.exportedKeys(
+                toDataSourceList(requiredSession.requireMetadataDataSources()), catalog, schema, table),
             metadataCacheService
         )
     );
@@ -410,11 +413,9 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
     return withDriverContext(requiredSession, contextId, requiredSession.selectedCatalogCode(), (resolvedSession, resolvedContextId) ->
-        requiredSession.cachedMetadata("typeInfo", () -> deduplicateRows(mergeTabularResults(
-            requiredSession.requireMetadataDataSources().stream()
-                .map(source -> jdbcMetadataSupport.typeInfo(source.dataSource()))
-                .toList()
-        )), metadataCacheService)
+        requiredSession.cachedMetadata("typeInfo",
+            () -> metadataQueryService.typeInfo(toDataSourceList(requiredSession.requireMetadataDataSources())),
+            metadataCacheService)
     );
   }
 
@@ -660,186 +661,8 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
     return Map.copyOf(authorizedDataSources);
   }
 
-  private FederationJdbcDriverModels.TabularResult aggregateSchemas(
-      final JdbcConnectionSession session,
-      final String catalogPattern,
-      final String schemaPattern
-  ) {
-    List<AuthorizedDataSource> metadataSources = session.requireMetadataDataSources();
-    List<AuthorizedDataSource> filteredSources = filterByCatalogPattern(metadataSources, catalogPattern);
-    if (filteredSources.isEmpty()) {
-      return jdbcMetadataSupport.schemas(metadataSources.get(0).dataSource(), NO_MATCH_CATALOG_PATTERN, schemaPattern);
-    }
-    return safeAggregateFromSources(filteredSources,
-        ds -> jdbcMetadataSupport.schemas(ds, catalogPattern, schemaPattern));
-  }
-
-  private FederationJdbcDriverModels.TabularResult aggregateTables(
-      final JdbcConnectionSession session,
-      final String catalogPattern,
-      final String schemaPattern,
-      final String tablePattern,
-      final List<String> types
-  ) {
-    List<AuthorizedDataSource> metadataSources = session.requireMetadataDataSources();
-    List<AuthorizedDataSource> filteredSources = filterByCatalogPattern(metadataSources, catalogPattern);
-    if (filteredSources.isEmpty()) {
-      return jdbcMetadataSupport.tables(
-          metadataSources.get(0).dataSource(),
-          NO_MATCH_CATALOG_PATTERN,
-          schemaPattern,
-          tablePattern,
-          types
-      );
-    }
-    return safeAggregateFromSources(filteredSources,
-        ds -> jdbcMetadataSupport.tables(ds, catalogPattern, schemaPattern, tablePattern, types));
-  }
-
-  private FederationJdbcDriverModels.TabularResult aggregateColumns(
-      final JdbcConnectionSession session,
-      final String catalogPattern,
-      final String schemaPattern,
-      final String tablePattern,
-      final String columnPattern
-  ) {
-    List<AuthorizedDataSource> metadataSources = session.requireMetadataDataSources();
-    List<AuthorizedDataSource> filteredSources = filterByCatalogPattern(metadataSources, catalogPattern);
-    if (filteredSources.isEmpty()) {
-      return jdbcMetadataSupport.columns(
-          metadataSources.get(0).dataSource(),
-          NO_MATCH_CATALOG_PATTERN,
-          schemaPattern,
-          tablePattern,
-          columnPattern
-      );
-    }
-    return safeAggregateFromSources(filteredSources,
-        ds -> jdbcMetadataSupport.columns(ds, catalogPattern, schemaPattern, tablePattern, columnPattern));
-  }
-
-  private FederationJdbcDriverModels.TabularResult aggregateTableMetadata(
-      final JdbcConnectionSession session,
-      final String catalog,
-      final DataSourceMetadataAction action
-  ) {
-    List<AuthorizedDataSource> metadataSources = session.requireMetadataDataSources();
-    List<AuthorizedDataSource> filteredSources = filterByCatalogPattern(metadataSources, catalog);
-    if (filteredSources.isEmpty()) {
-      return new FederationJdbcDriverModels.TabularResult(List.of(), List.of());
-    }
-    return safeAggregateFromSources(filteredSources, action::apply);
-  }
-
-  @FunctionalInterface
-  private interface DataSourceMetadataAction {
-    FederationJdbcDriverModels.TabularResult apply(JdbcDataSourceDefinition dataSource);
-  }
-
-  /**
-   * 安全地从单个数据源收集元数据，失败时记录警告并返回空结果。
-   */
-  private static FederationJdbcDriverModels.TabularResult safeCollect(
-      final AuthorizedDataSource source,
-      final DataSourceMetadataAction action
-  ) {
-    try {
-      return action.apply(source.dataSource());
-    } catch (Exception ex) {
-      LOG.warn("数据源 [{}] 元数据查询失败，已跳过: {}",
-          source.dataSource().getCode(), ex.getMessage(), ex);
-      return null;
-    }
-  }
-
-  /**
-   * 对多个数据源并行执行元数据操作并合并结果，单个数据源失败不影响整体。
-   */
-  private FederationJdbcDriverModels.TabularResult safeAggregateFromSources(
-      final List<AuthorizedDataSource> sources,
-      final DataSourceMetadataAction action
-  ) {
-    if (sources.size() == 1) {
-      FederationJdbcDriverModels.TabularResult single = safeCollect(sources.get(0), action);
-      return single != null ? single : new FederationJdbcDriverModels.TabularResult(List.of(), List.of());
-    }
-    return mergeTabularResults(sources.parallelStream()
-        .map(source -> safeCollect(source, action))
-        .filter(Objects::nonNull)
-        .toList());
-  }
-
-  private static FederationJdbcDriverModels.TabularResult buildCatalogsResult(
-      final List<AuthorizedDataSource> dataSources
-  ) {
-    return new FederationJdbcDriverModels.TabularResult(
-        List.of(new FederationJdbcDriverModels.JdbcColumn("TABLE_CAT", "VARCHAR", java.sql.Types.VARCHAR)),
-        (dataSources == null ? List.<AuthorizedDataSource>of() : dataSources).stream()
-            .map(AuthorizedDataSource::dataSource)
-            .map(JdbcDataSourceDefinition::getCode)
-            .filter(Objects::nonNull)
-            .sorted(String.CASE_INSENSITIVE_ORDER)
-            .<List<Object>>map(code -> List.of(code))
-            .toList()
-    );
-  }
-
-  private static FederationJdbcDriverModels.TabularResult mergeTabularResults(
-      final List<FederationJdbcDriverModels.TabularResult> results
-  ) {
-    LinkedHashMap<String, FederationJdbcDriverModels.JdbcColumn> mergedColumns = new LinkedHashMap<>();
-    List<Map<String, Object>> mappedRows = new ArrayList<>();
-    for (FederationJdbcDriverModels.TabularResult result : results == null ? List.<FederationJdbcDriverModels.TabularResult>of() : results) {
-      if (result == null) {
-        continue;
-      }
-      List<FederationJdbcDriverModels.JdbcColumn> columns = result.columns();
-      for (FederationJdbcDriverModels.JdbcColumn column : columns) {
-        if (column != null && trimToNull(column.name()) != null) {
-          mergedColumns.putIfAbsent(column.name(), column);
-        }
-      }
-      for (List<Object> row : result.rows()) {
-        Map<String, Object> rowValues = new LinkedHashMap<>();
-        for (int index = 0; index < columns.size(); index++) {
-          FederationJdbcDriverModels.JdbcColumn column = columns.get(index);
-          if (column == null || trimToNull(column.name()) == null) {
-            continue;
-          }
-          rowValues.put(column.name(), row != null && index < row.size() ? row.get(index) : null);
-        }
-        mappedRows.add(rowValues);
-      }
-    }
-    List<FederationJdbcDriverModels.JdbcColumn> columns = List.copyOf(mergedColumns.values());
-    List<List<Object>> rows = mappedRows.stream()
-        .map(row -> columns.stream()
-            .map(column -> row.get(column.name()))
-            .toList())
-        .toList();
-    return new FederationJdbcDriverModels.TabularResult(columns, rows);
-  }
-
-  private static FederationJdbcDriverModels.TabularResult deduplicateRows(
-      final FederationJdbcDriverModels.TabularResult result
-  ) {
-    if (result == null || result.rows().isEmpty()) {
-      return result == null ? new FederationJdbcDriverModels.TabularResult(List.of(), List.of()) : result;
-    }
-    return new FederationJdbcDriverModels.TabularResult(result.columns(), result.rows().stream().distinct().toList());
-  }
-
-  private static List<AuthorizedDataSource> filterByCatalogPattern(
-      final List<AuthorizedDataSource> dataSources,
-      final String catalog
-  ) {
-    String normalizedCatalog = trimToNull(catalog);
-    if (normalizedCatalog == null) {
-      return dataSources == null ? List.of() : dataSources;
-    }
-    return (dataSources == null ? List.<AuthorizedDataSource>of() : dataSources).stream()
-        .filter(source -> normalizedCatalog.equalsIgnoreCase(source.dataSource().getCode()))
-        .toList();
+  private static List<JdbcDataSourceDefinition> toDataSourceList(final List<AuthorizedDataSource> sources) {
+    return sources == null ? List.of() : sources.stream().map(AuthorizedDataSource::dataSource).toList();
   }
 
   private static String resolveMetadataContextCatalog(

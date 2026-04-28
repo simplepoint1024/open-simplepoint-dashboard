@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -125,10 +124,12 @@ class JdbcMetadataManagementServiceImplTest {
     when(metaData.getIdentifierQuoteString()).thenReturn("\"");
     when(metaData.getSearchStringEscape()).thenReturn("\\");
 
-    return new JdbcMetadataManagementServiceImpl(
-        dataSourceService,
-        driverRepository,
-        dialectManagementService
+    JdbcMetadataBrowserServiceImpl browserService = new JdbcMetadataBrowserServiceImpl(
+        dataSourceService, driverRepository, dialectManagementService
     );
+    JdbcDdlOperationServiceImpl ddlService = new JdbcDdlOperationServiceImpl(
+        dataSourceService, driverRepository, dialectManagementService
+    );
+    return new JdbcMetadataManagementServiceImpl(browserService, ddlService);
   }
 }

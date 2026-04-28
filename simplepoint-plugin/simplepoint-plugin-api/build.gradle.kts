@@ -5,4 +5,5 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation(libs.swagger.annotations)
     implementation(libs.oauth2.oidc.sdk)
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

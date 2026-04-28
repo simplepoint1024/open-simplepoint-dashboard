@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    jacoco
 }
 allprojects {
     group = "org.simplepoint.api"
@@ -13,4 +14,19 @@ dependencies {
     api("org.springframework.security:spring-security-oauth2-core")
     api(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-annotation"))
     api(libs.swagger.annotations)
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+}
+
+tasks.test {
+    useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(false)
+        html.required.set(true)
+    }
 }

@@ -39,11 +39,11 @@
 
 1. 只起了数据库 / Redis / RabbitMQ，没有起 Consul / Vault
 2. 起了 Consul / Vault，但没有执行 `init_profile.sh`
-3. 使用了 `docker-compose`，却以为里面已经包含 Vault
+3. 使用了 `docker-compose`，但起完依赖后没有继续执行 `init_profile.sh`
 
 **建议处理**
 
-优先执行：
+如果你走本机 CLI 路径，优先执行：
 
 ```bash
 ./scripts/shell/start_developer.sh
@@ -55,7 +55,14 @@
 2. 启动本地 Consul dev agent
 3. 通过 Terraform 把开发配置写入 Consul，并在 Vault 初始化 key
 
-> 注意：`docker/docker-compose.yaml` 当前并不包含 Vault。
+如果你走容器路径，则先执行：
+
+```bash
+docker compose -f docker/docker-compose.yaml up -d
+./scripts/shell/init_profile.sh
+```
+
+不要在 compose 已经占用 `8500` / `8200` 端口时，再执行 `start_dev_consul.sh` 或 `start_dev_vault.sh`。
 
 ### 3.2 PostgreSQL 端口通了，但 JPA 仍然连库失败
 
@@ -66,17 +73,14 @@
 
 **常见原因**
 
-当前仓库里有一个现成差异：
-
-- `docker/docker-compose.yaml` 默认 PostgreSQL 账号：`root/root`
-- Consul 开发配置里的默认数据源账号：`postgres/postgres`
+当前仓库默认的 `docker/docker-compose.yaml` 已经使用 `postgres/postgres`，但如果你复用了旧容器、旧数据卷，或连接了另一套本地 PostgreSQL，依然可能和 Consul 开发配置不一致。
 
 **建议处理**
 
-二选一：
+建议处理：
 
-1. 调整 PostgreSQL 容器账号，使其与 Consul 开发配置一致
-2. 改 Consul 开发配置，再执行一次 `init_profile.sh`
+1. 确认当前实际数据库账号密码和 `infrastructure/consul/config/simplepoint/config/application/application.properties` 一致
+2. 如果你沿用了旧的 PostgreSQL 数据，删除旧容器 / 数据卷后按当前 compose 重新创建，或同步修改 Consul 开发配置后再执行一次 `init_profile.sh`
 
 ## 4. 登录与认证问题
 
