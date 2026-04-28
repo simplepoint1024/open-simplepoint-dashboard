@@ -230,6 +230,219 @@ class FederationJdbcMetadataSupportTest {
     assertThat(columnValues(result, "TABLE_TYPE")).doesNotContain("BASE TABLE");
   }
 
+  @Test
+  void catalogsShouldReturnDataSourceCodeAsOnlyCatalogEntry() {
+    JdbcDataSourceDefinition definition = new JdbcDataSourceDefinition();
+    definition.setId("ds-1");
+    definition.setCode("my_catalog");
+
+    FederationJdbcMetadataSupport support = new FederationJdbcMetadataSupport(
+        dataSourceService, driverRepository, dialectManagementService
+    );
+
+    FederationJdbcDriverModels.TabularResult result = support.catalogs(definition);
+
+    assertThat(columnValues(result, "TABLE_CAT")).containsExactly("my_catalog");
+  }
+
+  @Test
+  void schemasShouldReturnResultsWhenCatalogPatternIsNull() throws Exception {
+    JdbcDataSource dataSource = createDataSource();
+    initialize(dataSource, "create table orders (id int primary key);");
+
+    JdbcDataSourceDefinition definition = createDefinitionWithCode(dataSource, "target_db");
+    JdbcDriverDefinition driver = createDriver();
+    JdbcDatabaseDialect dialect = h2LikeDialect();
+    when(dataSourceService.requireSimpleDataSource("ds-1")).thenReturn(new SimpleDataSource(dataSource));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
+
+    FederationJdbcMetadataSupport support = new FederationJdbcMetadataSupport(
+        dataSourceService, driverRepository, dialectManagementService
+    );
+
+    FederationJdbcDriverModels.TabularResult result = support.schemas(definition, null, null);
+
+    assertThat(result.columns()).isNotEmpty();
+    assertThat(columnValues(result, "TABLE_SCHEM")).contains("PUBLIC");
+  }
+
+  @Test
+  void schemasShouldReturnEmptyWhenCatalogPatternDoesNotMatch() throws Exception {
+    JdbcDataSource dataSource = createDataSource();
+    initialize(dataSource, "create table orders (id int primary key);");
+
+    JdbcDataSourceDefinition definition = createDefinitionWithCode(dataSource, "my_db");
+
+    FederationJdbcMetadataSupport support = new FederationJdbcMetadataSupport(
+        dataSourceService, driverRepository, dialectManagementService
+    );
+
+    FederationJdbcDriverModels.TabularResult result = support.schemas(definition, "other_db", null);
+
+    assertThat(result.rows()).isEmpty();
+  }
+
+  @Test
+  void columnsShouldReturnEmptyWhenCatalogPatternDoesNotMatch() throws Exception {
+    JdbcDataSource dataSource = createDataSource();
+    initialize(dataSource, "create table orders (id int primary key, name varchar(100));");
+
+    JdbcDataSourceDefinition definition = createDefinitionWithCode(dataSource, "target_db");
+    JdbcDriverDefinition driver = createDriver();
+    JdbcDatabaseDialect dialect = h2LikeDialect();
+    when(dataSourceService.requireSimpleDataSource("ds-1")).thenReturn(new SimpleDataSource(dataSource));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
+
+    FederationJdbcMetadataSupport support = new FederationJdbcMetadataSupport(
+        dataSourceService, driverRepository, dialectManagementService
+    );
+
+    FederationJdbcDriverModels.TabularResult result = support.columns(
+        definition, "other_db", "PUBLIC", "ORDERS", "%"
+    );
+
+    assertThat(result.rows()).isEmpty();
+  }
+
+  @Test
+  void tablesShouldReturnEmptyColumnsResultWhenCatalogPatternDoesNotMatch() throws Exception {
+    JdbcDataSource dataSource = createDataSource();
+    initialize(dataSource, "create table orders (id int primary key);");
+
+    JdbcDataSourceDefinition definition = createDefinitionWithCode(dataSource, "my_catalog");
+    JdbcDriverDefinition driver = createDriver();
+    JdbcDatabaseDialect dialect = h2LikeDialect();
+    when(dataSourceService.requireSimpleDataSource("ds-1")).thenReturn(new SimpleDataSource(dataSource));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
+
+    FederationJdbcMetadataSupport support = new FederationJdbcMetadataSupport(
+        dataSourceService, driverRepository, dialectManagementService
+    );
+
+    FederationJdbcDriverModels.TabularResult result = support.tables(
+        definition, "other_catalog", "PUBLIC", "%", List.of("TABLE")
+    );
+
+    assertThat(result.rows()).isEmpty();
+  }
+
+  @Test
+  void primaryKeysShouldReturnKeyColumnsForTable() throws Exception {
+    JdbcDataSource dataSource = createDataSource();
+    initialize(dataSource, "create table orders (id int primary key, name varchar(100));");
+
+    JdbcDataSourceDefinition definition = createDefinition(dataSource);
+    JdbcDriverDefinition driver = createDriver();
+    JdbcDatabaseDialect dialect = h2LikeDialect();
+    when(dataSourceService.requireSimpleDataSource("ds-1")).thenReturn(new SimpleDataSource(dataSource));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
+
+    FederationJdbcMetadataSupport support = new FederationJdbcMetadataSupport(
+        dataSourceService, driverRepository, dialectManagementService
+    );
+
+    FederationJdbcDriverModels.TabularResult result = support.primaryKeys(
+        definition, "ds1", "PUBLIC", "ORDERS"
+    );
+
+    assertThat(columnValues(result, "COLUMN_NAME")).containsExactly("ID");
+  }
+
+  @Test
+  void typeInfoShouldReturnTypesFromDatabase() throws Exception {
+    JdbcDataSource dataSource = createDataSource();
+    initialize(dataSource, "create table dummy (id int);");
+
+    JdbcDataSourceDefinition definition = createDefinition(dataSource);
+    JdbcDriverDefinition driver = createDriver();
+    JdbcDatabaseDialect dialect = h2LikeDialect();
+    when(dataSourceService.requireSimpleDataSource("ds-1")).thenReturn(new SimpleDataSource(dataSource));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
+
+    FederationJdbcMetadataSupport support = new FederationJdbcMetadataSupport(
+        dataSourceService, driverRepository, dialectManagementService
+    );
+
+    FederationJdbcDriverModels.TabularResult result = support.typeInfo(definition);
+
+    assertThat(result.columns()).isNotEmpty();
+    assertThat(result.rows()).isNotEmpty();
+  }
+
+  @Test
+  void indexInfoShouldReturnEmptyForTableWithNoPrimaryKeyAsNonUniqueIndex() throws Exception {
+    JdbcDataSource dataSource = createDataSource();
+    initialize(dataSource, "create table no_index_table (id int, name varchar(100));");
+
+    JdbcDataSourceDefinition definition = createDefinition(dataSource);
+    JdbcDriverDefinition driver = createDriver();
+    JdbcDatabaseDialect dialect = h2LikeDialect();
+    when(dataSourceService.requireSimpleDataSource("ds-1")).thenReturn(new SimpleDataSource(dataSource));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
+
+    FederationJdbcMetadataSupport support = new FederationJdbcMetadataSupport(
+        dataSourceService, driverRepository, dialectManagementService
+    );
+
+    FederationJdbcDriverModels.TabularResult result = support.indexInfo(
+        definition, "ds1", "PUBLIC", "NO_INDEX_TABLE", true, false
+    );
+
+    assertThat(result).isNotNull();
+  }
+
+  @Test
+  void importedKeysShouldReturnEmptyForTableWithNoForeignKeys() throws Exception {
+    JdbcDataSource dataSource = createDataSource();
+    initialize(dataSource, "create table simple_table (id int primary key);");
+
+    JdbcDataSourceDefinition definition = createDefinition(dataSource);
+    JdbcDriverDefinition driver = createDriver();
+    JdbcDatabaseDialect dialect = h2LikeDialect();
+    when(dataSourceService.requireSimpleDataSource("ds-1")).thenReturn(new SimpleDataSource(dataSource));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
+
+    FederationJdbcMetadataSupport support = new FederationJdbcMetadataSupport(
+        dataSourceService, driverRepository, dialectManagementService
+    );
+
+    FederationJdbcDriverModels.TabularResult result = support.importedKeys(
+        definition, "ds1", "PUBLIC", "SIMPLE_TABLE"
+    );
+
+    assertThat(result.rows()).isEmpty();
+  }
+
+  @Test
+  void exportedKeysShouldReturnEmptyForTableWithNoExportedKeys() throws Exception {
+    JdbcDataSource dataSource = createDataSource();
+    initialize(dataSource, "create table parent_table (id int primary key);");
+
+    JdbcDataSourceDefinition definition = createDefinition(dataSource);
+    JdbcDriverDefinition driver = createDriver();
+    JdbcDatabaseDialect dialect = h2LikeDialect();
+    when(dataSourceService.requireSimpleDataSource("ds-1")).thenReturn(new SimpleDataSource(dataSource));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
+
+    FederationJdbcMetadataSupport support = new FederationJdbcMetadataSupport(
+        dataSourceService, driverRepository, dialectManagementService
+    );
+
+    FederationJdbcDriverModels.TabularResult result = support.exportedKeys(
+        definition, "ds1", "PUBLIC", "PARENT_TABLE"
+    );
+
+    assertThat(result.rows()).isEmpty();
+  }
+
   private static JdbcDataSource createDataSource() {
     JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL("jdbc:h2:mem:federation-metadata-" + UUID.randomUUID() + ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1");

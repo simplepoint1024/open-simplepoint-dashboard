@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.dna.federation.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -13,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Set;
+import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -288,6 +290,249 @@ class FederationJdbcDriverServiceImplTest {
     verify(jdbcMetadataSupport, times(1)).tableTypes(dataSource);
     verify(authorizationContextService, times(1)).calculate(eq("tenant-a"), eq("user-1"), eq("ctx-1"), any());
   }
+
+  @Test
+  void schemasShouldDelegateToMetadataSupport() {
+    User user = enabledUser();
+    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "ds1");
+    AuthorizationContext authorizationContext = authorizationContext("user-1");
+    FederationJdbcDriverModels.TabularResult schemasResult = new FederationJdbcDriverModels.TabularResult(
+        List.of(
+            new FederationJdbcDriverModels.JdbcColumn("TABLE_SCHEM", "VARCHAR", java.sql.Types.VARCHAR),
+            new FederationJdbcDriverModels.JdbcColumn("TABLE_CATALOG", "VARCHAR", java.sql.Types.VARCHAR)
+        ),
+        List.of(List.of("PUBLIC", "ds1"))
+    );
+    when(usersService.loadUserByPhoneOrEmail("alice@example.com")).thenReturn(user);
+    when(passwordEncoder.matches("secret", "encoded")).thenReturn(true);
+    when(jdbcConnectionUserService.enabledGrants("user-1")).thenReturn(List.of(enabledGrant("g1", "ds-1")));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(dataSource));
+    when(authorizationContextService.calculate(eq("tenant-a"), eq("user-1"), eq("ctx-1"), any()))
+        .thenReturn(authorizationContext);
+    when(jdbcMetadataSupport.schemas(dataSource, "ds1", "%")).thenReturn(schemasResult);
+    FederationJdbcDriverServiceImpl service = service();
+
+    try (FederationJdbcDriverService.DriverSession session = service.openSession(
+        new FederationJdbcDriverModels.DriverRequest("alice@example.com", "secret", "ds1", "tenant-a", "ctx-1")
+    )) {
+      FederationJdbcDriverModels.TabularResult response = service.schemas(session, "ctx-1", "ds1", "%");
+      assertThat(response.rows()).containsExactly(List.of("PUBLIC", "ds1"));
+    }
+
+    verify(jdbcMetadataSupport).schemas(dataSource, "ds1", "%");
+  }
+
+  @Test
+  void columnsShouldDelegateToMetadataSupport() {
+    User user = enabledUser();
+    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "ds1");
+    AuthorizationContext authorizationContext = authorizationContext("user-1");
+    FederationJdbcDriverModels.TabularResult columnsResult = new FederationJdbcDriverModels.TabularResult(
+        List.of(new FederationJdbcDriverModels.JdbcColumn("COLUMN_NAME", "VARCHAR", java.sql.Types.VARCHAR)),
+        List.of(List.of("id"))
+    );
+    when(usersService.loadUserByPhoneOrEmail("alice@example.com")).thenReturn(user);
+    when(passwordEncoder.matches("secret", "encoded")).thenReturn(true);
+    when(jdbcConnectionUserService.enabledGrants("user-1")).thenReturn(List.of(enabledGrant("g1", "ds-1")));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(dataSource));
+    when(authorizationContextService.calculate(eq("tenant-a"), eq("user-1"), eq("ctx-1"), any()))
+        .thenReturn(authorizationContext);
+    when(jdbcMetadataSupport.columns(dataSource, "ds1", "PUBLIC", "ORDERS", "%")).thenReturn(columnsResult);
+    FederationJdbcDriverServiceImpl service = service();
+
+    try (FederationJdbcDriverService.DriverSession session = service.openSession(
+        new FederationJdbcDriverModels.DriverRequest("alice@example.com", "secret", "ds1", "tenant-a", "ctx-1")
+    )) {
+      FederationJdbcDriverModels.TabularResult response = service.columns(
+          session, "ctx-1", "ds1", "PUBLIC", "ORDERS", "%"
+      );
+      assertThat(response.rows()).containsExactly(List.of("id"));
+    }
+  }
+
+  @Test
+  void primaryKeysShouldDelegateToMetadataSupport() {
+    User user = enabledUser();
+    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "ds1");
+    AuthorizationContext authorizationContext = authorizationContext("user-1");
+    FederationJdbcDriverModels.TabularResult pksResult = new FederationJdbcDriverModels.TabularResult(
+        List.of(new FederationJdbcDriverModels.JdbcColumn("COLUMN_NAME", "VARCHAR", java.sql.Types.VARCHAR)),
+        List.of(List.of("id"))
+    );
+    when(usersService.loadUserByPhoneOrEmail("alice@example.com")).thenReturn(user);
+    when(passwordEncoder.matches("secret", "encoded")).thenReturn(true);
+    when(jdbcConnectionUserService.enabledGrants("user-1")).thenReturn(List.of(enabledGrant("g1", "ds-1")));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(dataSource));
+    when(authorizationContextService.calculate(eq("tenant-a"), eq("user-1"), eq("ctx-1"), any()))
+        .thenReturn(authorizationContext);
+    when(jdbcMetadataSupport.primaryKeys(dataSource, "ds1", "PUBLIC", "ORDERS")).thenReturn(pksResult);
+    FederationJdbcDriverServiceImpl service = service();
+
+    try (FederationJdbcDriverService.DriverSession session = service.openSession(
+        new FederationJdbcDriverModels.DriverRequest("alice@example.com", "secret", "ds1", "tenant-a", "ctx-1")
+    )) {
+      FederationJdbcDriverModels.TabularResult response = service.primaryKeys(
+          session, "ctx-1", "ds1", "PUBLIC", "ORDERS"
+      );
+      assertThat(response.rows()).containsExactly(List.of("id"));
+    }
+  }
+
+  @Test
+  void indexInfoShouldDelegateToMetadataSupport() {
+    User user = enabledUser();
+    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "ds1");
+    AuthorizationContext authorizationContext = authorizationContext("user-1");
+    FederationJdbcDriverModels.TabularResult indexResult = new FederationJdbcDriverModels.TabularResult(
+        List.of(new FederationJdbcDriverModels.JdbcColumn("INDEX_NAME", "VARCHAR", java.sql.Types.VARCHAR)),
+        List.of()
+    );
+    when(usersService.loadUserByPhoneOrEmail("alice@example.com")).thenReturn(user);
+    when(passwordEncoder.matches("secret", "encoded")).thenReturn(true);
+    when(jdbcConnectionUserService.enabledGrants("user-1")).thenReturn(List.of(enabledGrant("g1", "ds-1")));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(dataSource));
+    when(authorizationContextService.calculate(eq("tenant-a"), eq("user-1"), eq("ctx-1"), any()))
+        .thenReturn(authorizationContext);
+    when(jdbcMetadataSupport.indexInfo(dataSource, "ds1", "PUBLIC", "ORDERS", false, true)).thenReturn(indexResult);
+    FederationJdbcDriverServiceImpl service = service();
+
+    try (FederationJdbcDriverService.DriverSession session = service.openSession(
+        new FederationJdbcDriverModels.DriverRequest("alice@example.com", "secret", "ds1", "tenant-a", "ctx-1")
+    )) {
+      FederationJdbcDriverModels.TabularResult response = service.indexInfo(
+          session, "ctx-1", "ds1", "PUBLIC", "ORDERS", false, true
+      );
+      assertThat(response).isNotNull();
+    }
+  }
+
+  @Test
+  void importedKeysShouldDelegateToMetadataSupport() {
+    User user = enabledUser();
+    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "ds1");
+    AuthorizationContext authorizationContext = authorizationContext("user-1");
+    FederationJdbcDriverModels.TabularResult keysResult = new FederationJdbcDriverModels.TabularResult(
+        List.of(), List.of()
+    );
+    when(usersService.loadUserByPhoneOrEmail("alice@example.com")).thenReturn(user);
+    when(passwordEncoder.matches("secret", "encoded")).thenReturn(true);
+    when(jdbcConnectionUserService.enabledGrants("user-1")).thenReturn(List.of(enabledGrant("g1", "ds-1")));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(dataSource));
+    when(authorizationContextService.calculate(eq("tenant-a"), eq("user-1"), eq("ctx-1"), any()))
+        .thenReturn(authorizationContext);
+    when(jdbcMetadataSupport.importedKeys(dataSource, "ds1", "PUBLIC", "ORDERS")).thenReturn(keysResult);
+    FederationJdbcDriverServiceImpl service = service();
+
+    try (FederationJdbcDriverService.DriverSession session = service.openSession(
+        new FederationJdbcDriverModels.DriverRequest("alice@example.com", "secret", "ds1", "tenant-a", "ctx-1")
+    )) {
+      FederationJdbcDriverModels.TabularResult response = service.importedKeys(
+          session, "ctx-1", "ds1", "PUBLIC", "ORDERS"
+      );
+      assertThat(response).isNotNull();
+    }
+  }
+
+  @Test
+  void exportedKeysShouldDelegateToMetadataSupport() {
+    User user = enabledUser();
+    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "ds1");
+    AuthorizationContext authorizationContext = authorizationContext("user-1");
+    FederationJdbcDriverModels.TabularResult keysResult = new FederationJdbcDriverModels.TabularResult(
+        List.of(), List.of()
+    );
+    when(usersService.loadUserByPhoneOrEmail("alice@example.com")).thenReturn(user);
+    when(passwordEncoder.matches("secret", "encoded")).thenReturn(true);
+    when(jdbcConnectionUserService.enabledGrants("user-1")).thenReturn(List.of(enabledGrant("g1", "ds-1")));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(dataSource));
+    when(authorizationContextService.calculate(eq("tenant-a"), eq("user-1"), eq("ctx-1"), any()))
+        .thenReturn(authorizationContext);
+    when(jdbcMetadataSupport.exportedKeys(dataSource, "ds1", "PUBLIC", "ORDERS")).thenReturn(keysResult);
+    FederationJdbcDriverServiceImpl service = service();
+
+    try (FederationJdbcDriverService.DriverSession session = service.openSession(
+        new FederationJdbcDriverModels.DriverRequest("alice@example.com", "secret", "ds1", "tenant-a", "ctx-1")
+    )) {
+      FederationJdbcDriverModels.TabularResult response = service.exportedKeys(
+          session, "ctx-1", "ds1", "PUBLIC", "ORDERS"
+      );
+      assertThat(response).isNotNull();
+    }
+  }
+
+  @Test
+  void openSessionShouldFailWhenPasswordDoesNotMatch() {
+    User user = enabledUser();
+    when(usersService.loadUserByPhoneOrEmail("alice@example.com")).thenReturn(user);
+    when(passwordEncoder.matches("wrong-password", "encoded")).thenReturn(false);
+    FederationJdbcDriverServiceImpl service = service();
+
+    assertThrows(
+        org.springframework.security.access.AccessDeniedException.class,
+        () -> service.openSession(
+            new FederationJdbcDriverModels.DriverRequest("alice@example.com", "wrong-password", null, "tenant-a", null)
+        )
+    );
+  }
+
+  @Test
+  void openSessionShouldFailWhenUserIsDisabled() {
+    User user = new User();
+    user.setId("user-1");
+    user.setEnabled(false);
+    user.setPassword("encoded");
+    user.setEmail("alice@example.com");
+    when(usersService.loadUserByPhoneOrEmail("alice@example.com")).thenReturn(user);
+    FederationJdbcDriverServiceImpl service = service();
+
+    assertThrows(
+        org.springframework.security.access.AccessDeniedException.class,
+        () -> service.openSession(
+            new FederationJdbcDriverModels.DriverRequest("alice@example.com", "secret", null, "tenant-a", null)
+        )
+    );
+  }
+
+  @Test
+  void openSessionShouldFailWhenUserHasNoAuthorizedGrants() {
+    User user = enabledUser();
+    when(usersService.loadUserByPhoneOrEmail("alice@example.com")).thenReturn(user);
+    when(passwordEncoder.matches("secret", "encoded")).thenReturn(true);
+    when(jdbcConnectionUserService.enabledGrants("user-1")).thenReturn(List.of());
+    FederationJdbcDriverServiceImpl service = service();
+
+    assertThrows(
+        org.springframework.security.access.AccessDeniedException.class,
+        () -> service.openSession(
+            new FederationJdbcDriverModels.DriverRequest("alice@example.com", "secret", null, "tenant-a", null)
+        )
+    );
+  }
+
+  @Test
+  void openSessionShouldResolveTenantFromServiceWhenNotSupplied() {
+    User user = enabledUser();
+    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "ds1");
+    FederationJdbcConnectionUser grant = enabledGrant("grant-1", "ds-1");
+    AuthorizationContext authorizationContext = authorizationContext("user-1");
+    NamedTenantVo tenantVo = new NamedTenantVo("tenant-resolved", "Resolved Tenant");
+    when(usersService.loadUserByPhoneOrEmail("alice@example.com")).thenReturn(user);
+    when(passwordEncoder.matches("secret", "encoded")).thenReturn(true);
+    when(jdbcConnectionUserService.enabledGrants("user-1")).thenReturn(List.of(grant));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(dataSource));
+    when(tenantService.getTenantsByUserId("user-1")).thenReturn(Set.of(tenantVo));
+    when(authorizationContextService.calculate(eq("tenant-resolved"), eq("user-1"), any(), any()))
+        .thenReturn(authorizationContext);
+    FederationJdbcDriverServiceImpl service = service();
+
+    try (FederationJdbcDriverService.DriverSession session = service.openSession(
+        new FederationJdbcDriverModels.DriverRequest("alice@example.com", "secret", "ds1", null, "ctx-1")
+    )) {
+      FederationJdbcDriverModels.PingResult ping = service.ping(session, "ctx-1");
+      assertThat(ping.tenantId()).isEqualTo("tenant-resolved");
+    }
+  }
+
 
   private FederationJdbcDriverServiceImpl service() {
     return new FederationJdbcDriverServiceImpl(
