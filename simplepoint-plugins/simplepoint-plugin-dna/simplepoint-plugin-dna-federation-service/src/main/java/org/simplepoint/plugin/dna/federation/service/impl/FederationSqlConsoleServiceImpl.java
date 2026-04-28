@@ -7,35 +7,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.calcite.sql.SqlBasicCall;
-import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlDelete;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlInsert;
-import org.apache.calcite.sql.SqlJoin;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlMerge;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlOrderBy;
-import org.apache.calcite.sql.SqlSelect;
-import org.apache.calcite.sql.SqlUpdate;
-import org.apache.calcite.sql.SqlWith;
-import org.apache.calcite.sql.SqlWithItem;
-import org.apache.calcite.sql.parser.SqlParseException;
-import org.apache.calcite.sql.parser.SqlParser;
 import org.simplepoint.data.calcite.core.query.CalciteQueryAnalysis;
 import org.simplepoint.data.calcite.core.query.CalciteQueryEngine;
 import org.simplepoint.data.calcite.core.query.CalciteQueryRequest;
@@ -43,19 +20,18 @@ import org.simplepoint.data.calcite.core.query.CalciteQueryResult;
 import org.simplepoint.data.datasource.jdbc.SimpleDataSource;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
-import org.simplepoint.plugin.dna.federation.api.entity.FederationQueryAudit;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationQueryPolicy;
 import org.simplepoint.plugin.dna.federation.api.repository.FederationQueryPolicyRepository;
 import org.simplepoint.plugin.dna.federation.api.service.FederationQueryAuditService;
 import org.simplepoint.plugin.dna.federation.api.service.FederationSqlConsoleService;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationQueryModels;
+import org.simplepoint.plugin.dna.federation.service.impl.FederationDdlStatementProcessor.DdlTarget;
+import org.simplepoint.plugin.dna.federation.service.impl.FederationDmlStatementProcessor.DmlTarget;
+import org.simplepoint.plugin.dna.federation.service.impl.FederationSqlAnalysisUtils.TableReferenceSummary;
 import org.simplepoint.plugin.dna.federation.service.support.FederationCalciteCatalogAssembler;
 import org.simplepoint.plugin.dna.federation.service.support.FederationMetadataCacheService;
-import org.simplepoint.plugin.dna.federation.service.support.FederationSqlIdentifierNormalizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 /**
@@ -66,26 +42,32 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FederationSqlConsoleServiceImpl.class);
 
-  private static final int SQL_TEXT_MAX_LENGTH = 12_000;
-
-  private static final int AUDIT_MESSAGE_MAX_LENGTH = 4_000;
-
   /** Default statement timeout (in seconds) for DDL and DML execution to prevent indefinite hangs. */
   private static final int DDL_DML_STATEMENT_TIMEOUT_SECONDS = 60;
 
-  private static final Pattern JDBC_TABLE_SCAN_PATTERN = Pattern.compile("JdbcTableScan\\(table=\\[\\[([^\\]]+)]]");
+  private static final Pattern SMART_DML_PATTERN = Pattern.compile(
+      "\\s*(INSERT|UPDATE|DELETE|MERGE|UPSERT)\\b", Pattern.CASE_INSENSITIVE
+  );
+
+  private static final Pattern SMART_FLUSH_CACHE_PATTERN = Pattern.compile(
+      "\\s*FLUSH\\s+CACHE\\s*", Pattern.CASE_INSENSITIVE
+  );
 
   private final JdbcDataSourceDefinitionService dataSourceService;
 
   private final FederationQueryPolicyRepository policyRepository;
-
-  private final FederationQueryAuditService auditService;
 
   private final FederationCalciteCatalogAssembler catalogAssembler;
 
   private final CalciteQueryEngine queryEngine;
 
   private final FederationMetadataCacheService metadataCacheService;
+
+  private final FederationDmlStatementProcessor dmlProcessor;
+
+  private final FederationDdlStatementProcessor ddlProcessor;
+
+  private final FederationSqlAuditor sqlAuditor;
 
   /**
    * Creates a SQL console service implementation.
@@ -107,10 +89,12 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   ) {
     this.dataSourceService = dataSourceService;
     this.policyRepository = policyRepository;
-    this.auditService = auditService;
     this.catalogAssembler = catalogAssembler;
     this.queryEngine = queryEngine;
     this.metadataCacheService = metadataCacheService;
+    this.dmlProcessor = new FederationDmlStatementProcessor(dataSourceService);
+    this.ddlProcessor = new FederationDdlStatementProcessor(dataSourceService);
+    this.sqlAuditor = new FederationSqlAuditor(auditService);
   }
 
   /** {@inheritDoc} */
@@ -153,8 +137,12 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           prepared.assembly().schemaConfigurer(),
           prepared.analysis()
       );
-      List<String> resultSources = resolveResponseDataSources(prepared, result.analysis());
-      String pushdownSummary = buildPushdownSummary(result.analysis(), resultSources);
+      List<String> resultSources = FederationSqlAnalysisUtils.resolveResponseDataSources(
+          result.analysis().planText(),
+          prepared.assembly().physicalDataSourceCodes(),
+          prepared.dataSources()
+      );
+      String pushdownSummary = FederationSqlAnalysisUtils.buildPushdownSummary(result.analysis(), resultSources);
       FederationQueryModels.SqlQueryResult response = new FederationQueryModels.SqlQueryResult(
           prepared.catalogCode(),
           prepared.policy().code(),
@@ -174,7 +162,7 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           result.analysis().pushedSqls(),
           pushdownSummary
       );
-      persistAudit(
+      sqlAuditor.persist(
           prepared.catalogCode(),
           prepared.queryRequest().sql(),
           "SUCCESS",
@@ -211,17 +199,17 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   ) {
     String catalogCode = requireValue(request == null ? null : request.catalogCode(), "数据源编码不能为空");
     String sql = requireValue(request == null ? null : request.sql(), "SQL 不能为空");
-    if (sql.length() > SQL_TEXT_MAX_LENGTH) {
-      throw new IllegalArgumentException("SQL 长度不能超过 " + SQL_TEXT_MAX_LENGTH + " 个字符");
+    if (sql.length() > FederationSqlAuditor.SQL_TEXT_MAX_LENGTH) {
+      throw new IllegalArgumentException("SQL 长度不能超过 " + FederationSqlAuditor.SQL_TEXT_MAX_LENGTH + " 个字符");
     }
-    String normalizedSql = normalizeQualifiedIdentifiers(sql);
+    String normalizedSql = FederationSqlAnalysisUtils.normalizeQualifiedIdentifiers(sql);
     JdbcDataSourceDefinition resolvedDataSource = resolveDataSource(dataSourceId, catalogCode);
-    TableReferenceSummary references = collectTableReferences(normalizedSql);
-    DmlTarget dmlTarget = resolveDmlTarget(resolvedDataSource, references);
+    TableReferenceSummary references = FederationSqlAnalysisUtils.collectTableReferences(normalizedSql);
+    DmlTarget dmlTarget = dmlProcessor.resolve(resolvedDataSource, references);
     SimpleDataSource simpleDataSource = dataSourceService.requireSimpleDataSource(
         requireValue(dmlTarget.dataSource().getId(), "数据源ID不能为空")
     );
-    String pushedSql = rewriteDmlForPhysicalDatabase(normalizedSql, dmlTarget.dataSource().getCode());
+    String pushedSql = FederationDmlStatementProcessor.rewrite(normalizedSql, dmlTarget.dataSource().getCode());
     LOGGER.debug("DML 下推到物理数据源 [{}]: {}", dmlTarget.dataSource().getCode(), pushedSql);
     long startedAt = System.nanoTime();
     try (Connection connection = simpleDataSource.getConnection();
@@ -229,8 +217,8 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       statement.setQueryTimeout(DDL_DML_STATEMENT_TIMEOUT_SECONDS);
       bindParameters(statement, request == null ? null : request.parameters());
       int affectedRows = statement.executeUpdate();
-      long elapsed = toElapsedMs(startedAt);
-      persistAudit(
+      long elapsed = FederationSqlAuditor.toElapsedMs(startedAt);
+      sqlAuditor.persist(
           catalogCode,
           normalizedSql,
           "SUCCESS",
@@ -247,125 +235,19 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           pushedSql
       );
     } catch (SQLException ex) {
-      long elapsed = toElapsedMs(startedAt);
-      persistAudit(
+      long elapsed = FederationSqlAuditor.toElapsedMs(startedAt);
+      sqlAuditor.persist(
           catalogCode,
           normalizedSql,
           "FAILED",
           elapsed,
           null,
           "DML 执行失败 - 目标数据源: " + dmlTarget.dataSource().getCode(),
-          resolveMessage(ex)
+          FederationSqlAuditor.resolveMessage(ex)
       );
       throw new IllegalStateException("DML 执行失败: " + ex.getMessage(), ex);
     }
   }
-
-  /**
-   * Resolves the single physical datasource that is the DML target.
-   * DML must target exactly one physical datasource — cross-source DML is forbidden.
-   */
-  private DmlTarget resolveDmlTarget(
-      final JdbcDataSourceDefinition selectedDataSource,
-      final TableReferenceSummary references
-  ) {
-    if (!references.hasTableReferences()) {
-      return new DmlTarget(selectedDataSource);
-    }
-    LinkedHashMap<String, JdbcDataSourceDefinition> resolved = new LinkedHashMap<>();
-    List<JdbcDataSourceDefinition> enabledDataSources = dataSourceService.listEnabledDefinitions();
-    Map<String, JdbcDataSourceDefinition> dataSourcesByCode = new LinkedHashMap<>();
-    enabledDataSources.forEach(definition -> {
-      String code = trimToNull(definition == null ? null : definition.getCode());
-      if (code != null) {
-        dataSourcesByCode.putIfAbsent(code.toLowerCase(Locale.ROOT), definition);
-      }
-    });
-    boolean usesSelectedDataSource = false;
-    for (List<String> identifier : references.identifiers()) {
-      if (identifier.size() < 2) {
-        usesSelectedDataSource = true;
-        continue;
-      }
-      JdbcDataSourceDefinition explicitDataSource = dataSourcesByCode.get(identifier.get(0).toLowerCase(Locale.ROOT));
-      if (explicitDataSource != null) {
-        resolved.putIfAbsent(explicitDataSource.getId(), explicitDataSource);
-      } else {
-        usesSelectedDataSource = true;
-      }
-    }
-    if (usesSelectedDataSource) {
-      resolved.putIfAbsent(requireValue(selectedDataSource.getId(), "数据源ID不能为空"), selectedDataSource);
-    }
-    if (resolved.size() > 1) {
-      throw new IllegalArgumentException("DML 语句不允许跨数据源操作，检测到多个目标数据源: "
-          + String.join(", ", resolved.values().stream().map(JdbcDataSourceDefinition::getCode).toList()));
-    }
-    if (resolved.isEmpty()) {
-      return new DmlTarget(selectedDataSource);
-    }
-    return new DmlTarget(resolved.values().iterator().next());
-  }
-
-  /**
-   * Rewrites federation DML SQL for the physical database by stripping the datasource code prefix.
-   * E.g., {@code INSERT INTO mysql_ds.users ...} becomes {@code INSERT INTO users ...}
-   */
-  private static String rewriteDmlForPhysicalDatabase(
-      final String sql,
-      final String dataSourceCode
-  ) {
-    String normalizedSql = trimToNull(sql);
-    if (normalizedSql == null) {
-      return sql;
-    }
-    try {
-      SqlParser parser = SqlParser.create(normalizedSql);
-      SqlNodeList statements = parser.parseStmtList();
-      if (statements.size() != 1 || statements.get(0) == null) {
-        return normalizedSql;
-      }
-      DmlTableRewriter rewriter = new DmlTableRewriter(normalizedSql, dataSourceCode);
-      rewriter.rewrite(statements.get(0));
-      return rewriter.apply();
-    } catch (SqlParseException ex) {
-      return normalizedSql;
-    }
-  }
-
-  private record DmlTarget(JdbcDataSourceDefinition dataSource) {
-  }
-
-  /**
-   * Pattern that matches DDL keywords at the start of a SQL statement.
-   * Covers: CREATE, ALTER, DROP, TRUNCATE, RENAME, COMMENT ON.
-   */
-  private static final Pattern DDL_PREFIX_PATTERN = Pattern.compile(
-      "\\s*(CREATE|ALTER|DROP|TRUNCATE|RENAME|COMMENT\\s+ON)\\b",
-      Pattern.CASE_INSENSITIVE
-  );
-
-  /**
-   * Pattern that extracts a possibly-qualified table name from DDL statements.
-   * Matches: CREATE [TEMP/TEMPORARY/EXTERNAL/...] TABLE [IF NOT EXISTS] name
-   *          ALTER TABLE name
-   *          DROP TABLE [IF EXISTS] name
-   *          TRUNCATE [TABLE] name
-   *          RENAME TABLE name
-   * The name may be dotted: {@code datasource.schema.table} or {@code datasource.table}.
-   * Identifiers may be quoted with double-quotes, backticks, or square brackets.
-   */
-  private static final Pattern DDL_TABLE_NAME_PATTERN = Pattern.compile(
-      "(?i)(?:"
-          + "(?:CREATE\\s+(?:(?:TEMP(?:ORARY)?|EXTERNAL|GLOBAL|LOCAL|VIRTUAL|UNLOGGED|MATERIALIZED|OR\\s+REPLACE)\\s+)*"
-          + "(?:TABLE|VIEW|INDEX)\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?)"
-          + "|(?:ALTER\\s+TABLE\\s+(?:IF\\s+EXISTS\\s+)?)"
-          + "|(?:DROP\\s+(?:TABLE|VIEW|INDEX)\\s+(?:IF\\s+EXISTS\\s+)?)"
-          + "|(?:TRUNCATE\\s+(?:TABLE\\s+)?)"
-          + "|(?:RENAME\\s+TABLE\\s+)"
-          + ")"
-          + "((?:[\"\\[`]?[^\\s\"\\]`(),;]+[\"\\]`]?\\.)*[\"\\[`]?[^\\s\"\\]`(),;]+[\"\\]`]?)"
-  );
 
   /** {@inheritDoc} */
   @Override
@@ -383,15 +265,15 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   ) {
     String catalogCode = requireValue(request == null ? null : request.catalogCode(), "数据源编码不能为空");
     String sql = requireValue(request == null ? null : request.sql(), "SQL 不能为空");
-    if (sql.length() > SQL_TEXT_MAX_LENGTH) {
-      throw new IllegalArgumentException("SQL 长度不能超过 " + SQL_TEXT_MAX_LENGTH + " 个字符");
+    if (sql.length() > FederationSqlAuditor.SQL_TEXT_MAX_LENGTH) {
+      throw new IllegalArgumentException("SQL 长度不能超过 " + FederationSqlAuditor.SQL_TEXT_MAX_LENGTH + " 个字符");
     }
     JdbcDataSourceDefinition resolvedDataSource = resolveDataSource(dataSourceId, catalogCode);
-    DdlTarget ddlTarget = resolveDdlTarget(resolvedDataSource, sql);
+    DdlTarget ddlTarget = ddlProcessor.resolve(resolvedDataSource, sql);
     SimpleDataSource simpleDataSource = dataSourceService.requireSimpleDataSource(
         requireValue(ddlTarget.dataSource().getId(), "数据源ID不能为空")
     );
-    String pushedSql = rewriteDdlForPhysicalDatabase(sql, ddlTarget.dataSource().getCode());
+    String pushedSql = FederationDdlStatementProcessor.rewrite(sql, ddlTarget.dataSource().getCode());
     LOGGER.debug("DDL 下推到物理数据源 [{}]: {}", ddlTarget.dataSource().getCode(), pushedSql);
     long startedAt = System.nanoTime();
     List<Object> params = request == null ? null : request.parameters();
@@ -410,8 +292,8 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           result = statement.executeUpdate(pushedSql);
         }
       }
-      long elapsed = toElapsedMs(startedAt);
-      persistAudit(
+      long elapsed = FederationSqlAuditor.toElapsedMs(startedAt);
+      sqlAuditor.persist(
           catalogCode,
           sql,
           "SUCCESS",
@@ -428,101 +310,50 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           pushedSql
       );
     } catch (SQLException ex) {
-      long elapsed = toElapsedMs(startedAt);
-      persistAudit(
+      long elapsed = FederationSqlAuditor.toElapsedMs(startedAt);
+      sqlAuditor.persist(
           catalogCode,
           sql,
           "FAILED",
           elapsed,
           null,
           "DDL 执行失败 - 目标数据源: " + ddlTarget.dataSource().getCode(),
-          resolveMessage(ex)
+          FederationSqlAuditor.resolveMessage(ex)
       );
       throw new IllegalStateException("DDL 执行失败: " + ex.getMessage(), ex);
     }
   }
 
-  /**
-   * Resolves the target physical datasource for a DDL statement.
-   * Uses regex-based identifier extraction since Calcite's standard parser
-   * does not support DDL.
-   */
-  private DdlTarget resolveDdlTarget(
-      final JdbcDataSourceDefinition selectedDataSource,
-      final String sql
+  // ------------------------------------------------------------------
+  // Smart execute — auto-detect SQL type and dispatch
+  // ------------------------------------------------------------------
+
+  /** {@inheritDoc} */
+  @Override
+  public FederationQueryModels.SqlExecuteResult smartExecute(
+      final FederationQueryModels.SqlConsoleRequest request
   ) {
-    Matcher matcher = DDL_TABLE_NAME_PATTERN.matcher(sql);
-    if (!matcher.find()) {
-      return new DdlTarget(selectedDataSource);
+    String sql = requireValue(request == null ? null : request.sql(), "SQL 不能为空");
+    String trimmed = sql.strip();
+
+    if (SMART_FLUSH_CACHE_PATTERN.matcher(trimmed).matches()) {
+      long flushed = metadataCacheService.flushAll();
+      return FederationQueryModels.SqlExecuteResult.flushCache(
+          "缓存已刷新，共清除 " + flushed + " 条缓存记录"
+      );
     }
-    String qualifiedName = matcher.group(1);
-    if (qualifiedName == null || qualifiedName.isBlank()) {
-      return new DdlTarget(selectedDataSource);
+    if (FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher(trimmed).lookingAt()) {
+      return FederationQueryModels.SqlExecuteResult.ddl(executeDdl(request));
     }
-    // Split on dots, stripping any quotes
-    String[] segments = qualifiedName.split("\\.");
-    if (segments.length < 2) {
-      return new DdlTarget(selectedDataSource);
+    if (SMART_DML_PATTERN.matcher(trimmed).lookingAt()) {
+      return FederationQueryModels.SqlExecuteResult.dml(executeUpdate(request));
     }
-    String candidateCode = stripQuotes(segments[0]);
-    List<JdbcDataSourceDefinition> enabledDataSources = dataSourceService.listEnabledDefinitions();
-    for (JdbcDataSourceDefinition definition : enabledDataSources) {
-      String code = trimToNull(definition.getCode());
-      if (code != null && code.equalsIgnoreCase(candidateCode)) {
-        return new DdlTarget(definition);
-      }
-    }
-    return new DdlTarget(selectedDataSource);
+    return FederationQueryModels.SqlExecuteResult.query(execute(request));
   }
 
-  /**
-   * Rewrites DDL SQL by stripping the federation datasource code prefix from table names.
-   * Uses regex-based replacement since Calcite cannot parse DDL.
-   */
-  private static String rewriteDdlForPhysicalDatabase(
-      final String sql,
-      final String dataSourceCode
-  ) {
-    if (sql == null || dataSourceCode == null) {
-      return sql;
-    }
-    Matcher matcher = DDL_TABLE_NAME_PATTERN.matcher(sql);
-    if (!matcher.find()) {
-      return sql;
-    }
-    String qualifiedName = matcher.group(1);
-    if (qualifiedName == null || qualifiedName.isBlank()) {
-      return sql;
-    }
-    String[] segments = qualifiedName.split("\\.");
-    if (segments.length < 2) {
-      return sql;
-    }
-    String candidateCode = stripQuotes(segments[0]);
-    if (!candidateCode.equalsIgnoreCase(dataSourceCode)) {
-      return sql;
-    }
-    // Build native name from remaining segments
-    String nativeName = String.join(".", Arrays.copyOfRange(segments, 1, segments.length));
-    return sql.substring(0, matcher.start(1)) + nativeName + sql.substring(matcher.end(1));
-  }
-
-  private static String stripQuotes(final String identifier) {
-    if (identifier == null || identifier.length() < 2) {
-      return identifier;
-    }
-    char first = identifier.charAt(0);
-    char last = identifier.charAt(identifier.length() - 1);
-    if ((first == '"' && last == '"')
-        || (first == '`' && last == '`')
-        || (first == '[' && last == ']')) {
-      return identifier.substring(1, identifier.length() - 1);
-    }
-    return identifier;
-  }
-
-  private record DdlTarget(JdbcDataSourceDefinition dataSource) {
-  }
+  // ------------------------------------------------------------------
+  // Internal helpers
+  // ------------------------------------------------------------------
 
   private PreparedExecution prepare(
       final String dataSourceId,
@@ -530,10 +361,10 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   ) {
     String catalogCode = requireValue(request == null ? null : request.catalogCode(), "数据源编码不能为空");
     String sql = requireValue(request == null ? null : request.sql(), "SQL 不能为空");
-    if (sql.length() > SQL_TEXT_MAX_LENGTH) {
-      throw new IllegalArgumentException("SQL 长度不能超过 " + SQL_TEXT_MAX_LENGTH + " 个字符");
+    if (sql.length() > FederationSqlAuditor.SQL_TEXT_MAX_LENGTH) {
+      throw new IllegalArgumentException("SQL 长度不能超过 " + FederationSqlAuditor.SQL_TEXT_MAX_LENGTH + " 个字符");
     }
-    String normalizedSql = normalizeQualifiedIdentifiers(sql);
+    String normalizedSql = FederationSqlAnalysisUtils.normalizeQualifiedIdentifiers(sql);
     JdbcDataSourceDefinition resolvedDataSource = resolveDataSource(dataSourceId, catalogCode);
     ResolvedPolicy policy = resolvePolicy(resolvedDataSource);
     List<JdbcDataSourceDefinition> queryDataSources = resolveQueryDataSources(resolvedDataSource, normalizedSql);
@@ -554,7 +385,9 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           request == null ? null : request.parameters()
       );
       CalciteQueryAnalysis analysis = queryEngine.explain(queryRequest, assembly.schemaConfigurer());
-      List<String> dataSources = extractUsedDataSources(analysis.planText(), assembly.physicalDataSourceCodes());
+      List<String> dataSources = FederationSqlAnalysisUtils.extractUsedDataSources(
+          analysis.planText(), assembly.physicalDataSourceCodes()
+      );
       boolean crossSourceJoin = dataSources.size() > 1;
       if (crossSourceJoin && !policy.allowCrossSourceJoin()) {
         throw new PolicyViolationException("当前查询策略禁止跨数据源 Join");
@@ -567,7 +400,7 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           analysis,
           dataSources,
           crossSourceJoin,
-          buildPushdownSummary(analysis, dataSources)
+          FederationSqlAnalysisUtils.buildPushdownSummary(analysis, dataSources)
       );
     } catch (RuntimeException ex) {
       assembly.close();
@@ -640,12 +473,12 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       final JdbcDataSourceDefinition selectedDataSource,
       final String sql
   ) {
-    TableReferenceSummary references = collectTableReferences(sql);
+    TableReferenceSummary references = FederationSqlAnalysisUtils.collectTableReferences(sql);
     if (!references.hasTableReferences()) {
       return List.of();
     }
     List<JdbcDataSourceDefinition> enabledDataSources = dataSourceService.listEnabledDefinitions();
-    Map<String, JdbcDataSourceDefinition> dataSourcesByCode = new LinkedHashMap<>();
+    LinkedHashMap<String, JdbcDataSourceDefinition> dataSourcesByCode = new LinkedHashMap<>();
     enabledDataSources.forEach(definition -> {
       String code = trimToNull(definition == null ? null : definition.getCode());
       if (code != null) {
@@ -703,161 +536,28 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       final long startedAt,
       final String status
   ) {
-    try {
-      persistAudit(
-          prepared == null ? trimToNull(request == null ? null : request.catalogCode()) : prepared.catalogCode(),
-          prepared == null ? trimToNull(request == null ? null : request.sql()) : prepared.queryRequest().sql(),
-          status,
-          toElapsedMs(startedAt),
-          null,
-          prepared == null ? null : prepared.pushdownSummary(),
-          resolveMessage(exception)
-      );
-      return exception;
-    } catch (RuntimeException auditException) {
-      IllegalStateException combined = new IllegalStateException(
-          resolveMessage(exception) + "；同时查询审计写入失败: " + resolveMessage(auditException),
-          exception
-      );
-      combined.addSuppressed(auditException);
-      return combined;
-    }
+    String catalogCode = prepared == null
+        ? trimToNull(request == null ? null : request.catalogCode())
+        : prepared.catalogCode();
+    String sql = prepared == null
+        ? trimToNull(request == null ? null : request.sql())
+        : prepared.queryRequest().sql();
+    String pushdownSummary = prepared == null ? null : prepared.pushdownSummary();
+    return sqlAuditor.recordFailure(exception, catalogCode, sql, startedAt, status, pushdownSummary);
   }
 
-  private void persistAudit(
-      final String catalogCode,
-      final String sql,
-      final String status,
-      final long durationMs,
-      final Long resultRows,
-      final String pushdownSummary,
-      final String errorMessage
-  ) {
-    FederationQueryAudit audit = new FederationQueryAudit();
-    audit.setCatalogCode(trimToNull(catalogCode));
-    audit.setStatus(requireValue(status, "审计状态不能为空"));
-    audit.setExecutedAt(Instant.now());
-    audit.setExecutionTimeMs(durationMs);
-    audit.setResultRows(resultRows);
-    audit.setExecutedBy(resolveExecutedBy());
-    audit.setQueryText(truncate(sql, SQL_TEXT_MAX_LENGTH));
-    audit.setPushdownSummary(truncate(pushdownSummary, AUDIT_MESSAGE_MAX_LENGTH));
-    audit.setErrorMessage(truncate(errorMessage, AUDIT_MESSAGE_MAX_LENGTH));
-    auditService.create(audit);
+  private static void closePreparedExecution(final PreparedExecution prepared) {
+    if (prepared == null) {
+      return;
+    }
+    prepared.close();
   }
 
-  private static List<String> resolveResponseDataSources(
-      final PreparedExecution prepared,
-      final CalciteQueryAnalysis analysis
-  ) {
-    List<String> detected = extractUsedDataSources(analysis.planText(), prepared.assembly().physicalDataSourceCodes());
-    return detected.isEmpty() ? prepared.dataSources() : detected;
-  }
+  private static final class PolicyViolationException extends IllegalStateException {
 
-  private static List<String> extractUsedDataSources(
-      final String planText,
-      final List<String> candidateCodes
-  ) {
-    if (planText == null || planText.isBlank() || candidateCodes == null || candidateCodes.isEmpty()) {
-      return List.of();
+    private PolicyViolationException(final String message) {
+      super(message);
     }
-    Map<String, String> candidatesByLowerCase = new LinkedHashMap<>();
-    candidateCodes.forEach(code -> {
-      String normalized = trimToNull(code);
-      if (normalized != null) {
-        candidatesByLowerCase.put(normalized.toLowerCase(Locale.ROOT), normalized);
-      }
-    });
-    LinkedHashSet<String> usedSources = new LinkedHashSet<>();
-    Matcher matcher = JDBC_TABLE_SCAN_PATTERN.matcher(planText);
-    while (matcher.find()) {
-      String[] segments = matcher.group(1).split(",");
-      for (String segment : segments) {
-        String normalized = trimToNull(segment);
-        if (normalized == null) {
-          continue;
-        }
-        String candidate = candidatesByLowerCase.get(normalized.toLowerCase(Locale.ROOT));
-        if (candidate != null) {
-          usedSources.add(candidate);
-        }
-      }
-    }
-    return List.copyOf(usedSources);
-  }
-
-  private static TableReferenceSummary collectTableReferences(final String sql) {
-    String normalizedSql = trimToNull(sql);
-    if (normalizedSql == null) {
-      return TableReferenceSummary.empty();
-    }
-    try {
-      SqlParser parser = SqlParser.create(normalizedSql);
-      SqlNodeList statements = parser.parseStmtList();
-      if (statements.size() != 1 || statements.get(0) == null) {
-        return TableReferenceSummary.empty();
-      }
-      TableReferenceCollector collector = new TableReferenceCollector();
-      collector.collectQuery(statements.get(0));
-      return collector.summary();
-    } catch (SqlParseException ex) {
-      return TableReferenceSummary.empty();
-    }
-  }
-
-  private static String normalizeQualifiedIdentifiers(final String sql) {
-    return FederationSqlIdentifierNormalizer.normalize(sql);
-  }
-
-  private static String buildPushdownSummary(
-      final CalciteQueryAnalysis analysis,
-      final List<String> dataSources
-  ) {
-    List<String> sections = new ArrayList<>();
-    sections.add("命中数据源: " + (dataSources == null || dataSources.isEmpty() ? "未识别" : String.join(", ", dataSources)));
-    if (analysis.pushedDownOperators().isEmpty()) {
-      sections.add("未从执行计划中识别出明确的 JDBC 下推算子");
-    } else {
-      sections.add("检测到已下推算子: " + String.join(", ", analysis.pushedDownOperators()));
-    }
-    if (dataSources != null && dataSources.size() > 1) {
-      sections.add(analysis.platformJoin()
-          ? "检测到跨数据源 Join 保留在平台层执行"
-          : "检测到跨数据源访问");
-    } else if (analysis.pushedDownOperators().contains("Join")) {
-      sections.add("检测到单数据源 Join 已下推到源库");
-    }
-    return String.join("；", sections);
-  }
-
-  private static long toElapsedMs(final long startedAt) {
-    return Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L);
-  }
-
-  private static String resolveMessage(final Throwable throwable) {
-    Throwable current = throwable;
-    while (current.getCause() != null) {
-      current = current.getCause();
-    }
-    String message = trimToNull(current.getMessage());
-    return message == null ? current.getClass().getSimpleName() : message;
-  }
-
-  private static String truncate(final String value, final int maxLength) {
-    String normalized = trimToNull(value);
-    if (normalized == null || normalized.length() <= maxLength) {
-      return normalized;
-    }
-    return normalized.substring(0, maxLength);
-  }
-
-  private static String resolveExecutedBy() {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication == null) {
-      return "anonymous";
-    }
-    String username = trimToNull(authentication.getName());
-    return username == null ? "anonymous" : username;
   }
 
   private record ResolvedPolicy(
@@ -866,13 +566,6 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       int timeoutMs,
       boolean allowCrossSourceJoin
   ) {
-  }
-
-  private static void closePreparedExecution(final PreparedExecution prepared) {
-    if (prepared == null) {
-      return;
-    }
-    prepared.close();
   }
 
   private record PreparedExecution(
@@ -889,337 +582,6 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
     @Override
     public void close() {
       assembly.close();
-    }
-  }
-
-  private record TableReferenceSummary(
-      List<List<String>> identifiers
-  ) {
-
-    private static TableReferenceSummary empty() {
-      return new TableReferenceSummary(List.of());
-    }
-
-    private boolean hasTableReferences() {
-      return identifiers != null && !identifiers.isEmpty();
-    }
-  }
-
-  private static final class TableReferenceCollector {
-
-    private final List<List<String>> identifiers = new ArrayList<>();
-
-    private final LinkedHashSet<String> commonTableExpressionNames = new LinkedHashSet<>();
-
-    private void collectQuery(final SqlNode node) {
-      if (node == null) {
-        return;
-      }
-      if (node instanceof SqlWith with) {
-        for (SqlNode item : with.withList) {
-          if (item instanceof SqlWithItem withItem) {
-            String cteName = trimToNull(withItem.name == null ? null : withItem.name.getSimple());
-            if (cteName != null) {
-              commonTableExpressionNames.add(cteName.toLowerCase(Locale.ROOT));
-            }
-            collectQuery(withItem.query);
-          }
-        }
-        collectQuery(with.body);
-        return;
-      }
-      if (node instanceof SqlOrderBy orderBy) {
-        collectQuery(orderBy.query);
-        collectNestedQueries(orderBy.orderList);
-        return;
-      }
-      if (node instanceof SqlInsert insert) {
-        collectFrom(insert.getTargetTable());
-        collectQuery(insert.getSource());
-        return;
-      }
-      if (node instanceof SqlUpdate update) {
-        collectFrom(update.getTargetTable());
-        collectNestedQueries(update.getSourceExpressionList());
-        collectNestedQueries(update.getCondition());
-        return;
-      }
-      if (node instanceof SqlDelete delete) {
-        collectFrom(delete.getTargetTable());
-        collectNestedQueries(delete.getCondition());
-        return;
-      }
-      if (node instanceof SqlMerge merge) {
-        collectFrom(merge.getTargetTable());
-        collectQuery(merge.getSourceTableRef());
-        collectNestedQueries(merge.getCondition());
-        if (merge.getUpdateCall() != null) {
-          collectQuery(merge.getUpdateCall());
-        }
-        if (merge.getInsertCall() != null) {
-          collectQuery(merge.getInsertCall());
-        }
-        return;
-      }
-      if (node instanceof SqlSelect select) {
-        collectFrom(select.getFrom());
-        collectNestedQueries(select.getSelectList());
-        collectNestedQueries(select.getWhere());
-        collectNestedQueries(select.getHaving());
-        collectNestedQueries(select.getGroup());
-        collectNestedQueries(select.getOrderList());
-        return;
-      }
-      if (node instanceof SqlCall call) {
-        collectNestedQueries(call);
-      }
-    }
-
-    private void collectFrom(final SqlNode node) {
-      if (node == null) {
-        return;
-      }
-      if (node instanceof SqlIdentifier identifier) {
-        addIdentifier(identifier);
-        return;
-      }
-      if (node instanceof SqlJoin join) {
-        collectFrom(join.getLeft());
-        collectFrom(join.getRight());
-        collectNestedQueries(join.getCondition());
-        return;
-      }
-      if (node instanceof SqlSelect || node instanceof SqlWith || node instanceof SqlOrderBy) {
-        collectQuery(node);
-        return;
-      }
-      if (node instanceof SqlNodeList nodeList) {
-        nodeList.forEach(this::collectFrom);
-        return;
-      }
-      if (node instanceof SqlBasicCall call) {
-        if (SqlKind.AS.equals(call.getKind()) && !call.getOperandList().isEmpty()) {
-          collectFrom(call.getOperandList().get(0));
-          return;
-        }
-        collectNestedQueries(call);
-        return;
-      }
-      if (node instanceof SqlCall call) {
-        collectNestedQueries(call);
-      }
-    }
-
-    private void collectNestedQueries(final SqlNode node) {
-      if (node == null) {
-        return;
-      }
-      if (node instanceof SqlSelect || node instanceof SqlWith || node instanceof SqlOrderBy) {
-        collectQuery(node);
-        return;
-      }
-      if (node instanceof SqlNodeList nodeList) {
-        nodeList.forEach(this::collectNestedQueries);
-        return;
-      }
-      if (node instanceof SqlCall call) {
-        for (SqlNode operand : call.getOperandList()) {
-          collectNestedQueries(operand);
-        }
-      }
-    }
-
-    private void addIdentifier(final SqlIdentifier identifier) {
-      if (identifier == null || identifier.names == null || identifier.names.isEmpty()) {
-        return;
-      }
-      List<String> names = identifier.names.stream()
-          .map(name -> trimToNull(name))
-          .filter(Objects::nonNull)
-          .toList();
-      if (names.isEmpty()) {
-        return;
-      }
-      if (names.size() == 1 && commonTableExpressionNames.contains(names.get(0).toLowerCase(Locale.ROOT))) {
-        return;
-      }
-      identifiers.add(names);
-    }
-
-    private TableReferenceSummary summary() {
-      return new TableReferenceSummary(List.copyOf(identifiers));
-    }
-  }
-
-  /**
-   * Rewrites DML SQL by stripping the federation datasource code prefix from table identifiers.
-   * Uses position-based string replacement via Calcite SqlIdentifier positions.
-   */
-  private static final class DmlTableRewriter {
-
-    private final String originalSql;
-
-    private final String dataSourceCode;
-
-    private final List<IdentifierReplacement> replacements = new ArrayList<>();
-
-    private DmlTableRewriter(final String originalSql, final String dataSourceCode) {
-      this.originalSql = originalSql;
-      this.dataSourceCode = dataSourceCode;
-    }
-
-    private void rewrite(final SqlNode node) {
-      if (node == null) {
-        return;
-      }
-      if (node instanceof SqlInsert insert) {
-        rewriteTableIdentifier(insert.getTargetTable());
-        rewriteNestedDml(insert.getSource());
-        return;
-      }
-      if (node instanceof SqlUpdate update) {
-        rewriteTableIdentifier(update.getTargetTable());
-        return;
-      }
-      if (node instanceof SqlDelete delete) {
-        rewriteTableIdentifier(delete.getTargetTable());
-        return;
-      }
-      if (node instanceof SqlMerge merge) {
-        rewriteTableIdentifier(merge.getTargetTable());
-        return;
-      }
-    }
-
-    private void rewriteNestedDml(final SqlNode node) {
-      if (node instanceof SqlSelect select) {
-        rewriteSelectFrom(select.getFrom());
-      }
-    }
-
-    private void rewriteSelectFrom(final SqlNode node) {
-      if (node == null) {
-        return;
-      }
-      if (node instanceof SqlIdentifier identifier) {
-        rewriteTableIdentifier(identifier);
-        return;
-      }
-      if (node instanceof SqlJoin join) {
-        rewriteSelectFrom(join.getLeft());
-        rewriteSelectFrom(join.getRight());
-        return;
-      }
-      if (node instanceof SqlBasicCall call) {
-        if (SqlKind.AS.equals(call.getKind()) && !call.getOperandList().isEmpty()) {
-          rewriteSelectFrom(call.getOperandList().get(0));
-        }
-      }
-    }
-
-    private void rewriteTableIdentifier(final SqlNode node) {
-      if (!(node instanceof SqlIdentifier identifier)) {
-        return;
-      }
-      if (identifier.names == null || identifier.names.size() < 2) {
-        return;
-      }
-      String firstSegment = trimToNull(identifier.names.get(0));
-      if (firstSegment == null || !firstSegment.equalsIgnoreCase(dataSourceCode)) {
-        return;
-      }
-      // Strip the datasource code prefix — rest becomes native table reference
-      List<String> nativeNames = identifier.names.subList(1, identifier.names.size());
-      String nativeRef = String.join(".", nativeNames);
-      var pos = identifier.getParserPosition();
-      if (pos != null && pos.getLineNum() > 0) {
-        replacements.add(new IdentifierReplacement(
-            pos.getLineNum(),
-            pos.getColumnNum(),
-            pos.getEndLineNum(),
-            pos.getEndColumnNum(),
-            nativeRef
-        ));
-      }
-    }
-
-    private String apply() {
-      if (replacements.isEmpty()) {
-        return originalSql;
-      }
-      // Sort replacements from end to start so position indices remain valid
-      replacements.sort(Comparator
-          .comparingInt(IdentifierReplacement::endLine).reversed()
-          .thenComparingInt(IdentifierReplacement::endColumn).reversed()
-      );
-      String[] lines = originalSql.split("\n", -1);
-      for (IdentifierReplacement replacement : replacements) {
-        int startLineIdx = replacement.startLine() - 1;
-        int endLineIdx = replacement.endLine() - 1;
-        if (startLineIdx < 0 || endLineIdx >= lines.length) {
-          continue;
-        }
-        if (startLineIdx == endLineIdx) {
-          String line = lines[startLineIdx];
-          int startCol = replacement.startColumn() - 1;
-          int endCol = replacement.endColumn();
-          if (startCol >= 0 && endCol <= line.length()) {
-            lines[startLineIdx] = line.substring(0, startCol) + replacement.replacement() + line.substring(endCol);
-          }
-        }
-      }
-      return String.join("\n", lines);
-    }
-
-    private record IdentifierReplacement(
-        int startLine,
-        int startColumn,
-        int endLine,
-        int endColumn,
-        String replacement
-    ) {
-    }
-  }
-
-  // ------------------------------------------------------------------
-  // Smart execute — auto-detect SQL type and dispatch
-  // ------------------------------------------------------------------
-
-  private static final Pattern SMART_DML_PATTERN = Pattern.compile(
-      "\\s*(INSERT|UPDATE|DELETE|MERGE|UPSERT)\\b", Pattern.CASE_INSENSITIVE
-  );
-
-  private static final Pattern SMART_FLUSH_CACHE_PATTERN = Pattern.compile(
-      "\\s*FLUSH\\s+CACHE\\s*", Pattern.CASE_INSENSITIVE
-  );
-
-  /** {@inheritDoc} */
-  @Override
-  public FederationQueryModels.SqlExecuteResult smartExecute(
-      final FederationQueryModels.SqlConsoleRequest request
-  ) {
-    String sql = requireValue(request == null ? null : request.sql(), "SQL 不能为空");
-    String trimmed = sql.strip();
-
-    if (SMART_FLUSH_CACHE_PATTERN.matcher(trimmed).matches()) {
-      long flushed = metadataCacheService.flushAll();
-      return FederationQueryModels.SqlExecuteResult.flushCache(
-          "缓存已刷新，共清除 " + flushed + " 条缓存记录"
-      );
-    }
-    if (DDL_PREFIX_PATTERN.matcher(trimmed).lookingAt()) {
-      return FederationQueryModels.SqlExecuteResult.ddl(executeDdl(request));
-    }
-    if (SMART_DML_PATTERN.matcher(trimmed).lookingAt()) {
-      return FederationQueryModels.SqlExecuteResult.dml(executeUpdate(request));
-    }
-    return FederationQueryModels.SqlExecuteResult.query(execute(request));
-  }
-
-  private static final class PolicyViolationException extends IllegalStateException {
-
-    private PolicyViolationException(final String message) {
-      super(message);
     }
   }
 

@@ -295,6 +295,62 @@ class FederationSqlConsoleServiceImplTest {
     return policy;
   }
 
+  // ----- parameter validation -----
+
+  @Test
+  void executeShouldThrowWhenRequestIsNull() {
+    FederationSqlConsoleServiceImpl service = service();
+    assertThrows(IllegalArgumentException.class, () -> service.execute((String) null, null));
+  }
+
+  @Test
+  void executeShouldThrowWhenSqlIsBlank() {
+    FederationSqlConsoleServiceImpl service = service();
+    assertThrows(IllegalArgumentException.class,
+        () -> service.execute(new FederationQueryModels.SqlConsoleRequest("ds1", "  ")));
+  }
+
+  @Test
+  void executeShouldThrowWhenCatalogCodeIsBlank() {
+    FederationSqlConsoleServiceImpl service = service();
+    assertThrows(IllegalArgumentException.class,
+        () -> service.execute(new FederationQueryModels.SqlConsoleRequest("", "SELECT 1")));
+  }
+
+  @Test
+  void executeShouldThrowWhenSqlExceedsMaxLength() {
+    FederationSqlConsoleServiceImpl service = service();
+    String longSql = "SELECT " + "x,".repeat(7_000);
+    assertThrows(IllegalArgumentException.class,
+        () -> service.execute(new FederationQueryModels.SqlConsoleRequest("ds1", longSql)));
+  }
+
+  @Test
+  void executeUpdateShouldThrowWhenRequestIsNull() {
+    FederationSqlConsoleServiceImpl service = service();
+    assertThrows(IllegalArgumentException.class, () -> service.executeUpdate(null));
+  }
+
+  @Test
+  void executeUpdateShouldThrowWhenSqlIsBlank() {
+    FederationSqlConsoleServiceImpl service = service();
+    assertThrows(IllegalArgumentException.class,
+        () -> service.executeUpdate(new FederationQueryModels.SqlConsoleRequest("ds1", "")));
+  }
+
+  @Test
+  void executeDdlShouldThrowWhenRequestIsNull() {
+    FederationSqlConsoleServiceImpl service = service();
+    assertThrows(IllegalArgumentException.class, () -> service.executeDdl(null));
+  }
+
+  @Test
+  void smartExecuteShouldThrowWhenSqlIsNull() {
+    FederationSqlConsoleServiceImpl service = service();
+    assertThrows(IllegalArgumentException.class,
+        () -> service.smartExecute(new FederationQueryModels.SqlConsoleRequest("ds1", null)));
+  }
+
   private boolean usesQuotedQualifiedName(final CalciteQueryRequest request) {
     return request != null
         && request.sql() != null
