@@ -1,9 +1,12 @@
 package org.simplepoint.plugin.dna.core.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -111,6 +114,305 @@ class JdbcDataSourceDefinitionServiceImplTest {
     assertEquals("MockDB", result.databaseProductName());
     assertInstanceOf(SimpleDataSource.class, service.requireSimpleDataSource("ds-1"));
     verify(repository).save(definition);
+  }
+
+  @Test
+  void connectShouldSetFailedStatusAndThrowWhenConnectionFails() {
+    JdbcDriverDefinition driver = buildDriver("driver-1", "^jdbc:pg://.*$");
+    JdbcDataSourceDefinition definition = buildDefinition("ds-1", "driver-1", "jdbc:pg://localhost/db");
+    when(repository.findActiveById("ds-1")).thenReturn(Optional.of(definition));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager,
+        List.of(new ThrowingFactory()), List.of()
+    );
+
+    assertThrows(IllegalStateException.class, () -> service.connect("ds-1"));
+    assertEquals("FAILED", definition.getLastConnectStatus());
+  }
+
+  @Test
+  void connectShouldThrowWhenIdIsBlank() {
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+    assertThrows(IllegalArgumentException.class, () -> service.connect("  "));
+  }
+
+  @Test
+  void connectShouldThrowWhenDefinitionNotFound() {
+    when(repository.findActiveById("missing")).thenReturn(Optional.empty());
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+    assertThrows(IllegalArgumentException.class, () -> service.connect("missing"));
+  }
+
+  @Test
+  void getCachedSimpleDataSourceShouldReturnEmptyBeforeConnect() {
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+    assertTrue(service.getCachedSimpleDataSource("ds-1").isEmpty());
+  }
+
+  @Test
+  void disconnectShouldRemoveCachedDataSource() throws Exception {
+    JdbcDriverDefinition driver = buildDriver("driver-1", "^jdbc:mysql://.*$");
+    driver.setEnabled(true);
+    JdbcDataSourceDefinition definition = buildDefinition("ds-1", "driver-1", "jdbc:mysql://localhost:3306/demo");
+    definition.setEnabled(true);
+    SimpleDataSource simpleDataSource = new SimpleDataSource(new SingleConnectionDataSource(connection));
+    when(repository.findActiveById("ds-1")).thenReturn(Optional.of(definition));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    when(driverRepository.findAllByIds(any())).thenReturn(List.of(driver));
+    when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(connection.getMetaData()).thenReturn(metaData);
+    when(metaData.getDatabaseProductName()).thenReturn("MockDB");
+    when(metaData.getDatabaseProductVersion()).thenReturn("1.0");
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager,
+        List.of(new StubFactory(simpleDataSource)), List.of()
+    );
+    service.connect("ds-1");
+    assertTrue(service.getCachedSimpleDataSource("ds-1").isPresent());
+
+    service.disconnect("ds-1");
+
+    assertTrue(service.getCachedSimpleDataSource("ds-1").isEmpty());
+  }
+
+  @Test
+  void disconnectShouldDoNothingWhenIdIsNull() {
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+    // should not throw
+    service.disconnect(null);
+    service.disconnect("  ");
+  }
+
+  @Test
+  void requireSimpleDataSourceShouldThrowWhenDefinitionDisabled() {
+    JdbcDriverDefinition driver = buildDriver("driver-1", "^jdbc:pg://.*$");
+    driver.setEnabled(true);
+    JdbcDataSourceDefinition definition = buildDefinition("ds-1", "driver-1", "jdbc:pg://localhost/db");
+    definition.setEnabled(false);
+    when(repository.findActiveById("ds-1")).thenReturn(Optional.of(definition));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager,
+        List.of(new StubFactory(new SimpleDataSource(new EmptyDataSource()))), List.of()
+    );
+    assertThrows(IllegalStateException.class, () -> service.requireSimpleDataSource("ds-1"));
+  }
+
+  @Test
+  void requireSimpleDataSourceShouldThrowWhenDriverDisabled() {
+    JdbcDriverDefinition driver = buildDriver("driver-1", "^jdbc:pg://.*$");
+    driver.setEnabled(false);
+    JdbcDataSourceDefinition definition = buildDefinition("ds-1", "driver-1", "jdbc:pg://localhost/db");
+    definition.setEnabled(true);
+    when(repository.findActiveById("ds-1")).thenReturn(Optional.of(definition));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager,
+        List.of(new StubFactory(new SimpleDataSource(new EmptyDataSource()))), List.of()
+    );
+    assertThrows(IllegalStateException.class, () -> service.requireSimpleDataSource("ds-1"));
+  }
+
+  @Test
+  void createShouldThrowWhenCodeAlreadyExists() {
+    JdbcDataSourceDefinition existing = buildDefinition("ds-existing", "driver-1", "jdbc:mysql://localhost/db");
+    when(repository.findActiveByCode("demo")).thenReturn(Optional.of(existing));
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+    JdbcDataSourceDefinition definition = buildDefinition(null, "driver-1", "jdbc:mysql://localhost:3306/db");
+
+    assertThrows(IllegalArgumentException.class, () -> service.create(definition));
+  }
+
+  @Test
+  void createShouldThrowWhenNameIsEmpty() {
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+    JdbcDataSourceDefinition definition = new JdbcDataSourceDefinition();
+    definition.setCode("code");
+    definition.setDriverId("d1");
+    definition.setJdbcUrl("jdbc:x://localhost/db");
+    assertThrows(IllegalArgumentException.class, () -> service.create(definition));
+  }
+
+  @Test
+  void createShouldThrowWhenDriverNotFound() {
+    when(driverRepository.findActiveById("missing-driver")).thenReturn(Optional.empty());
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+    JdbcDataSourceDefinition definition = new JdbcDataSourceDefinition();
+    definition.setName("demo");
+    definition.setCode("demo");
+    definition.setDriverId("missing-driver");
+    definition.setJdbcUrl("jdbc:pg://localhost/db");
+
+    assertThrows(IllegalArgumentException.class, () -> service.create(definition));
+  }
+
+  @Test
+  void disconnectByDriverIdShouldCloseAllRelatedDataSources() throws Exception {
+    JdbcDriverDefinition driver = buildDriver("driver-1", "^jdbc:mysql://.*$");
+    driver.setEnabled(true);
+    JdbcDataSourceDefinition def1 = buildDefinition("ds-1", "driver-1", "jdbc:mysql://localhost:3306/db1");
+    def1.setEnabled(true);
+    JdbcDataSourceDefinition def2 = buildDefinition("ds-2", "driver-1", "jdbc:mysql://localhost:3306/db2");
+    SimpleDataSource ds1 = new SimpleDataSource(new SingleConnectionDataSource(connection));
+
+    when(repository.findActiveById("ds-1")).thenReturn(Optional.of(def1));
+    when(driverRepository.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    when(driverRepository.findAllByIds(any())).thenReturn(List.of(driver));
+    when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(connection.getMetaData()).thenReturn(metaData);
+    when(metaData.getDatabaseProductName()).thenReturn("MockDB");
+    when(metaData.getDatabaseProductVersion()).thenReturn("1.0");
+    when(repository.findAllActiveByDriverId("driver-1")).thenReturn(List.of(def1, def2));
+
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager,
+        List.of(new StubFactory(ds1)), List.of()
+    );
+    service.connect("ds-1");
+
+    service.disconnectByDriverId("driver-1");
+
+    assertTrue(service.getCachedSimpleDataSource("ds-1").isEmpty());
+  }
+
+  @Test
+  void disconnectByDriverIdShouldDoNothingForNullDriverId() {
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+    service.disconnectByDriverId(null);
+    verify(repository, never()).findAllActiveByDriverId(any());
+  }
+
+  @Test
+  void findActiveByIdShouldReturnDecoratedDefinition() {
+    JdbcDriverDefinition driver = buildDriver("driver-1", "^jdbc:mysql://.*$");
+    driver.setCode("mysql");
+    driver.setName("MySQL");
+    JdbcDataSourceDefinition definition = buildDefinition("ds-1", "driver-1", "jdbc:mysql://localhost/db");
+    when(repository.findActiveById("ds-1")).thenReturn(Optional.of(definition));
+    when(driverRepository.findAllByIds(any())).thenReturn(List.of(driver));
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+
+    Optional<JdbcDataSourceDefinition> result = service.findActiveById("ds-1");
+
+    assertTrue(result.isPresent());
+    assertEquals("mysql", result.get().getDriverCode());
+  }
+
+  @Test
+  void findActiveByIdShouldReturnEmptyWhenNotFound() {
+    when(repository.findActiveById("unknown")).thenReturn(Optional.empty());
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+    assertFalse(service.findActiveById("unknown").isPresent());
+  }
+
+  @Test
+  void findActiveByCodeShouldReturnDecoratedDefinition() {
+    JdbcDriverDefinition driver = buildDriver("driver-1", "^jdbc:pg://.*$");
+    driver.setCode("pg");
+    driver.setName("PG");
+    JdbcDataSourceDefinition definition = buildDefinition("ds-1", "driver-1", "jdbc:pg://localhost/db");
+    when(repository.findActiveByCode("ds-code")).thenReturn(Optional.of(definition));
+    when(driverRepository.findAllByIds(any())).thenReturn(List.of(driver));
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+
+    Optional<JdbcDataSourceDefinition> result = service.findActiveByCode("ds-code");
+
+    assertTrue(result.isPresent());
+    assertEquals("pg", result.get().getDriverCode());
+  }
+
+  @Test
+  void listEnabledDefinitionsShouldReturnOnlyEnabledSortedByCode() {
+    JdbcDataSourceDefinition ds1 = buildDefinition("ds-1", "driver-1", "jdbc:pg://localhost/b");
+    ds1.setCode("beta");
+    ds1.setEnabled(true);
+    JdbcDataSourceDefinition ds2 = buildDefinition("ds-2", "driver-1", "jdbc:pg://localhost/a");
+    ds2.setCode("alpha");
+    ds2.setEnabled(true);
+    JdbcDataSourceDefinition ds3 = buildDefinition("ds-3", "driver-1", "jdbc:pg://localhost/d");
+    ds3.setCode("disabled");
+    ds3.setEnabled(false);
+    when(repository.findAllActive()).thenReturn(List.of(ds1, ds2, ds3));
+    when(driverRepository.findAllByIds(any())).thenReturn(List.of());
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+
+    List<JdbcDataSourceDefinition> result = service.listEnabledDefinitions();
+
+    assertEquals(2, result.size());
+    assertEquals("alpha", result.get(0).getCode());
+    assertEquals("beta", result.get(1).getCode());
+  }
+
+  @Test
+  void removeByIdsShouldReturnEarlyForNullOrEmpty() {
+    final JdbcDataSourceDefinitionServiceImpl service = new JdbcDataSourceDefinitionServiceImpl(
+        repository, detailsProviderService, driverRepository, artifactManager, List.of(), List.of()
+    );
+    // No-ops — should not throw or interact with any repository
+    service.removeByIds(List.of());
+    service.removeByIds(null);
+  }
+
+  // ---- static helpers ----
+
+  private static JdbcDriverDefinition buildDriver(final String id, final String urlPattern) {
+    JdbcDriverDefinition driver = new JdbcDriverDefinition();
+    driver.setId(id);
+    driver.setCode(id);
+    driver.setJdbcUrlPattern(urlPattern);
+    return driver;
+  }
+
+  private static JdbcDataSourceDefinition buildDefinition(
+      final String id,
+      final String driverId,
+      final String jdbcUrl
+  ) {
+    JdbcDataSourceDefinition definition = new JdbcDataSourceDefinition();
+    definition.setId(id);
+    definition.setName("demo");
+    definition.setCode("demo");
+    definition.setDriverId(driverId);
+    definition.setJdbcUrl(jdbcUrl);
+    return definition;
+  }
+
+  private record ThrowingFactory() implements JdbcManagedDataSourceFactory {
+    @Override
+    public boolean supports(final JdbcDriverDefinition driver) {
+      return true;
+    }
+
+    @Override
+    public SimpleDataSource create(final JdbcDriverDefinition driver, final JdbcDataSourceDefinition dataSource) {
+      throw new RuntimeException("Connection refused");
+    }
   }
 
   private record StubFactory(SimpleDataSource simpleDataSource) implements JdbcManagedDataSourceFactory {
