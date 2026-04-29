@@ -12,6 +12,7 @@ import org.simplepoint.api.base.BaseService;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
+import org.simplepoint.plugin.rbac.core.api.pojo.command.ChangePasswordCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
@@ -71,6 +72,15 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
      * @param dto The RoleSelectDto containing unauthorization criteria.
      */
     void unauthorized(UserRoleRelevanceDto dto);
+
+    /**
+     * Changes the password of the user identified by userId.
+     * Verifies the current password, checks new/confirm match, then updates.
+     *
+     * @param userId  the ID of the user whose password is to be changed
+     * @param command the change-password command with currentPassword, newPassword, confirmPassword
+     */
+    void changePassword(String userId, ChangePasswordCommand command);
 
     /**
      * Loads a user by their phone number or email address.

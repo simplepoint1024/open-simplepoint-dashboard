@@ -108,11 +108,14 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
   public <S extends Feature> Feature modifyById(S entity) {
     Feature current = findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("功能不存在"));
     String oldCode = current.getCode();
+    Boolean oldPublicAccess = current.getPublicAccess();
     Set<String> affectedTenantIds = tenantPackageRelevanceRepository.findTenantIdsByFeatureCodes(Set.of(oldCode));
     Feature updated = (Feature) super.modifyById(entity);
     if (!Objects.equals(oldCode, updated.getCode())) {
       applicationFeatureRelevanceRepository.updateFeatureCode(oldCode, updated.getCode());
       featurePermissionRelevanceRepository.updateFeatureCode(oldCode, updated.getCode());
+      refreshPermissionVersion(affectedTenantIds);
+    } else if (!Objects.equals(oldPublicAccess, updated.getPublicAccess())) {
       refreshPermissionVersion(affectedTenantIds);
     }
     return updated;

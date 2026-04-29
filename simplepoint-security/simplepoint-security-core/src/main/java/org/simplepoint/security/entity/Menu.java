@@ -163,13 +163,27 @@ public class Menu extends BaseEntityImpl<String> {
 
   /**
    * Type of menu item.
+   *
+   * <ul>
+   *   <li>{@code item}    – leaf menu item with a component or path (default)</li>
+   *   <li>{@code submenu} – expandable sub-menu that contains child items</li>
+   *   <li>{@code group}   – non-expandable group label for child items</li>
+   *   <li>{@code divider} – horizontal separator line</li>
+   * </ul>
    */
   @Order(2)
-  @Schema(title = "i18n:menus.title.type", description = "i18n:menus.description.type", maxLength = 32, minLength = 1, extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
-      })
-  })
+  @Schema(
+      title = "i18n:menus.title.type",
+      description = "i18n:menus.description.type",
+      maxLength = 32,
+      minLength = 1,
+      allowableValues = {"item", "submenu", "group", "divider"},
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
   @Column(length = 32)
   private String type;
 

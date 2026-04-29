@@ -16,6 +16,7 @@ import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
+import org.simplepoint.plugin.rbac.core.api.pojo.command.ChangePasswordCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.entity.User;
@@ -24,6 +25,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -143,6 +146,22 @@ public class UsersController extends BaseController<UsersService, User, String> 
   @PreAuthorize("hasRole('Administrator') or hasAuthority('users.config.role')")
   public Response<Void> unauthorized(@RequestBody UserRoleRelevanceDto dto) {
     service.unauthorized(dto);
+    return Response.okay();
+  }
+
+  /**
+   * Changes the password for the currently authenticated user.
+   *
+   * @param command the change-password command with current, new, and confirm passwords
+   * @return an empty success response
+   */
+  @PostMapping("/change-password")
+  @Operation(summary = "修改当前用户密码", description = "验证旧密码后，将当前用户密码修改为新密码")
+  @PreAuthorize("isAuthenticated()")
+  public Response<Void> changePassword(@RequestBody ChangePasswordCommand command) {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    User principal = (User) auth.getPrincipal();
+    service.changePassword(principal.getId(), command);
     return Response.okay();
   }
 }

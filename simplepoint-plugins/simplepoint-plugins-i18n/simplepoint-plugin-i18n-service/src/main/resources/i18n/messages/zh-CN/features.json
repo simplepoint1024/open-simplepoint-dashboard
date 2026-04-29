@@ -13,5 +13,7 @@
   "features.description.type": "功能类型，如目录、菜单、按钮或接口",
   "features.title.ancestor": "祖级路径",
   "features.description.ancestor": "当前功能的完整祖级路径",
+  "features.title.publicAccess": "所有人可用",
+  "features.description.publicAccess": "勾选后，所有已认证用户均可访问此功能，无需分配权限",
   "features.button.config.permission": "配置权限"
 }

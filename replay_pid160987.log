@@ -1,0 +1,30 @@
+JvmtiExport can_access_local_variables 0
+JvmtiExport can_hotswap_or_post_breakpoint 0
+JvmtiExport can_post_on_exceptions 0
+# 345 ciObject found
+instanceKlass lombok/core/AST
+ciMethod lombok/permit/Permit permissiveReadField (Ljava/lang/Class;Ljava/lang/reflect/Field;Ljava/lang/Object;)Ljava/lang/Object; 0 0 1 0 -1
+ciMethod lombok/core/LombokNode <init> (Ljava/lang/Object;Ljava/util/List;Llombok/core/AST$Kind;)V 15002 14938 27482 0 3040
+ciMethod lombok/core/LombokNode calculateIsStructurallySignificant (Ljava/lang/Object;)Z 0 0 1 0 -1
+ciMethod lombok/core/LombokNode get ()Ljava/lang/Object; 456 0 228 0 0
+ciMethod lombok/javac/JavacNode <init> (Llombok/javac/JavacAST;Lcom/sun/tools/javac/tree/JCTree;Ljava/util/List;Llombok/core/AST$Kind;)V 4232 0 23039 0 0
+ciMethod lombok/core/AST putInMap (Llombok/core/LombokNode;)Llombok/core/LombokNode; 4056 0 22948 0 0
+ciMethod lombok/core/AST setAndGetAsHandled (Ljava/lang/Object;)Z 4446 0 23026 0 0
+ciMethod lombok/core/AST buildTree (Ljava/lang/Object;Llombok/core/AST$Kind;)Llombok/core/LombokNode; 0 0 1 0 -1
+ciMethod lombok/core/AST fieldsOf (Ljava/lang/Class;)[Llombok/core/AST$FieldAccess; 5650 0 22984 0 -1
+ciMethod lombok/core/AST buildWithField (Ljava/lang/Class;Ljava/lang/Object;Llombok/core/AST$FieldAccess;)Ljava/util/Collection; 4164 0 28288 0 -1
+ciMethod lombok/core/AST buildWithField0 (Ljava/lang/Class;Ljava/lang/Object;Llombok/core/AST$FieldAccess;Ljava/util/Collection;)V 14078 0 28288 0 0
+ciMethod lombok/core/AST buildWithArray (Ljava/lang/Class;Ljava/lang/Object;Ljava/util/Collection;I)V 0 0 1 0 -1
+ciMethod lombok/core/AST buildWithCollection (Ljava/lang/Class;Ljava/lang/Object;Ljava/util/Collection;I)V 6948 3204 13455 0 0
+ciMethod com/sun/tools/javac/util/List emptyIterator ()Ljava/util/Iterator; 302 0 821427 0 0
+ciMethod com/sun/tools/javac/util/List iterator ()Ljava/util/Iterator; 596 0 2244549 0 192
+ciMethod com/sun/tools/javac/util/List$2 hasNext ()Z 274 0 137 0 0
+ciMethod com/sun/tools/javac/util/List$3 <init> (Lcom/sun/tools/javac/util/List;)V 288 0 1425374 0 0
+ciMethod com/sun/tools/javac/util/List$3 hasNext ()Z 606 0 11555 0 96
+ciMethod com/sun/tools/javac/util/List$3 next ()Ljava/lang/Object; 550 0 14715 0 320
+ciMethodData com/sun/tools/javac/util/List$3 hasNext ()Z 2 11555 orig 80 0 0 0 0 0 0 0 0 0 0 0 0 12 127 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 data 16 0x70007 0x5ce 0x38 0x2694 0xb0003 0x269c 0x18 0x0 0x0 0x0 0x0 0x0 0x0 0x9 0x1 0x0 oops 0 methods 0
+ciMethodData com/sun/tools/javac/util/List iterator ()Ljava/util/Iterator; 2 2244560 orig 80 0 0 0 0 0 0 0 0 0 0 0 0 12 127 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 data 17 0x40007 0x15c2bf 0x30 0xc889c 0x70002 0xc88a4 0x100002 0x15c286 0x0 0x0 0x0 0x0 0x0 0x0 0x9 0x1 0x0 oops 0 methods 0
+ciMethodData com/sun/tools/javac/util/List emptyIterator ()Ljava/util/Iterator; 2 821427 orig 80 0 0 0 0 0 0 0 0 0 0 0 0 11 127 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 data 4 0x0 0x0 0x9 0x0 oops 0 methods 0
+ciMethodData com/sun/tools/javac/util/List$3 <init> (Lcom/sun/tools/javac/util/List;)V 2 1425374 orig 80 0 0 0 0 0 0 0 0 0 0 0 0 10 127 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 data 10 0x60002 0x15c0b8 0x0 0x0 0x0 0x0 0x9 0x2 0x6 0x0 oops 0 methods 0
+ciMethodData com/sun/tools/javac/util/List$3 next ()Ljava/lang/Object; 2 14715 orig 80 0 0 0 0 0 0 0 0 0 0 0 0 11 127 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 data 15 0x70007 0x37de 0x30 0x0 0xe0002 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x9 0x1 0x6 oops 0 methods 0
+ciMethodData lombok/javac/JavacAST buildTypeUse (Lcom/sun/tools/javac/tree/JCTree;)Llombok/javac/JavacNode; 1 1469 orig 80 0 0 0 0 0 0 0 0 0 0 0 0 10 127 0 0 0 0 0 0 0 0 0 0 0

@@ -144,4 +144,34 @@ public class Feature extends BaseEntityImpl<String> {
       }
   )
   private Integer sort;
+
+  /**
+   * Whether this feature is publicly accessible to all users without any permission requirement.
+   *
+   * <p>When {@code true}, any authenticated user can access this feature regardless of their
+   * role or assigned permissions. Defaults to {@code false}.</p>
+   */
+  @Order(5)
+  @Schema(
+      title = "i18n:features.title.publicAccess",
+      description = "i18n:features.description.publicAccess",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  @Column(nullable = false)
+  private Boolean publicAccess;
+
+  /**
+   * Lifecycle callback to set default values before persisting the entity.
+   */
+  @Override
+  public void prePersist() {
+    if (this.publicAccess == null) {
+      this.publicAccess = false;
+    }
+    super.prePersist();
+  }
 }

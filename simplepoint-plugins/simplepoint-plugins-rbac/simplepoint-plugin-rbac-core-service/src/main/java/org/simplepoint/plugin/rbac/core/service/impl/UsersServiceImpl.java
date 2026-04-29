@@ -16,6 +16,7 @@ import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChangeLogRecordCommand;
 import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
+import org.simplepoint.plugin.rbac.core.api.pojo.command.ChangePasswordCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
@@ -196,6 +197,30 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
         userRoleRelevanceRepository.unauthorized(resolveCurrentTenantScope(), dto.getUserId(), dto.getRoleIds());
         refreshCurrentTenantPermissionVersion();
         recordPermissionChange("UNAUTHORIZE", dto);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void changePassword(String userId, ChangePasswordCommand command) {
+        if (command.getCurrentPassword() == null || command.getCurrentPassword().isBlank()) {
+            throw new IllegalArgumentException("当前密码不能为空");
+        }
+        if (command.getNewPassword() == null || command.getNewPassword().isBlank()) {
+            throw new IllegalArgumentException("新密码不能为空");
+        }
+        if (command.getNewPassword().length() < 6) {
+            throw new IllegalArgumentException("新密码长度不能少于 6 位");
+        }
+        if (!Objects.equals(command.getNewPassword(), command.getConfirmPassword())) {
+            throw new IllegalArgumentException("新密码与确认密码不一致");
+        }
+        User user = findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+        if (!passwordEncoder.matches(command.getCurrentPassword(), user.getPassword())) {
+            throw new AccessDeniedException("当前密码不正确");
+        }
+        user.setPassword(passwordEncoder.encode(command.getNewPassword()));
+        super.modifyById(user);
     }
 
     @Override
