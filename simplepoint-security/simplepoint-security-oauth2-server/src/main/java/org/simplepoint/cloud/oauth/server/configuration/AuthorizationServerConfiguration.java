@@ -98,7 +98,7 @@ public class AuthorizationServerConfiguration {
             authorize -> authorize.requestMatchers(
                     "/actuator/**", "/static/**", "/webjars/**", "/favicon.ico", "/assets/**",
                     "/v3/api-docs/**", "/swagger-ui/**", "/error", "/css/**", "/js/**", "/images/**", "/**.svg",
-                    "/.well-known/appspecific/**"
+                    "/.well-known/appspecific/**", "/register"
                 ).permitAll().anyRequest()
                 .authenticated())
         .formLogin(configurer -> {

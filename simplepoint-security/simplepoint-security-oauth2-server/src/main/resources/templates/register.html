@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Sign in</title>
+    <title>Sign up</title>
     <style>
         body {
             margin: 0;
@@ -20,7 +20,6 @@
             box-sizing: border-box;
         }
 
-        /* 彩虹柔光光斑 */
         .blob {
             position: absolute;
             width: 520px;
@@ -50,7 +49,6 @@
             100% { transform: translate(0,0); }
         }
 
-        /* 毛玻璃卡片 */
         .card {
             position: relative;
             width: 400px;
@@ -79,8 +77,7 @@
             margin-bottom: 24px;
         }
 
-        /* 输入框 */
-        input[type="text"], input[type="password"] {
+        input[type="text"], input[type="password"], input[type="email"] {
             width: 100%;
             padding: 14px 16px;
             border-radius: 18px;
@@ -112,7 +109,6 @@
             transform: translateY(-1px);
         }
 
-        /* 主按钮 */
         .sign-in-btn {
             display: block;
             width: 100%;
@@ -128,6 +124,8 @@
                     0 4px 12px rgba(0,0,0,0.08),
                     inset 0 1px 2px rgba(255,255,255,0.9);
             transition: all 0.25s ease;
+            border: none;
+            cursor: pointer;
         }
 
         .sign-in-btn:hover {
@@ -138,33 +136,20 @@
                     inset 0 1px 2px rgba(255,255,255,1);
         }
 
-        /* OAuth 按钮 */
-        .oauth-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px;
-            margin: 12px 0 0 0;
-            border-radius: 16px;
-            background: rgba(255,255,255,0.7);
-            border: 1px solid rgba(0,0,0,0.1);
-            box-shadow:
-                    0 2px 8px rgba(0,0,0,0.06),
-                    inset 0 1px 2px rgba(255,255,255,0.8);
-            font-size: 15px;
-            color: #333;
+        .link-row {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #6d6d6d;
+        }
+
+        .link-row a {
+            color: #4f7cff;
             text-decoration: none;
-            transition: 0.2s;
+            font-weight: 500;
         }
 
-        .oauth-btn:hover {
-            background: rgba(255,255,255,0.9);
-            transform: translateY(-2px);
-        }
-
-        .oauth-btn img {
-            height: 24px;
-            margin-right: 10px;
+        .link-row a:hover {
+            text-decoration: underline;
         }
 
         .alert {
@@ -181,46 +166,30 @@
 <div class="blob"></div>
 
 <div class="card">
-    <form method="post" th:action="@{/login}">
-        <h2>Sign in</h2>
-        <div class="subtitle">Sign in with your Simple·point account</div>
+    <form method="post" th:action="@{/register}">
+        <h2>Sign up</h2>
+        <div class="subtitle">Create your Simple·point account</div>
+
+        <div th:if="${error}" class="alert" style="color:#d93025;" th:text="${error}"></div>
 
         <label>
-            <input type="text" name="username" placeholder="Email or phone" required autofocus />
+            <input type="email" name="email" placeholder="Email address" required autofocus />
         </label>
         <label>
-            <input type="password" name="password" placeholder="Enter your password" required />
+            <input type="text" name="nickname" placeholder="Nickname (optional)" />
+        </label>
+        <label>
+            <input type="password" name="password" placeholder="Password (min 6 characters)" required />
+        </label>
+        <label>
+            <input type="password" name="confirmPassword" placeholder="Confirm password" required />
         </label>
 
-        <div th:if="${param.error}" class="alert" style="color:#d93025;">
-            Invalid username or password.
+        <button type="submit" class="sign-in-btn">Create account</button>
+
+        <div class="link-row">
+            Already have an account? <a href="/login">Sign in</a>
         </div>
-
-        <div th:if="${param.logout}" class="alert" style="color:#188038;">
-            You have been logged out.
-        </div>
-
-        <div th:if="${param.registered}" class="alert" style="color:#188038;">
-            Registration successful! Please sign in.
-        </div>
-
-        <a class="sign-in-btn" href="#" onclick="document.querySelector('form').submit()">
-            Sign in
-        </a>
-
-        <div style="margin-top:20px;font-size:14px;color:#6d6d6d;">
-            Don't have an account? <a href="/register" style="color:#4f7cff;text-decoration:none;font-weight:500;">Sign up</a>
-        </div>
-
-        <a class="oauth-btn" href="/oauth2/authorization/google-idp">
-            <img src="/assets/img/google.png" th:src="@{/assets/img/google.png}" alt="Google logo">
-            Sign in with Google
-        </a>
-
-        <a class="oauth-btn" href="/oauth2/authorization/github-idp">
-            <img src="/assets/img/github.png" th:src="@{/assets/img/github.png}" alt="Github logo">
-            Sign in with Github
-        </a>
     </form>
 </div>
 
