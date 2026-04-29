@@ -19,7 +19,7 @@ jobs:
           java-version: '17'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Run Checkstyle
         run: ./gradlew checkstyleMain checkstyleTest
