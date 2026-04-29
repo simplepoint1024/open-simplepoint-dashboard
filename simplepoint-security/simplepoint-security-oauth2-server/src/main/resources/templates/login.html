@@ -208,10 +208,6 @@
             Sign in
         </a>
 
-        <div style="margin-top:20px;font-size:14px;color:#6d6d6d;">
-            Don't have an account? <a href="/register" style="color:#4f7cff;text-decoration:none;font-weight:500;">Sign up</a>
-        </div>
-
         <a class="oauth-btn" href="/oauth2/authorization/google-idp">
             <img src="/assets/img/google.png" th:src="@{/assets/img/google.png}" alt="Google logo">
             Sign in with Google
@@ -221,6 +217,11 @@
             <img src="/assets/img/github.png" th:src="@{/assets/img/github.png}" alt="Github logo">
             Sign in with Github
         </a>
+
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(0,0,0,0.08);font-size:14px;color:#6d6d6d;">
+            还没有账号？
+            <a href="/register" style="color:#4f7cff;text-decoration:none;font-weight:600;">立即注册</a>
+        </div>
     </form>
 </div>
 
