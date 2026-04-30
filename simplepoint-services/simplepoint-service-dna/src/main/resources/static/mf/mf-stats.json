@@ -48,8 +48,9 @@
         }
       },
       "usedIn": [
-        "./platform/DataAsset",
+        "./platform/QueryAudit",
         "./platform/Dashboard",
+        "./platform/DataAsset",
         "./platform/DataLineage",
         "./platform/DataQuality",
         "./platform/FederationJdbcUser/config/dataSource",
@@ -60,7 +61,6 @@
         "./platform/JdbcDialect",
         "./platform/JdbcDriver",
         "./platform/JdbcMetadata",
-        "./platform/QueryAudit",
         "./platform/QueryPolicy",
         "./platform/QueryTemplate",
         "./platform/SqlConsole"
@@ -88,7 +88,7 @@
         }
       },
       "usedIn": [
-        "./platform/QueryAudit",
+        "./platform/JdbcDataSource",
         "./platform/Dashboard",
         "./platform/DataAsset",
         "./platform/DataLineage",
@@ -97,10 +97,10 @@
         "./platform/FederationJdbcUser",
         "./platform/FederationView",
         "./platform/HealthMonitor",
-        "./platform/JdbcDataSource",
         "./platform/JdbcDialect",
         "./platform/JdbcDriver",
         "./platform/JdbcMetadata",
+        "./platform/QueryAudit",
         "./platform/QueryPolicy",
         "./platform/QueryTemplate",
         "./platform/SqlConsole"
@@ -154,10 +154,10 @@
         }
       },
       "usedIn": [
-        "./platform/FederationJdbcUser/config/dataSource",
-        "./platform/DataLineage",
-        "./platform/FederationJdbcUser",
         "./platform/JdbcDialect",
+        "./platform/DataLineage",
+        "./platform/FederationJdbcUser/config/dataSource",
+        "./platform/FederationJdbcUser",
         "./platform/JdbcDriver",
         "./platform/JdbcMetadata",
         "./platform/SqlConsole"
@@ -778,6 +778,7 @@
         "js": {
           "sync": [
             "473.js",
+            "121.js",
             "__federation_expose_platform__SqlConsole.js"
           ],
           "async": []

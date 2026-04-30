@@ -604,6 +604,7 @@
         "js": {
           "sync": [
             "473.js",
+            "121.js",
             "__federation_expose_platform__SqlConsole.js"
           ],
           "async": []
