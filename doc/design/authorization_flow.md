@@ -55,7 +55,7 @@ host 自己的 `/login` 页面非常轻量，当前主要提供一个入口：
 本地 `dev` 配置里，这个回调地址是：
 
 ```text
-http://127.0.0.1:8080/login/oauth2/code/oidc
+http://127.0.0.1:2555/login/oauth2/code/oidc
 ```
 
 ## 4. 从登录成功到前端壳应用加载

@@ -48,13 +48,13 @@
         }
       },
       "usedIn": [
-        "./platform/FederationView",
-        "./platform/Dashboard",
         "./platform/DataAsset",
+        "./platform/Dashboard",
         "./platform/DataLineage",
         "./platform/DataQuality",
         "./platform/FederationJdbcUser/config/dataSource",
         "./platform/FederationJdbcUser",
+        "./platform/FederationView",
         "./platform/HealthMonitor",
         "./platform/JdbcDataSource",
         "./platform/JdbcDialect",
@@ -88,8 +88,9 @@
         }
       },
       "usedIn": [
-        "./platform/DataAsset",
+        "./platform/QueryAudit",
         "./platform/Dashboard",
+        "./platform/DataAsset",
         "./platform/DataLineage",
         "./platform/DataQuality",
         "./platform/FederationJdbcUser/config/dataSource",
@@ -100,7 +101,6 @@
         "./platform/JdbcDialect",
         "./platform/JdbcDriver",
         "./platform/JdbcMetadata",
-        "./platform/QueryAudit",
         "./platform/QueryPolicy",
         "./platform/QueryTemplate",
         "./platform/SqlConsole"
@@ -188,6 +188,30 @@
     },
     {
       "singleton": true,
+      "requiredVersion": "^19.0.0",
+      "shareScope": "default",
+      "strictVersion": false,
+      "eager": true,
+      "name": "react-dom",
+      "version": "19.0.0",
+      "id": "dna:react-dom",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "dna.js",
+            "index.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": []
+    },
+    {
+      "singleton": true,
       "requiredVersion": "^7.9.6",
       "shareScope": "default",
       "eager": true,
@@ -240,30 +264,6 @@
       "name": "@rjsf/validator-ajv8",
       "version": "^5.24.13",
       "id": "dna:@rjsf/validator-ajv8",
-      "assets": {
-        "js": {
-          "async": [],
-          "sync": [
-            "dna.js",
-            "index.js"
-          ]
-        },
-        "css": {
-          "async": [],
-          "sync": []
-        }
-      },
-      "usedIn": []
-    },
-    {
-      "singleton": true,
-      "requiredVersion": "^19.0.0",
-      "shareScope": "default",
-      "strictVersion": false,
-      "eager": true,
-      "name": "react-dom",
-      "version": "19.0.0",
-      "id": "dna:react-dom",
       "assets": {
         "js": {
           "async": [],
@@ -387,8 +387,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "121.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__DataAsset.js"
           ],
           "async": []
@@ -410,8 +411,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "121.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__DataCatalog.js"
           ],
           "async": []
@@ -437,8 +439,10 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
+            "234.js",
             "121.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__DataLineage.js"
           ],
           "async": []
@@ -463,8 +467,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "121.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__DataQuality.js"
           ],
           "async": []
@@ -537,8 +542,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "121.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__FederationView.js"
           ],
           "async": []
@@ -586,8 +592,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "121.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__JdbcDataSource.js"
           ],
           "async": []
@@ -637,8 +644,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "121.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__JdbcDriver.js"
           ],
           "async": []
@@ -687,8 +695,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "121.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__QueryAudit.js"
           ],
           "async": []
@@ -713,8 +722,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "121.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__QueryPolicy.js"
           ],
           "async": []
@@ -739,8 +749,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "121.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__QueryTemplate.js"
           ],
           "async": []
@@ -766,6 +777,7 @@
       "assets": {
         "js": {
           "sync": [
+            "473.js",
             "__federation_expose_platform__SqlConsole.js"
           ],
           "async": []

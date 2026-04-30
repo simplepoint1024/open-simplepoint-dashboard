@@ -1,5 +1,6 @@
 package org.simplepoint.plugin.rbac.core.service.impl;
 
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -74,6 +75,16 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     var featurePermissionRelevanceRepository = featurePermissionRelevanceRepositoryProvider.getIfAvailable();
     if (featurePermissionRelevanceRepository != null && !permissions.isEmpty()) {
       permissions.addAll(featurePermissionRelevanceRepository.findFeatureCodesByPermissionAuthorities(permissions));
+    }
+    if (featurePermissionRelevanceRepository != null) {
+      Collection<String> publicFeatureCodes = featurePermissionRelevanceRepository.findPublicAccessFeatureCodes();
+      if (publicFeatureCodes != null) {
+        permissions.addAll(publicFeatureCodes);
+      }
+      Collection<String> publicPermissions = featurePermissionRelevanceRepository.findPermissionAuthoritiesByPublicAccessFeatures();
+      if (publicPermissions != null) {
+        permissions.addAll(publicPermissions);
+      }
     }
     var tenantPackageRelevanceRepository = tenantPackageRelevanceRepositoryProvider.getIfAvailable();
     if (tenantPackageRelevanceRepository != null

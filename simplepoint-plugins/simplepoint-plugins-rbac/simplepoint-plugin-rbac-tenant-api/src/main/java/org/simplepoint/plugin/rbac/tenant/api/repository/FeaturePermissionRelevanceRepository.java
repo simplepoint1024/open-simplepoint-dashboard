@@ -23,4 +23,18 @@ public interface FeaturePermissionRelevanceRepository {
   Collection<String> findPermissionAuthoritiesByTenantId(String tenantId);
 
   Collection<String> findFeatureCodesByPermissionAuthorities(Collection<String> permissionAuthorities);
+
+  /**
+   * Returns all feature codes whose {@code publicAccess} flag is {@code true}.
+   *
+   * @return distinct feature codes marked as publicly accessible
+   */
+  Collection<String> findPublicAccessFeatureCodes();
+
+  /**
+   * Returns all permission authorities that belong to features whose {@code publicAccess} flag is {@code true}.
+   *
+   * @return distinct permission authorities for publicly accessible features
+   */
+  Collection<String> findPermissionAuthoritiesByPublicAccessFeatures();
 }

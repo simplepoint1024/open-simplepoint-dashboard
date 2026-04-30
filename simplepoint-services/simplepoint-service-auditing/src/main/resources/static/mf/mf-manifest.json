@@ -234,7 +234,8 @@
       "assets": {
         "js": {
           "sync": [
-            "793.js",
+            "760.js",
+            "828.js",
             "__federation_expose_monitoring__EndpointRateLimitRule.js"
           ],
           "async": []
@@ -254,7 +255,8 @@
       "assets": {
         "js": {
           "sync": [
-            "793.js",
+            "760.js",
+            "828.js",
             "__federation_expose_monitoring__ErrorLog.js"
           ],
           "async": []
@@ -274,7 +276,8 @@
       "assets": {
         "js": {
           "sync": [
-            "793.js",
+            "760.js",
+            "828.js",
             "__federation_expose_monitoring__LoginLog.js"
           ],
           "async": []
@@ -294,7 +297,8 @@
       "assets": {
         "js": {
           "sync": [
-            "793.js",
+            "760.js",
+            "828.js",
             "__federation_expose_monitoring__PermissionChangeLog.js"
           ],
           "async": []
@@ -331,7 +335,8 @@
       "assets": {
         "js": {
           "sync": [
-            "793.js",
+            "760.js",
+            "828.js",
             "__federation_expose_monitoring__ServiceRateLimitRule.js"
           ],
           "async": []

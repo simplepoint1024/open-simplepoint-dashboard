@@ -176,7 +176,7 @@ pnpm dev:common
 在开发态配置里，host / common 的 OAuth2 issuer 和 redirect URI 都默认指向：
 
 - issuer：`http://127.0.0.1:9000`
-- redirect：`http://127.0.0.1:8080/login/oauth2/code/oidc`
+- redirect：`http://127.0.0.1:2555/login/oauth2/code/oidc`
 
 ## 7. 初始化数据与默认账号
 

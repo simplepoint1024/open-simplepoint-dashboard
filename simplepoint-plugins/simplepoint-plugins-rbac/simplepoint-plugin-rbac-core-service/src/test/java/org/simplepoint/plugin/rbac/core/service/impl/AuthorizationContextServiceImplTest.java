@@ -131,6 +131,8 @@ class AuthorizationContextServiceImplTest {
         when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(featurePermRepo);
         when(tenantPackageRepo.findFeatureCodesByTenantId("tenant1")).thenReturn(Set.of("feature1"));
         when(featurePermRepo.findPermissionAuthoritiesByTenantId("tenant1")).thenReturn(Set.of("perm.tenant1"));
+        when(featurePermRepo.findPublicAccessFeatureCodes()).thenReturn(Set.of());
+        when(featurePermRepo.findPermissionAuthoritiesByPublicAccessFeatures()).thenReturn(Set.of());
 
         AuthorizationContext ctx = service.calculate("tenant1", "u1", null, null);
 
@@ -144,16 +146,38 @@ class AuthorizationContextServiceImplTest {
         User user = new User();
         user.setSuperAdmin(false);
         RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_USER");
+        FeaturePermissionRelevanceRepository featurePermRepo = mock(FeaturePermissionRelevanceRepository.class);
 
         when(usersService.findById("u1")).thenReturn(Optional.of(user));
         when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role));
         when(usersService.loadPermissionsInRoleIds(List.of("role1"))).thenReturn(Set.of("perm1", "perm2"));
-        when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
+        when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(featurePermRepo);
+        when(featurePermRepo.findFeatureCodesByPermissionAuthorities(anyCollection())).thenReturn(Set.of());
+        when(featurePermRepo.findPublicAccessFeatureCodes()).thenReturn(Set.of());
+        when(featurePermRepo.findPermissionAuthoritiesByPublicAccessFeatures()).thenReturn(Set.of());
         when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
 
         AuthorizationContext ctx = service.calculate(null, "u1", null, null);
 
         assertThat(ctx.getPermissions()).contains("perm1", "perm2");
         assertThat(ctx.getRoles()).contains("ROLE_USER");
+    }
+
+    @Test
+    void calculate_publicAccessFeatures_alwaysIncludedRegardlessOfRoles() {
+        User user = new User();
+        user.setSuperAdmin(false);
+        FeaturePermissionRelevanceRepository featurePermRepo = mock(FeaturePermissionRelevanceRepository.class);
+
+        when(usersService.findById("u1")).thenReturn(Optional.of(user));
+        when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
+        when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(featurePermRepo);
+        when(featurePermRepo.findPublicAccessFeatureCodes()).thenReturn(Set.of("public-feature"));
+        when(featurePermRepo.findPermissionAuthoritiesByPublicAccessFeatures()).thenReturn(Set.of("public.perm1"));
+        when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
+
+        AuthorizationContext ctx = service.calculate(null, "u1", null, null);
+
+        assertThat(ctx.getPermissions()).contains("public-feature", "public.perm1");
     }
 }

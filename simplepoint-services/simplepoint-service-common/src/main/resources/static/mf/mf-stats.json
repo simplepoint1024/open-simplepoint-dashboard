@@ -48,7 +48,7 @@
         }
       },
       "usedIn": [
-        "./i18n/Timezone",
+        "./platform/Package",
         "./system/Role/config/permission",
         "./Dashboard",
         "./i18n/Countries",
@@ -56,6 +56,7 @@
         "./i18n/Message",
         "./i18n/Namespace",
         "./i18n/Region",
+        "./i18n/Timezone",
         "./ops/Microapp",
         "./platform/Application/config/feature",
         "./platform/Application",
@@ -66,7 +67,6 @@
         "./platform/ObjectStorage",
         "./platform/Organization",
         "./platform/Package/config/application",
-        "./platform/Package",
         "./platform/Tenant/config/package",
         "./platform/Tenant/config/user",
         "./platform/Tenant",
@@ -101,6 +101,7 @@
         }
       },
       "usedIn": [
+        "./system/User",
         "./Dashboard",
         "./platform/Application",
         "./platform/Dictionary",
@@ -109,8 +110,7 @@
         "./platform/Package",
         "./platform/Tenant",
         "./system/Menu",
-        "./system/Role",
-        "./system/User"
+        "./system/Role"
       ]
     },
     {
@@ -411,8 +411,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_i18n__Countries.js"
           ],
           "async": []
@@ -436,8 +437,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_i18n__Language.js"
           ],
           "async": []
@@ -461,8 +463,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_i18n__Message.js"
           ],
           "async": []
@@ -486,8 +489,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_i18n__Namespace.js"
           ],
           "async": []
@@ -511,8 +515,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_i18n__Region.js"
           ],
           "async": []
@@ -536,8 +541,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_i18n__Timezone.js"
           ],
           "async": []
@@ -561,8 +567,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_ops__Microapp.js"
           ],
           "async": []
@@ -606,8 +613,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Application.js"
           ],
           "async": []
@@ -654,8 +662,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Dictionary.js"
           ],
           "async": []
@@ -679,8 +688,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Dictionary__config__item.js"
           ],
           "async": []
@@ -705,8 +715,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Feature.js"
           ],
           "async": []
@@ -776,8 +787,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Organization.js"
           ],
           "async": []
@@ -802,8 +814,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Package.js"
           ],
           "async": []
@@ -850,8 +863,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Tenant.js"
           ],
           "async": []
@@ -920,8 +934,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_system__Menu.js"
           ],
           "async": []
@@ -967,8 +982,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_system__OAuthClient.js"
           ],
           "async": []
@@ -992,8 +1008,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_system__Permission.js"
           ],
           "async": []
@@ -1018,13 +1035,15 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_system__Role.js"
           ],
           "async": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Application.js",
             "__federation_expose_platform__Application__config__feature.js",
             "__federation_expose_platform__Feature.js",
@@ -1091,8 +1110,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_system__User.js"
           ],
           "async": []

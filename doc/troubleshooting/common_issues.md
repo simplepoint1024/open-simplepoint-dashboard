@@ -103,7 +103,7 @@ docker compose -f docker/docker-compose.yaml up -d
 开发配置里，host / common 的 OIDC 相关地址默认写的是：
 
 - issuer：`http://127.0.0.1:9000`
-- redirect：`http://127.0.0.1:8080/login/oauth2/code/oidc`
+- redirect：`http://127.0.0.1:2555/login/oauth2/code/oidc`
 
 所以本地开发时，优先使用：
 

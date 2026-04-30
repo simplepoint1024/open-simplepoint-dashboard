@@ -48,12 +48,12 @@
         }
       },
       "usedIn": [
-        "./monitoring/ServiceRateLimitRule",
+        "./monitoring/LoginLog",
         "./monitoring/EndpointRateLimitRule",
         "./monitoring/ErrorLog",
-        "./monitoring/LoginLog",
         "./monitoring/PermissionChangeLog",
-        "./monitoring/Redis"
+        "./monitoring/Redis",
+        "./monitoring/ServiceRateLimitRule"
       ]
     },
     {
@@ -78,6 +78,9 @@
         }
       },
       "usedIn": [
+        "./monitoring/ErrorLog",
+        "./monitoring/LoginLog",
+        "./monitoring/PermissionChangeLog",
         "./monitoring/Redis"
       ]
     },
@@ -281,7 +284,8 @@
       "assets": {
         "js": {
           "sync": [
-            "793.js",
+            "760.js",
+            "828.js",
             "__federation_expose_monitoring__EndpointRateLimitRule.js"
           ],
           "async": []
@@ -299,13 +303,15 @@
       "id": "auditing:monitoring/ErrorLog",
       "name": "monitoring/ErrorLog",
       "requires": [
-        "react"
+        "react",
+        "antd"
       ],
       "file": "src/views/monitoring/ErrorLog/index.tsx",
       "assets": {
         "js": {
           "sync": [
-            "793.js",
+            "760.js",
+            "828.js",
             "__federation_expose_monitoring__ErrorLog.js"
           ],
           "async": []
@@ -323,13 +329,15 @@
       "id": "auditing:monitoring/LoginLog",
       "name": "monitoring/LoginLog",
       "requires": [
-        "react"
+        "react",
+        "antd"
       ],
       "file": "src/views/monitoring/LoginLog/index.tsx",
       "assets": {
         "js": {
           "sync": [
-            "793.js",
+            "760.js",
+            "828.js",
             "__federation_expose_monitoring__LoginLog.js"
           ],
           "async": []
@@ -347,13 +355,15 @@
       "id": "auditing:monitoring/PermissionChangeLog",
       "name": "monitoring/PermissionChangeLog",
       "requires": [
-        "react"
+        "react",
+        "antd"
       ],
       "file": "src/views/monitoring/PermissionChangeLog/index.tsx",
       "assets": {
         "js": {
           "sync": [
-            "793.js",
+            "760.js",
+            "828.js",
             "__federation_expose_monitoring__PermissionChangeLog.js"
           ],
           "async": []
@@ -399,7 +409,8 @@
       "assets": {
         "js": {
           "sync": [
-            "793.js",
+            "760.js",
+            "828.js",
             "__federation_expose_monitoring__ServiceRateLimitRule.js"
           ],
           "async": []

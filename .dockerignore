@@ -5,6 +5,9 @@
 .kotlin
 build
 **/build
+!simplepoint-services/simplepoint-service-authorization/build/install/**
+!simplepoint-services/simplepoint-service-common/build/install/**
+!simplepoint-services/simplepoint-service-host/build/install/**
 **/node_modules
 data
 infrastructure/.terraform

@@ -49,4 +49,17 @@ public interface JpaFeaturePermissionRelevanceRepository
   @Override
   @Query("select distinct fpr.featureCode from FeaturePermissionRelevance fpr where fpr.permissionAuthority in ?1")
   Collection<String> findFeatureCodesByPermissionAuthorities(Collection<String> permissionAuthorities);
+
+  @Override
+  @Query("select distinct f.code from Feature f where f.publicAccess = true")
+  Collection<String> findPublicAccessFeatureCodes();
+
+  @Override
+  @Query("""
+      select distinct fpr.permissionAuthority
+      from Feature f
+      join FeaturePermissionRelevance fpr on fpr.featureCode = f.code
+      where f.publicAccess = true
+      """)
+  Collection<String> findPermissionAuthoritiesByPublicAccessFeatures();
 }

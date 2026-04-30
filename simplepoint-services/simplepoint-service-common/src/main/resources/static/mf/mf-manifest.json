@@ -311,8 +311,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_i18n__Countries.js"
           ],
           "async": []
@@ -332,8 +333,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_i18n__Language.js"
           ],
           "async": []
@@ -353,8 +355,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_i18n__Message.js"
           ],
           "async": []
@@ -374,8 +377,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_i18n__Namespace.js"
           ],
           "async": []
@@ -395,8 +399,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_i18n__Region.js"
           ],
           "async": []
@@ -416,8 +421,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_i18n__Timezone.js"
           ],
           "async": []
@@ -437,8 +443,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_ops__Microapp.js"
           ],
           "async": []
@@ -475,8 +482,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Application.js"
           ],
           "async": []
@@ -514,8 +522,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Dictionary.js"
           ],
           "async": []
@@ -535,8 +544,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Dictionary__config__item.js"
           ],
           "async": []
@@ -556,8 +566,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Feature.js"
           ],
           "async": []
@@ -613,8 +624,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Organization.js"
           ],
           "async": []
@@ -634,8 +646,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Package.js"
           ],
           "async": []
@@ -673,8 +686,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Tenant.js"
           ],
           "async": []
@@ -730,8 +744,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_system__Menu.js"
           ],
           "async": []
@@ -769,8 +784,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_system__OAuthClient.js"
           ],
           "async": []
@@ -790,8 +806,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_system__Permission.js"
           ],
           "async": []
@@ -811,13 +828,15 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_system__Role.js"
           ],
           "async": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_platform__Application.js",
             "__federation_expose_platform__Application__config__feature.js",
             "__federation_expose_platform__Feature.js",
@@ -875,8 +894,9 @@
       "assets": {
         "js": {
           "sync": [
+            "760.js",
             "950.js",
-            "223.js",
+            "898.js",
             "__federation_expose_system__User.js"
           ],
           "async": []
