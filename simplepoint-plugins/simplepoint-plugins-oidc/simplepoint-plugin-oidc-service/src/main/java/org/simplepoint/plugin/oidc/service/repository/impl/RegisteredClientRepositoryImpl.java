@@ -62,7 +62,13 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientRepositor
   @Override
   public void save(RegisteredClient registeredClient) {
     Assert.notNull(registeredClient, "registeredClient cannot be null");
-    this.clientRepository.save(toEntity(registeredClient));
+    Client entity = toEntity(registeredClient);
+    // Reuse the existing JPA id if the client is already registered, so that
+    // JPA performs an UPDATE instead of INSERT. This keeps the UUID stable
+    // across restarts, ensuring that existing authorization records remain valid.
+    clientRepository.findByClientId(registeredClient.getClientId())
+        .ifPresent(existing -> entity.setId(existing.getId()));
+    this.clientRepository.save(entity);
   }
 
   /**

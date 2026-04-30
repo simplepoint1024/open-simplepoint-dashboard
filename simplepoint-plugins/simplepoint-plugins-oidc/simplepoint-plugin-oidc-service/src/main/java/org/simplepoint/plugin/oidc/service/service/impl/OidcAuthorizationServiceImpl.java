@@ -40,6 +40,8 @@ import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.jackson2.OAuth2AuthorizationServerJackson2Module;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -54,6 +56,7 @@ import org.springframework.util.StringUtils;
  */
 @Component
 public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService {
+  private static final Logger log = LoggerFactory.getLogger(OidcAuthorizationServiceImpl.class);
   /**
    * Repository for storing OAuth2 authorization data.
    */
@@ -323,6 +326,8 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
       return this.objectMapper.readValue(data, new TypeReference<>() {
       });
     } catch (Exception ex) {
+      log.error("[OidcAuthorizationService] Failed to deserialize map. Data snippet: {}",
+          data != null ? data.substring(0, Math.min(300, data.length())) : "null", ex);
       throw new IllegalArgumentException(ex.getMessage(), ex);
     }
   }

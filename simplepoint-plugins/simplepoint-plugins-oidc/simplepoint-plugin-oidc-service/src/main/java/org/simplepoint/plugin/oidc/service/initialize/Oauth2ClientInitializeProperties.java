@@ -87,6 +87,12 @@ public class Oauth2ClientInitializeProperties implements InitializingBean {
     private @Nullable String redirectUri;
 
     /**
+     * Post-logout redirect URIs. Registered with the authorization server so that it
+     * accepts the {@code post_logout_redirect_uri} parameter during OIDC logout.
+     */
+    private @Nullable Set<String> postLogoutRedirectUris;
+
+    /**
      * Authorization scopes. When left blank the provider's default scopes, if any,
      * will be used.
      */
@@ -143,6 +149,14 @@ public class Oauth2ClientInitializeProperties implements InitializingBean {
 
     public void setRedirectUri(@Nullable String redirectUri) {
       this.redirectUri = redirectUri;
+    }
+
+    public @Nullable Set<String> getPostLogoutRedirectUris() {
+      return this.postLogoutRedirectUris;
+    }
+
+    public void setPostLogoutRedirectUris(@Nullable Set<String> postLogoutRedirectUris) {
+      this.postLogoutRedirectUris = postLogoutRedirectUris;
     }
 
     public @Nullable Set<String> getScope() {

@@ -79,16 +79,11 @@ public class ClientRegistrationInitialize implements ApplicationRunner {
         clientProperties.getRegistration().forEach((k, registration) -> {
             var provider = clientProperties.getProvider().get(registration.getProvider());
             var registeredClient = buildRegisteredClient(registration, provider);
-            log.info("Checking client registration for {}", registeredClient.getClientId());
-
-            if (registeredClientRepository.findByClientId(registeredClient.getClientId()) == null) {
-                log.info("Found client with id {}", registeredClient.getClientId());
-
-                // Encode client secret before saving
-                registeredClientRepository.save(registeredClient);
-
-                log.info("Saved registered client {}", registeredClient.getClientId());
-            }
+            log.info("Upserting client registration for {}", registeredClient.getClientId());
+            // Always save to ensure the latest config (including postLogoutRedirectUris) is applied.
+            // RegisteredClientRepository.save() performs an upsert keyed on clientId.
+            registeredClientRepository.save(registeredClient);
+            log.info("Saved registered client {}", registeredClient.getClientId());
         });
     }
 
@@ -129,6 +124,10 @@ public class ClientRegistrationInitialize implements ApplicationRunner {
 
         if (registration.getRedirectUri() != null) {
             builder.redirectUri(registration.getRedirectUri());
+        }
+
+        if (registration.getPostLogoutRedirectUris() != null) {
+            registration.getPostLogoutRedirectUris().forEach(builder::postLogoutRedirectUri);
         }
 
         if (registration.getScope() != null) {
