@@ -8,6 +8,7 @@
 
 package org.simplepoint.security.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.extensions.Extension;
@@ -408,6 +409,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    */
   @Schema(hidden = true)
   @Transient
+  @JsonIgnore
   private Collection<GrantedAuthority> authorities = Collections.emptyList();
 
   /**

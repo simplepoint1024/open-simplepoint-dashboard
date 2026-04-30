@@ -12,7 +12,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +86,8 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
     List<Module> securityModules = SecurityJackson2Modules.getModules(classLoader);
     this.objectMapper.registerModules(securityModules);
     this.objectMapper.registerModule(new OAuth2AuthorizationServerJackson2Module());
+    this.objectMapper.registerModule(new JavaTimeModule());
+    this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     objectMapper.activateDefaultTyping(
         LaissezFaireSubTypeValidator.instance,
         ObjectMapper.DefaultTyping.NON_FINAL,
