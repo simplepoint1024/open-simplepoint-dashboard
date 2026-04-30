@@ -10,6 +10,13 @@ package org.simplepoint.cloud.oauth.server.configuration;
 
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.Principal;
+import java.util.Base64;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion;
@@ -23,10 +30,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Configuration class for OpenID Connect (OIDC) settings.
@@ -82,11 +95,13 @@ public class OidcConfiguration {
    */
   @Bean
   public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer(
-      final Set<TokenDecorator> tokenDecorator
+      final Set<TokenDecorator> tokenDecorator,
+      final SessionRegistry sessionRegistry
   ) {
 
     return context -> {
       context.getJwsHeader().algorithm(SignatureAlgorithm.PS256);
+      addSessionIdClaimIfAvailable(context, sessionRegistry);
       for (TokenDecorator decorator : tokenDecorator) {
         // 获取认证主体
         Authentication principal = context.getPrincipal();
@@ -98,6 +113,69 @@ public class OidcConfiguration {
         }
       }
     };
+  }
+
+  private static void addSessionIdClaimIfAvailable(
+      final JwtEncodingContext context,
+      final SessionRegistry sessionRegistry
+  ) {
+    if (!OidcParameterNames.ID_TOKEN.equals(context.getTokenType().getValue())
+        || context.getClaims().build().hasClaim("sid")) {
+      return;
+    }
+    SessionInformation sessionInformation = findLatestSessionInformation(
+        sessionRegistry,
+        context.getPrincipal()
+    );
+    if (sessionInformation != null) {
+      context.getClaims().claim("sid", createHash(sessionInformation.getSessionId()));
+    }
+  }
+
+  private static SessionInformation findLatestSessionInformation(
+      final SessionRegistry sessionRegistry,
+      final Authentication authentication
+  ) {
+    if (authentication == null || !StringUtils.hasText(authentication.getName())) {
+      return null;
+    }
+
+    List<SessionInformation> sessions = sessionRegistry.getAllSessions(
+        authentication.getPrincipal(),
+        false
+    );
+    if (CollectionUtils.isEmpty(sessions)) {
+      sessions = sessionRegistry.getAllPrincipals().stream()
+          .filter(principal -> principalMatches(authentication.getName(), principal))
+          .flatMap(principal -> sessionRegistry.getAllSessions(principal, false).stream())
+          .toList();
+    }
+    return sessions.stream()
+        .max(Comparator.comparing(SessionInformation::getLastRequest))
+        .orElse(null);
+  }
+
+  private static boolean principalMatches(final String expectedName, final Object principal) {
+    if (principal instanceof Authentication authentication) {
+      return expectedName.equals(authentication.getName());
+    }
+    if (principal instanceof UserDetails userDetails) {
+      return expectedName.equals(userDetails.getUsername());
+    }
+    if (principal instanceof Principal namedPrincipal) {
+      return expectedName.equals(namedPrincipal.getName());
+    }
+    return expectedName.equals(String.valueOf(principal));
+  }
+
+  private static String createHash(final String value) {
+    try {
+      MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+      byte[] digest = messageDigest.digest(value.getBytes(StandardCharsets.US_ASCII));
+      return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+    } catch (NoSuchAlgorithmException ex) {
+      throw new IllegalStateException("Failed to compute hash for Session ID.", ex);
+    }
   }
 
   /**

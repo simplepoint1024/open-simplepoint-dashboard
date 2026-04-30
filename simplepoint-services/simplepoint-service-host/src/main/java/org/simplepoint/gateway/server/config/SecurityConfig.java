@@ -65,11 +65,20 @@ public class SecurityConfig {
 
         // Configure logout handling using OIDC client-initiated logout success handler
         .logout(logout -> logout
-            .logoutSuccessHandler(new OidcClientInitiatedServerLogoutSuccessHandler(clientRegistrationRepository))
+            .logoutSuccessHandler(oidcLogoutSuccessHandler(clientRegistrationRepository))
             .logoutUrl("/logout")
         );
 
     return http.build();
+  }
+
+  private OidcClientInitiatedServerLogoutSuccessHandler oidcLogoutSuccessHandler(
+      final ReactiveClientRegistrationRepository clientRegistrationRepository
+  ) {
+    OidcClientInitiatedServerLogoutSuccessHandler handler =
+        new OidcClientInitiatedServerLogoutSuccessHandler(clientRegistrationRepository);
+    handler.setPostLogoutRedirectUri("{baseUrl}");
+    return handler;
   }
 
   /**
