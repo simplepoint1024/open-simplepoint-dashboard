@@ -18,7 +18,8 @@
         "feature": {
           "name": "Dashboard",
           "description": "Dashboard Feature",
-          "code": "dashboard"
+          "code": "dashboard",
+          "publicAccess": true
         }
       }
     ]

@@ -69,19 +69,21 @@ public class MenuServiceImpl
     private final DataInitializeExecutor dataInitializeManager;
     private final PermissionChangeLogRemoteService permissionChangeLogRemoteService;
 
-    /** Cached admin routes result with expiry timestamp. */
+    /**
+     * Cached admin routes result with expiry timestamp.
+     */
     private volatile ServiceMenuResult adminRoutesCache;
     private volatile long adminRoutesCacheExpiry;
 
     /**
      * Constructs a MenuServiceImpl with the specified dependencies.
      *
-     * @param repository                       the MenuRepository for data access
-     * @param detailsProviderService           the DetailsProviderService for user details retrieval
-     * @param menuAncestorRepository           the MenuAncestorRepository for managing menu ancestor relationships
-     * @param permissionsService               the PermissionsService for managing permissions
-     * @param menuFeatureRelevanceRepository   the MenuFeatureRelevanceRepository for managing menu-feature relationships
-     * @param dataInitializeManager            the DataInitializeExecutor for handling data initialization tasks
+     * @param repository                     the MenuRepository for data access
+     * @param detailsProviderService         the DetailsProviderService for user details retrieval
+     * @param menuAncestorRepository         the MenuAncestorRepository for managing menu ancestor relationships
+     * @param permissionsService             the PermissionsService for managing permissions
+     * @param menuFeatureRelevanceRepository the MenuFeatureRelevanceRepository for managing menu-feature relationships
+     * @param dataInitializeManager          the DataInitializeExecutor for handling data initialization tasks
      */
     public MenuServiceImpl(
             final MenuRepository repository,
@@ -287,6 +289,7 @@ public class MenuServiceImpl
                 continue;
             }
             Feature feature = new Feature();
+            feature.setPublicAccess(definition.getPublicAccess() != null ? definition.getPublicAccess() : Boolean.FALSE);
             feature.setCode(definition.getCode());
             feature.setName(definition.getName());
             feature.setDescription(definition.getDescription());

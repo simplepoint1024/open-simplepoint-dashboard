@@ -8,13 +8,11 @@
 
 package org.simplepoint.cloud.oauth.server.controller;
 
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.entity.User;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +29,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class RegisterController {
 
   private final UsersService usersService;
-  private final PasswordEncoder passwordEncoder;
 
   /**
    * Serves the registration page.
@@ -81,9 +78,8 @@ public class RegisterController {
 
     try {
       User user = new User();
-      user.setId(UUID.randomUUID().toString());
       user.setEmail(email);
-      user.setPassword(passwordEncoder.encode(password));
+      user.setPassword(password);
       if (nickname != null && !nickname.isBlank()) {
         user.setNickname(nickname);
       }
