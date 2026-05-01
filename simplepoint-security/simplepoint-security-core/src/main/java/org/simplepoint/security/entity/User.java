@@ -404,6 +404,23 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   private String twoFactorSecret;
 
   /**
+   * The primary organization (department) this user belongs to.
+   * Used for row-level data scope enforcement (DEPT / DEPT_AND_BELOW scope types).
+   */
+  @Schema(
+      title = "所属组织",
+      description = "用户所属的主组织/部门 ID，用于数据权限范围过滤",
+      maxLength = 36,
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "widget", value = "select"),
+          })
+      }
+  )
+  @Column(name = "org_id", length = 36)
+  private String orgId;
+
+  /**
    * 用户的授权集合，存储该用户的权限信息
    * A collection of authorities granted to the user.
    */

@@ -10,7 +10,10 @@ package org.simplepoint.cloud.oauth.server.oidc;
 
 import org.simplepoint.cloud.oauth.server.expansion.oidc.AbstractOidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcUserInfoAuthenticationExpansion;
+import org.simplepoint.cloud.oauth.server.handler.RevokingOidcLogoutSuccessHandler;
+import org.simplepoint.security.token.TokenRevocationService;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OidcConfigurer;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 
 /**
  * Default implementation for OIDC configuration expansion.
@@ -24,6 +27,10 @@ public class DefaultOidcConfigurerExpansion extends AbstractOidcConfigurerExpans
    */
   private final OidcUserInfoAuthenticationExpansion oidcUserInfoAuthenticationExpansion;
 
+  private final OAuth2AuthorizationService authorizationService;
+
+  private final TokenRevocationService tokenRevocationService;
+
   /**
    * Constructs a DefaultOidcConfigurerExpansion with the specified user info authentication expansion.
    * 使用指定的用户信息认证扩展构造 DefaultOidcConfigurerExpansion
@@ -32,8 +39,12 @@ public class DefaultOidcConfigurerExpansion extends AbstractOidcConfigurerExpans
    *                                            OIDC 用户信息认证扩展
    */
   public DefaultOidcConfigurerExpansion(
-      OidcUserInfoAuthenticationExpansion oidcUserInfoAuthenticationExpansion) {
+      OidcUserInfoAuthenticationExpansion oidcUserInfoAuthenticationExpansion,
+      OAuth2AuthorizationService authorizationService,
+      TokenRevocationService tokenRevocationService) {
     this.oidcUserInfoAuthenticationExpansion = oidcUserInfoAuthenticationExpansion;
+    this.authorizationService = authorizationService;
+    this.tokenRevocationService = tokenRevocationService;
   }
 
   /**
@@ -48,6 +59,11 @@ public class DefaultOidcConfigurerExpansion extends AbstractOidcConfigurerExpans
     // 配置用户信息端点映射器
     oidc.userInfoEndpoint(endpointConfigurer ->
         endpointConfigurer.userInfoMapper(oidcUserInfoAuthenticationExpansion)
+    );
+    oidc.logoutEndpoint(endpointConfigurer ->
+        endpointConfigurer.logoutResponseHandler(
+            new RevokingOidcLogoutSuccessHandler(authorizationService, tokenRevocationService)
+        )
     );
   }
 }

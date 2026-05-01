@@ -1,0 +1,20 @@
+{
+  "data-scopes.title.name": "Name",
+  "data-scopes.description.name": "Display name for this data scope configuration",
+  "data-scopes.title.description": "Description",
+  "data-scopes.description.description": "Short description of what this data scope covers",
+  "data-scopes.title.type": "Scope Type",
+  "data-scopes.description.type": "Controls which rows of data the assigned role can access",
+  "data-scopes.title.type.ALL": "All Data",
+  "data-scopes.description.type.ALL": "Access to all data regardless of ownership or department",
+  "data-scopes.title.type.DEPT_AND_BELOW": "Department and Below",
+  "data-scopes.description.type.DEPT_AND_BELOW": "Access to the user's own department and all its sub-departments",
+  "data-scopes.title.type.DEPT": "Own Department",
+  "data-scopes.description.type.DEPT": "Access to data within the user's own department only",
+  "data-scopes.title.type.CUSTOM": "Custom Departments",
+  "data-scopes.description.type.CUSTOM": "Access to data within a manually specified set of departments",
+  "data-scopes.title.type.SELF": "Own Data Only",
+  "data-scopes.description.type.SELF": "Access to data created by or belonging to the current user only",
+  "data-scopes.title.customDeptIds": "Custom Departments",
+  "data-scopes.description.customDeptIds": "Set of department IDs explicitly granted access; only used when scope type is CUSTOM"
+}

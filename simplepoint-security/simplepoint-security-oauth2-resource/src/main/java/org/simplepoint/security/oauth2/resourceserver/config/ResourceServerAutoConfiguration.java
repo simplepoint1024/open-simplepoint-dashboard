@@ -13,9 +13,12 @@ import org.simplepoint.security.context.AuthorizationContextResolver;
 import org.simplepoint.security.context.AuthorizationContextService;
 import org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilter;
 import org.simplepoint.security.oauth2.resourceserver.delegate.JwtAuthenticationConverterDelegate;
+import org.simplepoint.security.token.TokenRevocationService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
@@ -40,10 +43,18 @@ public class ResourceServerAutoConfiguration {
    * @throws Exception if an error occurs during the security configuration process
    */
   @Bean
+  @ConditionalOnMissingBean
+  public TokenRevocationService tokenRevocationService(final CacheService cacheService) {
+    return new TokenRevocationService(cacheService);
+  }
+
+  @Bean
   public SecurityFilterChain securityWebFilterChain(
       HttpSecurity http,
       AuthorizationGrantedAuthorityLoader authorizationGrantedAuthorityLoader,
-      AuthorizationContextResolver authorizationContextResolver
+      AuthorizationContextResolver authorizationContextResolver,
+      TokenRevocationService tokenRevocationService,
+      Environment environment
   ) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable);
     http.addFilterBefore(new AuthorizationContextFilter(authorizationContextResolver), BearerTokenAuthenticationFilter.class);
@@ -55,7 +66,13 @@ public class ResourceServerAutoConfiguration {
         )
         .oauth2ResourceServer(configurer ->
             configurer.jwt(
-                jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(new JwtAuthenticationConverterDelegate(authorizationGrantedAuthorityLoader))
+                jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(
+                    new JwtAuthenticationConverterDelegate(
+                        authorizationGrantedAuthorityLoader,
+                        tokenRevocationService,
+                        environment.getProperty("simplepoint.security.oauth2.token.audience", "simplepoint-api")
+                    )
+                )
             )
         )
         .build();

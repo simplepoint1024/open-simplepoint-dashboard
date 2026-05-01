@@ -48,9 +48,9 @@
         }
       },
       "usedIn": [
-        "./monitoring/LoginLog",
-        "./monitoring/EndpointRateLimitRule",
         "./monitoring/ErrorLog",
+        "./monitoring/EndpointRateLimitRule",
+        "./monitoring/LoginLog",
         "./monitoring/PermissionChangeLog",
         "./monitoring/Redis",
         "./monitoring/ServiceRateLimitRule"
@@ -285,7 +285,8 @@
         "js": {
           "sync": [
             "760.js",
-            "828.js",
+            "950.js",
+            "898.js",
             "__federation_expose_monitoring__EndpointRateLimitRule.js"
           ],
           "async": []
@@ -311,7 +312,8 @@
         "js": {
           "sync": [
             "760.js",
-            "828.js",
+            "950.js",
+            "898.js",
             "__federation_expose_monitoring__ErrorLog.js"
           ],
           "async": []
@@ -337,7 +339,8 @@
         "js": {
           "sync": [
             "760.js",
-            "828.js",
+            "950.js",
+            "898.js",
             "__federation_expose_monitoring__LoginLog.js"
           ],
           "async": []
@@ -363,7 +366,8 @@
         "js": {
           "sync": [
             "760.js",
-            "828.js",
+            "950.js",
+            "898.js",
             "__federation_expose_monitoring__PermissionChangeLog.js"
           ],
           "async": []
@@ -388,6 +392,7 @@
       "assets": {
         "js": {
           "sync": [
+            "950.js",
             "__federation_expose_monitoring__Redis.js"
           ],
           "async": []
@@ -410,7 +415,8 @@
         "js": {
           "sync": [
             "760.js",
-            "828.js",
+            "950.js",
+            "898.js",
             "__federation_expose_monitoring__ServiceRateLimitRule.js"
           ],
           "async": []

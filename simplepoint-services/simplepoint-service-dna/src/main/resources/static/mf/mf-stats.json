@@ -88,7 +88,7 @@
         }
       },
       "usedIn": [
-        "./platform/JdbcDataSource",
+        "./platform/QueryPolicy",
         "./platform/Dashboard",
         "./platform/DataAsset",
         "./platform/DataLineage",
@@ -97,11 +97,11 @@
         "./platform/FederationJdbcUser",
         "./platform/FederationView",
         "./platform/HealthMonitor",
+        "./platform/JdbcDataSource",
         "./platform/JdbcDialect",
         "./platform/JdbcDriver",
         "./platform/JdbcMetadata",
         "./platform/QueryAudit",
-        "./platform/QueryPolicy",
         "./platform/QueryTemplate",
         "./platform/SqlConsole"
       ]
@@ -154,10 +154,10 @@
         }
       },
       "usedIn": [
-        "./platform/JdbcDialect",
         "./platform/DataLineage",
         "./platform/FederationJdbcUser/config/dataSource",
         "./platform/FederationJdbcUser",
+        "./platform/JdbcDialect",
         "./platform/JdbcDriver",
         "./platform/JdbcMetadata",
         "./platform/SqlConsole"

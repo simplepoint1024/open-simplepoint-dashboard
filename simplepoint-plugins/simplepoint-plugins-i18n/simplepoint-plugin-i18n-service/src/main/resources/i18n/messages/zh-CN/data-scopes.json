@@ -1,0 +1,20 @@
+{
+  "data-scopes.title.name": "名称",
+  "data-scopes.description.name": "该数据权限配置的展示名称",
+  "data-scopes.title.description": "描述",
+  "data-scopes.description.description": "简要说明该数据权限范围的用途",
+  "data-scopes.title.type": "范围类型",
+  "data-scopes.description.type": "控制被分配角色可以访问哪些行的数据",
+  "data-scopes.title.type.ALL": "全部数据",
+  "data-scopes.description.type.ALL": "可访问所有数据，不受归属或部门限制",
+  "data-scopes.title.type.DEPT_AND_BELOW": "本部门及下级",
+  "data-scopes.description.type.DEPT_AND_BELOW": "可访问用户所在部门及其所有下级部门的数据",
+  "data-scopes.title.type.DEPT": "本部门",
+  "data-scopes.description.type.DEPT": "只能访问用户所在部门的数据",
+  "data-scopes.title.type.CUSTOM": "自定义部门",
+  "data-scopes.description.type.CUSTOM": "只能访问手动指定的部门集合的数据",
+  "data-scopes.title.type.SELF": "仅本人",
+  "data-scopes.description.type.SELF": "只能访问当前用户本人创建或归属的数据",
+  "data-scopes.title.customDeptIds": "自定义部门",
+  "data-scopes.description.customDeptIds": "明确授权的部门 ID 集合；仅在范围类型为「自定义部门」时生效"
+}

@@ -23,8 +23,11 @@ import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcUserInfoAuthenticationExpansion;
 import org.simplepoint.cloud.oauth.server.oidc.DefaultOidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.oidc.OpenidOidcUserInfoAuthentication;
+import org.simplepoint.cache.CacheService;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.decorator.TokenDecorator;
+import org.simplepoint.security.token.TokenRevocationService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,9 +36,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.util.CollectionUtils;
@@ -48,6 +53,12 @@ import org.springframework.util.StringUtils;
 @Configuration
 public class OidcConfiguration {
 
+  @Bean
+  @ConditionalOnMissingBean
+  public TokenRevocationService tokenRevocationService(final CacheService cacheService) {
+    return new TokenRevocationService(cacheService);
+  }
+
   /**
    * Provides the OIDC configuration expansion bean.
    * 提供 OIDC 配置扩展的 Bean
@@ -59,9 +70,15 @@ public class OidcConfiguration {
   @Bean
   @ConditionalOnMissingBean(OidcConfigurerExpansion.class)
   public OidcConfigurerExpansion oidcConfigurer(
-      final OidcUserInfoAuthenticationExpansion oidcUserInfoAuthenticationExpansion
+      final OidcUserInfoAuthenticationExpansion oidcUserInfoAuthenticationExpansion,
+      final OAuth2AuthorizationService authorizationService,
+      final TokenRevocationService tokenRevocationService
   ) {
-    return new DefaultOidcConfigurerExpansion(oidcUserInfoAuthenticationExpansion);
+    return new DefaultOidcConfigurerExpansion(
+        oidcUserInfoAuthenticationExpansion,
+        authorizationService,
+        tokenRevocationService
+    );
   }
 
   /**
@@ -96,11 +113,17 @@ public class OidcConfiguration {
   @Bean
   public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer(
       final Set<TokenDecorator> tokenDecorator,
-      final SessionRegistry sessionRegistry
+      final SessionRegistry sessionRegistry,
+      @Value("${simplepoint.security.oauth2.token.audience:simplepoint-api}")
+      final String tokenAudience
   ) {
 
     return context -> {
       context.getJwsHeader().algorithm(SignatureAlgorithm.PS256);
+      if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())
+          && StringUtils.hasText(tokenAudience)) {
+        context.getClaims().audience(List.of(tokenAudience));
+      }
       addSessionIdClaimIfAvailable(context, sessionRegistry);
       for (TokenDecorator decorator : tokenDecorator) {
         // 获取认证主体

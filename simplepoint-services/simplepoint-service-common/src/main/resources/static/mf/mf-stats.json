@@ -48,7 +48,7 @@
         }
       },
       "usedIn": [
-        "./platform/Package",
+        "./i18n/Timezone",
         "./system/Role/config/permission",
         "./Dashboard",
         "./i18n/Countries",
@@ -56,7 +56,6 @@
         "./i18n/Message",
         "./i18n/Namespace",
         "./i18n/Region",
-        "./i18n/Timezone",
         "./ops/Microapp",
         "./platform/Application/config/feature",
         "./platform/Application",
@@ -67,6 +66,7 @@
         "./platform/ObjectStorage",
         "./platform/Organization",
         "./platform/Package/config/application",
+        "./platform/Package",
         "./platform/Tenant/config/package",
         "./platform/Tenant/config/user",
         "./platform/Tenant",
@@ -101,16 +101,16 @@
         }
       },
       "usedIn": [
-        "./system/User",
+        "./platform/Dictionary",
         "./Dashboard",
         "./platform/Application",
-        "./platform/Dictionary",
         "./platform/Feature",
         "./platform/ObjectStorage",
         "./platform/Package",
         "./platform/Tenant",
         "./system/Menu",
-        "./system/Role"
+        "./system/Role",
+        "./system/User"
       ]
     },
     {

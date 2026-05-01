@@ -18,6 +18,7 @@ import org.simplepoint.plugin.rbac.core.api.repository.FieldScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.repository.FeaturePermissionRelevanceRepository;
+import org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.security.context.AuthorizationContextService;
@@ -47,6 +48,7 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
   private final ObjectProvider<RolePermissionsRelevanceRepository> rolePermissionsRelevanceRepositoryProvider;
   private final ObjectProvider<DataScopeRepository> dataScopeRepositoryProvider;
   private final ObjectProvider<FieldScopeRepository> fieldScopeRepositoryProvider;
+  private final ObjectProvider<OrganizationRepository> organizationRepositoryProvider;
 
   /**
    * Constructs an AuthorizationContextServiceImpl with the specified UsersService.
@@ -60,7 +62,8 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
       ObjectProvider<TenantRepository> tenantRepositoryProvider,
       ObjectProvider<RolePermissionsRelevanceRepository> rolePermissionsRelevanceRepositoryProvider,
       ObjectProvider<DataScopeRepository> dataScopeRepositoryProvider,
-      ObjectProvider<FieldScopeRepository> fieldScopeRepositoryProvider
+      ObjectProvider<FieldScopeRepository> fieldScopeRepositoryProvider,
+      ObjectProvider<OrganizationRepository> organizationRepositoryProvider
   ) {
     this.usersService = usersService;
     this.featurePermissionRelevanceRepositoryProvider = featurePermissionRelevanceRepositoryProvider;
@@ -69,6 +72,7 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     this.rolePermissionsRelevanceRepositoryProvider = rolePermissionsRelevanceRepositoryProvider;
     this.dataScopeRepositoryProvider = dataScopeRepositoryProvider;
     this.fieldScopeRepositoryProvider = fieldScopeRepositoryProvider;
+    this.organizationRepositoryProvider = organizationRepositoryProvider;
   }
 
   @Override
@@ -134,7 +138,7 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
 
     // Resolve data scope and field permissions for the user's roles
     if (!roleIds.isEmpty()) {
-      resolveDataAndFieldScope(roleIds, userId, authorizationContext);
+      resolveDataAndFieldScope(roleIds, userId, tenantId, user, authorizationContext);
     }
 
     return authorizationContext;
@@ -146,8 +150,11 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
    * Most-permissive strategy is used: for multiple roles with different scopes,
    * the broadest DataScopeType wins; for field permissions, the most permissive
    * FieldAccessType per field wins.
+   * DEPT and DEPT_AND_BELOW types additionally populate deptIds by traversing
+   * the organization tree starting from the user's orgId.
    */
-  private void resolveDataAndFieldScope(List<String> roleIds, String userId, AuthorizationContext ctx) {
+  private void resolveDataAndFieldScope(
+      List<String> roleIds, String userId, String tenantId, User user, AuthorizationContext ctx) {
     var rolePermissionsRepo = rolePermissionsRelevanceRepositoryProvider.getIfAvailable();
     if (rolePermissionsRepo == null) {
       return;
@@ -177,6 +184,9 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
                 .filter(ds -> ds.getType() == DataScopeType.CUSTOM)
                 .forEach(ds -> allCustomDeptIds.addAll(ds.getCustomDeptIds()));
             ctx.setDeptIds(allCustomDeptIds);
+          } else if (mostPermissive.getType() == DataScopeType.DEPT
+              || mostPermissive.getType() == DataScopeType.DEPT_AND_BELOW) {
+            resolveDeptIds(mostPermissive.getType(), userId, tenantId, user, ctx);
           }
         }
       }
@@ -213,5 +223,42 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
         }
       }
     }
+  }
+
+  /**
+   * Resolves the set of department IDs for DEPT or DEPT_AND_BELOW scope types.
+   * For DEPT: just the user's own orgId.
+   * For DEPT_AND_BELOW: BFS from user's orgId through the organization tree.
+   */
+  private void resolveDeptIds(
+      DataScopeType type, String userId, String tenantId, User user, AuthorizationContext ctx) {
+    String orgId = user.getOrgId();
+    if (orgId == null || orgId.isBlank()) {
+      // No org assigned — fall back to SELF scope for this user
+      ctx.setDataScopeType(DataScopeType.SELF.name());
+      return;
+    }
+    if (type == DataScopeType.DEPT) {
+      ctx.setDeptIds(Set.of(orgId));
+      return;
+    }
+    // DEPT_AND_BELOW: BFS traversal
+    var orgRepo = organizationRepositoryProvider.getIfAvailable();
+    if (orgRepo == null) {
+      // No org repo available — fall back to DEPT (just own dept)
+      ctx.setDeptIds(Set.of(orgId));
+      return;
+    }
+    Set<String> allDeptIds = new HashSet<>();
+    allDeptIds.add(orgId);
+    Set<String> frontier = new HashSet<>(Set.of(orgId));
+    while (!frontier.isEmpty()) {
+      Collection<String> children = orgRepo.findIdsByParentIds(frontier, tenantId);
+      Set<String> newChildren = new HashSet<>(children);
+      newChildren.removeAll(allDeptIds); // prevent cycles
+      allDeptIds.addAll(newChildren);
+      frontier = newChildren;
+    }
+    ctx.setDeptIds(allDeptIds);
   }
 }

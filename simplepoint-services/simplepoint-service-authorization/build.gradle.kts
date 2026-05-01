@@ -18,6 +18,7 @@ dependencies {
     implementation(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))
     implementation(project(":simplepoint-data:simplepoint-data-cp"))
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
+    implementation(project(":simplepoint-cache:simplepoint-cache-redis"))
     implementation(project(":simplepoint-security:simplepoint-security-core"))
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
