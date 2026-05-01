@@ -7,6 +7,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
+import org.simplepoint.plugin.rbac.core.api.repository.DataScopeRepository;
+import org.simplepoint.plugin.rbac.core.api.repository.FieldScopeRepository;
+import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.repository.FeaturePermissionRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
@@ -39,6 +42,15 @@ class AuthorizationContextServiceImplTest {
     @Mock
     ObjectProvider<TenantRepository> tenantRepositoryProvider;
 
+    @Mock
+    ObjectProvider<RolePermissionsRelevanceRepository> rolePermissionsRelevanceRepositoryProvider;
+
+    @Mock
+    ObjectProvider<DataScopeRepository> dataScopeRepositoryProvider;
+
+    @Mock
+    ObjectProvider<FieldScopeRepository> fieldScopeRepositoryProvider;
+
     // Manual construction ensures the correct mock is passed to each constructor parameter
     // (Mockito @InjectMocks cannot distinguish multiple ObjectProvider<?> mocks without -parameters flag)
     AuthorizationContextServiceImpl service;
@@ -49,7 +61,10 @@ class AuthorizationContextServiceImplTest {
                 usersService,
                 featurePermissionRelevanceRepositoryProvider,
                 tenantPackageRelevanceRepositoryProvider,
-                tenantRepositoryProvider
+                tenantRepositoryProvider,
+                rolePermissionsRelevanceRepositoryProvider,
+                dataScopeRepositoryProvider,
+                fieldScopeRepositoryProvider
         );
     }
 

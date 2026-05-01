@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,6 +22,27 @@ public class AuthorizationContext implements Serializable {
   private Collection<String> permissions;
   private Long version;
   private Map<String, String> attributes;
+
+  /**
+   * The effective data scope type name for row-level access control.
+   * Null means no data scope restriction has been configured.
+   * This is the most permissive scope across all of the user's roles.
+   * Values correspond to {@code DataScopeType} enum names.
+   */
+  private String dataScopeType;
+
+  /**
+   * Effective department IDs for CUSTOM data scope.
+   * Only populated when dataScopeType is "CUSTOM".
+   */
+  private Set<String> deptIds;
+
+  /**
+   * Field-level access permissions keyed by "ClassName#fieldName".
+   * Values are the {@code FieldAccessType} name (VISIBLE, EDITABLE, MASKED, HIDDEN).
+   * The most permissive access type across all of the user's roles is stored.
+   */
+  private Map<String, String> fieldPermissions;
 
   /**
    * Sets the context ID if it has not been set before.
@@ -96,6 +118,39 @@ public class AuthorizationContext implements Serializable {
   public void setAttributes(Map<String, String> attributes) {
     if (this.attributes == null) {
       this.attributes = attributes == null ? Collections.emptyMap() : attributes;
+    }
+  }
+
+  /**
+   * Sets the data scope type if it has not been set before.
+   *
+   * @param dataScopeType the data scope type name to set
+   */
+  public void setDataScopeType(String dataScopeType) {
+    if (this.dataScopeType == null) {
+      this.dataScopeType = dataScopeType;
+    }
+  }
+
+  /**
+   * Sets the department IDs if they have not been set before.
+   *
+   * @param deptIds the set of department IDs to set
+   */
+  public void setDeptIds(Set<String> deptIds) {
+    if (this.deptIds == null) {
+      this.deptIds = deptIds == null ? Collections.emptySet() : deptIds;
+    }
+  }
+
+  /**
+   * Sets the field permissions map if it has not been set before.
+   *
+   * @param fieldPermissions the map of field permissions to set
+   */
+  public void setFieldPermissions(Map<String, String> fieldPermissions) {
+    if (this.fieldPermissions == null) {
+      this.fieldPermissions = fieldPermissions == null ? Collections.emptyMap() : fieldPermissions;
     }
   }
 

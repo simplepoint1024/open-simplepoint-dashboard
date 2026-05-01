@@ -1,5 +1,6 @@
 package org.simplepoint.plugin.rbac.core.api.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
@@ -32,4 +33,13 @@ public interface RolePermissionsRelevanceRepository {
    * @param authorities   a set of authorities to be removed from the role
    */
   void unauthorized(String roleId, Set<String> authorities);
+
+  /**
+   * Finds all role-permission relevance records for the given role IDs.
+   * Used to resolve the effective data scope and field scope across a user's roles.
+   *
+   * @param roleIds the collection of role IDs to query
+   * @return list of all matching RolePermissionsRelevance records
+   */
+  List<RolePermissionsRelevance> findByRoleIdIn(Collection<String> roleIds);
 }

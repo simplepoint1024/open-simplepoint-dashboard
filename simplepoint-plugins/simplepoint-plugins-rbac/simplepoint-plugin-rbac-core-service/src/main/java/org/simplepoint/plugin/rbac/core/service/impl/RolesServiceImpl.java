@@ -130,6 +130,8 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       RolePermissionsRelevance relevance = new RolePermissionsRelevance();
       relevance.setRoleId(roleId);
       relevance.setPermissionAuthority(pm);
+      relevance.setDataScopeId(dto.getDataScopeId());
+      relevance.setFieldScopeId(dto.getFieldScopeId());
       applyCurrentTenantIdIfNecessary(relevance);
       rels.add(relevance);
     }

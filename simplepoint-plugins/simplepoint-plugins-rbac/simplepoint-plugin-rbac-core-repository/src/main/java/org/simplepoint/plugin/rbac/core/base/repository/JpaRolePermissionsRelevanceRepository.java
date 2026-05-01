@@ -1,5 +1,7 @@
 package org.simplepoint.plugin.rbac.core.base.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
@@ -24,4 +26,7 @@ public interface JpaRolePermissionsRelevanceRepository extends JpaRepository<Rol
   @Modifying
   @Query("delete from RolePermissionsRelevance rpr where rpr.roleId = ?1 and rpr.permissionAuthority in ?2")
   void unauthorized(String roleId, Set<String> authorities);
+
+  @Override
+  List<RolePermissionsRelevance> findByRoleIdIn(Collection<String> roleIds);
 }
