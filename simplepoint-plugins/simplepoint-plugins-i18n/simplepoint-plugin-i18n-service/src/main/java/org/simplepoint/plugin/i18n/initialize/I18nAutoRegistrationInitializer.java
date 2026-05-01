@@ -41,9 +41,20 @@ public class I18nAutoRegistrationInitializer {
 
   private static final String I18N_INIT_DATA_PERMISSION_MODULE = "i18n-messages-data-permission";
 
+  private static final String I18N_INIT_SUPPLEMENT_MODULE = "i18n-messages-supplement-v1";
+
   private static final Set<String> DATA_PERMISSION_NAMESPACES = Set.of(
       "data-scopes",
       "field-scopes"
+  );
+
+  /**
+   * Namespaces that were missing en-US translations or had new fields added after the initial
+   * i18n-messages run. Loaded by the supplement init module.
+   */
+  private static final Set<String> SUPPLEMENT_NAMESPACES = Set.of(
+      "users", "roles", "permissions", "menus", "messages", "namespaces",
+      "clients", "countries", "languages", "profile", "regions", "settings", "timezones"
   );
 
   /**
@@ -163,6 +174,56 @@ public class I18nAutoRegistrationInitializer {
             message.setCode(messageKey);
             message.setMessage(messages.get(messageKey));
             message.setGlobal(false);
+            messageSet.add(message);
+          }
+        }
+      }
+      if (!namespaceSet.isEmpty()) {
+        namespaceService.create(namespaceSet);
+      }
+      if (!messageSet.isEmpty()) {
+        messageService.create(messageSet);
+      }
+    });
+  }
+
+  /**
+   * Register a DataInitRegister bean for supplementing missing or updated i18n messages.
+   *
+   * <p>Loads namespaces that were missing en-US translations or had new fields added after the
+   * initial i18n-messages run (e.g. users.orgId, roles en-US, permissions en-US, etc.).</p>
+   *
+   * @return a DataInitRegister instance that supplements i18n messages
+   */
+  @Bean
+  public DataInitRegister supplementMessagesRegister(
+      I18nNamespaceService namespaceService,
+      I18nMessageService messageService
+  ) {
+    return () -> new InitTask(I18N_INIT_SUPPLEMENT_MODULE, () -> {
+      Map<String, Map<String, Map<String, String>>> load = ClassPathResourceUtil
+          .readJsonPathMap("/i18n/messages/");
+      Set<String> regNsCodes = new HashSet<>();
+      Set<Namespace> namespaceSet = new HashSet<>();
+      Set<Message> messageSet = new HashSet<>();
+      for (String locale : load.keySet()) {
+        Map<String, Map<String, String>> namespaceMessages = load.get(locale);
+        for (String namespaceCode : namespaceMessages.keySet()) {
+          if (!SUPPLEMENT_NAMESPACES.contains(namespaceCode)) {
+            continue;
+          }
+          if (!regNsCodes.contains(namespaceCode)) {
+            namespaceSet.add(new Namespace(namespaceCode, namespaceCode));
+            regNsCodes.add(namespaceCode);
+          }
+          Map<String, String> messages = namespaceMessages.get(namespaceCode);
+          for (String messageKey : messages.keySet()) {
+            Message message = new Message();
+            message.setLocale(locale);
+            message.setNamespace(namespaceCode);
+            message.setCode(messageKey);
+            message.setMessage(messages.get(messageKey));
+            message.setGlobal(I18N_GLOBAL_NAMESPACES.contains(namespaceCode));
             messageSet.add(message);
           }
         }

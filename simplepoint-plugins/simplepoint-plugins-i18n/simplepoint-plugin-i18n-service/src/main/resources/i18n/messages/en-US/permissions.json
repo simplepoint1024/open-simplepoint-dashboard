@@ -1,0 +1,16 @@
+{
+  "permissions.title.name": "Permission Name",
+  "permissions.description.name": "Display name of the permission",
+  "permissions.title.description": "Description",
+  "permissions.description.description": "Brief description of this permission",
+  "permissions.title.authority": "Authority",
+  "permissions.description.authority": "Permission string, e.g. system:user:read",
+  "permissions.title.method": "HTTP Method",
+  "permissions.description.method": "HTTP method such as GET/POST",
+  "permissions.title.resource": "Resource Path",
+  "permissions.description.resource": "The protected resource path",
+  "permissions.title.type": "Permission Type",
+  "permissions.description.type": "Permission type: 0 = access permission, 1 = action permission",
+  "permissions.title.permissionName": "Permission Name",
+  "permissions.description.permissionName": "Display name of the permission"
+}

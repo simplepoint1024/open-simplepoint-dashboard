@@ -1,0 +1,16 @@
+{
+  "regions.title.code": "Region Code",
+  "regions.description.code": "Unique code for the region",
+  "regions.title.countryCode": "Country Code",
+  "regions.description.countryCode": "Country/region code this region belongs to",
+  "regions.title.level": "Level",
+  "regions.description.level": "Administrative level (province / city / district, etc.)",
+  "regions.title.nameEnglish": "English Name",
+  "regions.description.nameEnglish": "English name of the region",
+  "regions.title.nameNative": "Native Name",
+  "regions.description.nameNative": "Name in the local language",
+  "regions.title.parentCode": "Parent Code",
+  "regions.description.parentCode": "Code of the parent region",
+  "regions.title.postalCode": "Postal Code",
+  "regions.description.postalCode": "Postal code for the region"
+}

@@ -99,5 +99,15 @@ declare const _default: {
         i18nNamespaces: string[];
         name: string;
     };
+    'rbac-data-scopes': {
+        baseUrl: string;
+        i18nNamespaces: string[];
+        name: string;
+    };
+    'rbac-field-scopes': {
+        baseUrl: string;
+        i18nNamespaces: string[];
+        name: string;
+    };
 };
 export default _default;

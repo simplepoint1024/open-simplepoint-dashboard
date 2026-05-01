@@ -48,7 +48,8 @@
         }
       },
       "usedIn": [
-        "./i18n/Timezone",
+        "./platform/Package",
+        "./system/FieldScope/config/entries",
         "./system/Role/config/permission",
         "./Dashboard",
         "./i18n/Countries",
@@ -56,6 +57,7 @@
         "./i18n/Message",
         "./i18n/Namespace",
         "./i18n/Region",
+        "./i18n/Timezone",
         "./ops/Microapp",
         "./platform/Application/config/feature",
         "./platform/Application",
@@ -66,10 +68,11 @@
         "./platform/ObjectStorage",
         "./platform/Organization",
         "./platform/Package/config/application",
-        "./platform/Package",
         "./platform/Tenant/config/package",
         "./platform/Tenant/config/user",
         "./platform/Tenant",
+        "./system/DataScope",
+        "./system/FieldScope",
         "./system/Menu/config/permission",
         "./system/Menu",
         "./system/OAuthClient",
@@ -101,13 +104,15 @@
         }
       },
       "usedIn": [
-        "./platform/Dictionary",
         "./Dashboard",
+        "./system/FieldScope/config/entries",
         "./platform/Application",
+        "./platform/Dictionary",
         "./platform/Feature",
         "./platform/ObjectStorage",
         "./platform/Package",
         "./platform/Tenant",
+        "./system/FieldScope",
         "./system/Menu",
         "./system/Role",
         "./system/User"
@@ -136,6 +141,7 @@
         }
       },
       "usedIn": [
+        "./system/FieldScope/config/entries",
         "./Dashboard",
         "./platform/ObjectStorage"
       ]
@@ -913,6 +919,85 @@
           "sync": [
             "950.js",
             "__federation_expose_platform__Tenant__config__user.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./system/DataScope",
+      "id": "common:system/DataScope",
+      "name": "system/DataScope",
+      "requires": [
+        "react"
+      ],
+      "file": "src/views/system/DataScope/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "760.js",
+            "950.js",
+            "898.js",
+            "__federation_expose_system__DataScope.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__DataScope.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./system/FieldScope",
+      "id": "common:system/FieldScope",
+      "name": "system/FieldScope",
+      "requires": [
+        "react",
+        "antd"
+      ],
+      "file": "src/views/system/FieldScope/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "760.js",
+            "950.js",
+            "898.js",
+            "__federation_expose_system__FieldScope.js"
+          ],
+          "async": [
+            "96.js"
+          ]
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__FieldScope.css"
+          ],
+          "async": []
+        }
+      }
+    },
+    {
+      "path": "./system/FieldScope/config/entries",
+      "id": "common:system/FieldScope/config/entries",
+      "name": "system/FieldScope/config/entries",
+      "requires": [
+        "react",
+        "antd",
+        "@ant-design/icons"
+      ],
+      "file": "src/views/system/FieldScope/config/entries/index.tsx",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_system__FieldScope__config__entries.js"
           ],
           "async": []
         },

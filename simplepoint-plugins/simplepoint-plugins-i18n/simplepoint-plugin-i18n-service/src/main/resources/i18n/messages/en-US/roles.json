@@ -1,0 +1,14 @@
+{
+  "roles.title.authority": "Authority",
+  "roles.description.authority": "Unique identifier used for system authorization checks",
+  "roles.title.description": "Description",
+  "roles.description.description": "Brief description of this role",
+  "roles.title.priority": "Priority",
+  "roles.description.priority": "Higher values indicate higher priority",
+  "roles.title.roleName": "Role Name",
+  "roles.description.roleName": "e.g. Super Administrator",
+  "table.button.permissionConfig": "Permission Config",
+  "roles.permissionConfig.title": "System Permission Config",
+  "roles.permissionConfig.menu": "Menu Config",
+  "roles.config.permission": "Permission Config"
+}

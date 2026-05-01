@@ -739,6 +739,70 @@
       "path": "./platform/Tenant/config/user"
     },
     {
+      "id": "common:system/DataScope",
+      "name": "system/DataScope",
+      "assets": {
+        "js": {
+          "sync": [
+            "760.js",
+            "950.js",
+            "898.js",
+            "__federation_expose_system__DataScope.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__DataScope.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./system/DataScope"
+    },
+    {
+      "id": "common:system/FieldScope",
+      "name": "system/FieldScope",
+      "assets": {
+        "js": {
+          "sync": [
+            "760.js",
+            "950.js",
+            "898.js",
+            "__federation_expose_system__FieldScope.js"
+          ],
+          "async": [
+            "96.js"
+          ]
+        },
+        "css": {
+          "sync": [
+            "__federation_expose_system__FieldScope.css"
+          ],
+          "async": []
+        }
+      },
+      "path": "./system/FieldScope"
+    },
+    {
+      "id": "common:system/FieldScope/config/entries",
+      "name": "system/FieldScope/config/entries",
+      "assets": {
+        "js": {
+          "sync": [
+            "950.js",
+            "__federation_expose_system__FieldScope__config__entries.js"
+          ],
+          "async": []
+        },
+        "css": {
+          "sync": [],
+          "async": []
+        }
+      },
+      "path": "./system/FieldScope/config/entries"
+    },
+    {
       "id": "common:system/Menu",
       "name": "system/Menu",
       "assets": {

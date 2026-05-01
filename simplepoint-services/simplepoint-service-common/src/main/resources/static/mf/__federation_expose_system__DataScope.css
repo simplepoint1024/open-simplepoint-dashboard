@@ -1,0 +1,118 @@
+.react-resizable {
+  position: relative;
+}
+
+.react-resizable-handle {
+  box-sizing: border-box;
+  background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2IDYiIHN0eWxlPSJiYWNrZ3JvdW5kLWNvbG9yOiNmZmZmZmYwMCIgeD0iMHB4IiB5PSIwcHgiIHdpZHRoPSI2cHgiIGhlaWdodD0iNnB4Ij48ZyBvcGFjaXR5PSIwLjMwMiI+PHBhdGggZD0iTSA2IDYgTCAwIDYgTCAwIDQuMiBMIDQgNC4yIEwgNC4yIDQuMiBMIDQuMiAwIEwgNiAwIEwgNiA2IEwgNiA2IFoiIGZpbGw9IiMwMDAwMDAiLz48L2c+PC9zdmc+);
+  background-position: 100% 100%;
+  background-repeat: no-repeat;
+  background-origin: content-box;
+  width: 20px;
+  height: 20px;
+  padding: 0 3px 3px 0;
+  position: absolute;
+}
+
+.react-resizable-handle-sw {
+  cursor: sw-resize;
+  bottom: 0;
+  left: 0;
+  transform: rotate(90deg);
+}
+
+.react-resizable-handle-se {
+  cursor: se-resize;
+  bottom: 0;
+  right: 0;
+}
+
+.react-resizable-handle-nw {
+  cursor: nw-resize;
+  top: 0;
+  left: 0;
+  transform: rotate(180deg);
+}
+
+.react-resizable-handle-ne {
+  cursor: ne-resize;
+  top: 0;
+  right: 0;
+  transform: rotate(270deg);
+}
+
+.react-resizable-handle-w, .react-resizable-handle-e {
+  cursor: ew-resize;
+  margin-top: -10px;
+  top: 50%;
+}
+
+.react-resizable-handle-w {
+  left: 0;
+  transform: rotate(135deg);
+}
+
+.react-resizable-handle-e {
+  right: 0;
+  transform: rotate(315deg);
+}
+
+.react-resizable-handle-n, .react-resizable-handle-s {
+  cursor: ns-resize;
+  margin-left: -10px;
+  left: 50%;
+}
+
+.react-resizable-handle-n {
+  top: 0;
+  transform: rotate(225deg);
+}
+
+.react-resizable-handle-s {
+  bottom: 0;
+  transform: rotate(45deg);
+}
+
+.rjsf .form-group {
+  margin-bottom: 16px;
+}
+
+.rjsf .form-group > label, .rjsf .control-label {
+  color: #000000e0;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.rjsf .form-control, .rjsf input[type="text"], .rjsf input[type="number"], .rjsf input[type="email"], .rjsf input[type="password"], .rjsf textarea, .rjsf select {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.rjsf .field-description, .rjsf .help-block {
+  color: #00000073;
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+.rjsf .field-array .array-item {
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  display: flex;
+}
+
+.rjsf .field-array .array-item-toolbox {
+  flex-shrink: 0;
+}
+
+.rjsf .errors-block .text-danger, .rjsf .field-error {
+  color: #ff4d4f;
+  font-size: 12px;
+}
+
+.rjsf .fieldset > .form-group {
+  margin-bottom: 12px;
+}
+

@@ -1,0 +1,14 @@
+{
+  "messages.title.code": "Message Key",
+  "messages.description.code": "Key name for the i18n message",
+  "messages.title.description": "Description",
+  "messages.description.description": "Description of this message key",
+  "messages.title.global": "Global",
+  "messages.description.global": "Whether this is a globally visible message key",
+  "messages.title.locale": "Locale",
+  "messages.description.locale": "Language locale this message belongs to",
+  "messages.title.message": "Message",
+  "messages.description.message": "The translated message content",
+  "messages.title.namespace": "Namespace",
+  "messages.description.namespace": "Namespace this message key belongs to"
+}

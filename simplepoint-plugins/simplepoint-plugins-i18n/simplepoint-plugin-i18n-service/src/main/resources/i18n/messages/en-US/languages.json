@@ -1,0 +1,18 @@
+{
+  "languages.title.code": "Language Code",
+  "languages.description.code": "Unique language code, e.g. zh-CN",
+  "languages.title.dateFormat": "Date Format",
+  "languages.description.dateFormat": "Date format used by this language",
+  "languages.title.description": "Description",
+  "languages.description.description": "Description of this language entry",
+  "languages.title.enabled": "Enabled",
+  "languages.description.enabled": "Whether this language is enabled in the system",
+  "languages.title.locale": "Locale",
+  "languages.description.locale": "Locale identifier, e.g. en-US or ja-JP",
+  "languages.title.nameEnglish": "English Name",
+  "languages.description.nameEnglish": "English name of the language",
+  "languages.title.nameNative": "Native Name",
+  "languages.description.nameNative": "Name of the language in its own script",
+  "languages.title.textDirection": "Text Direction",
+  "languages.description.textDirection": "Reading direction of the script (LTR/RTL)"
+}

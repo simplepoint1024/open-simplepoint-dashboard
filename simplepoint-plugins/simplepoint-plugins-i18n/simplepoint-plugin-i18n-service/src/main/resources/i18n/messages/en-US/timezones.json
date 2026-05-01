@@ -1,0 +1,16 @@
+{
+  "timezones.title.countryCode": "Country Code",
+  "timezones.description.countryCode": "Country/region code this timezone belongs to",
+  "timezones.title.enabled": "Enabled",
+  "timezones.description.enabled": "Whether this timezone is enabled in the system",
+  "timezones.title.isDst": "Daylight Saving",
+  "timezones.description.isDst": "Whether this is a daylight saving time zone",
+  "timezones.title.nameEnglish": "English Name",
+  "timezones.description.nameEnglish": "English name of the timezone",
+  "timezones.title.nameNative": "Native Name",
+  "timezones.description.nameNative": "Name in the local language",
+  "timezones.title.timezoneCode": "Timezone Code",
+  "timezones.description.timezoneCode": "IANA timezone code, e.g. Asia/Shanghai",
+  "timezones.title.utcOffset": "UTC Offset",
+  "timezones.description.utcOffset": "Offset from UTC, e.g. +08:00"
+}

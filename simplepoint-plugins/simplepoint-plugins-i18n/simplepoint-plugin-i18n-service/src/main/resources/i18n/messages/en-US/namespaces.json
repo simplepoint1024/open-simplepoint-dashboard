@@ -1,0 +1,10 @@
+{
+  "namespaces.title.code": "Namespace Code",
+  "namespaces.description.code": "Unique identifier for the namespace",
+  "namespaces.title.description": "Description",
+  "namespaces.description.description": "Description of this namespace",
+  "namespaces.title.module": "Module",
+  "namespaces.description.module": "Feature module or application this namespace belongs to",
+  "namespaces.title.name": "Name",
+  "namespaces.description.name": "Namespace display name"
+}
