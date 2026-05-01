@@ -20,5 +20,6 @@
   "field-scopes.title.entry.access.MASKED": "Masked",
   "field-scopes.description.entry.access.MASKED": "Field value is partially obscured (e.g. phone or ID number masking)",
   "field-scopes.title.entry.access.HIDDEN": "Hidden",
-  "field-scopes.description.entry.access.HIDDEN": "Field is not visible or included in responses"
+  "field-scopes.description.entry.access.HIDDEN": "Field is not visible or included in responses",
+  "field-scopes.button.config.entries": "Configure Field Rules"
 }

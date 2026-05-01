@@ -293,6 +293,98 @@
             "type": 1
           }
         ]
+      },
+      {
+        "label": "数据权限策略",
+        "title": "menu.system.data-scope",
+        "icon": "FilterOutlined",
+        "path": "/system/data-scope",
+        "authority": "data-scope.view",
+        "sort": 5,
+        "type": "item",
+        "component": "common/system/DataScope",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Data Scope View",
+            "authority": "data-scope.view",
+            "resource": "/system/data-scope",
+            "description": "允许访问数据权限策略管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Data Scope Management",
+              "description": "Data Scope Management Feature",
+              "code": "data-scope-management"
+            }
+          },
+          {
+            "name": "Data Scope Create",
+            "authority": "data-scope.create",
+            "resource": "/system/data-scope",
+            "description": "允许创建数据权限策略",
+            "type": 1
+          },
+          {
+            "name": "Data Scope Edit",
+            "authority": "data-scope.edit",
+            "resource": "/system/data-scope",
+            "description": "允许编辑数据权限策略",
+            "type": 1
+          },
+          {
+            "name": "Data Scope Delete",
+            "authority": "data-scope.delete",
+            "resource": "/system/data-scope",
+            "description": "允许删除数据权限策略",
+            "type": 1
+          }
+        ]
+      },
+      {
+        "label": "字段权限策略",
+        "title": "menu.system.field-scope",
+        "icon": "TableOutlined",
+        "path": "/system/field-scope",
+        "authority": "field-scope.view",
+        "sort": 6,
+        "type": "item",
+        "component": "common/system/FieldScope",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Field Scope View",
+            "authority": "field-scope.view",
+            "resource": "/system/field-scope",
+            "description": "允许访问字段权限策略管理页面",
+            "type": 0,
+            "feature": {
+              "name": "Field Scope Management",
+              "description": "Field Scope Management Feature",
+              "code": "field-scope-management"
+            }
+          },
+          {
+            "name": "Field Scope Create",
+            "authority": "field-scope.create",
+            "resource": "/system/field-scope",
+            "description": "允许创建字段权限策略",
+            "type": 1
+          },
+          {
+            "name": "Field Scope Edit",
+            "authority": "field-scope.edit",
+            "resource": "/system/field-scope",
+            "description": "允许编辑字段权限策略",
+            "type": 1
+          },
+          {
+            "name": "Field Scope Delete",
+            "authority": "field-scope.delete",
+            "resource": "/system/field-scope",
+            "description": "允许删除字段权限策略",
+            "type": 1
+          }
+        ]
       }
     ]
   },

@@ -20,5 +20,6 @@
   "field-scopes.title.entry.access.MASKED": "脱敏",
   "field-scopes.description.entry.access.MASKED": "字段值部分遮蔽（如手机号或身份证号脱敏显示）",
   "field-scopes.title.entry.access.HIDDEN": "隐藏",
-  "field-scopes.description.entry.access.HIDDEN": "字段不可见，也不包含在响应数据中"
+  "field-scopes.description.entry.access.HIDDEN": "字段不可见，也不包含在响应数据中",
+  "field-scopes.button.config.entries": "配置字段规则"
 }

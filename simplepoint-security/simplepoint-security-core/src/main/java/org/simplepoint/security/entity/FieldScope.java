@@ -63,6 +63,16 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         argumentMaxSize = 10,
         danger = true,
         authority = "field-scope.delete"
+    ),
+    @ButtonDeclaration(
+        title = "i18n:field-scopes.button.config.entries",
+        key = "config.entries",
+        color = "blue",
+        icon = Icons.SAFETY_OUTLINED,
+        sort = 3,
+        argumentMinSize = 1,
+        argumentMaxSize = 1,
+        authority = "field-scope.edit"
     )
 })
 @Schema(title = "字段范围", description = "定义列级字段访问权限策略")
