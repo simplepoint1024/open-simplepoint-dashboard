@@ -16,7 +16,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -234,6 +236,7 @@ public class BaseServiceImpl
    */
   @Override
   public <S extends T> S create(S entity) {
+    clearNonEditableFieldsForCreate(entity);
     applyCurrentTenantIdIfNecessary(entity);
     S save = repository.save(entity);
     getModifyDataAuditingServices().forEach(service -> service.save(Set.of(save), repository.getDomainClass()));
@@ -249,7 +252,10 @@ public class BaseServiceImpl
   @Override
   public List<T> create(Collection<T> entities) {
     if (entities != null) {
-      entities.forEach(this::applyCurrentTenantIdIfNecessary);
+      entities.forEach(e -> {
+        clearNonEditableFieldsForCreate(e);
+        applyCurrentTenantIdIfNecessary(e);
+      });
     }
     List<T> save = repository.saveAll(entities);
     getModifyDataAuditingServices().forEach(service -> service.save(save, repository.getDomainClass()));
@@ -311,7 +317,9 @@ public class BaseServiceImpl
     }
     repository.findById(entity.getId()).ifPresent(db -> {
       // Only these fields are allowed to be modified by the client
-      Set<String> scopeFields = getAllFieldNames(getRepository().getDomainClass()); // e.g. load from permissions if needed
+      Set<String> scopeFields = getAllFieldNames(getRepository().getDomainClass());
+      // Remove fields that the current user cannot write (non-EDITABLE)
+      scopeFields.removeAll(getNonWritableFieldNames(entity.getClass()));
 
       // For fields NOT in scopeFields, copy from db -> entity (including nulls)
       CopyOptions options = CopyOptions.create()
@@ -430,8 +438,9 @@ public class BaseServiceImpl
    */
   @Override
   public <S extends T> void validate(Collection<S> data) {
-    JsonSchemaDetailsService dialect = detailsProviderService.getDialect(JsonSchemaDetailsService.class);
-    // 验证字段权限 ，如果没有改字段权限，则设置为 null
+    // Read-path field validation: handled at the serialization layer by FieldScopeJacksonModule.
+    // Non-EDITABLE fields are already stripped/masked in the JSON response; no in-memory mutation
+    // of JPA-managed entities is performed here to avoid unintended dirty-state flushes.
   }
 
   /**
@@ -477,5 +486,72 @@ public class BaseServiceImpl
    */
   public AuthorizationContext getAuthorizationContext() {
     return AuthorizationContextHolder.getContext();
+  }
+
+  /**
+   * Returns the set of field names that the current user cannot write based on their field permissions.
+   * Fields with access type other than {@code EDITABLE} (i.e. HIDDEN, MASKED, VISIBLE) are read-only.
+   * Used in {@link #modifyById} to preserve DB values for protected fields.
+   *
+   * @param entityClass the entity class; used to build the {@code "SimpleClassName#fieldName"} lookup key
+   * @return names of non-writable fields, or an empty set when no field permissions apply
+   */
+  private Set<String> getNonWritableFieldNames(Class<?> entityClass) {
+    AuthorizationContext ctx = getAuthorizationContext();
+    if (ctx == null) {
+      return Set.of();
+    }
+    Map<String, String> fieldPerms = ctx.getFieldPermissions();
+    if (fieldPerms == null || fieldPerms.isEmpty()) {
+      return Set.of();
+    }
+    String prefix = entityClass.getSimpleName() + "#";
+    Set<String> result = new HashSet<>();
+    fieldPerms.forEach((key, access) -> {
+      if (key.startsWith(prefix) && !"EDITABLE".equals(access)) {
+        result.add(key.substring(prefix.length()));
+      }
+    });
+    return result;
+  }
+
+  /**
+   * Clears fields that the current user cannot write (non-EDITABLE) from an entity before creation.
+   * Only non-primitive, non-static, non-final fields are affected.
+   * This prevents clients from supplying values for fields they have no write permission for.
+   *
+   * @param entity the entity being created
+   */
+  private void clearNonEditableFieldsForCreate(Object entity) {
+    if (entity == null) {
+      return;
+    }
+    AuthorizationContext ctx = getAuthorizationContext();
+    if (ctx == null) {
+      return;
+    }
+    Map<String, String> fieldPerms = ctx.getFieldPermissions();
+    if (fieldPerms == null || fieldPerms.isEmpty()) {
+      return;
+    }
+    String className = entity.getClass().getSimpleName();
+    Class<?> clazz = entity.getClass();
+    while (clazz != null && clazz != Object.class) {
+      for (Field field : clazz.getDeclaredFields()) {
+        if (Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers())) {
+          continue;
+        }
+        String access = fieldPerms.get(className + "#" + field.getName());
+        if (access != null && !"EDITABLE".equals(access) && !field.getType().isPrimitive()) {
+          try {
+            field.setAccessible(true);
+            field.set(entity, null);
+          } catch (Exception ignored) {
+            // skip inaccessible fields (e.g. security manager restrictions)
+          }
+        }
+      }
+      clazz = clazz.getSuperclass();
+    }
   }
 }

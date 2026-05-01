@@ -105,6 +105,8 @@ if (condition != null && !condition.isAllData()) {
 | `getDeptField()` | Value of `@DataScopeFilter#deptField` |
 | `getOwnerField()` | Value of `@DataScopeFilter#ownerField` |
 
+> **Spring proxy boundary warning:** `@DataScopeFilter` is intercepted by Spring AOP, which only fires when a method is called through the Spring proxy — i.e., from outside the bean, via an injected reference. Internal calls such as `this.limit(...)`, constructor calls, or calls from private/final methods bypass the proxy and will **not** trigger data scope filtering. If you need filtering in such cases, extract the call to a separate Spring bean or invoke the method through the self-injected proxy.
+
 ---
 
 ## Field-Level Filtering
@@ -117,6 +119,14 @@ When an object is serialized to JSON:
 - Fields with `VISIBLE` or `EDITABLE` permission are returned as-is.
 
 The lookup key used is `"SimpleClassName#fieldName"` — e.g., `"User#phoneNumber"`. This must match the value of `FieldScopeEntry#field` and `FieldScopeEntry#resource` stored in the database.
+
+### Write-side enforcement
+
+`BaseServiceImpl` also enforces field permissions on writes:
+- **`create()`**: Non-EDITABLE fields (HIDDEN/MASKED/VISIBLE) supplied by the client are cleared to `null` before the entity is persisted. Primitive fields are not affected.
+- **`modifyById()`**: Non-EDITABLE fields are excluded from the set of modifiable fields, so the DB-persisted value is automatically preserved regardless of what the client sent.
+
+> **Note:** If a non-EDITABLE field has a `NOT NULL` DB constraint, marking it as HIDDEN/MASKED in a FieldScope is a configuration error — creation of new records would fail at the DB level. Only mark fields HIDDEN/MASKED that are either auto-populated by auditing or have a DB default.
 
 ### Registering a field for masking
 
