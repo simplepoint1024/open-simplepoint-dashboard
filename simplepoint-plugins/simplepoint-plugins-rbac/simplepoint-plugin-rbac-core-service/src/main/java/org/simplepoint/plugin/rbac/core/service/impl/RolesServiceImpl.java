@@ -22,6 +22,7 @@ import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChange
 import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleScopeAssignmentVo;
 import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
@@ -229,5 +230,29 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       }
     }
     return null;
+  }
+
+  @Override
+  public RoleScopeAssignmentVo getScopeAssignment(String roleId) {
+    String tenantId = resolveCurrentTenantScope();
+    RoleScopeAssignmentVo vo = new RoleScopeAssignmentVo();
+    vo.setRoleId(roleId);
+    rolePermissionsRelevanceRepository.findFirstByTenantIdAndRoleId(tenantId, roleId)
+        .ifPresent(record -> {
+          vo.setDataScopeId(record.getDataScopeId());
+          vo.setFieldScopeId(record.getFieldScopeId());
+        });
+    return vo;
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void updateScopeAssignment(RoleScopeAssignmentVo vo) {
+    requireTenantOwnerOrAdministratorIfTenantScoped();
+    validateRoleBelongsToCurrentTenant(vo.getRoleId());
+    String tenantId = resolveCurrentTenantScope();
+    rolePermissionsRelevanceRepository.updateScopeForRole(
+        tenantId, vo.getRoleId(), vo.getDataScopeId(), vo.getFieldScopeId());
+    refreshCurrentTenantPermissionVersion();
   }
 }

@@ -13,6 +13,7 @@ import java.util.Set;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleScopeAssignmentVo;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.springframework.data.domain.Page;
@@ -57,5 +58,20 @@ public interface RoleService extends BaseService<Role, String> {
    * @return a collection of RolePermissionsRelevance entities representing the authorized permissions
    */
   Collection<RolePermissionsRelevance> authorize(RolePermissionsRelevanceDto dto);
+
+  /**
+   * Returns the current data scope and field scope assignment for a role.
+   *
+   * @param roleId the role ID
+   * @return a VO with the role's current dataScopeId and fieldScopeId
+   */
+  RoleScopeAssignmentVo getScopeAssignment(String roleId);
+
+  /**
+   * Updates the data scope and field scope for all permission records belonging to a role.
+   *
+   * @param vo VO containing roleId, dataScopeId, and fieldScopeId
+   */
+  void updateScopeAssignment(RoleScopeAssignmentVo vo);
 
 }

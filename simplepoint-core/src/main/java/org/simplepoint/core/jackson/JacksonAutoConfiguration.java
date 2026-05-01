@@ -27,6 +27,7 @@ public class JacksonAutoConfiguration {
   public ObjectMapper objectMapper() {
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.registerModule(new JavaTimeModule());
+    objectMapper.registerModule(new FieldScopeJacksonModule());
     //objectMapper.disable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS);
     //log.info("ObjectMapper modules: {}", objectMapper.getRegisteredModuleIds());
     objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

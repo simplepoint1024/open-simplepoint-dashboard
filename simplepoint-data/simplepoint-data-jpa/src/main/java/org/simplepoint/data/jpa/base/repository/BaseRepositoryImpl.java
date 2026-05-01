@@ -10,6 +10,7 @@ import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.Metamodel;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,8 @@ import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.datascopeannotation.DataScopeCondition;
+import org.simplepoint.core.datascopeannotation.DataScopeContext;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.data.jpa.AttributeMatcher;
 import org.simplepoint.data.jpa.AttributeMatchers;
@@ -153,8 +156,52 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
    */
   protected <S extends T> Specification<S> readSpecification(Map<String, String> attributes) {
     enableTenantFilter();
-    return (root, query, criteriaBuilder) -> criteriaBuilder.and(
-        getPredicates(attributes, root, query, criteriaBuilder, EscapeCharacter.DEFAULT));
+    DataScopeCondition scope = DataScopeContext.get();
+    return (root, query, criteriaBuilder) -> {
+      List<Predicate> predicates = new ArrayList<>(Arrays.asList(
+          getPredicates(attributes, root, query, criteriaBuilder, EscapeCharacter.DEFAULT)));
+      if (scope != null) {
+        Predicate dataScopePredicate = buildDataScopePredicate(scope, root, criteriaBuilder);
+        if (dataScopePredicate != null) {
+          predicates.add(dataScopePredicate);
+        }
+      }
+      return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+    };
+  }
+
+  private <S extends T> Predicate buildDataScopePredicate(DataScopeCondition scope, Root<S> root,
+                                                           CriteriaBuilder cb) {
+    String scopeType = scope.getScopeType();
+    if (scopeType == null || "ALL".equals(scopeType)) {
+      return null;
+    }
+    Metamodel metamodel = this.entityManager.getMetamodel();
+    EntityType<T> entityType = metamodel.entity(getDomainClass());
+    Set<String> attrs = entityType.getAttributes().stream()
+        .map(Attribute::getName).collect(Collectors.toSet());
+    switch (scopeType) {
+      case "SELF": {
+        String ownerField = scope.getOwnerField();
+        String userId = scope.getUserId();
+        if (ownerField != null && userId != null && attrs.contains(ownerField)) {
+          return cb.equal(root.get(ownerField), userId);
+        }
+        return null;
+      }
+      case "DEPT":
+      case "DEPT_AND_BELOW":
+      case "CUSTOM": {
+        String deptField = scope.getDeptField();
+        Set<String> deptIds = scope.getDeptIds();
+        if (deptField != null && deptIds != null && !deptIds.isEmpty() && attrs.contains(deptField)) {
+          return root.get(deptField).in(deptIds);
+        }
+        return null;
+      }
+      default:
+        return null;
+    }
   }
 
   @Override

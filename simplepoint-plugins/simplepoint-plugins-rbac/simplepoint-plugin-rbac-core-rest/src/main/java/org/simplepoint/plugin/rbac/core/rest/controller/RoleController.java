@@ -18,6 +18,7 @@ import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleScopeAssignmentVo;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
@@ -160,6 +161,33 @@ public class RoleController extends BaseController<RoleService, Role, String> {
   @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.permission')")
   public Response<Void> unauthorized(@RequestBody RolePermissionsRelevanceDto dto) {
     service.unauthorized(dto.getRoleId(), dto.getPermissionAuthority());
+    return Response.okay();
+  }
+
+  /**
+   * 查询角色的数据权限和字段权限分配
+   *
+   * @param roleId 角色ID
+   * @return 包含 dataScopeId 和 fieldScopeId 的 VO
+   */
+  @GetMapping("/scope-assignment")
+  @Operation(summary = "查询角色数据/字段权限分配", description = "获取指定角色当前配置的数据权限和字段权限")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.permission')")
+  public Response<RoleScopeAssignmentVo> getScopeAssignment(@RequestParam("roleId") String roleId) {
+    return ok(service.getScopeAssignment(roleId));
+  }
+
+  /**
+   * 更新角色的数据权限和字段权限分配
+   *
+   * @param vo 包含 roleId、dataScopeId 和 fieldScopeId 的 VO
+   * @return 操作响应
+   */
+  @PutMapping("/scope-assignment")
+  @Operation(summary = "更新角色数据/字段权限分配", description = "将角色下所有权限记录的数据权限和字段权限更新为指定值")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.permission')")
+  public Response<Void> updateScopeAssignment(@RequestBody RoleScopeAssignmentVo vo) {
+    service.updateScopeAssignment(vo);
     return Response.okay();
   }
 }
