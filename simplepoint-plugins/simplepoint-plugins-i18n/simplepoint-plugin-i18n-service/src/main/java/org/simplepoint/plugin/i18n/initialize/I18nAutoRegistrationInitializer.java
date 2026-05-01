@@ -39,6 +39,13 @@ public class I18nAutoRegistrationInitializer {
 
   private static final String I18N_INIT_MSG_MODULE = "i18n-messages";
 
+  private static final String I18N_INIT_DATA_PERMISSION_MODULE = "i18n-messages-data-permission";
+
+  private static final Set<String> DATA_PERMISSION_NAMESPACES = Set.of(
+      "data-scopes",
+      "field-scopes"
+  );
+
   /**
    * Register a DataInitRegister bean for initializing i18n data.
    *
@@ -107,6 +114,55 @@ public class I18nAutoRegistrationInitializer {
             message.setCode(messageKey);
             message.setMessage(messages.get(messageKey));
             message.setGlobal(I18N_GLOBAL_NAMESPACES.contains(namespaceCode));
+            messageSet.add(message);
+          }
+        }
+      }
+      if (!namespaceSet.isEmpty()) {
+        namespaceService.create(namespaceSet);
+      }
+      if (!messageSet.isEmpty()) {
+        messageService.create(messageSet);
+      }
+    });
+  }
+
+  /**
+   * Register a DataInitRegister bean for initializing data-permission-related i18n messages.
+   *
+   * <p>This runs after the base i18n-messages module and loads the data-scopes and field-scopes namespaces that were added for the data permission feature.</p>
+   *
+   * @return a DataInitRegister instance that initializes data-permission i18n messages
+   */
+  @Bean
+  public DataInitRegister dataPermissionMessagesRegister(
+      I18nNamespaceService namespaceService,
+      I18nMessageService messageService
+  ) {
+    return () -> new InitTask(I18N_INIT_DATA_PERMISSION_MODULE, () -> {
+      Map<String, Map<String, Map<String, String>>> load = ClassPathResourceUtil
+          .readJsonPathMap("/i18n/messages/");
+      Set<String> regNsCodes = new HashSet<>();
+      Set<Namespace> namespaceSet = new HashSet<>();
+      Set<Message> messageSet = new HashSet<>();
+      for (String locale : load.keySet()) {
+        Map<String, Map<String, String>> namespaceMessages = load.get(locale);
+        for (String namespaceCode : namespaceMessages.keySet()) {
+          if (!DATA_PERMISSION_NAMESPACES.contains(namespaceCode)) {
+            continue;
+          }
+          if (!regNsCodes.contains(namespaceCode)) {
+            namespaceSet.add(new Namespace(namespaceCode, namespaceCode));
+            regNsCodes.add(namespaceCode);
+          }
+          Map<String, String> messages = namespaceMessages.get(namespaceCode);
+          for (String messageKey : messages.keySet()) {
+            Message message = new Message();
+            message.setLocale(locale);
+            message.setNamespace(namespaceCode);
+            message.setCode(messageKey);
+            message.setMessage(messages.get(messageKey));
+            message.setGlobal(false);
             messageSet.add(message);
           }
         }
