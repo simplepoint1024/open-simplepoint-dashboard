@@ -36,19 +36,19 @@ import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 @Schema(title = "字段范围条目", description = "字段范围中的单条字段访问规则")
 public class FieldScopeEntry extends TenantBaseEntityImpl<String> {
 
-  @Schema(title = "i18n:field-scope-entry.title.fieldScopeId", description = "i18n:field-scope-entry.description.fieldScopeId")
+  @Schema(title = "i18n:field-scopes.title.entry.fieldScopeId", description = "i18n:field-scopes.description.entry.fieldScopeId")
   @Column(name = "field_scope_id", nullable = false)
   private String fieldScopeId;
 
-  @Schema(title = "i18n:field-scope-entry.title.resource", description = "i18n:field-scope-entry.description.resource", example = "Order")
+  @Schema(title = "i18n:field-scopes.title.entry.resource", description = "i18n:field-scopes.description.entry.resource", example = "Order")
   @Column(nullable = false, length = 200)
   private String resource;
 
-  @Schema(title = "i18n:field-scope-entry.title.field", description = "i18n:field-scope-entry.description.field", example = "amount")
+  @Schema(title = "i18n:field-scopes.title.entry.field", description = "i18n:field-scopes.description.entry.field", example = "amount")
   @Column(nullable = false, length = 100)
   private String field;
 
-  @Schema(title = "i18n:field-scope-entry.title.access", description = "i18n:field-scope-entry.description.access")
+  @Schema(title = "i18n:field-scopes.title.entry.access", description = "i18n:field-scopes.description.entry.access")
   @Column(nullable = false, length = 20)
   @Enumerated(EnumType.STRING)
   private FieldAccessType access;

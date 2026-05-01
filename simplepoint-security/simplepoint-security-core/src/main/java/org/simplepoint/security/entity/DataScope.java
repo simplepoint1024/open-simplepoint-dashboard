@@ -71,22 +71,22 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 @Schema(title = "数据范围", description = "定义行级数据访问范围策略")
 public class DataScope extends TenantBaseEntityImpl<String> {
 
-  @Schema(title = "i18n:data-scope.title.name", description = "i18n:data-scope.description.name")
+  @Schema(title = "i18n:data-scopes.title.name", description = "i18n:data-scopes.description.name")
   @Column(nullable = false, length = 100)
   private String name;
 
-  @Schema(title = "i18n:data-scope.title.type", description = "i18n:data-scope.description.type")
+  @Schema(title = "i18n:data-scopes.title.type", description = "i18n:data-scopes.description.type")
   @Column(nullable = false, length = 30)
   @Enumerated(EnumType.STRING)
   private DataScopeType type;
 
-  @Schema(title = "i18n:data-scope.title.customDeptIds", description = "i18n:data-scope.description.customDeptIds")
+  @Schema(title = "i18n:data-scopes.title.customDeptIds", description = "i18n:data-scopes.description.customDeptIds")
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "simpoint_ac_data_scope_dept", joinColumns = @JoinColumn(name = "data_scope_id"))
   @Column(name = "dept_id", nullable = false)
   private Set<String> customDeptIds = new HashSet<>();
 
-  @Schema(title = "i18n:data-scope.title.description", description = "i18n:data-scope.description.description")
+  @Schema(title = "i18n:data-scopes.title.description", description = "i18n:data-scopes.description.description")
   @Column(length = 200)
   private String description;
 }

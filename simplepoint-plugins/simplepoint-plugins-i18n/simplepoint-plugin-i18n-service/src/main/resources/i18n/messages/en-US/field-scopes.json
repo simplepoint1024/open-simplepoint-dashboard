@@ -7,6 +7,8 @@
   "field-scopes.description.resource": "The resource identifier this scope applies to (e.g. entity class name or API path prefix)",
   "field-scopes.title.entries": "Field Rules",
   "field-scopes.description.entries": "Per-field access level rules contained in this scope",
+  "field-scopes.title.entry.fieldScopeId": "Field Scope",
+  "field-scopes.description.entry.fieldScopeId": "The ID of the field scope this rule entry belongs to",
   "field-scopes.title.entry.resource": "Resource",
   "field-scopes.description.entry.resource": "Resource identifier for this rule entry",
   "field-scopes.title.entry.field": "Field",

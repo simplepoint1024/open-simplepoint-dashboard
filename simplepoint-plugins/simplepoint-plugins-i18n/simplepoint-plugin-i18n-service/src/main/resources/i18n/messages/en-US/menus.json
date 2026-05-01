@@ -24,5 +24,7 @@
   "menus.config.permission": "Feature Config",
   "menus.config.feature": "Feature Config",
   "menus.title.authority": "Authority",
-  "menus.description.authority": "Menu authority identifier"
+  "menus.description.authority": "Menu authority identifier",
+  "menus.title.parent": "Parent Menu",
+  "menus.description.parent": "The parent menu this menu item belongs to"
 }

@@ -78,15 +78,15 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 @Schema(title = "字段范围", description = "定义列级字段访问权限策略")
 public class FieldScope extends TenantBaseEntityImpl<String> {
 
-  @Schema(title = "i18n:field-scope.title.name", description = "i18n:field-scope.description.name")
+  @Schema(title = "i18n:field-scopes.title.name", description = "i18n:field-scopes.description.name")
   @Column(nullable = false, length = 100)
   private String name;
 
-  @Schema(title = "i18n:field-scope.title.description", description = "i18n:field-scope.description.description")
+  @Schema(title = "i18n:field-scopes.title.description", description = "i18n:field-scopes.description.description")
   @Column(length = 200)
   private String description;
 
-  @Schema(title = "i18n:field-scope.title.entries", description = "i18n:field-scope.description.entries")
+  @Schema(title = "i18n:field-scopes.title.entries", description = "i18n:field-scopes.description.entries")
   @OneToMany(mappedBy = "fieldScopeId", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
   private List<FieldScopeEntry> entries = new ArrayList<>();
 }

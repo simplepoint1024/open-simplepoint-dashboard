@@ -47,5 +47,11 @@
   "users.description.credentialsNonExpired": "登录凭证是否仍在有效期内",
   "users.title.orgId": "所属部门",
   "users.description.orgId": "用户所在的组织部门，用于数据权限范围计算",
+  "users.title.preferredUsername": "首选用户名",
+  "users.description.preferredUsername": "用户偏好的显示用户名",
+  "users.title.website": "个人网站",
+  "users.description.website": "用户的个人网站地址",
+  "users.title.zoneinfo": "时区",
+  "users.description.zoneinfo": "用户偏好的时区，例如 Asia/Shanghai",
   "users.button.config.role": "配置角色"
 }

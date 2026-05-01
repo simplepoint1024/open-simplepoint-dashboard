@@ -7,6 +7,8 @@
   "field-scopes.description.resource": "该范围适用的资源标识符（如实体类名或 API 路径前缀）",
   "field-scopes.title.entries": "字段规则",
   "field-scopes.description.entries": "该范围包含的逐字段访问级别规则",
+  "field-scopes.title.entry.fieldScopeId": "字段权限组",
+  "field-scopes.description.entry.fieldScopeId": "该规则条目所属的字段权限组 ID",
   "field-scopes.title.entry.resource": "资源",
   "field-scopes.description.entry.resource": "该规则条目对应的资源标识符",
   "field-scopes.title.entry.field": "字段",

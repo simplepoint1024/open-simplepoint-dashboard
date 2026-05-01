@@ -24,5 +24,7 @@
   "menus.config.permission": "功能配置",
   "menus.config.feature": "功能配置",
   "menus.title.authority": "权限标识",
-  "menus.description.authority": "菜单权限标识"
+  "menus.description.authority": "菜单权限标识",
+  "menus.title.parent": "上级菜单",
+  "menus.description.parent": "当前菜单所属的父级菜单"
 }

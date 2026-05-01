@@ -13,5 +13,7 @@
   "features.description.type": "Feature type, such as catalog, menu, button, or API",
   "features.title.ancestor": "Ancestor Path",
   "features.description.ancestor": "Full ancestor path of the feature",
+  "features.title.publicAccess": "Public Access",
+  "features.description.publicAccess": "When enabled, all authenticated users can access this feature without explicit permission assignment",
   "features.button.config.permission": "Configure Permissions"
 }

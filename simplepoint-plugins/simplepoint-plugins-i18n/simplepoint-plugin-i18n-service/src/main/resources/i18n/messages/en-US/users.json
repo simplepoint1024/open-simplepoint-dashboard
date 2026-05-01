@@ -47,5 +47,11 @@
   "users.description.credentialsNonExpired": "Whether login credentials are still valid",
   "users.title.orgId": "Department",
   "users.description.orgId": "The organization unit the user belongs to, used for data permission scope",
+  "users.title.preferredUsername": "Preferred Username",
+  "users.description.preferredUsername": "The user's preferred display username",
+  "users.title.website": "Website",
+  "users.description.website": "The user's personal website URL",
+  "users.title.zoneinfo": "Time Zone",
+  "users.description.zoneinfo": "The user's preferred time zone, e.g. Asia/Shanghai",
   "users.button.config.role": "Configure Roles"
 }
