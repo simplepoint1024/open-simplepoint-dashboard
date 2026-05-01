@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.i18n.api.repository;
 
 import java.util.Collection;
+import java.util.Set;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.core.entity.Message;
 
@@ -36,4 +37,13 @@ public interface I18nMessageRepository extends BaseRepository<Message, String> {
    * @return a collection of global Message entities
    */
   Collection<Message> global(String locale);
+
+  /**
+   * Returns a set of composite keys ({@code locale:namespace:code}) for all messages
+   * belonging to the given namespaces. Used for idempotent batch import.
+   *
+   * @param namespaces the namespaces to query
+   * @return set of composite keys for existing messages
+   */
+  Set<String> findExistingKeys(Collection<String> namespaces);
 }

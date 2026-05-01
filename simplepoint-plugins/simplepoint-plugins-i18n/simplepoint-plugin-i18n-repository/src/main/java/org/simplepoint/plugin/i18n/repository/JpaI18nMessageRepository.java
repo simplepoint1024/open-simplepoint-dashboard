@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.i18n.repository;
 
 import java.util.Collection;
+import java.util.Set;
 import org.simplepoint.core.entity.Message;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.i18n.api.repository.I18nMessageRepository;
@@ -41,4 +42,8 @@ public interface JpaI18nMessageRepository extends BaseRepository<Message, String
   @Override
   @Query("SELECT m FROM Message m where m.global = true and m.locale = :locale")
   Collection<Message> global(@Param("locale") String locale);
+
+  @Override
+  @Query("SELECT CONCAT(m.locale, ':', m.namespace, ':', m.code) FROM Message m WHERE m.namespace IN :namespaces")
+  Set<String> findExistingKeys(@Param("namespaces") Collection<String> namespaces);
 }

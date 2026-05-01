@@ -13,6 +13,7 @@ import org.simplepoint.plugin.i18n.api.entity.Language;
 import org.simplepoint.plugin.i18n.api.entity.Namespace;
 import org.simplepoint.plugin.i18n.api.entity.Region;
 import org.simplepoint.plugin.i18n.api.entity.TimeZone;
+import org.simplepoint.plugin.i18n.api.repository.I18nMessageRepository;
 import org.simplepoint.plugin.i18n.api.service.I18nCountriesService;
 import org.simplepoint.plugin.i18n.api.service.I18nLanguageService;
 import org.simplepoint.plugin.i18n.api.service.I18nNamespaceService;
@@ -51,10 +52,13 @@ public class I18nAutoRegistrationInitializer {
   /**
    * Namespaces that were missing en-US translations or had new fields added after the initial
    * i18n-messages run. Loaded by the supplement init module.
+   * Includes data-scopes and field-scopes so this module covers them idempotently even if
+   * the data-permission module already ran (existing keys are skipped via pre-filter).
    */
   private static final Set<String> SUPPLEMENT_NAMESPACES = Set.of(
       "users", "roles", "permissions", "menus", "messages", "namespaces",
-      "clients", "countries", "languages", "profile", "regions", "settings", "timezones"
+      "clients", "countries", "languages", "profile", "regions", "settings", "timezones",
+      "data-scopes", "field-scopes"
   );
 
   /**
@@ -191,18 +195,22 @@ public class I18nAutoRegistrationInitializer {
    * Register a DataInitRegister bean for supplementing missing or updated i18n messages.
    *
    * <p>Loads namespaces that were missing en-US translations or had new fields added after the
-   * initial i18n-messages run (e.g. users.orgId, roles en-US, permissions en-US, etc.).</p>
+   * initial i18n-messages run (e.g. users.orgId, roles en-US, permissions en-US, etc.).
+   * Also covers data-scopes and field-scopes idempotently — if the data-permission module already
+   * inserted some entries, this module skips them to avoid unique-constraint violations.</p>
    *
    * @return a DataInitRegister instance that supplements i18n messages
    */
   @Bean
   public DataInitRegister supplementMessagesRegister(
       I18nNamespaceService namespaceService,
-      I18nMessageService messageService
+      I18nMessageService messageService,
+      I18nMessageRepository messageRepository
   ) {
     return () -> new InitTask(I18N_INIT_SUPPLEMENT_MODULE, () -> {
       Map<String, Map<String, Map<String, String>>> load = ClassPathResourceUtil
           .readJsonPathMap("/i18n/messages/");
+      Set<String> existingKeys = messageRepository.findExistingKeys(SUPPLEMENT_NAMESPACES);
       Set<String> regNsCodes = new HashSet<>();
       Set<Namespace> namespaceSet = new HashSet<>();
       Set<Message> messageSet = new HashSet<>();
@@ -218,6 +226,10 @@ public class I18nAutoRegistrationInitializer {
           }
           Map<String, String> messages = namespaceMessages.get(namespaceCode);
           for (String messageKey : messages.keySet()) {
+            String compositeKey = locale + ":" + namespaceCode + ":" + messageKey;
+            if (existingKeys.contains(compositeKey)) {
+              continue;
+            }
             Message message = new Message();
             message.setLocale(locale);
             message.setNamespace(namespaceCode);
