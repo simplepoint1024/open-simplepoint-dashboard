@@ -58,4 +58,14 @@ public final class DataScopeCondition {
   public Set<String> getDeptIds() {
     return deptIds;
   }
+
+  /** Returns {@code true} when the scope type is {@code ALL}, meaning no row-level restriction applies. */
+  public boolean isAllData() {
+    return "ALL".equals(scopeType);
+  }
+
+  /** Returns {@code true} when the scope type is {@code SELF}, meaning only records owned by the current user. */
+  public boolean isSelf() {
+    return "SELF".equals(scopeType);
+  }
 }

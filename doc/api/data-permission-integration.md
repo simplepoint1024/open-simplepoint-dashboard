@@ -42,42 +42,56 @@ Both dimensions are resolved at login time and stored inside the user's `Authori
 
 ## Row-Level Filtering
 
-### 1. Annotate the query/service method
+### Automatic filtering (recommended)
+
+`BaseServiceImpl.limit()` is already annotated with `@DataScopeFilter(ownerField = "createdBy", deptField = "orgId")`. All services that extend `BaseServiceImpl` automatically get row-level filtering applied whenever the calling user has a `DataScope` configured on their role.
+
+The `BaseRepositoryImpl` reads `DataScopeContext` inside `readSpecification()` and appends the appropriate JPA predicate automatically. No repository changes are needed.
+
+If your entity uses standard field names (`createdBy` / `orgId`), you get filtering for free. If any field is missing on the entity, the predicate for that field is silently skipped — there is no error.
+
+### Custom field names
+
+If your service overrides `limit()` with different field names, annotate the override:
 
 ```java
 import org.simplepoint.core.datascopeannotation.DataScopeFilter;
 
-@DataScopeFilter(ownerField = "createdBy", deptField = "orgId")
-public Page<MyEntity> list(Pageable pageable) { ... }
+@Override
+@DataScopeFilter(ownerField = "authorId", deptField = "departmentId")
+public <S extends Article> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
+    return super.limit(attributes, pageable);
+}
 ```
 
-- `ownerField` — the JPA entity field name that stores the record owner's user ID
-- `deptField` — the JPA entity field name that stores the record's department ID (optional)
+### Opting out
 
-### 2. Read the resolved condition and apply it
+To disable row-level filtering for a specific service's list endpoint, override `limit()` without the annotation:
 
-The AOP aspect (`DataScopeAspect`) intercepts the annotated method and populates `DataScopeContext` on the current thread. Retrieve it and build a JPA `Specification`:
+```java
+@Override
+public <S extends AuditLog> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
+    // audit logs are intentionally exempt from data scope filtering
+    return super.limit(attributes, pageable);
+}
+```
+
+### Reading the condition manually (advanced)
+
+If you need to build a custom query outside of `BaseServiceImpl.limit()`, you can read the condition directly. Annotate your method with `@DataScopeFilter` first, then:
 
 ```java
 import org.simplepoint.core.datascopeannotation.DataScopeCondition;
 import org.simplepoint.core.datascopeannotation.DataScopeContext;
 
 DataScopeCondition condition = DataScopeContext.get();
-
-Specification<MyEntity> spec = (root, query, cb) -> {
-    if (condition == null || condition.isAllData()) {
-        return cb.conjunction(); // no filter
-    }
+if (condition != null && !condition.isAllData()) {
     if (condition.isSelf()) {
-        return cb.equal(root.get("createdBy"), condition.getCurrentUserId());
+        // filter by condition.getUserId() on ownerField
+    } else if (condition.getDeptIds() != null) {
+        // filter by condition.getDeptIds() on deptField
     }
-    if (condition.getDeptIds() != null && !condition.getDeptIds().isEmpty()) {
-        return root.get(condition.getDeptField()).in(condition.getDeptIds());
-    }
-    return cb.conjunction();
-};
-
-return repository.findAll(spec, pageable);
+}
 ```
 
 `DataScopeCondition` provides:
@@ -87,7 +101,7 @@ return repository.findAll(spec, pageable);
 | `isAllData()` | `true` when scope type is `ALL` |
 | `isSelf()` | `true` when scope type is `SELF` |
 | `getDeptIds()` | Non-null set for DEPT / DEPT_AND_BELOW / CUSTOM; `null` otherwise |
-| `getCurrentUserId()` | Current user's ID |
+| `getUserId()` | Current user's ID |
 | `getDeptField()` | Value of `@DataScopeFilter#deptField` |
 | `getOwnerField()` | Value of `@DataScopeFilter#ownerField` |
 
@@ -95,26 +109,31 @@ return repository.findAll(spec, pageable);
 
 ## Field-Level Filtering
 
-Field permissions are read directly from `AuthorizationContext` at the controller or service layer. No AOP is involved.
+Field permissions are enforced **automatically** via a Jackson `BeanSerializerModifier` registered in `FieldScopeJacksonModule`. No controller or service code is needed.
 
-```java
-import org.simplepoint.core.AuthorizationContext;
+When an object is serialized to JSON:
+- Fields with `HIDDEN` permission are omitted entirely from the response.
+- Fields with `MASKED` permission are replaced with a partially obscured string (first 3 chars + `****` + last char).
+- Fields with `VISIBLE` or `EDITABLE` permission are returned as-is.
 
-// Inject via SecurityContextHolder or pass through from the controller
-AuthorizationContext ctx = ...; // e.g. from SecurityContextHolder or parameter
+The lookup key used is `"SimpleClassName#fieldName"` — e.g., `"User#phoneNumber"`. This must match the value of `FieldScopeEntry#field` and `FieldScopeEntry#resource` stored in the database.
 
-Map<String, String> fieldPerms = ctx.getFieldPermissions(); // may be null
-String key = "MyEntity#salary"; // "resource#field"
+### Registering a field for masking
 
-String accessType = fieldPerms != null ? fieldPerms.get(key) : null;
-if ("HIDDEN".equals(accessType)) {
-    entity.setSalary(null);
-} else if ("MASKED".equals(accessType)) {
-    entity.setSalary(mask(entity.getSalary()));
-}
+Create a `FieldScope` with one or more `FieldScopeEntry` records:
+
+```
+POST /field-scopes
+{ "name": "Sensitive User Fields" }
+
+PUT /field-scopes/{id}/entries
+[
+  { "resource": "User", "field": "phoneNumber", "access": "MASKED" },
+  { "resource": "User", "field": "idCard",      "access": "HIDDEN" }
+]
 ```
 
-> **Tip:** Define constants for your resource identifier (e.g. `"MyEntity"`) to avoid magic strings.
+Then assign the `FieldScope` to a role (see [Configuration Management](#configuration-management)).
 
 ---
 
@@ -122,28 +141,29 @@ if ("HIDDEN".equals(accessType)) {
 
 ### DataScope (row-level)
 
-REST endpoint: `POST /data-scopes`, `PUT /data-scopes/{id}`, `DELETE /data-scopes`, `GET /data-scopes`
-
-Assign a `DataScope` to a role:
-
-```json
-PUT /roles/{roleId}/permissions
-{
-  "permissionIds": ["..."],
-  "dataScopeId": "<data-scope-id>",
-  "fieldScopeId": "<field-scope-id>"
-}
-```
+REST endpoints: `GET /data-scopes`, `POST /data-scopes`, `PUT /data-scopes/{id}`, `DELETE /data-scopes`
 
 ### FieldScope (field-level)
 
-REST endpoint: `POST /field-scopes`, `PUT /field-scopes/{id}`, `DELETE /field-scopes`, `GET /field-scopes`
+REST endpoints: `GET /field-scopes`, `POST /field-scopes`, `PUT /field-scopes/{id}`, `DELETE /field-scopes`
 
-Replace entries for a scope:
+Replace entries for a scope: `PUT /field-scopes/{id}/entries`
+
+### Assign scopes to a role
+
+Scopes are assigned per role via the role permissions UI, or directly through the API:
 
 ```
-PUT /field-scopes/{id}/entries
-Body: List<FieldScopeEntryDto>
+GET  /roles/scope-assignment?roleId={roleId}
+PUT  /roles/scope-assignment
+Body: { "roleId": "...", "dataScopeId": "...", "fieldScopeId": "..." }
+```
+
+The scope assignment is also included when authorizing role permissions:
+
+```
+PUT /roles/{roleId}/permissions
+Body: { "permissionIds": [...], "dataScopeId": "...", "fieldScopeId": "..." }
 ```
 
 ---
@@ -186,3 +206,4 @@ If your entity uses different field names, pass them explicitly:
 ```java
 @DataScopeFilter(ownerField = "authorId", deptField = "departmentId")
 ```
+

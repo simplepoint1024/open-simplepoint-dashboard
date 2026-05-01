@@ -39,6 +39,7 @@ import org.simplepoint.api.security.service.JsonSchemaDetailsService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.annotation.ButtonDeclaration;
+import org.simplepoint.core.datascopeannotation.DataScopeFilter;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -413,6 +414,7 @@ public class BaseServiceImpl
    * @return the paginated list of entities
    */
   @Override
+  @DataScopeFilter(ownerField = "createdBy", deptField = "orgId")
   public <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
     Page<S> limit = repository.limit(attributes, pageable);
     this.validate(limit.getContent());
