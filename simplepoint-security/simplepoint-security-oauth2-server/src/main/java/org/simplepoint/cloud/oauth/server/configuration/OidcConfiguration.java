@@ -14,16 +14,18 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.simplepoint.cache.CacheService;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcUserInfoAuthenticationExpansion;
 import org.simplepoint.cloud.oauth.server.oidc.DefaultOidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.oidc.OpenidOidcUserInfoAuthentication;
-import org.simplepoint.cache.CacheService;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.decorator.TokenDecorator;
 import org.simplepoint.security.token.TokenRevocationService;
@@ -41,6 +43,7 @@ import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.util.CollectionUtils;
@@ -53,6 +56,9 @@ import org.springframework.util.StringUtils;
 @Configuration
 public class OidcConfiguration {
 
+  /**
+   * @ Bean.
+   */
   @Bean
   @ConditionalOnMissingBean
   public TokenRevocationService tokenRevocationService(final CacheService cacheService) {
@@ -122,7 +128,9 @@ public class OidcConfiguration {
       context.getJwsHeader().algorithm(SignatureAlgorithm.PS256);
       if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())
           && StringUtils.hasText(tokenAudience)) {
-        context.getClaims().audience(List.of(tokenAudience));
+        List<String> audiences = resolveAccessTokenAudiences(context, tokenAudience);
+        context.getClaims().audience(audiences);
+        context.getClaims().claims(claims -> claims.put("aud", audiences));
       }
       addSessionIdClaimIfAvailable(context, sessionRegistry);
       for (TokenDecorator decorator : tokenDecorator) {
@@ -136,6 +144,19 @@ public class OidcConfiguration {
         }
       }
     };
+  }
+
+  private static List<String> resolveAccessTokenAudiences(
+      final JwtEncodingContext context,
+      final String tokenAudience
+  ) {
+    LinkedHashSet<String> audiences = new LinkedHashSet<>();
+    audiences.add(tokenAudience);
+    RegisteredClient registeredClient = context.getRegisteredClient();
+    if (registeredClient != null && StringUtils.hasText(registeredClient.getClientId())) {
+      audiences.add(registeredClient.getClientId());
+    }
+    return new ArrayList<>(audiences);
   }
 
   private static void addSessionIdClaimIfAvailable(

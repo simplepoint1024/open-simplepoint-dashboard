@@ -101,6 +101,7 @@ import org.springframework.security.core.GrantedAuthority;
 public class User extends BaseEntityImpl<String> implements BaseUser {
 
   @Transient
+  @Schema(hidden = true)
   private String username = getId();
 
   /**

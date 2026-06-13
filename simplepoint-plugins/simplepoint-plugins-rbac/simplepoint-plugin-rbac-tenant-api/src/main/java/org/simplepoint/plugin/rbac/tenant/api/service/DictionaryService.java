@@ -10,5 +10,8 @@ import org.simplepoint.plugin.rbac.tenant.api.vo.DictionaryOptionVo;
  */
 public interface DictionaryService extends BaseService<Dictionary, String> {
 
+  /**
+   * Options.
+   */
   Collection<DictionaryOptionVo> options(String dictionaryCode);
 }

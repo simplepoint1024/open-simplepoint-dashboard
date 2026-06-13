@@ -21,8 +21,9 @@ dependencies {
     implementation(project(":simplepoint-security:simplepoint-security-oauth2-resource"))
     implementation(project(":simplepoint-cache:simplepoint-cache-redis"))
 
-    // 引入AMQP RPC支持
-    implementation(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))
+    // 引入服务路由远程调用支持
+    implementation(project(":simplepoint-service-router:simplepoint-service-router-core"))
+    implementation(project(":simplepoint-service-router:simplepoint-service-router-consul"))
     implementation(project(":simplepoint-data:simplepoint-data-json:simplepoint-data-json-schema"))
 
     // 引入RBAC权限体系核心插件

@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.rbac.tenant.repository;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
@@ -23,7 +24,7 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
   @Override
   @Query("""
       select
-          new org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo(t.id, t.name)
+          new org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo(t.id, t.name, t.tenantType)
       from Tenant t
       where t.ownerId = :userId
          or exists (
@@ -31,8 +32,19 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
              from TenantUserRelevance utr
              where utr.tenantId = t.id and utr.userId = :userId
          )
+      order by
+          case when t.tenantType = org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL then 1 else 0 end,
+          t.name
       """)
   Set<NamedTenantVo> getTenantsByUserId(@Param("userId") String userId);
+
+  @Override
+  @Query("""
+      select t from Tenant t
+      where t.ownerId = :ownerId
+        and t.tenantType = org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL
+      """)
+  Optional<Tenant> findPersonalTenantByOwnerId(@Param("ownerId") String ownerId);
 
   @Override
   @Query("select coalesce(t.permissionVersion, 0) from Tenant t where t.id = :tenantId")
@@ -46,6 +58,10 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
       where t.id in :tenantIds
       """)
   void increasePermissionVersion(@Param("tenantIds") Collection<String> tenantIds);
+
+  @Override
+  @Query("select t.id from Tenant t")
+  Collection<String> findAllIds();
 
   @Override
   @Query("""

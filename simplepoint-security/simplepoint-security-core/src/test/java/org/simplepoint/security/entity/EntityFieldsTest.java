@@ -3,8 +3,8 @@ package org.simplepoint.security.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.simplepoint.security.cache.AuthorityRecord;
 import org.simplepoint.security.MenuFeatureDefinition;
+import org.simplepoint.security.cache.AuthorityRecord;
 
 class EntityFieldsTest {
 

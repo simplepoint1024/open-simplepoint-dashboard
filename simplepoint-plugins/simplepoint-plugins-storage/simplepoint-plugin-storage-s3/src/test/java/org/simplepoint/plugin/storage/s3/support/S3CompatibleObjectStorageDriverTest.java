@@ -1,5 +1,18 @@
 package org.simplepoint.plugin.storage.s3.support;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.io.ByteArrayInputStream;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.simplepoint.plugin.storage.api.model.ObjectStoragePlatformType;
@@ -22,15 +35,6 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Exception;
-
-import java.io.ByteArrayInputStream;
-import java.util.Map;
-import java.util.NoSuchElementException;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 class S3CompatibleObjectStorageDriverTest {
 
@@ -239,7 +243,7 @@ class S3CompatibleObjectStorageDriverTest {
   }
 
   @Test
-  void delete_404Exception_silentlyIgnored() {
+  void delete_notFoundException_silentlyIgnored() {
     ObjectStorageProperties.ProviderProperties props = minioProps();
 
     try (MockedStatic<S3Client> s3Static = mockStatic(S3Client.class);

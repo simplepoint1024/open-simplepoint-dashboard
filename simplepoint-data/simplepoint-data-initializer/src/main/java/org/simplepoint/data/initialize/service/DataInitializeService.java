@@ -1,11 +1,11 @@
 package org.simplepoint.data.initialize.service;
 
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
+import org.simplepoint.remoting.RemoteContract;
 
 /**
  * Service interface for data initialization operations.
  */
-@AmqpRemoteClient(to = "data.initialize")
+@RemoteContract(name = "data.initialize")
 public interface DataInitializeService {
 
   /**

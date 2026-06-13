@@ -3,7 +3,6 @@ set -euo pipefail
 
 SHELL_DIR="scripts/shell"
 
-VAULT_SCRIPT="${SHELL_DIR}/start_dev_vault.sh"
 CONSUL_SCRIPT="${SHELL_DIR}/start_dev_consul.sh"
 PROFILE_SCRIPT="${SHELL_DIR}/init_profile.sh"
 
@@ -29,7 +28,6 @@ run_script() {
 
 echo "🚀 Starting development environment..."
 
-run_script "$VAULT_SCRIPT"
 run_script "$CONSUL_SCRIPT"
 run_script "$PROFILE_SCRIPT"
 

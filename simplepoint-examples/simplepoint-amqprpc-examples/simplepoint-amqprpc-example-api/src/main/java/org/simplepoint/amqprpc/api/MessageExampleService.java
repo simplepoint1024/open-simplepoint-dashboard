@@ -1,11 +1,11 @@
 package org.simplepoint.amqprpc.api;
 
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
+import org.simplepoint.remoting.RemoteContract;
 
 /**
  * Message example service interface.
  */
-@AmqpRemoteClient(to = "messages")
+@RemoteContract(name = "messages")
 public interface MessageExampleService {
   /**
    * Echo the input message.

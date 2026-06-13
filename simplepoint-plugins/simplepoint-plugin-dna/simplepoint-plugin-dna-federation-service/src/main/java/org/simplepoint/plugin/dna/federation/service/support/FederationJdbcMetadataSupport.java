@@ -19,13 +19,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import org.simplepoint.data.datasource.jdbc.SimpleDataSource;
-import org.simplepoint.plugin.dna.core.api.spi.JdbcTypeMapping;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDriverDefinition;
 import org.simplepoint.plugin.dna.core.api.repository.JdbcDriverDefinitionRepository;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDialectManagementService;
 import org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect;
+import org.simplepoint.plugin.dna.core.api.spi.JdbcTypeMapping;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcDriverModels;
 import org.springframework.stereotype.Component;
 
@@ -348,7 +348,7 @@ public class FederationJdbcMetadataSupport {
       final String schema,
       final MetadataQuery query
   ) {
-    TabularResultAccumulator accumulator = new TabularResultAccumulator();
+    final TabularResultAccumulator accumulator = new TabularResultAccumulator();
     List<SchemaTarget> targets;
     if (trimToNull(catalog) != null && !matchesCatalogPattern(dataSource, catalog)) {
       return new FederationJdbcDriverModels.TabularResult(List.of(), List.of());

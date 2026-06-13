@@ -7,8 +7,9 @@ import lombok.Data;
  */
 @Data
 public class MenuFeatureDefinition {
-    private String name;
-    private String description;
-    private String code;
-    private Boolean publicAccess;
+  private String name;
+  private String description;
+  private String code;
+  private Boolean publicAccess;
+  private Boolean requireOrgTenant;
 }

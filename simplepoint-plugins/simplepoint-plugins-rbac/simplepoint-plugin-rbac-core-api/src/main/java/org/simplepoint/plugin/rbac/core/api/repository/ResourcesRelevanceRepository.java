@@ -34,6 +34,13 @@ public interface ResourcesRelevanceRepository {
   void unauthorize(String authority, Collection<String> resourceAuthorities);
 
   /**
+   * Deletes all resource-permission relations for the specified permission authorities.
+   *
+   * @param permissionAuthorities permission authorities to remove
+   */
+  void deleteAllByPermissionAuthorities(Collection<String> permissionAuthorities);
+
+  /**
    * Authorizes and retrieves resource authorities of a specific type associated with a given authority.
    *
    * @param resourceAuthority the authority to be checked
@@ -55,4 +62,12 @@ public interface ResourcesRelevanceRepository {
    * @param collection the collection of ResourcesPermissionsRelevance entities to be authorized
    */
   void authorize(Collection<ResourcesPermissionsRelevance> collection);
+
+  /**
+   * Rewrites a permission authority across all resource relations.
+   *
+   * @param oldAuthority old permission authority
+   * @param newAuthority new permission authority
+   */
+  void updatePermissionAuthority(String oldAuthority, String newAuthority);
 }

@@ -83,6 +83,7 @@ public class FederationSchema extends BaseEntityImpl<String> {
   private String catalogName;
 
   @Transient
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.federation.schemas.title.catalogCode", description = "i18n:dna.federation.schemas.description.catalogCode", accessMode = Schema.AccessMode.READ_ONLY)
   private String catalogCode;
 
@@ -129,6 +130,7 @@ public class FederationSchema extends BaseEntityImpl<String> {
   private Boolean enabled;
 
   @Order(4)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.federation.schemas.title.description", description = "i18n:dna.federation.schemas.description.description", maxLength = 512)
   @Column(length = 512)
   private String description;

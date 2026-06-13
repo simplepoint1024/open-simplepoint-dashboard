@@ -16,8 +16,8 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.simplepoint.core.ApplicationContextHolder;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
-import org.simplepoint.data.amqp.rpc.annotation.EnableAmqpRemoteClients;
+import org.simplepoint.data.amqp.rpc.annotation.EnableRemoteClients;
+import org.simplepoint.remoting.RemoteContract;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -38,7 +38,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * A registrar for dynamically registering AMQP (Advanced Message Queuing Protocol) remote client beans.
- * This class scans specified packages for interfaces annotated with {@link AmqpRemoteClient}
+ * This class scans specified packages for interfaces annotated with {@link RemoteContract}
  * and registers proxy implementations for them in the Spring context.
  */
 @Slf4j
@@ -91,7 +91,7 @@ public class RemoteClientsRegistrar
 
     scanner.setResourceLoader(this.resourceLoader);
     scanner.setEnvironment(this.environment);
-    scanner.addIncludeFilter(new AnnotationTypeFilter(AmqpRemoteClient.class));
+    scanner.addIncludeFilter(new AnnotationTypeFilter(RemoteContract.class));
 
     // Scan the base packages for candidates
     getBasePackages(metadata).forEach(basePackage ->
@@ -105,7 +105,7 @@ public class RemoteClientsRegistrar
             "@RemoteClient can only be specified on an interface");
 
         Map<String, Object> attributes =
-            annotationMetadata.getAnnotationAttributes(AmqpRemoteClient.class.getCanonicalName());
+            annotationMetadata.getAnnotationAttributes(RemoteContract.class.getCanonicalName());
         String className = annotationMetadata.getClassName();
         try {
           this.registerBeanDefinition(registry, className, attributes);
@@ -123,7 +123,7 @@ public class RemoteClientsRegistrar
    *
    * @param registry   the {@link BeanDefinitionRegistry} where the bean is registered
    * @param className  the fully qualified name of the client interface
-   * @param attributes the attributes from the {@link AmqpRemoteClient} annotation
+   * @param attributes the attributes from the {@link RemoteContract} annotation
    * @throws ClassNotFoundException if the client interface class cannot be found
    */
   protected void registerBeanDefinition(BeanDefinitionRegistry registry, String className,
@@ -157,7 +157,7 @@ public class RemoteClientsRegistrar
    */
   protected Set<String> getBasePackages(AnnotationMetadata importingClassMetadata) {
     Map<String, Object> attributes = importingClassMetadata.getAnnotationAttributes(
-        EnableAmqpRemoteClients.class.getCanonicalName());
+        EnableRemoteClients.class.getCanonicalName());
     Set<String> basePackages = new HashSet<>();
     if (attributes == null) {
       return basePackages;

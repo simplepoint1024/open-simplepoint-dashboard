@@ -47,6 +47,21 @@ public interface JpaTenantUserRelevanceRepository
   Page<UserRelevanceVo> items(Pageable pageable);
 
   @Override
+  @Query("""
+      select new org.simplepoint.plugin.rbac.tenant.api.vo.UserRelevanceVo(
+          u.id,
+          coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id),
+          u.email,
+          u.phoneNumber
+      )
+      from User u
+      join TenantUserRelevance tur on tur.userId = u.id
+      where tur.tenantId = ?1
+      order by coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id), u.id
+      """)
+  Page<UserRelevanceVo> items(String tenantId, Pageable pageable);
+
+  @Override
   @Query("select u.id from User u where u.id in ?1")
   Set<String> existingUserIds(Collection<String> userIds);
 }

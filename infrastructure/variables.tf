@@ -14,14 +14,3 @@ variable "consul_master_token" {
   description = "Consul 管理员 Token（有写 KV 和管理 ACL 的权限）"
   sensitive   = true
 }
-
-variable "vault_address" {
-  type        = string
-  description = "Vault 地址，例如 http://localhost:8200"
-}
-
-variable "vault_root_token" {
-  type        = string
-  description = "Vault 地址，例如 http://localhost:8200"
-  sensitive   = true
-}

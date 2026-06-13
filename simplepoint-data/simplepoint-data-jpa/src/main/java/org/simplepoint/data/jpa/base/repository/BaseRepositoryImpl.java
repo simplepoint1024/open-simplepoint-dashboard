@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
+import org.simplepoint.core.AuthorizationScopeGuards;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.simplepoint.core.datascopeannotation.DataScopeCondition;
@@ -33,6 +34,7 @@ import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.convert.QueryByExamplePredicateBuilder;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.query.EscapeCharacter;
@@ -51,6 +53,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializable>
     extends SimpleJpaRepository<T, I> implements BaseRepository<T, I> {
+
+  private static final String TENANT_ID_ATTRIBUTE = "X-Tenant-Id";
+  private static final String TENANT_CONTEXT_REQUIRED_MESSAGE =
+      "Tenant-aware repository operation requires an active tenant context";
 
   private final EntityManager entityManager;
 
@@ -181,33 +187,65 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
     Set<String> attrs = entityType.getAttributes().stream()
         .map(Attribute::getName).collect(Collectors.toSet());
     switch (scopeType) {
-      case "SELF": {
-        String ownerField = scope.getOwnerField();
-        String userId = scope.getUserId();
-        if (ownerField != null && userId != null && attrs.contains(ownerField)) {
-          return cb.equal(root.get(ownerField), userId);
+      case "SELF":
+        {
+        Predicate selfPredicate = buildSelfPredicate(scope, root, cb, attrs);
+        return selfPredicate == null ? cb.disjunction() : selfPredicate;
         }
-        return null;
-      }
       case "DEPT":
       case "DEPT_AND_BELOW":
-      case "CUSTOM": {
+      case "CUSTOM":
+        {
         String deptField = scope.getDeptField();
         Set<String> deptIds = scope.getDeptIds();
+        List<Predicate> scopePredicates = new ArrayList<>();
         if (deptField != null && deptIds != null && !deptIds.isEmpty() && attrs.contains(deptField)) {
-          return root.get(deptField).in(deptIds);
+          scopePredicates.add(root.get(deptField).in(deptIds));
         }
-        return null;
-      }
+        if (scope.isIncludeSelf()) {
+          Predicate selfPredicate = buildSelfPredicate(scope, root, cb, attrs);
+          if (selfPredicate != null) {
+            scopePredicates.add(selfPredicate);
+          }
+        }
+        return scopePredicates.isEmpty() ? cb.disjunction()
+            : cb.or(scopePredicates.toArray(new Predicate[0]));
+        }
       default:
-        return null;
+        return cb.disjunction();
     }
+  }
+
+  private <S extends T> Predicate buildSelfPredicate(DataScopeCondition scope, Root<S> root, CriteriaBuilder cb,
+                                                     Set<String> attrs) {
+    String ownerField = scope.getOwnerField();
+    String userId = scope.getUserId();
+    if (ownerField != null && userId != null && attrs.contains(ownerField)) {
+      return cb.equal(root.get(ownerField), userId);
+    }
+    return null;
   }
 
   @Override
   public <S extends T> long count(S example) {
     enableTenantFilter();
-    return super.count(Example.of(example));
+    DataScopeCondition scope = DataScopeContext.get();
+    if (scope == null || scope.isAllData()) {
+      return super.count(Example.of(example));
+    }
+    Example<T> typedExample = Example.of((T) example);
+    Specification<T> specification = (root, query, cb) -> {
+      Predicate examplePredicate = QueryByExamplePredicateBuilder.getPredicate(root, cb, typedExample);
+      Predicate dataScopePredicate = buildDataScopePredicate(scope, root, cb);
+      if (examplePredicate == null) {
+        return dataScopePredicate;
+      }
+      if (dataScopePredicate == null) {
+        return examplePredicate;
+      }
+      return cb.and(examplePredicate, dataScopePredicate);
+    };
+    return super.count(specification);
   }
 
   @SneakyThrows
@@ -251,14 +289,17 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
     if (TenantBaseEntityImpl.class.isAssignableFrom(getDomainClass())) {
       AuthorizationContext context = AuthorizationContextHolder.getContext();
       if (context == null) {
-        return;
+        throw new IllegalStateException(TENANT_CONTEXT_REQUIRED_MESSAGE);
       }
-      String tenantId = context.getAttribute("X-Tenant-Id");
+      String tenantId = context.getAttribute(TENANT_ID_ATTRIBUTE);
       if (tenantId == null || tenantId.isBlank()) {
-        return;
+        if (AuthorizationScopeGuards.isPlatformAdministrator(context)) {
+          return;
+        }
+        throw new IllegalStateException(TENANT_CONTEXT_REQUIRED_MESSAGE);
       }
       Session session = entityManager.unwrap(Session.class);
-      session.enableFilter("tenantFilter").setParameter("tenantId", tenantId);
+      session.enableFilter("tenantFilter").setParameter("tenantId", tenantId.trim());
     }
   }
 }

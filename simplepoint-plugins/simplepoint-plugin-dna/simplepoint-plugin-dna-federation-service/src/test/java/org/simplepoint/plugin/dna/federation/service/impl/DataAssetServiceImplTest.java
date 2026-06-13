@@ -216,7 +216,7 @@ class DataAssetServiceImplTest {
 
   @Test
   void createRejectsDisabledDataSource() {
-    DataAsset asset = validAsset();
+    final DataAsset asset = validAsset();
     JdbcDataSourceDefinition ds = enabledDs("catalog-1", "MySQL", "mysql");
     ds.setEnabled(false);
     when(repository.findActiveByCode("ASSET_001")).thenReturn(Optional.empty());

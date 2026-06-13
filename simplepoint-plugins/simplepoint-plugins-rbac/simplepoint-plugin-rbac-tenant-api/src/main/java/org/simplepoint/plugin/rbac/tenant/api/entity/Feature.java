@@ -161,8 +161,27 @@ public class Feature extends BaseEntityImpl<String> {
           })
       }
   )
-  @Column(nullable = false)
+  @Column(nullable = false, columnDefinition = "boolean default false")
   private Boolean publicAccess;
+
+  /**
+   * Whether this feature requires an organisation tenant to access.
+   *
+   * <p>When {@code true}, users operating under a personal tenant will see an error page
+   * instead of the feature. Defaults to {@code false}.</p>
+   */
+  @Order(6)
+  @Schema(
+      title = "i18n:features.title.requireOrgTenant",
+      description = "i18n:features.description.requireOrgTenant",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  @Column(nullable = false, columnDefinition = "boolean default false")
+  private Boolean requireOrgTenant;
 
   /**
    * Lifecycle callback to set default values before persisting the entity.
@@ -171,6 +190,9 @@ public class Feature extends BaseEntityImpl<String> {
   public void prePersist() {
     if (this.publicAccess == null) {
       this.publicAccess = false;
+    }
+    if (this.requireOrgTenant == null) {
+      this.requireOrgTenant = false;
     }
     super.prePersist();
   }

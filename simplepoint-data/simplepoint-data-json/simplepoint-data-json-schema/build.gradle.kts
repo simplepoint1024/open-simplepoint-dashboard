@@ -6,4 +6,5 @@ dependencies{
     api("com.github.victools:jsonschema-module-jakarta-validation")
     api(project(":simplepoint-api"))
     api(project(":simplepoint-security:simplepoint-security-core"))
+    implementation(project(":simplepoint-remoting:simplepoint-remoting-core"))
 }

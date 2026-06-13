@@ -10,8 +10,10 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Map;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,6 +29,7 @@ import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceR
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
+import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RolePermissionsRelevance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +50,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
 
   private final RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository;
   private final TenantRepository tenantRepository;
+  private final PermissionVersionRefreshService permissionVersionRefreshService;
   private final PermissionChangeLogRemoteService permissionChangeLogRemoteService;
 
   /**
@@ -62,11 +66,13 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository,
       @Autowired(required = false)
       TenantRepository tenantRepository,
+      PermissionVersionRefreshService permissionVersionRefreshService,
       PermissionChangeLogRemoteService permissionChangeLogRemoteService
   ) {
     super(repository, detailsProviderService);
     this.rolePermissionsRelevanceRepository = rolePermissionsRelevanceRepository;
     this.tenantRepository = tenantRepository;
+    this.permissionVersionRefreshService = permissionVersionRefreshService;
     this.permissionChangeLogRemoteService = permissionChangeLogRemoteService;
   }
 
@@ -77,9 +83,66 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
    * @return A page of RoleSelectDto containing role selection data.
    */
   @Override
+  public <S extends Role> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
+    if (!Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())) {
+      ensureTenantContextAttribute(resolveCurrentTenantScope());
+    }
+    return super.limit(attributes, pageable);
+  }
+
+  @Override
   public Page<RoleRelevanceVo> roleSelectItems(Pageable pageable) {
     requireTenantOwnerOrAdministratorIfTenantScoped();
     return getRepository().roleSelectItems(resolveCurrentTenantScope(), pageable);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public <S extends Role> S create(S entity) {
+    if (!Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())) {
+      ensureTenantContextAttribute(resolveCurrentTenantScope());
+    }
+    S saved = super.create(entity);
+    refreshPermissionVersionByRoleTenantIds(List.of(saved));
+    return saved;
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public List<Role> create(Collection<Role> entities) {
+    if (!Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())) {
+      ensureTenantContextAttribute(resolveCurrentTenantScope());
+    }
+    List<Role> saved = super.create(entities);
+    refreshPermissionVersionByRoleTenantIds(saved);
+    return saved;
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public <S extends Role> Role modifyById(S entity) {
+    if (!Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())) {
+      ensureTenantContextAttribute(resolveCurrentTenantScope());
+      validateRoleBelongsToCurrentTenant(entity.getId());
+    }
+    Role updated = (Role) super.modifyById(entity);
+    refreshPermissionVersionByRoleTenantIds(List.of(updated));
+    return updated;
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void removeByIds(Collection<String> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return;
+    }
+    if (!Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())) {
+      ensureTenantContextAttribute(resolveCurrentTenantScope());
+      ids.forEach(this::validateRoleBelongsToCurrentTenant);
+    }
+    Collection<Role> roles = findAllByIds(ids);
+    super.removeByIds(ids);
+    refreshPermissionVersionByRoleTenantIds(roles);
   }
 
 
@@ -143,10 +206,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   }
 
   private void requireTenantOwnerOrAdministratorIfTenantScoped() {
-    String tenantId = currentTenantId();
-    if (tenantId == null || tenantId.isBlank() || "default".equals(tenantId)) {
-      return;
-    }
+    String tenantId = resolveCurrentTenantScope();
     if (Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())) {
       return;
     }
@@ -159,7 +219,30 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
 
   private String resolveCurrentTenantScope() {
     String tenantId = currentTenantId();
-    return tenantId == null || tenantId.isBlank() ? "default" : tenantId;
+    if (tenantId != null && !tenantId.isBlank()) {
+      return tenantId;
+    }
+    var ctx = getAuthorizationContext();
+    String userId = ctx != null ? ctx.getUserId() : null;
+    if (userId == null || userId.isBlank()) {
+      throw new IllegalStateException("Tenant context is required");
+    }
+    if (tenantRepository == null) {
+      throw new IllegalStateException("Tenant repository is required to resolve tenant context");
+    }
+    return tenantRepository.findPersonalTenantByOwnerId(userId)
+        .map(org.simplepoint.plugin.rbac.tenant.api.entity.Tenant::getId)
+        .orElseThrow(() -> new IllegalStateException("Tenant context is required"));
+  }
+
+  private void ensureTenantContextAttribute(String tenantId) {
+    if (tenantId == null || tenantId.isBlank()) {
+      return;
+    }
+    AuthorizationContext context = getAuthorizationContext();
+    if (context != null && (context.getAttribute("X-Tenant-Id") == null || context.getAttribute("X-Tenant-Id").isBlank())) {
+      context.mergeAttributes(Map.of("X-Tenant-Id", tenantId));
+    }
   }
 
   private void validateRoleBelongsToCurrentTenant(String roleId) {
@@ -171,11 +254,24 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   }
 
   private void refreshCurrentTenantPermissionVersion() {
-    String tenantId = currentTenantId();
-    if (tenantId == null || tenantId.isBlank() || "default".equals(tenantId)) {
+    String tenantId = resolveCurrentTenantScope();
+    if (tenantId == null || tenantId.isBlank()) {
       return;
     }
-    tenantRepository.increasePermissionVersion(Set.of(tenantId));
+    permissionVersionRefreshService.refreshTenant(tenantId);
+  }
+
+  private void refreshPermissionVersionByRoleTenantIds(Collection<Role> roles) {
+    if (roles == null || roles.isEmpty()) {
+      return;
+    }
+    Set<String> tenantIds = roles.stream()
+        .map(Role::getTenantId)
+        .filter(tenantId -> tenantId != null && !tenantId.isBlank())
+        .collect(Collectors.toSet());
+    if (!tenantIds.isEmpty()) {
+      permissionVersionRefreshService.refreshTenants(tenantIds);
+    }
   }
 
   private void recordPermissionChange(String action, String roleId, Set<String> permissionAuthorities) {

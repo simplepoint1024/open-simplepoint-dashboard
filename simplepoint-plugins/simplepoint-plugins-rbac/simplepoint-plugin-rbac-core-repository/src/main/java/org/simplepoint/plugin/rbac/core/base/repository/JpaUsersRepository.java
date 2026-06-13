@@ -10,6 +10,7 @@ package org.simplepoint.plugin.rbac.core.base.repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
@@ -26,6 +27,10 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface JpaUsersRepository extends BaseRepository<User, String>, UserRepository {
+
+  @Override
+  @Query(value = "select * from simpoint_ac_users where id = :userId", nativeQuery = true)
+  Optional<User> findByIdForAuthorization(@Param("userId") String userId);
 
   /**
    * Loads the roles associated with the given username.

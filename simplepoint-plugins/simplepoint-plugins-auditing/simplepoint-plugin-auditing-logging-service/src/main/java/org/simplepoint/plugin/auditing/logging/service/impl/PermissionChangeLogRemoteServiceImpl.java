@@ -9,16 +9,18 @@
 package org.simplepoint.plugin.auditing.logging.service.impl;
 
 import java.time.Instant;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.auditing.logging.api.entity.PermissionChangeLog;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChangeLogRecordCommand;
 import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
 import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogService;
+import org.simplepoint.remoting.RemoteProvider;
+import org.springframework.stereotype.Service;
 
 /**
  * Remote provider for permission change log recording.
  */
-@AmqpRemoteService
+@Service
+@RemoteProvider
 public class PermissionChangeLogRemoteServiceImpl implements PermissionChangeLogRemoteService {
 
   private final PermissionChangeLogService permissionChangeLogService;

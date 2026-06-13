@@ -19,6 +19,7 @@ import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.storage.api.constants.ObjectStoragePaths;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageObject;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageTenantQuota;
+import org.simplepoint.plugin.storage.api.model.ObjectStorageUploadRequest;
 import org.simplepoint.plugin.storage.api.service.ObjectStorageObjectService;
 import org.simplepoint.plugin.storage.api.service.ObjectStorageTenantQuotaService;
 import org.simplepoint.plugin.storage.api.spi.ObjectStorageReadResult;
@@ -41,7 +42,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.simplepoint.plugin.storage.api.model.ObjectStorageUploadRequest;
 
 /**
  * Admin endpoints for object storage.
@@ -55,6 +55,9 @@ public class ObjectStorageAdminController {
 
   private final ObjectStorageTenantQuotaService quotaService;
 
+  /**
+   * Object Storage Admin Controller.
+   */
   public ObjectStorageAdminController(
       final ObjectStorageObjectService objectService,
       final ObjectStorageTenantQuotaService quotaService
@@ -63,6 +66,9 @@ public class ObjectStorageAdminController {
     this.quotaService = quotaService;
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/providers")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.objects.view')")
   @Operation(summary = "查询可用对象存储提供方", description = "返回当前配置且启用的对象存储提供方列表")
@@ -70,6 +76,9 @@ public class ObjectStorageAdminController {
     return Response.okay(objectService.providers());
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/objects")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.objects.view')")
   @Operation(summary = "分页查询对象", description = "分页查询对象存储元信息")
@@ -80,6 +89,9 @@ public class ObjectStorageAdminController {
     return Response.limit(objectService.limit(attributes, pageable), ObjectStorageObject.class);
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/objects/{id}")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.objects.view')")
   @Operation(summary = "查询对象详情", description = "根据对象 ID 查询详细元信息")
@@ -89,6 +101,9 @@ public class ObjectStorageAdminController {
         .orElseGet(() -> notFound("对象不存在: " + id));
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/objects/{id}/content")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.objects.view')")
   @Operation(summary = "下载对象内容", description = "按对象 ID 下载文件内容")
@@ -108,6 +123,9 @@ public class ObjectStorageAdminController {
     }
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping(value = "/objects/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.objects.create')")
   @Operation(summary = "上传对象", description = "上传文件到对象存储并记录元信息")
@@ -124,6 +142,9 @@ public class ObjectStorageAdminController {
     }
   }
 
+  /**
+   * @ Delete Mapping.
+   */
   @DeleteMapping("/objects")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.objects.delete')")
   @Operation(summary = "删除对象", description = "删除对象元信息和远端文件")
@@ -139,6 +160,9 @@ public class ObjectStorageAdminController {
     }
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/quotas")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.quotas.view')")
   @Operation(summary = "分页查询租户配额", description = "查询租户对象存储配额和当前使用量")
@@ -149,6 +173,9 @@ public class ObjectStorageAdminController {
     return Response.limit(quotaService.limit(attributes, pageable), ObjectStorageTenantQuota.class);
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping("/quotas")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.quotas.create')")
   @Operation(summary = "新增租户配额", description = "为指定租户新增对象存储配额")
@@ -160,6 +187,9 @@ public class ObjectStorageAdminController {
     }
   }
 
+  /**
+   * @ Put Mapping.
+   */
   @PutMapping("/quotas")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.quotas.edit')")
   @Operation(summary = "修改租户配额", description = "修改指定租户的对象存储配额")
@@ -171,6 +201,9 @@ public class ObjectStorageAdminController {
     }
   }
 
+  /**
+   * @ Delete Mapping.
+   */
   @DeleteMapping("/quotas")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.quotas.delete')")
   @Operation(summary = "删除租户配额", description = "删除租户对象存储配额配置")

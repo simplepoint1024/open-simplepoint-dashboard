@@ -164,7 +164,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
     return Response.okay();
   }
 
-  /**
+  /**.
    * 查询角色的数据权限和字段权限分配
    *
    * @param roleId 角色ID
@@ -177,7 +177,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
     return ok(service.getScopeAssignment(roleId));
   }
 
-  /**
+  /**.
    * 更新角色的数据权限和字段权限分配
    *
    * @param vo 包含 roleId、dataScopeId 和 fieldScopeId 的 VO

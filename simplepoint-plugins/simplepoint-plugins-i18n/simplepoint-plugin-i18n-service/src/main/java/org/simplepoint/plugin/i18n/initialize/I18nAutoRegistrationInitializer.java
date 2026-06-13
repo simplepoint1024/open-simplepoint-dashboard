@@ -24,9 +24,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 /**
- * I18nAutoRegistrationInitializer is responsible for automatically registering internationalization (i18n) data during application startup.
+ * I18nAutoRegistrationInitializer automatically registers internationalization data.
  *
- * <p>This class defines two DataInitRegister beans: one for initializing i18n data such as countries, languages, regions, and time zones, and another for initializing i18n messages. The initialization tasks read data from JSON files located in the classpath and populate the corresponding services with the data.</p>
+ * <p>This class defines DataInitRegister beans for base i18n data and i18n messages. The
+ * initialization tasks read classpath JSON files and populate the corresponding services.
  */
 @Component
 public class I18nAutoRegistrationInitializer {
@@ -145,7 +146,8 @@ public class I18nAutoRegistrationInitializer {
   /**
    * Register a DataInitRegister bean for initializing data-permission-related i18n messages.
    *
-   * <p>This runs after the base i18n-messages module and loads the data-scopes and field-scopes namespaces that were added for the data permission feature.</p>
+   * <p>This runs after the base i18n-messages module and loads the data-scopes and field-scopes
+   * namespaces that were added for the data permission feature.
    *
    * @return a DataInitRegister instance that initializes data-permission i18n messages
    */

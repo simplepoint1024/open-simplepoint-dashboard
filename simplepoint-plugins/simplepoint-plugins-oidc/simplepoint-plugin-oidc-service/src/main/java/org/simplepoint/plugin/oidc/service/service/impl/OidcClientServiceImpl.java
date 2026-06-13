@@ -33,7 +33,6 @@ public class OidcClientServiceImpl extends BaseServiceImpl<OidcClientRepository,
    * Constructs a new OidcClientServiceImpl with the specified repository, user context, and details provider service.
    *
    * @param repository             the OidcClientRepository instance for data access
-   * @param userContext            the user context for retrieving current user information
    * @param detailsProviderService the service for providing user details
    */
   public OidcClientServiceImpl(

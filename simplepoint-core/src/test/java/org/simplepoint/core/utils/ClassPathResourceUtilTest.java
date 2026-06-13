@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 class ClassPathResourceUtilTest {
 
-  /** Simple POJO to deserialize test JSON {"value":"hello"} */
+  /** Simple POJO to deserialize test JSON {"value":"hello"}. */
   static class Item {
     public String value;
   }

@@ -78,7 +78,6 @@
   "host.dashboard.feature.form.permission": "权限按钮过滤",
   "host.dashboard.feature.infra.boot": "Spring Boot 4 / Spring Cloud",
   "host.dashboard.feature.infra.consul": "Consul 配置中心",
-  "host.dashboard.feature.infra.vault": "Vault 秘密管理",
   "host.dashboard.feature.infra.redis": "Redis WebSession / 缓存",
   "host.dashboard.feature.infra.amqp": "AMQP RPC 服务间调用",
   "host.dashboard.feature.infra.docker": "Docker Swarm 编排",

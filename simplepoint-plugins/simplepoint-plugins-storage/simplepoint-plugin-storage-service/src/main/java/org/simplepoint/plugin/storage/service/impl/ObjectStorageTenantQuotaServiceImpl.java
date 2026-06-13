@@ -41,6 +41,9 @@ public class ObjectStorageTenantQuotaServiceImpl
 
   private final TenantRepository tenantRepository;
 
+  /**
+   * Object Storage Tenant Quota Service Impl.
+   */
   public ObjectStorageTenantQuotaServiceImpl(
       final ObjectStorageTenantQuotaRepository repository,
       final DetailsProviderService detailsProviderService,

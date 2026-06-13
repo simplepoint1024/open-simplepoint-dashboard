@@ -308,7 +308,7 @@ class OidcAuthorizationServiceImplTest {
 
   @Test
   void findByIdShouldPopulateAuthorizationCodeToken() {
-    RegisteredClient client = minimalClient("client-10");
+    final RegisteredClient client = minimalClient("client-10");
     Authorization entity = minimalEntity("auth-10", "client-10", "authorization_code");
     Instant now = Instant.now();
     entity.setAuthorizationCodeValue("auth-code-value");
@@ -327,7 +327,7 @@ class OidcAuthorizationServiceImplTest {
 
   @Test
   void findByIdShouldPopulateAccessToken() {
-    RegisteredClient client = minimalClient("client-11");
+    final RegisteredClient client = minimalClient("client-11");
     Authorization entity = minimalEntity("auth-11", "client-11", "authorization_code");
     Instant now = Instant.now();
     entity.setAccessTokenValue("access-token-value");
@@ -347,7 +347,7 @@ class OidcAuthorizationServiceImplTest {
 
   @Test
   void findByIdShouldPopulateRefreshToken() {
-    RegisteredClient client = minimalClient("client-12");
+    final RegisteredClient client = minimalClient("client-12");
     Authorization entity = minimalEntity("auth-12", "client-12", "authorization_code");
     Instant now = Instant.now();
     entity.setRefreshTokenValue("refresh-token-value");
@@ -366,7 +366,7 @@ class OidcAuthorizationServiceImplTest {
 
   @Test
   void findByIdShouldPopulateUserCode() {
-    RegisteredClient client = minimalClient("client-13");
+    final RegisteredClient client = minimalClient("client-13");
     Authorization entity = minimalEntity("auth-13", "client-13",
         "urn:ietf:params:oauth:grant-type:device_code");
     Instant now = Instant.now();
@@ -386,7 +386,7 @@ class OidcAuthorizationServiceImplTest {
 
   @Test
   void findByIdShouldPopulateDeviceCode() {
-    RegisteredClient client = minimalClient("client-14");
+    final RegisteredClient client = minimalClient("client-14");
     Authorization entity = minimalEntity("auth-14", "client-14",
         "urn:ietf:params:oauth:grant-type:device_code");
     Instant now = Instant.now();

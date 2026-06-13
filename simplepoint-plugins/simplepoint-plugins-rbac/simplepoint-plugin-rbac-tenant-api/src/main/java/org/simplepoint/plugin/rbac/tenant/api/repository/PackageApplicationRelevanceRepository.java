@@ -10,17 +10,38 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.PackageApplicationRelevance
  */
 public interface PackageApplicationRelevanceRepository {
 
+  /**
+   * Save All.
+   */
   <S extends PackageApplicationRelevance> List<S> saveAll(Iterable<S> entities);
 
+  /**
+   * Unauthorized.
+   */
   void unauthorized(String packageCode, Set<String> applicationCodes);
 
+  /**
+   * Authorized.
+   */
   Collection<String> authorized(String packageCode);
 
+  /**
+   * Delete All By Package Codes.
+   */
   void deleteAllByPackageCodes(Collection<String> packageCodes);
 
+  /**
+   * Delete All By Application Codes.
+   */
   void deleteAllByApplicationCodes(Collection<String> applicationCodes);
 
+  /**
+   * Update Package Code.
+   */
   void updatePackageCode(String oldCode, String newCode);
 
+  /**
+   * Update Application Code.
+   */
   void updateApplicationCode(String oldCode, String newCode);
 }

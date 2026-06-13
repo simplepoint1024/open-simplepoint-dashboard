@@ -184,9 +184,9 @@ class FederationViewServiceImplTest {
 
   @Test
   void modifyByIdShouldValidateAndUpdateView() {
-    FederationSchema schema = schema("schema-1", "rpt", "Reporting", "cat-1");
-    FederationCatalog catalog = virtualCatalog("cat-1");
-    FederationView current = view("v1", "summary_view", "Old Summary", "schema-1");
+    final FederationSchema schema = schema("schema-1", "rpt", "Reporting", "cat-1");
+    final FederationCatalog catalog = virtualCatalog("cat-1");
+    final FederationView current = view("v1", "summary_view", "Old Summary", "schema-1");
     FederationView patch = new FederationView();
     patch.setId("v1");
     patch.setSchemaId("schema-1");

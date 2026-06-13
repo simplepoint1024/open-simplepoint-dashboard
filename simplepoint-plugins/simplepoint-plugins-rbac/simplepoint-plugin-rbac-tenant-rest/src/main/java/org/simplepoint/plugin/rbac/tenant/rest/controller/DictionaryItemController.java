@@ -29,10 +29,16 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "字典项管理", description = "用于管理系统中的动态字典项")
 public class DictionaryItemController extends BaseController<DictionaryItemService, DictionaryItem, String> {
 
+  /**
+   * Dictionary Item Controller.
+   */
   public DictionaryItemController(DictionaryItemService service) {
     super(service);
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dictionaries.view') or hasAuthority('dictionaries.config.item')")
   @Operation(summary = "分页查询字典项", description = "根据提供的属性和分页参数，检索字典项的分页列表")
@@ -40,6 +46,9 @@ public class DictionaryItemController extends BaseController<DictionaryItemServi
     return limit(service.limit(attributes, pageable), DictionaryItem.class);
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dictionaries.create')")
   @Operation(summary = "添加字典项", description = "添加一个新的字典项到系统中")
@@ -47,6 +56,9 @@ public class DictionaryItemController extends BaseController<DictionaryItemServi
     return ok(service.create(data));
   }
 
+  /**
+   * @ Put Mapping.
+   */
   @PutMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dictionaries.edit')")
   @Operation(summary = "修改字典项", description = "修改一个已存在的字典项信息")
@@ -54,6 +66,9 @@ public class DictionaryItemController extends BaseController<DictionaryItemServi
     return ok(service.modifyById(data));
   }
 
+  /**
+   * @ Delete Mapping.
+   */
   @DeleteMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dictionaries.delete')")
   @Operation(summary = "删除字典项", description = "根据提供的字典项ID集合，删除一个或多个字典项")

@@ -48,11 +48,10 @@
         }
       },
       "usedIn": [
-        "./platform/Package",
+        "./i18n/Countries",
         "./system/FieldScope/config/entries",
         "./system/Role/config/permission",
         "./Dashboard",
-        "./i18n/Countries",
         "./i18n/Language",
         "./i18n/Message",
         "./i18n/Namespace",
@@ -68,6 +67,7 @@
         "./platform/ObjectStorage",
         "./platform/Organization",
         "./platform/Package/config/application",
+        "./platform/Package",
         "./platform/Tenant/config/package",
         "./platform/Tenant/config/user",
         "./platform/Tenant",
@@ -104,11 +104,12 @@
         }
       },
       "usedIn": [
-        "./Dashboard",
+        "./platform/Feature",
         "./system/FieldScope/config/entries",
+        "./system/Role/config/permission",
+        "./Dashboard",
         "./platform/Application",
         "./platform/Dictionary",
-        "./platform/Feature",
         "./platform/ObjectStorage",
         "./platform/Package",
         "./platform/Tenant",
@@ -141,8 +142,8 @@
         }
       },
       "usedIn": [
-        "./system/FieldScope/config/entries",
         "./Dashboard",
+        "./system/FieldScope/config/entries",
         "./platform/ObjectStorage"
       ]
     },
@@ -419,7 +420,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_i18n__Countries.js"
           ],
           "async": []
@@ -445,7 +446,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_i18n__Language.js"
           ],
           "async": []
@@ -471,7 +472,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_i18n__Message.js"
           ],
           "async": []
@@ -497,7 +498,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_i18n__Namespace.js"
           ],
           "async": []
@@ -523,7 +524,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_i18n__Region.js"
           ],
           "async": []
@@ -549,7 +550,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_i18n__Timezone.js"
           ],
           "async": []
@@ -575,7 +576,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_ops__Microapp.js"
           ],
           "async": []
@@ -621,7 +622,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__Application.js"
           ],
           "async": []
@@ -670,7 +671,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__Dictionary.js"
           ],
           "async": []
@@ -696,7 +697,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__Dictionary__config__item.js"
           ],
           "async": []
@@ -723,7 +724,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__Feature.js"
           ],
           "async": []
@@ -795,7 +796,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__Organization.js"
           ],
           "async": []
@@ -822,7 +823,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__Package.js"
           ],
           "async": []
@@ -871,7 +872,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__Tenant.js"
           ],
           "async": []
@@ -941,7 +942,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_system__DataScope.js"
           ],
           "async": []
@@ -968,7 +969,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_system__FieldScope.js"
           ],
           "async": [
@@ -1021,7 +1022,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_system__Menu.js"
           ],
           "async": []
@@ -1069,7 +1070,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_system__OAuthClient.js"
           ],
           "async": []
@@ -1095,7 +1096,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_system__Permission.js"
           ],
           "async": []
@@ -1122,13 +1123,13 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_system__Role.js"
           ],
           "async": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__Application.js",
             "__federation_expose_platform__Application__config__feature.js",
             "__federation_expose_platform__Feature.js",
@@ -1166,7 +1167,8 @@
       "id": "common:system/Role/config/permission",
       "name": "system/Role/config/permission",
       "requires": [
-        "react"
+        "react",
+        "antd"
       ],
       "file": "src/views/system/Role/config/permission/index.tsx",
       "assets": {
@@ -1197,7 +1199,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_system__User.js"
           ],
           "async": []

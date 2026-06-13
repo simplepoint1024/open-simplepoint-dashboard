@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
+import org.simplepoint.remoting.RemoteContract;
+import org.simplepoint.remoting.RemoteProvider;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
@@ -21,7 +21,7 @@ class RemoteClientOverrideBeanFactoryPostProcessorTest {
     DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
     postProcessor.setBeanClassLoader(getClass().getClassLoader());
     beanFactory.registerBeanDefinition(SampleApi.class.getName(),
-        RemoteProxyFactory.proxy(getClass().getClassLoader(), SampleApi.class, Map.of("to", "sample")));
+        RemoteProxyFactory.proxy(getClass().getClassLoader(), SampleApi.class, Map.of("name", "sample")));
     beanFactory.registerBeanDefinition("sampleRemoteService",
         BeanDefinitionBuilder.genericBeanDefinition(SampleRemoteService.class).getBeanDefinition());
 
@@ -37,7 +37,7 @@ class RemoteClientOverrideBeanFactoryPostProcessorTest {
     DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
     postProcessor.setBeanClassLoader(getClass().getClassLoader());
     beanFactory.registerBeanDefinition(SampleApi.class.getName(),
-        RemoteProxyFactory.proxy(getClass().getClassLoader(), SampleApi.class, Map.of("to", "sample")));
+        RemoteProxyFactory.proxy(getClass().getClassLoader(), SampleApi.class, Map.of("name", "sample")));
 
     postProcessor.postProcessBeanFactory(beanFactory);
 
@@ -46,12 +46,12 @@ class RemoteClientOverrideBeanFactoryPostProcessorTest {
         beanFactory.getBeanNamesForType(SampleApi.class, false, false));
   }
 
-  @AmqpRemoteClient(to = "sample")
+  @RemoteContract(name = "sample")
   interface SampleApi {
     String ping();
   }
 
-  @AmqpRemoteService
+  @RemoteProvider
   static final class SampleRemoteService implements SampleApi {
 
     @Override

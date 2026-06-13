@@ -67,7 +67,8 @@ public interface CacheService {
    * @param keys the collection of keys for the cached values to retrieve
    * @param type the Class object representing the type to which the cached values should be cast
    * @param <T>  the type of the values being retrieved, which must implement Serializable
-   * @return a map of cached values cast to the specified type, where the keys are the original keys and the values are the cached values, or an empty map if not found or if the type does not match
+   * @return a map of cached values cast to the specified type, keyed by the original keys, or an
+   *     empty map if not found or if the type does not match
    */
   <T extends Serializable> Map<String, T> multipleGetAsMap(Collection<String> keys, Class<T> type);
 

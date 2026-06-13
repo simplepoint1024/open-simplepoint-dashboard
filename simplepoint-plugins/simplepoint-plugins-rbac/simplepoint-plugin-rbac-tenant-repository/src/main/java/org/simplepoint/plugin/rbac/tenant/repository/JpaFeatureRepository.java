@@ -18,10 +18,14 @@ import org.springframework.stereotype.Repository;
 public interface JpaFeatureRepository extends BaseRepository<Feature, String>, FeatureRepository {
   @Override
   @Query("""
-	  select f
-	  from Feature f
-	  where f.code in :codes
-	  order by f.sort asc, f.name asc
-	  """)
+    select f
+    from Feature f
+    where f.code in :codes
+    order by f.sort asc, f.name asc
+      """)
   Collection<Feature> findAllByCodes(@Param("codes") Collection<String> codes);
+
+  @Override
+  @Query("select f.code from Feature f where f.requireOrgTenant = true")
+  Collection<String> findCodesByRequireOrgTenant();
 }

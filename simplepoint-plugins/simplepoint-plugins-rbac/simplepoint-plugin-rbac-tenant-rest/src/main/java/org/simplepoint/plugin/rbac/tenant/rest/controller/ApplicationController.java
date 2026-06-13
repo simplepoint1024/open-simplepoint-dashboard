@@ -96,6 +96,9 @@ public class ApplicationController extends BaseController<ApplicationService, Ap
     return ok(idSet);
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/items")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('packages.config.application') or hasAuthority('applications.config.feature')")
   @Operation(summary = "获取应用候选列表", description = "获取用于套餐应用配置的应用候选列表")
@@ -103,6 +106,9 @@ public class ApplicationController extends BaseController<ApplicationService, Ap
     return ok(service.limit(Map.of(), pageable));
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/authorized")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature')")
   @Operation(summary = "获取应用已分配功能", description = "获取指定应用已授权的功能编码列表")
@@ -110,6 +116,9 @@ public class ApplicationController extends BaseController<ApplicationService, Ap
     return ok(service.authorizedFeatures(applicationCode));
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping("/authorize")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature')")
   @Operation(summary = "配置应用功能", description = "为指定应用分配功能编码")
@@ -117,6 +126,9 @@ public class ApplicationController extends BaseController<ApplicationService, Ap
     return ok(service.authorizeFeatures(dto));
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping("/unauthorized")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature')")
   @Operation(summary = "取消应用功能", description = "取消指定应用已分配的功能编码")

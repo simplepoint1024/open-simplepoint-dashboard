@@ -3,6 +3,7 @@ package org.simplepoint.plugin.rbac.tenant.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,12 +12,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.AuthorizationContextHolder;
+import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Feature;
 import org.simplepoint.plugin.rbac.tenant.api.entity.FeaturePermissionRelevance;
@@ -26,6 +33,7 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.FeaturePermissionReleva
 import org.simplepoint.plugin.rbac.tenant.api.repository.FeatureRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
+import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
 
 @ExtendWith(MockitoExtension.class)
 class FeatureServiceImplTest {
@@ -49,10 +57,26 @@ class FeatureServiceImplTest {
   TenantRepository tenantRepository;
 
   @Mock
+  PermissionVersionRefreshService permissionVersionRefreshService;
+
+  @Mock
   PermissionChangeLogRemoteService permissionChangeLogRemoteService;
 
   @InjectMocks
   FeatureServiceImpl service;
+
+  MockedStatic<AuthorizationContextHolder> contextHolder;
+
+  @BeforeEach
+  void setUpContext() {
+    contextHolder = org.mockito.Mockito.mockStatic(AuthorizationContextHolder.class);
+    contextHolder.when(AuthorizationContextHolder::getContext).thenReturn(platformAdminContext());
+  }
+
+  @AfterEach
+  void tearDownContext() {
+    contextHolder.close();
+  }
 
   // ── authorizedPermissions ─────────────────────────────────────────────────
 
@@ -151,7 +175,6 @@ class FeatureServiceImplTest {
 
     FeaturePermissionRelevance saved = new FeaturePermissionRelevance();
     when(featurePermissionRelevanceRepository.saveAll(any())).thenReturn(List.of(saved));
-    when(tenantPackageRelevanceRepository.findTenantIdsByFeatureCodes(any())).thenReturn(Set.of());
     // No auth context -> recordPermissionChange is a no-op (userId is null check)
 
     Collection<FeaturePermissionRelevance> result = service.authorizePermissions(dto);
@@ -206,5 +229,30 @@ class FeatureServiceImplTest {
   void removeByIds_returnsEarlyWhenIdsIsEmpty() {
     service.removeByIds(List.of());
     verify(repository, never()).deleteByIds(any());
+  }
+
+  @Test
+  void authorizePermissions_rejectsTenantContext() {
+    contextHolder.when(AuthorizationContextHolder::getContext).thenReturn(tenantContext());
+    FeaturePermissionsRelevanceDto dto = new FeaturePermissionsRelevanceDto();
+    dto.setFeatureCode("feature.code");
+    dto.setPermissionAuthority(Set.of("perm.code"));
+
+    assertThatThrownBy(() -> service.authorizePermissions(dto))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+  }
+
+  private static AuthorizationContext platformAdminContext() {
+    AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setIsAdministrator(true);
+    ctx.setScopeType(AuthorizationScopeType.PLATFORM);
+    return ctx;
+  }
+
+  private static AuthorizationContext tenantContext() {
+    AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setIsAdministrator(false);
+    ctx.setScopeType(AuthorizationScopeType.TENANT);
+    return ctx;
   }
 }

@@ -18,15 +18,16 @@ import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.core.api.pojo.command.ChangePasswordCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -147,6 +148,16 @@ public class UsersController extends BaseController<UsersService, User, String> 
   public Response<Void> unauthorized(@RequestBody UserRoleRelevanceDto dto) {
     service.unauthorized(dto);
     return Response.okay();
+  }
+
+  /**
+   * @ Get Mapping.
+   */
+  @GetMapping("/role-candidates")
+  @Operation(summary = "获取用户管理可分配角色列表", description = "获取用户管理中可分配的角色列表，始终使用默认租户范围")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('users.config.role')")
+  public Response<Page<RoleRelevanceVo>> roleCandidates(Pageable pageable) {
+    return ok(service.roleCandidates(pageable));
   }
 
   /**

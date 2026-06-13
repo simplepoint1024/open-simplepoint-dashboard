@@ -20,7 +20,7 @@ class UserRegistrationPropertiesTest {
 
   @Test
   void setUsers_addsAllToInternalSet() {
-    UserRegistrationProperties props = new UserRegistrationProperties();
+    final UserRegistrationProperties props = new UserRegistrationProperties();
     User u1 = new User();
     u1.setId("id-admin");
     u1.setUsername("admin");
@@ -34,7 +34,7 @@ class UserRegistrationPropertiesTest {
 
   @Test
   void setUsers_calledTwice_accumulatesUsers() {
-    UserRegistrationProperties props = new UserRegistrationProperties();
+    final UserRegistrationProperties props = new UserRegistrationProperties();
     User u1 = new User();
     u1.setId("id-admin");
     u1.setUsername("admin");

@@ -97,8 +97,6 @@ Expected access URLs after services become healthy:
   Host UI:           http://${SIMPLEPOINT_PUBLIC_HOST}:8080
   Authorization:     http://${SIMPLEPOINT_PUBLIC_HOST}:9000
   Consul UI:         http://${SIMPLEPOINT_PUBLIC_HOST}:8500
-  Vault UI:          http://${SIMPLEPOINT_PUBLIC_HOST}:8200/ui
-  RabbitMQ UI:       http://${SIMPLEPOINT_PUBLIC_HOST}:15672
 
 Useful commands:
   docker stack services ${STACK_NAME}

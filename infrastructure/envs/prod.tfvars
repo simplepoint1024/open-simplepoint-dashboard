@@ -1,5 +1,3 @@
-consul_address       = "http://consul.prod.internal:8500"
-consul_master_token  = "prod-master-token"
-environment          = "prod"
-vault_address        = "http://vault.prod.internal:8200"
-vault_root_token     = "prod-root-token"
+consul_address      = "http://consul.prod.internal:8500"
+consul_master_token = "prod-master-token"
+environment         = "prod"

@@ -26,14 +26,19 @@ public class LoginAuthenticationAuditEventListener {
   private static final String STATUS_SUCCESS = "SUCCESS";
   private static final String STATUS_FAILURE = "FAILURE";
   private static final String SOURCE_SERVICE = "authorization";
-  private static final String DEFAULT_TENANT_ID = "default";
 
   private final LoginLogRemoteService loginLogRemoteService;
 
+  /**
+   * Login Authentication Audit Event Listener.
+   */
   public LoginAuthenticationAuditEventListener(final LoginLogRemoteService loginLogRemoteService) {
     this.loginLogRemoteService = loginLogRemoteService;
   }
 
+  /**
+   * @ Event Listener.
+   */
   @EventListener
   public void onLoginSuccess(final LoginAuthenticationSuccessEvent event) {
     LoginLogRecordCommand command = baseCommand(
@@ -54,6 +59,9 @@ public class LoginAuthenticationAuditEventListener {
     record(command);
   }
 
+  /**
+   * @ Event Listener.
+   */
   @EventListener
   public void onLoginFailure(final LoginAuthenticationFailureEvent event) {
     LoginLogRecordCommand command = baseCommand(
@@ -93,7 +101,7 @@ public class LoginAuthenticationAuditEventListener {
     command.setUserId(normalize(userId));
     command.setUsername(firstNonBlank(username, userId));
     command.setDisplayName(firstNonBlank(displayName, username, userId));
-    command.setTenantId(firstNonBlank(tenantId, DEFAULT_TENANT_ID));
+    command.setTenantId(normalize(tenantId));
     command.setContextId(normalize(contextId));
     command.setSessionId(normalize(sessionId));
     command.setRemoteAddress(normalize(remoteAddress));

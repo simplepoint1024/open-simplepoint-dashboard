@@ -10,14 +10,12 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.core.api.repository.DataScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.service.DataScopeService;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
+import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
 import org.simplepoint.security.entity.DataScope;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,15 +28,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, DataScope, String>
     implements DataScopeService {
 
-  private final TenantRepository tenantRepository;
+  private final PermissionVersionRefreshService permissionVersionRefreshService;
 
+  /**
+   * Data Scope Service Impl.
+   */
   public DataScopeServiceImpl(
       DataScopeRepository repository,
       DetailsProviderService detailsProviderService,
-      @Autowired(required = false) TenantRepository tenantRepository
+      PermissionVersionRefreshService permissionVersionRefreshService
   ) {
     super(repository, detailsProviderService);
-    this.tenantRepository = tenantRepository;
+    this.permissionVersionRefreshService = permissionVersionRefreshService;
   }
 
   @Override
@@ -73,13 +74,7 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   }
 
   private void refreshCurrentTenantPermissionVersion() {
-    if (tenantRepository == null) {
-      return;
-    }
     String tenantId = currentTenantId();
-    if (tenantId == null || tenantId.isBlank() || "default".equals(tenantId)) {
-      return;
-    }
-    tenantRepository.increasePermissionVersion(Set.of(tenantId));
+    permissionVersionRefreshService.refreshTenant(tenantId);
   }
 }

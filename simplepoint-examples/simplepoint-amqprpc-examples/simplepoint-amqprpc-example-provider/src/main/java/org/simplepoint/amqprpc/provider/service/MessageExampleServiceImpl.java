@@ -2,12 +2,14 @@ package org.simplepoint.amqprpc.provider.service;
 
 import org.simplepoint.amqprpc.api.MessageExample;
 import org.simplepoint.amqprpc.api.MessageExampleService;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
+import org.simplepoint.remoting.RemoteProvider;
+import org.springframework.stereotype.Service;
 
 /**
  * Implementation of the MessageExampleService interface.
  */
-@AmqpRemoteService
+@Service
+@RemoteProvider
 public class MessageExampleServiceImpl implements MessageExampleService {
   @Override
   public MessageExample echo(String message) {

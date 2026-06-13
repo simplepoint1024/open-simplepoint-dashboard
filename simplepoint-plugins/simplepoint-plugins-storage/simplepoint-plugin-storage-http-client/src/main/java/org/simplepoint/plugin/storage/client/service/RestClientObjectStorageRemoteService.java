@@ -40,6 +40,9 @@ public class RestClientObjectStorageRemoteService implements ObjectStorageRemote
 
   private final ObjectStorageRemoteProperties properties;
 
+  /**
+   * Rest Client Object Storage Remote Service.
+   */
   public RestClientObjectStorageRemoteService(
       final RestClient.Builder restClientBuilder,
       final ObjectStorageRemoteProperties properties

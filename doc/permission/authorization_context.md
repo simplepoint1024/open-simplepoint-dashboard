@@ -32,7 +32,7 @@
 | `AuthorizationContext` | `simplepoint-core` | 承载 `contextId`、`userId`、`roles`、`permissions`、`attributes` 等运行时权限结果。 |
 | `AuthorizationContextFilter` | `simplepoint-security-oauth2-resource` | 在 JWT 认证前解析请求头，加载或重建授权上下文。 |
 | `AuthorizationContextResolver` | `simplepoint-security-core` | 负责缓存读取、`/userinfo` 取 `sub`、调用上下文计算服务。 |
-| `AuthorizationContextService` | `simplepoint-security-core` | 统一的上下文计算接口，声明为 `@AmqpRemoteClient(to = "security.authorization-context")`。 |
+| `AuthorizationContextService` | `simplepoint-security-core` | 统一的上下文计算接口，声明为 `@RemoteContract(name = "security.authorization-context")`。 |
 | `AuthorizationContextServiceImpl` | `simplepoint-plugin-rbac-core-service` | 当前默认实现，负责把用户、角色、权限、功能、套餐链路拼成最终上下文。 |
 | `AuthorizationContextHolder` | `simplepoint-core` | 业务层读取当前请求上下文的统一入口。 |
 | `TenantService.calculatePermissionContextId(...)` | `simplepoint-plugin-rbac-tenant-service` | 根据租户权限版本计算 `contextId`，用于缓存失效。 |

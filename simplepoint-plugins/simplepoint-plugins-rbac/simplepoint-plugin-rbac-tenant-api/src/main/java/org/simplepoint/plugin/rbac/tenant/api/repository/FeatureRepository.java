@@ -17,4 +17,11 @@ public interface FeatureRepository extends BaseRepository<Feature, String> {
    * @return matched features
    */
   Collection<Feature> findAllByCodes(Collection<String> codes);
+
+  /**
+   * Returns all feature codes that have {@code requireOrgTenant = true}.
+   *
+   * @return collection of feature codes
+   */
+  Collection<String> findCodesByRequireOrgTenant();
 }

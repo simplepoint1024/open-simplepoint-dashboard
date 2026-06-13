@@ -2,13 +2,15 @@ package org.simplepoint.security.context;
 
 import java.util.Map;
 import org.simplepoint.core.AuthorizationContext;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
+import org.simplepoint.remoting.RemoteContract;
 
 /**
- * AuthorizationContextService defines the contract for calculating the authorization context based on provided attributes.
- * It provides a method to calculate the authorization context, which can be implemented by different classes to provide specific logic for determining the authorization information.
+ * AuthorizationContextService defines the contract for calculating the authorization context.
+ *
+ * <p>Implementations provide specific logic for determining authorization information from
+ * supplied attributes.
  */
-@AmqpRemoteClient(to = "security.authorization-context")
+@RemoteContract(name = "security.authorization-context")
 public interface AuthorizationContextService {
 
   /**

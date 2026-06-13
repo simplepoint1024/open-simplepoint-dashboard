@@ -2,12 +2,14 @@ package org.simplepoint.data.json.schema.service;
 
 import jakarta.persistence.EntityManager;
 import org.simplepoint.api.security.service.JsonSchemaDetailsService;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
+import org.simplepoint.remoting.RemoteProvider;
+import org.springframework.stereotype.Service;
 
 /**
  * Default implementation of JsonSchemaDetailsService.
  */
-@AmqpRemoteService
+@Service
+@RemoteProvider
 public class DefaultJsonSchemaDetailsService implements JsonSchemaDetailsService {
 
   private final EntityManager entityManager;

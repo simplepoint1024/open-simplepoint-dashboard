@@ -71,7 +71,7 @@ class JdbcMetadataManagementServiceImplTest {
 
   @Test
   void structureShouldEscapeExactSchemaAndTablePatterns() throws Exception {
-    JdbcMetadataManagementServiceImpl service = createService();
+    final JdbcMetadataManagementServiceImpl service = createService();
 
     when(dialect.loadColumns(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         new JdbcDatabaseDialect.MetadataResult(List.of(), List.of())

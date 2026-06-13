@@ -20,6 +20,7 @@ dependencies {
 
     api(project(":simplepoint-plugin:simplepoint-plugin-webmvc"))
 
+    api(project(":simplepoint-remoting:simplepoint-remoting-core"))
     api(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))
     api(project(":simplepoint-examples:simplepoint-amqprpc-examples:simplepoint-amqprpc-example-api"))
 }

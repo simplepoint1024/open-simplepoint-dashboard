@@ -8,8 +8,8 @@
 
 package org.simplepoint.gateway.server;
 
+import com.simplepoint.service.router.annotation.EnableServiceRouter;
 import org.simplepoint.boot.starter.Boot;
-import org.simplepoint.data.amqp.rpc.annotation.EnableAmqpRemoteClients;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.session.data.redis.config.annotation.web.server.EnableRedisWebSession;
 
@@ -21,7 +21,7 @@ import org.springframework.session.data.redis.config.annotation.web.server.Enabl
 @Boot
 @EnableCaching
 @EnableRedisWebSession(redisNamespace = "simplepoint:sessions")
-@EnableAmqpRemoteClients(basePackages = "org.simplepoint")
+@EnableServiceRouter(basePackages = "org.simplepoint")
 public class Host {
 
   /**

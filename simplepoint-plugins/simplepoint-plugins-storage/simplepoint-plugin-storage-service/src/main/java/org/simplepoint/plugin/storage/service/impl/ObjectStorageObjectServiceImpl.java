@@ -63,6 +63,9 @@ public class ObjectStorageObjectServiceImpl
 
   private final String applicationName;
 
+  /**
+   * Object Storage Object Service Impl.
+   */
   public ObjectStorageObjectServiceImpl(
       final ObjectStorageObjectRepository repository,
       final DetailsProviderService detailsProviderService,
@@ -129,7 +132,7 @@ public class ObjectStorageObjectServiceImpl
       throw new IllegalArgumentException("上传文件不能为空");
     }
     ResolvedProvider provider = resolveProvider(request == null ? null : request.getProviderCode(), false);
-    String tenantId = currentTenantIdOrDefault();
+    String tenantId = requireCurrentTenantId();
     enforceQuota(tenantId, file.getSize());
     String fileName = resolveFileName(file, request);
     String objectKey = resolveObjectKey(tenantId, provider.getProperties(), fileName, request);
@@ -203,10 +206,8 @@ public class ObjectStorageObjectServiceImpl
       normalized.putAll(attributes);
     }
     normalized.put("deletedAt", "is:null");
-    String tenantId = currentTenantId();
-    if (tenantId != null && !tenantId.isBlank()) {
-      normalized.putIfAbsent("tenantId", tenantId);
-    }
+    String tenantId = requireCurrentTenantId();
+    normalized.putIfAbsent("tenantId", tenantId);
     String fileName = normalized.get("originalFileName");
     if (fileName != null && !fileName.isBlank() && !fileName.contains(":")) {
       normalized.put("originalFileName", "like:" + fileName.trim());
@@ -280,9 +281,12 @@ public class ObjectStorageObjectServiceImpl
     return sanitizePath(basePath) + '/' + sanitizePath(objectKey);
   }
 
-  private String currentTenantIdOrDefault() {
+  private String requireCurrentTenantId() {
     String tenantId = currentTenantId();
-    return tenantId == null || tenantId.isBlank() ? "default" : tenantId;
+    if (tenantId == null || tenantId.isBlank()) {
+      throw new IllegalArgumentException("租户ID不能为空");
+    }
+    return tenantId;
   }
 
   private String resolveSourceServiceName(final ObjectStorageUploadRequest request) {

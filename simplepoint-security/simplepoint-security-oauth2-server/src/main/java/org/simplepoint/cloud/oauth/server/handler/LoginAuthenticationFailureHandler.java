@@ -27,6 +27,9 @@ public class LoginAuthenticationFailureHandler implements AuthenticationFailureH
   private final AuthenticationFailureHandler delegate = new SimpleUrlAuthenticationFailureHandler("/login?error");
   private final LoginAuditEventPublisher loginAuditEventPublisher;
 
+  /**
+   * Login Authentication Failure Handler.
+   */
   public LoginAuthenticationFailureHandler(final LoginAuditEventPublisher loginAuditEventPublisher) {
     this.loginAuditEventPublisher = loginAuditEventPublisher;
   }

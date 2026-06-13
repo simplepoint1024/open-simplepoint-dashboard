@@ -21,6 +21,13 @@ public interface RolePermissionsRelevanceRepository {
   <S extends RolePermissionsRelevance> List<S> saveAll(Iterable<S> entities);
 
   /**
+   * Deletes all role-permission relations for the specified permission authorities.
+   *
+   * @param authorities permission authorities to remove
+   */
+  void deleteAllByPermissionAuthorities(Collection<String> authorities);
+
+  /**
    * Delete all RolePermissionsRelevance entities associated with the specified role authority.
    *
    * @param roleId the role authority whose associated RolePermissionsRelevance entities are to be deleted
@@ -45,6 +52,14 @@ public interface RolePermissionsRelevanceRepository {
   List<RolePermissionsRelevance> findByRoleIdIn(Collection<String> roleIds);
 
   /**
+   * Returns tenant IDs whose role-permission relations reference the given authorities.
+   *
+   * @param authorities permission authorities
+   * @return affected tenant IDs
+   */
+  Set<String> findTenantIdsByPermissionAuthorities(Collection<String> authorities);
+
+  /**
    * Returns the first permission relevance record for a role within a tenant,
    * used to read the current scope assignment.
    *
@@ -63,4 +78,12 @@ public interface RolePermissionsRelevanceRepository {
    * @param fieldScopeId the new field scope ID (may be null to clear)
    */
   void updateScopeForRole(String tenantId, String roleId, String dataScopeId, String fieldScopeId);
+
+  /**
+   * Rewrites a permission authority across all role relations.
+   *
+   * @param oldAuthority old permission authority
+   * @param newAuthority new permission authority
+   */
+  void updatePermissionAuthority(String oldAuthority, String newAuthority);
 }

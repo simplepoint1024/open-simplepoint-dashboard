@@ -8,6 +8,7 @@
 
 package org.simplepoint.plugin.rbac.core.base.repository;
 
+import java.util.Collection;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.PermissionsRepository;
@@ -18,8 +19,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Collection;
-
 /**
  * Repository interface for managing Permissions entities.
  * This interface extends BaseRepository and provides additional custom query methods
@@ -27,30 +26,30 @@ import java.util.Collection;
  */
 @Repository
 public interface JpaPermissionsRepository extends BaseRepository<Permissions, String>,
-        PermissionsRepository {
+    PermissionsRepository {
 
-    @Override
-    @Query("""
-                    select
-                    new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.id,p.name,p.authority,p.description,p.type)
-                    from Permissions p where p.authority in :permissions
-                    order by p.name asc, p.authority asc
-            """)
-    Collection<PermissionsRelevanceVo> permissionItems(@Param("permissions") Collection<String> permissions);
+  @Override
+  @Query("""
+          select
+          new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.id,p.name,p.authority,p.description,p.type)
+          from Permissions p where p.authority in :permissions
+          order by p.name asc, p.authority asc
+      """)
+  Collection<PermissionsRelevanceVo> permissionItems(@Param("permissions") Collection<String> permissions);
 
-    @Override
-    @Query("""
-                    select
-                    new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.id,p.name,p.authority,p.description,p.type)
-                    from Permissions p where p.authority in :permissions
-            """)
-    Page<PermissionsRelevanceVo> permissionItems(Pageable pageable, @Param("permissions") Collection<String> permissions);
+  @Override
+  @Query("""
+          select
+          new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.id,p.name,p.authority,p.description,p.type)
+          from Permissions p where p.authority in :permissions
+      """)
+  Page<PermissionsRelevanceVo> permissionItems(Pageable pageable, @Param("permissions") Collection<String> permissions);
 
-    @Override
-    @Query("""
-                    select
-                    new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.id,p.name,p.authority,p.description,p.type)
-                    from Permissions p
-            """)
-    Page<PermissionsRelevanceVo> permissionItemsAll(Pageable pageable);
+  @Override
+  @Query("""
+          select
+          new org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo(p.id,p.name,p.authority,p.description,p.type)
+          from Permissions p
+      """)
+  Page<PermissionsRelevanceVo> permissionItemsAll(Pageable pageable);
 }

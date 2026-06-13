@@ -301,6 +301,9 @@ public class ClickhouseJdbcDatabaseDialect extends AbstractJdbcDatabaseDialect {
     return value.trim();
   }
 
+  /**
+   * Trim To Null.
+   */
   protected static String trimToNull(final String value) {
     if (value == null) {
       return null;

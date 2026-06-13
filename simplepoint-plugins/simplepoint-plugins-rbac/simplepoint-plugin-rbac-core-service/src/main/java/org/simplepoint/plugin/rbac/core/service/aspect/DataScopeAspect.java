@@ -35,6 +35,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class DataScopeAspect {
 
+  /**
+   * @ Around.
+   */
   @Around("@annotation(dataScope)")
   public Object applyDataScope(ProceedingJoinPoint pjp, DataScopeFilter dataScope) throws Throwable {
     AuthorizationContext ctx = AuthorizationContextHolder.getContext();
@@ -45,13 +48,15 @@ public class DataScopeAspect {
     String scopeType = ctx.getDataScopeType();
     String userId = ctx.getUserId();
     Set<String> deptIds = ctx.getDeptIds();
+    boolean includeSelf = Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf());
 
     DataScopeCondition condition = new DataScopeCondition(
         scopeType,
         dataScope.deptField(),
         dataScope.ownerField(),
         userId,
-        deptIds
+        deptIds,
+        includeSelf
     );
     DataScopeContext.set(condition);
     try {

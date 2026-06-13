@@ -51,3 +51,7 @@ bin/
 
 ### Logs ###
 scripts/shell/logs/
+*.log
+hs_err_pid*.log
+replay_pid*.log
+*.hprof

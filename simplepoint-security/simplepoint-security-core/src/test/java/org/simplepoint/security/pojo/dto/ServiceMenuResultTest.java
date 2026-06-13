@@ -3,6 +3,7 @@ package org.simplepoint.security.pojo.dto;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.security.entity.TreeMenu;
@@ -14,6 +15,7 @@ class ServiceMenuResultTest {
     assertThat(ServiceMenuResult.EMPTY.services()).isEmpty();
     assertThat(ServiceMenuResult.EMPTY.routes()).isEmpty();
     assertThat(ServiceMenuResult.EMPTY.entryPoint()).isNull();
+    assertThat(ServiceMenuResult.EMPTY.authorizationContext()).isEmpty();
   }
 
   @Test
@@ -59,8 +61,19 @@ class ServiceMenuResultTest {
   @Test
   void serviceMenuResult_constructorAndAccessors() {
     ServiceMenuResult.ServiceEntry entry = new ServiceMenuResult.ServiceEntry("svc", "/entry");
-    ServiceMenuResult result = new ServiceMenuResult(Set.of(entry), List.of(), "/ep");
+    ServiceMenuResult result = new ServiceMenuResult(Set.of(entry), List.of(), "/ep", Map.of("scopeType", "PLATFORM"));
     assertThat(result.services()).containsExactly(entry);
     assertThat(result.entryPoint()).isEqualTo("/ep");
+    assertThat(result.authorizationContext()).containsEntry("scopeType", "PLATFORM");
+  }
+
+  @Test
+  void withAuthorizationContext_returnsCopyWithContext() {
+    ServiceMenuResult result = ServiceMenuResult.of(Set.of(), List.of())
+        .withAuthorizationContext(Map.of("scopeType", "TENANT", "actorRole", "TENANT_ADMIN"));
+
+    assertThat(result.authorizationContext())
+        .containsEntry("scopeType", "TENANT")
+        .containsEntry("actorRole", "TENANT_ADMIN");
   }
 }

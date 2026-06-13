@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,14 +27,15 @@ import org.simplepoint.api.base.BaseEntity;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.api.base.TenantBaseEntity;
 import org.simplepoint.api.base.audit.ModifyDataAuditingService;
+import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.api.security.service.JsonSchemaDetailsService;
-import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 class BaseServiceImplTest {
@@ -50,6 +52,7 @@ class BaseServiceImplTest {
     private String createdBy;
     private String updatedBy;
     private String createOrgDeptId;
+    private String orgId;
 
     @Override
     public String getId() {
@@ -119,6 +122,14 @@ class BaseServiceImplTest {
     @Override
     public void setCreateOrgDeptId(String s) {
       this.createOrgDeptId = s;
+    }
+
+    public String getOrgId() {
+      return orgId;
+    }
+
+    public void setOrgId(String orgId) {
+      this.orgId = orgId;
     }
   }
 
@@ -195,7 +206,7 @@ class BaseServiceImplTest {
   @Test
   void findAll_delegatesToRepository() {
     StubEntity e = new StubEntity();
-    when(repository.findAll(any(Map.class))).thenReturn(List.of(e));
+    when(repository.limit(any(Map.class), any())).thenReturn((Page) new PageImpl<>(List.of(e)));
 
     List<StubEntity> result = service.findAll(Map.of("k", "v"));
 
@@ -204,7 +215,8 @@ class BaseServiceImplTest {
 
   @Test
   void existsById_delegatesToRepository() {
-    when(repository.existsById("x")).thenReturn(true);
+    StubEntity entity = new StubEntity();
+    when(repository.findById("x")).thenReturn(Optional.of(entity));
 
     assertThat(service.existsById("x")).isTrue();
   }
@@ -312,6 +324,18 @@ class BaseServiceImplTest {
     service.create(entity);
 
     assertThat(entity.getTenantId()).isEqualTo("existing-tenant");
+  }
+
+  @Test
+  void applyCurrentTenantId_throwsWhenTenantEntityHasNoTenantContext() {
+    service.injectedContext = null;
+    StubTenantEntity entity = new StubTenantEntity();
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.create(entity))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Tenant-aware entity requires an active tenant context");
+
+    verify(repository, never()).save(any());
   }
 
   @Test
@@ -583,8 +607,87 @@ class BaseServiceImplTest {
 
     service.removeByIds(List.of("del-1"));
 
-    verify(repository).deleteByIds(any());
+    verify(repository).deleteByIds(List.of("del-1"));
     verify(auditor).delete(any(), any());
+  }
+
+  @Test
+  void findById_selfScope_filtersOtherOwner() {
+    AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setUserId("user-1");
+    ctx.setDataScopeType("SELF");
+    service.injectedContext = ctx;
+
+    StubEntity entity = new StubEntity();
+    entity.setId("id-1");
+    entity.setCreatedBy("user-2");
+    when(repository.findById("id-1")).thenReturn(Optional.of(entity));
+
+    assertThat(service.findById("id-1")).isEmpty();
+  }
+
+  @Test
+  void findById_deptScope_allowsConfiguredDept() {
+    AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setDataScopeType("DEPT");
+    ctx.setDeptIds(Set.of("dept-1"));
+    service.injectedContext = ctx;
+
+    StubEntity entity = new StubEntity();
+    entity.setId("id-1");
+    entity.setOrgId("dept-1");
+    when(repository.findById("id-1")).thenReturn(Optional.of(entity));
+
+    assertThat(service.findById("id-1")).contains(entity);
+  }
+
+  @Test
+  void removeById_throwsWhenEntityOutsideDataScope() {
+    AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setUserId("user-1");
+    ctx.setDataScopeType("SELF");
+    service.injectedContext = ctx;
+
+    StubEntity entity = new StubEntity();
+    entity.setId("id-1");
+    entity.setCreatedBy("user-2");
+    when(repository.findById("id-1")).thenReturn(Optional.of(entity));
+
+    assertThatThrownBy(() -> service.removeById("id-1"))
+        .isInstanceOf(AccessDeniedException.class);
+    verify(repository, never()).deleteById("id-1");
+  }
+
+  @Test
+  void modifyById_whenDataScopeActiveAndEntityMissing_doesNotUpdate() {
+    AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setUserId("user-1");
+    ctx.setDataScopeType("SELF");
+    service.injectedContext = ctx;
+
+    StubEntity entity = new StubEntity();
+    entity.setId("id-99");
+    when(repository.findById("id-99")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.modifyById(entity))
+        .isInstanceOf(java.util.NoSuchElementException.class);
+    verify(repository, never()).updateById(entity);
+  }
+
+  @Test
+  void create_clearsNonEditableFields() {
+    AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setFieldPermissions(Map.of("StubEntity#createdBy", "VISIBLE"));
+    service.injectedContext = ctx;
+
+    StubEntity entity = new StubEntity();
+    entity.setCreatedBy("client-user");
+    when(repository.save(entity)).thenReturn(entity);
+    when(detailsProviderService.getDialects(ModifyDataAuditingService.class)).thenReturn(Set.of());
+
+    service.create(entity);
+
+    assertThat(entity.getCreatedBy()).isNull();
   }
 
   @Test

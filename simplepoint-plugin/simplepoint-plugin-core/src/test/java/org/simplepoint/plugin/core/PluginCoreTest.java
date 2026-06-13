@@ -69,10 +69,14 @@ class PluginCoreTest {
       public List<String> groups() {
         return List.of(groupNames);
       }
+
       @Override
-      public void handle(Plugin.PluginInstance instance) {}
+      public void handle(Plugin.PluginInstance instance) {
+      }
+
       @Override
-      public void rollback(Plugin.PluginInstance instance) {}
+      public void rollback(Plugin.PluginInstance instance) {
+      }
     };
   }
 

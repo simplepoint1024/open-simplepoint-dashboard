@@ -15,8 +15,8 @@ import org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilter
 import org.simplepoint.security.oauth2.resourceserver.delegate.JwtAuthenticationConverterDelegate;
 import org.simplepoint.security.token.TokenRevocationService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -38,7 +38,6 @@ public class ResourceServerAutoConfiguration {
    * <p>This bean defines a security filter that ensures all incoming requests are authenticated
    * and utilizes OAuth2 JWT tokens for identity verification.</p>
    *
-   * @param http the {@link HttpSecurity} instance used for security configurations
    * @return a fully configured {@link SecurityFilterChain} instance
    * @throws Exception if an error occurs during the security configuration process
    */
@@ -48,6 +47,9 @@ public class ResourceServerAutoConfiguration {
     return new TokenRevocationService(cacheService);
   }
 
+  /**
+   * @ Bean.
+   */
   @Bean
   public SecurityFilterChain securityWebFilterChain(
       HttpSecurity http,

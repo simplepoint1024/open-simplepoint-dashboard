@@ -107,10 +107,12 @@ public class JdbcDataSourceDefinition extends BaseEntityImpl<String> {
   private String driverId;
 
   @Transient
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dataSources.title.driverCode", description = "i18n:dna.dataSources.description.driverCode", accessMode = Schema.AccessMode.READ_ONLY)
   private String driverCode;
 
   @Transient
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dataSources.title.driverName", description = "i18n:dna.dataSources.description.driverName", accessMode = Schema.AccessMode.READ_ONLY)
   private String driverName;
 
@@ -137,6 +139,7 @@ public class JdbcDataSourceDefinition extends BaseEntityImpl<String> {
 
   @Order(5)
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dataSources.title.password", description = "i18n:dna.dataSources.description.password", accessMode = Schema.AccessMode.WRITE_ONLY,
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -147,6 +150,7 @@ public class JdbcDataSourceDefinition extends BaseEntityImpl<String> {
   private String password;
 
   @Order(6)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dataSources.title.connectionProperties", description = "i18n:dna.dataSources.description.connectionProperties", maxLength = 4000)
   @Column(length = 4000)
   private String connectionProperties;
@@ -166,6 +170,7 @@ public class JdbcDataSourceDefinition extends BaseEntityImpl<String> {
   private String description;
 
   @Order(9)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dataSources.title.lastConnectStatus", description = "i18n:dna.dataSources.description.lastConnectStatus", accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -176,17 +181,20 @@ public class JdbcDataSourceDefinition extends BaseEntityImpl<String> {
   private String lastConnectStatus;
 
   @Order(10)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dataSources.title.lastConnectMessage", description = "i18n:dna.dataSources.description.lastConnectMessage", accessMode = Schema.AccessMode.READ_ONLY,
       maxLength = 1024)
   @Column(length = 1024)
   private String lastConnectMessage;
 
   @Order(11)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dataSources.title.lastTestedAt", description = "i18n:dna.dataSources.description.lastTestedAt", type = "string", format = "date-time",
       accessMode = Schema.AccessMode.READ_ONLY)
   private Instant lastTestedAt;
 
   @Order(12)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dataSources.title.databaseProductName", description = "i18n:dna.dataSources.description.databaseProductName", accessMode = Schema.AccessMode.READ_ONLY,
       maxLength = 128,
       extensions = {
@@ -198,6 +206,7 @@ public class JdbcDataSourceDefinition extends BaseEntityImpl<String> {
   private String databaseProductName;
 
   @Order(13)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dataSources.title.databaseProductVersion", description = "i18n:dna.dataSources.description.databaseProductVersion", accessMode = Schema.AccessMode.READ_ONLY,
       maxLength = 256)
   @Column(length = 256)

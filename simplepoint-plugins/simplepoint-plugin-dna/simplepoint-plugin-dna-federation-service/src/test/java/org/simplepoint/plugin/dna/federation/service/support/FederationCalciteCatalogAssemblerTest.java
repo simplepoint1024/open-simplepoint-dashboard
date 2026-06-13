@@ -11,16 +11,16 @@ import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
-import org.h2.jdbcx.JdbcDataSource;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
+import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -206,12 +206,12 @@ class FederationCalciteCatalogAssemblerTest {
   void assembleShouldHandleChineseSchemaNames() throws Exception {
     JdbcDataSource dataSource = createDataSource();
     initialize(dataSource, """
-        create schema if not exists "\u6D4B\u8BD5";
-        create table "\u6D4B\u8BD5".items (
+        create schema if not exists "测试";
+        create table "测试".items (
           id int primary key,
           name varchar(64) not null
         );
-        insert into "\u6D4B\u8BD5".items(id, name) values (1, 'hello');
+        insert into "测试".items(id, name) values (1, 'hello');
         """);
 
     JdbcDataSourceDefinition definition = new JdbcDataSourceDefinition();
@@ -245,7 +245,7 @@ class FederationCalciteCatalogAssemblerTest {
       // Chinese schema name should NOT crash Calcite convention/rule validation
       CalciteQueryResult result = engine.execute(
           new CalciteQueryRequest(
-              "select id, name from ds_cn.\"\u6D4B\u8BD5\".items order by id",
+              "select id, name from ds_cn.\"测试\".items order by id",
               "ds_cn",
               100,
               5_000

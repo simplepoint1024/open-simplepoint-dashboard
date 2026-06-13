@@ -48,19 +48,19 @@
         }
       },
       "usedIn": [
-        "./platform/QueryAudit",
+        "./platform/FederationView",
         "./platform/Dashboard",
         "./platform/DataAsset",
         "./platform/DataLineage",
         "./platform/DataQuality",
         "./platform/FederationJdbcUser/config/dataSource",
         "./platform/FederationJdbcUser",
-        "./platform/FederationView",
         "./platform/HealthMonitor",
         "./platform/JdbcDataSource",
         "./platform/JdbcDialect",
         "./platform/JdbcDriver",
         "./platform/JdbcMetadata",
+        "./platform/QueryAudit",
         "./platform/QueryPolicy",
         "./platform/QueryTemplate",
         "./platform/SqlConsole"
@@ -88,10 +88,11 @@
         }
       },
       "usedIn": [
-        "./platform/DataQuality",
+        "./platform/QueryAudit",
         "./platform/Dashboard",
         "./platform/DataAsset",
         "./platform/DataLineage",
+        "./platform/DataQuality",
         "./platform/FederationJdbcUser/config/dataSource",
         "./platform/FederationJdbcUser",
         "./platform/FederationView",
@@ -100,7 +101,6 @@
         "./platform/JdbcDialect",
         "./platform/JdbcDriver",
         "./platform/JdbcMetadata",
-        "./platform/QueryAudit",
         "./platform/QueryPolicy",
         "./platform/QueryTemplate",
         "./platform/SqlConsole"
@@ -154,11 +154,11 @@
         }
       },
       "usedIn": [
-        "./platform/JdbcDriver",
-        "./platform/DataLineage",
         "./platform/FederationJdbcUser/config/dataSource",
+        "./platform/DataLineage",
         "./platform/FederationJdbcUser",
         "./platform/JdbcDialect",
+        "./platform/JdbcDriver",
         "./platform/JdbcMetadata",
         "./platform/SqlConsole"
       ]
@@ -389,7 +389,7 @@
           "sync": [
             "760.js",
             "121.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__DataAsset.js"
           ],
           "async": []
@@ -413,7 +413,7 @@
           "sync": [
             "760.js",
             "121.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__DataCatalog.js"
           ],
           "async": []
@@ -442,7 +442,7 @@
             "760.js",
             "234.js",
             "121.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__DataLineage.js"
           ],
           "async": []
@@ -469,7 +469,7 @@
           "sync": [
             "760.js",
             "121.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__DataQuality.js"
           ],
           "async": []
@@ -544,7 +544,7 @@
           "sync": [
             "760.js",
             "121.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__FederationView.js"
           ],
           "async": []
@@ -594,7 +594,7 @@
           "sync": [
             "760.js",
             "121.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__JdbcDataSource.js"
           ],
           "async": []
@@ -646,7 +646,7 @@
           "sync": [
             "760.js",
             "121.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__JdbcDriver.js"
           ],
           "async": []
@@ -697,7 +697,7 @@
           "sync": [
             "760.js",
             "121.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__QueryAudit.js"
           ],
           "async": []
@@ -724,7 +724,7 @@
           "sync": [
             "760.js",
             "121.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__QueryPolicy.js"
           ],
           "async": []
@@ -751,7 +751,7 @@
           "sync": [
             "760.js",
             "121.js",
-            "898.js",
+            "306.js",
             "__federation_expose_platform__QueryTemplate.js"
           ],
           "async": []

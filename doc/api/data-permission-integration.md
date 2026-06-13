@@ -19,15 +19,19 @@ Both dimensions are resolved at login time and stored inside the user's `Authori
 - `AuthorizationContext#deptIds` — set of department IDs for DEPT / DEPT_AND_BELOW / CUSTOM scopes
 - `AuthorizationContext#fieldPermissions` — `Map<String, String>` keyed as `"resource#field"` → `FieldAccessType` name
 
-### DataScopeType precedence (most-permissive wins across roles)
+### DataScopeType merge semantics
 
-| Level | Type | Meaning |
-|-------|------|---------|
-| 4 | `ALL` | Access all data |
-| 3 | `DEPT_AND_BELOW` | Own department + all sub-departments (BFS via org tree) |
-| 2 | `DEPT` | Own department only |
-| 1 | `CUSTOM` | Explicitly listed department IDs |
-| 0 | `SELF` | Own data only (default when no scope is configured) |
+Multiple roles are merged into one effective row predicate:
+
+| Type | Meaning |
+|------|---------|
+| `ALL` | Access all data; overrides all restrictive scopes |
+| `DEPT_AND_BELOW` | Adds own department + all sub-departments to the effective department set |
+| `DEPT` | Adds own department to the effective department set |
+| `CUSTOM` | Adds explicitly listed department IDs to the effective department set |
+| `SELF` | Adds `ownerField = currentUserId` as an OR condition |
+
+If no `DataScope` is configured for a role-bearing user, the effective scope falls back to `SELF`.
 
 ### FieldAccessType precedence (most-permissive wins across roles)
 
@@ -48,7 +52,9 @@ Both dimensions are resolved at login time and stored inside the user's `Authori
 
 The `BaseRepositoryImpl` reads `DataScopeContext` inside `readSpecification()` and appends the appropriate JPA predicate automatically. No repository changes are needed.
 
-If your entity uses standard field names (`createdBy` / `orgId`), you get filtering for free. If any field is missing on the entity, the predicate for that field is silently skipped — there is no error.
+If your entity uses standard field names (`createdBy` / `orgId`), you get filtering for free. Restrictive scopes are **fail-closed**: if the configured field is missing, `CUSTOM` has no department IDs, or an unknown scope type is encountered, the predicate resolves to no rows instead of silently dropping the filter.
+
+The base service also applies row-level checks to generic ID and mutation paths (`findById`, `findAllByIds`, `findAll`, `modifyById`, `removeById`, `removeByIds`, `exists`, and `count`). This prevents a user from listing only permitted rows but then modifying or deleting an out-of-scope row by ID.
 
 ### Custom field names
 
@@ -62,7 +68,19 @@ import org.simplepoint.core.datascopeannotation.DataScopeFilter;
 public <S extends Article> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
     return super.limit(attributes, pageable);
 }
+
+@Override
+protected String dataScopeOwnerField() {
+    return "authorId";
+}
+
+@Override
+protected String dataScopeDeptField() {
+    return "departmentId";
+}
 ```
+
+The protected field-name methods are used by base ID/mutation checks (`findById`, `modifyById`, `removeById`, etc.); override them together with the `limit()` annotation so list and by-ID behavior stay consistent.
 
 ### Opting out
 
@@ -90,6 +108,7 @@ if (condition != null && !condition.isAllData()) {
         // filter by condition.getUserId() on ownerField
     } else if (condition.getDeptIds() != null) {
         // filter by condition.getDeptIds() on deptField
+        // if condition.isIncludeSelf(), OR with condition.getUserId() on ownerField
     }
 }
 ```
@@ -101,6 +120,7 @@ if (condition != null && !condition.isAllData()) {
 | `isAllData()` | `true` when scope type is `ALL` |
 | `isSelf()` | `true` when scope type is `SELF` |
 | `getDeptIds()` | Non-null set for DEPT / DEPT_AND_BELOW / CUSTOM; `null` otherwise |
+| `isIncludeSelf()` | `true` when SELF should be OR-ed into a department/custom predicate |
 | `getUserId()` | Current user's ID |
 | `getDeptField()` | Value of `@DataScopeFilter#deptField` |
 | `getOwnerField()` | Value of `@DataScopeFilter#ownerField` |
@@ -216,4 +236,3 @@ If your entity uses different field names, pass them explicitly:
 ```java
 @DataScopeFilter(ownerField = "authorId", deptField = "departmentId")
 ```
-

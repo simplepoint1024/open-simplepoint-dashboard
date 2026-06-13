@@ -42,6 +42,7 @@ public class JdbcDialectSourceDefinition extends BaseEntityImpl<String> {
   private String sourceUrl;
 
   @Order(3)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dialects.title.localJarPath", description = "i18n:dna.dialects.description.localJarPath", accessMode = Schema.AccessMode.READ_ONLY,
       maxLength = 2048)
   @Column(length = 2048)
@@ -57,11 +58,13 @@ public class JdbcDialectSourceDefinition extends BaseEntityImpl<String> {
   private String description;
 
   @Order(6)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dialects.title.loadedAt", description = "i18n:dna.dialects.description.loadedAt", accessMode = Schema.AccessMode.READ_ONLY,
       type = "string", format = "date-time")
   private Instant loadedAt;
 
   @Order(7)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dialects.title.lastLoadMessage", description = "i18n:dna.dialects.description.lastLoadMessage", accessMode = Schema.AccessMode.READ_ONLY,
       maxLength = 1024)
   @Column(length = 1024)

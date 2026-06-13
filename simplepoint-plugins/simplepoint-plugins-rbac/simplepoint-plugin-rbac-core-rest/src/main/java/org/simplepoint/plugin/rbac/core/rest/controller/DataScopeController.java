@@ -37,10 +37,16 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "数据范围管理", description = "用于管理系统中的行级数据访问范围策略")
 public class DataScopeController extends BaseController<DataScopeService, DataScope, String> {
 
+  /**
+   * Data Scope Controller.
+   */
   public DataScopeController(DataScopeService service) {
     super(service);
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping
   @Operation(summary = "分页查询数据范围", description = "根据提供的属性和分页参数检索数据范围列表")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('data-scope.view')")
@@ -48,6 +54,9 @@ public class DataScopeController extends BaseController<DataScopeService, DataSc
     return limit(service.limit(attributes, pageable), DataScope.class);
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping
   @Operation(summary = "添加数据范围", description = "创建新的数据范围策略")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('data-scope.create')")
@@ -55,6 +64,9 @@ public class DataScopeController extends BaseController<DataScopeService, DataSc
     return ok(service.create(data));
   }
 
+  /**
+   * @ Put Mapping.
+   */
   @PutMapping
   @Operation(summary = "更新数据范围", description = "更新已有的数据范围策略")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('data-scope.edit')")
@@ -62,6 +74,9 @@ public class DataScopeController extends BaseController<DataScopeService, DataSc
     return ok(service.modifyById(data));
   }
 
+  /**
+   * @ Delete Mapping.
+   */
   @DeleteMapping
   @Operation(summary = "删除数据范围", description = "根据 ID 删除一个或多个数据范围策略")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('data-scope.delete')")

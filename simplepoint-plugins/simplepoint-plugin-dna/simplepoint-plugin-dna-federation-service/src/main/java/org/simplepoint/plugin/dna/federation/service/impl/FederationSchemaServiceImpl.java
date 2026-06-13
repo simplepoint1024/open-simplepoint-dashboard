@@ -41,7 +41,6 @@ public class FederationSchemaServiceImpl
    *
    * @param repository             schema repository
    * @param detailsProviderService details provider service
-   * @param catalogRepository      catalog repository
    */
   public FederationSchemaServiceImpl(
       final FederationSchemaRepository repository,

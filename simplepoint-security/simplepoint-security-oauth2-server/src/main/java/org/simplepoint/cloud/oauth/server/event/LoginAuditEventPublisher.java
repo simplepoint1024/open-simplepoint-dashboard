@@ -24,10 +24,16 @@ public class LoginAuditEventPublisher {
 
   private final ApplicationEventPublisher applicationEventPublisher;
 
+  /**
+   * Login Audit Event Publisher.
+   */
   public LoginAuditEventPublisher(final ApplicationEventPublisher applicationEventPublisher) {
     this.applicationEventPublisher = applicationEventPublisher;
   }
 
+  /**
+   * Publish Success.
+   */
   public void publishSuccess(final HttpServletRequest request, final Authentication authentication) {
     UserIdentity userIdentity = resolveUserIdentity(authentication, null);
     RequestMetadata requestMetadata = resolveRequestMetadata(request);
@@ -47,6 +53,9 @@ public class LoginAuditEventPublisher {
     ));
   }
 
+  /**
+   * Publish Failure.
+   */
   public void publishFailure(
       final HttpServletRequest request,
       final Authentication authentication,
@@ -56,6 +65,9 @@ public class LoginAuditEventPublisher {
     publishFailure(request, userIdentity, authentication == null ? null : authentication.getClass().getSimpleName(), exception);
   }
 
+  /**
+   * Publish Failure.
+   */
   public void publishFailure(
       final HttpServletRequest request,
       final String username,

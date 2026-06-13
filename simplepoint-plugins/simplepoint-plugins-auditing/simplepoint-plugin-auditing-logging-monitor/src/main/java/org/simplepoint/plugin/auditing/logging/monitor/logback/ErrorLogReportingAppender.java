@@ -15,9 +15,9 @@ import org.simplepoint.plugin.auditing.logging.api.pojo.command.ErrorLogRecordCo
 import org.simplepoint.plugin.auditing.logging.api.service.ErrorLogRemoteService;
 import org.simplepoint.plugin.auditing.logging.monitor.support.ErrorLogCommandFactory;
 
- /**
-  * Logback appender that reports warning and error log events to the auditing service.
-  */
+/**
+ * Logback appender that reports warning and error log events to the auditing service.
+ */
 public class ErrorLogReportingAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
 
   private static final ThreadLocal<Boolean> REPORTING = ThreadLocal.withInitial(() -> false);
@@ -69,10 +69,16 @@ public class ErrorLogReportingAppender extends UnsynchronizedAppenderBase<ILoggi
         || (eventObject.getLevel() != null && eventObject.getLevel().levelInt >= Level.WARN_INT);
   }
 
+  /**
+   * Enable Reporting.
+   */
   public void enableReporting() {
     this.reportingEnabled = true;
   }
 
+  /**
+   * Disable Reporting.
+   */
   public void disableReporting() {
     this.reportingEnabled = false;
   }

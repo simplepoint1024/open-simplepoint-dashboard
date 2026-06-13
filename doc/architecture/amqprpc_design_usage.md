@@ -9,14 +9,14 @@
   - Consumer：调用 RPC 接口，通过 MQ 将请求发送到指定队列，等待响应。
   - Broker：AMQP 消息中间件（如 RabbitMQ），提供队列、路由和可靠传输。
 - 主要组件：
-  - 注解 `@AmqpRemoteService`：标记提供方实现类。
-  - 注解 `@AmqpRemoteClient`：标记接口，生成远程代理供消费方注入调用。
-  - 注解 `@EnableAmqpRemoteClients`：开启远程客户端扫描。
+  - 注解 `@RemoteProvider`：标记提供方实现类。
+  - 注解 `@RemoteContract`：标记接口，生成远程代理供消费方注入调用。
+  - 注解 `@EnableRemoteContracts`：开启远程客户端扫描。
   - 模块 `simplepoint-data-amqp-rpc`：提供底层 RPC 框架与自动配置。
 
 ## 2. 工作流程
-1) Provider 启动后扫描 `@AmqpRemoteService`，将实现与接口绑定到队列（由注解 `to` 或默认命名决定）。
-2) Consumer 端通过 `@EnableAmqpRemoteClients` 扫描 `@AmqpRemoteClient` 接口，生成代理 Bean。
+1) Provider 启动后扫描 `@RemoteProvider`，将实现与接口绑定到队列（由注解 `to` 或默认命名决定）。
+2) Consumer 端通过 `@EnableRemoteContracts` 扫描 `@RemoteContract` 接口，生成代理 Bean。
 3) Consumer 代码调用接口方法 → 序列化请求 → 发送到对应队列。
 4) Provider 监听队列，收到请求后调用本地实现，序列化返回值并应答。
 5) Consumer 接收响应消息并反序列化为返回类型。
@@ -24,18 +24,18 @@
 ## 3. 示例结构（`simplepoint-examples/simplepoint-amqprpc-examples/`）
 - `simplepoint-amqprpc-example-api/`：接口与 DTO。
   - `MessageExample`：示例消息 DTO。
-  - `MessageExampleService`：接口，`@AmqpRemoteClient(to = "messages")`。
+  - `MessageExampleService`：接口，`@RemoteContract(name = "messages")`。
 - `simplepoint-amqprpc-example-provider/`：服务提供方。
   - `ProviderApplication`：`@Boot` 启动。
-  - `MessageExampleServiceImpl`：`@AmqpRemoteService` 实现，处理 echo 逻辑。
+  - `MessageExampleServiceImpl`：`@RemoteProvider` 实现，处理 echo 逻辑。
 - `simplepoint-amqprpc-example-consumer/`：服务消费方。
-  - `ConsumerApplication`：`@Boot` + `@EnableAmqpRemoteClients(basePackages = "org.simplepoint.amqprpc")`。
+  - `ConsumerApplication`：`@Boot` + `@EnableRemoteContracts(basePackages = "org.simplepoint.amqprpc")`。
   - `MessageExampleController`：注入 `MessageExampleService`，通过 HTTP 触发 RPC 调用。
 
 ## 4. 关键代码片段
 ### 定义接口（API 模块）
 ```java
-@AmqpRemoteClient(to = "messages")
+@RemoteContract(name = "messages")
 public interface MessageExampleService {
   MessageExample echo(String message);
 }
@@ -43,7 +43,7 @@ public interface MessageExampleService {
 
 ### Provider 实现
 ```java
-@AmqpRemoteService
+@RemoteProvider
 public class MessageExampleServiceImpl implements MessageExampleService {
   public MessageExample echo(String message) {
     MessageExample m = new MessageExample();
@@ -56,7 +56,7 @@ public class MessageExampleServiceImpl implements MessageExampleService {
 ### Consumer 启用与调用
 ```java
 @Boot
-@EnableAmqpRemoteClients(basePackages = "org.simplepoint.amqprpc")
+@EnableRemoteContracts(basePackages = "org.simplepoint.amqprpc")
 public class ConsumerApplication { /* main(...) */ }
 ```
 ```java
@@ -76,9 +76,9 @@ public class MessageExampleController {
 - 依赖：
   - API 模块：`api(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))`
   - Provider/Consumer：引入 `simplepoint-data-amqp-rpc`、Starter（Web/WebFlux）、Consul/LoadBalancer 视需要。
-- 队列命名：由 `@AmqpRemoteClient(to = "<queue>")` 指定；Provider 默认监听同名队列。
+- 队列命名：由 `@RemoteContract(name = "<queue>")` 指定；Provider 默认监听同名队列。
 - 序列化：基于框架默认序列化（遵循 DTO 的可序列化约束）。
-- 包扫描：Consumer 需在 `@EnableAmqpRemoteClients` 中指定接口所在包。
+- 包扫描：Consumer 需在 `@EnableRemoteContracts` 中指定接口所在包。
 
 ## 6. 本地运行（示例）
 1) 准备 AMQP Broker（如 RabbitMQ），并在配置中指向正确地址（参考 `simplepoint-data-amqp-rpc` 的默认配置项）。

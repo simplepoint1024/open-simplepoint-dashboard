@@ -1,5 +1,3 @@
-environment          = "dev"
-consul_address       = "http://127.0.0.1:8500"
-consul_master_token  = ""
-vault_address        = "http://127.0.0.1:8200"
-vault_root_token     = "root"
+environment         = "dev"
+consul_address      = "http://127.0.0.1:8500"
+consul_master_token = ""

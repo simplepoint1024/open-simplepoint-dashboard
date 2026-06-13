@@ -32,8 +32,22 @@ public interface JpaFeaturePermissionRelevanceRepository
 
   @Override
   @Modifying
+  @Query("delete from FeaturePermissionRelevance fpr where fpr.permissionAuthority in ?1")
+  void deleteAllByPermissionAuthorities(Collection<String> permissionAuthorities);
+
+  @Override
+  @Modifying
   @Query("update FeaturePermissionRelevance fpr set fpr.featureCode = ?2 where fpr.featureCode = ?1")
   void updateFeatureCode(String oldCode, String newCode);
+
+  @Override
+  @Modifying
+  @Query("""
+      update FeaturePermissionRelevance fpr
+      set fpr.permissionAuthority = ?2
+      where fpr.permissionAuthority = ?1
+      """)
+  void updatePermissionAuthority(String oldAuthority, String newAuthority);
 
   @Override
   @Query("""

@@ -8,13 +8,13 @@
 
 package org.simplepoint.plugin.auditing.logging.api.service;
 
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.LoginLogRecordCommand;
+import org.simplepoint.remoting.RemoteContract;
 
 /**
  * Remote service used by the authorization service to record login logs.
  */
-@AmqpRemoteClient(to = "auditing.login-log")
+@RemoteContract(name = "auditing.login-log")
 public interface LoginLogRemoteService {
   /**
    * Records a login log event in the auditing service.

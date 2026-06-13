@@ -75,6 +75,7 @@ public class ObjectStorageObject extends TenantBaseEntityImpl<String> {
   @Order(7)
   @Schema(title = "i18n:storage.object.eTag", description = "i18n:storage.object.eTag.desc")
   @Column(name = "etag", length = 255)
+  @SuppressWarnings("checkstyle:MemberName")
   private String eTag;
 
   @Order(8)

@@ -95,6 +95,7 @@ public class FederationQueryTemplate extends BaseEntityImpl<String> {
   private String code;
 
   @Order(2)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.federation.queryTemplates.title.catalogId", description = "i18n:dna.federation.queryTemplates.description.catalogId", maxLength = 64)
   @Column(length = 64)
   private String catalogId;
@@ -113,6 +114,7 @@ public class FederationQueryTemplate extends BaseEntityImpl<String> {
   private String catalogName;
 
   @Transient
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.federation.queryTemplates.title.catalogCode", description = "i18n:dna.federation.queryTemplates.description.catalogCode", accessMode = Schema.AccessMode.READ_ONLY)
   private String catalogCode;
 
@@ -171,6 +173,7 @@ public class FederationQueryTemplate extends BaseEntityImpl<String> {
   private Boolean enabled;
 
   @Order(7)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.federation.queryTemplates.title.description", description = "i18n:dna.federation.queryTemplates.description.description", maxLength = 512)
   @Column(length = 512)
   private String description;

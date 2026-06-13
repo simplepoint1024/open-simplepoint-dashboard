@@ -1,12 +1,12 @@
 package org.simplepoint.api.security.service;
 
 import org.simplepoint.api.base.BaseDetailsService;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
+import org.simplepoint.remoting.RemoteContract;
 
 /**
  * JSON Schema service.
  */
-@AmqpRemoteClient(to = "security.schema")
+@RemoteContract(name = "security.schema")
 public interface JsonSchemaDetailsService extends BaseDetailsService {
 
 }

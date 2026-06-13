@@ -50,7 +50,7 @@ public class ErrorLogMonitorAutoConfiguration {
   }
 
   /**
-   * Creates the reporting appender that forwards warning and error logs through AMQP.
+   * Creates the reporting appender that forwards warning and error logs through the remote audit service.
    *
    * @param errorLogRemoteService the remote service proxy
    * @param errorLogCommandFactory the command factory

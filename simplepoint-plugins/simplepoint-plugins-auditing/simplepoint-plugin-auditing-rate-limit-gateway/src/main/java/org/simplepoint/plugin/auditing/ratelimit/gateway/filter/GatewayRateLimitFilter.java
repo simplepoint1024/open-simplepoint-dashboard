@@ -72,31 +72,44 @@ public class GatewayRateLimitFilter implements GlobalFilter, Ordered {
     if (serviceId == null) {
       return chain.filter(exchange);
     }
+    // Compute rate-limit decision in isolation so that onErrorResume does NOT wrap
+    // chain.filter(exchange). This prevents downstream exceptions (e.g.
+    // ClientAuthorizationRequiredException from TokenRelay) from being swallowed as 503.
+    return computeRateLimitDecision(serviceId, exchange)
+        .flatMap(decision -> {
+          if (!decision.isAllowed()) {
+            return reject(exchange, decision.getHeaders());
+          }
+          return chain.filter(exchange);
+        });
+  }
+
+  private Mono<Response> computeRateLimitDecision(
+      final String serviceId,
+      final ServerWebExchange exchange
+  ) {
     return ruleProvider.getRules()
         .flatMap(rules -> applyServiceRule(serviceId, exchange, rules)
             .flatMap(serviceDecision -> {
               if (!serviceDecision.isAllowed()) {
-                return reject(exchange, serviceDecision.getHeaders());
+                applyHeaders(exchange, serviceDecision.getHeaders());
+                return Mono.just(serviceDecision);
               }
               applyHeaders(exchange, serviceDecision.getHeaders());
               return applyEndpointRule(serviceId, exchange, rules)
-                  .flatMap(endpointDecision -> {
-                    if (!endpointDecision.isAllowed()) {
-                      return reject(exchange, endpointDecision.getHeaders());
-                    }
+                  .map(endpointDecision -> {
                     applyHeaders(exchange, endpointDecision.getHeaders());
-                    return chain.filter(exchange);
+                    return endpointDecision;
                   });
             }))
         .onErrorResume(ex -> {
           log.error(
-              "Failed to apply gateway rate limiting for request [{} {}]",
+              "Failed to apply gateway rate limiting for request [{} {}], passing through",
               exchange.getRequest().getMethod(),
               exchange.getRequest().getURI(),
               ex
           );
-          exchange.getResponse().setStatusCode(HttpStatus.SERVICE_UNAVAILABLE);
-          return exchange.getResponse().setComplete();
+          return Mono.just(new Response(true, Map.of()));
         });
   }
 

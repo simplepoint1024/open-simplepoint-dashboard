@@ -1,5 +1,11 @@
 {
   "app.title": "Simple·Point Platform",
+  "scope.platform": "Platform Console",
+  "scope.personal": "Personal Workspace",
+  "scope.tenantOwner": "Organization Tenant · Owner",
+  "scope.tenantAdmin": "Organization Tenant · Admin",
+  "scope.tenant": "Organization Tenant",
+  "scope.unknown": "Unknown Scope",
   "error.remoteLoadFail": "Failed to load remote resources. Please try again later.",
   "error.404": "Page not found",
   "error.requestFailed": "Request failed",

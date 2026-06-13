@@ -174,11 +174,13 @@ public class JdbcDriverDefinition extends BaseEntityImpl<String> {
   private String localJarPath;
 
   @Order(10)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.drivers.title.downloadedAt", description = "i18n:dna.drivers.description.downloadedAt", type = "string", format = "date-time",
       accessMode = Schema.AccessMode.READ_ONLY)
   private Instant downloadedAt;
 
   @Order(11)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.drivers.title.lastDownloadMessage", description = "i18n:dna.drivers.description.lastDownloadMessage", accessMode = Schema.AccessMode.READ_ONLY,
       maxLength = 1024)
   @Column(length = 1024)

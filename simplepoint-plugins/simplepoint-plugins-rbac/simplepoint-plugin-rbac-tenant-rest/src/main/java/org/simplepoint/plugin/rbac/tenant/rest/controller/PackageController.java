@@ -83,6 +83,9 @@ public class PackageController extends BaseController<PackageService, Package, S
     return ok(idSet);
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/items")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.config.package') or hasAuthority('packages.config.application')")
   @Operation(summary = "获取套餐候选列表", description = "获取用于租户套餐配置的套餐候选列表")
@@ -90,6 +93,9 @@ public class PackageController extends BaseController<PackageService, Package, S
     return ok(service.limit(Map.of(), pageable));
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/authorized")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('packages.config.application')")
   @Operation(summary = "获取套餐已分配应用", description = "获取指定套餐已授权的应用编码列表")
@@ -97,6 +103,9 @@ public class PackageController extends BaseController<PackageService, Package, S
     return ok(service.authorizedApplications(packageCode));
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping("/authorize")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('packages.config.application')")
   @Operation(summary = "配置套餐应用", description = "为指定套餐分配应用编码")
@@ -104,6 +113,9 @@ public class PackageController extends BaseController<PackageService, Package, S
     return ok(service.authorizeApplications(dto));
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping("/unauthorized")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('packages.config.application')")
   @Operation(summary = "取消套餐应用", description = "取消指定套餐已分配的应用编码")

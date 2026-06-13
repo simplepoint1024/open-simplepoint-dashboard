@@ -21,7 +21,8 @@ dependencies {
     implementation("org.springframework.session:spring-session-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
 
-    api(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))
+    api(project(":simplepoint-service-router:simplepoint-service-router-core"))
+    implementation(project(":simplepoint-service-router:simplepoint-service-router-consul"))
 
     api(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-monitor"))

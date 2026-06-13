@@ -19,6 +19,8 @@ fileTree(rootDir) {
     val excludes = gradle.startParameter.projectProperties["excludeProjects"]?.split(",")
     include("**/*.gradle.kts")
     exclude("build", "**/gradle", "settings.gradle", "buildSrc", "/build.gradle", ".*", "out")
+    exclude("simplepoint-data/simplepoint-data-amqp/**")
+    exclude("simplepoint-examples/simplepoint-amqprpc-examples/**")
     if (excludes != null) {
         if (excludes.isNotEmpty()) {
             exclude(excludes)

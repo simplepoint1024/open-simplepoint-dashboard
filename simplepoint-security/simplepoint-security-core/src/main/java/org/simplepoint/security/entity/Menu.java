@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.annotation.ButtonDeclaration;
@@ -219,6 +220,13 @@ public class Menu extends BaseEntityImpl<String> {
   })
   @Column(nullable = false)
   private Boolean disabled;
+
+  /**
+   * Runtime flag indicating that accessing this menu requires an organisation tenant.
+   * Not persisted to the database; populated at runtime from feature metadata.
+   */
+  @Transient
+  private Boolean requireOrgTenant;
 
   /**
    * Lifecycle callback to set default values before persisting the entity.

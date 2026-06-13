@@ -84,7 +84,7 @@ public interface FederationSqlConsoleService {
     return executeDdl(request);
   }
 
-  /**
+  /**.
    * Detects the SQL statement type and delegates to the appropriate execution method:
    * <ul>
    *   <li>SELECT / WITH → {@link #execute(FederationQueryModels.SqlConsoleRequest)}</li>

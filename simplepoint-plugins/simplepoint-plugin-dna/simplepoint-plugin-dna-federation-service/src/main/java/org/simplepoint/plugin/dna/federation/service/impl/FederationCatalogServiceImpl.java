@@ -120,14 +120,14 @@ public class FederationCatalogServiceImpl
         .map(this::toDataSourceCatalog)
         .forEach(catalogs::add);
 
-     List<FederationCatalog> filtered = catalogs.stream()
-         .filter(catalog -> matchesCatalogFilters(catalog, normalized))
-         .sorted(Comparator.comparingInt(FederationCatalogServiceImpl::catalogTypeOrder).thenComparing(
-             FederationCatalog::getCode,
-             Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
-         ).thenComparing(
-             FederationCatalog::getName,
-             Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+    List<FederationCatalog> filtered = catalogs.stream()
+        .filter(catalog -> matchesCatalogFilters(catalog, normalized))
+        .sorted(Comparator.comparingInt(FederationCatalogServiceImpl::catalogTypeOrder).thenComparing(
+            FederationCatalog::getCode,
+            Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+        ).thenComparing(
+            FederationCatalog::getName,
+            Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
         ).thenComparing(
             FederationCatalog::getId,
             Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
@@ -286,8 +286,8 @@ public class FederationCatalogServiceImpl
     }
     if (normalizedFilter == null) {
       return true;
-        }
-        return Objects.equals(Boolean.valueOf(normalizedFilter), actualValue);
+    }
+    return Objects.equals(Boolean.valueOf(normalizedFilter), actualValue);
   }
 
   private static int catalogTypeOrder(final FederationCatalog catalog) {

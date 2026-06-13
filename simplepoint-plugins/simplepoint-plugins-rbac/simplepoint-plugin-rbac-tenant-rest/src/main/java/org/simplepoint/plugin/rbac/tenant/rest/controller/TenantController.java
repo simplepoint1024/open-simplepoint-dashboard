@@ -125,6 +125,9 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
     return ok(service.calculatePermissionContextId(tenantId));
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/owners/items")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.create') or hasAuthority('tenants.edit')")
   @Operation(summary = "获取租户所有者候选项", description = "分页返回可用于选择租户所有者的用户列表")
@@ -132,6 +135,9 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
     return ok(service.ownerItems(pageable));
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/users/items")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "获取租户成员候选项", description = "分页返回指定租户可配置的成员候选用户列表")
@@ -139,6 +145,9 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
     return ok(service.userItems(tenantId, pageable));
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/users/authorized")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "获取租户已邀请成员", description = "获取指定租户当前已加入的成员用户ID列表")
@@ -146,6 +155,9 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
     return ok(service.authorizedUsers(tenantId));
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping("/users/authorize")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "邀请用户加入租户", description = "向指定租户添加成员用户")
@@ -153,6 +165,9 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
     return ok(service.authorizeUsers(dto));
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping("/users/unauthorized")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "移出租户成员", description = "从指定租户中移除成员用户")
@@ -161,6 +176,9 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
     return Response.okay();
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/authorized")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.config.package')")
   @Operation(summary = "获取租户已分配套餐", description = "获取指定租户已授权的套餐编码列表")
@@ -168,6 +186,9 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
     return ok(service.authorizedPackages(tenantId));
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping("/authorize")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.config.package')")
   @Operation(summary = "配置租户套餐", description = "为指定租户分配套餐编码")
@@ -175,6 +196,9 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
     return ok(service.authorizePackages(dto));
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping("/unauthorized")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.config.package')")
   @Operation(summary = "取消租户套餐", description = "取消指定租户已分配的套餐编码")

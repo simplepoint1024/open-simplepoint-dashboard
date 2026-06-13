@@ -7,6 +7,7 @@ import org.simplepoint.plugin.dna.federation.api.vo.FederationQueryModels;
 /**
  * Service contract for the external DNA JDBC driver gateway.
  */
+@SuppressWarnings("checkstyle:OverloadMethodsDeclarationOrder")
 public interface FederationJdbcDriverService {
 
   /**

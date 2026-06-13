@@ -16,14 +16,23 @@ public class MenuFeaturesRelevanceDto {
   @Deprecated
   private Set<String> permissionAuthority;
 
+  /**
+   * Menu Features Relevance Dto.
+   */
   public MenuFeaturesRelevanceDto(String menuId, Set<String> featureCodes) {
     this.menuId = menuId;
     this.featureCodes = featureCodes;
   }
 
+  /**
+   * Menu Features Relevance Dto.
+   */
   public MenuFeaturesRelevanceDto() {
   }
 
+  /**
+   * Resolved Feature Codes.
+   */
   public Set<String> resolvedFeatureCodes() {
     if (featureCodes != null && !featureCodes.isEmpty()) {
       return featureCodes;

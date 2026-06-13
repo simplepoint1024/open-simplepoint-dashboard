@@ -3,6 +3,7 @@ package org.simplepoint.core;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
@@ -10,10 +11,13 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
- * 表示授权上下文的接口，提供获取当前用户授权相关信息的方法
- * An interface representing the authorization context, providing methods to retrieve authorization-related information for the current user.
+ * 表示授权上下文的接口，提供获取当前用户授权相关信息的方法。
+ *
+ * <p>An interface representing the authorization context, providing methods to retrieve
+ * authorization-related information for the current user.
  */
 @Getter
+@SuppressWarnings("checkstyle:OverloadMethodsDeclarationOrder")
 public class AuthorizationContext implements Serializable {
   private String contextId;
   private String userId;
@@ -22,6 +26,16 @@ public class AuthorizationContext implements Serializable {
   private Collection<String> permissions;
   private Long version;
   private Map<String, String> attributes;
+
+  /**
+   * Runtime scope for the current request: PLATFORM, TENANT, or PERSONAL.
+   */
+  private AuthorizationScopeType scopeType;
+
+  /**
+   * Actor role within the active scope.
+   */
+  private AuthorizationActorRole actorRole;
 
   /**
    * The effective data scope type name for row-level access control.
@@ -36,6 +50,12 @@ public class AuthorizationContext implements Serializable {
    * Only populated when dataScopeType is "CUSTOM".
    */
   private Set<String> deptIds;
+
+  /**
+   * Whether the effective data scope also includes records owned by the current user.
+   * Used when multiple roles combine SELF with department/custom scopes.
+   */
+  private Boolean dataScopeIncludeSelf;
 
   /**
    * Field-level access permissions keyed by "ClassName#fieldName".
@@ -122,6 +142,114 @@ public class AuthorizationContext implements Serializable {
   }
 
   /**
+   * Sets the runtime authorization scope if it has not been set before.
+   *
+   * @param scopeType the runtime scope to set
+   */
+  public void setScopeType(AuthorizationScopeType scopeType) {
+    if (this.scopeType == null) {
+      this.scopeType = scopeType;
+    }
+  }
+
+  /**
+   * Replaces the runtime authorization scope.
+   *
+   * <p>Use this only when rebuilding or refreshing a context. Normal request
+   * construction should continue using the write-once setters.</p>
+   *
+   * @param scopeType the runtime scope to set
+   */
+  public void replaceScopeType(AuthorizationScopeType scopeType) {
+    this.scopeType = scopeType;
+  }
+
+  /**
+   * Sets the runtime authorization scope by enum name if it has not been set before.
+   *
+   * @param scopeType the runtime scope enum name
+   */
+  public void setScopeType(String scopeType) {
+    if (this.scopeType == null && scopeType != null && !scopeType.isBlank()) {
+      this.scopeType = AuthorizationScopeType.valueOf(scopeType);
+    }
+  }
+
+  /**
+   * Replaces the runtime authorization scope by enum name.
+   *
+   * @param scopeType the runtime scope enum name
+   */
+  public void replaceScopeType(String scopeType) {
+    this.scopeType = scopeType == null || scopeType.isBlank() ? null : AuthorizationScopeType.valueOf(scopeType);
+  }
+
+  /**
+   * Sets the actor role within the active scope if it has not been set before.
+   *
+   * @param actorRole the actor role to set
+   */
+  public void setActorRole(AuthorizationActorRole actorRole) {
+    if (this.actorRole == null) {
+      this.actorRole = actorRole;
+    }
+  }
+
+  /**
+   * Replaces the actor role within the active scope.
+   *
+   * <p>Use this only when rebuilding or refreshing a context. Normal request
+   * construction should continue using the write-once setters.</p>
+   *
+   * @param actorRole the actor role to set
+   */
+  public void replaceActorRole(AuthorizationActorRole actorRole) {
+    this.actorRole = actorRole;
+  }
+
+  /**
+   * Sets the actor role by enum name if it has not been set before.
+   *
+   * @param actorRole the actor role enum name
+   */
+  public void setActorRole(String actorRole) {
+    if (this.actorRole == null && actorRole != null && !actorRole.isBlank()) {
+      this.actorRole = AuthorizationActorRole.valueOf(actorRole);
+    }
+  }
+
+  /**
+   * Replaces the actor role by enum name.
+   *
+   * @param actorRole the actor role enum name
+   */
+  public void replaceActorRole(String actorRole) {
+    this.actorRole = actorRole == null || actorRole.isBlank() ? null : AuthorizationActorRole.valueOf(actorRole);
+  }
+
+  /**
+   * Merges request-scoped attributes into the current context.
+   * Existing values are overwritten so the active request headers remain authoritative.
+   *
+   * @param attributes request attributes to merge
+   */
+  public void mergeAttributes(Map<String, String> attributes) {
+    if (attributes == null || attributes.isEmpty()) {
+      return;
+    }
+    Map<String, String> merged = new HashMap<>();
+    if (this.attributes != null) {
+      merged.putAll(this.attributes);
+    }
+    attributes.forEach((key, value) -> {
+      if (key != null && value != null) {
+        merged.put(key, value);
+      }
+    });
+    this.attributes = merged;
+  }
+
+  /**
    * Sets the data scope type if it has not been set before.
    *
    * @param dataScopeType the data scope type name to set
@@ -140,6 +268,17 @@ public class AuthorizationContext implements Serializable {
   public void setDeptIds(Set<String> deptIds) {
     if (this.deptIds == null) {
       this.deptIds = deptIds == null ? Collections.emptySet() : deptIds;
+    }
+  }
+
+  /**
+   * Sets whether the effective data scope also includes the current user's own records.
+   *
+   * @param dataScopeIncludeSelf true when SELF should be OR-ed into the effective row predicate
+   */
+  public void setDataScopeIncludeSelf(Boolean dataScopeIncludeSelf) {
+    if (this.dataScopeIncludeSelf == null) {
+      this.dataScopeIncludeSelf = dataScopeIncludeSelf == null ? Boolean.FALSE : dataScopeIncludeSelf;
     }
   }
 

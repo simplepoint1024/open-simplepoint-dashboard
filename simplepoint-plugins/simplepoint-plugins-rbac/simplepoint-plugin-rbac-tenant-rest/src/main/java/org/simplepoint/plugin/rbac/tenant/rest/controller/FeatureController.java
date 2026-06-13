@@ -83,6 +83,9 @@ public class FeatureController extends BaseController<FeatureService, Feature, S
     return ok(idSet);
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/items")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature') or hasAuthority('features.config.permission')")
   @Operation(summary = "获取功能候选列表", description = "获取用于应用功能配置的功能候选列表")
@@ -90,13 +93,20 @@ public class FeatureController extends BaseController<FeatureService, Feature, S
     return ok(service.limit(Map.of(), pageable));
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/items/selected")
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature') or hasAuthority('menus.config.permission') or hasAuthority('features.config.permission')")
   @Operation(summary = "获取已选功能明细", description = "根据功能编码列表获取完整的功能明细，用于穿梭框右侧回显")
   public Response<Collection<Feature>> selectedItems(@RequestParam("codes") Set<String> codes) {
     return ok(service.findAllByCodes(codes));
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/authorized")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('features.config.permission')")
   @Operation(summary = "获取功能已分配权限", description = "获取指定功能已授权的权限标识列表")
@@ -104,6 +114,9 @@ public class FeatureController extends BaseController<FeatureService, Feature, S
     return ok(service.authorizedPermissions(featureCode));
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping("/authorize")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('features.config.permission')")
   @Operation(summary = "配置功能权限", description = "为指定功能分配权限标识")
@@ -111,6 +124,9 @@ public class FeatureController extends BaseController<FeatureService, Feature, S
     return ok(service.authorizePermissions(dto));
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping("/unauthorized")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('features.config.permission')")
   @Operation(summary = "取消功能权限", description = "取消指定功能已分配的权限标识")

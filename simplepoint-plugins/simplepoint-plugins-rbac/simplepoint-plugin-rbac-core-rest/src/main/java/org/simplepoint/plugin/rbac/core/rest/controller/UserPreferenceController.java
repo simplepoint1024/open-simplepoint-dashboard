@@ -57,7 +57,6 @@ public class UserPreferenceController {
    * Saves a preference value for the current user.
    *
    * @param key   the preference key
-   * @param value the preference value (JSON text)
    * @return success response
    */
   @PutMapping("/{key}")

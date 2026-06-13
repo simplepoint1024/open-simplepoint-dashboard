@@ -22,6 +22,9 @@ public final class LoginAuthenticationSuccessHandler implements AuthenticationSu
   private final AuthenticationSuccessHandler delegate = new SavedRequestAwareAuthenticationSuccessHandler();
   private final LoginAuditEventPublisher loginAuditEventPublisher;
 
+  /**
+   * Login Authentication Success Handler.
+   */
   public LoginAuthenticationSuccessHandler(final LoginAuditEventPublisher loginAuditEventPublisher) {
     this.loginAuditEventPublisher = loginAuditEventPublisher;
   }

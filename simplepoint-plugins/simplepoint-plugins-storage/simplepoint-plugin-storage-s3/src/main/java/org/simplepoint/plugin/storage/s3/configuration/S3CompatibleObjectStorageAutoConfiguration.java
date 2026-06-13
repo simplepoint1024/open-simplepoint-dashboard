@@ -23,6 +23,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 @ConditionalOnClass(S3Client.class)
 public class S3CompatibleObjectStorageAutoConfiguration {
 
+  /**
+   * @ Bean.
+   */
   @Bean
   @ConditionalOnMissingBean(name = "s3CompatibleObjectStorageDriver")
   public ObjectStorageDriver s3CompatibleObjectStorageDriver() {

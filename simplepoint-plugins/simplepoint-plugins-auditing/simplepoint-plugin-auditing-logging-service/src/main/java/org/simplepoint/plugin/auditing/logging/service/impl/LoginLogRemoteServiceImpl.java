@@ -9,17 +9,19 @@
 package org.simplepoint.plugin.auditing.logging.service.impl;
 
 import java.time.Instant;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.auditing.logging.api.entity.LoginLog;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.LoginLogRecordCommand;
 import org.simplepoint.plugin.auditing.logging.api.service.LoginLogRemoteService;
 import org.simplepoint.plugin.auditing.logging.api.service.LoginLogService;
+import org.simplepoint.remoting.RemoteProvider;
 import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Service;
 
 /**
  * Remote provider for login log recording.
  */
-@AmqpRemoteService
+@Service
+@RemoteProvider
 public class LoginLogRemoteServiceImpl implements LoginLogRemoteService {
 
   private final LoginLogService loginLogService;

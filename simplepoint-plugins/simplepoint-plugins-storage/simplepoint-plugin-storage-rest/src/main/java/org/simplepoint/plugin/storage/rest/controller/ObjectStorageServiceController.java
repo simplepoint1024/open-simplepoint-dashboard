@@ -37,10 +37,16 @@ public class ObjectStorageServiceController {
 
   private final ObjectStorageObjectService objectService;
 
+  /**
+   * Object Storage Service Controller.
+   */
   public ObjectStorageServiceController(final ObjectStorageObjectService objectService) {
     this.objectService = objectService;
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "服务上传对象", description = "供其他服务通过 HTTP 上传对象并获取元信息")
@@ -57,6 +63,9 @@ public class ObjectStorageServiceController {
     }
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/objects/{id}")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "服务查询对象元信息", description = "供其他服务根据对象 ID 查询元信息")

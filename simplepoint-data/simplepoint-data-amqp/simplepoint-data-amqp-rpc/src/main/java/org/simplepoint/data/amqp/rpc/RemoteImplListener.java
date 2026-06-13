@@ -18,9 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.data.amqp.rpc.properties.ArpcProperties;
+import org.simplepoint.remoting.RemoteContract;
+import org.simplepoint.remoting.RemoteProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -38,8 +38,8 @@ import org.springframework.stereotype.Component;
  * A listener component for processing incoming AMQP
  * (Advanced Message Queuing Protocol) messages.
  * Integrates with Spring's application context to dynamically
- * invoke methods on beans annotated with
- * {@link AmqpRemoteService}. Handles message correlation,
+ * invoke methods on beans annotated with {@link RemoteProvider}.
+ * Handles message correlation,
  * reply-to functionality, and message priorities.
  */
 @Component
@@ -259,7 +259,8 @@ class RemoteImplListener implements ApplicationContextAware {
   private DispatchRegistry buildDispatchRegistry() {
     Map<RemoteMethodKey, RemoteServiceMethod> exact = new LinkedHashMap<>();
     Map<RemoteMethodSelector, List<RemoteServiceMethod>> grouped = new LinkedHashMap<>();
-    Map<String, Object> beans = applicationContext.getBeansWithAnnotation(AmqpRemoteService.class);
+    Map<String, Object> beans = new LinkedHashMap<>();
+    beans.putAll(applicationContext.getBeansWithAnnotation(RemoteProvider.class));
     for (Map.Entry<String, Object> entry : beans.entrySet()) {
       Object bean = entry.getValue();
       Class<?> beanType = applicationContext.getType(entry.getKey());
@@ -300,7 +301,7 @@ class RemoteImplListener implements ApplicationContextAware {
         continue;
       }
       for (Class<?> currentInterface : current.getInterfaces()) {
-        if (currentInterface.isAnnotationPresent(AmqpRemoteClient.class)) {
+        if (currentInterface.isAnnotationPresent(RemoteContract.class)) {
           interfaces.putIfAbsent(currentInterface.getName(), currentInterface);
         }
         queue.offer(currentInterface);

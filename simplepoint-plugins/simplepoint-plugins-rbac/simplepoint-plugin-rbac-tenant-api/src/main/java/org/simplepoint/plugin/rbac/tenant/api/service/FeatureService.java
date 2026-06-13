@@ -32,12 +32,35 @@ public interface FeatureService extends BaseService<Feature, String> {
   Collection<Feature> findAllByCodes(Collection<String> featureCodes);
 
   /**
+   * Returns all feature codes where {@code requireOrgTenant = true}.
+   *
+   * @return collection of feature codes that require an organisation tenant
+   */
+  Collection<String> findAllRequireOrgTenantCodes();
+
+  /**
    * Assigns permissions to the feature.
    *
    * @param dto feature permission dto
    * @return saved relation rows
    */
   Collection<FeaturePermissionRelevance> authorizePermissions(FeaturePermissionsRelevanceDto dto);
+
+  /**
+   * Assigns permissions during trusted data initialization.
+   *
+   * @param dto feature permission dto
+   * @return saved relation rows
+   */
+  Collection<FeaturePermissionRelevance> initializePermissions(FeaturePermissionsRelevanceDto dto);
+
+  /**
+   * Updates a feature during trusted data initialization.
+   *
+   * @param feature feature entity
+   * @return updated feature
+   */
+  Feature initializeFeature(Feature feature);
 
   /**
    * Removes permissions from the feature.

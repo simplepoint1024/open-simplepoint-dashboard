@@ -206,7 +206,7 @@ class FederationQueryPolicyServiceImplTest {
 
   @Test
   void createRejectsDisabledDataSource() {
-    FederationQueryPolicy policy = validPolicy();
+    final FederationQueryPolicy policy = validPolicy();
     JdbcDataSourceDefinition ds = enabledDs("catalog-1", "MySQL", "mysql");
     ds.setEnabled(false);
     when(repository.findActiveByCode("POLICY_A")).thenReturn(Optional.empty());

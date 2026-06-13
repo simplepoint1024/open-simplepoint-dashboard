@@ -21,6 +21,9 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
  */
 public class FieldScopeJacksonModule extends SimpleModule {
 
+  /**
+   * Field Scope Jackson Module.
+   */
   public FieldScopeJacksonModule() {
     super("FieldScopeJacksonModule");
     setSerializerModifier(new FieldScopeBeanSerializerModifier());

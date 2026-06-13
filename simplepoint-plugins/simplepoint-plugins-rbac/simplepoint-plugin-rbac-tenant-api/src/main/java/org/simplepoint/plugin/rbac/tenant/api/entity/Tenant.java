@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -144,4 +146,32 @@ public class Tenant extends BaseEntityImpl<String> {
   )
   @Column(nullable = false)
   private String ownerId;
+
+  /**
+   * The type of the tenant (PERSONAL or ORGANIZATION).
+   */
+  @Schema(
+      title = "i18n:tenants.title.tenantType",
+      description = "i18n:tenants.description.tenantType",
+      example = "ORGANIZATION",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  @Enumerated(EnumType.STRING)
+  @Column(length = 32, nullable = false)
+  private TenantType tenantType;
+
+  /**
+   * Lifecycle callback to set default values before persisting the entity.
+   */
+  @Override
+  public void prePersist() {
+    if (this.tenantType == null) {
+      this.tenantType = TenantType.ORGANIZATION;
+    }
+    super.prePersist();
+  }
 }

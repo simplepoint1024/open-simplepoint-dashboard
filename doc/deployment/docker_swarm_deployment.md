@@ -6,12 +6,12 @@
 
 ## 1. 背景与目标
 
-当前仓库原有的 `scripts/shell/start_developer.sh` 主要负责启动开发态的 Consul、Vault，并通过 `init_profile.sh` 初始化配置；它并不会把 `host`、`common`、`authorization` 这些应用服务一起拉起。
+当前仓库原有的 `scripts/shell/start_developer.sh` 主要负责启动开发态的 Consul，并通过 `init_profile.sh` 初始化配置；它并不会把 `host`、`common`、`authorization` 这些应用服务一起拉起。
 
 新增的 Swarm 方案目标是：
 
-- 把 PostgreSQL、Redis、RabbitMQ、Consul、Vault 与核心业务服务统一编排；
-- 自动完成 Consul KV 初始化与 Vault Transit Key 初始化；
+- 把 PostgreSQL、Redis、RabbitMQ、Consul 与核心业务服务统一编排；
+- 自动完成 Consul KV 初始化；
 - 在一次命令执行后，直接通过浏览器访问 Host UI 和 Authorization 服务；
 - 尽量复用现有 Gradle 模块、Spring Profile 和仓库中的配置约定。
 
@@ -27,12 +27,11 @@
 
 Swarm 部署会拉起以下两类组件：
 
-- 基础设施：`postgres`、`redis`、`rabbitmq`、`consul`、`vault`
+- 基础设施：`postgres`、`redis`、`rabbitmq`、`consul`
 - 应用服务：`bootstrap`、`authorization`、`common`、`host`
 
 其中：
 
-- `bootstrap` 是一次性初始化任务，用来写入 Consul KV 配置并在 Vault 中创建 `transit/sas-jwt`；
 - `authorization` 提供 OAuth2/OIDC 授权、登录页与 JWKS；
 - `common` 提供主业务 API、AMQP RPC 服务与微前端 Remote 资源；
 - `host` 对外提供网关、前端 Shell 静态资源与登录入口。
@@ -53,11 +52,9 @@ flowchart LR
 
     Auth --> Postgres
     Auth --> Redis
-    Auth --> Vault[vault :8200]
     Auth --> Consul
 
     Bootstrap[bootstrap one-shot] --> Consul
-    Bootstrap --> Vault
 ```
 
 ---
@@ -70,8 +67,7 @@ flowchart LR
 | `redis` | 否 | `6379` | Session / Cache |
 | `rabbitmq` | 管理界面对外 | `15672` | AMQP RPC 与消息通信 |
 | `consul` | 是 | `8500` | 配置中心与服务发现 |
-| `vault` | 是 | `8200` | Transit 签名密钥管理 |
-| `bootstrap` | 否 | - | 初始化 Consul KV 与 Vault Transit Key |
+| `bootstrap` | 否 | - | 初始化 Consul KV |
 | `authorization` | 是 | `9000` | OAuth2/OIDC 授权服务 |
 | `common` | 否 | `7000` | 业务 API、Remote 资源、AMQP RPC |
 | `host` | 是 | `8080` | 网关、前端 Shell、登录入口 |
@@ -131,7 +127,7 @@ cd open-simplepoint-dashboard
 3. 检测当前节点地址并作为对外访问地址；
 4. 构建 `bootstrap`、`authorization`、`common`、`host` 镜像；
 5. 部署 `docker/swarm/stack.yml`；
-6. 等待 bootstrap 服务初始化 Consul 与 Vault；
+6. 等待 bootstrap 服务初始化 Consul；
 7. 启动应用服务。
 
 ### 5.2 指定对外访问地址
@@ -201,7 +197,7 @@ docker stack deploy -c docker/swarm/stack.yml <stack-name>
 `bootstrap` 容器基于 `docker/swarm/bootstrap/init-swarm.sh` 完成两件事：
 
 1. 把 `docker/swarm/bootstrap/consul-config/` 下的配置写入 Consul；
-2. 在 Vault 中确保存在 `transit` mount 和 `sas-jwt` RSA Key。
+2. 授权服务使用进程内 RSA JWK 签名。
 
 初始化完成后，会在 Consul 中写入：
 
@@ -217,7 +213,6 @@ simplepoint/bootstrap/status = ready
 - Redis
 - RabbitMQ
 - Consul
-- Vault
 - `simplepoint/bootstrap/status`
 
 这样可以减少“服务先启动但配置尚未写入”的竞态问题。
@@ -242,12 +237,10 @@ simplepoint/bootstrap/status = ready
 新增的 Profile 入口包括：
 
 - `simplepoint-boot/simplepoint-boot-config-consul-starter/src/main/resources/application-consul-swarm.properties`
-- `simplepoint-boot/simplepoint-boot-config-vault-starter/src/main/resources/application-vault-swarm.properties`
 
 它们会把服务默认访问地址切换为：
 
 - Consul：`consul:8500`
-- Vault：`vault:8200`
 
 ### 7.3 Consul 中初始化的配置
 
@@ -279,7 +272,6 @@ docker/swarm/bootstrap/consul-config/simplepoint/config/
 | Host UI / Gateway | `http://<public-host>:8080` |
 | Authorization Server | `http://<public-host>:9000` |
 | Consul UI | `http://<public-host>:8500` |
-| Vault UI | `http://<public-host>:8200/ui` |
 | RabbitMQ Management | `http://<public-host>:15672` |
 
 说明：
@@ -308,9 +300,8 @@ docker service logs simplepoint_bootstrap -f
 
 成功时应能看到类似含义的日志：
 
-- 等待 Consul / Vault 可用；
+- 等待 Consul 可用；
 - 上传 Consul KV 配置；
-- 创建或确认 Vault Transit Key；
 - 输出 `SimplePoint bootstrap completed.`
 
 ### 9.3 检查 Consul 初始化状态
@@ -372,7 +363,7 @@ docker service logs simplepoint_authorization -f
 
 - `bootstrap` 尚未完成；
 - PostgreSQL / Redis / RabbitMQ 尚未 ready；
-- Consul 或 Vault 未成功启动。
+- Consul  未成功启动。
 
 ### 10.3 浏览器跳转到了错误的登录地址
 
@@ -404,14 +395,12 @@ docker service logs simplepoint_authorization -f
 
 - `docker service logs simplepoint_bootstrap -f`
 - `docker service logs simplepoint_consul -f`
-- `docker service logs simplepoint_vault -f`
 
 重点确认：
 
 - Consul `8500` 端口是否正常；
-- Vault `8200` 端口是否正常；
 - `PUBLIC_HOST` 是否传入；
-- 网络是否允许 Bootstrap 容器访问 Consul / Vault。
+- 网络是否允许 Bootstrap 容器访问 Consul。
 
 ---
 
@@ -463,8 +452,6 @@ docker swarm leave --force
 
 ### 12.1 非生产级安全设置
 
-- Vault 运行在 `dev` 模式；
-- Vault Root Token 默认是 `root`；
 - PostgreSQL 默认用户名密码为 `postgres/postgres`；
 - RabbitMQ 默认用户名密码为 `simplepoint/simplepoint`；
 - OAuth2 Client Secret 当前为 `secret`。
@@ -478,7 +465,6 @@ docker swarm leave --force
 - `8080`
 - `9000`
 - `8500`
-- `8200`
 - `15672`
 
 如果部署在共享网络环境中，请自行补充：
@@ -493,7 +479,6 @@ docker swarm leave --force
 当前脚本更偏向单机或单 Manager 节点使用。若扩展到多节点：
 
 - 需要统一镜像分发方案；
-- 需要更稳定的 Vault 持久化方案；
 - 需要更严格的服务约束、资源限制和调度策略；
 - 需要进一步梳理域名、TLS 与 OIDC 外部地址。
 
@@ -503,7 +488,6 @@ docker swarm leave --force
 
 - 私有镜像仓库；
 - 非默认凭据与 Secret 管理；
-- 持久化 Vault 与备份策略；
 - 域名、HTTPS 与证书管理；
 - 反向代理与统一入口；
 - 更严格的健康检查与监控告警；
@@ -520,8 +504,6 @@ docker swarm leave --force
 | `docker/swarm/app/Dockerfile` | 通用应用镜像构建模板 |
 | `docker/swarm/app/docker-entrypoint.sh` | 应用启动前等待依赖 |
 | `docker/swarm/bootstrap/Dockerfile` | Bootstrap 镜像定义 |
-| `docker/swarm/bootstrap/init-swarm.sh` | Consul / Vault 初始化脚本 |
+| `docker/swarm/bootstrap/init-swarm.sh` | Consul 初始化脚本 |
 | `docker/swarm/bootstrap/consul-config/` | Bootstrap 上传到 Consul 的配置 |
 | `application-consul-swarm.properties` | Swarm 下 Consul 地址覆盖 |
-| `application-vault-swarm.properties` | Swarm 下 Vault 地址覆盖 |
-

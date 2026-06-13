@@ -1,11 +1,14 @@
 package org.simplepoint.plugin.api.exception;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 import java.net.URI;
 import java.util.HashMap;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.plugin.api.Plugin;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class PluginExistExceptionTest {
 

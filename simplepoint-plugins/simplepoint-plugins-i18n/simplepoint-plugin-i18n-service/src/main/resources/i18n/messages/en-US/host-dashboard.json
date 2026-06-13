@@ -78,7 +78,6 @@
   "host.dashboard.feature.form.permission": "Permission-based button filtering",
   "host.dashboard.feature.infra.boot": "Spring Boot 4 / Spring Cloud",
   "host.dashboard.feature.infra.consul": "Consul configuration center",
-  "host.dashboard.feature.infra.vault": "Vault secret management",
   "host.dashboard.feature.infra.redis": "Redis WebSession / cache",
   "host.dashboard.feature.infra.amqp": "AMQP RPC inter-service calls",
   "host.dashboard.feature.infra.docker": "Docker Swarm orchestration",

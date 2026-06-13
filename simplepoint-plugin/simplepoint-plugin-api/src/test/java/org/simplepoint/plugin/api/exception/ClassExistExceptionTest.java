@@ -1,5 +1,9 @@
 package org.simplepoint.plugin.api.exception;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -7,8 +11,6 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.plugin.api.Plugin;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ClassExistExceptionTest {
 

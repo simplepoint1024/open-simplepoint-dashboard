@@ -41,7 +41,7 @@ class DnaJdbcSocketTransportTest {
             DnaJdbcModels.SocketRequest request = objectMapper.readValue(payload, DnaJdbcModels.SocketRequest.class);
             actions.add(request.action());
             DnaJdbcModels.SocketResponse response = switch (request.action()) {
-               case "CONNECT", "PING" -> new DnaJdbcModels.SocketResponse(
+              case "CONNECT", "PING" -> new DnaJdbcModels.SocketResponse(
                    true,
                    null,
                    new DnaJdbcModels.PingResult(

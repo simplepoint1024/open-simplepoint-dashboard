@@ -85,7 +85,7 @@ class RemoteProxyFactoryTest {
     Message reply = MessageBuilder.withBody(RemoteProxyFactory.toByteArray("pong")).build();
     when(rabbitTemplate.sendAndReceive(any(), any(), any(Message.class), any(CorrelationData.class))).thenReturn(reply);
     RemoteProxyFactory.RemoteInvocationHandler handler =
-        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("name", "sample"));
     Method method = SampleApi.class.getMethod("ping");
     Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
 
@@ -123,7 +123,7 @@ class RemoteProxyFactoryTest {
           return errorReply;
         });
     RemoteProxyFactory.RemoteInvocationHandler handler =
-        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("name", "sample"));
     Method method = SampleApi.class.getMethod("ping");
     Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
 
@@ -150,7 +150,7 @@ class RemoteProxyFactoryTest {
           return null;
         });
     RemoteProxyFactory.RemoteInvocationHandler handler =
-        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("name", "sample"));
     Method method = SampleApi.class.getMethod("ping");
     Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
 
@@ -174,7 +174,7 @@ class RemoteProxyFactoryTest {
         .build();
     when(rabbitTemplate.sendAndReceive(any(), any(), any(Message.class), any(CorrelationData.class))).thenReturn(reply);
     RemoteProxyFactory.RemoteInvocationHandler handler =
-        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("name", "sample"));
     Method method = SampleApi.class.getMethod("ping");
     Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
 
@@ -205,7 +205,7 @@ class RemoteProxyFactoryTest {
     when(rabbitTemplate.sendAndReceive(any(), any(), any(Message.class), any(CorrelationData.class)))
         .thenThrow(new AmqpMessageReturnedException("returned", returnedMessage));
     RemoteProxyFactory.RemoteInvocationHandler handler =
-        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("name", "sample"));
     Method method = SampleApi.class.getMethod("ping");
     Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
 
@@ -234,7 +234,7 @@ class RemoteProxyFactoryTest {
           return null;
         });
     RemoteProxyFactory.RemoteInvocationHandler handler =
-        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("name", "sample"));
     Method method = SampleApi.class.getMethod("ping");
     Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
 
@@ -255,7 +255,7 @@ class RemoteProxyFactoryTest {
       return null;
     }).when(rabbitTemplate).send(any(), any(), any(Message.class), any(CorrelationData.class));
     RemoteProxyFactory.RemoteInvocationHandler handler =
-        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("name", "sample"));
     Method method = SampleApi.class.getMethod("fire");
     Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
 
@@ -279,7 +279,7 @@ class RemoteProxyFactoryTest {
       throw new AmqpMessageReturnedException("returned", returnedMessage);
     }).when(auditRabbitTemplate).send(any(), any(), any(Message.class), any(CorrelationData.class));
     RemoteProxyFactory.RemoteInvocationHandler handler =
-        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "auditing.login-log"));
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("name", "auditing.login-log"));
     Method method = SampleApi.class.getMethod("fire");
     Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
 
@@ -303,7 +303,7 @@ class RemoteProxyFactoryTest {
       throw new AmqpMessageReturnedException("returned", returnedMessage);
     }).when(rabbitTemplate).send(any(), any(), any(Message.class), any(CorrelationData.class));
     RemoteProxyFactory.RemoteInvocationHandler handler =
-        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("name", "sample"));
     Method method = SampleApi.class.getMethod("fire");
     Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
 
@@ -319,7 +319,7 @@ class RemoteProxyFactoryTest {
     Message reply = MessageBuilder.withBody(RemoteProxyFactory.toByteArray("pong")).build();
     when(rabbitTemplate.sendAndReceive(any(), any(), any(Message.class), any(CorrelationData.class))).thenReturn(reply);
     RemoteProxyFactory.RemoteInvocationHandler handler =
-        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("name", "sample"));
     Method method = SampleApi.class.getMethod("ping");
     Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
 
@@ -333,7 +333,7 @@ class RemoteProxyFactoryTest {
     doAnswer(invocation -> null).when(rabbitTemplate)
         .send(any(), any(), any(Message.class), any(CorrelationData.class));
     RemoteProxyFactory.RemoteInvocationHandler handler =
-        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("name", "sample"));
     Method method = SampleApi.class.getMethod("fire");
     Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {SampleApi.class}, handler);
 
@@ -347,7 +347,7 @@ class RemoteProxyFactoryTest {
     Message reply = MessageBuilder.withBody(RemoteProxyFactory.toByteArray("pong")).build();
     when(rabbitTemplate.sendAndReceive(any(), any(), any(Message.class), any(CorrelationData.class))).thenReturn(reply);
     RemoteProxyFactory.RemoteInvocationHandler handler =
-        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("to", "sample"));
+        new RemoteProxyFactory.RemoteInvocationHandler(Map.of("name", "sample"));
     Method method = InheritedSampleApi.class.getMethod("ping");
     Object proxy = Proxy.newProxyInstance(
         getClass().getClassLoader(),

@@ -113,6 +113,7 @@ public class DataAsset extends BaseEntityImpl<String> {
   private String catalogName;
 
   @Transient
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.dataAssets.title.catalogCode", description = "i18n:dna.dataAssets.description.catalogCode", accessMode = Schema.AccessMode.READ_ONLY)
   private String catalogCode;
 

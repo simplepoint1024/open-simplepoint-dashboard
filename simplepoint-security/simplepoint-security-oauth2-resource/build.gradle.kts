@@ -1,4 +1,5 @@
 dependencies {
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
     api(libs.oauth2.oidc.sdk)
     api(project(":simplepoint-core"))
     api(project(":simplepoint-security:simplepoint-security-core"))

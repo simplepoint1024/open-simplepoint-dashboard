@@ -269,7 +269,15 @@ class RemoteProxyFactory {
     }
 
     private String resolveLogicalTarget() {
-      return attributes.get("to").toString();
+      Object contractName = attributes.get("name");
+      if (contractName != null && !contractName.toString().isBlank()) {
+        return contractName.toString();
+      }
+      Object interfaceName = attributes.get(REMOTE_INTERFACE_ATTRIBUTE);
+      if (interfaceName != null && !interfaceName.toString().isBlank()) {
+        return interfaceName.toString();
+      }
+      throw new IllegalStateException("Remote target is not configured");
     }
 
     private String resolveTarget(final String target) {

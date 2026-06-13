@@ -1,26 +1,32 @@
 package org.simplepoint.plugin.rbac.core.service.impl;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.simplepoint.core.AuthorizationActorRole;
 import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.AuthorizationPermissionNamespaces;
+import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.rbac.core.api.repository.DataScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.FieldScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
 import org.simplepoint.plugin.rbac.tenant.api.repository.FeaturePermissionRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
+import org.simplepoint.remoting.RemoteProvider;
 import org.simplepoint.security.context.AuthorizationContextService;
 import org.simplepoint.security.entity.DataScope;
 import org.simplepoint.security.entity.DataScopeType;
@@ -38,7 +44,7 @@ import org.springframework.stereotype.Service;
  * @since v0.0.2
  */
 @Service
-@AmqpRemoteService
+@RemoteProvider
 public class AuthorizationContextServiceImpl implements AuthorizationContextService {
 
   private final UsersService usersService;
@@ -77,23 +83,42 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
 
   @Override
   public AuthorizationContext calculate(String tenantId, String userId, String contextId, Map<String, String> attributes) {
-    User user = usersService.findById(userId).orElseThrow(() -> new RuntimeException("用户不存在"));
-    boolean tenantOwner = false;
-    if (!Boolean.TRUE.equals(user.superAdmin())
-        && tenantId != null
-        && !tenantId.isBlank()
-        && !"default".equals(tenantId)) {
-      var tenantRepository = tenantRepositoryProvider.getIfAvailable();
-      if (tenantRepository != null) {
-        var tenant = tenantRepository.findById(tenantId)
-            .orElseThrow(() -> new AccessDeniedException("指定租户不存在"));
-        if (!tenantRepository.hasUser(tenantId, userId)) {
-          throw new AccessDeniedException("当前用户未加入指定租户");
-        }
-        tenantOwner = Objects.equals(tenant.getOwnerId(), userId);
+    User user = usersService.findByIdForAuthorization(userId).orElseThrow(() -> new RuntimeException("用户不存在"));
+    String resolvedTenantId = normalizeTenantId(tenantId);
+    Tenant resolvedTenant = null;
+    boolean administrator = Boolean.TRUE.equals(user.superAdmin());
+    var tenantRepository = tenantRepositoryProvider.getIfAvailable();
+    if (!administrator && (resolvedTenantId == null || resolvedTenantId.isBlank()) && tenantRepository != null) {
+      resolvedTenant = Optional.ofNullable(tenantRepository.findPersonalTenantByOwnerId(userId))
+          .orElse(Optional.empty())
+          .orElse(null);
+      if (resolvedTenant != null) {
+        resolvedTenantId = resolvedTenant.getId();
       }
     }
-    var roleAuthorityVos = usersService.loadRolesByUserId(tenantId, userId);
+    Map<String, String> effectiveAttributes = new HashMap<>(attributes == null ? Map.of() : attributes);
+    effectiveAttributes.put("X-User-Id", userId);
+    if (resolvedTenantId != null) {
+      effectiveAttributes.put("X-Tenant-Id", resolvedTenantId);
+    }
+    if (contextId != null && !contextId.isBlank()) {
+      effectiveAttributes.put("X-Context-Id", contextId);
+    }
+    boolean tenantOwner = false;
+    if (resolvedTenantId != null && !resolvedTenantId.isBlank()) {
+      if (tenantRepository != null) {
+        resolvedTenant = resolvedTenant != null
+            ? resolvedTenant
+            : tenantRepository.findById(resolvedTenantId).orElseThrow(() -> new AccessDeniedException("指定租户不存在"));
+        if (!administrator && !tenantRepository.hasUser(resolvedTenantId, userId)) {
+          throw new AccessDeniedException("当前用户未加入指定租户");
+        }
+        tenantOwner = Objects.equals(resolvedTenant.getOwnerId(), userId);
+      } else if (!administrator) {
+        throw new AccessDeniedException("无法验证指定租户");
+      }
+    }
+    var roleAuthorityVos = loadEffectiveRoles(resolvedTenantId, userId);
     var permissions = new LinkedHashSet<String>();
     var roleIds = roleAuthorityVos.stream().map(RoleGrantedAuthority::getId).toList();
     if (!roleIds.isEmpty()) {
@@ -115,33 +140,120 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     }
     var tenantPackageRelevanceRepository = tenantPackageRelevanceRepositoryProvider.getIfAvailable();
     if (tenantPackageRelevanceRepository != null
-        && tenantId != null
-        && !tenantId.isBlank()
-        && tenantOwner
-        && !"default".equals(tenantId)) {
-      permissions.addAll(tenantPackageRelevanceRepository.findFeatureCodesByTenantId(tenantId));
+        && resolvedTenantId != null
+        && !resolvedTenantId.isBlank()
+        && tenantOwner) {
+      permissions.addAll(tenantPackageRelevanceRepository.findFeatureCodesByTenantId(resolvedTenantId));
     }
     if (featurePermissionRelevanceRepository != null
-        && tenantId != null
-        && !tenantId.isBlank()
-        && tenantOwner
-        && !"default".equals(tenantId)) {
-      permissions.addAll(featurePermissionRelevanceRepository.findPermissionAuthoritiesByTenantId(tenantId));
+        && resolvedTenantId != null
+        && !resolvedTenantId.isBlank()
+        && tenantOwner) {
+      permissions.addAll(featurePermissionRelevanceRepository.findPermissionAuthoritiesByTenantId(resolvedTenantId));
     }
+    AuthorizationScopeType scopeType = resolveScopeType(administrator, resolvedTenantId, resolvedTenant);
+    boolean tenantAdmin = hasTenantAdminAuthority(roleAuthorityVos, permissions);
+    AuthorizationActorRole actorRole = resolveActorRole(administrator, resolvedTenantId, resolvedTenant, tenantOwner, tenantAdmin);
+    effectiveAttributes.put("X-Scope-Type", scopeType.name());
+    effectiveAttributes.put("X-Actor-Role", actorRole.name());
     AuthorizationContext authorizationContext = new AuthorizationContext();
     authorizationContext.setUserId(userId);
     authorizationContext.setContextId(contextId);
     authorizationContext.setPermissions(permissions);
-    authorizationContext.setIsAdministrator(user.superAdmin());
+    authorizationContext.setIsAdministrator(administrator);
     authorizationContext.setRoles(roleAuthorityVos.stream().map(RoleGrantedAuthority::getAuthority).toList());
-    authorizationContext.setAttributes(attributes);
+    authorizationContext.setVersion(resolvePermissionVersion(resolvedTenantId, tenantRepository));
+    authorizationContext.setAttributes(effectiveAttributes);
+    authorizationContext.setScopeType(scopeType);
+    authorizationContext.setActorRole(actorRole);
 
     // Resolve data scope and field permissions for the user's roles
     if (!roleIds.isEmpty()) {
-      resolveDataAndFieldScope(roleIds, userId, tenantId, user, authorizationContext);
+      resolveDataAndFieldScope(roleIds, userId, resolvedTenantId, user, authorizationContext);
     }
 
     return authorizationContext;
+  }
+
+  private String normalizeTenantId(String tenantId) {
+    if (tenantId == null) {
+      return null;
+    }
+    String trimmed = tenantId.trim();
+    if (trimmed.isEmpty() || "default".equals(trimmed)) {
+      return null;
+    }
+    return trimmed;
+  }
+
+  private AuthorizationScopeType resolveScopeType(boolean administrator, String tenantId, Tenant tenant) {
+    if ((tenantId == null || tenantId.isBlank()) && administrator) {
+      return AuthorizationScopeType.PLATFORM;
+    }
+    if (tenantId == null || tenantId.isBlank()) {
+      return AuthorizationScopeType.PERSONAL;
+    }
+    if (tenant != null && tenant.getTenantType() == TenantType.PERSONAL) {
+      return AuthorizationScopeType.PERSONAL;
+    }
+    return AuthorizationScopeType.TENANT;
+  }
+
+  private Long resolvePermissionVersion(String tenantId, TenantRepository tenantRepository) {
+    if (tenantId == null || tenantId.isBlank() || tenantRepository == null) {
+      return 0L;
+    }
+    Long permissionVersion = tenantRepository.getTenantPermissionVersion(tenantId);
+    return permissionVersion == null ? 0L : permissionVersion;
+  }
+
+  private AuthorizationActorRole resolveActorRole(
+      boolean administrator, String tenantId, Tenant tenant, boolean tenantOwner, boolean tenantAdmin) {
+    if (administrator && (tenantId == null || tenantId.isBlank())) {
+      return AuthorizationActorRole.PLATFORM_ADMIN;
+    }
+    if (administrator) {
+      return AuthorizationActorRole.TENANT_ADMIN;
+    }
+    if (tenant == null) {
+      return AuthorizationActorRole.PERSONAL_MEMBER;
+    }
+    if (tenant != null && tenant.getTenantType() == TenantType.PERSONAL) {
+      return tenantOwner ? AuthorizationActorRole.PERSONAL_OWNER : AuthorizationActorRole.PERSONAL_MEMBER;
+    }
+    if (tenantOwner) {
+      return AuthorizationActorRole.TENANT_OWNER;
+    }
+    if (tenantAdmin) {
+      return AuthorizationActorRole.TENANT_ADMIN;
+    }
+    return AuthorizationActorRole.TENANT_MEMBER;
+  }
+
+  private boolean hasTenantAdminAuthority(Collection<RoleGrantedAuthority> roles, Collection<String> permissions) {
+    if (permissions != null && permissions.contains(AuthorizationPermissionNamespaces.TENANT_ADMIN)) {
+      return true;
+    }
+    if (roles == null) {
+      return false;
+    }
+    return roles.stream()
+        .map(RoleGrantedAuthority::getAuthority)
+        .filter(Objects::nonNull)
+        .anyMatch(authority -> "TENANT_ADMIN".equals(authority)
+            || "ROLE_TENANT_ADMIN".equals(authority)
+            || AuthorizationPermissionNamespaces.TENANT_ADMIN.equals(authority));
+  }
+
+  private List<RoleGrantedAuthority> loadEffectiveRoles(String tenantId, String userId) {
+    LinkedHashMap<String, RoleGrantedAuthority> rolesById = new LinkedHashMap<>();
+    usersService.loadRolesByUserId(tenantId, userId)
+        .forEach(role -> rolesById.putIfAbsent(role.getId(), role));
+    if (tenantId != null && !tenantId.isBlank()) {
+      usersService.loadRolesByUserId(null, userId)
+          .forEach(role -> rolesById.putIfAbsent(role.getId(), role));
+    }
+    return List.copyOf(rolesById.values());
   }
 
   /**
@@ -171,22 +283,45 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
 
       if (!dataScopeIds.isEmpty()) {
         List<DataScope> dataScopes = dataScopeRepo.findAllById(dataScopeIds);
-        // Pick the most permissive scope type
-        DataScope mostPermissive = dataScopes.stream()
-            .max(Comparator.comparingInt(ds -> ds.getType().getPermissiveLevel()))
-            .orElse(null);
-        if (mostPermissive != null) {
-          ctx.setDataScopeType(mostPermissive.getType().name());
-          if (mostPermissive.getType() == DataScopeType.CUSTOM) {
-            // Union of all custom dept IDs across scopes at the same (most permissive) level
-            Set<String> allCustomDeptIds = new HashSet<>();
-            dataScopes.stream()
-                .filter(ds -> ds.getType() == DataScopeType.CUSTOM)
-                .forEach(ds -> allCustomDeptIds.addAll(ds.getCustomDeptIds()));
-            ctx.setDeptIds(allCustomDeptIds);
-          } else if (mostPermissive.getType() == DataScopeType.DEPT
-              || mostPermissive.getType() == DataScopeType.DEPT_AND_BELOW) {
-            resolveDeptIds(mostPermissive.getType(), userId, tenantId, user, ctx);
+        if (!dataScopes.isEmpty()) {
+          boolean includeSelf = false;
+          boolean hasDepartmentScope = false;
+          Set<String> effectiveDeptIds = new HashSet<>();
+          for (DataScope dataScope : dataScopes) {
+            DataScopeType type = dataScope.getType();
+            if (type == DataScopeType.ALL) {
+              ctx.setDataScopeType(DataScopeType.ALL.name());
+              ctx.setDeptIds(Set.of());
+              ctx.setDataScopeIncludeSelf(false);
+              effectiveDeptIds.clear();
+              includeSelf = false;
+              break;
+            }
+            if (type == DataScopeType.SELF) {
+              includeSelf = true;
+            } else if (type == DataScopeType.CUSTOM) {
+              hasDepartmentScope = true;
+              effectiveDeptIds.addAll(dataScope.getCustomDeptIds());
+            } else if (type == DataScopeType.DEPT || type == DataScopeType.DEPT_AND_BELOW) {
+              hasDepartmentScope = true;
+              Set<String> deptIdsForScope = resolveDeptIds(type, tenantId, user);
+              if (deptIdsForScope.isEmpty()) {
+                includeSelf = true;
+              } else {
+                effectiveDeptIds.addAll(deptIdsForScope);
+              }
+            }
+          }
+          if (ctx.getDataScopeType() == null) {
+            if (hasDepartmentScope) {
+              ctx.setDataScopeType(DataScopeType.CUSTOM.name());
+              ctx.setDeptIds(effectiveDeptIds);
+              ctx.setDataScopeIncludeSelf(includeSelf);
+            } else if (includeSelf) {
+              ctx.setDataScopeType(DataScopeType.SELF.name());
+              ctx.setDeptIds(Set.of());
+              ctx.setDataScopeIncludeSelf(false);
+            }
           }
         }
       }
@@ -230,24 +365,18 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
    * For DEPT: just the user's own orgId.
    * For DEPT_AND_BELOW: BFS from user's orgId through the organization tree.
    */
-  private void resolveDeptIds(
-      DataScopeType type, String userId, String tenantId, User user, AuthorizationContext ctx) {
+  private Set<String> resolveDeptIds(DataScopeType type, String tenantId, User user) {
     String orgId = user.getOrgId();
     if (orgId == null || orgId.isBlank()) {
-      // No org assigned — fall back to SELF scope for this user
-      ctx.setDataScopeType(DataScopeType.SELF.name());
-      return;
+      return Set.of();
     }
     if (type == DataScopeType.DEPT) {
-      ctx.setDeptIds(Set.of(orgId));
-      return;
+      return Set.of(orgId);
     }
     // DEPT_AND_BELOW: BFS traversal
     var orgRepo = organizationRepositoryProvider.getIfAvailable();
     if (orgRepo == null) {
-      // No org repo available — fall back to DEPT (just own dept)
-      ctx.setDeptIds(Set.of(orgId));
-      return;
+      return Set.of(orgId);
     }
     Set<String> allDeptIds = new HashSet<>();
     allDeptIds.add(orgId);
@@ -259,6 +388,6 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
       allDeptIds.addAll(newChildren);
       frontier = newChildren;
     }
-    ctx.setDeptIds(allDeptIds);
+    return allDeptIds;
   }
 }

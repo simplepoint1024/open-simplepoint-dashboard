@@ -22,9 +22,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.data.amqp.rpc.properties.ArpcProperties;
+import org.simplepoint.remoting.RemoteContract;
+import org.simplepoint.remoting.RemoteProvider;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
@@ -56,7 +56,7 @@ class RemoteImplListenerTest {
     listener.setApplicationContext(applicationContext);
 
     SampleRemoteService service = new SampleRemoteService();
-    lenient().when(applicationContext.getBeansWithAnnotation(AmqpRemoteService.class))
+    lenient().when(applicationContext.getBeansWithAnnotation(RemoteProvider.class))
         .thenReturn(Map.of("sampleRemoteService", service));
     lenient().when(applicationContext.getType("sampleRemoteService"))
         .thenAnswer(invocation -> SampleRemoteService.class);
@@ -149,7 +149,24 @@ class RemoteImplListenerTest {
     listener.process(ping);
     listener.process(echo);
 
-    verify(applicationContext, times(1)).getBeansWithAnnotation(AmqpRemoteService.class);
+    verify(applicationContext, times(1)).getBeansWithAnnotation(RemoteProvider.class);
+  }
+
+  @Test
+  void processShouldInvokeRemoteContractProvider() throws Exception {
+    ContractRemoteService service = new ContractRemoteService();
+    when(applicationContext.getBeansWithAnnotation(RemoteProvider.class))
+        .thenReturn(Map.of("contractRemoteService", service));
+    when(applicationContext.getType("contractRemoteService"))
+        .thenAnswer(invocation -> ContractRemoteService.class);
+    listener = new RemoteImplListener(rabbitTemplate, newProperties(), meterRegistry);
+    listener.setApplicationContext(applicationContext);
+    Message request = requestMessage(ContractApi.class.getMethod("ping"), new Object[0], "reply.queue");
+
+    listener.process(request);
+
+    Object response = RemoteProxyFactory.toObjectArray(captureResponse().getBody());
+    assertEquals("contract-pong", response);
   }
 
   @Test
@@ -209,7 +226,15 @@ class RemoteImplListenerTest {
     return builder.build();
   }
 
-  @AmqpRemoteClient(to = "sample")
+  private ArpcProperties newProperties() {
+    ArpcProperties properties = new ArpcProperties();
+    properties.setAppId("common");
+    properties.setPrefix("simplepoint.arpc.");
+    properties.setPriority(10);
+    return properties;
+  }
+
+  @RemoteContract(name = "sample")
   interface SampleApi {
     String ping();
 
@@ -220,7 +245,7 @@ class RemoteImplListenerTest {
     void oneWayBoom();
   }
 
-  @AmqpRemoteService
+  @RemoteProvider
   static final class SampleRemoteService implements SampleApi {
 
     @Override
@@ -241,6 +266,20 @@ class RemoteImplListenerTest {
     @Override
     public void oneWayBoom() {
       throw new IllegalStateException("one-way-boom");
+    }
+  }
+
+  @RemoteContract(name = "sample.contract")
+  interface ContractApi {
+    String ping();
+  }
+
+  @RemoteProvider
+  static final class ContractRemoteService implements ContractApi {
+
+    @Override
+    public String ping() {
+      return "contract-pong";
     }
   }
 }

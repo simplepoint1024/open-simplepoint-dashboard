@@ -120,6 +120,7 @@ public class FederationCatalog extends BaseEntityImpl<String> {
   private Boolean enabled;
 
   @Order(4)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.federation.catalogs.title.description", description = "i18n:dna.federation.catalogs.description.description", maxLength = 512)
   @Column(length = 512)
   private String description;

@@ -17,8 +17,8 @@ import javax.sql.rowset.RowSetProvider;
 
 /**
  * Builds cached JDBC result sets from DNA gateway responses.
- * <p>
- * The server side now performs authoritative type mapping via dialect-specific
+ *
+ * <p>The server side now performs authoritative type mapping via dialect-specific
  * {@code JdbcTypeMapping} instances. The client side trusts the server-provided
  * {@code jdbcType} and only applies a lightweight fallback when the server sends
  * {@link Types#OTHER} or zero.

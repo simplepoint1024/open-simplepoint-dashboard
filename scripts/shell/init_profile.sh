@@ -5,7 +5,6 @@ ENV="${1:-dev}"
 INFRA_DIR="infrastructure"
 
 CONSUL_ADDR="http://127.0.0.1:8500"
-VAULT_ADDR="http://127.0.0.1:8200"
 
 wait_for_http() {
   local name="$1"
@@ -35,7 +34,6 @@ if [[ ! -d "$INFRA_DIR" ]]; then
 fi
 
 # Ensure dependencies are up before apply
-wait_for_http "Vault" "${VAULT_ADDR}/v1/sys/health"
 wait_for_http "Consul" "${CONSUL_ADDR}/v1/status/leader"
 
 echo "🚀 Applying Terraform for environment: $ENV"

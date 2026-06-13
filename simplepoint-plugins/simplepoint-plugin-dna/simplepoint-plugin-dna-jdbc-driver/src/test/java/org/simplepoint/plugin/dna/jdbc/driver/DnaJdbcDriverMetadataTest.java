@@ -30,7 +30,7 @@ class DnaJdbcDriverMetadataTest {
     var executor = Executors.newSingleThreadExecutor();
 
     try (ServerSocket serverSocket = new ServerSocket(0)) {
-      Future<?> serverFuture = executor.submit(() -> {
+      final Future<?> serverFuture = executor.submit(() -> {
         try (
             Socket socket = serverSocket.accept();
             DataInputStream inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));

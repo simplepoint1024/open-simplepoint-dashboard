@@ -29,10 +29,16 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "组织机构管理", description = "用于管理当前租户下的组织机构")
 public class OrganizationController extends BaseController<OrganizationService, Organization, String> {
 
+  /**
+   * Organization Controller.
+   */
   public OrganizationController(OrganizationService service) {
     super(service);
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('organizations.view')")
   @Operation(summary = "分页查询组织机构", description = "根据提供的属性和分页参数，检索组织机构的分页列表")
@@ -40,6 +46,9 @@ public class OrganizationController extends BaseController<OrganizationService, 
     return limit(service.limit(attributes, pageable), Organization.class);
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('organizations.create')")
   @Operation(summary = "添加组织机构", description = "添加一个新的组织机构到当前租户下")
@@ -47,6 +56,9 @@ public class OrganizationController extends BaseController<OrganizationService, 
     return ok(service.create(data));
   }
 
+  /**
+   * @ Put Mapping.
+   */
   @PutMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('organizations.edit')")
   @Operation(summary = "修改组织机构", description = "修改一个已存在的组织机构信息")
@@ -54,6 +66,9 @@ public class OrganizationController extends BaseController<OrganizationService, 
     return ok(service.modifyById(data));
   }
 
+  /**
+   * @ Delete Mapping.
+   */
   @DeleteMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('organizations.delete')")
   @Operation(summary = "删除组织机构", description = "根据提供的组织机构ID集合，删除一个或多个组织机构")

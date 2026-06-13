@@ -269,9 +269,9 @@ public class FederationJdbcSocketServer implements DisposableBean {
       ConnectionSession nextSession = new ConnectionSession(driverSession, pingResult.contextId());
       return new RequestOutcome(nextSession, SocketResponse.ping(pingResult));
     }
-      ConnectionSession requiredSession = requireSession(session);
-      String contextId = resolveContextId(requiredSession, request.contextId());
-      return switch (action) {
+    ConnectionSession requiredSession = requireSession(session);
+    String contextId = resolveContextId(requiredSession, request.contextId());
+    return switch (action) {
       case "PING" -> {
         FederationJdbcDriverModels.PingResult pingResult = driverService.ping(requiredSession.driverSession(), contextId);
         yield new RequestOutcome(requiredSession.withContextId(pingResult.contextId()), SocketResponse.ping(pingResult));
@@ -366,6 +366,7 @@ public class FederationJdbcSocketServer implements DisposableBean {
           SocketResponse.query(driverService.query(
               requiredSession.driverSession(),
               contextId,
+              // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
               new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode(), request.parameters(), request.maxRows())
           ))
       ));

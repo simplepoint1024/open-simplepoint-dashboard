@@ -169,6 +169,7 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
       final String schemaPattern
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
+    // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalogPattern), (resolvedSession, resolvedContextId) ->
         requiredSession.cachedMetadata(
             "schemas:" + normalizedCacheValue(catalogPattern) + ':' + normalizedCacheValue(schemaPattern),
@@ -222,6 +223,7 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
       final List<String> types
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
+    // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalogPattern), (resolvedSession, resolvedContextId) ->
         requiredSession.cachedMetadata(
             "tables:" + normalizedCacheValue(catalogPattern) + ':' + normalizedCacheValue(schemaPattern) + ':'
@@ -257,6 +259,7 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
       final String columnPattern
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
+    // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalogPattern), (resolvedSession, resolvedContextId) ->
         requiredSession.cachedMetadata(
             "columns:" + normalizedCacheValue(catalogPattern) + ':' + normalizedCacheValue(schemaPattern) + ':'
@@ -290,6 +293,7 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
       final String table
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
+    // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalog), (resolvedSession, resolvedContextId) ->
         requiredSession.cachedMetadata(
             "primaryKeys:" + normalizedCacheValue(catalog) + ':' + normalizedCacheValue(schema) + ':' + normalizedCacheValue(table),
@@ -325,6 +329,7 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
       final boolean approximate
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
+    // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalog), (resolvedSession, resolvedContextId) ->
         requiredSession.cachedMetadata(
             "indexInfo:" + normalizedCacheValue(catalog) + ':' + normalizedCacheValue(schema) + ':'
@@ -358,6 +363,7 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
       final String table
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
+    // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalog), (resolvedSession, resolvedContextId) ->
         requiredSession.cachedMetadata(
             "importedKeys:" + normalizedCacheValue(catalog) + ':' + normalizedCacheValue(schema) + ':' + normalizedCacheValue(table),
@@ -389,6 +395,7 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
       final String table
   ) {
     JdbcConnectionSession requiredSession = requireSession(session);
+    // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
     return withDriverContext(requiredSession, contextId, resolveMetadataContextCatalog(requiredSession, catalog), (resolvedSession, resolvedContextId) ->
         requiredSession.cachedMetadata(
             "exportedKeys:" + normalizedCacheValue(catalog) + ':' + normalizedCacheValue(schema) + ':' + normalizedCacheValue(table),

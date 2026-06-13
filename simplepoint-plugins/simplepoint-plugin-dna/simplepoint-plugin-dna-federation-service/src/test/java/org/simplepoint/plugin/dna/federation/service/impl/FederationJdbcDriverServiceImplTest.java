@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Set;
-import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -31,6 +30,7 @@ import org.simplepoint.plugin.dna.federation.api.vo.FederationQueryModels;
 import org.simplepoint.plugin.dna.federation.service.support.FederationJdbcMetadataSupport;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
+import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.simplepoint.security.context.AuthorizationContextService;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -515,7 +515,7 @@ class FederationJdbcDriverServiceImplTest {
     JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "ds1");
     FederationJdbcConnectionUser grant = enabledGrant("grant-1", "ds-1");
     AuthorizationContext authorizationContext = authorizationContext("user-1");
-    NamedTenantVo tenantVo = new NamedTenantVo("tenant-resolved", "Resolved Tenant");
+    NamedTenantVo tenantVo = new NamedTenantVo("tenant-resolved", "Resolved Tenant", null);
     when(usersService.loadUserByPhoneOrEmail("alice@example.com")).thenReturn(user);
     when(passwordEncoder.matches("secret", "encoded")).thenReturn(true);
     when(jdbcConnectionUserService.enabledGrants("user-1")).thenReturn(List.of(grant));

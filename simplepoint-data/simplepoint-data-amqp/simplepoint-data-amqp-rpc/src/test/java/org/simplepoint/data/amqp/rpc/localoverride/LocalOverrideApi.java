@@ -1,11 +1,11 @@
 package org.simplepoint.data.amqp.rpc.localoverride;
 
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
+import org.simplepoint.remoting.RemoteContract;
 
 /**
  * Remote client contract used to verify local-bean override behavior.
  */
-@AmqpRemoteClient(to = "sample")
+@RemoteContract(name = "sample")
 public interface LocalOverrideApi {
 
   /**

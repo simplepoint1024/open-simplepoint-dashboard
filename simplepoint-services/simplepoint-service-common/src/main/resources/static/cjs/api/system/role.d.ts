@@ -13,6 +13,16 @@ export interface RoleRelevantVo {
 export interface RolePermissionRelevantDto {
     roleId: string | null;
     permissionAuthority?: string[];
+    dataScopeId?: string | null;
+    fieldScopeId?: string | null;
+}
+/**
+ * 角色数据/字段权限分配 VO
+ */
+export interface RoleScopeAssignmentVo {
+    roleId: string;
+    dataScopeId?: string | null;
+    fieldScopeId?: string | null;
 }
 /**
  * 获取下拉角色分页
@@ -33,3 +43,11 @@ export declare function fetchUnauthorized(data: RolePermissionRelevantDto): Prom
  * @param data 请求数据
  */
 export declare function fetchAuthorize(data: RolePermissionRelevantDto): Promise<RolePermissionRelevantDto>;
+/**
+ * 查询角色的数据权限和字段权限分配
+ */
+export declare function fetchScopeAssignment(roleId: string): Promise<RoleScopeAssignmentVo>;
+/**
+ * 更新角色的数据权限和字段权限分配
+ */
+export declare function updateScopeAssignment(vo: RoleScopeAssignmentVo): Promise<void>;

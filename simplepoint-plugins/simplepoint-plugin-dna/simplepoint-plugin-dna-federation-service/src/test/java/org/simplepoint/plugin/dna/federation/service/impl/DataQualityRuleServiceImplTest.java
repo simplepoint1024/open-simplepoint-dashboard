@@ -237,7 +237,7 @@ class DataQualityRuleServiceImplTest {
 
   @Test
   void createRejectsDisabledDataSource() {
-    DataQualityRule rule = validCustomSqlRule();
+    final DataQualityRule rule = validCustomSqlRule();
     JdbcDataSourceDefinition ds = enabledDs("catalog-1", "MySQL");
     ds.setEnabled(false);
     when(repository.findActiveByCode("RULE_001")).thenReturn(Optional.empty());

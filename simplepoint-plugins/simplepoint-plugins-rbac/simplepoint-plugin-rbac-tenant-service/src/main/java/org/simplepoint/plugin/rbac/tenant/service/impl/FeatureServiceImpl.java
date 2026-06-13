@@ -2,13 +2,17 @@ package org.simplepoint.plugin.rbac.tenant.service.impl;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.AuthorizationScopeGuards;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChangeLogRecordCommand;
 import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
@@ -21,7 +25,10 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.FeatureRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.FeatureService;
+import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -34,8 +41,12 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
   private final ApplicationFeatureRelevanceRepository applicationFeatureRelevanceRepository;
   private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
   private final TenantRepository tenantRepository;
+  private final PermissionVersionRefreshService permissionVersionRefreshService;
   private final PermissionChangeLogRemoteService permissionChangeLogRemoteService;
 
+  /**
+   * Feature Service Impl.
+   */
   public FeatureServiceImpl(
       FeatureRepository repository,
       DetailsProviderService detailsProviderService,
@@ -43,6 +54,7 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
       ApplicationFeatureRelevanceRepository applicationFeatureRelevanceRepository,
       TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
       TenantRepository tenantRepository,
+      PermissionVersionRefreshService permissionVersionRefreshService,
       PermissionChangeLogRemoteService permissionChangeLogRemoteService
   ) {
     super(repository, detailsProviderService);
@@ -50,12 +62,46 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
     this.applicationFeatureRelevanceRepository = applicationFeatureRelevanceRepository;
     this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
     this.tenantRepository = tenantRepository;
+    this.permissionVersionRefreshService = permissionVersionRefreshService;
     this.permissionChangeLogRemoteService = permissionChangeLogRemoteService;
   }
 
   @Override
+  public <S extends Feature> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
+    if (AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
+      return super.limit(attributes, pageable);
+    }
+    Set<String> featureCodes = tenantPackageRelevanceRepository.findFeatureCodesByTenantId(resolveTenantScope());
+    if (featureCodes.isEmpty()) {
+      return Page.empty(pageable);
+    }
+    Map<String, String> scopedAttributes = new HashMap<>(attributes == null ? Map.of() : attributes);
+    scopedAttributes.put("code", "in:" + String.join(",", featureCodes));
+    return super.limit(scopedAttributes, pageable);
+  }
+
+  @Override
+  public Optional<Feature> findById(String id) {
+    Optional<Feature> feature = super.findById(id);
+    if (feature.isEmpty() || AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
+      return feature;
+    }
+    Set<String> featureCodes = tenantPackageRelevanceRepository.findFeatureCodesByTenantId(resolveTenantScope());
+    return featureCodes.contains(feature.get().getCode()) ? feature : Optional.empty();
+  }
+
+  @Override
   public Collection<String> authorizedPermissions(String featureCode) {
+    if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())
+        && !tenantPackageRelevanceRepository.findFeatureCodesByTenantId(resolveTenantScope()).contains(featureCode)) {
+      throw new IllegalArgumentException("功能不存在或不属于当前租户");
+    }
     return featurePermissionRelevanceRepository.authorized(requireCode(featureCode, "功能编码不能为空"));
+  }
+
+  @Override
+  public Collection<String> findAllRequireOrgTenantCodes() {
+    return getRepository().findCodesByRequireOrgTenant();
   }
 
   @Override
@@ -64,12 +110,39 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
     if (normalizedCodes.isEmpty()) {
       return List.of();
     }
+    if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
+      Set<String> visibleFeatureCodes = tenantPackageRelevanceRepository.findFeatureCodesByTenantId(resolveTenantScope());
+      normalizedCodes.retainAll(visibleFeatureCodes);
+      if (normalizedCodes.isEmpty()) {
+        return List.of();
+      }
+    }
     return getRepository().findAllByCodes(normalizedCodes);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Collection<FeaturePermissionRelevance> authorizePermissions(FeaturePermissionsRelevanceDto dto) {
+    requirePlatformAdministrator();
+    Collection<FeaturePermissionRelevance> saved = savePermissionRelations(dto);
+    recordPermissionChange("AUTHORIZE", requireCode(dto.getFeatureCode(), "功能编码不能为空"),
+        normalizeCodes(dto.getPermissionAuthority()));
+    return saved;
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Collection<FeaturePermissionRelevance> initializePermissions(FeaturePermissionsRelevanceDto dto) {
+    return savePermissionRelations(dto);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Feature initializeFeature(Feature feature) {
+    return (Feature) super.modifyById(feature);
+  }
+
+  private Collection<FeaturePermissionRelevance> savePermissionRelations(FeaturePermissionsRelevanceDto dto) {
     String featureCode = requireCode(dto.getFeatureCode(), "功能编码不能为空");
     Set<String> permissionAuthorities = normalizeCodes(dto.getPermissionAuthority());
     if (permissionAuthorities.isEmpty()) {
@@ -85,27 +158,28 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
     }
 
     Collection<FeaturePermissionRelevance> saved = featurePermissionRelevanceRepository.saveAll(relations);
-    refreshTenantsByFeatureCodes(Set.of(featureCode));
-    recordPermissionChange("AUTHORIZE", featureCode, permissionAuthorities);
+    permissionVersionRefreshService.refreshByFeatureCodes(Set.of(featureCode));
     return saved;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void unauthorizedPermissions(String featureCode, Set<String> permissionAuthority) {
+    requirePlatformAdministrator();
     Set<String> normalizedAuthorities = normalizeCodes(permissionAuthority);
     if (normalizedAuthorities.isEmpty()) {
       return;
     }
     String requiredFeatureCode = requireCode(featureCode, "功能编码不能为空");
     featurePermissionRelevanceRepository.unauthorized(requiredFeatureCode, normalizedAuthorities);
-    refreshTenantsByFeatureCodes(Set.of(requiredFeatureCode));
+    permissionVersionRefreshService.refreshByFeatureCodes(Set.of(requiredFeatureCode));
     recordPermissionChange("UNAUTHORIZE", requiredFeatureCode, normalizedAuthorities);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends Feature> Feature modifyById(S entity) {
+    requirePlatformAdministrator();
     Feature current = findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("功能不存在"));
     String oldCode = current.getCode();
     Boolean oldPublicAccess = current.getPublicAccess();
@@ -114,9 +188,9 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
     if (!Objects.equals(oldCode, updated.getCode())) {
       applicationFeatureRelevanceRepository.updateFeatureCode(oldCode, updated.getCode());
       featurePermissionRelevanceRepository.updateFeatureCode(oldCode, updated.getCode());
-      refreshPermissionVersion(affectedTenantIds);
+      permissionVersionRefreshService.refreshTenants(affectedTenantIds);
     } else if (!Objects.equals(oldPublicAccess, updated.getPublicAccess())) {
-      refreshPermissionVersion(affectedTenantIds);
+      permissionVersionRefreshService.refreshTenants(affectedTenantIds);
     }
     return updated;
   }
@@ -124,6 +198,7 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void removeByIds(Collection<String> ids) {
+    requirePlatformAdministrator();
     if (ids == null || ids.isEmpty()) {
       return;
     }
@@ -137,22 +212,11 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
       return;
     }
 
-    Set<String> affectedTenantIds = tenantPackageRelevanceRepository.findTenantIdsByFeatureCodes(featureCodes);
+    final Set<String> affectedTenantIds = tenantPackageRelevanceRepository.findTenantIdsByFeatureCodes(featureCodes);
     featurePermissionRelevanceRepository.deleteAllByFeatureCodes(featureCodes);
     applicationFeatureRelevanceRepository.deleteAllByFeatureCodes(featureCodes);
     super.removeByIds(ids);
-    refreshPermissionVersion(affectedTenantIds);
-  }
-
-  private void refreshTenantsByFeatureCodes(Collection<String> featureCodes) {
-    refreshPermissionVersion(tenantPackageRelevanceRepository.findTenantIdsByFeatureCodes(featureCodes));
-  }
-
-  private void refreshPermissionVersion(Collection<String> tenantIds) {
-    if (tenantIds == null || tenantIds.isEmpty()) {
-      return;
-    }
-    tenantRepository.increasePermissionVersion(tenantIds);
+    permissionVersionRefreshService.refreshTenants(affectedTenantIds);
   }
 
   private static Set<String> normalizeCodes(Collection<String> codes) {
@@ -205,7 +269,17 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
 
   private String resolveTenantScope() {
     String tenantId = currentTenantId();
-    return tenantId == null || tenantId.isBlank() ? "default" : tenantId;
+    if (tenantId != null && !tenantId.isBlank()) {
+      return tenantId;
+    }
+    var ctx = getAuthorizationContext();
+    String userId = ctx != null ? ctx.getUserId() : null;
+    if (userId == null || userId.isBlank()) {
+      return null;
+    }
+    return tenantRepository.findPersonalTenantByOwnerId(userId)
+        .map(org.simplepoint.plugin.rbac.tenant.api.entity.Tenant::getId)
+        .orElse(null);
   }
 
   private String joinValues(Set<String> values) {
@@ -229,5 +303,9 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
       }
     }
     return null;
+  }
+
+  private void requirePlatformAdministrator() {
+    AuthorizationScopeGuards.requirePlatformAdministrator(getAuthorizationContext());
   }
 }

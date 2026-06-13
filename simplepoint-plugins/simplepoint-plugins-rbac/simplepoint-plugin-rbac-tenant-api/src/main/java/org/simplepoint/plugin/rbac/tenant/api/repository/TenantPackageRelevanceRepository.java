@@ -10,23 +10,58 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
  */
 public interface TenantPackageRelevanceRepository {
 
+  /**
+   * Save All.
+   */
   <S extends TenantPackageRelevance> List<S> saveAll(Iterable<S> entities);
 
+  /**
+   * Unauthorized.
+   */
   void unauthorized(String tenantId, Set<String> packageCodes);
 
+  /**
+   * Authorized.
+   */
   Collection<String> authorized(String tenantId);
 
+  /**
+   * Delete All By Tenant Ids.
+   */
   void deleteAllByTenantIds(Collection<String> tenantIds);
 
+  /**
+   * Delete All By Package Codes.
+   */
   void deleteAllByPackageCodes(Collection<String> packageCodes);
 
+  /**
+   * Update Package Code.
+   */
   void updatePackageCode(String oldCode, String newCode);
 
+  /**
+   * Find Tenant Ids By Package Codes.
+   */
   Set<String> findTenantIdsByPackageCodes(Collection<String> packageCodes);
 
+  /**
+   * Find Tenant Ids By Application Codes.
+   */
   Set<String> findTenantIdsByApplicationCodes(Collection<String> applicationCodes);
 
+  /**
+   * Find Tenant Ids By Feature Codes.
+   */
   Set<String> findTenantIdsByFeatureCodes(Collection<String> featureCodes);
 
+  /**
+   * Find Feature Codes By Tenant Id.
+   */
   Set<String> findFeatureCodesByTenantId(String tenantId);
+
+  /**
+   * Find Application Codes By Tenant Id.
+   */
+  Set<String> findApplicationCodesByTenantId(String tenantId);
 }

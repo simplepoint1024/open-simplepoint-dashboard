@@ -28,14 +28,23 @@ public final class FederationQueryModels {
       Integer maxRows
   ) {
 
+    /**
+     * Sql Console Request.
+     */
     public SqlConsoleRequest(final String catalogCode, final String sql) {
       this(catalogCode, sql, null, null, null);
     }
 
+    /**
+     * Sql Console Request.
+     */
     public SqlConsoleRequest(final String catalogCode, final String sql, final String defaultSchema) {
       this(catalogCode, sql, defaultSchema, null, null);
     }
 
+    /**
+     * Sql Console Request.
+     */
     public SqlConsoleRequest(final String catalogCode, final String sql, final String defaultSchema, final List<Object> parameters) {
       this(catalogCode, sql, defaultSchema, parameters, null);
     }
@@ -54,6 +63,9 @@ public final class FederationQueryModels {
       Integer jdbcType
   ) {
 
+    /**
+     * Sql Column.
+     */
     public SqlColumn(final String name, final String typeName) {
       this(name, typeName, null);
     }

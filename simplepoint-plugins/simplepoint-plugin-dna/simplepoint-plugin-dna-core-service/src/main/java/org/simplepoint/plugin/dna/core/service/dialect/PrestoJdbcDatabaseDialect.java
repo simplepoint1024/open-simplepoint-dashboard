@@ -204,6 +204,9 @@ public class PrestoJdbcDatabaseDialect extends AbstractJdbcDatabaseDialect {
     return value == null ? "" : value.trim().toLowerCase();
   }
 
+  /**
+   * Trim To Null.
+   */
   protected static String trimToNull(final String value) {
     if (value == null) {
       return null;

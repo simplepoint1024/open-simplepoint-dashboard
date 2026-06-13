@@ -8,8 +8,8 @@
 
 package org.simplepoint.common.server;
 
+import com.simplepoint.service.router.annotation.EnableServiceRouter;
 import org.simplepoint.boot.starter.Boot;
-import org.simplepoint.data.amqp.rpc.annotation.EnableAmqpRemoteClients;
 import org.simplepoint.data.jpa.base.repository.EnableRepository;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
@@ -23,7 +23,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 @Boot
 @EnableCaching
 @EnableRepository
-@EnableAmqpRemoteClients(basePackages = "org.simplepoint")
+@EnableServiceRouter(basePackages = "org.simplepoint")
 @EnableMethodSecurity
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class Common {

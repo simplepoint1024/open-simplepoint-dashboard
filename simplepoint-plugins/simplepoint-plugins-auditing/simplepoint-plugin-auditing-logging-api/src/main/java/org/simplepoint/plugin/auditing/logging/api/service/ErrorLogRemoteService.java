@@ -8,13 +8,13 @@
 
 package org.simplepoint.plugin.auditing.logging.api.service;
 
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.ErrorLogRecordCommand;
+import org.simplepoint.remoting.RemoteContract;
 
 /**
  * Remote service used to record warning and error log events.
  */
-@AmqpRemoteClient(to = "auditing.error-log")
+@RemoteContract(name = "auditing.error-log")
 public interface ErrorLogRemoteService {
   /**
    * Records an error log event in the auditing service.

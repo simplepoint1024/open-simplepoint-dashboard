@@ -6,9 +6,9 @@ import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
+import org.simplepoint.plugin.rbac.menu.api.service.MicroAppService;
 import org.simplepoint.plugin.rbac.menu.api.vo.MicroModuleItemVo;
 import org.simplepoint.security.entity.MicroModule;
-import org.simplepoint.plugin.rbac.menu.api.service.MicroAppService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -58,8 +58,8 @@ public class MicroAppController
       @RequestParam Map<String, String> attributes,
       Pageable pageable
   ) {
-//    var list = new ArrayList<MicroModuleItemVo>();
-//    list.add(new MicroModuleItemVo("common", "http://127.0.0.1:8080/common/mf/mf-manifest.json"));
+    //    var list = new ArrayList<MicroModuleItemVo>();
+    //    list.add(new MicroModuleItemVo("common", "http://127.0.0.1:8080/common/mf/mf-manifest.json"));
     return limit(service.limit(attributes, pageable), MicroModule.class);
   }
 

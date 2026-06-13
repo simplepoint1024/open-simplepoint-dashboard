@@ -26,8 +26,10 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.base.BaseEntity;
@@ -41,10 +43,13 @@ import org.simplepoint.api.security.service.JsonSchemaDetailsService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.annotation.ButtonDeclaration;
-import org.simplepoint.core.datascopeannotation.DataScopeFilter;
 import org.simplepoint.core.annotation.ButtonDeclarations;
+import org.simplepoint.core.datascopeannotation.DataScopeCondition;
+import org.simplepoint.core.datascopeannotation.DataScopeContext;
+import org.simplepoint.core.datascopeannotation.DataScopeFilter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 
 /**
  * Abstract service implementation class for managing entities.
@@ -62,6 +67,20 @@ public class BaseServiceImpl
     implements BaseService<T, I> {
 
   private final ObjectMapper mapper = new ObjectMapper();
+
+  private static final String DATA_SCOPE_ALL = "ALL";
+
+  private static final String DATA_SCOPE_SELF = "SELF";
+
+  private static final String DATA_SCOPE_DEPT = "DEPT";
+
+  private static final String DATA_SCOPE_DEPT_AND_BELOW = "DEPT_AND_BELOW";
+
+  private static final String DATA_SCOPE_CUSTOM = "CUSTOM";
+
+  private static final String DEFAULT_DATA_SCOPE_OWNER_FIELD = "createdBy";
+
+  private static final String DEFAULT_DATA_SCOPE_DEPT_FIELD = "orgId";
 
   private final R repository;
 
@@ -279,6 +298,10 @@ public class BaseServiceImpl
     String currentTenantId = currentTenantId();
     if (currentTenantId != null && (tenantEntity.getTenantId() == null || tenantEntity.getTenantId().isBlank())) {
       tenantEntity.setTenantId(currentTenantId);
+      return;
+    }
+    if (tenantEntity.getTenantId() == null || tenantEntity.getTenantId().isBlank()) {
+      throw new IllegalStateException("Tenant-aware entity requires an active tenant context");
     }
   }
 
@@ -315,7 +338,16 @@ public class BaseServiceImpl
     if (entity.getId() == null) {
       throw new NullPointerException("entity id is null");
     }
-    repository.findById(entity.getId()).ifPresent(db -> {
+    Optional<T> existing = repository.findById(entity.getId());
+    if (existing.isEmpty()) {
+      if (isDataScopeRestricted()) {
+        throw new NoSuchElementException("entity not found: " + entity.getId());
+      }
+      return repository.updateById(entity);
+    }
+    T db = existing.get();
+    assertAccessible(db);
+    {
       // Only these fields are allowed to be modified by the client
       Set<String> scopeFields = getAllFieldNames(getRepository().getDomainClass());
       // Remove fields that the current user cannot write (non-EDITABLE)
@@ -331,7 +363,7 @@ public class BaseServiceImpl
 
       // Audit diff between db (before) and entity (after merge)
       getModifyDataAuditingServices().forEach(svc -> svc.modify(db, entity, repository.getDomainClass()));
-    });
+    }
 
     return repository.updateById(entity);
   }
@@ -362,7 +394,16 @@ public class BaseServiceImpl
    */
   @Override
   public void removeById(I id) {
-    findById(id).ifPresent(entity -> getModifyDataAuditingServices().forEach(service -> service.delete(Set.of(entity), repository.getDomainClass())));
+    Optional<T> entity = repository.findById(id);
+    if (entity.isEmpty()) {
+      if (!isDataScopeRestricted()) {
+        repository.deleteById(id);
+      }
+      return;
+    }
+    T data = entity.get();
+    assertAccessible(data);
+    getModifyDataAuditingServices().forEach(service -> service.delete(Set.of(data), repository.getDomainClass()));
     repository.deleteById(id);
   }
 
@@ -373,11 +414,15 @@ public class BaseServiceImpl
    */
   @Override
   public void removeByIds(Collection<I> ids) {
-    List<T> deleteData = findAllByIds(ids);
+    List<T> deleteData = repository.findAllByIds(ids);
+    boolean restricted = isDataScopeRestricted();
+    if (restricted) {
+      deleteData.forEach(this::assertAccessible);
+    }
     if (!deleteData.isEmpty()) {
       getModifyDataAuditingServices().forEach(service -> service.delete(deleteData, repository.getDomainClass()));
     }
-    repository.deleteByIds(ids);
+    repository.deleteByIds(restricted ? deleteData.stream().map(BaseEntity::getId).toList() : ids);
   }
 
   /**
@@ -388,7 +433,7 @@ public class BaseServiceImpl
    */
   @Override
   public Optional<T> findById(I id) {
-    return repository.findById(id);
+    return repository.findById(id).filter(this::isAccessible);
   }
 
   /**
@@ -399,7 +444,7 @@ public class BaseServiceImpl
    */
   @Override
   public List<T> findAllByIds(Iterable<I> ids) {
-    return repository.findAllByIds(ids);
+    return repository.findAllByIds(ids).stream().filter(this::isAccessible).toList();
   }
 
   /**
@@ -410,7 +455,7 @@ public class BaseServiceImpl
    */
   @Override
   public List<T> findAll(Map<String, String> attributes) {
-    return repository.findAll(attributes);
+    return limit(attributes, Pageable.unpaged()).getContent();
   }
 
   /**
@@ -422,9 +467,9 @@ public class BaseServiceImpl
    * @return the paginated list of entities
    */
   @Override
-  @DataScopeFilter(ownerField = "createdBy", deptField = "orgId")
+  @DataScopeFilter(ownerField = DEFAULT_DATA_SCOPE_OWNER_FIELD, deptField = DEFAULT_DATA_SCOPE_DEPT_FIELD)
   public <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
-    Page<S> limit = repository.limit(attributes, pageable);
+    Page<S> limit = runWithDefaultDataScope(() -> repository.limit(attributes, pageable));
     this.validate(limit.getContent());
     return limit;
   }
@@ -452,7 +497,7 @@ public class BaseServiceImpl
    */
   @Override
   public <S extends T> boolean exists(S example) {
-    return repository.exists(example);
+    return count(example) > 0;
   }
 
   /**
@@ -463,7 +508,7 @@ public class BaseServiceImpl
    */
   @Override
   public boolean existsById(I id) {
-    return repository.existsById(id);
+    return findById(id).isPresent();
   }
 
   /**
@@ -475,7 +520,7 @@ public class BaseServiceImpl
    */
   @Override
   public <S extends T> long count(S example) {
-    return repository.count(example);
+    return runWithDefaultDataScope(() -> repository.count(example));
   }
 
   /**
@@ -553,5 +598,120 @@ public class BaseServiceImpl
       }
       clazz = clazz.getSuperclass();
     }
+  }
+
+  private <V> V runWithDefaultDataScope(Supplier<V> supplier) {
+    if (DataScopeContext.get() != null) {
+      return supplier.get();
+    }
+    DataScopeCondition condition = buildDefaultDataScopeCondition();
+    if (condition == null) {
+      return supplier.get();
+    }
+    DataScopeContext.set(condition);
+    try {
+      return supplier.get();
+    } finally {
+      DataScopeContext.clear();
+    }
+  }
+
+  private DataScopeCondition buildDefaultDataScopeCondition() {
+    AuthorizationContext ctx = getAuthorizationContext();
+    if (ctx == null || Boolean.TRUE.equals(ctx.getIsAdministrator())) {
+      return null;
+    }
+    String scopeType = ctx.getDataScopeType();
+    if (scopeType == null || scopeType.isBlank() || DATA_SCOPE_ALL.equals(scopeType)) {
+      return null;
+    }
+    return new DataScopeCondition(
+        scopeType,
+        dataScopeDeptField(),
+        dataScopeOwnerField(),
+        ctx.getUserId(),
+        ctx.getDeptIds(),
+        Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf())
+    );
+  }
+
+  private boolean isDataScopeRestricted() {
+    DataScopeCondition condition = DataScopeContext.get();
+    if (condition != null) {
+      return !condition.isAllData();
+    }
+    return buildDefaultDataScopeCondition() != null;
+  }
+
+  private void assertAccessible(T entity) {
+    if (!isAccessible(entity)) {
+      throw new AccessDeniedException("Data scope denies access to entity: " + entity.getId());
+    }
+  }
+
+  private boolean isAccessible(T entity) {
+    if (entity == null) {
+      return false;
+    }
+    AuthorizationContext ctx = getAuthorizationContext();
+    if (ctx == null || Boolean.TRUE.equals(ctx.getIsAdministrator())) {
+      return true;
+    }
+    String scopeType = ctx.getDataScopeType();
+    if (scopeType == null || scopeType.isBlank() || DATA_SCOPE_ALL.equals(scopeType)) {
+      return true;
+    }
+    return switch (scopeType) {
+      case DATA_SCOPE_SELF -> {
+        Object owner = readFieldValue(entity, dataScopeOwnerField());
+        yield owner != null && owner.toString().equals(ctx.getUserId());
+      }
+      case DATA_SCOPE_DEPT, DATA_SCOPE_DEPT_AND_BELOW, DATA_SCOPE_CUSTOM -> {
+        Object dept = readFieldValue(entity, dataScopeDeptField());
+        Set<String> deptIds = ctx.getDeptIds();
+        boolean deptAllowed = dept != null && deptIds != null && deptIds.contains(dept.toString());
+        boolean selfAllowed = Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf())
+            && isOwnedByCurrentUser(entity, ctx);
+        yield deptAllowed || selfAllowed;
+      }
+      default -> false;
+    };
+  }
+
+  private boolean isOwnedByCurrentUser(T entity, AuthorizationContext ctx) {
+    Object owner = readFieldValue(entity, dataScopeOwnerField());
+    return owner != null && owner.toString().equals(ctx.getUserId());
+  }
+
+  /**
+   * Returns the owner field used by base data-scope checks.
+   * Override together with {@link #dataScopeDeptField()} when an entity does not use the standard names.
+   */
+  protected String dataScopeOwnerField() {
+    return DEFAULT_DATA_SCOPE_OWNER_FIELD;
+  }
+
+  /**
+   * Returns the department field used by base data-scope checks.
+   * Override together with {@link #dataScopeOwnerField()} when an entity does not use the standard names.
+   */
+  protected String dataScopeDeptField() {
+    return DEFAULT_DATA_SCOPE_DEPT_FIELD;
+  }
+
+  private Object readFieldValue(Object target, String fieldName) {
+    Class<?> clazz = target.getClass();
+    while (clazz != null && clazz != Object.class) {
+      try {
+        Field field = clazz.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(target);
+      } catch (NoSuchFieldException ignored) {
+        clazz = clazz.getSuperclass();
+      } catch (IllegalAccessException e) {
+        return null;
+      }
+    }
+    return null;
   }
 }

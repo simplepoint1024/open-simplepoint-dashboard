@@ -1,0 +1,147 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: simplepoint
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - simplepoint_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d simplepoint"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - simplepoint_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  consul:
+    image: hashicorp/consul:1.20
+    command: ["agent", "-dev", "-client=0.0.0.0", "-ui"]
+    ports:
+      - "8500:8500"
+      - "8600:8600"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8500/v1/status/leader >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  bootstrap:
+    build:
+      context: .
+      dockerfile: docker/swarm/bootstrap/Dockerfile
+    environment:
+      CONSUL_ADDR: http://consul:8500
+      PUBLIC_HOST: ${SIMPLEPOINT_PUBLIC_HOST:-localhost}
+    depends_on:
+      consul:
+        condition: service_healthy
+    restart: "no"
+
+  authorization:
+    build:
+      context: .
+      dockerfile: docker/swarm/app/Dockerfile
+      args:
+        APP_GRADLE_PATH: :simplepoint-services:simplepoint-service-authorization
+        APP_INSTALL_DIR: simplepoint-services/simplepoint-service-authorization/build/install/simplepoint-service-authorization
+      APP_START_SCRIPT: /opt/simplepoint/bin/simplepoint-service-authorization
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500
+      SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
+      SIMPLEPOINT_WAIT_TIMEOUT: 240
+    ports:
+      - "9000:9000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/actuator/health >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  common:
+    build:
+      context: .
+      dockerfile: docker/swarm/app/Dockerfile
+      args:
+        APP_GRADLE_PATH: :simplepoint-services:simplepoint-service-common
+        APP_INSTALL_DIR: simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common
+        APP_START_SCRIPT: /opt/simplepoint/bin/simplepoint-service-common
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_ADMIN_EMAIL: ${SIMPLEPOINT_ADMIN_EMAIL:-simplepoint@mail.com}
+      SIMPLEPOINT_ADMIN_PASSWORD: ${SIMPLEPOINT_ADMIN_PASSWORD:-123456}
+      SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500
+      SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
+      SIMPLEPOINT_WAIT_TIMEOUT: 240
+    ports:
+      - "7000:7000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      authorization:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:7000/actuator/health >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  host:
+    build:
+      context: .
+      dockerfile: docker/swarm/app/Dockerfile
+      args:
+        APP_GRADLE_PATH: :simplepoint-services:simplepoint-service-host
+        APP_INSTALL_DIR: simplepoint-services/simplepoint-service-host/build/install/simplepoint-service-host
+        APP_START_SCRIPT: /opt/simplepoint/bin/simplepoint-service-host
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_WAIT_FOR: redis:6379,consul:8500
+      SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
+      SIMPLEPOINT_WAIT_TIMEOUT: 240
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+      authorization:
+        condition: service_healthy
+      common:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/actuator/health >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+volumes:
+  simplepoint_postgres_data:
+  simplepoint_redis_data:

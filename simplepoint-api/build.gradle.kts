@@ -12,7 +12,7 @@ dependencies {
     api("org.springframework:spring-core")
     api("org.hibernate.orm:hibernate-core")
     api("org.springframework.security:spring-security-oauth2-core")
-    api(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-annotation"))
+    api(project(":simplepoint-remoting:simplepoint-remoting-core"))
     api(libs.swagger.annotations)
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")

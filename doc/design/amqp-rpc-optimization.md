@@ -12,7 +12,7 @@
 | 2 | 使用共享固定 reply queue | 多实例/多服务下回复路径耦合，扩容和排障成本高 | 改为 `RabbitTemplate` 管理 reply，移除固定 reply queue |
 | 3 | 方法分发依赖运行时参数类型反射匹配 | `Map`/`Collection`/父类/接口/无参调用容易失败 | 使用声明参数类型构建精确分发表，并提供兼容回退匹配 |
 | 4 | 请求路由使用 `HeadersExchange` | 仅按单一目标服务路由时不够轻量 | 改为 `DirectExchange + routingKey` |
-| 5 | 每次请求动态扫描 bean 和反射解析方法 | 增加延迟和 CPU 消耗 | 启动后缓存 `@AmqpRemoteService` 分发表 |
+| 5 | 每次请求动态扫描 bean 和反射解析方法 | 增加延迟和 CPU 消耗 | 启动后缓存 `@RemoteProvider` 分发表 |
 | 6 | 缺少 RPC 专用 listener 并发与 prefetch 调优 | 吞吐与背压表现依赖默认值 | 增加 RPC 专用 listener container 配置 |
 | 7 | 缺少 RPC 回归测试 | 线上风险难以及早暴露 | 增加无参、接口参数、异常传播、缓存分发等测试 |
 
@@ -30,7 +30,7 @@
 - [x] 无参调用和声明参数类型分发已补齐。
 - [x] 请求路由已从 `HeadersExchange` 切换为 `DirectExchange + routingKey`。
 - [x] 共享固定 reply queue 已移除，改为由 `RabbitTemplate` 管理 reply。
-- [x] `@AmqpRemoteService` 分发表已缓存，不再每次请求重新扫描。
+- [x] `@RemoteProvider` 分发表已缓存，不再每次请求重新扫描。
 - [x] RPC listener 已具备独立并发和 `prefetch` 默认值。
 - [x] 已补无参、接口参数、错误回包和分发缓存测试。
 

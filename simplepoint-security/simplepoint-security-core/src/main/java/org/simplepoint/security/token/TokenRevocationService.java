@@ -16,15 +16,24 @@ public class TokenRevocationService {
 
   private final String keyPrefix;
 
+  /**
+   * Token Revocation Service.
+   */
   public TokenRevocationService(final CacheService cacheService) {
     this(cacheService, DEFAULT_KEY_PREFIX);
   }
 
+  /**
+   * Token Revocation Service.
+   */
   public TokenRevocationService(final CacheService cacheService, final String keyPrefix) {
     this.cacheService = cacheService;
     this.keyPrefix = keyPrefix;
   }
 
+  /**
+   * Revoke.
+   */
   public void revoke(final String tokenId, final Instant expiresAt) {
     if (!StringUtils.hasText(tokenId) || expiresAt == null) {
       return;
@@ -35,6 +44,9 @@ public class TokenRevocationService {
     }
   }
 
+  /**
+   * Is Revoked.
+   */
   public boolean isRevoked(final String tokenId) {
     if (!StringUtils.hasText(tokenId)) {
       return false;

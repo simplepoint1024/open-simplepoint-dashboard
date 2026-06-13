@@ -14,5 +14,4 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine:2.9.2")
     implementation("org.apache.tomcat.embed:tomcat-embed-core")
     implementation("commons-codec:commons-codec:1.16.0")
-    api("org.springframework.cloud:spring-cloud-starter-vault-config")
 }

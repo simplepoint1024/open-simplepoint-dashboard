@@ -29,6 +29,9 @@ import org.springframework.web.client.RestClient;
 @ConditionalOnProperty(prefix = ObjectStorageRemoteProperties.PREFIX, name = "service-name")
 public class ObjectStorageHttpClientAutoConfiguration {
 
+  /**
+   * @ Bean.
+   */
   @Bean
   @LoadBalanced
   @ConditionalOnMissingBean(name = "objectStorageRestClientBuilder")
@@ -36,6 +39,9 @@ public class ObjectStorageHttpClientAutoConfiguration {
     return RestClient.builder();
   }
 
+  /**
+   * @ Bean.
+   */
   @Bean
   @ConditionalOnMissingBean
   public ObjectStorageRemoteService objectStorageRemoteService(

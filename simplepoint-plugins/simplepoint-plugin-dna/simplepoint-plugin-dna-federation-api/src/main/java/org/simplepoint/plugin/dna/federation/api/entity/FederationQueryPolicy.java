@@ -65,6 +65,7 @@ import org.springframework.core.annotation.Order;
 public class FederationQueryPolicy extends BaseEntityImpl<String> {
 
   @Order(0)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.federation.queryPolicies.title.catalogId", description = "i18n:dna.federation.queryPolicies.description.catalogId", maxLength = 64)
   @Column(length = 64, nullable = false)
   private String catalogId;
@@ -83,6 +84,7 @@ public class FederationQueryPolicy extends BaseEntityImpl<String> {
   private String catalogName;
 
   @Transient
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.federation.queryPolicies.title.catalogCode", description = "i18n:dna.federation.queryPolicies.description.catalogCode", accessMode = Schema.AccessMode.READ_ONLY)
   private String catalogCode;
 
@@ -179,6 +181,7 @@ public class FederationQueryPolicy extends BaseEntityImpl<String> {
   private Boolean enabled;
 
   @Order(8)
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.federation.queryPolicies.title.description", description = "i18n:dna.federation.queryPolicies.description.description", maxLength = 512)
   @Column(length = 512)
   private String description;

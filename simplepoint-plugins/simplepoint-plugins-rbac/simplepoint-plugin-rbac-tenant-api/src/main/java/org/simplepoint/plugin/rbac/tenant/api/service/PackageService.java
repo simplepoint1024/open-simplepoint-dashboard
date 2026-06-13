@@ -3,8 +3,8 @@ package org.simplepoint.plugin.rbac.tenant.api.service;
 import java.util.Collection;
 import java.util.Set;
 import org.simplepoint.api.base.BaseService;
-import org.simplepoint.plugin.rbac.tenant.api.entity.PackageApplicationRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Package;
+import org.simplepoint.plugin.rbac.tenant.api.entity.PackageApplicationRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.PackageApplicationsRelevanceDto;
 
 /**

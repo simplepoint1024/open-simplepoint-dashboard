@@ -20,12 +20,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantPackagesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
+import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -49,6 +51,9 @@ class TenantServiceImplTest {
   @Mock
   TenantUserRelevanceRepository tenantUserRelevanceRepository;
 
+  @Mock
+  PermissionVersionRefreshService permissionVersionRefreshService;
+
   @InjectMocks
   TenantServiceImpl service;
 
@@ -61,7 +66,7 @@ class TenantServiceImplTest {
 
   @Test
   void getTenantsByUserId_delegatesToRepository() {
-    NamedTenantVo vo = new NamedTenantVo("t1", "Tenant One");
+    NamedTenantVo vo = new NamedTenantVo("t1", "Tenant One", null);
     when(repository.getTenantsByUserId("user1")).thenReturn(Set.of(vo));
 
     Set<NamedTenantVo> result = service.getTenantsByUserId("user1");
@@ -83,12 +88,37 @@ class TenantServiceImplTest {
   @Test
   void getCurrentUserTenants_delegatesToRepositoryForAuthenticatedUser() {
     setAuthentication("user1");
-    NamedTenantVo vo = new NamedTenantVo("t1", "Tenant One");
+    Tenant personalTenant = new Tenant();
+    personalTenant.setId("t1");
+    personalTenant.setName("Tenant One");
+    personalTenant.setTenantType(TenantType.PERSONAL);
+    NamedTenantVo vo = new NamedTenantVo("t1", "Tenant One", TenantType.PERSONAL);
+    when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.of(personalTenant));
+    when(tenantUserRelevanceRepository.authorized("t1")).thenReturn(List.of("user1"));
     when(repository.getTenantsByUserId("user1")).thenReturn(Set.of(vo));
 
     Set<NamedTenantVo> result = service.getCurrentUserTenants();
 
     assertThat(result).containsExactly(vo);
+  }
+
+  @Test
+  void getCurrentUserTenants_missingPersonalTenant_createsIt() {
+    setAuthentication("user1");
+    Tenant savedTenant = new Tenant();
+    savedTenant.setId("t-personal");
+    savedTenant.setName("user1 的个人空间");
+    savedTenant.setTenantType(TenantType.PERSONAL);
+    when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.empty());
+    when(repository.save(any(Tenant.class))).thenReturn(savedTenant);
+    when(repository.getTenantsByUserId("user1")).thenReturn(Set.of());
+    when(tenantUserRelevanceRepository.authorized("t-personal")).thenReturn(List.of());
+
+    Set<NamedTenantVo> result = service.getCurrentUserTenants();
+
+    assertThat(result).containsExactly(new NamedTenantVo("t-personal", "user1 的个人空间", TenantType.PERSONAL));
+    verify(repository).save(any(Tenant.class));
+    verify(tenantUserRelevanceRepository).saveAll(any(Collection.class));
   }
 
   // ── calculatePermissionContextId ──────────────────────────────────────────
@@ -104,25 +134,36 @@ class TenantServiceImplTest {
   @Test
   void calculatePermissionContextId_returnsHashForDefaultTenant() {
     setAuthentication("user1");
+    Tenant personalTenant = new Tenant();
+    personalTenant.setId("personal-1");
+    when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.of(personalTenant));
+    when(tenantUserRelevanceRepository.authorized("personal-1")).thenReturn(List.of("user1"));
+    when(repository.getTenantPermissionVersion("personal-1")).thenReturn(3L);
+
     String contextId = service.calculatePermissionContextId("default");
 
     assertThat(contextId).isNotBlank().hasSize(64); // SHA-256 hex is 64 chars
+    verify(repository).findPersonalTenantByOwnerId("user1");
+    verify(repository).getTenantPermissionVersion("personal-1");
   }
 
   @Test
   void calculatePermissionContextId_withNonDefaultTenantAndVersion() {
     setAuthentication("user1");
+    when(repository.hasUser("tenant1", "user1")).thenReturn(true);
     when(repository.getTenantPermissionVersion("tenant1")).thenReturn(5L);
 
     String contextId = service.calculatePermissionContextId("tenant1");
 
     assertThat(contextId).isNotBlank().hasSize(64);
+    verify(repository).hasUser("tenant1", "user1");
     verify(repository).getTenantPermissionVersion("tenant1");
   }
 
   @Test
   void calculatePermissionContextId_withNullPermissionVersion() {
     setAuthentication("user1");
+    when(repository.hasUser("tenant1", "user1")).thenReturn(true);
     when(repository.getTenantPermissionVersion("tenant1")).thenReturn(null);
 
     String contextId = service.calculatePermissionContextId("tenant1");
@@ -131,15 +172,43 @@ class TenantServiceImplTest {
   }
 
   @Test
-  void calculatePermissionContextId_resolvesToFirstTenantWhenBlankTenantId() {
+  void calculatePermissionContextId_throwsWhenUserNotInTenant() {
     setAuthentication("user1");
-    NamedTenantVo vo = new NamedTenantVo("tenant-a", "Alpha");
-    when(repository.getTenantsByUserId("user1")).thenReturn(Set.of(vo));
-    when(repository.getTenantPermissionVersion("tenant-a")).thenReturn(1L);
+    when(repository.hasUser("tenant1", "user1")).thenReturn(false);
+
+    assertThatThrownBy(() -> service.calculatePermissionContextId("tenant1"))
+        .isInstanceOf(AccessDeniedException.class)
+        .hasMessage("当前用户未加入指定租户");
+  }
+
+  @Test
+  void calculatePermissionContextId_usesDefaultContextWhenBlankTenantId() {
+    setAuthentication("user1");
+    Tenant personalTenant = new Tenant();
+    personalTenant.setId("personal-1");
+    when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.of(personalTenant));
+    when(repository.getTenantPermissionVersion("personal-1")).thenReturn(2L);
 
     String contextId = service.calculatePermissionContextId(null);
 
     assertThat(contextId).isNotBlank().hasSize(64);
+    verify(repository).findPersonalTenantByOwnerId("user1");
+    verify(repository).getTenantPermissionVersion("personal-1");
+  }
+
+  @Test
+  void calculatePermissionContextId_usesPersonalTenantWhenTenantIdBlankString() {
+    setAuthentication("user1");
+    Tenant personalTenant = new Tenant();
+    personalTenant.setId("personal-1");
+    when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.of(personalTenant));
+    when(repository.getTenantPermissionVersion("personal-1")).thenReturn(4L);
+
+    String contextId = service.calculatePermissionContextId("   ");
+
+    assertThat(contextId).isNotBlank().hasSize(64);
+    verify(repository).findPersonalTenantByOwnerId("user1");
+    verify(repository).getTenantPermissionVersion("personal-1");
   }
 
   // ── authorizedPackages ────────────────────────────────────────────────────
@@ -160,6 +229,11 @@ class TenantServiceImplTest {
 
   @Test
   void authorizedPackages_delegatesToRepository() {
+    setAdminRole();
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    tenant.setOwnerId("admin");
+    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
     List<String> expected = List.of("pkg.standard");
     when(tenantPackageRelevanceRepository.authorized("tenant1")).thenReturn(expected);
 
@@ -225,9 +299,15 @@ class TenantServiceImplTest {
 
   @Test
   void authorizePackages_returnsEmptyWhenPackageCodesIsNull() {
+    setAdminRole();
     TenantPackagesRelevanceDto dto = new TenantPackagesRelevanceDto();
     dto.setTenantId("tenant1");
     dto.setPackageCodes(null);
+
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    tenant.setOwnerId("admin");
+    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
 
     Collection<TenantPackageRelevance> result = service.authorizePackages(dto);
 
@@ -237,9 +317,15 @@ class TenantServiceImplTest {
 
   @Test
   void authorizePackages_returnsEmptyWhenPackageCodesIsEmpty() {
+    setAdminRole();
     TenantPackagesRelevanceDto dto = new TenantPackagesRelevanceDto();
     dto.setTenantId("tenant1");
     dto.setPackageCodes(Set.of());
+
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    tenant.setOwnerId("admin");
+    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
 
     Collection<TenantPackageRelevance> result = service.authorizePackages(dto);
 
@@ -249,9 +335,15 @@ class TenantServiceImplTest {
 
   @Test
   void authorizePackages_savesRelationsAndRefreshesTenant() {
+    setAdminRole();
     TenantPackagesRelevanceDto dto = new TenantPackagesRelevanceDto();
     dto.setTenantId("tenant1");
     dto.setPackageCodes(Set.of("pkg.standard"));
+
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    tenant.setOwnerId("admin");
+    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
 
     TenantPackageRelevance saved = new TenantPackageRelevance();
     when(tenantPackageRelevanceRepository.saveAll(any())).thenReturn(List.of(saved));
@@ -260,19 +352,21 @@ class TenantServiceImplTest {
 
     assertThat(result).containsExactly(saved);
     verify(tenantPackageRelevanceRepository).saveAll(any());
-    verify(repository).increasePermissionVersion(Set.of("tenant1"));
+    verify(permissionVersionRefreshService).refreshTenant("tenant1");
   }
 
   // ── unauthorizedPackages ──────────────────────────────────────────────────
 
   @Test
   void unauthorizedPackages_returnsEarlyWhenPackageCodesIsNull() {
+    setAdminRole();
     service.unauthorizedPackages("tenant1", null);
     verify(tenantPackageRelevanceRepository, never()).unauthorized(any(), any());
   }
 
   @Test
   void unauthorizedPackages_returnsEarlyWhenPackageCodesIsEmpty() {
+    setAdminRole();
     service.unauthorizedPackages("tenant1", Set.of());
     verify(tenantPackageRelevanceRepository, never()).unauthorized(any(), any());
   }
@@ -286,10 +380,28 @@ class TenantServiceImplTest {
 
   @Test
   void unauthorizedPackages_callsRepositoryAndRefreshesVersion() {
+    setAdminRole();
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    tenant.setOwnerId("admin");
+    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
+
     service.unauthorizedPackages("tenant1", Set.of("pkg.standard"));
 
     verify(tenantPackageRelevanceRepository).unauthorized("tenant1", Set.of("pkg.standard"));
-    verify(repository).increasePermissionVersion(Set.of("tenant1"));
+    verify(permissionVersionRefreshService).refreshTenant("tenant1");
+  }
+
+  @Test
+  void authorizedPackages_throwsAccessDeniedForNonOwnerNonAdmin() {
+    setAuthentication("regularUser");
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    tenant.setOwnerId("owner1");
+    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
+
+    assertThatThrownBy(() -> service.authorizedPackages("tenant1"))
+        .isInstanceOf(AccessDeniedException.class);
   }
 
   // ── authorizeUsers ────────────────────────────────────────────────────────
@@ -332,7 +444,7 @@ class TenantServiceImplTest {
     Collection<TenantUserRelevance> result = service.authorizeUsers(dto);
 
     assertThat(result).containsExactly(rel);
-    verify(repository).increasePermissionVersion(Set.of("tenant1"));
+    verify(permissionVersionRefreshService).refreshTenant("tenant1");
   }
 
   @Test
@@ -405,7 +517,7 @@ class TenantServiceImplTest {
     service.unauthorizedUsers("tenant1", Set.of("user2"));
 
     verify(tenantUserRelevanceRepository).unauthorized("tenant1", Set.of("user2"));
-    verify(repository).increasePermissionVersion(Set.of("tenant1"));
+    verify(permissionVersionRefreshService).refreshTenant("tenant1");
   }
 
   // ── create ────────────────────────────────────────────────────────────────
@@ -420,15 +532,15 @@ class TenantServiceImplTest {
 
   @Test
   void create_setsOwnerFromAuthenticationAndSaves() {
-    setAuthentication("user1");
-    Tenant entity = new Tenant();
+    setAdminRole();
+    final Tenant entity = new Tenant();
 
-    when(tenantUserRelevanceRepository.existingUserIds(Set.of("user1"))).thenReturn(Set.of("user1"));
+    when(tenantUserRelevanceRepository.existingUserIds(Set.of("admin"))).thenReturn(Set.of("admin"));
     Tenant saved = new Tenant();
     saved.setId("t-new");
-    saved.setOwnerId("user1");
+    saved.setOwnerId("admin");
     when(repository.save(any())).thenReturn(saved);
-    when(tenantUserRelevanceRepository.authorized("t-new")).thenReturn(List.of("user1"));
+    when(tenantUserRelevanceRepository.authorized("t-new")).thenReturn(List.of("admin"));
 
     Tenant result = service.create(entity);
 
@@ -438,10 +550,10 @@ class TenantServiceImplTest {
 
   @Test
   void create_throwsWhenOwnerDoesNotExist() {
-    setAuthentication("user1");
+    setAdminRole();
     Tenant entity = new Tenant();
 
-    when(tenantUserRelevanceRepository.existingUserIds(Set.of("user1"))).thenReturn(Set.of());
+    when(tenantUserRelevanceRepository.existingUserIds(Set.of("admin"))).thenReturn(Set.of());
 
     assertThatThrownBy(() -> service.create(entity))
         .isInstanceOf(IllegalArgumentException.class)
@@ -455,7 +567,6 @@ class TenantServiceImplTest {
     SecurityContextHolder.clearContext();
     Tenant entity = new Tenant();
     entity.setId("t1");
-    when(repository.findById("t1")).thenReturn(Optional.of(new Tenant()));
 
     assertThatThrownBy(() -> service.modifyById(entity))
         .isInstanceOf(Exception.class);
@@ -463,7 +574,7 @@ class TenantServiceImplTest {
 
   @Test
   void modifyById_throwsWhenTenantNotFound() {
-    setAuthentication("admin");
+    setAdminRole();
     Tenant entity = new Tenant();
     entity.setId("missing");
     when(repository.findById("missing")).thenReturn(Optional.empty());
@@ -475,7 +586,7 @@ class TenantServiceImplTest {
 
   @Test
   void modifyById_preservesPermissionVersionFromCurrentWhenNull() {
-    setAuthentication("owner1");
+    setAdminRole();
     Tenant current = new Tenant();
     current.setId("t1");
     current.setOwnerId("owner1");
@@ -501,18 +612,21 @@ class TenantServiceImplTest {
 
   @Test
   void removeByIds_returnsEarlyWhenIdsIsNull() {
+    setAdminRole();
     service.removeByIds(null);
     verify(repository, never()).deleteByIds(any());
   }
 
   @Test
   void removeByIds_returnsEarlyWhenIdsIsEmpty() {
+    setAdminRole();
     service.removeByIds(List.of());
     verify(repository, never()).deleteByIds(any());
   }
 
   @Test
   void removeByIds_cleansPackagesAndUsersBeforeDelete() {
+    setAdminRole();
     service.removeByIds(List.of("t1", "t2"));
 
     verify(tenantPackageRelevanceRepository).deleteAllByTenantIds(List.of("t1", "t2"));

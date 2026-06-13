@@ -9,16 +9,18 @@
 package org.simplepoint.plugin.auditing.logging.service.impl;
 
 import java.time.Instant;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
 import org.simplepoint.plugin.auditing.logging.api.entity.ErrorLog;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.ErrorLogRecordCommand;
 import org.simplepoint.plugin.auditing.logging.api.service.ErrorLogRemoteService;
 import org.simplepoint.plugin.auditing.logging.api.service.ErrorLogService;
+import org.simplepoint.remoting.RemoteProvider;
+import org.springframework.stereotype.Service;
 
 /**
  * Remote provider for error log recording.
  */
-@AmqpRemoteService
+@Service
+@RemoteProvider
 public class ErrorLogRemoteServiceImpl implements ErrorLogRemoteService {
 
   private final ErrorLogService errorLogService;

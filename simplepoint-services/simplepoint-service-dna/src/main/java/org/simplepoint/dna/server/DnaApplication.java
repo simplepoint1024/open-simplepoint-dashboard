@@ -8,8 +8,8 @@
 
 package org.simplepoint.dna.server;
 
+import com.simplepoint.service.router.annotation.EnableServiceRouter;
 import org.simplepoint.boot.starter.Boot;
-import org.simplepoint.data.amqp.rpc.annotation.EnableAmqpRemoteClients;
 import org.simplepoint.data.jpa.base.repository.EnableRepository;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
@@ -24,7 +24,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 @EnableCaching
 @EnableRepository
 @EnableMethodSecurity
-@EnableAmqpRemoteClients(basePackages = "org.simplepoint")
+@EnableServiceRouter(basePackages = "org.simplepoint")
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class DnaApplication {
 

@@ -174,8 +174,8 @@ class OrganizationTypeDictionaryInitializerTest {
   @SuppressWarnings("unchecked")
   void initTask_noExistingData_createsAllDictionaryItemsAndMessages() throws Exception {
     DictionaryService dictionaryService = mock(DictionaryService.class);
-    DictionaryItemService dictionaryItemService = mock(DictionaryItemService.class);
-    I18nMessageService i18nMessageService = mock(I18nMessageService.class);
+    final DictionaryItemService dictionaryItemService = mock(DictionaryItemService.class);
+    final I18nMessageService i18nMessageService = mock(I18nMessageService.class);
 
     Dictionary createdDictionary = new Dictionary();
     createdDictionary.setCode("organization.type");
@@ -203,8 +203,8 @@ class OrganizationTypeDictionaryInitializerTest {
   @SuppressWarnings("unchecked")
   void initTask_existingDictionary_modifiesInsteadOfCreate() throws Exception {
     DictionaryService dictionaryService = mock(DictionaryService.class);
-    DictionaryItemService dictionaryItemService = mock(DictionaryItemService.class);
-    I18nMessageService i18nMessageService = mock(I18nMessageService.class);
+    final DictionaryItemService dictionaryItemService = mock(DictionaryItemService.class);
+    final I18nMessageService i18nMessageService = mock(I18nMessageService.class);
 
     Dictionary existingDictionary = new Dictionary();
     existingDictionary.setCode("organization.type");
@@ -230,8 +230,8 @@ class OrganizationTypeDictionaryInitializerTest {
   @SuppressWarnings("unchecked")
   void initTask_existingDictionaryItem_modifiesInsteadOfCreate() throws Exception {
     DictionaryService dictionaryService = mock(DictionaryService.class);
-    DictionaryItemService dictionaryItemService = mock(DictionaryItemService.class);
-    I18nMessageService i18nMessageService = mock(I18nMessageService.class);
+    final DictionaryItemService dictionaryItemService = mock(DictionaryItemService.class);
+    final I18nMessageService i18nMessageService = mock(I18nMessageService.class);
 
     Dictionary createdDictionary = new Dictionary();
     createdDictionary.setCode("organization.type");
@@ -259,8 +259,8 @@ class OrganizationTypeDictionaryInitializerTest {
   @SuppressWarnings("unchecked")
   void initTask_existingMessage_modifiesInsteadOfCreate() throws Exception {
     DictionaryService dictionaryService = mock(DictionaryService.class);
-    DictionaryItemService dictionaryItemService = mock(DictionaryItemService.class);
-    I18nMessageService i18nMessageService = mock(I18nMessageService.class);
+    final DictionaryItemService dictionaryItemService = mock(DictionaryItemService.class);
+    final I18nMessageService i18nMessageService = mock(I18nMessageService.class);
 
     Dictionary createdDictionary = new Dictionary();
     createdDictionary.setCode("organization.type");
@@ -288,8 +288,8 @@ class OrganizationTypeDictionaryInitializerTest {
   @SuppressWarnings("unchecked")
   void initTask_messagesDisabledModule_skipsMessageInit() throws Exception {
     DictionaryService dictionaryService = mock(DictionaryService.class);
-    DictionaryItemService dictionaryItemService = mock(DictionaryItemService.class);
-    I18nMessageService i18nMessageService = mock(I18nMessageService.class);
+    final DictionaryItemService dictionaryItemService = mock(DictionaryItemService.class);
+    final I18nMessageService i18nMessageService = mock(I18nMessageService.class);
 
     Dictionary createdDictionary = new Dictionary();
     createdDictionary.setCode("organization.type");

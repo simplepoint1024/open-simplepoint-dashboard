@@ -1,9 +1,11 @@
 package org.simplepoint.plugin.storage.api.properties;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Test;
 import org.simplepoint.plugin.storage.api.model.ObjectStoragePlatformType;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ObjectStoragePropertiesTest {
 

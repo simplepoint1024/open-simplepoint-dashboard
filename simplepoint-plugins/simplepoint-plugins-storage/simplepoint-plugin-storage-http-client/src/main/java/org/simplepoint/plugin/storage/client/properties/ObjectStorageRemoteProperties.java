@@ -24,6 +24,9 @@ public class ObjectStorageRemoteProperties {
 
   private String scheme = "http";
 
+  /**
+   * Base Url.
+   */
   public String baseUrl() {
     return scheme + "://" + serviceName;
   }

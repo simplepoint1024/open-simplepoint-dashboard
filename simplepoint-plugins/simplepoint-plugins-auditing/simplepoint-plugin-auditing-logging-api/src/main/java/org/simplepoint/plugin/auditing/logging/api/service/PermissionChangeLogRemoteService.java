@@ -8,13 +8,13 @@
 
 package org.simplepoint.plugin.auditing.logging.api.service;
 
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChangeLogRecordCommand;
+import org.simplepoint.remoting.RemoteContract;
 
 /**
  * Remote service used by the common service to record permission change logs.
  */
-@AmqpRemoteClient(to = "auditing.permission-change-log")
+@RemoteContract(name = "auditing.permission-change-log")
 public interface PermissionChangeLogRemoteService {
   /**
    * Records a permission change event in the auditing service.

@@ -54,25 +54,6 @@ services:
       retries: 10
       start_period: 10s
 
-  simple_point_vault:
-    container_name: sp_vault
-    image: hashicorp/vault:1.19
-    restart: unless-stopped
-    cap_add:
-      - IPC_LOCK
-    command: ["server", "-dev", "-dev-root-token-id=root", "-dev-listen-address=0.0.0.0:8200"]
-    environment:
-      VAULT_DEV_ROOT_TOKEN_ID: root
-      VAULT_ADDR: http://127.0.0.1:8200
-    ports:
-      - "8200:8200"
-    healthcheck:
-      test: ["CMD-SHELL", "VAULT_ADDR=http://127.0.0.1:8200 vault status >/dev/null 2>&1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-
   simple_point_redis:
     container_name: sp_redis
     image: redis:7-alpine
@@ -88,28 +69,7 @@ services:
       timeout: 5s
       retries: 10
 
-  simple_point_rabbitmq:
-    container_name: sp_mq
-    image: rabbitmq:3.13-management-alpine
-    restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit loopback_users []"
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-
 volumes:
   postgres_data:
   mysql_data:
   redis_data:
-  rabbitmq_data:

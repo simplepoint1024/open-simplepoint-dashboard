@@ -13,6 +13,9 @@ public record CalciteQueryColumn(
     Integer jdbcType
 ) {
 
+  /**
+   * Calcite Query Column.
+   */
   public CalciteQueryColumn(final String name, final String typeName) {
     this(name, typeName, null);
   }

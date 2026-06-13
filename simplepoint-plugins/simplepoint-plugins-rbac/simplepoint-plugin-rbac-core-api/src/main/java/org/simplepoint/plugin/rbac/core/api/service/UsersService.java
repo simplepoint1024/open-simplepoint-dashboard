@@ -8,28 +8,38 @@
 
 package org.simplepoint.plugin.rbac.core.api.service;
 
-import org.simplepoint.api.base.BaseService;
-import org.simplepoint.core.authority.RoleGrantedAuthority;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteService;
-import org.simplepoint.plugin.rbac.core.api.pojo.command.ChangePasswordCommand;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
-import org.simplepoint.security.entity.User;
-import org.simplepoint.security.entity.UserRoleRelevance;
-import org.springframework.security.core.userdetails.UserDetailsService;
-
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import org.simplepoint.api.base.BaseService;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
+import org.simplepoint.plugin.rbac.core.api.pojo.command.ChangePasswordCommand;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
+import org.simplepoint.remoting.RemoteContract;
+import org.simplepoint.security.entity.User;
+import org.simplepoint.security.entity.UserRoleRelevance;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 /**
  * Service interface for managing User entities in the RBAC (Role-Based Access Control) system.
  * This interface extends BaseService to inherit common service operations and provides
  * additional methods for handling user-specific functionality.
  */
-@AmqpRemoteClient(to = "security.user")
+@RemoteContract(name = "security.user")
 public interface UsersService extends BaseService<User, String>, UserDetailsService {
 
-    /**
+  /**
+     * Loads a user for permission-context calculation using only the user ID.
+     *
+     * @param userId the user ID to load
+     * @return the user when present
+     */
+  Optional<User> findByIdForAuthorization(String userId);
+
+  /**
      * Loads the roles associated with the given username.
      * This method retrieves a list of role authorities assigned to the specified user.
      *
@@ -37,9 +47,9 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
      * @param userId   the username of the user whose roles are to be loaded
      * @return a list of role authorities associated with the user
      */
-    Collection<RoleGrantedAuthority> loadRolesByUserId(String tenantId, String userId);
+  Collection<RoleGrantedAuthority> loadRolesByUserId(String tenantId, String userId);
 
-    /**
+  /**
      * Loads permissions associated with the given role authorities.
      * This method retrieves a list of RolePermissionsRelevance entities that represent
      * the permissions assigned to the specified roles.
@@ -47,46 +57,55 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
      * @param roleIds a list of role authorities for which to load permissions
      * @return a list of RolePermissionsRelevance associated with the specified role authorities
      */
-    Collection<String> loadPermissionsInRoleIds(List<String> roleIds);
+  Collection<String> loadPermissionsInRoleIds(List<String> roleIds);
 
-    /**
+  /**
      * Retrieve a collection of role authorities associated with a specific userId.
      *
      * @param userId The userId to filter the role authorities.
      * @return A collection of role authorities for the given userId.
      */
-    Collection<String> authorized(String userId);
+  Collection<String> authorized(String userId);
 
 
-    /**
+  /**
      * Authorize roles based on the provided RoleSelectDto.
      *
      * @param dto The RoleSelectDto containing authorization criteria.
      * @return A collection of UserRoleRelevance entities that match the authorization criteria.
      */
-    Collection<UserRoleRelevance> authorize(UserRoleRelevanceDto dto);
+  Collection<UserRoleRelevance> authorize(UserRoleRelevanceDto dto);
 
-    /**
+  /**
      * unauthorized roles based on the provided RoleSelectDto.
      *
      * @param dto The RoleSelectDto containing unauthorization criteria.
      */
-    void unauthorized(UserRoleRelevanceDto dto);
+  void unauthorized(UserRoleRelevanceDto dto);
 
-    /**
+  /**
      * Changes the password of the user identified by userId.
      * Verifies the current password, checks new/confirm match, then updates.
      *
      * @param userId  the ID of the user whose password is to be changed
      * @param command the change-password command with currentPassword, newPassword, confirmPassword
      */
-    void changePassword(String userId, ChangePasswordCommand command);
+  void changePassword(String userId, ChangePasswordCommand command);
 
-    /**
+  /**
      * Loads a user by their phone number or email address.
      *
      * @param phoneOrEmail the phone number or email address of the user to load
      * @return the User entity corresponding to the provided phone number or email address
      */
-    User loadUserByPhoneOrEmail(String phoneOrEmail);
+  User loadUserByPhoneOrEmail(String phoneOrEmail);
+
+  /**
+     * Returns a paginated list of roles available for assignment in the current tenant scope.
+     * Uses the current X-Tenant-Id (org or personal tenant) as the scope.
+     *
+     * @param pageable the pagination parameters
+     * @return a page of roles in the current tenant scope
+     */
+  Page<RoleRelevanceVo> roleCandidates(Pageable pageable);
 }

@@ -6,7 +6,6 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
 import java.util.logging.Logger;
-
 import javax.sql.DataSource;
 
 /**
@@ -31,9 +30,15 @@ public final class DnaJdbcDataSource implements DataSource {
   private PrintWriter logWriter;
   private int loginTimeout;
 
+  /**
+   * Dna Jdbc Data Source.
+   */
   public DnaJdbcDataSource() {
   }
 
+  /**
+   * Dna Jdbc Data Source.
+   */
   public DnaJdbcDataSource(final String url) {
     this.url = url;
   }

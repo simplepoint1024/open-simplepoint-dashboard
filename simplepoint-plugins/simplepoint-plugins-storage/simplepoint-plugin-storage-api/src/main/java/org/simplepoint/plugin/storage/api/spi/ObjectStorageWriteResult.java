@@ -22,6 +22,7 @@ public class ObjectStorageWriteResult {
 
   private final String objectKey;
 
+  @SuppressWarnings("checkstyle:MemberName")
   private final String eTag;
 
   private final String accessUrl;

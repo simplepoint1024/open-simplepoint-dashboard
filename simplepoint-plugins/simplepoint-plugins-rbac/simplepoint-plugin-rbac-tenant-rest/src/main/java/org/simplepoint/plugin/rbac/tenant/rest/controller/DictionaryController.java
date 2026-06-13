@@ -31,10 +31,16 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "字典管理", description = "用于管理系统中的动态字典")
 public class DictionaryController extends BaseController<DictionaryService, Dictionary, String> {
 
+  /**
+   * Dictionary Controller.
+   */
   public DictionaryController(DictionaryService service) {
     super(service);
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dictionaries.view')")
   @Operation(summary = "分页查询字典", description = "根据提供的属性和分页参数，检索字典的分页列表")
@@ -42,6 +48,9 @@ public class DictionaryController extends BaseController<DictionaryService, Dict
     return limit(service.limit(attributes, pageable), Dictionary.class);
   }
 
+  /**
+   * @ Post Mapping.
+   */
   @PostMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dictionaries.create')")
   @Operation(summary = "添加字典", description = "添加一个新的字典到系统中")
@@ -49,6 +58,9 @@ public class DictionaryController extends BaseController<DictionaryService, Dict
     return ok(service.create(data));
   }
 
+  /**
+   * @ Put Mapping.
+   */
   @PutMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dictionaries.edit')")
   @Operation(summary = "修改字典", description = "修改一个已存在的字典信息")
@@ -56,6 +68,9 @@ public class DictionaryController extends BaseController<DictionaryService, Dict
     return ok(service.modifyById(data));
   }
 
+  /**
+   * @ Delete Mapping.
+   */
   @DeleteMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dictionaries.delete')")
   @Operation(summary = "删除字典", description = "根据提供的字典ID集合，删除一个或多个字典")
@@ -65,6 +80,9 @@ public class DictionaryController extends BaseController<DictionaryService, Dict
     return ok(idSet);
   }
 
+  /**
+   * @ Get Mapping.
+   */
   @GetMapping("/options")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "获取字典选项", description = "根据字典编码返回启用状态的字典选项")

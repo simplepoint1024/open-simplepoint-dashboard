@@ -2,7 +2,6 @@ package org.simplepoint.plugin.rbac.menu.api.service;
 
 import java.util.Set;
 import org.simplepoint.api.base.BaseService;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.plugin.rbac.menu.api.vo.MicroModuleItemVo;
 import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.MicroModule;

@@ -22,7 +22,7 @@ class TenantVosTest {
 
   @Test
   void namedTenantVo_fields() {
-    NamedTenantVo vo = new NamedTenantVo("tenant-001", "Acme Corp");
+    NamedTenantVo vo = new NamedTenantVo("tenant-001", "Acme Corp", null);
     assertThat(vo.tenantId()).isEqualTo("tenant-001");
     assertThat(vo.tenantName()).isEqualTo("Acme Corp");
   }

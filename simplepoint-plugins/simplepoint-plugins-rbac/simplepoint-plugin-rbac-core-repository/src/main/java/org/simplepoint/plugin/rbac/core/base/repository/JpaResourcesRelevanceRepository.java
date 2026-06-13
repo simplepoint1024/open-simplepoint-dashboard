@@ -33,6 +33,11 @@ public interface JpaResourcesRelevanceRepository extends JpaRepository<Resources
   void unauthorize(String resourceId, Collection<String> permissionAuthority);
 
   @Override
+  @Modifying
+  @Query("DELETE FROM ResourcesPermissionsRelevance rpr WHERE rpr.permissionAuthority IN ?1")
+  void deleteAllByPermissionAuthorities(Collection<String> permissionAuthorities);
+
+  @Override
   @Query("SELECT permissionAuthority FROM ResourcesPermissionsRelevance WHERE resourceId = ?1")
   Collection<String> authorized(String resourceId);
 
@@ -44,4 +49,13 @@ public interface JpaResourcesRelevanceRepository extends JpaRepository<Resources
   default void authorize(Collection<ResourcesPermissionsRelevance> collection) {
     this.saveAll(collection);
   }
+
+  @Override
+  @Modifying
+  @Query("""
+      update ResourcesPermissionsRelevance rpr
+      set rpr.permissionAuthority = ?2
+      where rpr.permissionAuthority = ?1
+      """)
+  void updatePermissionAuthority(String oldAuthority, String newAuthority);
 }

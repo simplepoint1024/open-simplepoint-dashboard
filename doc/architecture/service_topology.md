@@ -13,14 +13,14 @@
 | --- | --- | --- | --- | --- |
 | `simplepoint-service-host` | `org.simplepoint.gateway.server.Host` | WebFlux + Spring Cloud Gateway + OAuth2 Client + Redis WebSession | 统一入口、登录跳转、会话承载、前端壳应用静态资源出口 | `spring-cloud-gateway-server-webflux`、`spring-session-data-redis`、`simplepoint-data-amqp-rpc` |
 | `simplepoint-service-common` | `org.simplepoint.common.server.Common` | Servlet MVC + JPA + Resource Server | 默认业务聚合服务，承载 RBAC、菜单路由、OIDC 客户端管理、租户、字典、i18n、对象存储等平台能力 | `simplepoint-plugin-webmvc`、`simplepoint-security-oauth2-resource`、RBAC/OIDC/i18n/tenant/storage 插件模块 |
-| `simplepoint-service-authorization` | `org.simplepoint.authorization.server.Authorization` | Servlet MVC + Spring Authorization Server + Thymeleaf | OAuth2/OIDC 授权服务器、登录与 Token/OIDC 端点 | `simplepoint-security-oauth2-server`、Redis、Vault、Thymeleaf |
+| `simplepoint-service-authorization` | `org.simplepoint.authorization.server.Authorization` | Servlet MVC + Spring Authorization Server + Thymeleaf | OAuth2/OIDC 授权服务器、登录与 Token/OIDC 端点 | `simplepoint-security-oauth2-server`、Redis、Thymeleaf |
 | `simplepoint-service-auditing` | `org.simplepoint.auditing.server.Auditing` | Servlet MVC + JPA + Resource Server | 审计日志、限流规则、Redis 监控等运维/审计能力 | auditing logging/rate-limit/redis 插件模块 |
 | `simplepoint-service-dna` | `org.simplepoint.dna.server.DnaApplication` | Servlet MVC + JPA + Resource Server | JDBC 驱动、方言、数据源等 DNA 能力 | `simplepoint-plugin-dna` 系列模块 |
 
 ### 共同点
 
 - 五个服务入口都使用 `@Boot`，而不是原生 `@SpringBootApplication`。
-- 五个服务都开启了 `@EnableAmqpRemoteClients(basePackages = "org.simplepoint")`，说明跨服务协作不只依赖 HTTP，也依赖 AMQP RPC。
+- 五个服务都开启了 `@EnableRemoteContracts(basePackages = "org.simplepoint")`，说明跨服务协作不只依赖 HTTP，也依赖 AMQP RPC。
 - `common`、`auditing`、`dna` 都是 Servlet 资源服务；`host` 是 WebFlux 边缘服务；`authorization` 是 OAuth2/OIDC 授权服务器。
 
 ## 3. 前端应用与后端映射

@@ -1,9 +1,11 @@
 package org.simplepoint.plugin.dna.core.service.dialect;
 
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.ResultSetMetaData;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -11,16 +13,14 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-import java.sql.Blob;
-import java.sql.Clob;
 import org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect;
 import org.simplepoint.plugin.dna.core.api.spi.JdbcTypeMapping;
 import org.simplepoint.plugin.dna.core.api.vo.JdbcMetadataModels;
@@ -587,12 +587,18 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     return List.copyOf(path);
   }
 
+  /**
+   * Serialize.
+   */
   protected MetadataResult serialize(final ResultSet resultSet) throws SQLException {
     try (ResultSet rows = resultSet) {
       return new MetadataResult(toMetadataColumns(rows.getMetaData()), readRows(rows));
     }
   }
 
+  /**
+   * To Metadata Columns.
+   */
   protected List<MetadataColumn> toMetadataColumns(final ResultSetMetaData metaData) throws SQLException {
     int columnCount = metaData.getColumnCount();
     List<MetadataColumn> columns = new ArrayList<>(columnCount);
@@ -611,6 +617,9 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     return List.copyOf(columns);
   }
 
+  /**
+   * Read Rows.
+   */
   protected List<List<Object>> readRows(final ResultSet resultSet) throws SQLException {
     ResultSetMetaData metaData = resultSet.getMetaData();
     int columnCount = metaData.getColumnCount();
@@ -625,6 +634,9 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     return rows;
   }
 
+  /**
+   * Normalize Metadata Cell Value.
+   */
   protected Object normalizeMetadataCellValue(final Object value) throws SQLException {
     if (value == null) {
       return null;
@@ -647,6 +659,9 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     return value;
   }
 
+  /**
+   * Normalize Table Type Result.
+   */
   protected MetadataResult normalizeTableTypeResult(final MetadataResult result) {
     if (result == null || result.rows().isEmpty()) {
       return result == null ? new MetadataResult(List.of(), List.of()) : result;
@@ -669,6 +684,9 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     return new MetadataResult(result.columns(), rows);
   }
 
+  /**
+   * Expand Table Types.
+   */
   protected String[] expandTableTypes(final List<String> types) {
     if (types == null || types.isEmpty()) {
       return null;
@@ -687,6 +705,9 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     return normalized.isEmpty() ? null : normalized.toArray(String[]::new);
   }
 
+  /**
+   * Normalize Table Type.
+   */
   protected String normalizeTableType(final String tableType) {
     String normalized = trimToNull(tableType);
     if (normalized == null) {
@@ -698,6 +719,9 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     return normalized;
   }
 
+  /**
+   * Empty Catalogs Result.
+   */
   protected MetadataResult emptyCatalogsResult() {
     return new MetadataResult(
         List.of(new MetadataColumn("TABLE_CAT", "VARCHAR", Types.VARCHAR)),
@@ -705,6 +729,9 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     );
   }
 
+  /**
+   * Empty Schemas Result.
+   */
   protected MetadataResult emptySchemasResult() {
     return new MetadataResult(
         List.of(
@@ -715,6 +742,9 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     );
   }
 
+  /**
+   * Find Column Index.
+   */
   protected int findColumnIndex(final List<MetadataColumn> columns, final String columnName) {
     for (int index = 0; index < (columns == null ? List.<MetadataColumn>of() : columns).size(); index++) {
       MetadataColumn column = columns.get(index);
@@ -725,6 +755,9 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     return -1;
   }
 
+  /**
+   * Matches Pattern.
+   */
   protected boolean matchesPattern(final String value, final String pattern) {
     String normalizedPattern = trimToNull(pattern);
     if (normalizedPattern == null) {
@@ -751,6 +784,9 @@ public abstract class AbstractJdbcDatabaseDialect implements JdbcDatabaseDialect
     return normalizedValue.toLowerCase(Locale.ROOT).matches(builder.toString().toLowerCase(Locale.ROOT));
   }
 
+  /**
+   * Trim To Null.
+   */
   protected static String trimToNull(final String value) {
     if (value == null) {
       return null;

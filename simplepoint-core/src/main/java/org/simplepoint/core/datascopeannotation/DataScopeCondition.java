@@ -21,6 +21,7 @@ public final class DataScopeCondition {
   private final String ownerField;
   private final String userId;
   private final Set<String> deptIds;
+  private final boolean includeSelf;
 
   /**
    * Constructs a DataScopeCondition.
@@ -32,11 +33,27 @@ public final class DataScopeCondition {
    * @param deptIds    the effective department IDs
    */
   public DataScopeCondition(String scopeType, String deptField, String ownerField, String userId, Set<String> deptIds) {
+    this(scopeType, deptField, ownerField, userId, deptIds, false);
+  }
+
+  /**
+   * Constructs a DataScopeCondition.
+   *
+   * @param scopeType   the data scope type name (corresponds to DataScopeType enum name)
+   * @param deptField   the department field name on the entity
+   * @param ownerField  the owner field name on the entity
+   * @param userId      the current user's ID
+   * @param deptIds     the effective department IDs
+   * @param includeSelf whether records owned by the current user should also be included
+   */
+  public DataScopeCondition(String scopeType, String deptField, String ownerField, String userId, Set<String> deptIds,
+                            boolean includeSelf) {
     this.scopeType = scopeType;
     this.deptField = deptField;
     this.ownerField = ownerField;
     this.userId = userId;
     this.deptIds = deptIds;
+    this.includeSelf = includeSelf;
   }
 
   public String getScopeType() {
@@ -57,6 +74,10 @@ public final class DataScopeCondition {
 
   public Set<String> getDeptIds() {
     return deptIds;
+  }
+
+  public boolean isIncludeSelf() {
+    return includeSelf;
   }
 
   /** Returns {@code true} when the scope type is {@code ALL}, meaning no row-level restriction applies. */

@@ -236,7 +236,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_monitoring__EndpointRateLimitRule.js"
           ],
           "async": []
@@ -258,7 +258,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_monitoring__ErrorLog.js"
           ],
           "async": []
@@ -280,7 +280,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_monitoring__LoginLog.js"
           ],
           "async": []
@@ -302,7 +302,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_monitoring__PermissionChangeLog.js"
           ],
           "async": []
@@ -342,7 +342,7 @@
           "sync": [
             "760.js",
             "950.js",
-            "898.js",
+            "306.js",
             "__federation_expose_monitoring__ServiceRateLimitRule.js"
           ],
           "async": []

@@ -10,15 +10,13 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.core.api.repository.FieldScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.service.FieldScopeService;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
+import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
 import org.simplepoint.security.entity.FieldScope;
 import org.simplepoint.security.entity.FieldScopeEntry;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,15 +29,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository, FieldScope, String>
     implements FieldScopeService {
 
-  private final TenantRepository tenantRepository;
+  private final PermissionVersionRefreshService permissionVersionRefreshService;
 
+  /**
+   * Field Scope Service Impl.
+   */
   public FieldScopeServiceImpl(
       FieldScopeRepository repository,
       DetailsProviderService detailsProviderService,
-      @Autowired(required = false) TenantRepository tenantRepository
+      PermissionVersionRefreshService permissionVersionRefreshService
   ) {
     super(repository, detailsProviderService);
-    this.tenantRepository = tenantRepository;
+    this.permissionVersionRefreshService = permissionVersionRefreshService;
   }
 
   @Override
@@ -91,13 +92,7 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   }
 
   private void refreshCurrentTenantPermissionVersion() {
-    if (tenantRepository == null) {
-      return;
-    }
     String tenantId = currentTenantId();
-    if (tenantId == null || tenantId.isBlank() || "default".equals(tenantId)) {
-      return;
-    }
-    tenantRepository.increasePermissionVersion(Set.of(tenantId));
+    permissionVersionRefreshService.refreshTenant(tenantId);
   }
 }

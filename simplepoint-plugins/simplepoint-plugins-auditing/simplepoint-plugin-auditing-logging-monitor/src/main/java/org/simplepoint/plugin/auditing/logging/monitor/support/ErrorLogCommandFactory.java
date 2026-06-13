@@ -47,7 +47,7 @@ public class ErrorLogCommandFactory {
   }
 
   /**
-   * Converts a logging event into an AMQP command for the auditing service.
+   * Converts a logging event into an audit command for the auditing service.
    *
    * @param event the logging event
    * @return the resulting error log command

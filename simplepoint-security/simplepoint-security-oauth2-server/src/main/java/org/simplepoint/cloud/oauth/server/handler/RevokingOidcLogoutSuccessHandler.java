@@ -32,6 +32,9 @@ public class RevokingOidcLogoutSuccessHandler implements AuthenticationSuccessHa
 
   private final TokenRevocationService tokenRevocationService;
 
+  /**
+   * Revoking Oidc Logout Success Handler.
+   */
   public RevokingOidcLogoutSuccessHandler(
       final OAuth2AuthorizationService authorizationService,
       final TokenRevocationService tokenRevocationService

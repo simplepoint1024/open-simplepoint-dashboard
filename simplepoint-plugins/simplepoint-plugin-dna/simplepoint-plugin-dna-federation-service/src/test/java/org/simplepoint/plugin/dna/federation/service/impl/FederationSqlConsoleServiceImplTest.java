@@ -250,7 +250,7 @@ class FederationSqlConsoleServiceImplTest {
     ));
 
     ArgumentCaptor<CalciteQueryRequest> explainRequest = ArgumentCaptor.forClass(CalciteQueryRequest.class);
-    ArgumentCaptor<CalciteQueryRequest> executeRequest = ArgumentCaptor.forClass(CalciteQueryRequest.class);
+    final ArgumentCaptor<CalciteQueryRequest> executeRequest = ArgumentCaptor.forClass(CalciteQueryRequest.class);
     assertEquals(1, response.returnedRows());
     assertEquals(1, response.rows().get(0).get(0));
     verify(queryEngine).explain(explainRequest.capture(), any());

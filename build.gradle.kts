@@ -1,11 +1,12 @@
 plugins {
     java
+    `java-library`
     idea
     checkstyle
     jacoco
     id("org.springframework.boot") version libs.versions.spring.boot.get() apply false
     id("io.spring.dependency-management") version libs.versions.spring.dependency.management.get()
-    kotlin("jvm") version libs.versions.kotlin.get()
+    kotlin("jvm") version libs.versions.kotlin.get() apply false
 }
 
 allprojects {
@@ -19,10 +20,14 @@ allprojects {
 }
 
 subprojects {
-    apply(plugin = "java")
+    val hasKotlinSources = file("src/main/kotlin").exists() || file("src/test/kotlin").exists()
+
+    apply(plugin = "java-library")
     apply(plugin = "idea")
-    apply(plugin = "kotlin")
     apply(plugin = "jacoco")
+    if (hasKotlinSources) {
+        apply(plugin = "org.jetbrains.kotlin.jvm")
+    }
     version = rootProject.version
 
     dependencies {
@@ -32,10 +37,6 @@ subprojects {
         implementation(platform("com.fasterxml.jackson:jackson-bom:${rootProject.libs.versions.jackson.get()}"))
         implementation(platform("org.springdoc:springdoc-openapi-bom:${rootProject.libs.versions.openapi.get()}"))
         implementation(platform ("com.github.victools:jsonschema-generator-bom:${rootProject.libs.versions.jsonschema.generator.get()}"))
-
-        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-        implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-        implementation("org.jetbrains.kotlin:kotlin-reflect")
 
         implementation("com.fasterxml.jackson.core:jackson-databind")
         implementation("com.fasterxml.jackson.core:jackson-core")
@@ -52,6 +53,12 @@ subprojects {
         testImplementation("org.junit.jupiter:junit-jupiter")
         testCompileOnly("org.projectlombok:lombok:${rootProject.libs.versions.lombok.get()}")
         testAnnotationProcessor("org.projectlombok:lombok:${rootProject.libs.versions.lombok.get()}")
+
+        if (hasKotlinSources) {
+            implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+            implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+            implementation("org.jetbrains.kotlin:kotlin-reflect")
+        }
     }
 
     tasks.test {

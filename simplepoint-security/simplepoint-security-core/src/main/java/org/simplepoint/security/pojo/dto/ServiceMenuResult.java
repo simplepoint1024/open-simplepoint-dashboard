@@ -1,6 +1,7 @@
 package org.simplepoint.security.pojo.dto;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import org.simplepoint.security.entity.TreeMenu;
 
@@ -15,9 +16,14 @@ import org.simplepoint.security.entity.TreeMenu;
  * @author JinxuLiu
  * @since 1.0
  */
-public record ServiceMenuResult(Set<ServiceEntry> services, Collection<TreeMenu> routes, String entryPoint) {
+public record ServiceMenuResult(
+    Set<ServiceEntry> services,
+    Collection<TreeMenu> routes,
+    String entryPoint,
+    Map<String, String> authorizationContext
+) {
   public static final ServiceMenuResult EMPTY =
-      new ServiceMenuResult(Set.of(), Set.of(), null);
+      new ServiceMenuResult(Set.of(), Set.of(), null, Map.of());
 
   /**
    * Creates a new instance of {@link ServiceMenuResult} with the specified services and routes.
@@ -27,7 +33,7 @@ public record ServiceMenuResult(Set<ServiceEntry> services, Collection<TreeMenu>
    * @return a new {@link ServiceMenuResult} instance
    */
   public static ServiceMenuResult of(Set<ServiceEntry> services, Collection<TreeMenu> routes) {
-    return new ServiceMenuResult(services, routes, "/mf/mf-manifest.json");
+    return new ServiceMenuResult(services, routes, "/mf/mf-manifest.json", Map.of());
   }
 
   /**
@@ -39,7 +45,19 @@ public record ServiceMenuResult(Set<ServiceEntry> services, Collection<TreeMenu>
    * @return a new {@link ServiceMenuResult} instance
    */
   public static ServiceMenuResult of(Set<ServiceEntry> services, Collection<TreeMenu> routes, String entryPoint) {
-    return new ServiceMenuResult(services, routes, entryPoint);
+    return new ServiceMenuResult(services, routes, entryPoint, Map.of());
+  }
+
+  /**
+   * With Authorization Context.
+   */
+  public ServiceMenuResult withAuthorizationContext(Map<String, String> authorizationContext) {
+    return new ServiceMenuResult(
+        services,
+        routes,
+        entryPoint,
+        authorizationContext == null ? Map.of() : Map.copyOf(authorizationContext)
+    );
   }
 
   /**

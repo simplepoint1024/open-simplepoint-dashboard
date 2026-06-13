@@ -20,6 +20,9 @@ public class NamedInputStreamResource extends InputStreamResource {
 
   private final long contentLength;
 
+  /**
+   * Named Input Stream Resource.
+   */
   public NamedInputStreamResource(final InputStream inputStream, final String filename, final long contentLength) {
     super(inputStream);
     this.filename = filename;

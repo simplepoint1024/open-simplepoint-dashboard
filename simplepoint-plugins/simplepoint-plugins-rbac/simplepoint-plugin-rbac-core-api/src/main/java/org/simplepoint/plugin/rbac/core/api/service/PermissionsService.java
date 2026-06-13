@@ -10,8 +10,8 @@ package org.simplepoint.plugin.rbac.core.api.service;
 
 import java.util.Collection;
 import org.simplepoint.api.base.BaseService;
-import org.simplepoint.data.amqp.annotation.AmqpRemoteClient;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
+import org.simplepoint.remoting.RemoteContract;
 import org.simplepoint.security.entity.Permissions;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +20,7 @@ import org.springframework.data.domain.Pageable;
  * PermissionsService interface provides methods for handling permissions-related operations.
  * It includes a custom query to retrieve permission authorities by role authority.
  */
-@AmqpRemoteClient(to = "security.permission")
+@RemoteContract(name = "security.permission")
 public interface PermissionsService extends BaseService<Permissions, String> {
   /**
    * Retrieves a paginated list of permission items.

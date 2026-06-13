@@ -1,153 +1,246 @@
-
-
 [![CI](https://github.com/simplepoint1024/open-simplepoint-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/simplepoint1024/open-simplepoint-dashboard/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)](https://github.com/simplepoint1024/open-simplepoint-dashboard/releases)
 
-# SimplePoint - Enterprise Application Framework
+# open-simplepoint-dashboard
 
-SimplePoint is a modern, modular, and pluggable enterprise application framework built with **Java**, **Kotlin**, and **Spring Boot**. It provides a robust foundation for building scalable, secure, and multi-tenant applications.
+`open-simplepoint-dashboard` 是一个面向企业后台与平台型应用的开源框架仓库，当前形态是：
 
-## Key Features
+- 一个动态装配的 **Gradle 多模块后端工作区**
+- 一个内嵌在仓库中的 **React + Nx + Module Federation 前端工作区**
+- 一套围绕 **认证、授权、多租户、插件化、Schema 驱动 UI、数据接入** 组织起来的服务与基础设施约定
 
-*   **Pluggable Architecture**: A dynamic plugin system allows for modular development, hot-swapping, and independent deployment of business features (see `simplepoint-plugin`).
-*   **Enterprise Security**: Comprehensive security implementation including OAuth2/OIDC server and resource server, Role-Based Access Control (RBAC), and multi-tenancy support.
-*   **Internationalization (i18n)**: Built-in localization framework for managing languages, regions, and translations globally (see `simplepoint-plugins/simplepoint-plugins-i18n`).
-*   **Flexible Data Layer**: Abstraction over various data sources including JPA, JDBC, MongoDB, and Calcite, with support for dynamic data source routing (see `simplepoint-data`).
-*   **Cloud Native Ready**: Integrations with service discovery (Consul) and message brokering (AMQP/RabbitMQ).
+它不是单体后台模板，而是更偏“平台内核 + 可组合业务能力”的工程基座。
 
-## Tech Stack
+## 核心能力
 
-*   **Languages**: Java, Kotlin, TypeScript
-*   **Framework**: Spring Boot (Gradle build system)
-*   **Security**: Spring Security (OAuth2, OIDC)
-*   **Database**: JPA / Hibernate, R2DBC, MongoDB
-*   **Message Queue**: RabbitMQ (AMQP)
+- **认证与授权**：内置 OAuth2 / OIDC 授权服务、资源服务、安全上下文解析与 RBAC 能力
+- **多租户模型**：租户上下文贯穿实体、仓储、服务与权限解析链路
+- **插件化扩展**：支持按模块拆分能力，并通过插件运行时加载与组装
+- **Schema 驱动后台**：后端基础服务会生成表单 / 动作元数据，前端按约定渲染页面
+- **微前端集成**：`host` 壳应用按菜单与服务路由动态注册 `common` / `auditing` / `dna` 等 remote
+- **云原生依赖集成**：当前开发与部署链路围绕 PostgreSQL、Redis、Consul 组织，服务间远程调用通过 service-router + Consul 发现完成
 
-## Project Structure
+## 仓库结构
 
-The project is organized into a multi-module Gradle structure:
+| 路径 | 说明 |
+| --- | --- |
+| `simplepoint-api/` | 共享接口、DTO、基础契约 |
+| `simplepoint-boot/` | Boot 注解、starter 与运行时启动支撑 |
+| `simplepoint-core/` | 基础实体、控制器、服务、响应封装、通用工具 |
+| `simplepoint-data/` | JPA、JDBC、JSON Schema 等数据层能力 |
+| `simplepoint-plugin/` | 插件运行时与 Spring 集成 |
+| `simplepoint-plugins/` | RBAC、OIDC、i18n、tenant、DNA 等业务能力模块 |
+| `simplepoint-security/` | OAuth2 Server / Resource Server、安全域模型与鉴权基础设施 |
+| `simplepoint-services/` | 可运行服务：`host`、`authorization`、`common`、`auditing`、`dna` |
+| `open-simplepoint-dashboard-react/` | 前端 Nx 工作区，包含 host shell 与多个 remote |
+| `doc/` | 架构、部署、权限、设计、排障文档 |
+| `docker/` | 本地开发与 Swarm 部署资产 |
+| `scripts/` | 本地开发、配置初始化、Swarm 启动等脚本 |
 
-*   **`simplepoint-api`**: Core interfaces and base definitions (Entities, Repositories, Services).
-*   **`simplepoint-boot`**: Spring Boot starters and auto-configuration modules.
-*   **`simplepoint-core`**: Core utilities, base implementations, annotations, and common domain logic.
-*   **`simplepoint-data`**: Data access modules (AMQP, JPA, JDBC, JSON Schema).
-*   **`simplepoint-plugins`**: Core business plugins:
-    *   `i18n`: Internationalization management.
-    *   `oidc`: OpenID Connect client management.
-    *   `rbac`: Role-Based Access Control, Menu, and Permission management.
-*   **`simplepoint-security`**: Authentication and authorization infrastructure (OAuth2 Server, Resource Server).
-*   **`simplepoint-examples`**: Example applications demonstrating AMQP RPC and Plugin usage.
-*   **`doc/`**: Comprehensive architectural and design documentation.
+## 运行时服务
 
-## Images
-![2fd5ee9b62939eb0ec33200a1511da58.png](images/2fd5ee9b62939eb0ec33200a1511da58.png)
+| 服务 | 默认端口 | 主要职责 |
+| --- | --- | --- |
+| `simplepoint-service-host` | `8080` | WebFlux 网关、登录入口、前端壳应用静态资源 |
+| `simplepoint-service-authorization` | `9000` | OAuth2 / OIDC 授权服务、登录页、Token / OIDC 端点 |
+| `simplepoint-service-common` | `7000` | 默认业务聚合服务，承载菜单、权限、租户、字典、i18n 等能力 |
+| `simplepoint-service-auditing` | 见服务配置 | 审计日志、限流规则、运维相关能力 |
+| `simplepoint-service-dna` | 见服务配置 | 数据接入、JDBC 驱动、方言与 DNA 相关能力 |
 
-![6fb993aa4e656805d5fbd6a944249c32.png](images/6fb993aa4e656805d5fbd6a944249c32.png)
+如果你只想跑通最小链路，优先启动：`authorization`、`common`、`host`。
 
-![255e2240975a9dfccda4e105071d32fa.png](images/255e2240975a9dfccda4e105071d32fa.png)
+## 环境要求
 
-![a8e7cef4b8ccdbf7b5947640c93fd1d0.png](images/a8e7cef4b8ccdbf7b5947640c93fd1d0.png)
+- **JDK 17**（CI 基线）
+- **Git**
+- **Docker / Docker Compose**（推荐，用于本地依赖编排）
+- **Node.js 22 + Corepack + pnpm 9**（仅当前端工作区开发或构建时需要）
+- **Terraform / Consul CLI**（仅走本机开发脚本链路时需要）
 
-![f2c6e28d88dd964d9067b4f7c03c95b1.png](images/f2c6e28d88dd964d9067b4f7c03c95b1.png)
+## 后端快速开始
 
-## Getting Started
-
-### Prerequisites
-
-*   Java Development Kit (JDK) 17 or later
-*   Node.js (optional, if developing the frontend separately)
-*   Git
-
-### Clone and Build
-
-Clone the backend repository:
+### 1. 获取代码
 
 ```bash
-git clone git@github.com:simplepoint1024/open-simplepoint-dashboard.git
+git clone https://github.com/simplepoint1024/open-simplepoint-dashboard.git
 cd open-simplepoint-dashboard
 ```
 
-Validate the backend workspace using the bundled Gradle wrapper:
+### 2. Docker Compose 一键启动
+
+推荐先用根目录 compose 拉起最小完整链路：
 
 ```bash
+docker compose up --build
+```
+
+首次启动会在容器内构建 `authorization`、`common`、`host` 三个核心服务，并自动拉起 PostgreSQL、Redis、Consul 与配置初始化容器。
+
+启动完成后访问：
+
+| 地址 | 说明 |
+| --- | --- |
+| `http://localhost:8080` | Host UI |
+| `http://localhost:9000` | Authorization |
+| `http://localhost:7000` | Common API |
+| `http://localhost:8500` | Consul UI |
+
+默认开发账号：
+
+| 字段 | 值 |
+| --- | --- |
+| 邮箱 | `simplepoint@mail.com` |
+| 密码 | `123456` |
+| 权限 | `super-admin=true` |
+
+如需修改默认登录账号，可在启动前设置环境变量：
+
+```bash
+SIMPLEPOINT_ADMIN_EMAIL=admin@example.com SIMPLEPOINT_ADMIN_PASSWORD=change-me docker compose up --build
+```
+
+停止并清理容器：
+
+```bash
+docker compose down
+```
+
+如果需要同时清空数据库与 Redis 数据：
+
+```bash
+docker compose down -v
+```
+
+### 3. 查看模块与基础校验
+
+```bash
+./gradlew projects
+./gradlew checkstyleMain checkstyleTest
 ./gradlew test
 ```
 
-### Running the Application
+CI 当前也是按 **Checkstyle + Backend Test + Frontend Typecheck/Build** 这条链路执行。
 
-This repository contains multiple runnable application modules. Common entry points are:
+### 4. 本机开发：启动本地依赖
+
+推荐直接使用仓库自带的 compose：
 
 ```bash
-./gradlew :simplepoint-services:simplepoint-service-host:run
+docker compose -f docker/docker-compose.yaml up -d
+./scripts/shell/init_profile.sh
+```
+
+这一步会把开发态需要的基础依赖拉起来，并把开发配置写入 Consul。
+
+### 5. 本机开发：按顺序启动核心服务
+
+分别打开三个终端：
+
+```bash
 ./gradlew :simplepoint-services:simplepoint-service-authorization:run
 ./gradlew :simplepoint-services:simplepoint-service-common:run
+./gradlew :simplepoint-services:simplepoint-service-host:run
 ```
 
-Example applications can also be launched directly:
+启动完成后，默认入口如下：
+
+| 地址 | 说明 |
+| --- | --- |
+| `http://127.0.0.1:8080` | Host UI |
+| `http://127.0.0.1:9000` | Authorization |
+| `http://127.0.0.1:7000` | Common API |
+| `http://127.0.0.1:8500` | Consul UI |
+
+### 6. 开发态默认账号
+
+`common` 服务在 `dev` 下会灌入一个超级管理员账号：
+
+| 字段 | 值 |
+| --- | --- |
+| 邮箱 | `simplepoint@mail.com` |
+| 密码 | `123456` |
+| 权限 | `super-admin=true` |
+
+仅用于本地开发验证，请不要带入生产环境。
+
+## 前端工作区
+
+前端不是独立仓库依赖，而是当前仓库下的 `open-simplepoint-dashboard-react/` 子工作区。
+
+### 安装与校验
 
 ```bash
-./gradlew :simplepoint-examples:simplepoint-amqprpc-examples:simplepoint-amqprpc-example-provider:run
-./gradlew :simplepoint-examples:simplepoint-amqprpc-examples:simplepoint-amqprpc-example-consumer:run
-./gradlew :simplepoint-examples:simplepoint-plugin-examples:simplepoint-plugin-example-app:run
-```
-
-### Frontend Setup
-
-This repository contains the backend API. For the frontend dashboard, please refer to the dedicated frontend repository:
-
-```bash
-# Clone the React frontend
-git clone https://github.com/simplepoint1024/open-simplepoint-dashboard-react.git
 cd open-simplepoint-dashboard-react
-# Follow the root README for installation, type-check, and build instructions
+corepack enable
+corepack prepare pnpm@9 --activate
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm build
 ```
 
-## Documentation
+### 常用开发命令
 
-Extensive documentation is available in the `doc/` directory. It covers:
+```bash
+pnpm dev:host
+pnpm dev:common
+pnpm dev:audit
+pnpm dev:dna
+```
 
-*   **System Overview**: Goals and core capabilities.
-*   **Architecture**: Component design, deployment diagrams, and module responsibilities.
-*   **Development Guide**: Environment setup, code conventions, and contribution guidelines.
-*   **API Documentation**: Guidelines for API development and OpenAPI generation.
+### 构建并回填到后端静态资源
 
-## Docker Swarm
+```bash
+./scripts/shell/builder.sh
+```
 
-If you want a one-command local Swarm deployment that brings up Consul, Vault, PostgreSQL, Redis, RabbitMQ, and the main SimplePoint services (`host`, `common`, `authorization`), use:
+这个脚本会构建 `host`、`common`、`audit`、`dna` 四个前端应用，并把产物复制到对应服务的 `src/main/resources/static/` 目录下。
+
+## 一键拉起完整环境
+
+如果你的目标不是逐个服务调试，而是尽快得到一个完整可访问环境，可以直接使用：
 
 ```bash
 ./scripts/shell/start_swarm.sh
 ```
 
-The script will:
+该脚本会在本地 / 单机 Swarm Manager 上编排 PostgreSQL、Redis、Consul、bootstrap、authorization、common、host。
 
-*   initialize Docker Swarm if needed,
-*   build the required application/bootstrap images locally,
-*   deploy `docker/swarm/stack.yml`,
-*   seed Consul KV config and the Vault transit key automatically.
+## 文档入口
 
-The current implementation is designed for a local or single-node Swarm manager. If you want to spread services across multiple nodes, push the built images to a registry first and point the stack to those image tags.
+| 文档 | 说明 |
+| --- | --- |
+| `doc/deployment/local_development.md` | 当前最准确的本地开发启动路径 |
+| `doc/deployment/docker_swarm_deployment.md` | Docker Swarm 一键部署说明 |
+| `doc/architecture/service_topology.md` | 服务边界、职责与前后端映射 |
+| `doc/architecture/project_structure_diagram.md` | 当前仓库目录与模块分层 |
+| `doc/architecture/plugin_architecture.md` | 插件运行时与装配模型 |
+| `doc/architecture/multi_tenant_model.md` | 多租户约定与上下文传递 |
+| `doc/architecture/schema_driven_ui.md` | Schema 驱动 UI 的后端与前端约定 |
+| `doc/architecture/frontend_microfrontend.md` | 微前端与模块联邦约定 |
+| `doc/permission/` | 权限模型、授权上下文等说明 |
+| `doc/troubleshooting/` | 常见问题与排障路径 |
 
-By default it detects the current node address and publishes the project on:
+`doc/quick_start.md` 正在持续完善；当前以 `local_development.md` 和 `service_topology.md` 作为更可靠的入口。
 
-*   `http://<node-ip>:8080` for the host UI,
-*   `http://<node-ip>:9000` for the authorization server,
-*   `http://<node-ip>:8500` for Consul,
-*   `http://<node-ip>:8200/ui` for Vault.
+## 贡献
 
-You can override the externally reachable address before deployment:
+请先阅读 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
+
+建议至少在提交前执行：
 
 ```bash
-SIMPLEPOINT_PUBLIC_HOST=192.168.1.10 ./scripts/shell/start_swarm.sh
+./gradlew test
+./gradlew check
 ```
 
-For the complete step-by-step guide, see [`doc/deployment/docker_swarm_deployment.md`](doc/deployment/docker_swarm_deployment.md).
+如果改动了前端，再补充执行：
 
-## Contributing
+```bash
+cd open-simplepoint-dashboard-react
+pnpm typecheck
+pnpm build
+```
 
-We welcome contributions! Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for detailed guidelines on how to report issues, submit feature requests, or open pull requests.
+## 许可证
 
-## License
-
-This project is licensed under the terms provided in [`NOTICE.md`](NOTICE.md) and [`LICENSE`](LICENSE). It acknowledges the use of third-party libraries such as Spring Cloud, Spring Boot, Gradle, Kotlin, and TypeScript.
+本项目采用 Apache 2.0 许可，详见 [`LICENSE`](LICENSE) 与 [`NOTICE.md`](NOTICE.md)。

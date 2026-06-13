@@ -1,7 +1,7 @@
 package org.simplepoint.amqprpc.consumer;
 
 import org.simplepoint.boot.starter.Boot;
-import org.simplepoint.data.amqp.rpc.annotation.EnableAmqpRemoteClients;
+import org.simplepoint.data.amqp.rpc.annotation.EnableRemoteClients;
 
 /**
  * The main entry point for the AMQP RPC Consumer application.
@@ -9,7 +9,7 @@ import org.simplepoint.data.amqp.rpc.annotation.EnableAmqpRemoteClients;
  * the application.
  */
 @Boot
-@EnableAmqpRemoteClients(basePackages = "org.simplepoint.amqprpc")
+@EnableRemoteClients(basePackages = "org.simplepoint.amqprpc")
 public class ConsumerApplication {
 
   /**

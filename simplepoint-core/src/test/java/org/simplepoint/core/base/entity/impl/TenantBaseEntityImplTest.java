@@ -18,13 +18,13 @@ class TenantBaseEntityImplTest {
   }
 
   @Test
-  void prePersist_defaultsTenantIdWhenNull() {
+  void prePersist_doesNotDefaultTenantIdWhenNull() {
     ConcreteTenantEntity entity = new ConcreteTenantEntity();
     assertThat(entity.getTenantId()).isNull();
 
     entity.prePersist();
 
-    assertThat(entity.getTenantId()).isEqualTo("default");
+    assertThat(entity.getTenantId()).isNull();
     assertThat(entity.getCreatedAt()).isCloseTo(Instant.now(), within(2, ChronoUnit.SECONDS));
   }
 

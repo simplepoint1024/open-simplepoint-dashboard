@@ -136,6 +136,92 @@ class AuthorizationContextTest {
     assertThat(ctx.getAttribute("k")).isEqualTo("v1");
   }
 
+  @Test
+  void setScopeType_setsWhenNull() {
+    ctx.setScopeType(AuthorizationScopeType.PLATFORM);
+    assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.PLATFORM);
+  }
+
+  @Test
+  void setScopeType_withString_setsWhenNull() {
+    ctx.setScopeType("TENANT");
+    assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.TENANT);
+  }
+
+  @Test
+  void setScopeType_doesNotOverwriteExistingValue() {
+    ctx.setScopeType(AuthorizationScopeType.PERSONAL);
+    ctx.setScopeType(AuthorizationScopeType.PLATFORM);
+    assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.PERSONAL);
+  }
+
+  @Test
+  void replaceScopeType_overwritesExistingValue() {
+    ctx.setScopeType(AuthorizationScopeType.PERSONAL);
+    ctx.replaceScopeType(AuthorizationScopeType.PLATFORM);
+    assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.PLATFORM);
+  }
+
+  @Test
+  void replaceScopeType_withString_overwritesExistingValue() {
+    ctx.setScopeType(AuthorizationScopeType.PERSONAL);
+    ctx.replaceScopeType("TENANT");
+    assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.TENANT);
+  }
+
+  @Test
+  void setActorRole_setsWhenNull() {
+    ctx.setActorRole(AuthorizationActorRole.TENANT_OWNER);
+    assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_OWNER);
+  }
+
+  @Test
+  void setActorRole_withString_setsWhenNull() {
+    ctx.setActorRole("PLATFORM_ADMIN");
+    assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.PLATFORM_ADMIN);
+  }
+
+  @Test
+  void setActorRole_doesNotOverwriteExistingValue() {
+    ctx.setActorRole(AuthorizationActorRole.TENANT_MEMBER);
+    ctx.setActorRole(AuthorizationActorRole.TENANT_OWNER);
+    assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_MEMBER);
+  }
+
+  @Test
+  void replaceActorRole_overwritesExistingValue() {
+    ctx.setActorRole(AuthorizationActorRole.TENANT_MEMBER);
+    ctx.replaceActorRole(AuthorizationActorRole.TENANT_OWNER);
+    assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_OWNER);
+  }
+
+  @Test
+  void replaceActorRole_withString_overwritesExistingValue() {
+    ctx.setActorRole(AuthorizationActorRole.TENANT_MEMBER);
+    ctx.replaceActorRole("PLATFORM_ADMIN");
+    assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.PLATFORM_ADMIN);
+  }
+
+  @Test
+  void mergeAttributes_overwritesExistingAndAddsNewValues() {
+    ctx.setAttributes(Collections.singletonMap("X-Tenant-Id", "old-tenant"));
+
+    ctx.mergeAttributes(Map.of("X-Tenant-Id", "new-tenant", "X-Context-Id", "ctx-1"));
+
+    assertThat(ctx.getAttributes())
+        .containsEntry("X-Tenant-Id", "new-tenant")
+        .containsEntry("X-Context-Id", "ctx-1");
+  }
+
+  @Test
+  void mergeAttributes_worksAfterNullAttributesWereSet() {
+    ctx.setAttributes(null);
+
+    ctx.mergeAttributes(Map.of("X-Tenant-Id", "tenant-1"));
+
+    assertThat(ctx.getAttribute("X-Tenant-Id")).isEqualTo("tenant-1");
+  }
+
   // -------- getAttribute --------
 
   @Test

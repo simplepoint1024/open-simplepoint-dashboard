@@ -16,9 +16,10 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.SerializationException;
 
 /**
- * RedisJsonCacheService is an implementation of the CacheService interface that uses Redis as the underlying caching mechanism.
- * This class provides methods for putting, getting, and evicting cache entries in Redis, with support for JSON serialization and deserialization.
- * The actual implementation of the caching logic (e.g., interacting with Redis) is not provided in this code snippet and should be implemented as needed.
+ * RedisJsonCacheService uses Redis as the underlying caching mechanism.
+ * This class provides methods for putting, getting, and evicting cache entries in Redis, with
+ * support for JSON serialization and deserialization. The actual cache interaction logic should be
+ * implemented as needed.
  */
 public class RedisJsonCacheService implements CacheService {
 

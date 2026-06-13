@@ -22,6 +22,9 @@ public class DictionaryServiceImpl extends BaseServiceImpl<DictionaryRepository,
 
   private final DictionaryItemRepository dictionaryItemRepository;
 
+  /**
+   * Dictionary Service Impl.
+   */
   public DictionaryServiceImpl(
       DictionaryRepository repository,
       DetailsProviderService detailsProviderService,

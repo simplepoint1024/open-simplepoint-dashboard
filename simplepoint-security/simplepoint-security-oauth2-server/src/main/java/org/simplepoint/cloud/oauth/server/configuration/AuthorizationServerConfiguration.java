@@ -127,11 +127,17 @@ public class AuthorizationServerConfiguration {
     return authenticationConfiguration.getAuthenticationManager();
   }
 
+  /**
+   * @ Bean.
+   */
   @Bean
   public SessionRegistry sessionRegistry() {
     return new SessionRegistryImpl();
   }
 
+  /**
+   * @ Bean.
+   */
   @Bean
   public HttpSessionEventPublisher httpSessionEventPublisher() {
     return new HttpSessionEventPublisher();

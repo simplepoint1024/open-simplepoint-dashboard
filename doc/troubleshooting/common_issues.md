@@ -20,25 +20,23 @@
 | Host UI | `http://127.0.0.1:8080` |
 | Authorization | `http://127.0.0.1:9000` |
 | Consul UI | `http://127.0.0.1:8500` |
-| Vault UI | `http://127.0.0.1:8200/ui` |
 | RabbitMQ 管理台 | `http://127.0.0.1:15672` |
 
 如果这些基础入口都不通，先不要排菜单或按钮问题。
 
 ## 3. 启动类问题
 
-### 3.1 `authorization` / `common` 一启动就报 Consul 或 Vault 连接失败
+### 3.1 `authorization` / `common` 一启动就报 Consul 配置失败
 
 **典型现象**
 
 - 启动日志里直接出现 Consul 配置导入失败
-- Vault 不可达
-- 认证相关配置或密钥读取失败
+- 认证相关配置读取失败
 
 **常见原因**
 
-1. 只起了数据库 / Redis / RabbitMQ，没有起 Consul / Vault
-2. 起了 Consul / Vault，但没有执行 `init_profile.sh`
+1. 只起了数据库 / Redis / RabbitMQ，没有起 Consul
+2. 起了 Consul，但没有执行 `init_profile.sh`
 3. 使用了 `docker-compose`，但起完依赖后没有继续执行 `init_profile.sh`
 
 **建议处理**
@@ -51,9 +49,8 @@
 
 它会顺序完成：
 
-1. 启动本地 Vault dev server
-2. 启动本地 Consul dev agent
-3. 通过 Terraform 把开发配置写入 Consul，并在 Vault 初始化 key
+1. 启动本地 Consul dev agent
+2. 通过 Terraform 把开发配置写入 Consul
 
 如果你走容器路径，则先执行：
 
@@ -62,7 +59,7 @@ docker compose -f docker/docker-compose.yaml up -d
 ./scripts/shell/init_profile.sh
 ```
 
-不要在 compose 已经占用 `8500` / `8200` 端口时，再执行 `start_dev_consul.sh` 或 `start_dev_vault.sh`。
+不要在 compose 已经占用 `8500` 端口时，再执行 `start_dev_consul.sh`。
 
 ### 3.2 PostgreSQL 端口通了，但 JPA 仍然连库失败
 
@@ -299,7 +296,7 @@ x-ui.dictCode
 
 如果你想最快定位问题，推荐按这个顺序：
 
-1. 中间件是否都起来：PostgreSQL / Redis / RabbitMQ / Consul / Vault
+1. 中间件是否都起来：PostgreSQL / Redis / RabbitMQ / Consul
 2. `start_developer.sh` / `init_profile.sh` 是否执行过
 3. `authorization`、`common`、`host` 是否按顺序启动
 4. 是否严格使用 `127.0.0.1` 的开发地址

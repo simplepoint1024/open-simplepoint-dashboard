@@ -19,6 +19,9 @@ public record CalciteQueryRequest(
     List<Object> parameters
 ) {
 
+  /**
+   * Calcite Query Request.
+   */
   public CalciteQueryRequest(
       final String sql,
       final String defaultSchema,

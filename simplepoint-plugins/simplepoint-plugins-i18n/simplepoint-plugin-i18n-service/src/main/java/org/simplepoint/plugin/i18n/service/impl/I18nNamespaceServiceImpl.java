@@ -21,7 +21,6 @@ public class I18nNamespaceServiceImpl extends BaseServiceImpl<I18nNamespaceRepos
    * Constructs a BaseServiceImpl with the specified repository, user context, and details provider service.
    *
    * @param repository             the repository to be used for entity operations
-   * @param authorizationContextHolder            用于访问与用户相关信息的用户上下文
    * @param detailsProviderService the service providing additional details
    */
   public I18nNamespaceServiceImpl(

@@ -66,7 +66,6 @@
 - Redis（当前默认开发配置见 `doc/deployment/local_development.md`）
 - RabbitMQ（当前默认开发配置见 `doc/deployment/local_development.md`）
 - Consul（当前默认开发配置见 `doc/deployment/local_development.md`）
-- Vault（当前默认开发配置见 `doc/deployment/local_development.md`）
 
 ### 3.3 可选前端环境
 
@@ -117,7 +116,6 @@
 - Host UI 地址
 - Authorization 服务地址
 - Consul 地址
-- Vault 地址
 - 其他关键服务端口
 
 ## 7. 初始化数据与默认账号

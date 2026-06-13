@@ -4,11 +4,11 @@ import static org.simplepoint.plugin.dna.federation.service.support.FederationSe
 import static org.simplepoint.plugin.dna.federation.service.support.FederationServiceSupport.trimToNull;
 
 import java.io.StringReader;
-import java.util.Collection;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -568,6 +568,9 @@ public class FederationCalciteCatalogAssembler {
       List<SimpleDataSource> cleanupDataSources
   ) implements AutoCloseable {
 
+    /**
+     * Federation Calcite Catalog Assembly.
+     */
     public FederationCalciteCatalogAssembly(
         final String catalogCode,
         final List<String> physicalDataSourceCodes,

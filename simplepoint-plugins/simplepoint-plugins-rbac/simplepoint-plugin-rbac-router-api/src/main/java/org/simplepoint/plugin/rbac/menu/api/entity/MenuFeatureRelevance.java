@@ -24,11 +24,17 @@ public class MenuFeatureRelevance extends BaseEntityImpl<String> {
   @Column(name = "permission_authority")
   private String featureCode;
 
+  /**
+   * Menu Feature Relevance.
+   */
   public MenuFeatureRelevance(String menuId, String featureCode) {
     this.menuId = menuId;
     this.featureCode = featureCode;
   }
 
+  /**
+   * Menu Feature Relevance.
+   */
   public MenuFeatureRelevance() {
   }
 }

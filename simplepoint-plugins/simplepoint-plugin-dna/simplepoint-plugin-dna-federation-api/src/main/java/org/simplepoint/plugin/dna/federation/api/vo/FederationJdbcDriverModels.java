@@ -45,14 +45,23 @@ public final class FederationJdbcDriverModels {
       List<Object> parameters,
       Integer maxRows
   ) {
+    /**
+     * Query Request.
+     */
     public QueryRequest(final String sql, final String defaultSchema) {
       this(sql, defaultSchema, null, null, null);
     }
 
+    /**
+     * Query Request.
+     */
     public QueryRequest(final String sql, final String defaultSchema, final String catalogCode) {
       this(sql, defaultSchema, catalogCode, null, null);
     }
 
+    /**
+     * Query Request.
+     */
     public QueryRequest(final String sql, final String defaultSchema, final String catalogCode, final List<Object> parameters) {
       this(sql, defaultSchema, catalogCode, parameters, null);
     }

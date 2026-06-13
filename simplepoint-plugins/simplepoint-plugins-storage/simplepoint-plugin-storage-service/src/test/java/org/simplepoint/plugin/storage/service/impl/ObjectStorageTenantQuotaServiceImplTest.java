@@ -175,8 +175,15 @@ class ObjectStorageTenantQuotaServiceImplTest {
     when(repository.findActiveByTenantId("t1")).thenReturn(Optional.of(quota));
     when(objectRepository.sumActiveContentLengthByTenantIds(any())).thenReturn(
         Collections.singletonList(new ObjectStorageObjectRepository.TenantStorageUsage() {
-          @Override public String getTenantId() { return "t1"; }
-          @Override public Long getUsedBytes() { return 200L; }
+          @Override
+          public String getTenantId() {
+            return "t1";
+          }
+
+          @Override
+          public Long getUsedBytes() {
+            return 200L;
+          }
         })
     );
     when(tenantRepository.findAllByIds(any())).thenReturn(Collections.singletonList(fakeTenant("t1")));

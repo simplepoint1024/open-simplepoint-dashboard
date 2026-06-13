@@ -10,12 +10,12 @@ dependencies {
     implementation(project(":simplepoint-boot:simplepoint-boot-starter"))
     // 引入Consul全局配置支持
     implementation(project(":simplepoint-boot:simplepoint-boot-config-consul-starter"))
-    implementation(project(":simplepoint-boot:simplepoint-boot-config-vault-starter"))
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-web")
 
     implementation(project(":simplepoint-plugin:simplepoint-plugin-webmvc"))
-    implementation(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))
+    implementation(project(":simplepoint-service-router:simplepoint-service-router-core"))
+    implementation(project(":simplepoint-service-router:simplepoint-service-router-consul"))
     implementation(project(":simplepoint-data:simplepoint-data-cp"))
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
     implementation(project(":simplepoint-cache:simplepoint-cache-redis"))

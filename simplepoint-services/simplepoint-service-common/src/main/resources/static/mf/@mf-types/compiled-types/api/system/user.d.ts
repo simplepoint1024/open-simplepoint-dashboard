@@ -1,3 +1,5 @@
+import { Page } from "@simplepoint/shared/types/request";
+import { RoleRelevantVo } from "@/api/system/role";
 /**
  * 用户角色分配接口
  */
@@ -19,3 +21,7 @@ export declare function fetchUnauthorized(data: UserRoleRelevantDto): Promise<Us
  * @param data
  */
 export declare function fetchAuthorize(data: UserRoleRelevantDto): Promise<UserRoleRelevantDto>;
+/**
+ * 获取用户管理中可分配角色列表（始终使用默认租户范围）
+ */
+export declare function fetchRoleCandidates(params: Record<string, string>): Promise<Page<RoleRelevantVo>>;

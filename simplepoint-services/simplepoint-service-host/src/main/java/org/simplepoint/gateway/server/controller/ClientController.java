@@ -11,8 +11,7 @@ package org.simplepoint.gateway.server.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URI;
-import java.util.Objects;
-import java.util.Set;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -56,10 +55,12 @@ public class ClientController {
   @GetMapping("/{registrationId}/authorize")
   public Mono<Void> authorize(@PathVariable("registrationId") String registrationId,
                               ServerWebExchange exchange) {
-
-    // 可选：白名单校验，避免恶意 registrationId
-    Set<String> allowedClients = Set.of("simplepoint", "another-client-id");
-    if (!allowedClients.contains(registrationId)) {
+    Map<String, String> registrationAliases = Map.of(
+        "simplepoint", "simplepoint-client",
+        "simplepoint-client", "simplepoint-client"
+    );
+    String targetRegistrationId = registrationAliases.get(registrationId);
+    if (targetRegistrationId == null) {
       log.warn("Illegal registrationId access attempt: {}", registrationId);
       exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
       return exchange.getResponse().setComplete();
@@ -71,7 +72,7 @@ public class ClientController {
 
       ServerHttpResponse response = exchange.getResponse();
       response.setStatusCode(HttpStatus.FOUND);
-      response.getHeaders().setLocation(URI.create("/oauth2/authorization/" + registrationId));
+      response.getHeaders().setLocation(URI.create("/oauth2/authorization/" + targetRegistrationId));
       return response.setComplete();
     });
   }

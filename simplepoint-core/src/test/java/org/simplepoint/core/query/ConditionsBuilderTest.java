@@ -23,9 +23,17 @@ class ConditionsBuilderTest {
       this.active = active;
     }
 
-    public String getName() { return name; }
-    public String getStatus() { return status; }
-    public boolean isActive() { return active; }
+    public String getName() {
+      return name;
+    }
+
+    public String getStatus() {
+      return status;
+    }
+
+    public boolean isActive() {
+      return active;
+    }
   }
 
   // -------- factory methods --------

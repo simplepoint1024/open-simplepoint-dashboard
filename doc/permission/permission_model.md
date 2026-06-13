@@ -194,3 +194,38 @@ sha256(tenantId + ":" + userId + ":" + permissionVersion)
 - 授权上下文：`doc/permission/authorization_context.md`
 - Schema 驱动 UI：`doc/architecture/schema_driven_ui.md`
 - 服务拓扑：`doc/architecture/service_topology.md`
+
+## 10. 标准化运行作用域
+
+授权上下文现在显式区分三类运行作用域：
+
+| 作用域 | 含义 | 典型使用场景 |
+| --- | --- | --- |
+| `PLATFORM` | 平台控制台，不绑定业务租户 | 租户、套餐、应用、功能等平台级配置 |
+| `TENANT` | 组织租户工作区 | 成员、角色、组织、租户业务数据管理 |
+| `PERSONAL` | 用户个人空间 | 个人默认工作区、个人级资源 |
+
+同时，`AuthorizationContext.actorRole` 标准化描述当前操作者在该作用域下的身份：
+
+| 身份 | 含义 |
+| --- | --- |
+| `PLATFORM_ADMIN` | 平台管理员，通常只出现在 `PLATFORM` 作用域 |
+| `TENANT_ADMIN` | 平台管理员进入某个租户后的管理身份 |
+| `TENANT_OWNER` | 组织租户所有者 |
+| `TENANT_MEMBER` | 组织租户普通成员 |
+| `PERSONAL_OWNER` | 个人空间所有者 |
+| `PERSONAL_MEMBER` | 个人空间成员或兼容兜底身份 |
+
+新增业务能力时应优先根据 `scopeType` 判断当前入口属于平台、租户还是个人空间，再根据 `actorRole` 判断操作者管理级别。不要再用 `default`、空 `tenantId` 或单个权限字符串隐式推断运行层级。
+
+权限命名空间按作用域拆分：
+
+| 命名空间 | 用途 | 示例 |
+| --- | --- | --- |
+| `platform.*` | 平台级管理能力 | `platform.tenants.create`、`platform.packages.assign` |
+| `tenant.*` | 租户内管理能力 | `tenant.users.invite`、`tenant.roles.assign` |
+| `self.*` | 当前用户个人能力 | `self.profile.update`、`self.password.change` |
+
+租户管理员的标准权限是 `tenant.admin`。当用户在当前组织租户下通过角色获得 `tenant.admin`，授权上下文会把 `actorRole` 映射为 `TENANT_ADMIN`。租户所有者仍使用 `TENANT_OWNER`，平台管理员进入租户时也会表现为 `TENANT_ADMIN`，但其平台身份仍由 `isAdministrator` 保留。
+
+租户感知实体不再依赖 `"default"` 租户兜底。创建实现 `TenantBaseEntity` 的实体时，如果实体没有 `tenantId` 且当前授权上下文没有 `X-Tenant-Id`，基础服务会直接失败，避免租户业务数据误写入默认空间。

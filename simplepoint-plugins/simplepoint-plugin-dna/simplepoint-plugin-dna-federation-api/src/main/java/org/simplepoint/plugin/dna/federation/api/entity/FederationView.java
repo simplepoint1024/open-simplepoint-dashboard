@@ -83,6 +83,7 @@ public class FederationView extends BaseEntityImpl<String> {
   private String schemaName;
 
   @Transient
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   @Schema(title = "i18n:dna.federation.views.title.schemaCode", description = "i18n:dna.federation.views.description.schemaCode", accessMode = Schema.AccessMode.READ_ONLY)
   private String schemaCode;
 

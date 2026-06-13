@@ -36,9 +36,6 @@ public class TenantBaseEntityImpl<I extends Serializable> extends BaseEntityImpl
 
   @Override
   public void prePersist() {
-    if (tenantId == null) {
-      tenantId = "default";
-    }
     super.prePersist();
   }
 }

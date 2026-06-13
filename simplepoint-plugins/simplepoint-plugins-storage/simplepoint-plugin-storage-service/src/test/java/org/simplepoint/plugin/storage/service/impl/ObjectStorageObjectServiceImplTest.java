@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -24,6 +26,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageObject;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageTenantQuota;
 import org.simplepoint.plugin.storage.api.model.ObjectStoragePlatformType;
@@ -36,6 +39,7 @@ import org.simplepoint.plugin.storage.api.spi.ObjectStorageDriver;
 import org.simplepoint.plugin.storage.api.spi.ObjectStorageReadResult;
 import org.simplepoint.plugin.storage.api.spi.ObjectStorageWriteRequest;
 import org.simplepoint.plugin.storage.api.spi.ObjectStorageWriteResult;
+import org.springframework.data.domain.Pageable;
 import org.springframework.mock.web.MockMultipartFile;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +56,18 @@ class ObjectStorageObjectServiceImplTest {
 
   @Mock
   private ObjectStorageDriver driver;
+
+  private AuthorizationContext authorizationContext;
+
+  @BeforeEach
+  void setTenantContext() {
+    authorizationContext = tenantContext("tenant-demo");
+  }
+
+  @AfterEach
+  void resetTenantContext() {
+    authorizationContext = null;
+  }
 
   // ── providers() ──────────────────────────────────────────────────────────
 
@@ -190,6 +206,30 @@ class ObjectStorageObjectServiceImplTest {
     assertThrows(IllegalArgumentException.class, () -> service.upload(empty, null));
   }
 
+  @Test
+  void uploadShouldRejectMissingTenantContext() {
+    authorizationContext = null;
+    ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
+    MockMultipartFile file = new MockMultipartFile("file", "demo.txt", "text/plain", "hello".getBytes());
+
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.upload(file, null));
+
+    assertEquals("租户ID不能为空", ex.getMessage());
+  }
+
+  @Test
+  void limitShouldRejectMissingTenantContext() {
+    authorizationContext = null;
+    ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
+
+    IllegalArgumentException ex = assertThrows(
+        IllegalArgumentException.class,
+        () -> service.limit(Map.of(), Pageable.unpaged())
+    );
+
+    assertEquals("租户ID不能为空", ex.getMessage());
+  }
+
   // ── upload – provider resolution ──────────────────────────────────────────
 
   @Test
@@ -228,7 +268,7 @@ class ObjectStorageObjectServiceImplTest {
 
   @Test
   void uploadShouldThrowWhenNoBucketConfigured() {
-    ObjectStorageProperties properties = new ObjectStorageProperties();
+    final ObjectStorageProperties properties = new ObjectStorageProperties();
     ObjectStorageProperties.ProviderProperties p = new ObjectStorageProperties.ProviderProperties();
     p.setEnabled(true);
     p.setType(ObjectStoragePlatformType.MINIO);
@@ -246,13 +286,13 @@ class ObjectStorageObjectServiceImplTest {
 
   @Test
   void uploadShouldRejectWhenQuotaExceeded() {
-    ObjectStorageProperties properties = configuredProperties();
+    final ObjectStorageProperties properties = configuredProperties();
     ObjectStorageTenantQuota quota = new ObjectStorageTenantQuota();
-    quota.setTenantId("default");
+    quota.setTenantId("tenant-demo");
     quota.setEnabled(true);
     quota.setQuotaBytes(10L);
-    when(quotaRepository.findActiveByTenantId("default")).thenReturn(Optional.of(quota));
-    when(repository.sumActiveContentLengthByTenantId("default")).thenReturn(9L);
+    when(quotaRepository.findActiveByTenantId("tenant-demo")).thenReturn(Optional.of(quota));
+    when(repository.sumActiveContentLengthByTenantId("tenant-demo")).thenReturn(9L);
 
     ObjectStorageObjectServiceImpl service = buildService(properties, "common");
 
@@ -264,16 +304,16 @@ class ObjectStorageObjectServiceImplTest {
 
   @Test
   void uploadShouldAllowWhenWithinQuota() {
-    ObjectStorageProperties properties = configuredProperties();
+    final ObjectStorageProperties properties = configuredProperties();
     ObjectStorageTenantQuota quota = new ObjectStorageTenantQuota();
-    quota.setTenantId("default");
+    quota.setTenantId("tenant-demo");
     quota.setEnabled(true);
     quota.setQuotaBytes(1000L);
-    when(quotaRepository.findActiveByTenantId("default")).thenReturn(Optional.of(quota));
-    when(repository.sumActiveContentLengthByTenantId("default")).thenReturn(5L);
+    when(quotaRepository.findActiveByTenantId("tenant-demo")).thenReturn(Optional.of(quota));
+    when(repository.sumActiveContentLengthByTenantId("tenant-demo")).thenReturn(5L);
     when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
     when(driver.write(any(), any())).thenReturn(new ObjectStorageWriteResult(
-        "demo-bucket", "default/2025/01/01/uuid-demo.txt", "etag", "http://url"));
+        "demo-bucket", "tenant-demo/2025/01/01/uuid-demo.txt", "etag", "http://url"));
     when(repository.findActiveByProviderCodeAndBucketAndObjectKey(any(), any(), any()))
         .thenReturn(Optional.empty());
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -287,15 +327,15 @@ class ObjectStorageObjectServiceImplTest {
 
   @Test
   void uploadShouldAllowWhenQuotaIsDisabled() {
-    ObjectStorageProperties properties = configuredProperties();
+    final ObjectStorageProperties properties = configuredProperties();
     ObjectStorageTenantQuota quota = new ObjectStorageTenantQuota();
-    quota.setTenantId("default");
+    quota.setTenantId("tenant-demo");
     quota.setEnabled(false);
     quota.setQuotaBytes(1L); // very small but disabled
-    when(quotaRepository.findActiveByTenantId("default")).thenReturn(Optional.of(quota));
+    when(quotaRepository.findActiveByTenantId("tenant-demo")).thenReturn(Optional.of(quota));
     when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
     when(driver.write(any(), any())).thenReturn(new ObjectStorageWriteResult(
-        "demo-bucket", "default/file.txt", "etag", "http://url"));
+        "demo-bucket", "tenant-demo/file.txt", "etag", "http://url"));
     when(repository.findActiveByProviderCodeAndBucketAndObjectKey(any(), any(), any()))
         .thenReturn(Optional.empty());
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -310,8 +350,8 @@ class ObjectStorageObjectServiceImplTest {
 
   @Test
   void uploadShouldThrowWhenObjectKeyAlreadyExists() {
-    ObjectStorageProperties properties = configuredProperties();
-    when(quotaRepository.findActiveByTenantId("default")).thenReturn(Optional.empty());
+    final ObjectStorageProperties properties = configuredProperties();
+    when(quotaRepository.findActiveByTenantId("tenant-demo")).thenReturn(Optional.empty());
 
     ObjectStorageUploadRequest request = new ObjectStorageUploadRequest();
     request.setObjectKey("existing/key.txt");
@@ -330,7 +370,7 @@ class ObjectStorageObjectServiceImplTest {
   @Test
   void uploadShouldUseDefaultProviderAndPersistMetadata() {
     ObjectStorageProperties properties = configuredProperties();
-    when(quotaRepository.findActiveByTenantId("default")).thenReturn(Optional.empty());
+    when(quotaRepository.findActiveByTenantId("tenant-demo")).thenReturn(Optional.empty());
     when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
     when(driver.write(any(), any())).thenReturn(new ObjectStorageWriteResult(
         "demo-bucket",
@@ -359,11 +399,11 @@ class ObjectStorageObjectServiceImplTest {
 
   @Test
   void uploadShouldUseCustomFileNameFromRequest() {
-    ObjectStorageProperties properties = configuredProperties();
-    when(quotaRepository.findActiveByTenantId("default")).thenReturn(Optional.empty());
+    final ObjectStorageProperties properties = configuredProperties();
+    when(quotaRepository.findActiveByTenantId("tenant-demo")).thenReturn(Optional.empty());
     when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
     when(driver.write(any(), any())).thenReturn(new ObjectStorageWriteResult(
-        "demo-bucket", "default/custom-name.pdf", "etag", "http://url"));
+        "demo-bucket", "tenant-demo/custom-name.pdf", "etag", "http://url"));
     when(repository.findActiveByProviderCodeAndBucketAndObjectKey(any(), any(), any()))
         .thenReturn(Optional.empty());
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -384,7 +424,7 @@ class ObjectStorageObjectServiceImplTest {
   @Test
   void uploadShouldNullifyContentTypeWhenBlank() {
     ObjectStorageProperties properties = configuredProperties();
-    when(quotaRepository.findActiveByTenantId("default")).thenReturn(Optional.empty());
+    when(quotaRepository.findActiveByTenantId("tenant-demo")).thenReturn(Optional.empty());
     when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
     when(driver.write(any(), any())).thenReturn(new ObjectStorageWriteResult(
         "demo-bucket", "key", "etag", null));
@@ -401,9 +441,9 @@ class ObjectStorageObjectServiceImplTest {
   }
 
   @Test
-  void uploadShouldSetETagAndAccessUrlFromWriteResult() {
+  void uploadShouldSetEtagAndAccessUrlFromWriteResult() {
     ObjectStorageProperties properties = configuredProperties();
-    when(quotaRepository.findActiveByTenantId("default")).thenReturn(Optional.empty());
+    when(quotaRepository.findActiveByTenantId("tenant-demo")).thenReturn(Optional.empty());
     when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
     when(driver.write(any(), any())).thenReturn(new ObjectStorageWriteResult(
         "demo-bucket", "key.txt", "my-etag", "http://access-url"));
@@ -422,7 +462,7 @@ class ObjectStorageObjectServiceImplTest {
   @Test
   void uploadShouldDeleteObjectWhenSaveFails() {
     ObjectStorageProperties properties = configuredProperties();
-    when(quotaRepository.findActiveByTenantId("default")).thenReturn(Optional.empty());
+    when(quotaRepository.findActiveByTenantId("tenant-demo")).thenReturn(Optional.empty());
     when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
     when(driver.write(any(), any())).thenReturn(new ObjectStorageWriteResult(
         "demo-bucket", "key.txt", "etag", "http://url"));
@@ -439,11 +479,11 @@ class ObjectStorageObjectServiceImplTest {
 
   @Test
   void uploadShouldUseDirectoryFromRequest() {
-    ObjectStorageProperties properties = configuredProperties();
-    when(quotaRepository.findActiveByTenantId("default")).thenReturn(Optional.empty());
+    final ObjectStorageProperties properties = configuredProperties();
+    when(quotaRepository.findActiveByTenantId("tenant-demo")).thenReturn(Optional.empty());
     when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
     when(driver.write(any(), any())).thenReturn(new ObjectStorageWriteResult(
-        "demo-bucket", "uploads/default/2025/01/01/uuid-f.txt", "etag", "http://url"));
+        "demo-bucket", "uploads/tenant-demo/2025/01/01/uuid-f.txt", "etag", "http://url"));
     when(repository.findActiveByProviderCodeAndBucketAndObjectKey(any(), any(), any()))
         .thenReturn(Optional.empty());
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -465,7 +505,7 @@ class ObjectStorageObjectServiceImplTest {
     ObjectStorageProperties.ProviderProperties p = providerProps(ObjectStoragePlatformType.MINIO, true, "bucket-auto");
     properties.setProviders(Map.of("auto-minio", p));
 
-    when(quotaRepository.findActiveByTenantId("default")).thenReturn(Optional.empty());
+    when(quotaRepository.findActiveByTenantId("tenant-demo")).thenReturn(Optional.empty());
     when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
     when(driver.write(any(), any())).thenReturn(new ObjectStorageWriteResult(
         "bucket-auto", "key.txt", "etag", "http://url"));
@@ -493,7 +533,18 @@ class ObjectStorageObjectServiceImplTest {
         List.of(driver),
         properties,
         applicationName
-    );
+    ) {
+      @Override
+      public AuthorizationContext getAuthorizationContext() {
+        return authorizationContext;
+      }
+    };
+  }
+
+  private static AuthorizationContext tenantContext(final String tenantId) {
+    AuthorizationContext context = new AuthorizationContext();
+    context.setAttributes(Map.of("X-Tenant-Id", tenantId));
+    return context;
   }
 
   static ObjectStorageProperties configuredProperties() {

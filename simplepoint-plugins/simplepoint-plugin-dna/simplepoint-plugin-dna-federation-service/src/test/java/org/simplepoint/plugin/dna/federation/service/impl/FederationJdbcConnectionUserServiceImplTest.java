@@ -236,8 +236,8 @@ class FederationJdbcConnectionUserServiceImplTest {
 
   @Test
   void createShouldValidateAndPersistGrant() {
-    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "pg", "PostgreSQL");
-    User user = enabledUser("user-1");
+    final JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "pg", "PostgreSQL");
+    final User user = enabledUser("user-1");
     FederationJdbcConnectionUser entity = new FederationJdbcConnectionUser();
     entity.setCatalogId("ds-1");
     entity.setUserId("user-1");
@@ -268,7 +268,7 @@ class FederationJdbcConnectionUserServiceImplTest {
 
   @Test
   void createShouldRejectWhenUserNotFound() {
-    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "pg", "PostgreSQL");
+    final JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "pg", "PostgreSQL");
     FederationJdbcConnectionUser entity = new FederationJdbcConnectionUser();
     entity.setCatalogId("ds-1");
     entity.setUserId("user-missing");
@@ -281,9 +281,9 @@ class FederationJdbcConnectionUserServiceImplTest {
 
   @Test
   void createShouldRejectDuplicateGrant() {
-    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "pg", "PostgreSQL");
-    User user = enabledUser("user-1");
-    FederationJdbcConnectionUser existing = enabledGrant("g1", "ds-1", "user-1");
+    final JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "pg", "PostgreSQL");
+    final User user = enabledUser("user-1");
+    final FederationJdbcConnectionUser existing = enabledGrant("g1", "ds-1", "user-1");
     FederationJdbcConnectionUser entity = new FederationJdbcConnectionUser();
     entity.setCatalogId("ds-1");
     entity.setUserId("user-1");
@@ -298,9 +298,9 @@ class FederationJdbcConnectionUserServiceImplTest {
 
   @Test
   void modifyByIdShouldValidateAndUpdateGrant() {
-    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "pg", "PostgreSQL");
-    User user = enabledUser("user-1");
-    FederationJdbcConnectionUser current = enabledGrant("g1", "ds-1", "user-1");
+    final JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "pg", "PostgreSQL");
+    final User user = enabledUser("user-1");
+    final FederationJdbcConnectionUser current = enabledGrant("g1", "ds-1", "user-1");
     FederationJdbcConnectionUser patch = new FederationJdbcConnectionUser();
     patch.setId("g1");
     patch.setCatalogId("ds-1");
