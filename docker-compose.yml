@@ -60,7 +60,7 @@ services:
       args:
         APP_GRADLE_PATH: :simplepoint-services:simplepoint-service-authorization
         APP_INSTALL_DIR: simplepoint-services/simplepoint-service-authorization/build/install/simplepoint-service-authorization
-      APP_START_SCRIPT: /opt/simplepoint/bin/simplepoint-service-authorization
+        APP_START_SCRIPT: /opt/simplepoint/bin/simplepoint-service-authorization
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500
