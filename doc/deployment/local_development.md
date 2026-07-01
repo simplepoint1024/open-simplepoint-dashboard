@@ -142,10 +142,10 @@ docker compose -f docker/docker-compose.yaml up -d
 
 ### 5.5 可选：单独启动前端工作区
 
-如果仓库里存在 `open-simplepoint-dashboard-react/`，并且你需要微前端热更新，可以额外启动前端工作区：
+如果仓库里存在 `simplepoint-react/`，并且你需要微前端热更新，可以额外启动前端工作区：
 
 ```bash
-cd open-simplepoint-dashboard-react
+cd simplepoint-react
 corepack enable
 corepack prepare pnpm@9 --activate
 pnpm install --frozen-lockfile

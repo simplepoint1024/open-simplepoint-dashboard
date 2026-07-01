@@ -10,7 +10,7 @@ updates:
       - "java"
 
   - package-ecosystem: "npm"
-    directory: "/open-simplepoint-dashboard-react"
+    directory: "/simplepoint-react"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10

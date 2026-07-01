@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-This repository is a full-stack SimplePoint dashboard project. Backend Java modules live at the root as `simplepoint-*` directories, including `simplepoint-api/src`, `simplepoint-core/src`, `simplepoint-boot`, and related support modules. The React frontend is isolated in `open-simplepoint-dashboard-react`, a pnpm/Nx workspace with apps under `apps/*`, shared libraries under `libs/*`, and static/mock assets under `public/`. Documentation and operational notes are in `README.md`, `doc/`, `plugins/`, and module-level README files.
+This repository is a full-stack SimplePoint dashboard project. Backend Java modules live at the root as `simplepoint-*` directories, including `simplepoint-api/src`, `simplepoint-core/src`, `simplepoint-boot`, and related support modules. The React frontend is isolated in `simplepoint-react`, a pnpm/Nx workspace with apps under `apps/*`, shared libraries under `libs/*`, and static/mock assets under `public/`. Documentation and operational notes are in `README.md`, `doc/`, `plugins/`, and module-level README files.
 
 ## Build, Test, and Development Commands
 Use root Gradle commands for backend work:
@@ -11,7 +11,7 @@ Use root Gradle commands for backend work:
 ./gradlew test
 ```
 
-Use frontend commands from `open-simplepoint-dashboard-react`:
+Use frontend commands from `simplepoint-react`:
 
 ```bash
 pnpm install

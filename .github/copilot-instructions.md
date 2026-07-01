@@ -15,15 +15,15 @@
 - Run one test class: `./gradlew :simplepoint-services:simplepoint-service-common:test --tests 'fully.qualified.TestClass'`
 - Run one test method: `./gradlew :simplepoint-services:simplepoint-service-common:test --tests 'fully.qualified.TestClass.testMethod'`
 
-### Frontend (`open-simplepoint-dashboard-react/`, if present in the working tree)
+### Frontend (`simplepoint-react/`, if present in the working tree)
 
-- Install dependencies: `cd open-simplepoint-dashboard-react && corepack enable && corepack prepare pnpm@9 --activate && pnpm install --frozen-lockfile`
-- Workspace type check: `cd open-simplepoint-dashboard-react && pnpm typecheck`
-- Workspace build: `cd open-simplepoint-dashboard-react && pnpm build`
-- Host app: `cd open-simplepoint-dashboard-react && pnpm dev:host` or `cd open-simplepoint-dashboard-react && pnpm build:host`
-- Common remote: `cd open-simplepoint-dashboard-react && pnpm dev:common` or `cd open-simplepoint-dashboard-react && pnpm build:common`
-- Audit remote: `cd open-simplepoint-dashboard-react && pnpm dev:audit` or `cd open-simplepoint-dashboard-react && pnpm build:audit`
-- DNA remote: `cd open-simplepoint-dashboard-react && pnpm dev:dna` or `cd open-simplepoint-dashboard-react && pnpm build:dna`
+- Install dependencies: `cd simplepoint-react && corepack enable && corepack prepare pnpm@9 --activate && pnpm install --frozen-lockfile`
+- Workspace type check: `cd simplepoint-react && pnpm typecheck`
+- Workspace build: `cd simplepoint-react && pnpm build`
+- Host app: `cd simplepoint-react && pnpm dev:host` or `cd simplepoint-react && pnpm build:host`
+- Common remote: `cd simplepoint-react && pnpm dev:common` or `cd simplepoint-react && pnpm build:common`
+- Audit remote: `cd simplepoint-react && pnpm dev:audit` or `cd simplepoint-react && pnpm build:audit`
+- DNA remote: `cd simplepoint-react && pnpm dev:dna` or `cd simplepoint-react && pnpm build:dna`
 
 ## High-level architecture
 
@@ -40,7 +40,7 @@
   - `simplepoint-service-authorization` is the servlet OAuth2/OIDC authorization server. It composes JPA, plugin-webmvc, Redis, Consul, and Vault support.
   - `simplepoint-service-common` is the servlet business API aggregator. It wires RBAC, OIDC, i18n, tenant, JSON-schema, AMQP RPC, and initializer modules into one application.
 - The plugin system is a runtime capability, not just a packaging convention. `PluginClassloader` loads plugin JARs, reads `META-INF/plugin-config.xml`, tracks inter-plugin dependencies, and the `/plugins` endpoint can auto-load everything from the `plugins/` directory at startup.
-- If the nested `open-simplepoint-dashboard-react/` workspace is present, treat it as a separate frontend monorepo that integrates with the backend instead of the primary build. It is an Nx + pnpm workspace where `apps/simplepoint-host` is the shell, `apps/simplepoint-common` is a federated remote, and `libs/` contains shared code. The host registers remotes dynamically and the architecture docs expect built frontend assets to be published into service `src/main/resources/static/` directories.
+- If the nested `simplepoint-react/` workspace is present, treat it as a separate frontend monorepo that integrates with the backend instead of the primary build. It is an Nx + pnpm workspace where `apps/simplepoint-host` is the shell, `apps/simplepoint-common` is a federated remote, and `libs/` contains shared code. The host registers remotes dynamically and the architecture docs expect built frontend assets to be published into service `src/main/resources/static/` directories.
 
 ## Key conventions
 

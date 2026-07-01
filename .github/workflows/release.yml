@@ -44,11 +44,11 @@ jobs:
           corepack prepare pnpm@9 --activate
 
       - name: Install frontend dependencies
-        working-directory: open-simplepoint-dashboard-react
+        working-directory: simplepoint-react
         run: pnpm install --frozen-lockfile
 
       - name: Build frontend
-        working-directory: open-simplepoint-dashboard-react
+        working-directory: simplepoint-react
         run: pnpm build
 
   release:

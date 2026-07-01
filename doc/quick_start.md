@@ -69,7 +69,7 @@
 
 ### 3.3 可选前端环境
 
-- `open-simplepoint-dashboard-react/` 工作区的安装要求
+- `simplepoint-react/` 工作区的安装要求
 - 本地微前端联调方式
 - 仅后端调试时可跳过的内容
 

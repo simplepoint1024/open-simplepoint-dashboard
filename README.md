@@ -32,7 +32,7 @@
 | `simplepoint-plugins/` | RBAC、OIDC、i18n、tenant、DNA 等业务能力模块 |
 | `simplepoint-security/` | OAuth2 Server / Resource Server、安全域模型与鉴权基础设施 |
 | `simplepoint-services/` | 可运行服务：`host`、`authorization`、`common`、`auditing`、`dna` |
-| `open-simplepoint-dashboard-react/` | 前端 Nx 工作区，包含 host shell 与多个 remote |
+| `simplepoint-react/` | 前端 Nx 工作区，包含 host shell 与多个 remote |
 | `doc/` | 架构、部署、权限、设计、排障文档 |
 | `docker/` | 本地开发与 Swarm 部署资产 |
 | `scripts/` | 本地开发、配置初始化、Swarm 启动等脚本 |
@@ -165,12 +165,12 @@ docker compose -f docker/docker-compose.yaml up -d
 
 ## 前端工作区
 
-前端不是独立仓库依赖，而是当前仓库下的 `open-simplepoint-dashboard-react/` 子工作区。
+前端不是独立仓库依赖，而是当前仓库下的 `simplepoint-react/` 子工作区。
 
 ### 安装与校验
 
 ```bash
-cd open-simplepoint-dashboard-react
+cd simplepoint-react
 corepack enable
 corepack prepare pnpm@9 --activate
 pnpm install --frozen-lockfile
@@ -236,7 +236,7 @@ pnpm dev:dna
 如果改动了前端，再补充执行：
 
 ```bash
-cd open-simplepoint-dashboard-react
+cd simplepoint-react
 pnpm typecheck
 pnpm build
 ```
