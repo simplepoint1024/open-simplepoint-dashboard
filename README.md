@@ -51,7 +51,7 @@
 
 ## 环境要求
 
-- **JDK 17**（CI 基线）
+- **JDK 21**（当前构建基线）
 - **Git**
 - **Docker / Docker Compose**（推荐，用于本地依赖编排）
 - **Node.js 22 + Corepack + pnpm 9**（仅当前端工作区开发或构建时需要）
@@ -75,6 +75,8 @@ docker compose up --build
 ```
 
 首次启动会在容器内构建 `authorization`、`common`、`host` 三个核心服务，并自动拉起 PostgreSQL、Redis、Consul 与配置初始化容器。
+PostgreSQL 与 Redis 默认只暴露在 compose 内部网络，不占用宿主机 `5432` / `6379` 端口；如果 Consul 的宿主机端口冲突，可通过 `SIMPLEPOINT_CONSUL_HTTP_PORT` 调整。
+如果本机已执行过对应服务的 `installDist`，compose 镜像会优先复用这些构建产物以加快启动；如需强制在容器内重建，可设置 `SIMPLEPOINT_USE_PREBUILT=false`。
 
 启动完成后访问：
 

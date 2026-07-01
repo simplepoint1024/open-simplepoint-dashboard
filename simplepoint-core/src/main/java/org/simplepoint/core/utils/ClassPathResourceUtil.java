@@ -37,9 +37,10 @@ public class ClassPathResourceUtil {
   public static <T> Map<String, T> readJson(String dir, Class<T> clazz) throws IOException {
     Map<String, T> result = new HashMap<>();
     PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+    String normalizedDir = normalizeDir(dir);
 
     // 使用 classpath*: 兼容 JAR 内扫描
-    Resource[] resources = resolver.getResources("classpath*:" + dir + "/*.json");
+    Resource[] resources = resolver.getResources("classpath*:" + normalizedDir + "/*.json");
 
     for (Resource resource : resources) {
       String filename = resource.getFilename();
@@ -69,9 +70,10 @@ public class ClassPathResourceUtil {
   public static Map<String, Map<String, Map<String, String>>> readJsonPathMap(String dir) throws IOException {
     Map<String, Map<String, Map<String, String>>> result = new HashMap<>();
     PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+    String normalizedDir = normalizeDir(dir);
 
     // classpath*: 兼容 JAR 内扫描
-    Resource[] resources = resolver.getResources("classpath*:" + dir + "/**/*.json");
+    Resource[] resources = resolver.getResources("classpath*:" + normalizedDir + "/**/*.json");
 
     for (Resource resource : resources) {
       String filename = resource.getFilename();
@@ -105,5 +107,19 @@ public class ClassPathResourceUtil {
     }
 
     return result;
+  }
+
+  private static String normalizeDir(String dir) {
+    if (dir == null || dir.isBlank()) {
+      return "";
+    }
+    String normalized = dir.trim().replace('\\', '/');
+    while (normalized.startsWith("/")) {
+      normalized = normalized.substring(1);
+    }
+    while (normalized.endsWith("/")) {
+      normalized = normalized.substring(0, normalized.length() - 1);
+    }
+    return normalized;
   }
 }

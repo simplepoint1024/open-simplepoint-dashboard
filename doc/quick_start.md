@@ -54,7 +54,7 @@
 
 ### 3.1 基础软件版本
 
-- JDK 17+
+- JDK 21+
 - Gradle Wrapper（使用仓库自带 `./gradlew`）
 - Git
 - Node.js 20+（如需运行前端工作区）

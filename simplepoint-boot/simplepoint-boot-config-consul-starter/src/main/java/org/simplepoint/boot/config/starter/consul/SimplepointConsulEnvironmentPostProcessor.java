@@ -52,9 +52,16 @@ public class SimplepointConsulEnvironmentPostProcessor
       return;
     }
 
-    for (String profile : activeProfiles.split(",")) {
-      String fileName = String.format(PROFILE_FILE_PATTERN, profile.trim());
-      String sourceName = SOURCE_NAME_PREFIX + "-" + profile.trim();
+    // Spring applies later active profiles with higher precedence. Load the profile
+    // property sources in reverse so "dev,swarm" lets swarm override dev.
+    List<String> profiles = List.of(activeProfiles.split(","));
+    for (int index = profiles.size() - 1; index >= 0; index--) {
+      String profile = profiles.get(index).trim();
+      if (profile.isEmpty()) {
+        continue;
+      }
+      String fileName = String.format(PROFILE_FILE_PATTERN, profile);
+      String sourceName = SOURCE_NAME_PREFIX + "-" + profile;
       loadProfileIfExists(sources, fileName, sourceName);
     }
 

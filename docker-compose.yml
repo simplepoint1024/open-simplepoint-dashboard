@@ -5,8 +5,8 @@ services:
       POSTGRES_DB: simplepoint
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - simplepoint_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,8 +18,8 @@ services:
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     volumes:
       - simplepoint_redis_data:/data
     healthcheck:
@@ -32,8 +32,8 @@ services:
     image: hashicorp/consul:1.20
     command: ["agent", "-dev", "-client=0.0.0.0", "-ui"]
     ports:
-      - "8500:8500"
-      - "8600:8600"
+      - "${SIMPLEPOINT_CONSUL_HTTP_PORT:-8500}:8500"
+      - "${SIMPLEPOINT_CONSUL_DNS_PORT:-8600}:8600"
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8500/v1/status/leader >/dev/null"]
       interval: 10s
@@ -61,6 +61,7 @@ services:
         APP_GRADLE_PATH: :simplepoint-services:simplepoint-service-authorization
         APP_INSTALL_DIR: simplepoint-services/simplepoint-service-authorization/build/install/simplepoint-service-authorization
         APP_START_SCRIPT: /opt/simplepoint/bin/simplepoint-service-authorization
+        APP_USE_PREBUILT: ${SIMPLEPOINT_USE_PREBUILT:-true}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500
@@ -90,6 +91,7 @@ services:
         APP_GRADLE_PATH: :simplepoint-services:simplepoint-service-common
         APP_INSTALL_DIR: simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common
         APP_START_SCRIPT: /opt/simplepoint/bin/simplepoint-service-common
+        APP_USE_PREBUILT: ${SIMPLEPOINT_USE_PREBUILT:-true}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
       SIMPLEPOINT_ADMIN_EMAIL: ${SIMPLEPOINT_ADMIN_EMAIL:-simplepoint@mail.com}
@@ -121,6 +123,7 @@ services:
         APP_GRADLE_PATH: :simplepoint-services:simplepoint-service-host
         APP_INSTALL_DIR: simplepoint-services/simplepoint-service-host/build/install/simplepoint-service-host
         APP_START_SCRIPT: /opt/simplepoint/bin/simplepoint-service-host
+        APP_USE_PREBUILT: ${SIMPLEPOINT_USE_PREBUILT:-true}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
       SIMPLEPOINT_WAIT_FOR: redis:6379,consul:8500

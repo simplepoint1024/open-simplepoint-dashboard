@@ -105,6 +105,18 @@ class FeatureServiceImplTest {
     verify(featurePermissionRelevanceRepository).authorized("feat.code");
   }
 
+  @Test
+  void authorizedPermissions_allowsTrustedInitializerWithoutTenantScope() {
+    contextHolder.when(AuthorizationContextHolder::getContext).thenReturn(null);
+    List<String> expected = List.of("perm.read");
+    when(featurePermissionRelevanceRepository.authorized("feat.code")).thenReturn(expected);
+
+    Collection<String> result = service.authorizedPermissions("feat.code");
+
+    assertThat(result).isEqualTo(expected);
+    verify(tenantPackageRelevanceRepository, never()).findFeatureCodesByTenantId(any());
+  }
+
   // ── findAllByCodes ────────────────────────────────────────────────────────
 
   @Test
@@ -128,6 +140,19 @@ class FeatureServiceImplTest {
     Collection<Feature> result = service.findAllByCodes(Set.of("f1"));
 
     assertThat(result).containsExactly(feature);
+  }
+
+  @Test
+  void findAllByCodes_allowsTrustedInitializerWithoutTenantScope() {
+    contextHolder.when(AuthorizationContextHolder::getContext).thenReturn(null);
+    Feature feature = new Feature();
+    feature.setCode("f1");
+    when(repository.findAllByCodes(Set.of("f1"))).thenReturn(List.of(feature));
+
+    Collection<Feature> result = service.findAllByCodes(Set.of("f1"));
+
+    assertThat(result).containsExactly(feature);
+    verify(tenantPackageRelevanceRepository, never()).findFeatureCodesByTenantId(any());
   }
 
   // ── authorizePermissions ──────────────────────────────────────────────────

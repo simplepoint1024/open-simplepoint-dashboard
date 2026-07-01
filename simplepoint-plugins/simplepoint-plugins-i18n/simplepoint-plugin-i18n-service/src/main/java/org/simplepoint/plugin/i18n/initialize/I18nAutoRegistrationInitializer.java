@@ -3,6 +3,7 @@ package org.simplepoint.plugin.i18n.initialize;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.simplepoint.api.data.DataInitRegister;
 import org.simplepoint.api.data.InitTask;
 import org.simplepoint.core.entity.Message;
@@ -37,6 +38,7 @@ public class I18nAutoRegistrationInitializer {
       "messages",
       "settings"
   );
+
   private static final String I18N_INIT_MODULE = "i18n-base";
 
   private static final String I18N_INIT_MSG_MODULE = "i18n-messages";
@@ -44,6 +46,12 @@ public class I18nAutoRegistrationInitializer {
   private static final String I18N_INIT_DATA_PERMISSION_MODULE = "i18n-messages-data-permission";
 
   private static final String I18N_INIT_SUPPLEMENT_MODULE = "i18n-messages-supplement-v1";
+
+  private static final String I18N_BOOTSTRAP_REPAIR_MODULE = "i18n-bootstrap-v2";
+
+  private static final String I18N_COUNTRIES_PATH = "/i18n/countries/";
+
+  private static final String I18N_MESSAGES_PATH = "/i18n/messages/";
 
   private static final Set<String> DATA_PERMISSION_NAMESPACES = Set.of(
       "data-scopes",
@@ -75,26 +83,9 @@ public class I18nAutoRegistrationInitializer {
       I18nTimeZoneService timeZoneService
   ) {
     return () -> new InitTask(I18N_INIT_MODULE, () -> {
-      Map<String, I18nInitializeProperties> data = ClassPathResourceUtil
-          .readJson("/i18n/countries/", I18nInitializeProperties.class);
-      verifyI18n(data);
-      data.values().forEach(item -> {
-        Countries countries = new Countries();
-        BeanUtils.copyProperties(item, countries);
-        countriesService.create(countries);
-        Set<Language> languages = item.getLanguages();
-        if (languages != null && !languages.isEmpty()) {
-          languageService.create(languages);
-        }
-        Set<Region> regions = item.getRegions();
-        if (regions != null && !regions.isEmpty()) {
-          regionService.create(regions);
-        }
-        Set<TimeZone> timeZones = item.getTimezones();
-        if (timeZones != null && !timeZones.isEmpty()) {
-          timeZoneService.create(timeZones);
-        }
-      });
+      if (languageService.findAll(Map.of()).isEmpty()) {
+        importBaseI18nData(loadBaseI18nData(), countriesService, languageService, regionService, timeZoneService);
+      }
     });
   }
 
@@ -106,41 +97,12 @@ public class I18nAutoRegistrationInitializer {
   @Bean
   public DataInitRegister messagesRegister(
       I18nNamespaceService namespaceService,
-      I18nMessageService messageService
+      I18nMessageService messageService,
+      I18nMessageRepository messageRepository
   ) {
-    return () -> new InitTask(I18N_INIT_MSG_MODULE, () -> {
-      Map<String, Map<String, Map<String, String>>> load = ClassPathResourceUtil
-          .readJsonPathMap("/i18n/messages/");
-      Set<String> regNsCodes = new HashSet<>();
-      Set<Namespace> namespaceSet = new HashSet<>();
-      Set<Message> messageSet = new HashSet<>();
-      for (String locale : load.keySet()) {
-        Map<String, Map<String, String>> namespaceMessages = load.get(locale);
-        Set<String> namespaceCodes = namespaceMessages.keySet();
-        for (String namespaceCode : namespaceCodes) {
-          if (!regNsCodes.contains(namespaceCode)) {
-            namespaceSet.add(new Namespace(namespaceCode, namespaceCode));
-            regNsCodes.add(namespaceCode);
-          }
-          Map<String, String> messages = namespaceMessages.get(namespaceCode);
-          for (String messageKey : messages.keySet()) {
-            Message message = new Message();
-            message.setLocale(locale);
-            message.setNamespace(namespaceCode);
-            message.setCode(messageKey);
-            message.setMessage(messages.get(messageKey));
-            message.setGlobal(I18N_GLOBAL_NAMESPACES.contains(namespaceCode));
-            messageSet.add(message);
-          }
-        }
-      }
-      if (!namespaceSet.isEmpty()) {
-        namespaceService.create(namespaceSet);
-      }
-      if (!messageSet.isEmpty()) {
-        messageService.create(messageSet);
-      }
-    });
+    return () -> new InitTask(I18N_INIT_MSG_MODULE, () ->
+        importMessages(loadMessages(), namespaceService, messageService, messageRepository, namespace -> true)
+    );
   }
 
   /**
@@ -154,43 +116,12 @@ public class I18nAutoRegistrationInitializer {
   @Bean
   public DataInitRegister dataPermissionMessagesRegister(
       I18nNamespaceService namespaceService,
-      I18nMessageService messageService
+      I18nMessageService messageService,
+      I18nMessageRepository messageRepository
   ) {
-    return () -> new InitTask(I18N_INIT_DATA_PERMISSION_MODULE, () -> {
-      Map<String, Map<String, Map<String, String>>> load = ClassPathResourceUtil
-          .readJsonPathMap("/i18n/messages/");
-      Set<String> regNsCodes = new HashSet<>();
-      Set<Namespace> namespaceSet = new HashSet<>();
-      Set<Message> messageSet = new HashSet<>();
-      for (String locale : load.keySet()) {
-        Map<String, Map<String, String>> namespaceMessages = load.get(locale);
-        for (String namespaceCode : namespaceMessages.keySet()) {
-          if (!DATA_PERMISSION_NAMESPACES.contains(namespaceCode)) {
-            continue;
-          }
-          if (!regNsCodes.contains(namespaceCode)) {
-            namespaceSet.add(new Namespace(namespaceCode, namespaceCode));
-            regNsCodes.add(namespaceCode);
-          }
-          Map<String, String> messages = namespaceMessages.get(namespaceCode);
-          for (String messageKey : messages.keySet()) {
-            Message message = new Message();
-            message.setLocale(locale);
-            message.setNamespace(namespaceCode);
-            message.setCode(messageKey);
-            message.setMessage(messages.get(messageKey));
-            message.setGlobal(false);
-            messageSet.add(message);
-          }
-        }
-      }
-      if (!namespaceSet.isEmpty()) {
-        namespaceService.create(namespaceSet);
-      }
-      if (!messageSet.isEmpty()) {
-        messageService.create(messageSet);
-      }
-    });
+    return () -> new InitTask(I18N_INIT_DATA_PERMISSION_MODULE, () ->
+        importMessages(loadMessages(), namespaceService, messageService, messageRepository, DATA_PERMISSION_NAMESPACES::contains)
+    );
   }
 
   /**
@@ -198,7 +129,7 @@ public class I18nAutoRegistrationInitializer {
    *
    * <p>Loads namespaces that were missing en-US translations or had new fields added after the
    * initial i18n-messages run (e.g. users.orgId, roles en-US, permissions en-US, etc.).
-   * Also covers data-scopes and field-scopes idempotently — if the data-permission module already
+   * Also covers data-scopes and field-scopes idempotently: if the data-permission module already
    * inserted some entries, this module skips them to avoid unique-constraint violations.</p>
    *
    * @return a DataInitRegister instance that supplements i18n messages
@@ -209,50 +140,147 @@ public class I18nAutoRegistrationInitializer {
       I18nMessageService messageService,
       I18nMessageRepository messageRepository
   ) {
-    return () -> new InitTask(I18N_INIT_SUPPLEMENT_MODULE, () -> {
-      Map<String, Map<String, Map<String, String>>> load = ClassPathResourceUtil
-          .readJsonPathMap("/i18n/messages/");
-      Set<String> existingKeys = messageRepository.findExistingKeys(SUPPLEMENT_NAMESPACES);
-      Set<String> regNsCodes = new HashSet<>();
-      Set<Namespace> namespaceSet = new HashSet<>();
-      Set<Message> messageSet = new HashSet<>();
-      for (String locale : load.keySet()) {
-        Map<String, Map<String, String>> namespaceMessages = load.get(locale);
-        for (String namespaceCode : namespaceMessages.keySet()) {
-          if (!SUPPLEMENT_NAMESPACES.contains(namespaceCode)) {
-            continue;
-          }
-          if (!regNsCodes.contains(namespaceCode)) {
-            namespaceSet.add(new Namespace(namespaceCode, namespaceCode));
-            regNsCodes.add(namespaceCode);
-          }
-          Map<String, String> messages = namespaceMessages.get(namespaceCode);
-          for (String messageKey : messages.keySet()) {
-            String compositeKey = locale + ":" + namespaceCode + ":" + messageKey;
-            if (existingKeys.contains(compositeKey)) {
-              continue;
-            }
-            Message message = new Message();
-            message.setLocale(locale);
-            message.setNamespace(namespaceCode);
-            message.setCode(messageKey);
-            message.setMessage(messages.get(messageKey));
-            message.setGlobal(I18N_GLOBAL_NAMESPACES.contains(namespaceCode));
-            messageSet.add(message);
-          }
-        }
+    return () -> new InitTask(I18N_INIT_SUPPLEMENT_MODULE, () ->
+        importMessages(loadMessages(), namespaceService, messageService, messageRepository, SUPPLEMENT_NAMESPACES::contains)
+    );
+  }
+
+  /**
+   * Repairs persisted environments where old i18n initialization was marked done even though
+   * resource scanning imported no rows.
+   */
+  @Bean
+  public DataInitRegister bootstrapRepairRegister(
+      I18nCountriesService countriesService,
+      I18nLanguageService languageService,
+      I18nRegionService regionService,
+      I18nTimeZoneService timeZoneService,
+      I18nNamespaceService namespaceService,
+      I18nMessageService messageService,
+      I18nMessageRepository messageRepository
+  ) {
+    return () -> new InitTask(I18N_BOOTSTRAP_REPAIR_MODULE, () -> {
+      if (!messageRepository.findAvailableLocales().isEmpty()) {
+        return;
       }
-      if (!namespaceSet.isEmpty()) {
-        namespaceService.create(namespaceSet);
+      if (languageService.findAll(Map.of()).isEmpty()) {
+        importBaseI18nData(loadBaseI18nData(), countriesService, languageService, regionService, timeZoneService);
       }
-      if (!messageSet.isEmpty()) {
-        messageService.create(messageSet);
+      importMessages(loadMessages(), namespaceService, messageService, messageRepository, namespace -> true);
+    });
+  }
+
+  private Map<String, I18nInitializeProperties> loadBaseI18nData() throws Exception {
+    Map<String, I18nInitializeProperties> data = ClassPathResourceUtil
+        .readJson(I18N_COUNTRIES_PATH, I18nInitializeProperties.class);
+    verifyI18n(data);
+    return data;
+  }
+
+  private Map<String, Map<String, Map<String, String>>> loadMessages() throws Exception {
+    Map<String, Map<String, Map<String, String>>> messages = ClassPathResourceUtil
+        .readJsonPathMap(I18N_MESSAGES_PATH);
+    verifyMessages(messages);
+    return messages;
+  }
+
+  private void importBaseI18nData(
+      Map<String, I18nInitializeProperties> data,
+      I18nCountriesService countriesService,
+      I18nLanguageService languageService,
+      I18nRegionService regionService,
+      I18nTimeZoneService timeZoneService
+  ) {
+    data.values().forEach(item -> {
+      Countries countries = new Countries();
+      BeanUtils.copyProperties(item, countries);
+      countriesService.create(countries);
+      Set<Language> languages = item.getLanguages();
+      if (languages != null && !languages.isEmpty()) {
+        languageService.create(languages);
+      }
+      Set<Region> regions = item.getRegions();
+      if (regions != null && !regions.isEmpty()) {
+        regionService.create(regions);
+      }
+      Set<TimeZone> timeZones = item.getTimezones();
+      if (timeZones != null && !timeZones.isEmpty()) {
+        timeZoneService.create(timeZones);
       }
     });
   }
 
-  private void verifyI18n(Map<String, I18nInitializeProperties> data) {
+  private void importMessages(
+      Map<String, Map<String, Map<String, String>>> load,
+      I18nNamespaceService namespaceService,
+      I18nMessageService messageService,
+      I18nMessageRepository messageRepository,
+      Predicate<String> namespaceFilter
+  ) {
+    Set<String> namespaceCodesToImport = new HashSet<>();
+    for (Map<String, Map<String, String>> namespaceMessages : load.values()) {
+      for (String namespaceCode : namespaceMessages.keySet()) {
+        if (namespaceFilter.test(namespaceCode)) {
+          namespaceCodesToImport.add(namespaceCode);
+        }
+      }
+    }
+    if (namespaceCodesToImport.isEmpty()) {
+      return;
+    }
 
+    Set<String> existingNamespaceCodes = new HashSet<>();
+    namespaceService.findAll(Map.of()).stream()
+        .map(Namespace::getCode)
+        .filter(code -> code != null && !code.isBlank())
+        .forEach(existingNamespaceCodes::add);
+    Set<String> existingKeys = messageRepository.findExistingKeys(namespaceCodesToImport);
+
+    Set<Namespace> namespaceSet = new HashSet<>();
+    Set<Message> messageSet = new HashSet<>();
+    for (String locale : load.keySet()) {
+      Map<String, Map<String, String>> namespaceMessages = load.get(locale);
+      for (String namespaceCode : namespaceMessages.keySet()) {
+        if (!namespaceFilter.test(namespaceCode)) {
+          continue;
+        }
+        if (!existingNamespaceCodes.contains(namespaceCode)) {
+          namespaceSet.add(new Namespace(namespaceCode, namespaceCode));
+          existingNamespaceCodes.add(namespaceCode);
+        }
+        Map<String, String> messages = namespaceMessages.get(namespaceCode);
+        for (String messageKey : messages.keySet()) {
+          String compositeKey = locale + ":" + namespaceCode + ":" + messageKey;
+          if (existingKeys.contains(compositeKey)) {
+            continue;
+          }
+          Message message = new Message();
+          message.setLocale(locale);
+          message.setNamespace(namespaceCode);
+          message.setCode(messageKey);
+          message.setMessage(messages.get(messageKey));
+          message.setGlobal(I18N_GLOBAL_NAMESPACES.contains(namespaceCode));
+          messageSet.add(message);
+        }
+      }
+    }
+    if (!namespaceSet.isEmpty()) {
+      namespaceService.create(namespaceSet);
+    }
+    if (!messageSet.isEmpty()) {
+      messageService.create(messageSet);
+    }
   }
 
+  private void verifyI18n(Map<String, I18nInitializeProperties> data) {
+    if (data == null || data.isEmpty()) {
+      throw new IllegalStateException("No i18n country resources found under " + I18N_COUNTRIES_PATH);
+    }
+  }
+
+  private void verifyMessages(Map<String, Map<String, Map<String, String>>> data) {
+    if (data == null || data.isEmpty()) {
+      throw new IllegalStateException("No i18n message resources found under " + I18N_MESSAGES_PATH);
+    }
+  }
 }

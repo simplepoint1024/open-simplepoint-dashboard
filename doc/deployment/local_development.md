@@ -50,7 +50,7 @@
 
 | 组件 | 默认地址 / 版本期望 | 用途 |
 | --- | --- | --- |
-| JDK 17+ | 本机安装 | 运行 Gradle 和所有 Java 服务。 |
+| JDK 21+ | 本机安装 | 运行 Gradle 和所有 Java 服务。 |
 | Gradle Wrapper | `./gradlew` | 构建、测试、启动各服务。 |
 | Consul CLI | `127.0.0.1:8500` | `start_dev_consul.sh` 使用本机 `consul` 命令启动 dev agent。 |
 | Terraform 1.5+ | 本机安装 | `infrastructure/Makefile` 会调用 `terraform init` / `terraform apply`。 |

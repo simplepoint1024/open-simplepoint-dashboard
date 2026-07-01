@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -31,6 +32,7 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.util.StringUtils;
 
 /**
  * Configuration class for the authorization server.
@@ -150,7 +152,12 @@ public class AuthorizationServerConfiguration {
    * @return the authorization server settings 授权服务器设置
    */
   @Bean
-  public AuthorizationServerSettings authorizationServerSettings() {
-    return AuthorizationServerSettings.builder().build();
+  public AuthorizationServerSettings authorizationServerSettings(final Environment environment) {
+    AuthorizationServerSettings.Builder builder = AuthorizationServerSettings.builder();
+    String issuer = environment.getProperty("spring.security.oauth2.authorizationserver.issuer");
+    if (StringUtils.hasText(issuer)) {
+      builder.issuer(issuer);
+    }
+    return builder.build();
   }
 }

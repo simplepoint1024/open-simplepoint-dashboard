@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 @Service
 @RemoteProvider
 public record DataInitializeServiceImpl(DataInitializeRepository repository) implements DataInitializeService {
+  private static final int MAX_ERROR_LENGTH = 255;
+
   /**
    * Constructor for DataInitializeServiceImpl.
    *
@@ -60,7 +62,7 @@ public record DataInitializeServiceImpl(DataInitializeRepository repository) imp
     initialize.setServiceName(serviceName);
     initialize.setModuleName(moduleName);
     initialize.setInitStatus(DataInitialize.STATUS_FAIL);
-    initialize.setError(error);
+    initialize.setError(truncateError(error));
     repository.save(initialize);
   }
 
@@ -76,5 +78,12 @@ public record DataInitializeServiceImpl(DataInitializeRepository repository) imp
   private DataInitialize getOrCreate(String serviceName, String moduleName) {
     DataInitialize initialize = repository.findFirstByServiceNameAndModuleName(serviceName, moduleName);
     return initialize == null ? new DataInitialize() : initialize;
+  }
+
+  private String truncateError(String error) {
+    if (error == null || error.length() <= MAX_ERROR_LENGTH) {
+      return error;
+    }
+    return error.substring(0, MAX_ERROR_LENGTH);
   }
 }

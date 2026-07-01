@@ -92,7 +92,8 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
 
   @Override
   public Collection<String> authorizedPermissions(String featureCode) {
-    if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())
+    AuthorizationContext context = getAuthorizationContext();
+    if (!hasGlobalFeatureAccess(context)
         && !tenantPackageRelevanceRepository.findFeatureCodesByTenantId(resolveTenantScope()).contains(featureCode)) {
       throw new IllegalArgumentException("功能不存在或不属于当前租户");
     }
@@ -110,7 +111,7 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
     if (normalizedCodes.isEmpty()) {
       return List.of();
     }
-    if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
+    if (!hasGlobalFeatureAccess(getAuthorizationContext())) {
       Set<String> visibleFeatureCodes = tenantPackageRelevanceRepository.findFeatureCodesByTenantId(resolveTenantScope());
       normalizedCodes.retainAll(visibleFeatureCodes);
       if (normalizedCodes.isEmpty()) {
@@ -307,5 +308,9 @@ public class FeatureServiceImpl extends BaseServiceImpl<FeatureRepository, Featu
 
   private void requirePlatformAdministrator() {
     AuthorizationScopeGuards.requirePlatformAdministrator(getAuthorizationContext());
+  }
+
+  private boolean hasGlobalFeatureAccess(AuthorizationContext context) {
+    return context == null || AuthorizationScopeGuards.isPlatformAdministrator(context);
   }
 }

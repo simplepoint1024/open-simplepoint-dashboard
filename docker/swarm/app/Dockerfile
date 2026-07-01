@@ -1,14 +1,29 @@
-ARG GRADLE_IMAGE=gradle:8.12-jdk17
-ARG RUNTIME_IMAGE=eclipse-temurin:17-jre-jammy
+ARG GRADLE_IMAGE=gradle:8.12-jdk21
+ARG NODE_IMAGE=node:22-bookworm-slim
+ARG RUNTIME_IMAGE=eclipse-temurin:21-jre-jammy
+
+FROM ${NODE_IMAGE} AS node
 
 FROM ${GRADLE_IMAGE} AS build
+USER root
+COPY --from=node /usr/local/ /usr/local/
+RUN npm install -g pnpm@9.0.0
+USER gradle
+
 WORKDIR /workspace
-COPY . .
+COPY --chown=gradle:gradle . .
 
 ARG APP_GRADLE_PATH
 ARG APP_INSTALL_DIR
+ARG APP_USE_PREBUILT=true
 RUN test -n "${APP_GRADLE_PATH}" && test -n "${APP_INSTALL_DIR}"
-RUN ./gradlew --no-daemon "${APP_GRADLE_PATH}:installDist"
+RUN if [ "${APP_USE_PREBUILT}" = "true" ] \
+        && [ -d "${APP_INSTALL_DIR}/bin" ] \
+        && find "${APP_INSTALL_DIR}/bin" -maxdepth 1 -type f -perm -111 | grep -q .; then \
+        echo "Using prebuilt distribution at ${APP_INSTALL_DIR}"; \
+    else \
+        gradle --no-daemon "${APP_GRADLE_PATH}:installDist"; \
+    fi
 
 FROM ${RUNTIME_IMAGE} AS runtime
 RUN apt-get update \

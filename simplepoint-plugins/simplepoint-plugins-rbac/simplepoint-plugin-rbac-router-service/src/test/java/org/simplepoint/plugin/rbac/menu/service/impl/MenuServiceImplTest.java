@@ -535,6 +535,59 @@ class MenuServiceImplTest {
   }
 
   @Test
+  void sync_withExistingFeatureDefinition_doesNotCreateDuplicateFeature() throws Exception {
+    doAnswer(inv -> {
+      org.simplepoint.api.data.InitTask.Initializer initializer = inv.getArgument(1);
+      initializer.run();
+      return true;
+    }).when(dataInitializeManager).execute(any(), any());
+
+    org.simplepoint.security.MenuFeatureDefinition definition = new org.simplepoint.security.MenuFeatureDefinition();
+    definition.setCode("dashboard");
+    definition.setName("Dashboard");
+    definition.setDescription("Dashboard feature");
+
+    org.simplepoint.security.entity.Permissions permission = new org.simplepoint.security.entity.Permissions();
+    permission.setAuthority("dashboard.view");
+    permission.setFeature(definition);
+
+    MenuChildren child = new MenuChildren();
+    child.setPath("/dashboard");
+    child.setAuthority("dashboard");
+    child.setSort(1);
+    child.setPermissions(Set.of(permission));
+
+    when(menuRepository.save(any())).thenAnswer(inv -> {
+      Menu m = inv.getArgument(0);
+      m.setId("dashboard-menu");
+      return m;
+    });
+    when(detailsProviderService.getDialects(any())).thenReturn(Collections.emptySet());
+
+    Menu loaded = menuWithPath("dashboard-menu", "/dashboard");
+    loaded.setAuthority("dashboard");
+    when(menuRepository.loadAll()).thenReturn(List.of(loaded));
+
+    org.simplepoint.plugin.rbac.tenant.api.entity.Feature existing = new org.simplepoint.plugin.rbac.tenant.api.entity.Feature();
+    existing.setId("existing-feature");
+    existing.setCode("dashboard");
+    existing.setName("Dashboard");
+    existing.setDescription("Dashboard feature");
+    existing.setSort(1);
+    existing.setPublicAccess(false);
+    existing.setRequireOrgTenant(false);
+    when(featureService.findAllByCodes(Set.of("dashboard"))).thenReturn(List.of(existing));
+    when(featureService.authorizedPermissions("dashboard")).thenReturn(List.of("dashboard.view"));
+    when(menuFeatureRelevanceRepository.authorized("dashboard-menu")).thenReturn(List.of("dashboard"));
+    when(permissionsService.findAll(any())).thenReturn(Collections.emptyList());
+
+    service.sync("svc", Set.of(child));
+
+    verify(featureService, never()).create(anyCollection());
+    verify(featureService, never()).initializeFeature(any());
+  }
+
+  @Test
   void sync_withPermissionsAndChildren_executesAll() throws Exception {
     doAnswer(inv -> {
       org.simplepoint.api.data.InitTask.Initializer initializer = inv.getArgument(1);

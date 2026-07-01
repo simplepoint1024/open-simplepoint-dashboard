@@ -323,7 +323,11 @@ public class MenuServiceImpl
       return;
     }
 
-    Map<String, Feature> existingByCode = featureService.findAll(Map.of()).stream()
+    Set<String> definitionCodes = definitions.stream()
+        .map(Feature::getCode)
+        .filter(code -> code != null && !code.isBlank())
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+    Map<String, Feature> existingByCode = featureService.findAllByCodes(definitionCodes).stream()
         .filter(feature -> feature.getCode() != null && !feature.getCode().isBlank())
         .collect(Collectors.toMap(Feature::getCode, feature -> feature, (left, right) -> left, HashMap::new));
 

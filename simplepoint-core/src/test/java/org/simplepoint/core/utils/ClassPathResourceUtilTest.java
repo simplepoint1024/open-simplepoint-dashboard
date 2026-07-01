@@ -26,6 +26,13 @@ class ClassPathResourceUtilTest {
   }
 
   @Test
+  void readJson_loadsJsonFilesWhenDirectoryHasSlashes() throws IOException {
+    Map<String, Item> result = ClassPathResourceUtil.readJson("/test-scan/", Item.class);
+    assertThat(result).containsKey("item");
+    assertThat(result.get("item").value).isEqualTo("hello");
+  }
+
+  @Test
   void readJson_returnsEmpty_whenNoFilesExist() throws IOException {
     Map<String, Item> result = ClassPathResourceUtil.readJson("non-existent-dir", Item.class);
     assertThat(result).isEmpty();
@@ -35,6 +42,15 @@ class ClassPathResourceUtilTest {
   void readJsonPathMap_loadsNestedJsonByLanguage() throws IOException {
     Map<String, Map<String, Map<String, String>>> result =
         ClassPathResourceUtil.readJsonPathMap("test-i18n");
+    assertThat(result).containsKey("en");
+    assertThat(result.get("en")).containsKey("messages");
+    assertThat(result.get("en").get("messages")).containsEntry("greeting", "Hello");
+  }
+
+  @Test
+  void readJsonPathMap_loadsNestedJsonWhenDirectoryHasSlashes() throws IOException {
+    Map<String, Map<String, Map<String, String>>> result =
+        ClassPathResourceUtil.readJsonPathMap("/test-i18n/");
     assertThat(result).containsKey("en");
     assertThat(result.get("en")).containsKey("messages");
     assertThat(result.get("en").get("messages")).containsEntry("greeting", "Hello");

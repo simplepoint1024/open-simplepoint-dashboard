@@ -4,6 +4,7 @@ import com.nimbusds.oauth2.sdk.GeneralException;
 import com.nimbusds.oauth2.sdk.id.Issuer;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collections;
 import org.simplepoint.cache.CacheService;
 import org.simplepoint.core.AuthorizationContext;
@@ -23,6 +24,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.util.StringUtils;
 
 /**
  * Auto-configuration for the resource server.
@@ -112,15 +114,19 @@ public class ResourceServerAutoConfiguration {
   public AuthorizationContextResolver authorizationContextResolver(
       CacheService cacheService,
       AuthorizationContextService authorizationContextService,
-      OAuth2ResourceServerProperties resourceServerProperties
+      OAuth2ResourceServerProperties resourceServerProperties,
+      Environment environment
   ) throws GeneralException, IOException {
+    String userInfoUri = environment.getProperty("simplepoint.security.oauth2.user-info-uri");
+    URI userInfoEndpoint = StringUtils.hasText(userInfoUri)
+        ? URI.create(userInfoUri)
+        : OIDCProviderMetadata.resolve(
+            Issuer.parse(resourceServerProperties.getJwt().getIssuerUri())).getUserInfoEndpointURI();
     return new AuthorizationContextResolver(
         "simplepoint:security:authorization-context:",
         cacheService,
         authorizationContextService,
-        // 从 OIDC Provider Metadata 中获取 issuer URI，确保与 JWT 认证配置一致
-        OIDCProviderMetadata.resolve(
-            Issuer.parse(resourceServerProperties.getJwt().getIssuerUri())).getUserInfoEndpointURI()
+        userInfoEndpoint
     );
   }
 }
