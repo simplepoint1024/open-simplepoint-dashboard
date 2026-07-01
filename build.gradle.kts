@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.Exec
+
 plugins {
     java
     `java-library`
@@ -7,6 +9,27 @@ plugins {
     id("org.springframework.boot") version libs.versions.spring.boot.get() apply false
     id("io.spring.dependency-management") version libs.versions.spring.dependency.management.get()
     kotlin("jvm") version libs.versions.kotlin.get() apply false
+}
+
+val frontendRootDir = layout.projectDirectory.dir("simplepoint-react").asFile
+val frontendPnpmCommand = if (System.getProperty("os.name").lowercase().contains("windows")) {
+    "pnpm.cmd"
+} else {
+    "pnpm"
+}
+
+val installFrontendDependencies by tasks.registering(Exec::class) {
+    group = "build"
+    description = "Installs frontend workspace dependencies for Gradle-driven frontend builds."
+    workingDir = frontendRootDir
+    commandLine(frontendPnpmCommand, "install", "--frozen-lockfile")
+
+    inputs.files(
+        frontendRootDir.resolve("package.json"),
+        frontendRootDir.resolve("pnpm-lock.yaml"),
+        frontendRootDir.resolve("pnpm-workspace.yaml")
+    )
+    outputs.dir(frontendRootDir.resolve("node_modules"))
 }
 
 allprojects {

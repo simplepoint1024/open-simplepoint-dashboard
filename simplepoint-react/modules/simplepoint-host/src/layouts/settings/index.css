@@ -1,0 +1,10 @@
+/* Settings 页面样式 */
+.settings-page { width: 100%; }
+.settings-card { height: 100%; }
+.settings-form { max-width: 560px; }
+.seg-control { min-width: 160px; }
+.lang-select { min-width: 220px; }
+.preview-list { max-width: 520px; }
+.form-divider { margin: 12px 0; }
+.about-desc { margin-top: 4px; }
+

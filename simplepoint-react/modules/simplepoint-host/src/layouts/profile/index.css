@@ -1,0 +1,26 @@
+/* Profile 页面样式（尽量简洁，兼容亮/暗主题） */
+.profile-page { width: 100%; }
+
+.profile-card { height: 100%; }
+
+.avatar-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.profile-name { margin: 6px 0 0; }
+
+.profile-sub {
+  margin: 0 0 8px;
+  color: rgba(0,0,0,0.45);
+}
+
+/* 暗色模式下次文本色阶（如果页面被包在深色容器内也能看清） */
+.theme-dark .profile-sub { color: rgba(255,255,255,0.65); }
+
+.profile-form { max-width: 520px; }
+

@@ -1,9 +1,60 @@
+import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.language.jvm.tasks.ProcessResources
+
 plugins {
     application
 }
 
 application {
     mainClass.set("org.simplepoint.common.server.Common")
+}
+
+val frontendRoot = rootProject.file("simplepoint-react")
+val frontendCommonDir = frontendRoot.resolve("modules/simplepoint-common")
+val frontendCommonDistDir = frontendCommonDir.resolve("dist")
+val pnpmCommand = if (System.getProperty("os.name").lowercase().contains("windows")) {
+    "pnpm.cmd"
+} else {
+    "pnpm"
+}
+
+val buildCommonFrontend by tasks.registering(Exec::class) {
+    group = "build"
+    description = "Builds the SimplePoint common frontend."
+    dependsOn(rootProject.tasks.named("installFrontendDependencies"))
+    workingDir = frontendRoot
+    commandLine(pnpmCommand, "run", "build:common")
+
+    inputs.files(
+        frontendRoot.resolve("package.json"),
+        frontendRoot.resolve("pnpm-lock.yaml"),
+        frontendRoot.resolve("pnpm-workspace.yaml"),
+        frontendCommonDir.resolve("package.json"),
+        frontendCommonDir.resolve("module.exposes.ts"),
+        frontendCommonDir.resolve("rslib.config.ts"),
+        frontendCommonDir.resolve("tsconfig.json")
+    )
+    inputs.files(fileTree(frontendRoot.resolve("libs")) {
+        exclude("**/node_modules/**", "**/dist/**")
+    })
+    inputs.files(fileTree(frontendCommonDir.resolve("src")) {
+        exclude("**/node_modules/**", "**/dist/**")
+    })
+    outputs.dir(frontendCommonDistDir)
+}
+
+configure<SourceSetContainer> {
+    named("main") {
+        resources.exclude("static/**")
+    }
+}
+
+tasks.named<ProcessResources>("processResources") {
+    dependsOn(buildCommonFrontend)
+    from(frontendCommonDistDir) {
+        into("static")
+    }
 }
 
 dependencies {

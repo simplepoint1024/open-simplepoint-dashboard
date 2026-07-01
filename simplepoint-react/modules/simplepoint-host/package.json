@@ -1,0 +1,16 @@
+{
+  "name": "@simplepoint/host",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rsbuild build",
+    "dev": "rsbuild dev",
+    "preview": "rsbuild preview"
+  },
+  "dependencies": {
+    "@module-federation/runtime": "^0.21.3",
+    "@simplepoint/components": "workspace:*",
+    "@simplepoint/shared": "workspace:*"
+  }
+}

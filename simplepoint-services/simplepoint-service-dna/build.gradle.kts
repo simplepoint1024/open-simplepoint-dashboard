@@ -1,9 +1,60 @@
+import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.language.jvm.tasks.ProcessResources
+
 plugins {
     application
 }
 
 application {
     mainClass.set("org.simplepoint.dna.server.DnaApplication")
+}
+
+val frontendRoot = rootProject.file("simplepoint-react")
+val frontendDnaDir = frontendRoot.resolve("modules/simplepoint-dna")
+val frontendDnaDistDir = frontendDnaDir.resolve("dist")
+val pnpmCommand = if (System.getProperty("os.name").lowercase().contains("windows")) {
+    "pnpm.cmd"
+} else {
+    "pnpm"
+}
+
+val buildDnaFrontend by tasks.registering(Exec::class) {
+    group = "build"
+    description = "Builds the SimplePoint DNA frontend."
+    dependsOn(rootProject.tasks.named("installFrontendDependencies"))
+    workingDir = frontendRoot
+    commandLine(pnpmCommand, "run", "build:dna")
+
+    inputs.files(
+        frontendRoot.resolve("package.json"),
+        frontendRoot.resolve("pnpm-lock.yaml"),
+        frontendRoot.resolve("pnpm-workspace.yaml"),
+        frontendDnaDir.resolve("package.json"),
+        frontendDnaDir.resolve("module.exposes.ts"),
+        frontendDnaDir.resolve("rslib.config.ts"),
+        frontendDnaDir.resolve("tsconfig.json")
+    )
+    inputs.files(fileTree(frontendRoot.resolve("libs")) {
+        exclude("**/node_modules/**", "**/dist/**")
+    })
+    inputs.files(fileTree(frontendDnaDir.resolve("src")) {
+        exclude("**/node_modules/**", "**/dist/**")
+    })
+    outputs.dir(frontendDnaDistDir)
+}
+
+configure<SourceSetContainer> {
+    named("main") {
+        resources.exclude("static/**")
+    }
+}
+
+tasks.named<ProcessResources>("processResources") {
+    dependsOn(buildDnaFrontend)
+    from(frontendDnaDistDir) {
+        into("static")
+    }
 }
 
 dependencies {

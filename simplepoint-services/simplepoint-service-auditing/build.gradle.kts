@@ -1,9 +1,60 @@
+import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.language.jvm.tasks.ProcessResources
+
 plugins {
     application
 }
 
 application {
     mainClass.set("org.simplepoint.auditing.server.Auditing")
+}
+
+val frontendRoot = rootProject.file("simplepoint-react")
+val frontendAuditDir = frontendRoot.resolve("modules/simplepoint-audit")
+val frontendAuditDistDir = frontendAuditDir.resolve("dist")
+val pnpmCommand = if (System.getProperty("os.name").lowercase().contains("windows")) {
+    "pnpm.cmd"
+} else {
+    "pnpm"
+}
+
+val buildAuditFrontend by tasks.registering(Exec::class) {
+    group = "build"
+    description = "Builds the SimplePoint auditing frontend."
+    dependsOn(rootProject.tasks.named("installFrontendDependencies"))
+    workingDir = frontendRoot
+    commandLine(pnpmCommand, "run", "build:audit")
+
+    inputs.files(
+        frontendRoot.resolve("package.json"),
+        frontendRoot.resolve("pnpm-lock.yaml"),
+        frontendRoot.resolve("pnpm-workspace.yaml"),
+        frontendAuditDir.resolve("package.json"),
+        frontendAuditDir.resolve("module.exposes.ts"),
+        frontendAuditDir.resolve("rslib.config.ts"),
+        frontendAuditDir.resolve("tsconfig.json")
+    )
+    inputs.files(fileTree(frontendRoot.resolve("libs")) {
+        exclude("**/node_modules/**", "**/dist/**")
+    })
+    inputs.files(fileTree(frontendAuditDir.resolve("src")) {
+        exclude("**/node_modules/**", "**/dist/**")
+    })
+    outputs.dir(frontendAuditDistDir)
+}
+
+configure<SourceSetContainer> {
+    named("main") {
+        resources.exclude("static/**")
+    }
+}
+
+tasks.named<ProcessResources>("processResources") {
+    dependsOn(buildAuditFrontend)
+    from(frontendAuditDistDir) {
+        into("static")
+    }
 }
 
 dependencies {

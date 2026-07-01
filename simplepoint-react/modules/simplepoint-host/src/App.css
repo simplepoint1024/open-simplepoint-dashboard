@@ -1,0 +1,552 @@
+body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.content {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+
+}
+
+.nb-top-menu {
+    min-width: 0;
+    height: 100%;
+    line-height: 52px;
+    display: flex;
+    align-items: center;
+    background: transparent !important;
+    border-bottom: none !important;
+    flex-shrink: 0;
+}
+
+/* 左侧 Logo 菜单 */
+.nb-top-menu-left { flex-shrink: 0; }
+
+/* 右侧工具菜单：彻底去掉激活蓝线（::after 伪元素） */
+.nb-top-menu-right { flex-shrink: 0; }
+.nb-top-menu-right .ant-menu-item::after,
+.nb-top-menu-right .ant-menu-submenu::after,
+.nb-top-menu-right .ant-menu-item-selected::after,
+.nb-top-menu-right .ant-menu-item-active::after { display: none !important; }
+
+/* Header Logo 独立组件 */
+.nb-header-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    flex-shrink: 0;
+    cursor: pointer;
+    height: 100%;
+    outline: none;
+}
+
+/* 中间搜索区域：flex: 1，居中限宽 */
+.nb-header-search {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+}
+
+/* Header 搜索条 Menu item 容器：去掉 AntD Menu 的默认行为（保留备用） */
+.nb-search-menu-item {
+    flex: 1 !important;
+    max-width: 480px !important;
+    cursor: default !important;
+    pointer-events: none;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 16px !important;
+}
+
+.nb-search-menu-item::after { display: none !important; }
+.nb-search-menu-item:hover { background: transparent !important; }
+.nb-search-menu-item.ant-menu-item-selected,
+.nb-search-menu-item.ant-menu-item-active { background: transparent !important; }
+
+/* 搜索条本体：仿输入框 */
+.nb-search-bar {
+    pointer-events: all;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    max-width: 440px;
+    height: 32px;
+    padding: 0 10px 0 12px;
+    border-radius: 6px;
+    border: 1px solid var(--nb-border);
+    background: transparent;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    user-select: none;
+    outline: none;
+}
+
+.nb-search-bar:hover,
+.nb-search-bar:focus {
+    border-color: var(--ant-color-primary, #1677ff);
+    box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.12);
+    background: var(--ant-color-bg-elevated, rgba(255,255,255,0.06));
+}
+
+.nb-search-bar-icon {
+    font-size: 13px;
+    opacity: 0.4;
+    flex-shrink: 0;
+}
+
+.nb-search-bar-placeholder {
+    flex: 1;
+    font-size: 13px;
+    opacity: 0.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nb-search-bar-kbd {
+    font-size: 11px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--nb-border);
+    opacity: 0.55;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: 16px;
+}
+
+/* 侧边栏容器：确保背景色与菜单一致，消除折叠时底部空白 */
+.nb-root .ant-layout-sider {
+    background: var(--nb-bg);
+}
+
+/* 让 Sider 内部容器也 flex-column，使折叠按钮能沉底 */
+.nb-root .ant-layout-sider-children {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* 侧边栏菜单 */
+.nb-sider-menu {
+    flex: 1;
+    min-height: 0;
+    border-right: 0;
+    background-color: var(--nb-bg);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* 侧边栏右侧拖动调整宽度的拖柄 */
+.nb-sider-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 10;
+    background: transparent;
+    transition: background 0.15s;
+}
+.nb-sider-resize-handle:hover,
+.nb-sider-resize-handle:active {
+    background: rgba(22, 119, 255, 0.35);
+}
+
+/* 主题切换全局颜色过渡动画 */
+html.theme-transition, html.theme-transition body, html.theme-transition * {
+    transition-property: background-color, color, border-color, box-shadow, fill, stroke;
+    transition-duration: 240ms;
+    transition-timing-function: ease;
+}
+
+.nb-footer {
+    text-align: center;
+    height: 24px;
+    line-height: 24px;
+    font-size: 11px;
+    padding: 0 12px;
+    flex-shrink: 0;
+    opacity: 0.4;
+    letter-spacing: 0.2px;
+}
+
+/* Tabs 标签文本与图标布局 */
+.nb-tab-label { display: inline-flex; align-items: center; gap: 6px; }
+.nb-tab-label-icon { display: inline-flex; align-items: center; }
+
+@media (prefers-reduced-motion: reduce) {
+    html.theme-transition, html.theme-transition * {
+        transition: none !important;
+    }
+}
+
+/* 顶部菜单下划线去除（保留原有样式） */
+.top-nav-menu.ant-menu-horizontal > .ant-menu-item::after,
+.top-nav-menu.ant-menu-horizontal > .ant-menu-submenu::after,
+.top-nav-menu.ant-menu-horizontal > .ant-menu-item-selected::after,
+.top-nav-menu.ant-menu-horizontal > .ant-menu-submenu-selected::after {
+    border-bottom: none !important;
+}
+
+/* 主题变量（亮/暗） */
+.nb-root.theme-light {
+    --nb-bg: #ffffff;
+    --nb-border: rgba(5, 5, 5, 0.07);
+    --nb-radius: 4px;
+    --nb-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.03);
+    --nb-shadow-tertiary: 0 1px 2px rgba(0,0,0,0.04);
+    --nb-greeting-color: rgba(0, 0, 0, 0.35);
+    --nb-name-color: rgba(0, 0, 0, 0.85);
+}
+
+.nb-root.theme-dark {
+    --nb-bg: #141414;
+    --nb-border: rgba(255, 255, 255, 0.16);
+    --nb-radius: 4px;
+    --nb-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3);
+    --nb-shadow-tertiary: 0 1px 2px rgba(0,0,0,0.5);
+    --nb-greeting-color: rgba(255, 255, 255, 0.35);
+    --nb-name-color: rgba(255, 255, 255, 0.85);
+}
+
+/* 根容器与头部 */
+.nb-root { height: 100vh; display: flex; flex-direction: column; }
+
+.nb-header {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    background: var(--nb-bg);
+    height: 52px;
+    flex-shrink: 0;
+}
+
+.nb-sider-toggle {
+    width: 100%;
+    border-radius: 0 !important;
+    border: none !important;
+    border-top: 1px solid var(--nb-border) !important;
+    height: 36px;
+    flex-shrink: 0;
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 16px !important;
+    margin: 0 !important;
+    background: var(--nb-bg) !important;
+    color: var(--nb-text-secondary, rgba(0,0,0,0.45)) !important;
+    font-size: 12px;
+    gap: 6px;
+    box-shadow: none !important;
+    transition: background 0.15s, color 0.15s !important;
+}
+
+.nb-sider-toggle:hover {
+    background: var(--nb-hover, rgba(0,0,0,0.04)) !important;
+    color: var(--nb-text, rgba(0,0,0,0.88)) !important;
+}
+
+/* 内层布局与内容容器 */
+.nb-inner-layout { padding: 0; overflow: hidden; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+.nb-content-wrapper {
+    padding: 0;
+    margin: 0;
+    min-height: 300px;
+    background: var(--nb-bg);
+    border-radius: var(--nb-radius);
+    border: 1px solid var(--nb-border);
+    box-shadow: var(--nb-shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 顶部右侧租户选择器 */
+.nb-header-tenant {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    height: 52px;
+    padding: 0 4px;
+    border-left: 1px solid var(--nb-border);
+    border-right: 1px solid var(--nb-border);
+    margin: 0 4px;
+}
+
+.nb-header-tenant > * {
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nb-tabs-bar {
+    padding: 0 8px;
+    background: var(--nb-bg-tabs, rgba(0,0,0,0.02));
+    flex-shrink: 0;
+}
+
+/* ——— Tab 页签：flat indicator 风格 ——— */
+.nb-tabs-bar .ant-tabs-nav {
+    margin-bottom: 0;
+}
+
+/* 去掉 nav wrap 底部线 */
+.nb-tabs-bar .ant-tabs-nav::before {
+    border-color: var(--nb-border) !important;
+}
+
+/* 每个 tab 卡片 */
+.nb-tabs-bar .ant-tabs-tab {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-bottom: none !important;
+    border-radius: 4px 4px 0 0 !important;
+    padding: 0 10px 0 14px !important;
+    height: 34px !important;
+    margin: 4px 2px 0 0 !important;
+    transition: background 0.15s, border-color 0.15s !important;
+    font-size: 12px !important;
+}
+
+.nb-tabs-bar .ant-tabs-tab:hover {
+    background: var(--nb-bg, #fff) !important;
+    border-color: var(--nb-border) !important;
+}
+
+/* 激活 tab：白底 + 顶部品牌色指示线 */
+.nb-tabs-bar .ant-tabs-tab-active {
+    background: var(--nb-bg, #fff) !important;
+    border-color: var(--nb-border) !important;
+    box-shadow: inset 0 2px 0 var(--nb-primary, #1677ff);
+}
+
+.nb-tabs-bar .ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: var(--nb-primary, #1677ff) !important;
+    font-weight: 500 !important;
+}
+
+/* 关闭按钮：平时半透明，hover 时显现 */
+.nb-tabs-bar .ant-tabs-tab-remove {
+    opacity: 0.45;
+    margin-left: 4px;
+    font-size: 10px !important;
+    width: 16px !important;
+    height: 16px !important;
+    line-height: 16px !important;
+    transition: opacity 0.15s, color 0.15s !important;
+}
+.nb-tabs-bar .ant-tabs-tab:hover .ant-tabs-tab-remove,
+.nb-tabs-bar .ant-tabs-tab-active .ant-tabs-tab-remove {
+    opacity: 0.75;
+}
+.nb-tabs-bar .ant-tabs-tab-remove:hover {
+    opacity: 1 !important;
+    color: var(--nb-danger, #ff4d4f) !important;
+}
+
+/* 新增 tab 按钮 */
+.nb-tabs-bar .ant-tabs-nav-add {
+    background: transparent !important;
+    border: none !important;
+    margin-top: 4px !important;
+}
+
+.nb-inner-content {
+    flex: 1;
+    padding: 12px;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* 面包屑：Header 内 Logo 后，显示当前菜单路径 */
+.nb-header-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0 12px 0 12px;
+    border-left: 1px solid var(--nb-border);
+    margin-left: 2px;
+    max-width: 320px;
+    overflow: hidden;
+}
+
+.nb-header-breadcrumb .ant-breadcrumb {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nb-header-breadcrumb .ant-breadcrumb-link {
+    color: var(--nb-text-secondary, rgba(0,0,0,0.45));
+}
+
+.nb-header-breadcrumb .ant-breadcrumb-separator {
+    color: var(--nb-text-secondary, rgba(0,0,0,0.3));
+}
+
+.nb-header-breadcrumb .ant-breadcrumb ol li:last-child .ant-breadcrumb-link {
+    color: var(--nb-text, rgba(0,0,0,0.88));
+    font-weight: 500;
+}
+
+/* 让内部 MF 页面能占满可用高度而非撑开滚动条 */
+.nb-inner-content > * {
+    height: 100%;
+    min-height: 0;
+    animation: nb-fadein 0.15s ease;
+}
+
+/* Tab切换淡入动画 */
+@keyframes nb-fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+/* 顶部右侧工具组容器（与头像水平对齐） */
+.nb-tools-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    height: 100%;
+}
+
+/* 工具组容器占满菜单项高度，保证与头像垂直居中 */
+.nb-top-menu .ant-menu-item .nb-tools-item { height: 100%; }
+
+/* 使菜单项（包含工具组与头像）在 Header 内垂直居中 */
+.nb-top-menu .ant-menu-item,
+.nb-top-menu .ant-menu-submenu { display: flex; align-items: center; height: 100%; }
+
+/* 美化：当前登录用户名区域 */
+.nb-header-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    height: 100%;
+}
+
+.nb-header-user .ant-avatar {
+    box-shadow: var(--nb-shadow-tertiary);
+    border: 1px solid var(--nb-border);
+}
+
+.nb-greeting {
+    font-size: 12px;
+    color: var(--nb-greeting-color);
+    margin-right: 2px;
+}
+
+.nb-name {
+    color: var(--nb-name-color);
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    max-width: 160px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nb-name:hover { text-decoration: underline; }
+
+/* 用户名文本容器：与头像垂直居中，并清除继承的行高 */
+.nb-header-user-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    line-height: 1;
+}
+
+/* 文本行高归一，避免受菜单 64px 行高影响 */
+.nb-greeting,
+.nb-name { line-height: 1; }
+
+/* ─── Table 视觉美化 ──────────────────────────────────────────────────────────── */
+
+/* 表头：半粗、正常字号、不换行 */
+.ant-table-wrapper .ant-table-thead > tr > th,
+.ant-table-wrapper .ant-table-thead > tr > td {
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.015em;
+    white-space: nowrap;
+    line-height: 1.5;
+}
+
+/* 单元格垂直居中 */
+.ant-table-wrapper .ant-table-cell { vertical-align: middle; }
+
+/* 隔行换色（亮色主题） */
+.theme-light .ant-table-tbody > tr:nth-child(even) > .ant-table-cell {
+    background-color: #f6f8fd;
+}
+
+/* 隔行换色（暗色主题） */
+.theme-dark .ant-table-tbody > tr:nth-child(even) > .ant-table-cell {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* 行 hover（亮色） */
+.theme-light .ant-table-wrapper .ant-table-tbody > tr.ant-table-row:hover > td {
+    background-color: #eef3ff !important;
+}
+
+/* 行 hover（暗色） */
+.theme-dark .ant-table-wrapper .ant-table-tbody > tr.ant-table-row:hover > td {
+    background-color: rgba(22, 119, 255, 0.1) !important;
+}
+
+/* 去掉表头圆角（token 已设，CSS 兜底） */
+.ant-table-wrapper .ant-table-container,
+.ant-table-wrapper .ant-table-content table,
+.ant-table-wrapper .ant-table-body table { border-radius: 0 !important; }
+.ant-table-wrapper .ant-table-thead > tr:first-child > th:first-child,
+.ant-table-wrapper .ant-table-thead > tr:first-child > td:first-child { border-start-start-radius: 0 !important; }
+.ant-table-wrapper .ant-table-thead > tr:first-child > th:last-child,
+.ant-table-wrapper .ant-table-thead > tr:first-child > td:last-child { border-start-end-radius: 0 !important; }
+
+/* 分页栏间距收紧 */
+.ant-table-wrapper .ant-table-pagination.ant-pagination { margin: 8px 0 2px !important; }
+
+/* 表格内滚动条细化 */
+.ant-table-body::-webkit-scrollbar,
+.ant-table-content::-webkit-scrollbar { width: 5px; height: 5px; }
+.ant-table-body::-webkit-scrollbar-track,
+.ant-table-content::-webkit-scrollbar-track { background: transparent; }
+.ant-table-body::-webkit-scrollbar-thumb,
+.ant-table-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.14); border-radius: 3px; }
+.theme-dark .ant-table-body::-webkit-scrollbar-thumb,
+.theme-dark .ant-table-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); }
+
+/* 空状态留白 */
+.ant-table-wrapper .ant-table-placeholder .ant-empty { padding: 32px 0; }
+
+/* 移动端基础适配 */
+@media (max-width: 768px) {
+  .nb-header-search { display: none; }
+  .nb-header-breadcrumb { display: none; }
+  .nb-header-tenant span { display: none; }
+  .nb-root .ant-layout-sider { width: 0 !important; min-width: 0 !important; }
+}

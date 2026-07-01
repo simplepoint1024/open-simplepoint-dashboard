@@ -1,0 +1,23 @@
+/* SimpleTable 柔和淡入动画 */
+.sp-fade-in {
+  animation: spFadeIn 240ms ease-out;
+}
+
+@keyframes spFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 无障碍：尊重系统的“减少动画”设置 */
+@media (prefers-reduced-motion: reduce) {
+  .sp-fade-in {
+    animation: none !important;
+  }
+}
+

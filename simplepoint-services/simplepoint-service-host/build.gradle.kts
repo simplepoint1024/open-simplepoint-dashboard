@@ -1,9 +1,62 @@
+import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.language.jvm.tasks.ProcessResources
+
 plugins {
     application
 }
 
 application {
     mainClass.set("org.simplepoint.gateway.server.Host")
+}
+
+val frontendRoot = rootProject.file("simplepoint-react")
+val frontendHostDir = frontendRoot.resolve("modules/simplepoint-host")
+val frontendHostDistDir = frontendHostDir.resolve("dist")
+val pnpmCommand = if (System.getProperty("os.name").lowercase().contains("windows")) {
+    "pnpm.cmd"
+} else {
+    "pnpm"
+}
+
+val buildHostFrontend by tasks.registering(Exec::class) {
+    group = "build"
+    description = "Builds the SimplePoint host frontend."
+    dependsOn(rootProject.tasks.named("installFrontendDependencies"))
+    workingDir = frontendRoot
+    commandLine(pnpmCommand, "run", "build:host")
+
+    inputs.files(
+        frontendRoot.resolve("package.json"),
+        frontendRoot.resolve("pnpm-lock.yaml"),
+        frontendRoot.resolve("pnpm-workspace.yaml"),
+        frontendHostDir.resolve("package.json"),
+        frontendHostDir.resolve("rsbuild.config.ts"),
+        frontendHostDir.resolve("tsconfig.json")
+    )
+    inputs.files(fileTree(frontendRoot.resolve("libs")) {
+        exclude("**/node_modules/**", "**/dist/**")
+    })
+    inputs.files(fileTree(frontendHostDir.resolve("src")) {
+        exclude("**/node_modules/**", "**/dist/**")
+    })
+    inputs.files(fileTree(frontendHostDir.resolve("public")) {
+        exclude("**/node_modules/**", "**/dist/**")
+    })
+    outputs.dir(frontendHostDistDir)
+}
+
+configure<SourceSetContainer> {
+    named("main") {
+        resources.exclude("static/**")
+    }
+}
+
+tasks.named<ProcessResources>("processResources") {
+    dependsOn(buildHostFrontend)
+    from(frontendHostDistDir) {
+        into("static")
+    }
 }
 
 dependencies {

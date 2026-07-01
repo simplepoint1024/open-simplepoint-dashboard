@@ -1,0 +1,46 @@
+/* RJSF form — uniform field sizing and spacing */
+.rjsf .form-group {
+    margin-bottom: 16px;
+}
+.rjsf .form-group > label,
+.rjsf .control-label {
+    display: inline-block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(0,0,0,0.88);
+}
+.rjsf .form-control,
+.rjsf input[type="text"],
+.rjsf input[type="number"],
+.rjsf input[type="email"],
+.rjsf input[type="password"],
+.rjsf textarea,
+.rjsf select {
+    width: 100%;
+    box-sizing: border-box;
+}
+.rjsf .field-description,
+.rjsf .help-block {
+    font-size: 12px;
+    color: rgba(0,0,0,0.45);
+    margin-top: 2px;
+}
+.rjsf .field-array .array-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.rjsf .field-array .array-item-toolbox {
+    flex-shrink: 0;
+}
+.rjsf .errors-block .text-danger,
+.rjsf .field-error {
+    font-size: 12px;
+    color: #ff4d4f;
+}
+/* Object fields: use grid layout for compact display */
+.rjsf .fieldset > .form-group {
+    margin-bottom: 12px;
+}
