@@ -9,17 +9,20 @@ export function useLocaleLoader(locale: string) {
 
     useEffect(() => {
         (async () => {
+            const dayjsLocale = dayjsLocaleMapping[locale] ?? 'en';
+            const antdLocale = antdLocaleMapping[locale] ?? 'zh_CN';
+
             // 加载 dayjs locale
             try {
-                await import(`dayjs/locale/${dayjsLocaleMapping[locale]}`);
-                dayjs.locale(locale);
+                await import(`dayjs/locale/${dayjsLocale}`);
+                dayjs.locale(dayjsLocale);
             } catch {
                 dayjs.locale('en');
             }
 
             // 加载 antd locale
             try {
-                const mod = await import(`antd/locale/${antdLocaleMapping[locale]}`);
+                const mod = await import(`antd/locale/${antdLocale}`);
                 setCurrentLocale(mod.default);
             } catch {
                 setCurrentLocale(zhCN);

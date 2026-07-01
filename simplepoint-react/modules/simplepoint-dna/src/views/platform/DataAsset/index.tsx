@@ -17,16 +17,16 @@ type DataSourceOption = {
   enabled?: boolean;
 };
 
-const ASSET_TYPES = [
-  {const: 'TABLE', title: '表 (TABLE)'},
-  {const: 'VIEW', title: '视图 (VIEW)'},
-  {const: 'ALL', title: '全部 (ALL)'},
-];
-
 const App = () => {
   const {t, ensure, locale} = useI18n();
   const [dataSources, setDataSources] = useState<DataSourceOption[]>([]);
   const [loaded, setLoaded] = useState(false);
+
+  const assetTypes = useMemo(() => [
+    {const: 'TABLE', title: t('dna.dataAssets.assetType.TABLE', '表 (TABLE)')},
+    {const: 'VIEW', title: t('dna.dataAssets.assetType.VIEW', '视图 (VIEW)')},
+    {const: 'ALL', title: t('dna.dataAssets.assetType.ALL', '全部 (ALL)')},
+  ], [t]);
 
   useEffect(() => {
     void ensure([...baseConfig.i18nNamespaces, ...dataSourceConfig.i18nNamespaces]);
@@ -56,12 +56,12 @@ const App = () => {
       }));
     }
     if (properties.assetType) {
-      properties.assetType.oneOf = ASSET_TYPES;
+      properties.assetType.oneOf = assetTypes;
     }
     delete properties.catalogCode;
     delete properties.catalogName;
     return nextSchema;
-  }, [dataSources, t]);
+  }, [assetTypes, dataSources, t]);
 
   const columnOverrides = useMemo(() => ({
     catalogId: {

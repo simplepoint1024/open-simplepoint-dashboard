@@ -7,6 +7,7 @@ import {RJSFValidationError, SubmitButtonProps} from "@rjsf/utils";
 import {memo, useMemo} from "react";
 import IconPicker from "./widgets/IconPicker";
 import OrgTreeMultiSelect from "./widgets/OrgTreeMultiSelect";
+import {useI18n} from "@simplepoint/shared/hooks/useI18n";
 
 type SFormProps = Omit<FormProps, "validator">& {
   i18nNamespaces?: string[];
@@ -15,10 +16,11 @@ type SFormProps = Omit<FormProps, "validator">& {
 
 // 自定义提交按钮
 const CustomSubmitButton = (props: SubmitButtonProps) => {
+  const {t} = useI18n();
   const {uiSchema} = props;
   const {"ui:submitButtonOptions": {submitText} = {}} = (uiSchema || {}) as any;
   const submitLoading = Boolean((props as any)?.registry?.formContext?.submitLoading);
-  const text = submitText || '提交';
+  const text = submitText || t('form.submit', '提交');
   return (
     <Button type="primary" htmlType="submit" style={{backgroundColor: '#00b96b'}} loading={submitLoading} disabled={submitLoading}>
       {text}
@@ -38,6 +40,7 @@ const defaultWidgets = {IconPicker, OrgTreeMultiSelect} as const;
 const TEXTAREA_AUTOSIZE = { minRows: 4, maxRows: 16 } as const;
 
 const SForm = (props: SFormProps) => {
+  const {t} = useI18n();
   const {schema, uiSchema, validate, submitLoading, ...rest} = props as any;
 
   // 从 schema.x-ui.widget 自动生成基础 uiSchema（含通用映射与 textarea 特例）
@@ -105,7 +108,7 @@ const SForm = (props: SFormProps) => {
         try {
           JSON.parse(v);
         } catch (_) {
-          errors[k]?.addError?.('JSON格式不正确');
+          errors[k]?.addError?.(t('form.jsonInvalid', 'JSON格式不正确'));
         }
       }
     });

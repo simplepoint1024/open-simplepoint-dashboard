@@ -1,0 +1,192 @@
+.role-permission-drawer .ant-drawer-header {
+    padding: 12px 16px;
+}
+
+.role-permission-drawer .ant-drawer-body {
+    background: var(--ant-color-bg-layout, #f5f7fb);
+}
+
+.role-permission-config {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.role-permission-scope {
+    flex-shrink: 0;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--ant-color-border-secondary, rgba(5, 5, 5, 0.08));
+    background: var(--ant-color-bg-container, #fff);
+}
+
+.role-permission-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.role-permission-section-subtitle {
+    margin-top: 2px;
+    color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.45));
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.role-permission-scope-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.role-permission-field {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
+    font-size: 12px;
+}
+
+.role-permission-select {
+    width: 100%;
+}
+
+.role-permission-alert {
+    flex-shrink: 0;
+    margin: 12px 16px 0;
+}
+
+.role-permission-transfer-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px 16px;
+}
+
+.role-permission-transfer-wrap {
+    flex: 1;
+    min-height: 0;
+}
+
+.role-permission-transfer {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+}
+
+.role-permission-transfer .ant-transfer-list {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    border-color: var(--ant-color-border-secondary, rgba(5, 5, 5, 0.08));
+    border-radius: 6px;
+    background: var(--ant-color-bg-container, #fff);
+    overflow: hidden;
+}
+
+.role-permission-transfer .ant-transfer-list-header {
+    height: 38px;
+    padding: 0 12px;
+    background: var(--ant-color-fill-quaternary, #f7f9fc);
+    border-bottom-color: var(--ant-color-border-secondary, rgba(5, 5, 5, 0.08));
+    font-weight: 600;
+}
+
+.role-permission-transfer .ant-transfer-list-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.role-permission-transfer .ant-transfer-list-body-search-wrapper {
+    padding: 8px 10px;
+}
+
+.role-permission-transfer .ant-transfer-list-content {
+    flex: 1;
+    min-height: 0;
+}
+
+.role-permission-transfer .ant-transfer-operation {
+    flex: 0 0 auto;
+    align-self: center;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.role-permission-transfer .ant-transfer-operation .ant-btn {
+    min-width: 72px;
+    border-radius: 4px;
+}
+
+.role-permission-transfer .ant-table-wrapper,
+.role-permission-transfer .ant-spin-nested-loading,
+.role-permission-transfer .ant-spin-container {
+    height: 100%;
+    min-height: 0;
+}
+
+.role-permission-transfer .ant-spin-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.role-permission-transfer .ant-table {
+    flex: 1;
+    min-height: 0;
+}
+
+.role-permission-transfer .ant-table-thead > tr > th {
+    background: var(--ant-color-fill-quaternary, #f7f9fc);
+    border-color: var(--ant-color-border-secondary, rgba(5, 5, 5, 0.08));
+}
+
+.role-permission-transfer .ant-table-tbody > tr > td {
+    border-color: var(--ant-color-border-secondary, rgba(5, 5, 5, 0.07));
+}
+
+.role-permission-code {
+    max-width: 100%;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+}
+
+.theme-dark .role-permission-drawer .ant-drawer-body {
+    background: var(--ant-color-bg-layout, #000);
+}
+
+.theme-dark .role-permission-scope,
+.theme-dark .role-permission-transfer .ant-transfer-list {
+    background: var(--ant-color-bg-container, #141414);
+}
+
+.theme-dark .role-permission-transfer .ant-transfer-list-header,
+.theme-dark .role-permission-transfer .ant-table-thead > tr > th {
+    background: rgba(255, 255, 255, 0.045);
+}
+
+@media (max-width: 900px) {
+    .role-permission-scope-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .role-permission-transfer {
+        flex-direction: column;
+    }
+
+    .role-permission-transfer .ant-transfer-operation {
+        flex-direction: row;
+        justify-content: center;
+    }
+}

@@ -55,5 +55,13 @@
   "dna.dataSources.page.field.result": "结果",
   "dna.dataSources.page.state.connectSuccess": "连接成功",
   "dna.dataSources.page.alert.noDrivers.title": "当前还没有可用驱动",
-  "dna.dataSources.page.alert.noDrivers.description": "请先到驱动管理页面新增并下载 JDBC 驱动，再回来配置数据源。"
+  "dna.dataSources.page.alert.noDrivers.description": "请先到驱动管理页面新增并下载 JDBC 驱动，再回来配置数据源。",
+  "dna.dataSources.health.error.load": "健康检查失败",
+  "dna.dataSources.health.stat.total": "数据源总数",
+  "dna.dataSources.health.stat.online": "在线",
+  "dna.dataSources.health.stat.offline": "离线",
+  "dna.dataSources.health.state.online": "在线",
+  "dna.dataSources.health.state.offline": "离线",
+  "dna.dataSources.health.responseTime": "响应时间",
+  "dna.dataSources.health.empty": "暂无数据源"
 }

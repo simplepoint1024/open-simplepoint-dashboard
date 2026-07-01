@@ -44,6 +44,10 @@ public interface JpaI18nMessageRepository extends BaseRepository<Message, String
   Collection<Message> global(@Param("locale") String locale);
 
   @Override
+  @Query("SELECT DISTINCT m.locale FROM Message m")
+  Set<String> findAvailableLocales();
+
+  @Override
   @Query("SELECT CONCAT(m.locale, ':', m.namespace, ':', m.code) FROM Message m WHERE m.namespace IN :namespaces")
   Set<String> findExistingKeys(@Param("namespaces") Collection<String> namespaces);
 }

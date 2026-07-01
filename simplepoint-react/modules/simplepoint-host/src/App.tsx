@@ -41,6 +41,8 @@ const RUNTIME_SCOPE_EVENT = 'sp-runtime-scope';
 const App: React.FC = () => {
     const {globalSize} = useGlobalSize();
     const {resolvedTheme} = useThemeMode();
+    const {t, locale, ready: i18nReady, loading: i18nLoading} = useI18n();
+    const currentLocale = useLocaleLoader(locale);
 
     const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
@@ -60,18 +62,15 @@ const App: React.FC = () => {
         return () => window.removeEventListener('sp-open-shortcuts', handler);
     }, []);
 
-    const shortcuts = [
-        {key: 'Ctrl + K', desc: '打开菜单搜索'},
-        {key: '?', desc: '显示/隐藏快捷键'},
-        {key: 'Ctrl + B', desc: '折叠/展开侧边栏（预留）'},
-        {key: 'Ctrl + D', desc: '切换深色/浅色模式（预留）'},
-        {key: 'Ctrl + W', desc: '关闭当前标签页（预留）'},
-        {key: 'F11', desc: '全屏/退出全屏'},
-        {key: 'Alt + ←', desc: '返回上一页（浏览器）'},
-    ];
-
-    const {t, locale, ready: i18nReady, loading: i18nLoading} = useI18n();
-    const currentLocale = useLocaleLoader(locale);
+    const shortcuts = useMemo(() => [
+        {key: 'Ctrl + K', desc: t('shortcuts.openMenuSearch', '打开菜单搜索')},
+        {key: '?', desc: t('shortcuts.toggleHelp', '显示/隐藏快捷键')},
+        {key: 'Ctrl + B', desc: t('shortcuts.toggleSidebar', '折叠/展开侧边栏（预留）')},
+        {key: 'Ctrl + D', desc: t('shortcuts.toggleTheme', '切换深色/浅色模式（预留）')},
+        {key: 'Ctrl + W', desc: t('shortcuts.closeCurrentTab', '关闭当前标签页（预留）')},
+        {key: 'F11', desc: t('shortcuts.toggleFullscreen', '全屏/退出全屏')},
+        {key: 'Alt + ←', desc: t('shortcuts.browserBack', '返回上一页（浏览器）')},
+    ], [t]);
 
     // 1) 租户优先：先取已存租户；没有则拉取 currentTenants 选第一个
     const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
@@ -215,7 +214,7 @@ const App: React.FC = () => {
                         </NavigateBar>
                     </HashRouter>
                     <Modal
-                        title={<><QuestionCircleOutlined style={{marginRight: 6}}/>快捷键</>}
+                        title={<><QuestionCircleOutlined style={{marginRight: 6}}/>{t('shortcuts.title', '快捷键')}</>}
                         open={shortcutsOpen}
                         onCancel={() => setShortcutsOpen(false)}
                         footer={null}
@@ -227,8 +226,8 @@ const App: React.FC = () => {
                             size="small"
                             rowKey="key"
                             columns={[
-                                {title: '快捷键', dataIndex: 'key', width: 160, render: (v: string) => <kbd style={{background:'rgba(0,0,0,0.06)',border:'1px solid rgba(0,0,0,0.12)',borderRadius:4,padding:'2px 8px',fontFamily:'monospace',fontSize:12}}>{v}</kbd>},
-                                {title: '说明', dataIndex: 'desc'},
+                                {title: t('shortcuts.column.key', '快捷键'), dataIndex: 'key', width: 160, render: (v: string) => <kbd style={{background:'rgba(0,0,0,0.06)',border:'1px solid rgba(0,0,0,0.12)',borderRadius:4,padding:'2px 8px',fontFamily:'monospace',fontSize:12}}>{v}</kbd>},
+                                {title: t('shortcuts.column.description', '说明'), dataIndex: 'desc'},
                             ]}
                         />
                     </Modal>

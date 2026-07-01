@@ -22,7 +22,7 @@ const App = ({tenantId}: TenantPackageConfigProps) => {
   const {t, messages, ensure, locale} = useI18n();
 
   useEffect(() => {
-    void ensure(['packages']);
+    void ensure(['packages', 'table', 'common']);
   }, [ensure, locale]);
 
   const {data: page} = usePage<PackageRelevantVo>(

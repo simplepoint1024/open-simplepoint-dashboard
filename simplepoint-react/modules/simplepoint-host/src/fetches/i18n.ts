@@ -7,11 +7,37 @@ export type Language = {
 };
 
 export type Messages = Record<string, string>;
+type LanguageMapping = Record<string, string>;
 
 const FALLBACK_LANGUAGES: Language[] = [
-  { code: 'zh-CN', name: '中文（简体）' },
-  { code: 'en-US', name: 'English' },
+  { code: 'zh-CN', name: 'Chinese (Simplified)' },
+  { code: 'en-US', name: 'English (US)' },
 ];
+
+const normalizeLanguageCode = (code: string) => {
+  const [language, region] = code.trim().replace(/_/g, '-').split('-');
+  if (!language) return '';
+  return region ? `${language.toLowerCase()}-${region.toUpperCase()}` : language.toLowerCase();
+};
+
+const toLanguageList = (data: unknown): Language[] => {
+  if (Array.isArray(data)) {
+    return data
+      .map((item: any) => ({
+        code: normalizeLanguageCode(item?.code ?? item?.locale ?? ''),
+        name: String(item?.name ?? item?.nameNative ?? item?.nameEnglish ?? item?.code ?? item?.locale ?? ''),
+      }))
+      .filter(item => item.code && item.name);
+  }
+
+  if (data && typeof data === 'object') {
+    return Object.entries(data as LanguageMapping)
+      .map(([code, name]) => ({code: normalizeLanguageCode(code), name: String(name)}))
+      .filter(item => item.code && item.name);
+  }
+
+  return [];
+};
 
 // 获取可选语言列表
 export async function fetchLanguages(): Promise<Language[]> {
@@ -19,8 +45,9 @@ export async function fetchLanguages(): Promise<Language[]> {
   const url = `${baseUrl}${expansion.mapping}`;
 
   try {
-    const data = await get<Language[]>(url);
-    if (Array.isArray(data) && data.length > 0) return data;
+    const data = await get<unknown>(url);
+    const list = toLanguageList(data);
+    if (list.length > 0) return list;
   } catch (err) {
     console.warn('[fetchLanguages] Failed to fetch languages:', err);
   }

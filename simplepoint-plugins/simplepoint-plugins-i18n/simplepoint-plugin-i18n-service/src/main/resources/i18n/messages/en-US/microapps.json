@@ -1,0 +1,19 @@
+{
+  "micro.domain.description.description": "Remote module description",
+  "micro.domain.description.entry": "Remote module entry URL",
+  "micro.domain.description.serviceName": "Service name for the remote module",
+  "micro.module.title.description": "Description",
+  "micro.module.title.displayName": "Display Name",
+  "micro.module.title.entry": "Entry URL",
+  "micro.module.title.serviceName": "Service Name",
+  "route.domain.description.description": "Route domain description",
+  "route.domain.description.displayName": "Name shown in the UI",
+  "route.domain.description.message": "Route domain name",
+  "route.domain.description.moduleName": "Module name for this route domain",
+  "route.domain.description.region": "Route domain region",
+  "route.domain.title.description": "Description",
+  "route.domain.title.displayName": "Display Name",
+  "route.domain.title.message": "Domain Name",
+  "route.domain.title.moduleName": "Module Name",
+  "route.domain.title.region": "Region"
+}

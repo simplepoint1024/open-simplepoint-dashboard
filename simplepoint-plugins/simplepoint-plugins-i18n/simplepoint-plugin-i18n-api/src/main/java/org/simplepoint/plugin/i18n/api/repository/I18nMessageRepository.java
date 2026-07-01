@@ -39,6 +39,13 @@ public interface I18nMessageRepository extends BaseRepository<Message, String> {
   Collection<Message> global(String locale);
 
   /**
+   * Retrieves all locales that have registered message resources.
+   *
+   * @return locale codes with at least one message
+   */
+  Set<String> findAvailableLocales();
+
+  /**
    * Returns a set of composite keys ({@code locale:namespace:code}) for all messages
    * belonging to the given namespaces. Used for idempotent batch import.
    *

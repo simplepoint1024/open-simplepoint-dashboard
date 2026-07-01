@@ -3,10 +3,12 @@ import {Select} from 'antd';
 import type {WidgetProps} from '@rjsf/utils';
 import * as AntIcons from '@ant-design/icons';
 import {createIcon} from '@simplepoint/shared/types/icon';
+import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 
 const allIconNames = Object.keys(AntIcons).filter((k) => /Outlined$/.test(k));
 
 const IconPicker: React.FC<WidgetProps> = ({id, value, disabled, readonly, autofocus, onChange, placeholder, rawErrors, options}) => {
+  const {t} = useI18n();
   const opts = useMemo(() => {
     const list = (options?.enumOptions as any[]) || allIconNames.map((name) => ({ value: name, label: name }));
     return list.map((o) => ({
@@ -29,7 +31,7 @@ const IconPicker: React.FC<WidgetProps> = ({id, value, disabled, readonly, autof
       id={id}
       showSearch
       allowClear
-      placeholder={placeholder || '选择图标'}
+      placeholder={placeholder || t('icon.placeholder.select', '选择图标')}
       value={value as any}
       disabled={disabled || readonly}
       autoFocus={autofocus}
@@ -43,4 +45,3 @@ const IconPicker: React.FC<WidgetProps> = ({id, value, disabled, readonly, autof
 };
 
 export default IconPicker;
-

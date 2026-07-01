@@ -30,5 +30,11 @@
   "dna.federation.queryPolicies.page.form.catalog.description.available": "请选择已配置的联邦目录",
   "dna.federation.queryPolicies.page.form.catalog.description.empty": "请先在联邦目录页面新增目录",
   "dna.federation.queryPolicies.page.alert.noCatalogs.title": "当前还没有联邦目录",
-  "dna.federation.queryPolicies.page.alert.noCatalogs.description": "请先到联邦目录页面新增目录，再回来配置查询策略。"
+  "dna.federation.queryPolicies.page.alert.noCatalogs.description": "请先到联邦目录页面新增目录，再回来配置查询策略。",
+  "dna.federation.queryPolicies.page.error.loadDataSources": "数据源列表加载失败",
+  "dna.federation.queryPolicies.page.field.dataSource": "数据源",
+  "dna.federation.queryPolicies.page.form.dataSource.description.available": "请选择已配置的数据源",
+  "dna.federation.queryPolicies.page.form.dataSource.description.empty": "请先在数据源页面新增数据源",
+  "dna.federation.queryPolicies.page.alert.noDataSources.title": "当前还没有数据源",
+  "dna.federation.queryPolicies.page.alert.noDataSources.description": "请先到数据源页面新增数据源，再回来配置查询策略。"
 }

@@ -2,6 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {TreeSelect} from 'antd';
 import type {WidgetProps} from '@rjsf/utils';
 import {get} from '@simplepoint/shared/api/methods';
+import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 
 type OrgNode = {
   id: string;
@@ -40,6 +41,7 @@ function buildTreeData(nodes: OrgNode[]): any[] {
  * from the parentId relation. Selected values are stored as an array of IDs.
  */
 const OrgTreeMultiSelect: React.FC<WidgetProps> = ({id, value, disabled, readonly, onChange, rawErrors}) => {
+  const {t} = useI18n();
   const [orgs, setOrgs] = useState<OrgNode[]>([]);
 
   useEffect(() => {
@@ -65,7 +67,7 @@ const OrgTreeMultiSelect: React.FC<WidgetProps> = ({id, value, disabled, readonl
       style={{width: '100%'}}
       treeNodeFilterProp="title"
       showSearch
-      placeholder="选择部门"
+      placeholder={t('organizations.placeholder.selectDepartment', '选择部门')}
       onChange={(vals: string[]) => onChange(vals.length > 0 ? vals : undefined)}
     />
   );

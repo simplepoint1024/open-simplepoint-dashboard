@@ -22,7 +22,7 @@ const App = () => {
   const {t, ensure, locale} = useI18n();
 
   useEffect(() => {
-    void ensure([...baseConfig.i18nNamespaces, 'users']);
+    void ensure([...baseConfig.i18nNamespaces, 'packages', 'users', 'table', 'common']);
   }, [ensure, locale]);
 
   useEffect(() => {
@@ -114,8 +114,8 @@ const App = () => {
     () => [
       {
         key: 'config.user',
-        title: '配置成员',
-        text: '配置成员',
+        title: 'i18n:tenants.button.config.user',
+        text: 'i18n:tenants.button.config.user',
         icon: 'TeamOutlined',
         color: 'orange',
         sort: 4,
@@ -138,10 +138,10 @@ const App = () => {
         onEditingRecordChange={setEditingRecord}
         formSchemaTransform={formSchemaTransform}
         formUiSchema={ownerSelectUiSchema}
-        i18nNamespaces={[...baseConfig.i18nNamespaces, 'users']}
+        i18nNamespaces={[...baseConfig.i18nNamespaces, 'packages', 'users', 'table', 'common']}
       />
       <Drawer
-        title={t('table.button.config.package', '配置套餐')}
+        title={t('tenants.button.config.package', '配置套餐')}
         open={openPackageConfig}
         onClose={() => {
           setOpenPackageConfig(false);
@@ -162,7 +162,7 @@ const App = () => {
         {tenantId && <PackageConfig tenantId={tenantId}/>}
       </Drawer>
       <Drawer
-        title={t('table.button.config.user', '配置成员')}
+        title={t('tenants.button.config.user', '配置成员')}
         open={openUserConfig}
         onClose={() => {
           setOpenUserConfig(false);

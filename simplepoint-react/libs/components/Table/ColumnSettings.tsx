@@ -18,6 +18,7 @@ import {
 import {CSS} from '@dnd-kit/utilities';
 import {Button, Checkbox, Divider, Drawer, Select, Tag} from 'antd';
 import {HolderOutlined} from '@ant-design/icons';
+import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 
 export type ColumnFixed = 'left' | 'right' | undefined;
 
@@ -36,6 +37,7 @@ interface SortableRowProps {
 }
 
 const SortableRow: React.FC<SortableRowProps> = ({setting, onChange}) => {
+  const {t} = useI18n();
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({
     id: setting.key,
   });
@@ -93,9 +95,9 @@ const SortableRow: React.FC<SortableRowProps> = ({setting, onChange}) => {
         onChange={v => onChange(setting.key, {fixed: v === 'none' ? undefined : v as ColumnFixed})}
         style={{width: 82, flexShrink: 0}}
         options={[
-          {value: 'none', label: '不固定'},
-          {value: 'left', label: '← 左固定'},
-          {value: 'right', label: '右固定 →'},
+          {value: 'none', label: t('table.columnSettings.fixed.none', '不固定')},
+          {value: 'left', label: t('table.columnSettings.fixed.left', '左固定')},
+          {value: 'right', label: t('table.columnSettings.fixed.right', '右固定')},
         ]}
       />
     </div>
@@ -119,6 +121,7 @@ const ColumnSettings: React.FC<ColumnSettingsProps> = ({
   onClose,
   onReset,
 }) => {
+  const {t} = useI18n();
   const [items, setItems] = useState<ColumnSetting[]>(initialSettings);
 
   // Re-sync when drawer opens
@@ -152,7 +155,7 @@ const ColumnSettings: React.FC<ColumnSettingsProps> = ({
 
   return (
     <Drawer
-      title="列设置"
+      title={t('table.columnSettings.title', '列设置')}
       width={320}
       open={open}
       onClose={onClose}
@@ -160,15 +163,15 @@ const ColumnSettings: React.FC<ColumnSettingsProps> = ({
       footer={
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
           <Button type="text" danger size="small" onClick={onReset}>
-            重置默认
+            {t('table.columnSettings.resetDefault', '重置默认')}
           </Button>
           <div style={{display: 'flex', gap: 8}}>
-            <Button onClick={onClose}>取消</Button>
+            <Button onClick={onClose}>{t('cancel', '取消')}</Button>
             <Button type="primary" onClick={() => {
               onSave(items);
               onClose();
             }}>
-              保存
+              {t('table.columnSettings.save', '保存')}
             </Button>
           </div>
         </div>
@@ -181,13 +184,20 @@ const ColumnSettings: React.FC<ColumnSettingsProps> = ({
           checked={allChecked}
           onChange={e => setItems(prev => prev.map(i => ({...i, visible: e.target.checked})))}
         >
-          全选
+          {t('table.columnSettings.selectAll', '全选')}
         </Checkbox>
-        <Tag color="blue" style={{margin: 0}}>{visibleCount} / {items.length} 显示</Tag>
+        <Tag color="blue" style={{margin: 0}}>
+          {t('table.columnSettings.visibleCount', '{visible} / {total} 显示', {
+            visible: visibleCount,
+            total: items.length,
+          })}
+        </Tag>
       </div>
 
       <div style={{display: 'flex', justifyContent: 'flex-end', marginBottom: 4}}>
-        <span style={{fontSize: 11, color: '#999', marginRight: 8}}>固定</span>
+        <span style={{fontSize: 11, color: '#999', marginRight: 8}}>
+          {t('table.columnSettings.fixed.label', '固定')}
+        </span>
       </div>
 
       <Divider style={{margin: '0 0 8px'}}/>
@@ -202,7 +212,7 @@ const ColumnSettings: React.FC<ColumnSettingsProps> = ({
 
       <div style={{marginTop: 12, padding: '8px 4px 0', borderTop: '1px solid rgba(0,0,0,0.06)'}}>
         <span style={{fontSize: 12, color: '#aaa'}}>
-          💡 拖动 <HolderOutlined style={{fontSize: 11}}/> 可调整列顺序
+          {t('table.columnSettings.dragPrefix', '拖动')} <HolderOutlined style={{fontSize: 11}}/> {t('table.columnSettings.dragSuffix', '可调整列顺序')}
         </span>
       </div>
     </Drawer>

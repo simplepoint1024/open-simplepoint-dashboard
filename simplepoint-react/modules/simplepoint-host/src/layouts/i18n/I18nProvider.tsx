@@ -1,8 +1,8 @@
 // context/I18nProvider.tsx
 import React, {createContext, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {fetchLanguages, fetchMessages, Language, Messages} from '@/fetches/i18n';
-import {mkT} from '@simplepoint/shared/hooks/useI18n';
-import {interpolate, isRTL, mapDayjsLocale, normalizeLocale} from '@/utils/i18nUtils';
+import {createTranslator, normalizeNamespaces} from '@simplepoint/shared/i18n/translator';
+import {isRTL, mapDayjsLocale, normalizeLocale} from '@/utils/i18nUtils';
 import {
     cacheKey,
     cacheTsKey,
@@ -51,6 +51,27 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
     const localeRef = useRef(locale);
     localeRef.current = locale;
 
+    const reportMissingKey = useCallback((key: string, lng = localeRef.current) => {
+        if (process.env.NODE_ENV === 'production') return;
+
+        const mk = `${lng}::${key}`;
+        if (missingKeysRef.current.has(mk)) return;
+
+        missingKeysRef.current.add(mk);
+        if (missingDebounceRef.current) window.clearTimeout(missingDebounceRef.current);
+        missingDebounceRef.current = window.setTimeout(() => {
+            const list = Array.from(missingKeysRef.current.values());
+            if (list.length > 0) {
+                console.warn('[i18n] Missing keys:', list);
+                emitAsync('sp-i18n-missing-batch', {keys: list});
+            }
+        }, 1200);
+    }, []);
+
+    const makeTranslator = useCallback((data: Messages, lng: string) => createTranslator(data, {
+        onMissing: (key) => reportMissingKey(key, lng),
+    }), [reportMissingKey]);
+
     useEffect(() => {
         checkAndUpgradeCacheVersion();
     }, []);
@@ -60,7 +81,7 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
         if (initial && Object.keys(initial).length > 0) {
             cache.current.set(initialLocale, initial);
             setInitialLoadSettled(true);
-            window.spI18n = {t: mkT(initial), locale: initialLocale, setLocale, messages: initial, ensure};
+            window.spI18n = {t: makeTranslator(initial, initialLocale), locale: initialLocale, setLocale, messages: initial, ensure};
         }
     }, []);
 
@@ -103,7 +124,7 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
     }, []);
 
     const updateGlobalI18n = (data: Messages, lng: string) => {
-        window.spI18n = {t: mkT(data), locale: lng, setLocale, messages: data, ensure};
+        window.spI18n = {t: makeTranslator(data, lng), locale: lng, setLocale, messages: data, ensure};
         emitAsync('sp-i18n-updated', {locale: lng});
     };
 
@@ -147,7 +168,7 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
     const ensure = useCallback(async (ns: string[]) => {
         if (!Array.isArray(ns) || ns.length === 0) return;
 
-        const normalized = Array.from(new Set(ns.filter(Boolean))).sort();
+        const normalized = normalizeNamespaces(ns);
         if (normalized.length === 0) return;
 
         const loadedNs = getLoadedNs(locale);
@@ -185,18 +206,22 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
 
             ensureInflightRef.current = fetchMessages(lng, list)
                 .then((data) => {
-                    if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+                    const validData = data && typeof data === 'object' ? data : {};
+                    const hasData = Object.keys(validData).length > 0;
+
+                    list.forEach(k => getLoadedNs(lng).add(k));
+
+                    if (hasData) {
                         // 无论 locale 是否已切换，都缓存到正确的 locale
                         const cachedForLng = cache.current.get(lng) || {};
-                        const merged = {...cachedForLng, ...data};
+                        const merged = {...cachedForLng, ...validData};
                         cache.current.set(lng, merged);
                         writeStoredMessages(lng, merged);
-                        list.forEach(k => getLoadedNs(lng).add(k));
 
                         // 仅当 locale 未切换时才更新 state
                         if (lng === localeRef.current) {
                             setMessages(prev => {
-                                const mergedState = {...prev, ...data};
+                                const mergedState = {...prev, ...validData};
                                 updateGlobalI18n(mergedState, lng);
                                 return mergedState;
                             });
@@ -239,34 +264,7 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
         return p;
     }, [locale, getLoadedNs]);
 
-    const t = useCallback<I18nContextValue['t']>((key, fallbackOrParams, maybeParams) => {
-        let params: Record<string, any> | undefined;
-        let fallback: string | undefined;
-
-        if (typeof fallbackOrParams === 'string') fallback = fallbackOrParams;
-        else if (typeof fallbackOrParams === 'object') params = fallbackOrParams;
-        if (typeof maybeParams === 'object') params = maybeParams;
-
-        const has = Object.prototype.hasOwnProperty.call(messages, key);
-        const raw = has ? messages[key] : (fallback ?? key);
-
-        if (!has && process.env.NODE_ENV !== 'production') {
-            const mk = `${locale}::${key}`;
-            if (!missingKeysRef.current.has(mk)) {
-                missingKeysRef.current.add(mk);
-                if (missingDebounceRef.current) window.clearTimeout(missingDebounceRef.current);
-                missingDebounceRef.current = window.setTimeout(() => {
-                    const list = Array.from(missingKeysRef.current.values());
-                    if (list.length > 0) {
-                        console.warn(`[i18n] Missing keys(${locale}):`, list);
-                        emitAsync('sp-i18n-missing-batch', {locale, keys: list});
-                    }
-                }, 1200);
-            }
-        }
-
-        return interpolate(raw, params);
-    }, [messages, locale]);
+    const t = useMemo<I18nContextValue['t']>(() => makeTranslator(messages, locale), [makeTranslator, messages, locale]);
 
     const refresh = useCallback(async () => {
         cache.current.delete(locale);
@@ -288,8 +286,8 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
     }), [locale, setLocale, languages, messages, t, loading, refresh, initialLoadSettled, ensure]);
 
     useEffect(() => {
-        window.spI18n = {t: mkT(messages), locale, setLocale, messages, ensure};
-    }, [messages, locale, setLocale, ensure]);
+        window.spI18n = {t, locale, setLocale, messages, ensure};
+    }, [messages, locale, setLocale, ensure, t]);
 
     useEffect(() => {
         void loadMessages(locale).then(() => {

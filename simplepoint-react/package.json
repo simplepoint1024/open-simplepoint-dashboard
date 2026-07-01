@@ -16,7 +16,10 @@
     "typecheck:common": "tsc -p modules/simplepoint-common/tsconfig.json --noEmit",
     "typecheck:audit": "tsc -p modules/simplepoint-audit/tsconfig.json --noEmit",
     "typecheck:dna": "tsc -p modules/simplepoint-dna/tsconfig.json --noEmit",
-    "typecheck": "pnpm run typecheck:common && pnpm run typecheck:audit && pnpm run typecheck:dna && pnpm run typecheck:host",
+    "typecheck:mocks": "tsc -p modules/mocks/tsconfig.json --noEmit",
+    "typecheck": "pnpm run typecheck:common && pnpm run typecheck:audit && pnpm run typecheck:dna && pnpm run typecheck:host && pnpm run typecheck:mocks",
+    "i18n:sync": "node scripts/sync-i18n-bundles.mjs",
+    "i18n:check": "node scripts/sync-i18n-bundles.mjs --check",
     "build": "pnpm --filter './modules/*' --if-present run build"
   },
   "dependencies": {

@@ -24,7 +24,7 @@ const App = ({featureCode}: FeaturePermissionConfigProps) => {
   const [rightPage, setRightPage] = useState({current: 1, pageSize: 10});
 
   useEffect(() => {
-    void ensure(['permissions']);
+    void ensure(['permissions', 'table', 'common']);
   }, [ensure, locale]);
 
   const {data: page} = usePage<PermissionRelevantVo>(

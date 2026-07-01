@@ -20,7 +20,7 @@ const changeTypeColor: Record<string, string> = {
 };
 
 const App = () => {
-    const {ensure, locale} = useI18n();
+    const {ensure, locale, t} = useI18n();
 
     useEffect(() => {
         void ensure(baseConfig.i18nNamespaces);
@@ -34,7 +34,13 @@ const App = () => {
                     action: {
                         render: (val: string) => (
                             <Tag color={actionColor[val] ?? 'default'}>
-                                {val === 'assign' ? '授权' : val === 'revoke' ? '撤销' : val === 'update' ? '更新' : (val ?? '-')}
+                                {val === 'assign'
+                                    ? t('monitoring.permissionChangeLog.action.assign', '授权')
+                                    : val === 'revoke'
+                                        ? t('monitoring.permissionChangeLog.action.revoke', '撤销')
+                                        : val === 'update'
+                                            ? t('monitoring.permissionChangeLog.action.update', '更新')
+                                            : (val ?? '-')}
                             </Tag>
                         ),
                     },

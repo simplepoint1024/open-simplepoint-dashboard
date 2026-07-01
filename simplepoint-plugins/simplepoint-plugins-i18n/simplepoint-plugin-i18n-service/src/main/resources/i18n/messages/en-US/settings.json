@@ -25,5 +25,7 @@
   "about.ui": "UI",
   "about.licenseValue": "Apache-2.0 License",
   "label.language": "Language",
-  "tooltip.size": "Toggle global size (Small / Medium / Large)"
+  "tooltip.size": "Toggle global size (Small / Medium / Large)",
+  "action.reset": "Reset",
+  "action.resetLang": "Reset Language"
 }

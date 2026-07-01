@@ -1,0 +1,19 @@
+{
+  "micro.domain.description.description": "远程模块说明",
+  "micro.domain.description.entry": "远程模块入口地址",
+  "micro.domain.description.serviceName": "远程模块所属服务名称",
+  "micro.module.title.description": "描述",
+  "micro.module.title.displayName": "显示名称",
+  "micro.module.title.entry": "入口地址",
+  "micro.module.title.serviceName": "服务名称",
+  "route.domain.description.description": "路由域说明",
+  "route.domain.description.displayName": "用于展示的名称",
+  "route.domain.description.message": "路由域名称",
+  "route.domain.description.moduleName": "路由域所属模块名称",
+  "route.domain.description.region": "路由域区域",
+  "route.domain.title.description": "描述",
+  "route.domain.title.displayName": "显示名称",
+  "route.domain.title.message": "域名称",
+  "route.domain.title.moduleName": "模块名称",
+  "route.domain.title.region": "区域"
+}

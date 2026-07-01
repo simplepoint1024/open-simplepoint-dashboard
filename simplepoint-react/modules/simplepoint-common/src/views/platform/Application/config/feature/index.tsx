@@ -22,7 +22,7 @@ const App = ({applicationCode}: ApplicationFeatureConfigProps) => {
   const {t, messages, ensure, locale} = useI18n();
 
   useEffect(() => {
-    void ensure(['features']);
+    void ensure(['features', 'table', 'common']);
   }, [ensure, locale]);
 
   const {data: page} = usePage<FeatureRelevantVo>(

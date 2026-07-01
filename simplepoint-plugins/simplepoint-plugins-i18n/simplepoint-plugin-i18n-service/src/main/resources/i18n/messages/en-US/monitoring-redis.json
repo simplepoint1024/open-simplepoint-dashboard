@@ -1,0 +1,23 @@
+{
+  "monitoring.redis.editableOnlyString": "Only STRING Redis key-value entries can be edited for now.",
+  "monitoring.redis.key": "Key",
+  "monitoring.redis.type": "Type",
+  "monitoring.redis.ttl": "TTL",
+  "monitoring.redis.persistent": "Permanent",
+  "monitoring.redis.size": "Size",
+  "monitoring.redis.valuePreview": "Value Preview",
+  "monitoring.redis.actions": "Actions",
+  "monitoring.redis.view": "View",
+  "monitoring.redis.deleteConfirm": "Delete this Redis key?",
+  "monitoring.redis.noticeTitle": "Redis Management",
+  "monitoring.redis.noticeDesc": "The list queries Redis keys with SCAN. Common Redis types can be viewed, while create/edit currently supports STRING entries only.",
+  "monitoring.redis.patternPlaceholder": "Enter a Redis pattern, e.g. simplepoint:*",
+  "monitoring.redis.typePlaceholder": "Select a data type",
+  "monitoring.redis.createTitle": "Add Redis Key-Value",
+  "monitoring.redis.editTitle": "Edit Redis Key-Value",
+  "monitoring.redis.value": "Value",
+  "monitoring.redis.ttlSeconds": "TTL Seconds",
+  "monitoring.redis.ttlRule": "TTL must be a number of seconds greater than 0",
+  "monitoring.redis.detailTitle": "Redis Key Details",
+  "monitoring.redis.editable": "Editable"
+}

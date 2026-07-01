@@ -478,7 +478,7 @@ const App = () => {
         <Row gutter={16} align="stretch" style={{height: '100%', minHeight: 0}}>
           <Col span={8} style={{height: '100%'}}>
             <Card
-              title={t('dna.federation.sqlConsole.page.card.dataSourceTree', '数据源树')}
+              title={t('dna.federation.sqlConsole.page.card.tree', '数据源树')}
               extra={(
                 <Button icon={<ReloadOutlined />} onClick={() => void handleRefreshTree()}>
                   {t('dna.federation.sqlConsole.page.button.refreshTree', '刷新树')}
@@ -509,14 +509,14 @@ const App = () => {
                   type="info"
                   showIcon
                   style={{marginTop: 12}}
-                  message={t('dna.federation.sqlConsole.page.alert.selectedPath.title', '当前选中路径')}
+                  message={t('dna.federation.sqlConsole.page.message.selectedPath', '当前选中路径')}
                   description={selectedTreePath}
                 />
               ) : null}
             </Card>
           </Col>
           <Col span={16} style={{height: '100%'}}>
-            <Card title={t('dna.federation.sqlConsole.page.card.sqlEditor', 'SQL 编辑器')} style={cardStyle} bodyStyle={cardBodyStyle}>
+            <Card title={t('dna.federation.sqlConsole.page.card.editor', 'SQL 编辑器')} style={cardStyle} bodyStyle={cardBodyStyle}>
               <Space direction="vertical" size={12} style={{display: 'flex', flex: 1, minHeight: 0}}>
                 <Select
                   placeholder={t('dna.federation.sqlConsole.page.placeholder.selectCatalog', '请选择数据目录')}
@@ -532,7 +532,7 @@ const App = () => {
                   <Alert
                     type="info"
                     showIcon
-                    message={t('dna.federation.sqlConsole.page.alert.selectedObject.title', '左侧树当前选中对象')}
+                    message={t('dna.federation.sqlConsole.page.message.selectedObject', '左侧树当前选中对象')}
                     description={selectedTreePath}
                     action={
                       <Button
@@ -575,7 +575,7 @@ const App = () => {
                       void submit('query');
                     }}
                   >
-                    {t('dna.federation.sqlConsole.page.button.runSql', '执行 SQL')}
+                    {t('dna.federation.sqlConsole.page.button.query', '执行 SQL')}
                   </Button>
                 </Space>
               </Space>
@@ -583,7 +583,7 @@ const App = () => {
           </Col>
         </Row>
 
-        <Card title={t('dna.federation.sqlConsole.page.card.executionOutput', '执行输出')} style={cardStyle} bodyStyle={{...cardBodyStyle, paddingTop: 8}}>
+        <Card title={t('dna.federation.sqlConsole.page.card.output', '执行输出')} style={cardStyle} bodyStyle={{...cardBodyStyle, paddingTop: 8}}>
           <div style={scrollAreaStyle}>
             <Tabs
               activeKey={activeTabKey}

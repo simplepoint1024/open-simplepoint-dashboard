@@ -35,9 +35,9 @@ const App = () => {
   useEffect(() => {
     void loadDataSources().catch((error) => {
       setDataSourcesLoaded(true);
-      message.error(resolveErrorMessage(error, '数据源列表加载失败'));
+      message.error(resolveErrorMessage(error, t('dna.federation.queryTemplates.error.loadDataSources', '数据源列表加载失败')));
     });
-  }, [loadDataSources]);
+  }, [loadDataSources, t]);
 
   const formSchemaTransform = useCallback((schema: any) => {
     const nextSchema = structuredClone(schema ?? {});
@@ -68,14 +68,22 @@ const App = () => {
       title: t('dna.federation.queryTemplates.title.isPublic', '公开'),
       width: 80,
       render: (value?: boolean) => (
-        <Tag color={value ? 'green' : 'default'}>{value ? '是' : '否'}</Tag>
+        <Tag color={value ? 'green' : 'default'}>
+          {value
+            ? t('dna.federation.queryTemplates.value.public', '是')
+            : t('dna.federation.queryTemplates.value.private', '否')}
+        </Tag>
       ),
     },
     enabled: {
       title: t('dna.federation.queryTemplates.title.enabled', '状态'),
       width: 80,
       render: (value?: boolean) => (
-        <Tag color={value ? 'green' : 'red'}>{value ? '启用' : '禁用'}</Tag>
+        <Tag color={value ? 'green' : 'red'}>
+          {value
+            ? t('dna.federation.queryTemplates.value.enabled', '启用')
+            : t('dna.federation.queryTemplates.value.disabled', '禁用')}
+        </Tag>
       ),
     },
   }), [t]);
@@ -87,7 +95,10 @@ const App = () => {
           type="info"
           showIcon
           style={{marginBottom: 16}}
-          message="暂无可用数据源，查询模板可不绑定数据源。"
+          message={t(
+            'dna.federation.queryTemplates.message.noDataSources',
+            '暂无可用数据源，查询模板可不绑定数据源。'
+          )}
         />
       ) : null}
       <SimpleTable

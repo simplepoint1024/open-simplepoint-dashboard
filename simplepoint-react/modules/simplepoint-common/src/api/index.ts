@@ -63,17 +63,17 @@ export default {
   },
   'platform.packages': {
     baseUrl: `${contextPath}/platform/packages`,
-    i18nNamespaces: ['packages'],
+    i18nNamespaces: ['packages', 'applications'],
     name: 'packages'
   },
   'platform.tenants': {
     baseUrl: `${contextPath}/platform/tenants`,
-    i18nNamespaces: ['tenants'],
+    i18nNamespaces: ['tenants', 'packages', 'users'],
     name: 'tenants'
   },
   'platform.features': {
     baseUrl: `${contextPath}/platform/features`,
-    i18nNamespaces: ['features'],
+    i18nNamespaces: ['features', 'permissions'],
     name: 'features'
   },
   'platform.dictionaries': {
@@ -98,7 +98,7 @@ export default {
   },
   'platform.applications': {
     baseUrl: `${contextPath}/platform/applications`,
-    i18nNamespaces: ['applications'],
+    i18nNamespaces: ['applications', 'features'],
     name: 'applications'
   },
   'rbac-data-scopes': {

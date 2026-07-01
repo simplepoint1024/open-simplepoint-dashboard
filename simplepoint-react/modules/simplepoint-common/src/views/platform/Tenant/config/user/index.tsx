@@ -28,7 +28,7 @@ const App = ({tenantId, ownerId}: TenantUserConfigProps) => {
   const {t, messages, ensure, locale} = useI18n();
 
   useEffect(() => {
-    void ensure(['users']);
+    void ensure(['users', 'table', 'common']);
   }, [ensure, locale]);
 
   const {data: page} = usePage<UserRelevanceVo>(

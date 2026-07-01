@@ -18,7 +18,7 @@ type HealthItem = {
 };
 
 const App = () => {
-  const {ensure, locale} = useI18n();
+  const {ensure, locale, t} = useI18n();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<HealthItem[]>([]);
 
@@ -32,11 +32,11 @@ const App = () => {
       const result = await get<HealthItem[]>(`${dataSourceConfig.baseUrl}/health`);
       setItems(result ?? []);
     } catch (error) {
-      message.error(resolveErrorMessage(error, '健康检查失败'));
+      message.error(resolveErrorMessage(error, t('dna.dataSources.health.error.load', '健康检查失败')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadHealth();
@@ -50,30 +50,30 @@ const App = () => {
       <Row gutter={[16, 16]} style={{marginBottom: 24}}>
         <Col span={8}>
           <Card>
-            <Statistic title="数据源总数" value={items.length} />
+            <Statistic title={t('dna.dataSources.health.stat.total', '数据源总数')} value={items.length} />
           </Card>
         </Col>
         <Col span={8}>
           <Card>
-            <Statistic title="在线" value={online} valueStyle={{color: '#3f8600'}} />
+            <Statistic title={t('dna.dataSources.health.stat.online', '在线')} value={online} valueStyle={{color: '#3f8600'}} />
           </Card>
         </Col>
         <Col span={8}>
           <Card>
-            <Statistic title="离线" value={offline} valueStyle={{color: offline > 0 ? '#cf1322' : undefined}} />
+            <Statistic title={t('dna.dataSources.health.stat.offline', '离线')} value={offline} valueStyle={{color: offline > 0 ? '#cf1322' : undefined}} />
           </Card>
         </Col>
       </Row>
 
       <div style={{marginBottom: 16, display: 'flex', justifyContent: 'flex-end'}}>
-        <Button type="primary" onClick={loadHealth} loading={loading}>刷新</Button>
+        <Button type="primary" onClick={loadHealth} loading={loading}>{t('action.refresh', '刷新')}</Button>
       </div>
 
       <Row gutter={[16, 16]}>
         {items.map((item) => (
           <Col key={item.dataSourceId} xs={24} sm={12} md={8} lg={6}>
             <Badge.Ribbon
-              text={item.status === 'UP' ? '在线' : '离线'}
+              text={item.status === 'UP' ? t('dna.dataSources.health.state.online', '在线') : t('dna.dataSources.health.state.offline', '离线')}
               color={item.status === 'UP' ? 'green' : 'red'}
             >
               <Card
@@ -87,7 +87,7 @@ const App = () => {
                   {item.driverName || '-'}
                 </Typography.Text>
                 <Typography.Text>
-                  响应时间: {item.responseTimeMs}ms
+                  {t('dna.dataSources.health.responseTime', '响应时间')}: {item.responseTimeMs}ms
                 </Typography.Text>
                 {item.errorMessage ? (
                   <Typography.Text type="danger" style={{display: 'block', marginTop: 4}} ellipsis>
@@ -101,7 +101,7 @@ const App = () => {
         {items.length === 0 && !loading ? (
           <Col span={24}>
             <Card>
-              <Typography.Text type="secondary">暂无数据源</Typography.Text>
+              <Typography.Text type="secondary">{t('dna.dataSources.health.empty', '暂无数据源')}</Typography.Text>
             </Card>
           </Col>
         ) : null}

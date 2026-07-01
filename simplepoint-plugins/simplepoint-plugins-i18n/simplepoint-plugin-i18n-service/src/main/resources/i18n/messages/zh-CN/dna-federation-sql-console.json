@@ -67,5 +67,6 @@
   "dna.federation.sqlConsole.page.button.query": "执行 SQL",
   "dna.federation.sqlConsole.page.placeholder.selectCatalog": "请选择联邦目录",
   "dna.federation.sqlConsole.page.message.selectedPath": "当前选中路径",
-  "dna.federation.sqlConsole.page.message.selectedObject": "左侧树当前选中对象"
+  "dna.federation.sqlConsole.page.message.selectedObject": "左侧树当前选中对象",
+  "dna.federation.sqlConsole.page.button.insertPath": "插入路径"
 }

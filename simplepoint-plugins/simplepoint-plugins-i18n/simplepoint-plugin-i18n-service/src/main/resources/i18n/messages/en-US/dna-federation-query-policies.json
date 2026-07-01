@@ -30,5 +30,11 @@
   "dna.federation.queryPolicies.page.form.catalog.description.available": "Select a configured federation catalog.",
   "dna.federation.queryPolicies.page.form.catalog.description.empty": "Create a federation catalog first.",
   "dna.federation.queryPolicies.page.alert.noCatalogs.title": "No federation catalogs are available yet",
-  "dna.federation.queryPolicies.page.alert.noCatalogs.description": "Create a federation catalog first, then come back to configure query policies."
+  "dna.federation.queryPolicies.page.alert.noCatalogs.description": "Create a federation catalog first, then come back to configure query policies.",
+  "dna.federation.queryPolicies.page.error.loadDataSources": "Failed to load data sources",
+  "dna.federation.queryPolicies.page.field.dataSource": "Data Source",
+  "dna.federation.queryPolicies.page.form.dataSource.description.available": "Select a configured data source.",
+  "dna.federation.queryPolicies.page.form.dataSource.description.empty": "Create a data source first.",
+  "dna.federation.queryPolicies.page.alert.noDataSources.title": "No data sources are available yet",
+  "dna.federation.queryPolicies.page.alert.noDataSources.description": "Create a data source first, then come back to configure query policies."
 }

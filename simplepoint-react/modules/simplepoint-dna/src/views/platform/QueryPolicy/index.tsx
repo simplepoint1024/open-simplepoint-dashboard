@@ -1,6 +1,7 @@
 import api from '@/api';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import {get} from '@simplepoint/shared/api/methods';
+import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {Page} from '@simplepoint/shared/types/request';
 import {Alert, Tag, message} from 'antd';
 import {useCallback, useEffect, useMemo, useState} from 'react';
@@ -16,23 +17,28 @@ type DataSourceOption = {
   enabled?: boolean;
 };
 
-const resolveDataSourceLabel = (dataSource: DataSourceOption) => {
+const resolveDataSourceLabel = (dataSource: DataSourceOption, disabledSuffix: string) => {
   const primary = dataSource.name || dataSource.code || dataSource.id;
   const secondary = dataSource.code && dataSource.code !== primary ? ` (${dataSource.code})` : '';
-  const disabled = dataSource.enabled === false ? ' - 已禁用' : '';
+  const disabled = dataSource.enabled === false ? disabledSuffix : '';
   return `${primary}${secondary}${disabled}`;
 };
 
-const renderBooleanTag = (value?: boolean) => {
+const renderBooleanTag = (value: boolean | undefined, yes: string, no: string) => {
   if (value == null) {
     return '-';
   }
-  return <Tag color={value ? 'green' : 'default'}>{value ? '是' : '否'}</Tag>;
+  return <Tag color={value ? 'green' : 'default'}>{value ? yes : no}</Tag>;
 };
 
 const App = () => {
+  const {t, ensure, locale} = useI18n();
   const [dataSources, setDataSources] = useState<DataSourceOption[]>([]);
   const [dataSourcesLoaded, setDataSourcesLoaded] = useState(false);
+
+  useEffect(() => {
+    void ensure([...baseConfig.i18nNamespaces, ...dataSourceConfig.i18nNamespaces]);
+  }, [ensure, locale]);
 
   const loadDataSources = useCallback(async () => {
     const page = await get<Page<DataSourceOption>>(dataSourceConfig.baseUrl, {page: 0, size: 200});
@@ -43,44 +49,46 @@ const App = () => {
   useEffect(() => {
     void loadDataSources().catch((error) => {
       setDataSourcesLoaded(true);
-      message.error(resolveErrorMessage(error, '数据源列表加载失败'));
+      message.error(resolveErrorMessage(error, t('dna.federation.queryPolicies.page.error.loadDataSources', '数据源列表加载失败')));
     });
-  }, [loadDataSources]);
+  }, [loadDataSources, t]);
 
   const formSchemaTransform = useCallback((schema: any) => {
     const nextSchema = structuredClone(schema ?? {});
     const properties = nextSchema?.properties ?? {};
     if (properties.catalogId) {
-      properties.catalogId.title = '数据源';
+      properties.catalogId.title = t('dna.federation.queryPolicies.page.field.dataSource', '数据源');
       properties.catalogId.oneOf = dataSources.map((dataSource) => ({
         const: dataSource.id,
-        title: resolveDataSourceLabel(dataSource),
+        title: resolveDataSourceLabel(dataSource, t('dna.federation.queryPolicies.page.state.disabledSuffix', ' - 已禁用')),
       }));
-      properties.catalogId.description = dataSources.length > 0 ? '请选择已配置的数据源' : '请先在数据源页面新增数据源';
+      properties.catalogId.description = dataSources.length > 0
+        ? t('dna.federation.queryPolicies.page.form.dataSource.description.available', '请选择已配置的数据源')
+        : t('dna.federation.queryPolicies.page.form.dataSource.description.empty', '请先在数据源页面新增数据源');
     }
     delete properties.catalogCode;
     delete properties.catalogName;
     return nextSchema;
-  }, [dataSources]);
+  }, [dataSources, t]);
 
   const columnOverrides = useMemo(() => ({
     catalogId: {
-      title: '数据源',
+      title: t('dna.federation.queryPolicies.page.field.dataSource', '数据源'),
       width: 220,
       render: (value: string, record: {catalogName?: string; catalogCode?: string}) =>
         record.catalogName || record.catalogCode || value || '-',
     },
     allowSqlConsole: {
-      title: '允许 SQL 控制台',
+      title: t('dna.federation.queryPolicies.title.allowSqlConsole', '允许 SQL 控制台'),
       width: 160,
-      render: renderBooleanTag,
+      render: (value?: boolean) => renderBooleanTag(value, t('dna.federation.queryPolicies.page.state.yes', '是'), t('dna.federation.queryPolicies.page.state.no', '否')),
     },
     allowCrossSourceJoin: {
-      title: '允许跨源 Join',
+      title: t('dna.federation.queryPolicies.title.allowCrossSourceJoin', '允许跨源 Join'),
       width: 160,
-      render: renderBooleanTag,
+      render: (value?: boolean) => renderBooleanTag(value, t('dna.federation.queryPolicies.page.state.yes', '是'), t('dna.federation.queryPolicies.page.state.no', '否')),
     },
-  }), []);
+  }), [t]);
 
   return (
     <div>
@@ -89,8 +97,8 @@ const App = () => {
           type="warning"
           showIcon
           style={{marginBottom: 16}}
-          message="当前还没有数据源"
-          description="请先到数据源页面新增数据源，再回来配置查询策略。"
+          message={t('dna.federation.queryPolicies.page.alert.noDataSources.title', '当前还没有数据源')}
+          description={t('dna.federation.queryPolicies.page.alert.noDataSources.description', '请先到数据源页面新增数据源，再回来配置查询策略。')}
         />
       ) : null}
       <SimpleTable

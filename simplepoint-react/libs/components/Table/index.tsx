@@ -1,7 +1,7 @@
 import React, {MouseEventHandler, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import type {TableRowSelection} from 'antd/es/table/interface';
 import {Button, Col, Row, Space, Table as AntTable, Tag, Tooltip} from 'antd';
-import {FilterFilled, FilterOutlined, ReloadOutlined, SettingOutlined} from '@ant-design/icons';
+import {FilterFilled, FilterOutlined, InboxOutlined, ReloadOutlined, SettingOutlined} from '@ant-design/icons';
 import type {ColumnType, ColumnsType} from 'antd/es/table';
 import {Resizable} from 'react-resizable';
 import 'react-resizable/css/styles.css';
@@ -126,6 +126,34 @@ function getUserId(): string {
   } catch { /* ignore */ }
   return 'anonymous';
 }
+
+const normalizeTreeRows = <T extends object>(rows: T[]): T[] => {
+  let changed = false;
+
+  const normalize = (row: T): T => {
+    const anyRow = row as any;
+    if (!anyRow || typeof anyRow !== 'object' || !Array.isArray(anyRow.children)) {
+      return row;
+    }
+
+    const normalizedChildren = normalizeTreeRows(anyRow.children);
+    if (normalizedChildren.length === 0) {
+      changed = true;
+      const {children: _children, ...rest} = anyRow;
+      return rest as T;
+    }
+
+    if (normalizedChildren !== anyRow.children) {
+      changed = true;
+      return {...anyRow, children: normalizedChildren};
+    }
+
+    return row;
+  };
+
+  const normalizedRows = rows.map(normalize);
+  return changed ? normalizedRows : rows;
+};
 
 const ResizableTitle = (props: React.HTMLAttributes<HTMLTableCellElement> & { onResize?: (e: React.SyntheticEvent, data: { size: { width: number; height: number } }) => void; width?: number }) => {
   const {onResize, width, ...restProps} = props;
@@ -408,7 +436,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
                 color={active ? 'success' : 'default'}
                 style={{margin: 0, fontSize: 11, lineHeight: '18px', padding: '0 6px', borderRadius: 3}}
               >
-                {active ? '是' : '否'}
+                {active ? t('common.yes', '是') : t('common.no', '否')}
               </Tag>
             );
           }
@@ -534,7 +562,8 @@ const App = <T extends object = any>(props: TableProps<T>) => {
       .map((item) => item.column);
   }, [properties, colConfigs, visibleKeys, filters, sortField, sortDir, colWidths, handleResize, props.onFilterChange, props.refresh, props.columnOverrides, t, locale])
 
-  const dataSource = props.pageable?.content ?? [];
+  const rawDataSource = props.pageable?.content ?? [];
+  const dataSource = useMemo(() => normalizeTreeRows(rawDataSource), [rawDataSource]);
 
   const pagination = toPagination(props.pageable);
 
@@ -620,6 +649,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     return buttons.map((button) => {
       const {argumentMinSize, argumentMaxSize, sort, color, variant, text, icon, title, ...rest} = button as any;
       const mapped: any = {...rest};
+      mapped.className = ['sp-table-button', mapped.className].filter(Boolean).join(' ');
       if (color === 'danger') mapped.danger = true;
       if (variant === 'outlined') mapped.ghost = true;
       const iconNode = typeof icon === 'string' ? createIcon(icon) : icon;
@@ -638,53 +668,56 @@ const App = <T extends object = any>(props: TableProps<T>) => {
   };
 
   const emptyText = useMemo(() => (
-    <div style={{padding: '32px 0', textAlign: 'center'}}>
-      <div style={{fontSize: 40, marginBottom: 8, opacity: 0.3}}>📭</div>
-      <div style={{color: 'rgba(0,0,0,0.45)', fontSize: 13}}>暂无数据</div>
+    <div className="sp-table-empty">
+      <InboxOutlined className="sp-table-empty-icon" />
+      <div className="sp-table-empty-title">{t('table.emptyText', '暂无数据')}</div>
     </div>
-  ), []);
+  ), [t]);
 
   return (
-    <div ref={containerRef} style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
-      <div ref={toolbarRef}>
-        <Row justify="space-between" style={{marginBottom: 16}}>
-          <Col>
-            <Space wrap>
+    <div ref={containerRef} className="sp-table-root" style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+      <div ref={toolbarRef} className="sp-table-toolbar">
+        <Row justify="space-between" align="middle" className="sp-table-toolbar-row">
+          <Col className="sp-table-toolbar-main">
+            <Space className="sp-table-button-group" size={[8, 8]} wrap>
               {renderButtons(props.buttons)}
               {selectedRowKeys.length > 0 && (
                 <Tag
+                  className="sp-table-selected-tag"
                   color="blue"
                   closable
                   onClose={() => { setSelectedRowKeys([]); setSelectedRows([]); props.onSelectionChange?.([], []); }}
-                  style={{margin: 0, fontSize: 13, padding: '2px 8px'}}
                 >
                   {t('table.selectedCount', '已选 {count} 条', {count: selectedRowKeys.length})}
                 </Tag>
               )}
             </Space>
           </Col>
-          <Col>
-            <Button
-              className="button-col"
-              type="text"
-              icon={<ReloadOutlined/>}
-              onClick={() => props.refresh()}
-              loading={props.loading}
-              disabled={props.refreshDisabled}
-            />
-            <Tooltip title="列设置">
+          <Col className="sp-table-toolbar-actions">
+            <Space size={4}>
               <Button
-                icon={<SettingOutlined/>}
+                className="sp-table-icon-button"
                 type="text"
-                style={{marginLeft: 8}}
-                onClick={() => setSettingsOpen(true)}
+                icon={<ReloadOutlined/>}
+                onClick={() => props.refresh()}
+                loading={props.loading}
+                disabled={props.refreshDisabled}
               />
-            </Tooltip>
+              <Tooltip title={t('table.columnSettings.title', '列设置')}>
+                <Button
+                  className="sp-table-icon-button"
+                  icon={<SettingOutlined/>}
+                  type="text"
+                  onClick={() => setSettingsOpen(true)}
+                />
+              </Tooltip>
+            </Space>
           </Col>
         </Row>
       </div>
-      <div style={{flex: 1, minHeight: 0}}>
+      <div style={{flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
         <AntTable<T>
+          className="sp-table-fill"
           bordered
           columns={columns}
           dataSource={dataSource}

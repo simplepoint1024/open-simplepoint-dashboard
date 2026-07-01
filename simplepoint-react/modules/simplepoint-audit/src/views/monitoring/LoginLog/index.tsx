@@ -18,10 +18,10 @@ const loginTypeColor: Record<string, string> = {
 };
 
 const App = () => {
-    const {ensure, locale} = useI18n();
+    const {t, ensure, locale} = useI18n();
 
     useEffect(() => {
-        void ensure(baseConfig.i18nNamespaces);
+        void ensure(['common', ...baseConfig.i18nNamespaces]);
     }, [ensure, locale]);
 
     return (
@@ -32,7 +32,11 @@ const App = () => {
                     status: {
                         render: (val: string) => (
                             <Tag color={statusColor[val] ?? 'default'}>
-                                {val === 'success' ? '成功' : val === 'failure' ? '失败' : val ?? '-'}
+                                {val === 'success'
+                                    ? t('status.success', '成功')
+                                    : val === 'failure'
+                                        ? t('status.failure', '失败')
+                                        : val ?? '-'}
                             </Tag>
                         ),
                     },

@@ -1,0 +1,23 @@
+{
+  "monitoring.redis.editableOnlyString": "当前只支持编辑 STRING 类型的 Redis 键值对。",
+  "monitoring.redis.key": "Key",
+  "monitoring.redis.type": "Type",
+  "monitoring.redis.ttl": "TTL",
+  "monitoring.redis.persistent": "永久",
+  "monitoring.redis.size": "大小",
+  "monitoring.redis.valuePreview": "值预览",
+  "monitoring.redis.actions": "操作",
+  "monitoring.redis.view": "查看",
+  "monitoring.redis.deleteConfirm": "确认删除当前 Redis 键？",
+  "monitoring.redis.noticeTitle": "Redis 管理",
+  "monitoring.redis.noticeDesc": "列表使用 SCAN 查询当前 Redis 键；支持查看常见 Redis 类型，新增/编辑当前先支持 STRING 类型键值对。",
+  "monitoring.redis.patternPlaceholder": "输入 Redis 模式，如 simplepoint:*",
+  "monitoring.redis.typePlaceholder": "选择数据类型",
+  "monitoring.redis.createTitle": "新增 Redis 键值",
+  "monitoring.redis.editTitle": "编辑 Redis 键值",
+  "monitoring.redis.value": "Value",
+  "monitoring.redis.ttlSeconds": "TTL 秒数",
+  "monitoring.redis.ttlRule": "TTL 必须是大于 0 的秒数",
+  "monitoring.redis.detailTitle": "Redis 键详情",
+  "monitoring.redis.editable": "可编辑"
+}

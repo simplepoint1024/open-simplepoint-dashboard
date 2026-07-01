@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-export type Messages = Record<string, string>;
+import { createTranslator, Messages, normalizeNamespaces, TranslateFn } from '../i18n/translator';
 
 export type I18nLike = {
-    t: (
-        key: string,
-        fallbackOrParams?: string | Record<string, unknown>,
-        maybeParams?: Record<string, unknown>
-    ) => string;
+    t: TranslateFn;
     locale: string;
     setLocale: (code: string) => void;
     messages: Messages;
@@ -22,31 +17,7 @@ declare global {
     }
 }
 
-/** 通用插值：支持 {a.b}、{0}、任意 key */
-const interpolate = (tpl: string, params?: Record<string, unknown>) =>
-    params
-        ? tpl.replace(/\{([^}]+)}/g, (_, k: string) =>
-            params[k] !== undefined ? String(params[k]) : `{${k}}`
-        )
-        : tpl;
-
-/** 生成 t 函数 */
-export const mkT = (messages: Messages): I18nLike['t'] => (
-    key,
-    fallbackOrParams,
-    maybeParams
-) => {
-    const fallback = typeof fallbackOrParams === 'string' ? fallbackOrParams : undefined;
-    const params =
-        typeof fallbackOrParams === 'object'
-            ? fallbackOrParams
-            : typeof maybeParams === 'object'
-                ? maybeParams
-                : undefined;
-
-    const raw = messages[key] ?? fallback ?? key;
-    return interpolate(raw, params);
-};
+export const mkT = createTranslator;
 
 function getGlobal(): I18nLike | undefined {
     return isBrowser ? window.spI18n : undefined;
@@ -57,14 +28,17 @@ const nsLoadedCache = new Set<string>();
 const nsLoadingMap = new Map<string, Promise<void>>();
 
 export function useI18n() {
+    const initialGlobal = getGlobal();
+
     /** 单一 state，减少渲染次数 */
     const [state, setState] = useState(() => ({
-        locale: 'zh-CN',
-        messages: {} as Messages,
-        t: mkT({})
+        locale: initialGlobal?.locale ?? 'zh-CN',
+        messages: initialGlobal?.messages ?? {} as Messages,
+        t: initialGlobal?.t ?? mkT({}),
+        ready: !!initialGlobal
     }));
 
-    const { locale, messages, t } = state;
+    const { locale, messages, t, ready } = state;
 
     /** 避免重复 setState */
     const lastMessagesRef = useRef(messages);
@@ -82,9 +56,13 @@ export function useI18n() {
             setState({
                 locale: g.locale,
                 messages: nextMessages,
-                t: g.t ?? mkT(nextMessages)
+                t: g.t ?? mkT(nextMessages),
+                ready: true
             });
+            return;
         }
+
+        setState(s => s.ready && s.locale === g.locale ? s : { ...s, locale: g.locale, ready: true });
     }, []);
 
     /** 设置语言（避免重复设置） */
@@ -108,7 +86,8 @@ export function useI18n() {
             const currentLocale = g.locale;
 
             // 规范化命名空间
-            const merged = Array.from(new Set(ns)).sort();
+            const merged = normalizeNamespaces(ns);
+            if (merged.length === 0) return;
 
             // 使用 JSON 作为 key，避免冲突
             const key = `${currentLocale}::${JSON.stringify(merged)}`;
@@ -153,8 +132,7 @@ export function useI18n() {
         return () => window.removeEventListener('sp-i18n-updated', onUpdated);
     }, [refreshFromGlobal]);
 
-    /** ready 状态 */
-    const ready = useMemo(() => !!messages, [messages]);
+    const isReady = useMemo(() => ready, [ready]);
 
     return {
         t,
@@ -162,6 +140,6 @@ export function useI18n() {
         setLocale,
         messages,
         ensure,
-        ready
+        ready: isReady
     } as const;
 }

@@ -67,5 +67,6 @@
   "dna.federation.sqlConsole.page.button.query": "Execute SQL",
   "dna.federation.sqlConsole.page.placeholder.selectCatalog": "Select a federation catalog",
   "dna.federation.sqlConsole.page.message.selectedPath": "Selected Path",
-  "dna.federation.sqlConsole.page.message.selectedObject": "Object selected in the left tree"
+  "dna.federation.sqlConsole.page.message.selectedObject": "Object selected in the left tree",
+  "dna.federation.sqlConsole.page.button.insertPath": "Insert Path"
 }

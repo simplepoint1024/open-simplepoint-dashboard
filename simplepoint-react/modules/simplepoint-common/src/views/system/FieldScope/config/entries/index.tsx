@@ -27,11 +27,11 @@ const App = ({fieldScopeId, initialEntries = [], onSuccess}: FieldScopeEntriesCo
             const values = await form.validateFields();
             setSaving(true);
             await replaceEntries(fieldScopeId, values.entries ?? []);
-            message.success('保存成功');
+            message.success(t('field-scopes.message.entriesSaveSuccess', '保存成功'));
             onSuccess?.();
         } catch (e: any) {
             if (e?.errorFields) return; // validation error, already shown
-            message.error('保存失败');
+            message.error(t('field-scopes.message.entriesSaveFailed', '保存失败'));
         } finally {
             setSaving(false);
         }
@@ -55,7 +55,7 @@ const App = ({fieldScopeId, initialEntries = [], onSuccess}: FieldScopeEntriesCo
                                 <Form.Item
                                     {...restField}
                                     name={[name, 'resource']}
-                                    rules={[{required: true, message: '请输入资源名'}]}
+                                    rules={[{required: true, message: t('field-scopes.rule.entry.resource', '请输入资源名')}]}
                                     style={{marginBottom: 0, minWidth: 160}}
                                 >
                                     <input
@@ -72,7 +72,7 @@ const App = ({fieldScopeId, initialEntries = [], onSuccess}: FieldScopeEntriesCo
                                 <Form.Item
                                     {...restField}
                                     name={[name, 'field']}
-                                    rules={[{required: true, message: '请输入字段名'}]}
+                                    rules={[{required: true, message: t('field-scopes.rule.entry.field', '请输入字段名')}]}
                                     style={{marginBottom: 0, minWidth: 160}}
                                 >
                                     <input
@@ -89,7 +89,7 @@ const App = ({fieldScopeId, initialEntries = [], onSuccess}: FieldScopeEntriesCo
                                 <Form.Item
                                     {...restField}
                                     name={[name, 'access']}
-                                    rules={[{required: true, message: '请选择访问级别'}]}
+                                    rules={[{required: true, message: t('field-scopes.rule.entry.access', '请选择访问级别')}]}
                                     style={{marginBottom: 0, minWidth: 140}}
                                 >
                                     <Select
@@ -107,7 +107,7 @@ const App = ({fieldScopeId, initialEntries = [], onSuccess}: FieldScopeEntriesCo
                         <Form.Item>
                             <Button type="dashed" onClick={() => add({resource: '', field: '', access: 'VISIBLE'})}
                                     icon={<PlusOutlined/>}>
-                                添加规则
+                                {t('field-scopes.action.addEntry', '添加规则')}
                             </Button>
                         </Form.Item>
                     </>
@@ -115,7 +115,7 @@ const App = ({fieldScopeId, initialEntries = [], onSuccess}: FieldScopeEntriesCo
             </Form.List>
             <Form.Item>
                 <Button type="primary" onClick={handleSave} loading={saving}>
-                    保存
+                    {t('field-scopes.action.saveEntries', '保存')}
                 </Button>
             </Form.Item>
         </Form>

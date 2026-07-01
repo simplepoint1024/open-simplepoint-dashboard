@@ -14,7 +14,7 @@ const App = () => {
   const {t, ensure, locale} = useI18n();
 
   useEffect(() => {
-    void ensure(baseConfig.i18nNamespaces);
+    void ensure([...baseConfig.i18nNamespaces, 'permissions', 'table', 'common']);
   }, [ensure, locale]);
 
   useEffect(() => {

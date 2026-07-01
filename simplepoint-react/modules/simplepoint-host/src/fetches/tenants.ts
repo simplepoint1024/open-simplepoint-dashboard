@@ -9,6 +9,10 @@ export type CurrentTenant = {
     tenantType: 'PERSONAL' | 'ORGANIZATION';
 };
 
+function normalizeTenantType(tenant?: Partial<CurrentTenant>): CurrentTenant['tenantType'] {
+    return tenant?.tenantType === 'PERSONAL' ? 'PERSONAL' : 'ORGANIZATION';
+}
+
 /**
  * 获取当前用户可切换的租户列表（部分后端会按当前 tenant 返回不同的列表）
  */
@@ -18,8 +22,10 @@ export async function fetchCurrentTenants(): Promise<CurrentTenant[]> {
     // 组织租户排在前面，个人租户排在最后；同类型按名称稳定排序
     if (!Array.isArray(res)) return [];
     return res.sort((a, b) => {
-        if (a.tenantType !== b.tenantType) {
-            return a.tenantType === 'PERSONAL' ? 1 : -1;
+        const typeA = normalizeTenantType(a);
+        const typeB = normalizeTenantType(b);
+        if (typeA !== typeB) {
+            return typeA === 'PERSONAL' ? 1 : -1;
         }
         return (a.tenantName || '').localeCompare(b.tenantName || '');
     });

@@ -14,7 +14,7 @@ const App = () => {
   const {t, ensure, locale} = useI18n();
 
   useEffect(() => {
-    void ensure(baseConfig.i18nNamespaces);
+    void ensure([...baseConfig.i18nNamespaces, 'features', 'table', 'common']);
   }, [ensure, locale]);
 
   useEffect(() => {
@@ -56,7 +56,7 @@ const App = () => {
     <div>
       <SimpleTable {...baseConfig} customButtonEvents={customButtonEvents}/>
       <Drawer
-        title={t('table.button.config.feature', '配置功能')}
+        title={t('applications.button.config.feature', '配置功能')}
         open={openFeatureConfig}
         onClose={() => {
           setOpenFeatureConfig(false);

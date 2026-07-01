@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useCallback} from 'react';
+import React, {useEffect, useState, useCallback, useMemo} from 'react';
 import SimpleTable from "@simplepoint/components/SimpleTable";
 import api from '@/api/index';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
@@ -8,22 +8,11 @@ import type {SimpleTableColumnOverride} from "@simplepoint/components/SimpleTabl
 
 const baseConfig = api['rbac-menus'];
 
-const MENU_TYPE_CONFIG: Record<string, { color: string; label: string }> = {
-  item:    {color: 'blue',    label: '菜单项'},
-  submenu: {color: 'green',   label: '子菜单'},
-  group:   {color: 'purple',  label: '分组'},
-  divider: {color: 'default', label: '分隔符'},
-};
-
-const menuColumnOverrides: Record<string, SimpleTableColumnOverride<any>> = {
-  type: {
-    render: (value: string) => {
-      if (!value) return <Tag color="default">-</Tag>;
-      const cfg = MENU_TYPE_CONFIG[value];
-      if (cfg) return <Tag color={cfg.color}>{cfg.label}</Tag>;
-      return <Tag color="warning">{value}</Tag>;
-    },
-  },
+const MENU_TYPE_CONFIG: Record<string, { color: string; labelKey: string; fallback: string }> = {
+  item:    {color: 'blue',    labelKey: 'menus.type.item',    fallback: '菜单项'},
+  submenu: {color: 'green',   labelKey: 'menus.type.submenu', fallback: '子菜单'},
+  group:   {color: 'purple',  labelKey: 'menus.type.group',   fallback: '分组'},
+  divider: {color: 'default', labelKey: 'menus.type.divider', fallback: '分隔符'},
 };
 
 const App = () => {
@@ -69,6 +58,17 @@ const App = () => {
   useEffect(() => {
     void ensure(baseConfig.i18nNamespaces);
   }, [ensure, locale]);
+
+  const menuColumnOverrides = useMemo<Record<string, SimpleTableColumnOverride<any>>>(() => ({
+    type: {
+      render: (value: string) => {
+        if (!value) return <Tag color="default">-</Tag>;
+        const cfg = MENU_TYPE_CONFIG[value];
+        if (cfg) return <Tag color={cfg.color}>{t(cfg.labelKey, cfg.fallback)}</Tag>;
+        return <Tag color="warning">{value}</Tag>;
+      },
+    },
+  }), [t]);
   // 自定义添加：若选中一行，则将其 id 作为 parent，默认类型为 item
   const customButtonEvents = {
     add: (_keys: React.Key[], rows: any[]) => {

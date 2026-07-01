@@ -17,22 +17,6 @@ type DataSourceOption = {
   enabled?: boolean;
 };
 
-const RULE_TYPES = [
-  {const: 'NOT_NULL', title: '非空检查 (NOT_NULL)'},
-  {const: 'UNIQUE', title: '唯一性检查 (UNIQUE)'},
-  {const: 'RANGE', title: '范围检查 (RANGE)'},
-  {const: 'REGEX', title: '正则匹配 (REGEX)'},
-  {const: 'ROW_COUNT', title: '行数检查 (ROW_COUNT)'},
-  {const: 'CUSTOM_SQL', title: '自定义SQL (CUSTOM_SQL)'},
-];
-
-const SEVERITIES = [
-  {const: 'INFO', title: '信息 (INFO)'},
-  {const: 'WARNING', title: '警告 (WARNING)'},
-  {const: 'ERROR', title: '错误 (ERROR)'},
-  {const: 'CRITICAL', title: '严重 (CRITICAL)'},
-];
-
 const SEVERITY_COLORS: Record<string, string> = {
   INFO: 'blue',
   WARNING: 'orange',
@@ -50,6 +34,22 @@ const App = () => {
   const {t, ensure, locale} = useI18n();
   const [dataSources, setDataSources] = useState<DataSourceOption[]>([]);
   const [loaded, setLoaded] = useState(false);
+
+  const ruleTypes = useMemo(() => [
+    {const: 'NOT_NULL', title: t('dna.dataQuality.ruleType.NOT_NULL', '非空检查 (NOT_NULL)')},
+    {const: 'UNIQUE', title: t('dna.dataQuality.ruleType.UNIQUE', '唯一性检查 (UNIQUE)')},
+    {const: 'RANGE', title: t('dna.dataQuality.ruleType.RANGE', '范围检查 (RANGE)')},
+    {const: 'REGEX', title: t('dna.dataQuality.ruleType.REGEX', '正则匹配 (REGEX)')},
+    {const: 'ROW_COUNT', title: t('dna.dataQuality.ruleType.ROW_COUNT', '行数检查 (ROW_COUNT)')},
+    {const: 'CUSTOM_SQL', title: t('dna.dataQuality.ruleType.CUSTOM_SQL', '自定义SQL (CUSTOM_SQL)')},
+  ], [t]);
+
+  const severities = useMemo(() => [
+    {const: 'INFO', title: t('dna.dataQuality.severity.INFO', '信息 (INFO)')},
+    {const: 'WARNING', title: t('dna.dataQuality.severity.WARNING', '警告 (WARNING)')},
+    {const: 'ERROR', title: t('dna.dataQuality.severity.ERROR', '错误 (ERROR)')},
+    {const: 'CRITICAL', title: t('dna.dataQuality.severity.CRITICAL', '严重 (CRITICAL)')},
+  ], [t]);
 
   useEffect(() => {
     void ensure([...baseConfig.i18nNamespaces, ...dataSourceConfig.i18nNamespaces]);
@@ -79,17 +79,17 @@ const App = () => {
       }));
     }
     if (properties.ruleType) {
-      properties.ruleType.oneOf = RULE_TYPES;
+      properties.ruleType.oneOf = ruleTypes;
     }
     if (properties.severity) {
-      properties.severity.oneOf = SEVERITIES;
+      properties.severity.oneOf = severities;
     }
     delete properties.catalogName;
     delete properties.lastRunStatus;
     delete properties.lastRunMessage;
     delete properties.lastRunAt;
     return nextSchema;
-  }, [dataSources, t]);
+  }, [dataSources, ruleTypes, severities, t]);
 
   const columnOverrides = useMemo(() => ({
     catalogId: {
@@ -102,7 +102,7 @@ const App = () => {
       title: t('dna.dataQuality.title.ruleType', 'Rule Type'),
       width: 130,
       render: (value?: string) => {
-        const label = RULE_TYPES.find((rt) => rt.const === value)?.title ?? value;
+        const label = ruleTypes.find((rt) => rt.const === value)?.title ?? value;
         return <Tag color="blue">{label}</Tag>;
       },
     },
@@ -132,7 +132,7 @@ const App = () => {
         <Tag color={value ? 'green' : 'red'}>{value ? t('dna.dataQuality.state.enabled', 'Enabled') : t('dna.dataQuality.state.disabled', 'Disabled')}</Tag>
       ),
     },
-  }), [t]);
+  }), [ruleTypes, t]);
 
   return (
     <div>

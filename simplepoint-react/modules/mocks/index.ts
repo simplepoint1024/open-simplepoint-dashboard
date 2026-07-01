@@ -1,24 +1,7 @@
-import { setupWorker } from 'msw/browser';
-import { useMocks } from './hooks/useMocks';
+import { startMockWorker } from './src/browser';
 
-declare const require: {
-  context: (
-    directory: string,
-    useSubdirectories: boolean,
-    regExp: RegExp
-  ) => {
-    keys: () => string[];
-    (id: string): any;
-  };
-};
+export * from './src/browser';
+export * from './src/registry';
+export * from './src/runtime';
 
-const ctx = require.context('./mocks', true, /\.(ts|tsx)$/);
-const handlers = useMocks(ctx);
-
-const worker = setupWorker(
-  ...handlers
-);
-
-export default worker.start({
-  onUnhandledRequest: 'bypass'
-});
+export default startMockWorker();

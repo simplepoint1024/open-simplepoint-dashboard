@@ -55,5 +55,13 @@
   "dna.dataSources.page.field.result": "Result",
   "dna.dataSources.page.state.connectSuccess": "Connection successful",
   "dna.dataSources.page.alert.noDrivers.title": "No drivers are currently available",
-  "dna.dataSources.page.alert.noDrivers.description": "Create and download a JDBC driver on the Driver Management page first, then come back to configure the data source."
+  "dna.dataSources.page.alert.noDrivers.description": "Create and download a JDBC driver on the Driver Management page first, then come back to configure the data source.",
+  "dna.dataSources.health.error.load": "Health check failed",
+  "dna.dataSources.health.stat.total": "Total Data Sources",
+  "dna.dataSources.health.stat.online": "Online",
+  "dna.dataSources.health.stat.offline": "Offline",
+  "dna.dataSources.health.state.online": "Online",
+  "dna.dataSources.health.state.offline": "Offline",
+  "dna.dataSources.health.responseTime": "Response Time",
+  "dna.dataSources.health.empty": "No data sources"
 }

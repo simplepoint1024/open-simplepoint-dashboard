@@ -1,10 +1,10 @@
 import type {ItemType} from "antd/es/menu/interface";
-import {Avatar, Badge, Button, Drawer, Dropdown, List, MenuProps, Tooltip, Popconfirm, message} from "antd";
+import {Avatar, Badge, Button, Drawer, Dropdown, List, MenuProps, Tooltip, Popconfirm, Tag, message} from "antd";
 import {BellOutlined, CreditCardOutlined, FontSizeOutlined, GithubOutlined, GlobalOutlined, LogoutOutlined, QuestionCircleOutlined, SearchOutlined, SettingOutlined, UserOutlined, MoonOutlined, SunOutlined, DesktopOutlined, DeleteOutlined, FullscreenOutlined, FullscreenExitOutlined, SwapOutlined} from "@ant-design/icons";
 import React, {useEffect, useRef, useState} from 'react';
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import { useUserInfo } from '@/fetches/user';
-import { useCurrentTenants } from '@/fetches/tenants';
+import { useCurrentTenants, type CurrentTenant } from '@/fetches/tenants';
 import { getTenantId, setTenantId } from '@/store/tenant';
 import { ensureContextId } from '@simplepoint/shared/api/contextId';
 import { clearClientCaches, redirectToLogout } from '@simplepoint/shared/api/session';
@@ -32,22 +32,46 @@ const LogoTitle: React.FC = () => {
   );
 };
 
-type RuntimeScopeContext = {
-  scopeType?: string;
-  actorRole?: string;
-  tenantId?: string;
-  userId?: string;
-};
+function normalizedTenantType(tenant?: Pick<CurrentTenant, 'tenantType'>): CurrentTenant['tenantType'] {
+  return tenant?.tenantType === 'PERSONAL' ? 'PERSONAL' : 'ORGANIZATION';
+}
 
-const RUNTIME_SCOPE_EVENT = 'sp-runtime-scope';
+function tenantTypeLabel(
+  t: (key: string, fallback?: string) => string,
+  tenant?: Pick<CurrentTenant, 'tenantType'>,
+): string {
+  return normalizedTenantType(tenant) === 'PERSONAL'
+    ? t('tenant.type.personal', '个人')
+    : t('tenant.type.organization', '组织');
+}
 
-function scopeLabel(t: (key: string, fallback?: string) => string, scope?: RuntimeScopeContext) {
-  if (scope?.scopeType === 'PLATFORM') return t('scope.platform', '平台控制台');
-  if (scope?.scopeType === 'PERSONAL') return t('scope.personal', '个人空间');
-  if (scope?.actorRole === 'TENANT_OWNER') return t('scope.tenantOwner', '组织租户 · 所有者');
-  if (scope?.actorRole === 'TENANT_ADMIN') return t('scope.tenantAdmin', '组织租户 · 管理员');
-  if (scope?.scopeType === 'TENANT') return t('scope.tenant', '组织租户');
-  return t('scope.unknown', '作用域未知');
+function tenantDisplayName(
+  t: (key: string, fallback?: string) => string,
+  tenant?: Pick<CurrentTenant, 'tenantName' | 'tenantType'>,
+): string {
+  if (!tenant) return t('tenant.unknown', '未选择');
+  if (normalizedTenantType(tenant) === 'PERSONAL') {
+    return t('tenant.personalSpace', '个人空间');
+  }
+  return tenant.tenantName || t('tenant.unknown', '未选择');
+}
+
+function TenantTypeTag({
+  tenant,
+  t,
+}: {
+  tenant?: Pick<CurrentTenant, 'tenantType'>;
+  t: (key: string, fallback?: string) => string;
+}) {
+  const type = normalizedTenantType(tenant);
+  return (
+    <Tag
+      color={type === 'PERSONAL' ? 'blue' : 'green'}
+      className="nb-tenant-type-tag"
+    >
+      {tenantTypeLabel(t, tenant)}
+    </Tag>
+  );
 }
 
 /**
@@ -57,7 +81,6 @@ export const TenantSwitcherTop: React.FC = () => {
   const { t } = useI18n();
   const { data, isFetching, refetch } = useCurrentTenants();
   const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
-  const [runtimeScope, setRuntimeScope] = useState<RuntimeScopeContext>({});
 
   // 同步外部切换
   useEffect(() => {
@@ -65,16 +88,6 @@ export const TenantSwitcherTop: React.FC = () => {
     try {
       window.addEventListener('sp-set-tenant', handler);
       return () => window.removeEventListener('sp-set-tenant', handler);
-    } catch {
-      return;
-    }
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: Event) => setRuntimeScope(((e as CustomEvent<RuntimeScopeContext>).detail) || {});
-    try {
-      window.addEventListener(RUNTIME_SCOPE_EVENT, handler);
-      return () => window.removeEventListener(RUNTIME_SCOPE_EVENT, handler);
     } catch {
       return;
     }
@@ -90,18 +103,30 @@ export const TenantSwitcherTop: React.FC = () => {
     }
   }, [data, tenantId]);
 
-  const currentName = (data || []).find((x) => x.tenantId === tenantId)?.tenantName;
+  const currentTenant = (data || []).find((x) => x.tenantId === tenantId);
+  const currentName = tenantDisplayName(t, currentTenant);
+  const currentType = currentTenant ? tenantTypeLabel(t, currentTenant) : t('tenant.type.unknown', '租户');
 
   const menu: MenuProps = {
     items: isFetching
       ? [{ key: 'loading', disabled: true, label: t('loading', '加载中...') }]
       : (data || []).map((it) => ({
           key: it.tenantId,
-          label: it.tenantName,
+          label: (
+            <div className="nb-tenant-menu-item">
+              <div className="nb-tenant-menu-main">
+                <span className="nb-tenant-menu-name">{tenantDisplayName(t, it)}</span>
+                <TenantTypeTag tenant={it} t={t} />
+              </div>
+            </div>
+          ),
         })),
     onClick: async (info: any) => {
       const nextId = String(info?.key || '');
       if (!nextId || nextId === tenantId) return;
+      const nextTenant = (data || []).find((x) => x.tenantId === nextId);
+      const nextType = tenantTypeLabel(t, nextTenant);
+      const nextName = tenantDisplayName(t, nextTenant);
 
       // 先切租户：保证后续请求头 X-Tenant-Id 立即生效
       setTenantId(nextId);
@@ -110,7 +135,7 @@ export const TenantSwitcherTop: React.FC = () => {
       // 预热权限上下文（best-effort，不阻断切换；真正的当前态由 App 内部按最新 tenant 决定）
       await ensureContextId(nextId, { force: true });
 
-      message.success(t('tenant.switchDone', '已切换租户，后续请求将生效')).then(_ => {});
+      message.success(`${t('tenant.switchDone', '已切换租户，后续请求将生效')} · ${nextType}: ${nextName}`).then(_ => {});
     },
   };
 
@@ -137,11 +162,12 @@ export const TenantSwitcherTop: React.FC = () => {
         }}
         onClick={(e) => { try { e.stopPropagation(); } catch {} }}
         onMouseDown={(e) => { try { e.stopPropagation(); } catch {} }}
-        title={t('label.tenant', '租户')}
+        title={`${t('label.tenant', '租户')} · ${currentType}: ${currentName}`}
       >
         <SwapOutlined style={{ marginRight: 6, opacity: 0.75 }} />
-        <span style={{ fontSize: 12, opacity: 0.85 }}>
-          {scopeLabel(t, runtimeScope)} · {currentName || t('tenant.unknown', '未选择')}
+        {currentTenant && <TenantTypeTag tenant={currentTenant} t={t} />}
+        <span className="nb-tenant-current-name">
+          {currentName}
         </span>
       </div>
     </Dropdown>
@@ -431,9 +457,36 @@ export const HeaderSearchBar: React.FC<{ onOpen: () => void }> = ({ onOpen }) =>
 };
 
 const mockNotifications = [
-  {id: 1, title: '系统更新', desc: 'SimplePoint v2.1.0 已发布', time: '5分钟前', read: false},
-  {id: 2, title: '新用户注册', desc: '有3位新用户待审批', time: '1小时前', read: false},
-  {id: 3, title: '任务完成', desc: '数据同步任务已完成', time: '2小时前', read: true},
+  {
+    id: 1,
+    titleKey: 'nav.notification.systemUpdate.title',
+    titleFallback: '系统更新',
+    descKey: 'nav.notification.systemUpdate.desc',
+    descFallback: 'SimplePoint v2.1.0 已发布',
+    timeKey: 'nav.notification.systemUpdate.time',
+    timeFallback: '5分钟前',
+    read: false,
+  },
+  {
+    id: 2,
+    titleKey: 'nav.notification.newUsers.title',
+    titleFallback: '新用户注册',
+    descKey: 'nav.notification.newUsers.desc',
+    descFallback: '有3位新用户待审批',
+    timeKey: 'nav.notification.newUsers.time',
+    timeFallback: '1小时前',
+    read: false,
+  },
+  {
+    id: 3,
+    titleKey: 'nav.notification.taskDone.title',
+    titleFallback: '任务完成',
+    descKey: 'nav.notification.taskDone.desc',
+    descFallback: '数据同步任务已完成',
+    timeKey: 'nav.notification.taskDone.time',
+    timeFallback: '2小时前',
+    read: true,
+  },
 ];
 
 const NotificationButton: React.FC = () => {
@@ -480,11 +533,11 @@ const NotificationButton: React.FC = () => {
               onClick={() => setNotifications(prev => prev.map(n => n.id === item.id ? {...n, read: true} : n))}
             >
               <List.Item.Meta
-                title={<span style={{fontSize:13, fontWeight: item.read ? 400 : 600}}>{item.title}</span>}
+                title={<span style={{fontSize:13, fontWeight: item.read ? 400 : 600}}>{t(item.titleKey, item.titleFallback)}</span>}
                 description={
                   <div>
-                    <div style={{fontSize:12, color:'rgba(0,0,0,0.65)'}}>{item.desc}</div>
-                    <div style={{fontSize:11, color:'rgba(0,0,0,0.35)', marginTop:2}}>{item.time}</div>
+                    <div style={{fontSize:12, color:'rgba(0,0,0,0.65)'}}>{t(item.descKey, item.descFallback)}</div>
+                    <div style={{fontSize:11, color:'rgba(0,0,0,0.35)', marginTop:2}}>{t(item.timeKey, item.timeFallback)}</div>
                   </div>
                 }
               />

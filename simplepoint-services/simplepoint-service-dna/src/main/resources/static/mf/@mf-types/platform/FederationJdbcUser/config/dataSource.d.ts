@@ -1,2 +1,0 @@
-export * from './../../../compiled-types/views/platform/FederationJdbcUser/config/dataSource/index';
-export { default } from './../../../compiled-types/views/platform/FederationJdbcUser/config/dataSource/index';

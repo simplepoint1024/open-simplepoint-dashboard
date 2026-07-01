@@ -265,9 +265,10 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 .nb-inner-layout { padding: 0; overflow: hidden; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
 .nb-content-wrapper {
+    flex: 1;
     padding: 0;
     margin: 0;
-    min-height: 300px;
+    min-height: 0;
     background: var(--nb-bg);
     border-radius: var(--nb-radius);
     border: 1px solid var(--nb-border);
@@ -291,9 +292,48 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 
 .nb-header-tenant > * {
     white-space: nowrap;
-    max-width: 200px;
+    max-width: 220px;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.nb-header-tenant .nb-tenant-type-tag,
+.nb-tenant-menu-item .nb-tenant-type-tag {
+    margin-inline-end: 0;
+    border-radius: 4px;
+    line-height: 18px;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.nb-tenant-current-name {
+    min-width: 0;
+    max-width: 128px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    opacity: 0.86;
+}
+
+.nb-tenant-menu-item {
+    min-width: 180px;
+}
+
+.nb-tenant-menu-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.nb-tenant-menu-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .nb-tabs-bar {
@@ -490,7 +530,7 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 .ant-table-wrapper .ant-table-thead > tr > td {
     font-weight: 600;
     font-size: 13px;
-    letter-spacing: 0.015em;
+    letter-spacing: 0;
     white-space: nowrap;
     line-height: 1.5;
 }
@@ -547,6 +587,7 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 @media (max-width: 768px) {
   .nb-header-search { display: none; }
   .nb-header-breadcrumb { display: none; }
-  .nb-header-tenant span { display: none; }
+  .nb-header-tenant .nb-tenant-current-name,
+  .nb-header-tenant .nb-tenant-type-tag { display: none; }
   .nb-root .ant-layout-sider { width: 0 !important; min-width: 0 !important; }
 }

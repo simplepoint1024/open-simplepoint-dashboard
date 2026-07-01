@@ -8,24 +8,30 @@ const PermissionConfig = lazy(() => import('./config/permission'));
 
 // 获取基础表格配置
 const baseConfig = api['rbac-roles'];
+const permissionConfigNamespaces = [...baseConfig.i18nNamespaces, 'data-scopes', 'field-scopes', 'table', 'common'];
+
+const getDefaultDrawerHeight = () => {
+    if (typeof window === 'undefined') return 620;
+    return Math.min(Math.max(560, Math.round(window.innerHeight * 0.72)), window.innerHeight - 64);
+};
 
 const App = () => {
     const [openRoleConfig, setOpenRoleConfig] = useState(false);
     const [roleId, setRoleId] = useState<string>('');
     // 支持拖拽高度
-    const [drawerHeight, setDrawerHeight] = useState<number>(480);
+    const [drawerHeight, setDrawerHeight] = useState<number>(() => getDefaultDrawerHeight());
 
     // 国际化
     const {t, ensure, locale} = useI18n();
     // 确保本页所需命名空间加载（roles），语言切换后也会自动增量加载
     useEffect(() => {
-        void ensure(baseConfig.i18nNamespaces);
+        void ensure(permissionConfigNamespaces);
     }, [ensure, locale]);
 
     // 关闭时重置高度，避免下次打开异常
     useEffect(() => {
         if (!openRoleConfig) {
-            setDrawerHeight(480);
+            setDrawerHeight(getDefaultDrawerHeight());
         }
     }, [openRoleConfig]);
 
@@ -34,7 +40,7 @@ const App = () => {
         e.preventDefault();
         const startY = e.clientY;
         const startHeight = drawerHeight;
-        const minHeight = 240;
+        const minHeight = 420;
         const maxHeight = Math.max(320, window.innerHeight - 80);
 
         const onMove = (me: MouseEvent) => {
@@ -56,6 +62,7 @@ const App = () => {
     const customButtonEvents = {
         // 角色权限配置
         'config.permission': (_keys: React.Key[], rows: any[]) => {
+            if (!rows[0]?.id) return;
             setOpenRoleConfig(true);
             setRoleId(rows[0].id);
         },
@@ -79,7 +86,8 @@ const App = () => {
                 deleteRefreshTargets={{page: true, schema: false}}
             />
             <Drawer
-                title={t("roles.config.permission")}
+                className="role-permission-drawer"
+                title={t("roles.config.permission", "权限配置")}
                 open={openRoleConfig}
                 onClose={() => {
                     setOpenRoleConfig(false);
@@ -90,7 +98,7 @@ const App = () => {
                 // width 对 bottom 抽屉无效，使用 height 控制高度
                 height={drawerHeight}
                 destroyOnHidden
-                styles={{body: {position: 'relative', paddingTop: 12}}}
+                styles={{body: {position: 'relative', padding: 0}}}
             >
                 {/* 顶部拖拽条 */}
                 <div
