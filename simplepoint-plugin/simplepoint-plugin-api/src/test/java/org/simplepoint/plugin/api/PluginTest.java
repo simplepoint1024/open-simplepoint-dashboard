@@ -9,24 +9,36 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.simplepoint.plugin.api.manifest.PluginManifest;
 
 class PluginTest {
+
+  private static PluginManifest manifest(String id) {
+    PluginManifest manifest = new PluginManifest();
+    manifest.setId(id);
+    manifest.setName(id);
+    manifest.setVersion("1.0.0");
+    return manifest;
+  }
 
   @Test
   void recordFieldsAccessible() {
     URI path = URI.create("file:///plugins/test.jar");
-    Plugin.PluginMetadata meta = new Plugin.PluginMetadata();
-    meta.setPid("test-pid");
+    PluginManifest manifest = manifest("test-plugin");
     Map<String, Set<Plugin.PluginInstance>> registered = new HashMap<>();
-    Plugin plugin = new Plugin(path, meta, registered);
+    Plugin plugin = new Plugin(path, manifest, registered);
 
     assertEquals(path, plugin.path());
-    assertSame(meta, plugin.metadata());
+    assertSame(manifest, plugin.manifest());
     assertNotNull(plugin.registered());
+    assertEquals(PluginStatus.RESOLVED, plugin.status());
+    assertNull(plugin.failure());
+    assertEquals(path, plugin.artifact().uri());
+    assertEquals(-1, plugin.artifact().size());
+    assertNull(plugin.artifact().sha256());
   }
 
   @Test
@@ -34,38 +46,10 @@ class PluginTest {
     URI path = URI.create("file:///plugins/test.jar");
     Map<String, Set<Plugin.PluginInstance>> registered = new HashMap<>();
     registered.put("service", new HashSet<>());
-    Plugin plugin = new Plugin(path, new Plugin.PluginMetadata(), registered);
+    Plugin plugin = new Plugin(path, manifest("test-plugin"), registered);
 
     assertThrows(UnsupportedOperationException.class,
         () -> plugin.registered().put("another", new HashSet<>()));
-  }
-
-  @Test
-  void pluginMetadataSettersGetters() {
-    Plugin.PluginMetadata m = new Plugin.PluginMetadata();
-    m.setPid("pid1");
-    m.setName("my-plugin");
-    m.setVersion("1.0.0");
-    m.setAuthor("Author");
-    m.setDeclaration("decl");
-    m.setEmail("a@b.com");
-    m.setDocument("doc");
-    m.setPhone("123456");
-    m.setPackageName("com.example");
-    m.setAutoRegister("true");
-    m.setDependencies(List.of("dep1", "dep2"));
-
-    assertEquals("pid1", m.getPid());
-    assertEquals("my-plugin", m.getName());
-    assertEquals("1.0.0", m.getVersion());
-    assertEquals("Author", m.getAuthor());
-    assertEquals("decl", m.getDeclaration());
-    assertEquals("a@b.com", m.getEmail());
-    assertEquals("doc", m.getDocument());
-    assertEquals("123456", m.getPhone());
-    assertEquals("com.example", m.getPackageName());
-    assertEquals("true", m.getAutoRegister());
-    assertEquals(List.of("dep1", "dep2"), m.getDependencies());
   }
 
   @Test
@@ -107,11 +91,53 @@ class PluginTest {
   }
 
   @Test
-  void pluginMetadataEquality() {
-    Plugin.PluginMetadata m1 = new Plugin.PluginMetadata();
-    m1.setPid("p1");
-    Plugin.PluginMetadata m2 = new Plugin.PluginMetadata();
-    m2.setPid("p1");
-    assertEquals(m1, m2);
+  void pluginInstanceClearRuntimeInstancePreservesLoadedClass() {
+    Plugin.PluginInstance inst = new Plugin.PluginInstance("bean", "com.Cls", "grp");
+    inst.instance(new Object());
+    inst.classes(String.class);
+    inst.clearRuntimeInstance();
+    assertNull(inst.getInstance());
+    assertSame(String.class, inst.getClazz());
+  }
+
+  @Test
+  void manifestEquality() {
+    assertEquals(manifest("p1"), manifest("p1"));
+  }
+
+  @Test
+  void withStatusCreatesCopyWithStatus() {
+    Plugin plugin = new Plugin(URI.create("file:///plugins/test.jar"),
+        manifest("test-plugin"), new HashMap<>());
+
+    Plugin installed = plugin.withStatus(PluginStatus.INSTALLED);
+
+    assertEquals(PluginStatus.INSTALLED, installed.status());
+    assertNull(installed.failure());
+    assertSame(plugin.manifest(), installed.manifest());
+    assertSame(plugin.artifact(), installed.artifact());
+  }
+
+  @Test
+  void withFailureCreatesFailedCopy() {
+    Plugin plugin = new Plugin(URI.create("file:///plugins/test.jar"),
+        manifest("test-plugin"), new HashMap<>());
+
+    Plugin failed = plugin.withFailure("boom");
+
+    assertEquals(PluginStatus.FAILED, failed.status());
+    assertEquals("boom", failed.failure());
+    assertSame(plugin.manifest(), failed.manifest());
+    assertSame(plugin.artifact(), failed.artifact());
+  }
+
+  @Test
+  void artifactConstructorUsesArtifactUriAsPath() {
+    PluginArtifact artifact = new PluginArtifact(URI.create("file:///plugins/test.jar"), 42, "abc");
+
+    Plugin plugin = new Plugin(artifact, manifest("test-plugin"), new HashMap<>());
+
+    assertSame(artifact, plugin.artifact());
+    assertEquals(artifact.uri(), plugin.path());
   }
 }

@@ -43,6 +43,7 @@
   "error.networkError": "Network error",
   "error.reload": "Reload",
   "error.remoteLoadFail": "Failed to load remote resources. Please try again later.",
+  "error.remoteLoadFailSub": "The remote module may be upgrading or temporarily unreachable.",
   "error.requestFailed": "Request failed",
   "form.invalid": "Invalid input",
   "form.jsonInvalid": "Invalid JSON format",

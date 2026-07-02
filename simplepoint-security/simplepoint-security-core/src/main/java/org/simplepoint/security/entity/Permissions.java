@@ -98,6 +98,12 @@ public class Permissions extends BaseEntityImpl<String> implements BasePermissio
   @Column(length = 100, nullable = false, unique = true)
   private String authority;
 
+  /**
+   * Plugin id that owns this permission. Null means the row is managed by the platform itself.
+   */
+  @Column(length = 128)
+  private String pluginId;
+
   @Column(length = 100, nullable = false)
   @Schema(
       title = "i18n:permissions.title.resource",

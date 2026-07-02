@@ -1,8 +1,9 @@
 // src/hooks/useRegisterRemotes.ts
 import {useEffect, useRef} from 'react';
-import {registerRemotesIfAny} from '@/utils/MfRoutes';
+import {registerRemotesIfAny, remoteRegistrySignature} from '@/utils/MfRoutes';
+import {ServiceMenuResult} from '@/fetches/routes';
 
-export function useRegisterRemotes(res: any, isLoading: boolean) {
+export function useRegisterRemotes(res: ServiceMenuResult | undefined, isLoading: boolean) {
     const signatureRef = useRef('');
 
     useEffect(() => {
@@ -10,10 +11,7 @@ export function useRegisterRemotes(res: any, isLoading: boolean) {
             return;
         }
 
-        const signature = JSON.stringify({
-            entryPoint: res.entryPoint,
-            services: (res.services ?? []).map((service: any) => [service.name, service.entry, service.alias]),
-        });
+        const signature = remoteRegistrySignature(res.services ?? [], res.entryPoint);
         if (signatureRef.current === signature) {
             return;
         }

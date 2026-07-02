@@ -1,5 +1,5 @@
 import React from 'react';
-import { Result } from 'antd';
+import {Button, Result} from 'antd';
 import { loadRemote } from '@module-federation/runtime';
 
 // 简单缓存，避免重复创建 React.lazy
@@ -17,14 +17,43 @@ function getSpecCandidates(spec: string) {
   return Array.from(new Set([normalized, spec]));
 }
 
-export function getLazyComponent(t: (k: string, d?: string) => string, spec?: string): React.LazyExoticComponent<React.ComponentType<any>> {
+function cacheKey(spec: string, remoteRegistryKey?: string) {
+  return `${remoteRegistryKey ?? 'default'}::${spec}`;
+}
+
+function invalidateLazyComponent(spec: string, remoteRegistryKey?: string) {
+  lazyCache.delete(cacheKey(spec, remoteRegistryKey));
+}
+
+function retryRouteLoad(spec: string, remoteRegistryKey?: string) {
+  invalidateLazyComponent(spec, remoteRegistryKey);
+  window.dispatchEvent(new CustomEvent('sp-refresh-route'));
+}
+
+export function getLazyComponent(
+  t: (k: string, d?: string) => string,
+  spec?: string,
+  remoteRegistryKey?: string,
+): React.LazyExoticComponent<React.ComponentType<any>> {
   const fallback: { default: React.ComponentType<any> } = {
     default: () => (
-      <Result status="error" title={t('error.remoteLoadFail','远程资源加载失败，请稍后再试。')}/>
+      <Result
+        status="error"
+        title={t('error.remoteLoadFail', '远程资源加载失败，请稍后再试。')}
+        subTitle={t('error.remoteLoadFailSub', '远程模块可能正在升级或网络暂不可用。')}
+        extra={
+          spec ? (
+            <Button type="primary" onClick={() => retryRouteLoad(spec, remoteRegistryKey)}>
+              {t('error.reload', '重新加载')}
+            </Button>
+          ) : undefined
+        }
+      />
     )
   };
   if (!spec) return React.lazy(async () => fallback);
-  const cached = lazyCache.get(spec);
+  const key = cacheKey(spec, remoteRegistryKey);
+  const cached = lazyCache.get(key);
   if (cached) return cached;
   const s = spec as string; // 保证后续为非空字符串
   const comp = React.lazy(async () => {
@@ -48,6 +77,6 @@ export function getLazyComponent(t: (k: string, d?: string) => string, spec?: st
     const firstKey = lazyCache.keys().next().value as string | undefined;
     if (firstKey) lazyCache.delete(firstKey);
   }
-  lazyCache.set(s, comp);
+  lazyCache.set(key, comp);
   return comp;
 }

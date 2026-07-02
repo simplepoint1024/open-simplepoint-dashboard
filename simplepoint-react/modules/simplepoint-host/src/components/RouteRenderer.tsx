@@ -36,7 +36,8 @@ export function renderRoutes(
     leafRoutes: LeafRoute[],
     refreshKeyMap: Record<string, number>,
     t: TranslateFn,
-    tenantType?: 'PERSONAL' | 'ORGANIZATION'
+    tenantType?: 'PERSONAL' | 'ORGANIZATION',
+    remoteRegistryKey?: string,
 ) {
     // 1. 静态路由（结构统一）
     const staticRoutes: RouteItem[] = [
@@ -78,7 +79,7 @@ export function renderRoutes(
             }
 
             // lazy remote component
-            const LazyComp = getLazyComponent(t, component);
+            const LazyComp = getLazyComponent(t, component, remoteRegistryKey);
             const Wrapped = withBoundaryAndSuspense(LazyComp, t, path, rk);
 
             return {

@@ -1,0 +1,9 @@
+id: org.simplepoint.rbac.router.service
+name: RBAC Router Service
+version: "1.0"
+author: simplepoint
+description: RBAC menu, route, and plugin contribution service layer
+backend:
+  packageScan:
+    service: org.simplepoint.plugin.rbac.menu.service.impl,org.simplepoint.plugin.rbac.menu.service.plugin
+  instances: {}

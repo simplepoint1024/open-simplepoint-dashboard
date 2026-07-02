@@ -63,7 +63,7 @@
   "host.dashboard.feature.dna.quality": "Data quality rules",
   "host.dashboard.feature.dna.console": "SQL console",
   "host.dashboard.feature.plugin.classloader": "PluginClassloader isolated loading",
-  "host.dashboard.feature.plugin.config": "plugin-config.xml declaration",
+  "host.dashboard.feature.plugin.config": "plugin.yaml manifest declaration",
   "host.dashboard.feature.plugin.spring": "Spring Bean auto-registration",
   "host.dashboard.feature.plugin.servlet": "Servlet endpoint dynamic mapping",
   "host.dashboard.feature.plugin.hotload": "/plugins endpoint hot-loading",

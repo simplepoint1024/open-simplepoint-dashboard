@@ -103,6 +103,12 @@ public class Menu extends BaseEntityImpl<String> {
   private String authority;
 
   /**
+   * Plugin id that owns this menu. Null means the row is managed by the platform itself.
+   */
+  @Column(length = 128)
+  private String pluginId;
+
+  /**
    * Label associated with the menu.
    */
   @Order(0)

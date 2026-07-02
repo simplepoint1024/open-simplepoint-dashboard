@@ -40,6 +40,14 @@ public interface MenuService extends BaseService<Menu, String> {
   void sync(String serviceName, Set<MenuChildren> data);
 
   /**
+   * Creates or updates a menu during trusted plugin/data initialization.
+   *
+   * @param menu menu entity
+   * @return saved menu
+   */
+  Menu initializeMenu(Menu menu);
+
+  /**
      * Retrieves the collection of menus accessible to the current user.
      *
      * @return a collection of {@link TreeMenu} entities available to the user

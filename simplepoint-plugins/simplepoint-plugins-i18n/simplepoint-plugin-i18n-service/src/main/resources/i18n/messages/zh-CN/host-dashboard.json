@@ -63,7 +63,7 @@
   "host.dashboard.feature.dna.quality": "数据质量规则",
   "host.dashboard.feature.dna.console": "SQL 控制台",
   "host.dashboard.feature.plugin.classloader": "PluginClassloader 隔离加载",
-  "host.dashboard.feature.plugin.config": "plugin-config.xml 声明",
+  "host.dashboard.feature.plugin.config": "plugin.yaml Manifest 声明",
   "host.dashboard.feature.plugin.spring": "Spring Bean 自动注册",
   "host.dashboard.feature.plugin.servlet": "Servlet 端点动态映射",
   "host.dashboard.feature.plugin.hotload": "/plugins 端点热加载",

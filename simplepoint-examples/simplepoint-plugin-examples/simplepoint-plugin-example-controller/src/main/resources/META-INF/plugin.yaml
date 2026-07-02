@@ -1,0 +1,12 @@
+id: org.simplepoint.example.plugin.controller
+name: demo-controller
+version: "1.0"
+author: simplepoint
+description: Demo plugin controller
+dependencies:
+  - id: org.simplepoint.example.plugin.service.impl
+  - id: org.simplepoint.example.plugin.service
+backend:
+  packageScan:
+    controller: org.simplepoint.example.plugin.controller
+  instances: {}

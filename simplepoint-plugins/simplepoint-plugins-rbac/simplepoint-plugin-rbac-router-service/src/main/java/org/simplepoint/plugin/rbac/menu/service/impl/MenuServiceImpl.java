@@ -33,6 +33,8 @@ import org.simplepoint.plugin.rbac.menu.api.entity.MenuFeatureRelevance;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuAncestorRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuFeatureRelevanceRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
+import org.simplepoint.plugin.rbac.menu.api.service.MicroAppService;
+import org.simplepoint.plugin.rbac.menu.api.vo.MicroModuleItemVo;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Feature;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.FeaturePermissionsRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.service.FeatureService;
@@ -78,6 +80,8 @@ public class MenuServiceImpl
 
   private final MenuFeatureRelevanceRepository menuFeatureRelevanceRepository;
 
+  private final MicroAppService microAppService;
+
   private final DataInitializeExecutor dataInitializeManager;
   private final PermissionChangeLogRemoteService permissionChangeLogRemoteService;
 
@@ -104,6 +108,7 @@ public class MenuServiceImpl
       final PermissionsService permissionsService,
       final FeatureService featureService,
       final MenuFeatureRelevanceRepository menuFeatureRelevanceRepository,
+      final MicroAppService microAppService,
       final DataInitializeExecutor dataInitializeManager,
       final PermissionChangeLogRemoteService permissionChangeLogRemoteService
   ) {
@@ -112,6 +117,7 @@ public class MenuServiceImpl
     this.permissionsService = permissionsService;
     this.featureService = featureService;
     this.menuFeatureRelevanceRepository = menuFeatureRelevanceRepository;
+    this.microAppService = microAppService;
     this.dataInitializeManager = dataInitializeManager;
     this.permissionChangeLogRemoteService = permissionChangeLogRemoteService;
   }
@@ -134,26 +140,51 @@ public class MenuServiceImpl
     var saved = super.create(entity);
     adminRoutesCache = null;
 
-    var parent = saved.getParent();
-
-    if (parent != null && !parent.isEmpty()) {
-      // Inherit ancestors from parent
-      var ancestors = menuAncestorRepository.findAncestorIdsByChildIdIn(Set.of(parent));
-      List<MenuAncestor> toSave = new ArrayList<>();
-      for (String ancestorUuid : ancestors) {
-        MenuAncestor ma = new MenuAncestor();
-        ma.setChildId(saved.getId());
-        ma.setAncestorId(ancestorUuid);
-        toSave.add(ma);
-      }
-      // Add parent as direct ancestor
-      MenuAncestor directAncestor = new MenuAncestor();
-      directAncestor.setChildId(saved.getId());
-      directAncestor.setAncestorId(parent);
-      toSave.add(directAncestor);
-      menuAncestorRepository.saveAll(toSave);
-    }
+    saveAncestors(saved, false);
     return saved;
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+  public Menu initializeMenu(Menu menu) {
+    if (menu.getId() == null || menu.getId().isBlank()) {
+      return create(menu);
+    }
+    if (menu.getAuthority() == null || menu.getAuthority().isEmpty()) {
+      if (menu.getPath() != null && !menu.getPath().isEmpty()) {
+        menu.setAuthority(menu.getPath().replace("/", "."));
+      }
+    }
+    Menu saved = getRepository().updateById(menu);
+    adminRoutesCache = null;
+    saveAncestors(saved, true);
+    return saved;
+  }
+
+  private void saveAncestors(Menu saved, boolean clearExisting) {
+    if (saved.getId() == null || saved.getId().isBlank()) {
+      return;
+    }
+    if (clearExisting) {
+      menuAncestorRepository.deleteChild(Set.of(saved.getId()));
+    }
+    var parent = saved.getParent();
+    if (parent == null || parent.isEmpty()) {
+      return;
+    }
+    var ancestors = menuAncestorRepository.findAncestorIdsByChildIdIn(Set.of(parent));
+    List<MenuAncestor> toSave = new ArrayList<>();
+    for (String ancestorUuid : ancestors) {
+      MenuAncestor ma = new MenuAncestor();
+      ma.setChildId(saved.getId());
+      ma.setAncestorId(ancestorUuid);
+      toSave.add(ma);
+    }
+    MenuAncestor directAncestor = new MenuAncestor();
+    directAncestor.setChildId(saved.getId());
+    directAncestor.setAncestorId(parent);
+    toSave.add(directAncestor);
+    menuAncestorRepository.saveAll(toSave);
   }
 
   @Override
@@ -447,10 +478,11 @@ public class MenuServiceImpl
         return withScopeContext(cached, userContext);
       }
       Set<ServiceMenuResult.ServiceEntry> adminServices = new HashSet<>();
+      Map<String, String> remoteEntries = loadRemoteEntriesByServiceName();
       Collection<Menu> allMenus = getRepository().loadAll();
       ServiceMenuResult result = ServiceMenuResult.of(
           adminServices,
-          buildMenuTree(allMenus, adminServices, true, computeRequireOrgMenuIds(allMenus))
+          buildMenuTree(allMenus, adminServices, true, computeRequireOrgMenuIds(allMenus), remoteEntries)
       );
       adminRoutesCache = result;
       adminRoutesCacheExpiry = System.currentTimeMillis() + 30_000; // 30s TTL
@@ -468,9 +500,10 @@ public class MenuServiceImpl
       // Load menus by collected authorities
       Collection<Menu> menus = getRepository().loadByIds(authorizedMenuIds);
       // Build and return menu tree
+      Map<String, String> remoteEntries = loadRemoteEntriesByServiceName();
       return withScopeContext(ServiceMenuResult.of(
           services,
-          buildMenuTree(menus, services, true, computeRequireOrgMenuIds(menus))
+          buildMenuTree(menus, services, true, computeRequireOrgMenuIds(menus), remoteEntries)
       ), userContext);
     }
 
@@ -606,7 +639,7 @@ public class MenuServiceImpl
      * @return a collection of {@link TreeMenu} representing the hierarchical menu structure
      */
   protected List<TreeMenu> buildMenuTree(Collection<Menu> menus, Set<ServiceMenuResult.ServiceEntry> services, boolean clearUnnecessaryFields) {
-    return buildMenuTree(menus, services, clearUnnecessaryFields, Set.of());
+    return buildMenuTree(menus, services, clearUnnecessaryFields, Set.of(), Map.of());
   }
 
   /**
@@ -621,11 +654,26 @@ public class MenuServiceImpl
      */
   // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
   protected List<TreeMenu> buildMenuTree(Collection<Menu> menus, Set<ServiceMenuResult.ServiceEntry> services, boolean clearUnnecessaryFields, Set<String> requireOrgMenuIds) {
+    return buildMenuTree(menus, services, clearUnnecessaryFields, requireOrgMenuIds, Map.of());
+  }
+
+  /**
+     * Builds a tree structure of menus and records remote module entries for referenced components.
+     *
+     * @param menus                  the flat collection of {@link Menu} entities
+     * @param services               the set of remote services to collect
+     * @param clearUnnecessaryFields whether to clear unnecessary fields from the Menu entities
+     * @param requireOrgMenuIds      set of menu IDs that require an organisation tenant
+     * @param remoteEntries          remote entry URL by service name
+     * @return a collection of {@link TreeMenu} representing the hierarchical menu structure
+     */
+  // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
+  protected List<TreeMenu> buildMenuTree(Collection<Menu> menus, Set<ServiceMenuResult.ServiceEntry> services, boolean clearUnnecessaryFields, Set<String> requireOrgMenuIds, Map<String, String> remoteEntries) {
     // 1) Build node map
     final Map<String, TreeMenu> nodeMap = new HashMap<>(menus.size());
     for (Menu m : menus) {
       // 添加服务
-      services.add(ServiceMenuResult.ServiceEntry.of(getServiceName(m.getComponent())));
+      addServiceEntry(services, m.getComponent(), remoteEntries);
 
       TreeMenu node = new TreeMenu();
       BeanUtils.copyProperties(m, node);
@@ -703,6 +751,41 @@ public class MenuServiceImpl
     }
 
     return path.substring(start, end);
+  }
+
+  private void addServiceEntry(
+      Set<ServiceMenuResult.ServiceEntry> services,
+      String component,
+      Map<String, String> remoteEntries
+  ) {
+    String serviceName = getServiceName(component);
+    if (serviceName == null || serviceName.isBlank() || isNonRemoteComponent(component)) {
+      return;
+    }
+    String entry = remoteEntries == null ? null : remoteEntries.get(serviceName);
+    services.add(ServiceMenuResult.ServiceEntry.of(serviceName, entry));
+  }
+
+  private boolean isNonRemoteComponent(String component) {
+    return component != null && (component.startsWith("external:") || component.startsWith("iframe:"));
+  }
+
+  private Map<String, String> loadRemoteEntriesByServiceName() {
+    if (microAppService == null) {
+      return Map.of();
+    }
+    Set<MicroModuleItemVo> remotes = microAppService.loadApps();
+    if (remotes == null || remotes.isEmpty()) {
+      return Map.of();
+    }
+    Map<String, String> entries = new HashMap<>();
+    for (MicroModuleItemVo remote : remotes) {
+      if (remote.getName() == null || remote.getName().isBlank()) {
+        continue;
+      }
+      entries.put(remote.getName(), remote.getEntry());
+    }
+    return entries;
   }
 
 

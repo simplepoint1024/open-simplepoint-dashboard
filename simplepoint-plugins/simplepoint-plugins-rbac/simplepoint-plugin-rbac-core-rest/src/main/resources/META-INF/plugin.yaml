@@ -1,0 +1,11 @@
+id: org.simplepoint.rbac.core.rest
+name: RBAC Core REST
+version: "1.0"
+author: simplepoint
+description: RBAC permission and user REST endpoints
+dependencies:
+  - id: org.simplepoint.rbac.core.service
+backend:
+  packageScan:
+    controller: org.simplepoint.plugin.rbac.core.rest.controller
+  instances: {}

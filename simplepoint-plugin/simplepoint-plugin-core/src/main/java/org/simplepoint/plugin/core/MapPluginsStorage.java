@@ -25,36 +25,36 @@ public class MapPluginsStorage implements Storage<Plugin> {
 
   /**
    * Saves a plugin instance to the storage.
-   * The plugin is stored using its package name as the key.
+   * The plugin is stored using its manifest id as the key.
    *
    * @param plugin the plugin instance to save
    * @return the saved plugin instance
    */
   @Override
   public Plugin save(Plugin plugin) {
-    plugins.put(plugin.metadata().getPackageName(), plugin);
+    plugins.put(plugin.manifest().getId(), plugin);
     return plugin;
   }
 
   /**
-   * Removes a plugin instance from the storage by its package name.
+   * Removes a plugin instance from the storage by its manifest id.
    *
-   * @param packageName the package name of the plugin to remove
+   * @param pluginId the manifest id of the plugin to remove
    */
   @Override
-  public void remove(String packageName) {
-    plugins.remove(packageName);
+  public void remove(String pluginId) {
+    plugins.remove(pluginId);
   }
 
   /**
-   * Finds a plugin instance in the storage by its package name.
+   * Finds a plugin instance in the storage by its manifest id.
    *
-   * @param packageName the package name of the plugin to find
-   * @return the plugin instance associated with the given package name, or null if not found
+   * @param pluginId the manifest id of the plugin to find
+   * @return the plugin instance associated with the given manifest id, or null if not found
    */
   @Override
-  public Plugin find(String packageName) {
-    return plugins.get(packageName);
+  public Plugin find(String pluginId) {
+    return plugins.get(pluginId);
   }
 
   /**

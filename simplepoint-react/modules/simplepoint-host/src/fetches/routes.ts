@@ -17,7 +17,10 @@ export type AuthorizationContextInfo = {
 
 export type ServiceEntry = {
     name: string;
-    entry: string;
+    entry?: string;
+    alias?: string;
+    remoteVersion?: string;
+    pluginVersion?: string;
 }
 
 export function fetchServiceRoutes() {

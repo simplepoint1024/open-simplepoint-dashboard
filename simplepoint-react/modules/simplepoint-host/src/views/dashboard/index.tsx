@@ -144,7 +144,7 @@ export const Dashboard: React.FC = () => {
       color: '#faad14',
       features: [
         {label: t('host.dashboard.feature.plugin.classloader', 'PluginClassloader 隔离加载')},
-        {label: t('host.dashboard.feature.plugin.config', 'plugin-config.xml 声明')},
+        {label: t('host.dashboard.feature.plugin.config', 'plugin.yaml Manifest 声明')},
         {label: t('host.dashboard.feature.plugin.spring', 'Spring Bean 自动注册')},
         {label: t('host.dashboard.feature.plugin.servlet', 'Servlet 端点动态映射')},
         {label: t('host.dashboard.feature.plugin.hotload', '/plugins 端点热加载')},

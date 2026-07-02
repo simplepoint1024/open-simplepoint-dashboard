@@ -1,0 +1,8 @@
+id: org.simplepoint.example.plugin.service
+name: demo-api
+version: "1.0"
+author: simplepoint
+description: Demo plugin API contract
+backend:
+  packageScan: {}
+  instances: {}

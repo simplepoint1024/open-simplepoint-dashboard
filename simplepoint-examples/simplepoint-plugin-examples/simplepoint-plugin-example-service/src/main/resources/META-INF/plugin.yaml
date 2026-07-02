@@ -1,0 +1,11 @@
+id: org.simplepoint.example.plugin.service.impl
+name: demo-service
+version: "1.0"
+author: simplepoint
+description: Demo plugin service
+dependencies:
+  - id: org.simplepoint.example.plugin.service
+backend:
+  packageScan:
+    service: org.simplepoint.example.plugin.service.impl
+  instances: {}

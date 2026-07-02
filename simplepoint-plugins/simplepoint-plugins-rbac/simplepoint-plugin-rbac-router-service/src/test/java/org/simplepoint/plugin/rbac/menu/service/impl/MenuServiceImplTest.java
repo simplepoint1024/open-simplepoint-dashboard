@@ -38,6 +38,8 @@ import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuAncestorRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuFeatureRelevanceRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuRepository;
+import org.simplepoint.plugin.rbac.menu.api.service.MicroAppService;
+import org.simplepoint.plugin.rbac.menu.api.vo.MicroModuleItemVo;
 import org.simplepoint.plugin.rbac.tenant.api.service.FeatureService;
 import org.simplepoint.security.MenuChildren;
 import org.simplepoint.security.entity.Menu;
@@ -68,6 +70,9 @@ class MenuServiceImplTest {
 
   @Mock
   MenuFeatureRelevanceRepository menuFeatureRelevanceRepository;
+
+  @Mock
+  MicroAppService microAppService;
 
   @Mock
   DataInitializeExecutor dataInitializeManager;
@@ -438,9 +443,18 @@ class MenuServiceImplTest {
     Menu m = menuWithPath("m1", "/page1");
     m.setComponent("/myService/SomeView");
 
-    service.buildMenuTree(List.of(m), services, false);
+    service.buildMenuTree(
+        List.of(m),
+        services,
+        false,
+        Set.of(),
+        Map.of("myService", "http://localhost/myService/mf/mf-manifest.json")
+    );
 
-    assertThat(services).anyMatch(e -> "myService".equals(e.name()));
+    assertThat(services).containsExactly(ServiceMenuResult.ServiceEntry.of(
+        "myService",
+        "http://localhost/myService/mf/mf-manifest.json"
+    ));
   }
 
   @Test
@@ -451,7 +465,47 @@ class MenuServiceImplTest {
 
     service.buildMenuTree(List.of(m), services, false);
 
-    assertThat(services).anyMatch(e -> e.name() == null);
+    assertThat(services).isEmpty();
+  }
+
+  @Test
+  void buildMenuTree_withExternalComponentPath_noServiceEntry() {
+    Set<ServiceMenuResult.ServiceEntry> services = new HashSet<>();
+    Menu m = menuWithPath("m1", "/page1");
+    m.setComponent("external:https://example.com");
+
+    service.buildMenuTree(List.of(m), services, false);
+
+    assertThat(services).isEmpty();
+  }
+
+  @Test
+  void routes_usesRegisteredRemoteEntry() {
+    try (MockedStatic<AuthorizationContextHolder> mockedStatic = mockStatic(AuthorizationContextHolder.class)) {
+      AuthorizationContext ctx = new AuthorizationContext();
+      ctx.setIsAdministrator(false);
+      ctx.setPermissions(Set.of("feat1"));
+      mockedStatic.when(AuthorizationContextHolder::getContext).thenReturn(ctx);
+
+      when(menuFeatureRelevanceRepository.findAllMenuIdByFeatureCodes(Set.of("feat1")))
+          .thenReturn(List.of("m1"));
+      when(menuAncestorRepository.findAncestorIdsByChildIdIn(Set.of("m1")))
+          .thenReturn(Collections.emptyList());
+      Menu m1 = menuWithPath("m1", "/remote/page");
+      m1.setComponent("analytics/Dashboard");
+      when(menuRepository.loadByIds(any())).thenReturn(List.of(m1));
+      when(microAppService.loadApps()).thenReturn(Set.of(new MicroModuleItemVo(
+          "analytics",
+          "https://cdn.example.com/analytics/mf-manifest.json"
+      )));
+
+      ServiceMenuResult result = service.routes();
+
+      assertThat(result.services()).containsExactly(ServiceMenuResult.ServiceEntry.of(
+          "analytics",
+          "https://cdn.example.com/analytics/mf-manifest.json"
+      ));
+    }
   }
 
   // ── authorize / unauthorized with auth context (covers recordPermissionChange) ─

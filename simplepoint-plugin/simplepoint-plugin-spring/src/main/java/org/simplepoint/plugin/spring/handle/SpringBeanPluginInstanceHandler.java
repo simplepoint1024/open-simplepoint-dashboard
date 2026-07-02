@@ -10,7 +10,11 @@ package org.simplepoint.plugin.spring.handle;
 
 import java.util.List;
 import org.simplepoint.plugin.api.Plugin;
+import org.simplepoint.plugin.api.PluginInstallBatchValidator;
+import org.simplepoint.plugin.api.PluginInstallValidator;
 import org.simplepoint.plugin.api.PluginInstanceHandler;
+import org.simplepoint.plugin.api.PluginLifecycleHandler;
+import org.simplepoint.plugin.api.PluginsManager;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
@@ -20,7 +24,7 @@ import org.springframework.context.ConfigurableApplicationContext;
  * Handles the registration and management of Spring Beans for plugin instances.
  * 处理插件实例的 Spring Bean 注册和管理
  */
-public record SpringBeanPluginInstanceHandler(ApplicationContext applicationContext)
+public record SpringBeanPluginInstanceHandler(ApplicationContext applicationContext, PluginsManager pluginsManager)
     implements PluginInstanceHandler {
 
   /**
@@ -28,6 +32,15 @@ public record SpringBeanPluginInstanceHandler(ApplicationContext applicationCont
    * 默认构造函数
    */
   public SpringBeanPluginInstanceHandler {
+  }
+
+  /**
+   * Creates a handler without lifecycle manager integration.
+   *
+   * @param applicationContext application context
+   */
+  public SpringBeanPluginInstanceHandler(ApplicationContext applicationContext) {
+    this(applicationContext, null);
   }
 
   /**
@@ -117,6 +130,16 @@ public record SpringBeanPluginInstanceHandler(ApplicationContext applicationCont
   public void handle(Plugin.PluginInstance instance) {
     instance.instance(createBean(instance.getClazz()));
     registerBean(instance.getName(), instance.getInstance());
+    if (pluginsManager != null
+        && instance.getInstance() instanceof PluginInstallBatchValidator installBatchValidator) {
+      pluginsManager.registerInstallBatchValidator(installBatchValidator);
+    }
+    if (pluginsManager != null && instance.getInstance() instanceof PluginInstallValidator installValidator) {
+      pluginsManager.registerInstallValidator(installValidator);
+    }
+    if (pluginsManager != null && instance.getInstance() instanceof PluginLifecycleHandler lifecycleHandler) {
+      pluginsManager.registerLifecycleHandler(lifecycleHandler);
+    }
   }
 
   /**
@@ -128,6 +151,16 @@ public record SpringBeanPluginInstanceHandler(ApplicationContext applicationCont
    */
   @Override
   public void rollback(Plugin.PluginInstance instance) {
+    if (pluginsManager != null && instance.getInstance() instanceof PluginInstallValidator installValidator) {
+      pluginsManager.unregisterInstallValidator(installValidator);
+    }
+    if (pluginsManager != null
+        && instance.getInstance() instanceof PluginInstallBatchValidator installBatchValidator) {
+      pluginsManager.unregisterInstallBatchValidator(installBatchValidator);
+    }
+    if (pluginsManager != null && instance.getInstance() instanceof PluginLifecycleHandler lifecycleHandler) {
+      pluginsManager.unregisterLifecycleHandler(lifecycleHandler);
+    }
     unregisterBean(instance.getName());
   }
 }

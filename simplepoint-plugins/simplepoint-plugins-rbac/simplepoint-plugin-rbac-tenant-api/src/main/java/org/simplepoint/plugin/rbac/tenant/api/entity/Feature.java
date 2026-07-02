@@ -130,6 +130,12 @@ public class Feature extends BaseEntityImpl<String> {
   private String code;
 
   /**
+   * Plugin id that owns this feature. Null means the row is managed by the platform itself.
+   */
+  @Column(length = 128)
+  private String pluginId;
+
+  /**
    * Sort order of the feature.
    */
   @Order(4)

@@ -1,5 +1,6 @@
 dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    implementation(project(":simplepoint-plugin:simplepoint-plugin-api"))
     implementation(project(":simplepoint-remoting:simplepoint-remoting-core"))
     implementation(project(":simplepoint-security:simplepoint-security-core"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-api"))

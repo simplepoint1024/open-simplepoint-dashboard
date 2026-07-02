@@ -1,19 +1,16 @@
 package org.simplepoint.plugin.rbac.menu.service.impl;
 
-import jakarta.transaction.Transactional;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
-import org.hibernate.service.spi.ServiceException;
-import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.menu.api.repository.RemoteModuleRepository;
 import org.simplepoint.plugin.rbac.menu.api.service.MicroAppService;
 import org.simplepoint.plugin.rbac.menu.api.vo.MicroModuleItemVo;
+import org.simplepoint.plugin.rbac.menu.service.support.RemoteEntryVersioner;
 import org.simplepoint.remoting.RemoteProvider;
-import org.simplepoint.security.entity.Menu;
 import org.simplepoint.security.entity.MicroModule;
-import org.simplepoint.security.service.MenuService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -30,6 +27,8 @@ import org.springframework.stereotype.Service;
 public class RemoteModuleServiceImpl
     extends BaseServiceImpl<RemoteModuleRepository, MicroModule, String>
     implements MicroAppService {
+
+  private final RemoteEntryVersioner remoteEntryVersioner = new RemoteEntryVersioner();
 
   /**
    * Constructs a new RemoteModuleServiceImpl with the specified repository and authorization context holder.
@@ -51,6 +50,30 @@ public class RemoteModuleServiceImpl
    */
   @Override
   public Set<MicroModuleItemVo> loadApps() {
-    return Set.of();
+    Set<MicroModuleItemVo> remotes = new LinkedHashSet<>();
+    for (MicroModule module : getRepository().findAll(Map.of())) {
+      String serviceName = trimToNull(module.getServiceName());
+      if (serviceName == null) {
+        continue;
+      }
+      remotes.add(new MicroModuleItemVo(serviceName, versionedEntry(module)));
+    }
+    return remotes;
+  }
+
+  private String versionedEntry(MicroModule module) {
+    return remoteEntryVersioner.versioned(
+        module.getEntry(),
+        module.getPluginId(),
+        module.getPluginVersion(),
+        module.getRemoteVersion(),
+        module.getPluginArtifactSha256());
+  }
+
+  private String trimToNull(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    return value.trim();
   }
 }

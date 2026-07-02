@@ -13,23 +13,79 @@ import java.io.Serializable;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import lombok.Data;
 import lombok.Getter;
+import org.simplepoint.plugin.api.manifest.PluginManifest;
 
 /**
  * Represents plugin information.
- * This record includes the plugin path, metadata, and registered bean instances.
+ * This record includes the plugin path, manifest, and registered bean instances.
  *
  * @param path       the URI location of the plugin
- * @param metadata   the metadata information of the plugin
+ * @param manifest   the declarative plugin manifest
  * @param registered the map of registered beans
+ * @param status     the current plugin runtime status
+ * @param failure    the latest failure message, if any
+ * @param artifact   plugin artifact metadata
  */
 public record Plugin(
     URI path,
-    PluginMetadata metadata,
-    Map<String, Set<PluginInstance>> registered
+    PluginManifest manifest,
+    Map<String, Set<PluginInstance>> registered,
+    PluginStatus status,
+    String failure,
+    PluginArtifact artifact
 ) implements Serializable {
+
+  /**
+   * Creates a plugin instance.
+   */
+  public Plugin {
+    artifact = artifact == null ? PluginArtifact.unknown(path) : artifact;
+  }
+
+  /**
+   * Constructs a resolved plugin without a failure message.
+   *
+   * @param path       the URI location of the plugin
+   * @param manifest   the declarative plugin manifest
+   * @param registered the map of registered beans
+   */
+  public Plugin(URI path, PluginManifest manifest, Map<String, Set<PluginInstance>> registered) {
+    this(path, manifest, registered, PluginStatus.RESOLVED, null, PluginArtifact.unknown(path));
+  }
+
+  /**
+   * Constructs a resolved plugin with artifact metadata.
+   *
+   * @param artifact   plugin artifact metadata
+   * @param manifest   the declarative plugin manifest
+   * @param registered the map of registered beans
+   */
+  public Plugin(PluginArtifact artifact, PluginManifest manifest, Map<String, Set<PluginInstance>> registered) {
+    this(artifact.uri(), manifest, registered, PluginStatus.RESOLVED, null, artifact);
+  }
+
+  /**
+   * Creates a copy with the specified status.
+   *
+   * @param status target status
+   * @return plugin copy
+   */
+  public Plugin withStatus(PluginStatus status) {
+    return new Plugin(path, manifest, registered, status, null, artifact);
+  }
+
+  /**
+   * Creates a failed plugin copy carrying the failure message.
+   *
+   * @param failure failure message
+   * @return plugin copy
+   */
+  public Plugin withFailure(String failure) {
+    return new Plugin(path, manifest, registered, PluginStatus.FAILED, failure, artifact);
+  }
 
   /**
    * Retrieves the map of registered beans as an unmodifiable map.
@@ -38,29 +94,7 @@ public record Plugin(
    */
   @Override
   public Map<String, Set<PluginInstance>> registered() {
-    return Collections.unmodifiableMap(registered);
-  }
-
-  /**
-   * Represents the metadata information of a plugin.
-   * Includes attributes such as plugin ID, name, version, author, and other details.
-   */
-  @Data
-  public static final class PluginMetadata implements Serializable {
-    private String pid;
-    private String name;
-    private String version;
-    private String author;
-    private String declaration;
-    private String email;
-    private String document;
-    private String phone;
-    private String packageName;
-    private String autoRegister;
-    private Map<String, String> packageScan;
-    private Map<String, Set<PluginInstance>> instances;
-    // New: dependent plugin package names this plugin requires
-    private java.util.List<String> dependencies;
+    return Collections.unmodifiableMap(Objects.requireNonNullElse(registered, Map.of()));
   }
 
   /**
@@ -112,6 +146,13 @@ public record Plugin(
       if (this.clazz == null) {
         this.clazz = clazz;
       }
+    }
+
+    /**
+     * Clears the runtime instance while keeping the loaded class.
+     */
+    public void clearRuntimeInstance() {
+      this.instance = null;
     }
 
     /**

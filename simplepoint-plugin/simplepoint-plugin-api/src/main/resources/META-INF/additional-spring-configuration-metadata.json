@@ -2,22 +2,173 @@
   "properties": [
     {
       "name": "plugin.endpoint.enable",
-      "type": "java.lang.String",
-      "description": "Description for plugin.endpoint.enable."
+      "type": "java.lang.Boolean",
+      "description": "Whether to expose the plugin management endpoint."
     },
     {
       "name": "plugin.endpoint.uninstall",
       "type": "java.lang.String",
-      "description": "Description for plugin.endpoint.uninstall."
+      "description": "Custom path suffix for the plugin uninstall endpoint."
     },
     {
       "name": "plugin.endpoint.install",
       "type": "java.lang.String",
-      "description": "Description for plugin.endpoint.install."
+      "description": "Custom path suffix for the plugin install endpoint."
+    },
+    {
+      "name": "plugin.endpoint.upgrade",
+      "type": "java.lang.String",
+      "description": "Custom path suffix for the plugin upgrade endpoint."
+    },
+    {
+      "name": "plugin.endpoint.plan",
+      "type": "java.lang.String",
+      "description": "Custom path suffix for the plugin install dry-run endpoint."
+    },
+    {
+      "name": "plugin.endpoint.plan-upgrade",
+      "type": "java.lang.String",
+      "description": "Custom path suffix for the plugin upgrade dry-run endpoint."
+    },
+    {
+      "name": "plugin.endpoint.enable-plugin",
+      "type": "java.lang.String",
+      "description": "Custom path suffix for the plugin enable endpoint."
+    },
+    {
+      "name": "plugin.endpoint.disable-plugin",
+      "type": "java.lang.String",
+      "description": "Custom path suffix for the plugin disable endpoint."
+    },
+    {
+      "name": "plugin.endpoint.operations",
+      "type": "java.lang.String",
+      "description": "Custom path suffix for the plugin operation audit endpoint."
+    },
+    {
+      "name": "plugin.endpoint.tasks",
+      "type": "java.lang.String",
+      "description": "Custom path suffix for the plugin runtime task endpoint."
     },
     {
       "name": "plugin.autoloader.path",
       "type": "java.lang.String",
-      "description": "Description for plugin.autoloader.path."
+      "description": "Directory scanned by the plugin auto-loader."
+    },
+    {
+      "name": "plugin.runtime.core-version",
+      "type": "java.lang.String",
+      "description": "Current backend plugin runtime version used for manifest compatibility checks."
+    },
+    {
+      "name": "plugin.runtime.frontend-sdk-version",
+      "type": "java.lang.String",
+      "description": "Current frontend plugin SDK version used for manifest compatibility checks."
+    },
+    {
+      "name": "plugin.trust.require-known-sha256",
+      "type": "java.lang.Boolean",
+      "description": "Whether every plugin artifact must have a configured trusted SHA-256 digest."
+    },
+    {
+      "name": "plugin.trust.sha256",
+      "type": "java.util.Map<java.lang.String,java.util.List<java.lang.String>>",
+      "description": "Trusted SHA-256 digests grouped by plugin manifest id."
+    },
+    {
+      "name": "plugin.task-store.jdbc.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to store plugin runtime task snapshots in JDBC."
+    },
+    {
+      "name": "plugin.task-store.jdbc.initialize-schema",
+      "type": "java.lang.Boolean",
+      "description": "Whether the JDBC plugin task store should create its table on startup."
+    },
+    {
+      "name": "plugin.task-store.jdbc.table-name",
+      "type": "java.lang.String",
+      "description": "JDBC table name used by the plugin runtime task store."
+    },
+    {
+      "name": "plugin.runtime-coordinator.jdbc.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to coordinate plugin runtime operations with a JDBC lease lock."
+    },
+    {
+      "name": "plugin.runtime-coordinator.jdbc.initialize-schema",
+      "type": "java.lang.Boolean",
+      "description": "Whether the JDBC plugin runtime coordinator should create its lock table on startup."
+    },
+    {
+      "name": "plugin.runtime-coordinator.jdbc.table-name",
+      "type": "java.lang.String",
+      "description": "JDBC table name used by the plugin runtime coordinator lock."
+    },
+    {
+      "name": "plugin.runtime-coordinator.jdbc.lock-name",
+      "type": "java.lang.String",
+      "description": "Logical lock name used to serialize plugin runtime operations."
+    },
+    {
+      "name": "plugin.runtime-coordinator.jdbc.owner-id",
+      "type": "java.lang.String",
+      "description": "Stable owner id for this application node when acquiring the plugin runtime lock."
+    },
+    {
+      "name": "plugin.runtime-coordinator.jdbc.lease-duration",
+      "type": "java.time.Duration",
+      "description": "Lease duration for the JDBC plugin runtime lock."
+    },
+    {
+      "name": "plugin.runtime-coordinator.jdbc.acquire-timeout",
+      "type": "java.time.Duration",
+      "description": "Maximum time to wait while acquiring the JDBC plugin runtime lock."
+    },
+    {
+      "name": "plugin.runtime-coordinator.jdbc.retry-interval",
+      "type": "java.time.Duration",
+      "description": "Retry interval used while acquiring the JDBC plugin runtime lock."
+    },
+    {
+      "name": "plugin.runtime-events.jdbc.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to record plugin runtime operation events in JDBC for cross-node propagation."
+    },
+    {
+      "name": "plugin.runtime-events.jdbc.initialize-schema",
+      "type": "java.lang.Boolean",
+      "description": "Whether the JDBC plugin runtime event store should create its table on startup."
+    },
+    {
+      "name": "plugin.runtime-events.jdbc.relay-enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to relay JDBC plugin runtime events from other nodes to the local Spring event bus."
+    },
+    {
+      "name": "plugin.runtime-events.jdbc.replay-existing",
+      "type": "java.lang.Boolean",
+      "description": "Whether the JDBC plugin runtime event relay should replay existing rows when it starts."
+    },
+    {
+      "name": "plugin.runtime-events.jdbc.table-name",
+      "type": "java.lang.String",
+      "description": "JDBC table name used by the plugin runtime event log."
+    },
+    {
+      "name": "plugin.runtime-events.jdbc.origin-id",
+      "type": "java.lang.String",
+      "description": "Stable origin id for this application node when recording or relaying plugin runtime events."
+    },
+    {
+      "name": "plugin.runtime-events.jdbc.poll-interval",
+      "type": "java.time.Duration",
+      "description": "Polling interval used by the JDBC plugin runtime event relay."
+    },
+    {
+      "name": "plugin.runtime-events.jdbc.batch-size",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of JDBC plugin runtime events fetched per relay poll."
     }
-  ] }
+  ]
+}

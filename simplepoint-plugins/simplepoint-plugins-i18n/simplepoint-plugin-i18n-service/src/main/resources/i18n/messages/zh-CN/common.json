@@ -43,6 +43,7 @@
   "error.networkError": "网络错误",
   "error.reload": "重新加载",
   "error.remoteLoadFail": "远程资源加载失败，请稍后再试。",
+  "error.remoteLoadFailSub": "远程模块可能正在升级或网络暂不可用。",
   "error.requestFailed": "请求失败",
   "form.invalid": "输入不合法",
   "form.jsonInvalid": "JSON格式不正确",

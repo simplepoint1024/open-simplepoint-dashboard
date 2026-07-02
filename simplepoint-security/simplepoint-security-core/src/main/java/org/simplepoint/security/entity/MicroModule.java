@@ -86,6 +86,30 @@ public class MicroModule extends BaseEntityImpl<String> {
       })
   private String serviceName;
 
+  /**
+   * Plugin id that owns this remote module. Null means the row is managed by the platform itself.
+   */
+  @Column(length = 128)
+  private String pluginId;
+
+  /**
+   * Version of the owning plugin manifest.
+   */
+  @Column(length = 64)
+  private String pluginVersion;
+
+  /**
+   * Version of the frontend remote declared by the plugin manifest.
+   */
+  @Column(length = 64)
+  private String remoteVersion;
+
+  /**
+   * SHA-256 digest of the owning plugin artifact.
+   */
+  @Column(length = 64)
+  private String pluginArtifactSha256;
+
   @Column(nullable = false, unique = true)
   @Schema(title = "i18n:micro.module.title.entry",
       description = "i18n:micro.domain.description.entry",

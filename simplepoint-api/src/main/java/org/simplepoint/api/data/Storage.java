@@ -19,25 +19,25 @@ public interface Storage<T> {
   /**
    * obj.
    *
-   * @param plugin plugin information
+   * @param data data item
    * @return obj
    */
-  T save(T plugin);
+  T save(T data);
 
   /**
    * remove.
    *
-   * @param packageName packageName
+   * @param key storage key
    */
-  void remove(String packageName);
+  void remove(String key);
 
   /**
    * find.
    *
-   * @param packageName packageName
-   * @return package information
+   * @param key storage key
+   * @return stored data item
    */
-  T find(String packageName);
+  T find(String key);
 
   /**
    * list.
