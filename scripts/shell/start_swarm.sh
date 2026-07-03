@@ -72,7 +72,7 @@ main() {
   ensure_swarm
 
   if [[ -z "${PUBLIC_HOST}" ]]; then
-    PUBLIC_HOST="$(detect_host_ip)"
+    PUBLIC_HOST="localhost"
   fi
 
   export SIMPLEPOINT_PUBLIC_HOST="${PUBLIC_HOST}"
