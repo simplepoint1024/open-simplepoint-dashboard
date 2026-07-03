@@ -8,6 +8,7 @@ import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -68,8 +69,7 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
     return withSession(normalizedRequest.defaultSchema(), schemaConfigurer, session -> {
       CapturedValue<CalciteQueryAnalysis> captured = captureBackendQueries(() -> explainInternal(
           session.connection(),
-          normalizedRequest.timeoutMs(),
-          normalizedRequest.sql()
+          normalizedRequest
       ));
       return enrichAnalysis(captured.value(), captured.capturedQueries());
     });
@@ -105,11 +105,7 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
       CapturedValue<ExecutionPayload> captured = captureBackendQueries(() -> {
         CalciteQueryAnalysis analysis = preComputedAnalysis != null
             ? preComputedAnalysis
-            : explainInternal(
-                session.connection(),
-                normalizedRequest.timeoutMs(),
-                normalizedRequest.sql()
-            );
+            : explainInternal(session.connection(), normalizedRequest);
         long startedAt = System.nanoTime();
         List<Object> params = normalizedRequest.parameters();
         boolean hasParams = params != null && !params.isEmpty();
@@ -117,17 +113,10 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
           ResultSet resultSet;
           Statement statement;
           if (hasParams) {
-            java.sql.PreparedStatement ps = session.connection().prepareStatement(normalizedRequest.sql());
+            PreparedStatement ps = session.connection().prepareStatement(normalizedRequest.sql());
             ps.setQueryTimeout(toQueryTimeoutSeconds(normalizedRequest.timeoutMs()));
             ps.setMaxRows(toStatementMaxRows(normalizedRequest.maxRows()));
-            for (int i = 0; i < params.size(); i++) {
-              Object value = params.get(i);
-              if (value == null) {
-                ps.setNull(i + 1, java.sql.Types.NULL);
-              } else {
-                ps.setObject(i + 1, value);
-              }
-            }
+            bindParameters(ps, params);
             resultSet = ps.executeQuery();
             statement = ps;
           } else {
@@ -199,22 +188,39 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
 
   private static CalciteQueryAnalysis explainInternal(
       final Connection connection,
-      final int timeoutMs,
-      final String sql
+      final CalciteQueryRequest request
   ) {
-    try (Statement statement = connection.createStatement()) {
-      statement.setQueryTimeout(toQueryTimeoutSeconds(timeoutMs));
-      try (ResultSet resultSet = statement.executeQuery("EXPLAIN PLAN FOR " + sql)) {
-        String planText = readExplainPlan(resultSet);
-        return new CalciteQueryAnalysis(
-            planText,
-            detectPushedDownOperators(planText),
-            detectPlatformJoin(planText)
-        );
+    List<Object> params = request.parameters();
+    boolean hasParams = params != null && !params.isEmpty();
+    try {
+      ResultSet resultSet;
+      Statement statement;
+      if (hasParams) {
+        PreparedStatement ps = connection.prepareStatement("EXPLAIN PLAN FOR " + request.sql());
+        ps.setQueryTimeout(toQueryTimeoutSeconds(request.timeoutMs()));
+        bindParameters(ps, params);
+        resultSet = ps.executeQuery();
+        statement = ps;
+      } else {
+        Statement st = connection.createStatement();
+        st.setQueryTimeout(toQueryTimeoutSeconds(request.timeoutMs()));
+        resultSet = st.executeQuery("EXPLAIN PLAN FOR " + request.sql());
+        statement = st;
+      }
+      try (statement; resultSet) {
+        return toAnalysis(readExplainPlan(resultSet));
       }
     } catch (SQLException ex) {
       throw new IllegalStateException("Calcite 执行计划生成失败: " + rootMessage(ex), ex);
     }
+  }
+
+  private static CalciteQueryAnalysis toAnalysis(final String planText) {
+    return new CalciteQueryAnalysis(
+        planText,
+        detectPushedDownOperators(planText),
+        detectPlatformJoin(planText)
+    );
   }
 
   private static CalciteQueryAnalysis enrichAnalysis(
@@ -353,6 +359,23 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
   private static String readBlob(final Blob blob) throws SQLException {
     long length = Math.min(blob.length(), LOB_PREVIEW_LENGTH);
     return Base64.getEncoder().encodeToString(blob.getBytes(1, (int) length));
+  }
+
+  private static void bindParameters(
+      final PreparedStatement statement,
+      final List<Object> parameters
+  ) throws SQLException {
+    if (parameters == null || parameters.isEmpty()) {
+      return;
+    }
+    for (int i = 0; i < parameters.size(); i++) {
+      Object value = parameters.get(i);
+      if (value == null) {
+        statement.setNull(i + 1, java.sql.Types.NULL);
+      } else {
+        statement.setObject(i + 1, value);
+      }
+    }
   }
 
   private static int toStatementMaxRows(final int maxRows) {

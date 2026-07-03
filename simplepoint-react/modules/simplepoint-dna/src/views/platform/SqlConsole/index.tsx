@@ -1,6 +1,13 @@
 import api from '@/api';
 import {contextPath} from '@/services';
-import {ReloadOutlined} from '@ant-design/icons';
+import {DownloadOutlined, ReloadOutlined} from '@ant-design/icons';
+import {
+  ensureContextId,
+  getStoredContextId,
+  getStoredTenantId,
+  shouldAutoEnsureContextId,
+  shouldUseTenantContext,
+} from '@simplepoint/shared/api/contextId';
 import {get, post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {Page} from '@simplepoint/shared/types/request';
@@ -11,6 +18,8 @@ import {
   Col,
   Descriptions,
   Empty,
+  Input,
+  InputNumber,
   Row,
   Select,
   Space,
@@ -71,11 +80,17 @@ type SqlExplainResult = {
   planText: string;
   pushedSqls: string[];
   pushdownSummary?: string;
+  schemaCacheHit: boolean;
+  schemaAssemblyTimeMs: number;
+  mountedDataSourceCount: number;
+  pushedDownOperators?: string[];
+  platformJoin?: boolean;
 };
 
 type SqlColumn = {
   name: string;
   typeName?: string | null;
+  jdbcType?: number | null;
 };
 
 type SqlQueryResult = SqlExplainResult & {
@@ -84,6 +99,33 @@ type SqlQueryResult = SqlExplainResult & {
   truncated: boolean;
   returnedRows: number;
   executionTimeMs: number;
+};
+
+type SqlUpdateResult = {
+  catalogCode: string;
+  dataSourceCode: string;
+  affectedRows: number;
+  executionTimeMs: number;
+  pushedSql?: string | null;
+};
+
+type SqlExecuteResult = {
+  type: 'QUERY' | 'DML' | 'DDL' | 'FLUSH_CACHE' | string;
+  queryResult?: SqlQueryResult | null;
+  updateResult?: SqlUpdateResult | null;
+  message?: string | null;
+};
+
+type SqlConsolePayload = {
+  catalogCode?: string;
+  sql: string;
+  defaultSchema?: string;
+  maxRows?: number;
+  parameters?: unknown[];
+};
+
+type BuildSqlConsolePayloadOptions = {
+  allowGlobalFlush?: boolean;
 };
 
 type ResultRow = {
@@ -139,11 +181,67 @@ const toExplainSnapshot = (result: SqlExplainResult | SqlQueryResult): SqlExplai
   planText: result.planText,
   pushedSqls: result.pushedSqls ?? [],
   pushdownSummary: result.pushdownSummary,
+  schemaCacheHit: result.schemaCacheHit ?? false,
+  schemaAssemblyTimeMs: result.schemaAssemblyTimeMs ?? 0,
+  mountedDataSourceCount: result.mountedDataSourceCount ?? result.dataSources.length,
+  pushedDownOperators: result.pushedDownOperators ?? [],
+  platformJoin: result.platformJoin ?? false,
 });
 
 const formatPushedSqls = (pushedSqls: string[]) => pushedSqls
   .map((sql, index) => `-- Pushdown SQL ${index + 1}\n${sql}`)
   .join('\n\n');
+
+const formatPushedSql = (sql: string, type: string) => `-- ${type} Pushdown SQL\n${sql}`;
+
+const isFlushCacheSql = (value: string) => /^\s*FLUSH\s+CACHE\s*;?\s*$/i.test(value);
+
+const resolveDownloadFileName = (contentDisposition: string | null, fallback: string) => {
+  if (!contentDisposition) {
+    return fallback;
+  }
+  const encodedMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (encodedMatch?.[1]) {
+    try {
+      return decodeURIComponent(encodedMatch[1]);
+    } catch {
+      return encodedMatch[1];
+    }
+  }
+  const quotedMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  return quotedMatch?.[1] || fallback;
+};
+
+const saveBlob = (blob: Blob, fileName: string) => {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+};
+
+const buildJsonHeaders = async (url: string) => {
+  const headers: Record<string, string> = {'Content-Type': 'application/json'};
+  if (!shouldUseTenantContext(url)) {
+    return headers;
+  }
+  const tenantId = getStoredTenantId()?.trim();
+  if (!tenantId) {
+    throw new Error('Tenant context is required');
+  }
+  let contextId = getStoredContextId(tenantId);
+  headers['X-Tenant-Id'] = tenantId;
+  if (shouldAutoEnsureContextId(url, contextId)) {
+    contextId = contextId || await ensureContextId(tenantId);
+  }
+  if (contextId) {
+    headers['X-Context-Id'] = contextId;
+  }
+  return headers;
+};
 
 const pageContainerStyle = {
   display: 'flex',
@@ -210,10 +308,17 @@ const App = () => {
   const [selectedTreeNode, setSelectedTreeNode] = useState<MetadataTreeNode | null>(null);
   const [treeLoading, setTreeLoading] = useState(false);
   const [sql, setSql] = useState(defaultSql);
+  const [defaultSchema, setDefaultSchema] = useState('');
+  const [maxRows, setMaxRows] = useState<number | null>(null);
+  const [parametersText, setParametersText] = useState('');
   const [loadingMode, setLoadingMode] = useState<'explain' | 'query' | null>(null);
+  const [exportFormat, setExportFormat] = useState<'CSV' | 'JSON' | null>(null);
   const [activeTabKey, setActiveTabKey] = useState<ResultTabKey>('analysis');
   const [explainResult, setExplainResult] = useState<SqlExplainResult | null>(null);
   const [queryResult, setQueryResult] = useState<SqlQueryResult | null>(null);
+  const [updateResult, setUpdateResult] = useState<SqlUpdateResult | null>(null);
+  const [executeType, setExecuteType] = useState<SqlExecuteResult['type'] | null>(null);
+  const [executeMessage, setExecuteMessage] = useState<string | null>(null);
   const editorRef = useRef<SqlEditorRef>(null);
 
   useEffect(() => {
@@ -297,13 +402,59 @@ const App = () => {
     return [rootCode, ...selectedTreeNode.path.map((segment) => segment.name)].join('.');
   }, [dataSources, selectedTreeNode]);
 
-  const submit = useCallback(async (mode: 'explain' | 'query') => {
-    if (!catalogCode) {
-      message.warning(t('dna.federation.sqlConsole.page.warning.selectCatalog', '请选择数据目录'));
-      return;
-    }
-    if (!sql.trim()) {
+  const buildSqlConsolePayload = useCallback((options?: BuildSqlConsolePayloadOptions): SqlConsolePayload | null => {
+    const normalizedSql = sql.trim();
+    if (!normalizedSql) {
       message.warning(t('dna.federation.sqlConsole.page.warning.enterSql', '请输入要执行的 SQL'));
+      return null;
+    }
+    const globalFlush = options?.allowGlobalFlush === true && isFlushCacheSql(normalizedSql);
+    if (!catalogCode && !globalFlush) {
+      message.warning(t('dna.federation.sqlConsole.page.warning.selectCatalog', '请选择数据目录'));
+      return null;
+    }
+
+    const payload: SqlConsolePayload = {sql};
+    if (catalogCode) {
+      payload.catalogCode = catalogCode;
+    }
+    if (globalFlush) {
+      return payload;
+    }
+
+    let parameters: unknown[] | undefined;
+    const normalizedParameters = parametersText.trim();
+    if (normalizedParameters) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(normalizedParameters);
+      } catch {
+        message.warning(t('dna.federation.sqlConsole.page.warning.invalidParametersJson', '参数必须是合法的 JSON 数组'));
+        return null;
+      }
+      if (!Array.isArray(parsed)) {
+        message.warning(t('dna.federation.sqlConsole.page.warning.parametersMustBeArray', '参数必须是 JSON 数组'));
+        return null;
+      }
+      parameters = parsed;
+    }
+
+    const normalizedDefaultSchema = defaultSchema.trim();
+    if (normalizedDefaultSchema) {
+      payload.defaultSchema = normalizedDefaultSchema;
+    }
+    if (maxRows && maxRows > 0) {
+      payload.maxRows = maxRows;
+    }
+    if (parameters) {
+      payload.parameters = parameters;
+    }
+    return payload;
+  }, [catalogCode, defaultSchema, maxRows, parametersText, sql, t]);
+
+  const submit = useCallback(async (mode: 'explain' | 'query') => {
+    const payload = buildSqlConsolePayload({allowGlobalFlush: mode === 'query'});
+    if (!payload) {
       return;
     }
     setLoadingMode(mode);
@@ -314,19 +465,40 @@ const App = () => {
       0,
     );
     try {
-      const payload = {catalogCode, sql};
       if (mode === 'explain') {
         const result = await post<SqlExplainResult>(`${sqlConsoleConfig.baseUrl}/explain`, payload);
         setExplainResult(result);
         setQueryResult(null);
+        setUpdateResult(null);
+        setExecuteType(null);
+        setExecuteMessage(null);
         setActiveTabKey('analysis');
         message.success(t('dna.federation.sqlConsole.page.success.explain', '执行计划已生成'));
       } else {
-        const result = await post<SqlQueryResult>(`${sqlConsoleConfig.baseUrl}/query`, payload);
-        setExplainResult(toExplainSnapshot(result));
-        setQueryResult(result);
-        setActiveTabKey('result');
-        message.success(t('dna.federation.sqlConsole.page.success.query', 'SQL 执行成功'));
+        const result = await post<SqlExecuteResult>(`${sqlConsoleConfig.baseUrl}/execute`, payload);
+        setExecuteType(result.type);
+        setExecuteMessage(result.message ?? null);
+        if (result.type === 'QUERY' && result.queryResult) {
+          setExplainResult(toExplainSnapshot(result.queryResult));
+          setQueryResult(result.queryResult);
+          setUpdateResult(null);
+          setActiveTabKey('result');
+          message.success(t('dna.federation.sqlConsole.page.success.query', 'SQL 执行成功'));
+        } else if ((result.type === 'DML' || result.type === 'DDL') && result.updateResult) {
+          setExplainResult(null);
+          setQueryResult(null);
+          setUpdateResult(result.updateResult);
+          setActiveTabKey('result');
+          message.success(t('dna.federation.sqlConsole.page.success.update', 'SQL 已下推执行'));
+        } else if (result.type === 'FLUSH_CACHE') {
+          setExplainResult(null);
+          setQueryResult(null);
+          setUpdateResult(null);
+          setActiveTabKey('result');
+          message.success(result.message || t('dna.federation.sqlConsole.page.success.flushCache', '缓存已刷新'));
+        } else {
+          throw new Error(t('dna.federation.sqlConsole.page.error.unsupportedExecuteResult', '不支持的执行结果类型'));
+        }
       }
     } catch (error) {
       message.error(resolveErrorMessage(
@@ -339,7 +511,41 @@ const App = () => {
       hide();
       setLoadingMode(null);
     }
-  }, [catalogCode, sql, t]);
+  }, [buildSqlConsolePayload, t]);
+
+  const exportResults = useCallback(async (format: 'CSV' | 'JSON') => {
+    const payload = buildSqlConsolePayload();
+    if (!payload) {
+      return;
+    }
+    const exportUrl = `${sqlConsoleConfig.baseUrl}/export`;
+    setExportFormat(format);
+    const hide = message.loading(t('dna.federation.sqlConsole.page.progress.export', '正在导出查询结果...'), 0);
+    try {
+      const response = await fetch(exportUrl, {
+        method: 'POST',
+        credentials: 'include',
+        headers: await buildJsonHeaders(exportUrl),
+        body: JSON.stringify({...payload, format}),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `${response.status} ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      const fileName = resolveDownloadFileName(
+        response.headers.get('content-disposition'),
+        format === 'JSON' ? 'export.json' : 'export.csv',
+      );
+      saveBlob(blob, fileName);
+      message.success(t('dna.federation.sqlConsole.page.success.export', '查询结果已导出'));
+    } catch (error) {
+      message.error(resolveErrorMessage(error, t('dna.federation.sqlConsole.page.error.export', '查询结果导出失败')));
+    } finally {
+      hide();
+      setExportFormat(null);
+    }
+  }, [buildSqlConsolePayload, t]);
 
   const analysisResult = queryResult ?? explainResult;
 
@@ -380,10 +586,37 @@ const App = () => {
                   : t('dna.federation.sqlConsole.page.state.no', '否')}
               </Tag>
             </Descriptions.Item>
+            <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.platformJoin', '平台侧 Join')}>
+              <Tag color={analysisResult.platformJoin ? 'warning' : 'success'}>
+                {analysisResult.platformJoin
+                  ? t('dna.federation.sqlConsole.page.state.yes', '是')
+                  : t('dna.federation.sqlConsole.page.state.no', '否')}
+              </Tag>
+            </Descriptions.Item>
             <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.dataSources', '命中数据源')} span={2}>
               {analysisResult.dataSources.length > 0
                 ? analysisResult.dataSources.map((code) => <Tag key={code}>{code}</Tag>)
                 : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.pushedDownOperators', '下推算子')} span={2}>
+              {(analysisResult.pushedDownOperators ?? []).length > 0
+                ? (analysisResult.pushedDownOperators ?? []).map((operator, index) => (
+                  <Tag key={`${operator}-${index}`}>{operator}</Tag>
+                ))
+                : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.schemaCache', 'Schema 缓存')}>
+              <Tag color={analysisResult.schemaCacheHit ? 'success' : 'default'}>
+                {analysisResult.schemaCacheHit
+                  ? t('dna.federation.sqlConsole.page.state.hit', '命中')
+                  : t('dna.federation.sqlConsole.page.state.miss', '未命中')}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.mountedDataSourceCount', '挂载数据源数')}>
+              {analysisResult.mountedDataSourceCount}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.schemaAssemblyTimeMs', 'Schema 组装耗时(ms)')} span={2}>
+              {analysisResult.schemaAssemblyTimeMs}
             </Descriptions.Item>
             {queryResult ? (
               <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.executionTimeMs', '执行耗时(ms)')} span={2}>
@@ -416,6 +649,10 @@ const App = () => {
         ) : (
           <Empty description={t('dna.federation.sqlConsole.page.empty.noPushedSqlCollected', '本次执行未采集到 JDBC 下推 SQL')} />
         )
+      ) : updateResult?.pushedSql ? (
+        <Paragraph style={{whiteSpace: 'pre-wrap', marginBottom: 0}}>
+          {formatPushedSql(updateResult.pushedSql, executeType || 'SQL')}
+        </Paragraph>
       ) : (
         <Empty description={t('dna.federation.sqlConsole.page.empty.pushedSqlPending', '执行 SQL 后展示 JDBC 下推 SQL')} />
       ),
@@ -466,11 +703,37 @@ const App = () => {
             dataSource={resultData}
           />
         </Space>
+      ) : updateResult ? (
+        <Space direction="vertical" size={16} style={{display: 'flex'}}>
+          <Descriptions bordered size="small" column={2}>
+            <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.executionType', '执行类型')}>
+              <Tag color={executeType === 'DDL' ? 'purple' : 'processing'}>{executeType}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.catalog', '数据目录')}>{updateResult.catalogCode}</Descriptions.Item>
+            <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.dataSource', '执行数据源')}>{updateResult.dataSourceCode}</Descriptions.Item>
+            <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.affectedRows', '影响行数')}>{updateResult.affectedRows}</Descriptions.Item>
+            <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.executionTimeMs', '执行耗时(ms)')} span={2}>
+              {updateResult.executionTimeMs}
+            </Descriptions.Item>
+          </Descriptions>
+          {updateResult.pushedSql ? (
+            <Paragraph style={{whiteSpace: 'pre-wrap', marginBottom: 0}}>
+              {formatPushedSql(updateResult.pushedSql, executeType || 'SQL')}
+            </Paragraph>
+          ) : null}
+        </Space>
+      ) : executeType === 'FLUSH_CACHE' ? (
+        <Alert
+          type="success"
+          showIcon
+          message={t('dna.federation.sqlConsole.page.success.flushCache', '缓存已刷新')}
+          description={executeMessage || '-'}
+        />
       ) : (
         <Empty description={t('dna.federation.sqlConsole.page.empty.resultPending', '执行 SQL 后展示结果集')} />
       ),
     },
-  ], [analysisResult, queryResult, resultColumns, resultData, t]);
+  ], [analysisResult, executeMessage, executeType, queryResult, resultColumns, resultData, t, updateResult]);
 
   return (
     <div style={pageContainerStyle}>
@@ -518,14 +781,42 @@ const App = () => {
           <Col span={16} style={{height: '100%'}}>
             <Card title={t('dna.federation.sqlConsole.page.card.editor', 'SQL 编辑器')} style={cardStyle} bodyStyle={cardBodyStyle}>
               <Space direction="vertical" size={12} style={{display: 'flex', flex: 1, minHeight: 0}}>
-                <Select
-                  placeholder={t('dna.federation.sqlConsole.page.placeholder.selectCatalog', '请选择数据目录')}
-                  value={catalogCode}
-                  onChange={setCatalogCode}
-                  options={catalogs.map((catalog) => ({
-                    label: resolveCatalogLabel(catalog),
-                    value: catalog.code,
-                  }))}
+                <Space.Compact style={{width: '100%'}}>
+                  <Select
+                    style={{flex: 1}}
+                    placeholder={t('dna.federation.sqlConsole.page.placeholder.selectCatalog', '请选择数据目录')}
+                    value={catalogCode}
+                    onChange={setCatalogCode}
+                    options={catalogs.map((catalog) => ({
+                      label: resolveCatalogLabel(catalog),
+                      value: catalog.code,
+                    }))}
+                  />
+                  <Input
+                    style={{width: 220}}
+                    value={defaultSchema}
+                    placeholder={t('dna.federation.sqlConsole.page.placeholder.defaultSchema', '默认 Schema')}
+                    onChange={(event) => setDefaultSchema(event.target.value)}
+                  />
+                  <InputNumber
+                    min={1}
+                    max={1000000}
+                    style={{width: 180}}
+                    value={maxRows ?? undefined}
+                    placeholder={t('dna.federation.sqlConsole.page.placeholder.maxRows', '本次行数上限')}
+                    onChange={(value) => setMaxRows(typeof value === 'number' ? value : null)}
+                  />
+                </Space.Compact>
+
+                <Input.TextArea
+                  value={parametersText}
+                  onChange={(event) => setParametersText(event.target.value)}
+                  autoSize={{minRows: 1, maxRows: 3}}
+                  placeholder={t(
+                    'dna.federation.sqlConsole.page.placeholder.parameters',
+                    '参数 JSON 数组，例如 [1, "Alice", null]',
+                  )}
+                  style={{fontFamily: 'monospace'}}
                 />
 
                 {selectedTreePath ? (
@@ -560,7 +851,7 @@ const App = () => {
                   <Button
                     type="default"
                     loading={loadingMode === 'explain'}
-                    disabled={loadingMode !== null}
+                    disabled={loadingMode !== null || exportFormat !== null}
                     onClick={() => {
                       void submit('explain');
                     }}
@@ -570,12 +861,32 @@ const App = () => {
                   <Button
                     type="primary"
                     loading={loadingMode === 'query'}
-                    disabled={loadingMode !== null}
+                    disabled={loadingMode !== null || exportFormat !== null}
                     onClick={() => {
                       void submit('query');
                     }}
                   >
                     {t('dna.federation.sqlConsole.page.button.query', '执行 SQL')}
+                  </Button>
+                  <Button
+                    icon={<DownloadOutlined />}
+                    loading={exportFormat === 'CSV'}
+                    disabled={loadingMode !== null || exportFormat !== null}
+                    onClick={() => {
+                      void exportResults('CSV');
+                    }}
+                  >
+                    {t('dna.federation.sqlConsole.page.button.exportCsv', '导出 CSV')}
+                  </Button>
+                  <Button
+                    icon={<DownloadOutlined />}
+                    loading={exportFormat === 'JSON'}
+                    disabled={loadingMode !== null || exportFormat !== null}
+                    onClick={() => {
+                      void exportResults('JSON');
+                    }}
+                  >
+                    {t('dna.federation.sqlConsole.page.button.exportJson', '导出 JSON')}
                   </Button>
                 </Space>
               </Space>

@@ -81,6 +81,8 @@ class FederationModelsTest {
     assertThat(explain.planText()).isEmpty();
     assertThat(explain.pushedSqls()).isEmpty();
     assertThat(explain.pushdownSummary()).isNull();
+    assertThat(explain.pushedDownOperators()).isEmpty();
+    assertThat(explain.platformJoin()).isFalse();
   }
 
   @Test
@@ -91,6 +93,8 @@ class FederationModelsTest {
         null, List.of(col), null, false, 1L, 10L, null, null, null);
     assertThat(queryResult.columns()).hasSize(1);
     assertThat(queryResult.planText()).isEmpty();
+    assertThat(queryResult.pushedDownOperators()).isEmpty();
+    assertThat(queryResult.platformJoin()).isFalse();
 
     var exec = FederationQueryModels.SqlExecuteResult.query(queryResult);
     assertThat(exec.type()).isEqualTo("QUERY");

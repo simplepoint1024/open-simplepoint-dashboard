@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.Statement;
+import java.util.List;
 import java.util.UUID;
 import javax.sql.DataSource;
 import org.apache.calcite.adapter.jdbc.JdbcSchema;
@@ -95,6 +96,46 @@ class DefaultCalciteQueryEngineTest {
 
     assertEquals(2, result.returnedRows());
     assertTrue(result.truncated());
+  }
+
+  @Test
+  void executeShouldExplainParameterizedQuery() throws Exception {
+    JdbcDataSource ordersDataSource = createDataSource("orders-params");
+    initialize(ordersDataSource, """
+        create table orders (
+          id int primary key,
+          amount decimal(10,2) not null
+        );
+        insert into orders(id, amount) values (1, 10.00), (2, 20.00), (3, 30.00);
+        """);
+
+    CalciteQueryRequest request = new CalciteQueryRequest(
+        "select id from orders_ds.orders where id > ? order by id",
+        "demo",
+        100,
+        5_000,
+        List.of(1)
+    );
+
+    CalciteQueryAnalysis analysis = engine.explain(
+        request,
+        rootSchema -> {
+          SchemaPlus catalog = rootSchema.add("demo", new AbstractSchema());
+          catalog.add("orders_ds", JdbcSchema.create(catalog, "orders_ds", ordersDataSource, null, "PUBLIC"));
+        }
+    );
+    CalciteQueryResult result = engine.execute(
+        request,
+        rootSchema -> {
+          SchemaPlus catalog = rootSchema.add("demo", new AbstractSchema());
+          catalog.add("orders_ds", JdbcSchema.create(catalog, "orders_ds", ordersDataSource, null, "PUBLIC"));
+        },
+        analysis
+    );
+
+    assertFalse(analysis.planText().isBlank());
+    assertEquals(2, result.returnedRows());
+    assertEquals(2, result.rows().get(0).get(0));
   }
 
   @Test

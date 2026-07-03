@@ -55,6 +55,8 @@ doc/
 │   ├── common_issues.md       # 常见问题与解决方案
 │   ├── performance_issues.md   # 性能问题排查指南
 │   └── permission_issues.md    # 权限问题排查指南
+├── release-notes/        # 发布与升级说明
+│   ├── dna-data-lineage-removal.md # DNA 数据血缘下线说明
 ├── changelog/            # 版本变更记录
 │   ├── v1.0.0.md              # 版本 1.0.0 变更记录
 └── README.md              # 本文档说明
@@ -176,6 +178,16 @@ doc/
 - 环境变量说明
 
 适合运维、DevOps。
+
+---
+
+### **release-notes/**
+发布与升级说明，包括：
+- 功能上下线说明
+- 数据库清理或迁移步骤
+- 发布前后的验证命令
+
+适合发布负责人、运维和二开团队确认升级影响。
 
 ---
 

@@ -1,9 +1,13 @@
 package org.simplepoint.plugin.dna.federation.service.support;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.PrintWriter;
@@ -114,6 +118,62 @@ class FederationCalciteCatalogAssemblerTest {
       assertEquals(1, result.returnedRows());
       assertEquals("Alice", result.rows().get(0).get(1));
     }
+  }
+
+  @Test
+  void assembleShouldReuseCachedSchemaAssemblyUntilFlush() throws Exception {
+    JdbcDataSource dataSource = createDataSource();
+    initialize(dataSource, """
+        create table orders (
+          id int primary key
+        );
+        insert into orders(id) values (1);
+        """);
+
+    JdbcDataSourceDefinition definition = new JdbcDataSourceDefinition();
+    definition.setId("ds-cache");
+    definition.setCode("cache_ds");
+    definition.setDriverId("driver-cache");
+
+    JdbcDriverDefinition driver = new JdbcDriverDefinition();
+    driver.setId("driver-cache");
+    driver.setDatabaseType("postgresql");
+    driver.setDriverClassName("org.h2.Driver");
+    JdbcDatabaseDialect dialect = mock(JdbcDatabaseDialect.class, Answers.CALLS_REAL_METHODS);
+    when(dialect.metadataCatalog(any(), any())).thenReturn(null);
+    when(dialect.visibleSchemas(any(), any(), any())).thenAnswer(invocation -> invocation.<List<String>>getArgument(0)
+        .stream()
+        .filter(schema -> schema != null && !"INFORMATION_SCHEMA".equalsIgnoreCase(schema))
+        .toList());
+
+    when(dataSourceService.requireSimpleDataSource("ds-cache")).thenReturn(new SimpleDataSource(dataSource));
+    when(driverService.findActiveById("driver-cache")).thenReturn(Optional.of(driver));
+    when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
+
+    FederationCalciteCatalogAssembler assembler = new FederationCalciteCatalogAssembler(
+        dataSourceService,
+        driverService,
+        dialectManagementService
+    );
+
+    try (FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly first = assembler.assemble("cache_ds", List.of(definition));
+         FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly second = assembler.assemble("cache_ds", List.of(definition))) {
+      assertFalse(first.schemaCacheHit());
+      assertTrue(first.schemaAssemblyTimeMs() >= 0);
+      assertEquals(1, first.mountedDataSourceCount());
+      assertTrue(second.schemaCacheHit());
+      assertTrue(second.schemaAssemblyTimeMs() >= 0);
+      assertEquals(1, second.mountedDataSourceCount());
+    }
+    verify(driverService, times(1)).findActiveById("driver-cache");
+
+    assertEquals(1, assembler.flushSchemaCache());
+
+    try (FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly third = assembler.assemble("cache_ds", List.of(definition))) {
+      assertFalse(third.schemaCacheHit());
+    }
+    verify(driverService, times(2)).findActiveById("driver-cache");
+    assertEquals(1, assembler.flushSchemaCache());
   }
 
   @Test

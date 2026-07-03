@@ -79,7 +79,7 @@ class FederationSqlConsoleServiceImplTest {
 
     when(dataSourceService.findActiveById("ds-1")).thenReturn(java.util.Optional.of(dataSource));
 
-    FederationQueryModels.SqlQueryResult response = service.execute("ds-1", new FederationQueryModels.SqlConsoleRequest(
+    final FederationQueryModels.SqlQueryResult response = service.execute("ds-1", new FederationQueryModels.SqlConsoleRequest(
         "ds1",
         "select 1"
     ));
@@ -88,6 +88,91 @@ class FederationSqlConsoleServiceImplTest {
     assertTrue(response.dataSources().isEmpty());
     verify(dataSourceService, never()).listEnabledDefinitions();
     verify(catalogAssembler).assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty()));
+  }
+
+  @Test
+  void executeShouldForwardDefaultSchemaParametersAndPerRunMaxRowsToCalcite() {
+    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "ds1");
+    FederationQueryPolicy policy = enabledPolicy("ds-1", true);
+    FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly =
+        new FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly(
+            "ds1",
+            List.of(),
+            rootSchema -> {
+            }
+        );
+    CalciteQueryAnalysis analysis = new CalciteQueryAnalysis("EnumerableValues(tuples=[[{ 7 }]])", List.of(), false);
+    CalciteQueryResult queryResult = new CalciteQueryResult(
+        List.of(new CalciteQueryColumn("EXPR$0", "INTEGER")),
+        List.of(List.of(7)),
+        false,
+        1,
+        2L,
+        analysis
+    );
+    when(policyRepository.findAllActiveByCatalogId("ds-1")).thenReturn(List.of(policy));
+    when(catalogAssembler.assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty())))
+        .thenReturn(assembly);
+    when(queryEngine.explain(any(), any())).thenReturn(analysis);
+    when(queryEngine.execute(any(), any(), any())).thenReturn(queryResult);
+    when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    FederationSqlConsoleServiceImpl service = service();
+
+    when(dataSourceService.findActiveById("ds-1")).thenReturn(java.util.Optional.of(dataSource));
+
+    FederationQueryModels.SqlQueryResult response = service.execute("ds-1", new FederationQueryModels.SqlConsoleRequest(
+        "ds1",
+        "select ?",
+        "public",
+        List.of(7),
+        25
+    ));
+    assertEquals(25, response.maxRows());
+
+    ArgumentCaptor<CalciteQueryRequest> explainRequest = ArgumentCaptor.forClass(CalciteQueryRequest.class);
+    ArgumentCaptor<CalciteQueryRequest> executeRequest = ArgumentCaptor.forClass(CalciteQueryRequest.class);
+    verify(queryEngine).explain(explainRequest.capture(), any());
+    verify(queryEngine).execute(executeRequest.capture(), any(), any());
+    assertEquals("public", explainRequest.getValue().defaultSchema());
+    assertEquals("public", executeRequest.getValue().defaultSchema());
+    assertEquals(List.of(7), explainRequest.getValue().parameters());
+    assertEquals(List.of(7), executeRequest.getValue().parameters());
+    assertEquals(25, explainRequest.getValue().maxRows());
+    assertEquals(25, executeRequest.getValue().maxRows());
+  }
+
+  @Test
+  void explainShouldReturnEffectivePerRunMaxRows() {
+    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "ds1");
+    FederationQueryPolicy policy = enabledPolicy("ds-1", true);
+    FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly =
+        new FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly(
+            "ds1",
+            List.of(),
+            rootSchema -> {
+            }
+        );
+    CalciteQueryAnalysis analysis = new CalciteQueryAnalysis("EnumerableValues(tuples=[[{ 1 }]])", List.of(), false);
+    when(policyRepository.findAllActiveByCatalogId("ds-1")).thenReturn(List.of(policy));
+    when(catalogAssembler.assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty())))
+        .thenReturn(assembly);
+    when(queryEngine.explain(any(), any())).thenReturn(analysis);
+    FederationSqlConsoleServiceImpl service = service();
+
+    when(dataSourceService.findActiveByCode("ds1")).thenReturn(java.util.Optional.of(dataSource));
+
+    FederationQueryModels.SqlExplainResult response = service.explain(new FederationQueryModels.SqlConsoleRequest(
+        "ds1",
+        "select 1",
+        null,
+        null,
+        25
+    ));
+
+    ArgumentCaptor<CalciteQueryRequest> explainRequest = ArgumentCaptor.forClass(CalciteQueryRequest.class);
+    verify(queryEngine).explain(explainRequest.capture(), any());
+    assertEquals(25, explainRequest.getValue().maxRows());
+    assertEquals(25, response.maxRows());
   }
 
   @Test
@@ -195,6 +280,8 @@ class FederationSqlConsoleServiceImplTest {
     assertEquals("policy-demo", response.policyCode());
     assertEquals(2, response.dataSources().size());
     assertTrue(response.crossSourceJoin());
+    assertEquals(List.of("Filter"), response.pushedDownOperators());
+    assertTrue(response.platformJoin());
     assertEquals(1, response.returnedRows());
     assertEquals("Alice", response.rows().get(0).get(1));
     assertTrue(response.pushdownSummary().contains("命中数据源"));
@@ -349,6 +436,20 @@ class FederationSqlConsoleServiceImplTest {
     FederationSqlConsoleServiceImpl service = service();
     assertThrows(IllegalArgumentException.class,
         () -> service.smartExecute(new FederationQueryModels.SqlConsoleRequest("ds1", null)));
+  }
+
+  @Test
+  void smartExecuteShouldFlushCalciteSchemaCache() {
+    when(catalogAssembler.flushSchemaCache()).thenReturn(2L);
+    FederationSqlConsoleServiceImpl service = service();
+
+    FederationQueryModels.SqlExecuteResult result = service.smartExecute(
+        new FederationQueryModels.SqlConsoleRequest(null, " FLUSH CACHE; ")
+    );
+
+    assertEquals("FLUSH_CACHE", result.type());
+    assertTrue(result.message().contains("Calcite Schema 缓存清除 2 条"));
+    verify(catalogAssembler).flushSchemaCache();
   }
 
   private boolean usesQuotedQualifiedName(final CalciteQueryRequest request) {

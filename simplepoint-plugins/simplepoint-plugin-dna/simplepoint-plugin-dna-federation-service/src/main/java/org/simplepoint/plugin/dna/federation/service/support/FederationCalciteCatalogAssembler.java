@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -17,6 +18,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.apache.calcite.adapter.jdbc.SafeJdbcSchema;
 import org.apache.calcite.schema.SchemaPlus;
@@ -28,6 +31,7 @@ import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionServi
 import org.simplepoint.plugin.dna.core.api.service.JdbcDialectManagementService;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDriverDefinitionService;
 import org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -42,6 +46,16 @@ public class FederationCalciteCatalogAssembler {
    * {@code [A-Za-z][-A-Za-z0-9_.(),\[\]\s:]*} — only ASCII is allowed.
    */
   private static final Pattern CALCITE_UNSAFE_CHAR = Pattern.compile("[^A-Za-z0-9_.]");
+
+  private final Map<String, CachedCatalogAssembly> schemaCache = new ConcurrentHashMap<>();
+
+  private final Object schemaCacheMonitor = new Object();
+
+  @Value("${simplepoint.dna.calcite.schema-cache.enabled:true}")
+  private boolean schemaCacheEnabled = true;
+
+  @Value("${simplepoint.dna.calcite.schema-cache.ttl-seconds:300}")
+  private long schemaCacheTtlSeconds = 300L;
 
   private final JdbcDataSourceDefinitionService dataSourceService;
 
@@ -77,20 +91,87 @@ public class FederationCalciteCatalogAssembler {
       final String catalogCode,
       final Collection<JdbcDataSourceDefinition> dataSources
   ) {
+    long startedAt = System.nanoTime();
     String normalizedCatalogCode = requireValue(catalogCode, "数据源编码不能为空");
+    List<JdbcDataSourceDefinition> normalizedDataSources = normalizeDataSources(dataSources);
+    if (!schemaCacheEnabled || normalizedDataSources.isEmpty()) {
+      CachedCatalogAssembly assembly = buildCatalogAssembly(
+          normalizedCatalogCode,
+          normalizedDataSources,
+          expireAtMillis()
+      );
+      return assembly.toRuntimeAssembly(false, toElapsedMs(startedAt), true);
+    }
+    String cacheKey = schemaCacheKey(normalizedCatalogCode, normalizedDataSources);
+    CachedCatalogAssembly cached = lookupCachedAssembly(cacheKey);
+    if (cached != null) {
+      return cached.toRuntimeAssembly(true, toElapsedMs(startedAt), false);
+    }
+    synchronized (schemaCacheMonitor) {
+      cached = lookupCachedAssembly(cacheKey);
+      if (cached != null) {
+        return cached.toRuntimeAssembly(true, toElapsedMs(startedAt), false);
+      }
+      CachedCatalogAssembly assembly = buildCatalogAssembly(
+          normalizedCatalogCode,
+          normalizedDataSources,
+          expireAtMillis()
+      );
+      schemaCache.put(cacheKey, assembly);
+      return assembly.toRuntimeAssembly(false, toElapsedMs(startedAt), false);
+    }
+  }
+
+  /**
+   * Clears cached Calcite schema assemblies and closes transient catalog datasources.
+   *
+   * @return number of cache entries cleared
+   */
+  public long flushSchemaCache() {
+    List<CachedCatalogAssembly> entries;
+    synchronized (schemaCacheMonitor) {
+      entries = new ArrayList<>(schemaCache.values());
+      schemaCache.clear();
+    }
+    entries.forEach(CachedCatalogAssembly::close);
+    return entries.size();
+  }
+
+  private CachedCatalogAssembly buildCatalogAssembly(
+      final String normalizedCatalogCode,
+      final List<JdbcDataSourceDefinition> dataSources,
+      final long expiresAtMillis
+  ) {
     List<ResolvedJdbcSource> jdbcSources = resolveJdbcSources(dataSources);
     validateRegistrationNames(normalizedCatalogCode, jdbcSources);
-    return new FederationCalciteCatalogAssembly(
+    return new CachedCatalogAssembly(
         normalizedCatalogCode,
         jdbcSources.stream().map(source -> source.definition().getCode()).toList(),
-        rootSchema -> configureQueryRootSchema(rootSchema, jdbcSources),
+        jdbcSources,
         jdbcSources.stream()
             .flatMap(source -> source.cleanupDataSources().stream())
-            .toList()
+            .toList(),
+        expiresAtMillis
     );
   }
 
-  private List<ResolvedJdbcSource> resolveJdbcSources(final Collection<JdbcDataSourceDefinition> dataSources) {
+  private CachedCatalogAssembly lookupCachedAssembly(final String cacheKey) {
+    CachedCatalogAssembly cached = schemaCache.get(cacheKey);
+    if (cached == null) {
+      return null;
+    }
+    if (!cached.expired(System.currentTimeMillis())) {
+      return cached;
+    }
+    if (schemaCache.remove(cacheKey, cached)) {
+      cached.close();
+    }
+    return null;
+  }
+
+  private static List<JdbcDataSourceDefinition> normalizeDataSources(
+      final Collection<JdbcDataSourceDefinition> dataSources
+  ) {
     if (dataSources == null || dataSources.isEmpty()) {
       return List.of();
     }
@@ -104,11 +185,55 @@ public class FederationCalciteCatalogAssembler {
     }
     return definitionsByCode.values().stream()
         .sorted(Comparator.comparing(JdbcDataSourceDefinition::getCode, Comparator.nullsLast(String::compareTo)))
+        .toList();
+  }
+
+  private static String schemaCacheKey(
+      final String catalogCode,
+      final List<JdbcDataSourceDefinition> dataSources
+  ) {
+    StringBuilder builder = new StringBuilder(catalogCode);
+    for (JdbcDataSourceDefinition dataSource : dataSources) {
+      builder.append('\n')
+          .append(valueForKey(dataSource.getId())).append('|')
+          .append(valueForKey(dataSource.getCode())).append('|')
+          .append(valueForKey(dataSource.getDriverId())).append('|')
+          .append(valueForKey(dataSource.getJdbcUrl())).append('|')
+          .append(valueForKey(dataSource.getConnectionProperties())).append('|')
+          .append(valueForKey(dataSource.getUpdatedAt()));
+    }
+    return builder.toString();
+  }
+
+  private long expireAtMillis() {
+    if (schemaCacheTtlSeconds <= 0) {
+      return Long.MAX_VALUE;
+    }
+    long now = System.currentTimeMillis();
+    long ttlMillis = TimeUnit.SECONDS.toMillis(schemaCacheTtlSeconds);
+    return ttlMillis >= Long.MAX_VALUE - now
+        ? Long.MAX_VALUE
+        : now + ttlMillis;
+  }
+
+  private static long toElapsedMs(final long startedAt) {
+    return Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L);
+  }
+
+  private static String valueForKey(final Object value) {
+    return value == null ? "" : String.valueOf(value);
+  }
+
+  private List<ResolvedJdbcSource> resolveJdbcSources(final Collection<JdbcDataSourceDefinition> dataSources) {
+    if (dataSources == null || dataSources.isEmpty()) {
+      return List.of();
+    }
+    return dataSources.stream()
         .map(this::resolveJdbcSource)
         .toList();
   }
 
-  private void configureQueryRootSchema(
+  private static void configureQueryRootSchema(
       final SchemaPlus rootSchema,
       final List<ResolvedJdbcSource> jdbcSources
   ) {
@@ -565,7 +690,11 @@ public class FederationCalciteCatalogAssembler {
       String catalogCode,
       List<String> physicalDataSourceCodes,
       CalciteSchemaConfigurer schemaConfigurer,
-      List<SimpleDataSource> cleanupDataSources
+      List<SimpleDataSource> cleanupDataSources,
+      boolean schemaCacheHit,
+      long schemaAssemblyTimeMs,
+      int mountedDataSourceCount,
+      boolean closeOnClose
   ) implements AutoCloseable {
 
     /**
@@ -580,6 +709,27 @@ public class FederationCalciteCatalogAssembler {
     }
 
     /**
+     * Federation Calcite Catalog Assembly.
+     */
+    public FederationCalciteCatalogAssembly(
+        final String catalogCode,
+        final List<String> physicalDataSourceCodes,
+        final CalciteSchemaConfigurer schemaConfigurer,
+        final List<SimpleDataSource> cleanupDataSources
+    ) {
+      this(
+          catalogCode,
+          physicalDataSourceCodes,
+          schemaConfigurer,
+          cleanupDataSources,
+          false,
+          0L,
+          physicalDataSourceCodes == null ? 0 : physicalDataSourceCodes.size(),
+          true
+      );
+    }
+
+    /**
      * Creates an immutable assembly payload.
      *
      * @param catalogCode             federation catalog code
@@ -588,33 +738,88 @@ public class FederationCalciteCatalogAssembler {
      */
     public FederationCalciteCatalogAssembly {
       catalogCode = requireValue(catalogCode, "数据目录编码不能为空");
-      physicalDataSourceCodes = physicalDataSourceCodes == null ? List.of() : List.copyOf(physicalDataSourceCodes);
+      physicalDataSourceCodes = physicalDataSourceCodes == null
+          ? List.of()
+          : List.copyOf(physicalDataSourceCodes);
       if (schemaConfigurer == null) {
         throw new IllegalArgumentException("schemaConfigurer 不能为空");
       }
       cleanupDataSources = cleanupDataSources == null ? List.of() : List.copyOf(cleanupDataSources);
+      schemaAssemblyTimeMs = Math.max(0L, schemaAssemblyTimeMs);
+      mountedDataSourceCount = Math.max(0, mountedDataSourceCount);
     }
 
     @Override
     public void close() {
-      RuntimeException failure = null;
-      for (SimpleDataSource cleanupDataSource : cleanupDataSources) {
-        if (cleanupDataSource == null) {
-          continue;
-        }
-        try {
-          cleanupDataSource.close();
-        } catch (RuntimeException ex) {
-          if (failure == null) {
-            failure = ex;
-          } else {
-            failure.addSuppressed(ex);
-          }
+      if (closeOnClose) {
+        closeDataSources(cleanupDataSources);
+      }
+    }
+  }
+
+  private record CachedCatalogAssembly(
+      String catalogCode,
+      List<String> physicalDataSourceCodes,
+      List<ResolvedJdbcSource> jdbcSources,
+      List<SimpleDataSource> cleanupDataSources,
+      long expiresAtMillis
+  ) implements AutoCloseable {
+
+    private CachedCatalogAssembly {
+      catalogCode = requireValue(catalogCode, "数据目录编码不能为空");
+      physicalDataSourceCodes = physicalDataSourceCodes == null
+          ? List.of()
+          : List.copyOf(physicalDataSourceCodes);
+      jdbcSources = jdbcSources == null ? List.of() : List.copyOf(jdbcSources);
+      cleanupDataSources = cleanupDataSources == null ? List.of() : List.copyOf(cleanupDataSources);
+    }
+
+    private FederationCalciteCatalogAssembly toRuntimeAssembly(
+        final boolean cacheHit,
+        final long assemblyTimeMs,
+        final boolean closeOnClose
+    ) {
+      return new FederationCalciteCatalogAssembly(
+          catalogCode,
+          physicalDataSourceCodes,
+          rootSchema -> configureQueryRootSchema(rootSchema, jdbcSources),
+          cleanupDataSources,
+          cacheHit,
+          assemblyTimeMs,
+          physicalDataSourceCodes.size(),
+          closeOnClose
+      );
+    }
+
+    private boolean expired(final long nowMillis) {
+      return expiresAtMillis < nowMillis;
+    }
+
+    @Override
+    public void close() {
+      closeDataSources(cleanupDataSources);
+    }
+  }
+
+  private static void closeDataSources(final List<SimpleDataSource> cleanupDataSources) {
+    RuntimeException failure = null;
+    List<SimpleDataSource> dataSources = cleanupDataSources == null ? List.of() : cleanupDataSources;
+    for (SimpleDataSource cleanupDataSource : dataSources) {
+      if (cleanupDataSource == null) {
+        continue;
+      }
+      try {
+        cleanupDataSource.close();
+      } catch (RuntimeException ex) {
+        if (failure == null) {
+          failure = ex;
+        } else {
+          failure.addSuppressed(ex);
         }
       }
-      if (failure != null) {
-        throw failure;
-      }
+    }
+    if (failure != null) {
+      throw failure;
     }
   }
 

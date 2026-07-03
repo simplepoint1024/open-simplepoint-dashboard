@@ -900,19 +900,6 @@ const routes = {
                     "type": "item",
                     "component": "dna/platform/DataQuality",
                     "children": []
-                },
-                {
-                    "id": "dna00000-0000-0000-0000-000000000023",
-                    "authority": "dna.dataLineage.view",
-                    "disabled": false,
-                    "label": "数据血缘",
-                    "title": "menu.dna.dataLineage",
-                    "parent": "dna00000-0000-0000-0000-000000000001",
-                    "icon": "ApartmentOutlined",
-                    "path": "/dna/data-lineage",
-                    "type": "item",
-                    "component": "dna/platform/DataLineage",
-                    "children": []
                 }
             ]
         },

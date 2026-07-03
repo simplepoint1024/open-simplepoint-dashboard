@@ -14,6 +14,7 @@ openapi = "2.8.13"
 jsonschema-generator="4.38.0"
 swagger="2.2.41"
 aws-sdk = "2.42.27"
+calcite = "1.40.0"
 
 [libraries]
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations", version.ref = "swagger" }

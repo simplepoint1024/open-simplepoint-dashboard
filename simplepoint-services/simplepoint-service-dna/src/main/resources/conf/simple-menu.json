@@ -691,26 +691,6 @@
             "type": 0
           }
         ]
-      },
-      {
-        "label": "数据血缘",
-        "title": "menu.dna.dataLineage",
-        "icon": "ApartmentOutlined",
-        "path": "/dna/data-lineage",
-        "authority": "dna.data-lineage.view",
-        "sort": 8,
-        "component": "dna/platform/DataLineage",
-        "type": "item",
-        "disabled": false,
-        "permissions": [
-          {
-            "name": "DNA Data Lineage View",
-            "authority": "dna.data-lineage.view",
-            "resource": "/dna/data-lineage",
-            "description": "允许访问数据血缘页面",
-            "type": 0
-          }
-        ]
       }
     ]
   }

@@ -53,14 +53,6 @@ public final class DnaFederationPaths {
 
   public static final String PLATFORM_DATA_QUALITY = PLATFORM_BASE + "/data-quality";
 
-  public static final String DATA_LINEAGE_NODES = BASE + "/data-lineage/nodes";
-
-  public static final String PLATFORM_DATA_LINEAGE_NODES = PLATFORM_BASE + "/data-lineage/nodes";
-
-  public static final String DATA_LINEAGE_EDGES = BASE + "/data-lineage/edges";
-
-  public static final String PLATFORM_DATA_LINEAGE_EDGES = PLATFORM_BASE + "/data-lineage/edges";
-
   public static final String DASHBOARD = "/dna/dashboard";
 
   public static final String PLATFORM_DASHBOARD = "/platform/dna/dashboard";

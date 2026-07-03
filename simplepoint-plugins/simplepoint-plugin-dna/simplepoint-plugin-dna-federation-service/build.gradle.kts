@@ -2,7 +2,7 @@ dependencies {
     implementation(project(":simplepoint-core"))
     implementation(project(":simplepoint-security:simplepoint-security-core"))
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
-    implementation("org.apache.calcite:calcite-core:1.40.0")
+    implementation("org.apache.calcite:calcite-core:${rootProject.libs.versions.calcite.get()}")
     implementation(project(":simplepoint-data:simplepoint-data-calcite:simplepoint-data-calcite-core"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-core-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-federation-api"))

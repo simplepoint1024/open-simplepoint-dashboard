@@ -84,6 +84,11 @@ public final class FederationQueryModels {
    * @param planText              explain-plan text
    * @param pushedSqls            JDBC SQL statements captured during execution planning/implementation
    * @param pushdownSummary       pushdown summary text
+   * @param schemaCacheHit        whether Calcite schema assembly was served from cache
+   * @param schemaAssemblyTimeMs  Calcite schema assembly/cache lookup time in milliseconds
+   * @param mountedDataSourceCount number of physical datasources mounted into Calcite
+   * @param pushedDownOperators   relational operators pushed down to physical datasources
+   * @param platformJoin          whether Calcite keeps a join on the federation platform
    */
   public record SqlExplainResult(
       String catalogCode,
@@ -95,8 +100,84 @@ public final class FederationQueryModels {
       List<String> dataSources,
       String planText,
       List<String> pushedSqls,
-      String pushdownSummary
+      String pushdownSummary,
+      boolean schemaCacheHit,
+      long schemaAssemblyTimeMs,
+      int mountedDataSourceCount,
+      List<String> pushedDownOperators,
+      boolean platformJoin
   ) {
+
+    /**
+     * Creates an explain response payload without schema-cache metrics.
+     */
+    public SqlExplainResult(
+        final String catalogCode,
+        final String policyCode,
+        final int maxRows,
+        final int timeoutMs,
+        final boolean allowCrossSourceJoin,
+        final boolean crossSourceJoin,
+        final List<String> dataSources,
+        final String planText,
+        final List<String> pushedSqls,
+        final String pushdownSummary
+    ) {
+      this(
+          catalogCode,
+          policyCode,
+          maxRows,
+          timeoutMs,
+          allowCrossSourceJoin,
+          crossSourceJoin,
+          dataSources,
+          planText,
+          pushedSqls,
+          pushdownSummary,
+          false,
+          0L,
+          dataSources == null ? 0 : dataSources.size(),
+          List.of(),
+          false
+      );
+    }
+
+    /**
+     * Creates an explain response payload with schema-cache metrics.
+     */
+    public SqlExplainResult(
+        final String catalogCode,
+        final String policyCode,
+        final int maxRows,
+        final int timeoutMs,
+        final boolean allowCrossSourceJoin,
+        final boolean crossSourceJoin,
+        final List<String> dataSources,
+        final String planText,
+        final List<String> pushedSqls,
+        final String pushdownSummary,
+        final boolean schemaCacheHit,
+        final long schemaAssemblyTimeMs,
+        final int mountedDataSourceCount
+    ) {
+      this(
+          catalogCode,
+          policyCode,
+          maxRows,
+          timeoutMs,
+          allowCrossSourceJoin,
+          crossSourceJoin,
+          dataSources,
+          planText,
+          pushedSqls,
+          pushdownSummary,
+          schemaCacheHit,
+          schemaAssemblyTimeMs,
+          mountedDataSourceCount,
+          List.of(),
+          false
+      );
+    }
 
     /**
      * Creates an immutable explain response payload.
@@ -111,11 +192,19 @@ public final class FederationQueryModels {
      * @param planText             explain-plan text
      * @param pushedSqls           JDBC SQL statements captured during execution planning/implementation
      * @param pushdownSummary      pushdown summary text
+     * @param schemaCacheHit       whether Calcite schema assembly was served from cache
+     * @param schemaAssemblyTimeMs Calcite schema assembly/cache lookup time in milliseconds
+     * @param mountedDataSourceCount number of physical datasources mounted into Calcite
+     * @param pushedDownOperators  relational operators pushed down to physical datasources
+     * @param platformJoin         whether Calcite keeps a join on the federation platform
      */
     public SqlExplainResult {
       dataSources = dataSources == null ? List.of() : List.copyOf(dataSources);
       planText = planText == null ? "" : planText;
       pushedSqls = pushedSqls == null ? List.of() : List.copyOf(pushedSqls);
+      schemaAssemblyTimeMs = Math.max(0L, schemaAssemblyTimeMs);
+      mountedDataSourceCount = Math.max(0, mountedDataSourceCount);
+      pushedDownOperators = pushedDownOperators == null ? List.of() : List.copyOf(pushedDownOperators);
     }
   }
 
@@ -193,6 +282,11 @@ public final class FederationQueryModels {
    * @param planText              explain-plan text
    * @param pushedSqls            JDBC SQL statements captured during execution planning/implementation
    * @param pushdownSummary       pushdown summary text
+   * @param schemaCacheHit        whether Calcite schema assembly was served from cache
+   * @param schemaAssemblyTimeMs  Calcite schema assembly/cache lookup time in milliseconds
+   * @param mountedDataSourceCount number of physical datasources mounted into Calcite
+   * @param pushedDownOperators   relational operators pushed down to physical datasources
+   * @param platformJoin          whether Calcite keeps a join on the federation platform
    */
   public record SqlQueryResult(
       String catalogCode,
@@ -209,8 +303,104 @@ public final class FederationQueryModels {
       long executionTimeMs,
       String planText,
       List<String> pushedSqls,
-      String pushdownSummary
+      String pushdownSummary,
+      boolean schemaCacheHit,
+      long schemaAssemblyTimeMs,
+      int mountedDataSourceCount,
+      List<String> pushedDownOperators,
+      boolean platformJoin
   ) {
+
+    /**
+     * Creates a query response payload without schema-cache metrics.
+     */
+    public SqlQueryResult(
+        final String catalogCode,
+        final String policyCode,
+        final int maxRows,
+        final int timeoutMs,
+        final boolean allowCrossSourceJoin,
+        final boolean crossSourceJoin,
+        final List<String> dataSources,
+        final List<SqlColumn> columns,
+        final List<List<Object>> rows,
+        final boolean truncated,
+        final long returnedRows,
+        final long executionTimeMs,
+        final String planText,
+        final List<String> pushedSqls,
+        final String pushdownSummary
+    ) {
+      this(
+          catalogCode,
+          policyCode,
+          maxRows,
+          timeoutMs,
+          allowCrossSourceJoin,
+          crossSourceJoin,
+          dataSources,
+          columns,
+          rows,
+          truncated,
+          returnedRows,
+          executionTimeMs,
+          planText,
+          pushedSqls,
+          pushdownSummary,
+          false,
+          0L,
+          dataSources == null ? 0 : dataSources.size(),
+          List.of(),
+          false
+      );
+    }
+
+    /**
+     * Creates a query response payload with schema-cache metrics.
+     */
+    public SqlQueryResult(
+        final String catalogCode,
+        final String policyCode,
+        final int maxRows,
+        final int timeoutMs,
+        final boolean allowCrossSourceJoin,
+        final boolean crossSourceJoin,
+        final List<String> dataSources,
+        final List<SqlColumn> columns,
+        final List<List<Object>> rows,
+        final boolean truncated,
+        final long returnedRows,
+        final long executionTimeMs,
+        final String planText,
+        final List<String> pushedSqls,
+        final String pushdownSummary,
+        final boolean schemaCacheHit,
+        final long schemaAssemblyTimeMs,
+        final int mountedDataSourceCount
+    ) {
+      this(
+          catalogCode,
+          policyCode,
+          maxRows,
+          timeoutMs,
+          allowCrossSourceJoin,
+          crossSourceJoin,
+          dataSources,
+          columns,
+          rows,
+          truncated,
+          returnedRows,
+          executionTimeMs,
+          planText,
+          pushedSqls,
+          pushdownSummary,
+          schemaCacheHit,
+          schemaAssemblyTimeMs,
+          mountedDataSourceCount,
+          List.of(),
+          false
+      );
+    }
 
     /**
      * Creates an immutable query response payload while preserving nullable result cells.
@@ -230,6 +420,11 @@ public final class FederationQueryModels {
      * @param planText             explain-plan text
      * @param pushedSqls           JDBC SQL statements captured during execution planning/implementation
      * @param pushdownSummary      pushdown summary text
+     * @param schemaCacheHit       whether Calcite schema assembly was served from cache
+     * @param schemaAssemblyTimeMs Calcite schema assembly/cache lookup time in milliseconds
+     * @param mountedDataSourceCount number of physical datasources mounted into Calcite
+     * @param pushedDownOperators  relational operators pushed down to physical datasources
+     * @param platformJoin         whether Calcite keeps a join on the federation platform
      */
     public SqlQueryResult {
       dataSources = dataSources == null ? List.of() : List.copyOf(dataSources);
@@ -239,6 +434,9 @@ public final class FederationQueryModels {
           .toList();
       planText = planText == null ? "" : planText;
       pushedSqls = pushedSqls == null ? List.of() : List.copyOf(pushedSqls);
+      schemaAssemblyTimeMs = Math.max(0L, schemaAssemblyTimeMs);
+      mountedDataSourceCount = Math.max(0, mountedDataSourceCount);
+      pushedDownOperators = pushedDownOperators == null ? List.of() : List.copyOf(pushedDownOperators);
     }
   }
 }

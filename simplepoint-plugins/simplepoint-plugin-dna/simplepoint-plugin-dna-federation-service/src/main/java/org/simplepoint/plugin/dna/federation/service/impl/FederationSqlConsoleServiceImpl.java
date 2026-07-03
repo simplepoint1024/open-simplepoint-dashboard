@@ -50,7 +50,7 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   );
 
   private static final Pattern SMART_FLUSH_CACHE_PATTERN = Pattern.compile(
-      "\\s*FLUSH\\s+CACHE\\s*", Pattern.CASE_INSENSITIVE
+      "\\s*FLUSH\\s+CACHE\\s*;?\\s*", Pattern.CASE_INSENSITIVE
   );
 
   private final JdbcDataSourceDefinitionService dataSourceService;
@@ -104,14 +104,19 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       return new FederationQueryModels.SqlExplainResult(
           prepared.catalogCode(),
           prepared.policy().code(),
-          prepared.policy().maxRows(),
+          prepared.queryRequest().maxRows(),
           prepared.policy().timeoutMs(),
           prepared.policy().allowCrossSourceJoin(),
           prepared.crossSourceJoin(),
           prepared.dataSources(),
           prepared.analysis().planText(),
           prepared.analysis().pushedSqls(),
-          prepared.pushdownSummary()
+          prepared.pushdownSummary(),
+          prepared.schemaCacheHit(),
+          prepared.schemaAssemblyTimeMs(),
+          prepared.mountedDataSourceCount(),
+          prepared.analysis().pushedDownOperators(),
+          prepared.analysis().platformJoin()
       );
     }
   }
@@ -146,7 +151,7 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       FederationQueryModels.SqlQueryResult response = new FederationQueryModels.SqlQueryResult(
           prepared.catalogCode(),
           prepared.policy().code(),
-          prepared.policy().maxRows(),
+          prepared.queryRequest().maxRows(),
           prepared.policy().timeoutMs(),
           prepared.policy().allowCrossSourceJoin(),
           resultSources.size() > 1,
@@ -160,7 +165,12 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           result.executionTimeMs(),
           result.analysis().planText(),
           result.analysis().pushedSqls(),
-          pushdownSummary
+          pushdownSummary,
+          prepared.schemaCacheHit(),
+          prepared.schemaAssemblyTimeMs(),
+          prepared.mountedDataSourceCount(),
+          result.analysis().pushedDownOperators(),
+          result.analysis().platformJoin()
       );
       sqlAuditor.persist(
           prepared.catalogCode(),
@@ -337,9 +347,10 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
     String trimmed = sql.strip();
 
     if (SMART_FLUSH_CACHE_PATTERN.matcher(trimmed).matches()) {
-      long flushed = metadataCacheService.flushAll();
+      long metadataEntries = metadataCacheService.flushAll();
+      long schemaEntries = catalogAssembler.flushSchemaCache();
       return FederationQueryModels.SqlExecuteResult.flushCache(
-          "缓存已刷新，共清除 " + flushed + " 条缓存记录"
+          "缓存已刷新，元数据缓存清除 " + metadataEntries + " 条，Calcite Schema 缓存清除 " + schemaEntries + " 条"
       );
     }
     if (FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher(trimmed).lookingAt()) {
@@ -400,7 +411,10 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           analysis,
           dataSources,
           crossSourceJoin,
-          FederationSqlAnalysisUtils.buildPushdownSummary(analysis, dataSources)
+          FederationSqlAnalysisUtils.buildPushdownSummary(analysis, dataSources),
+          assembly.schemaCacheHit(),
+          assembly.schemaAssemblyTimeMs(),
+          assembly.mountedDataSourceCount()
       );
     } catch (RuntimeException ex) {
       assembly.close();
@@ -576,7 +590,10 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       CalciteQueryAnalysis analysis,
       List<String> dataSources,
       boolean crossSourceJoin,
-      String pushdownSummary
+      String pushdownSummary,
+      boolean schemaCacheHit,
+      long schemaAssemblyTimeMs,
+      int mountedDataSourceCount
   ) implements AutoCloseable {
 
     @Override

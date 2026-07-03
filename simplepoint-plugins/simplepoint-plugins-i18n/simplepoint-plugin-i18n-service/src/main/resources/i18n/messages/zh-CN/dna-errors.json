@@ -21,21 +21,5 @@
   "dna.error.socket.invalidFrameSize": "DNA JDBC Socket 请求长度不合法: {0}",
   "dna.error.socket.missingAction": "DNA JDBC Socket 请求缺少 action",
   "dna.error.socket.notAuthenticated": "DNA JDBC Socket 连接尚未认证，请先发送 CONNECT",
-  "dna.error.socket.concurrencyLimit": "服务器查询并发数已达上限，请稍后重试",
-  "dna.error.lineage.nodeEmpty": "血缘节点不能为空",
-  "dna.error.lineage.nodeNotFound": "血缘节点不存在: {0}",
-  "dna.error.lineage.nodeNameEmpty": "节点名称不能为空",
-  "dna.error.lineage.catalogIdEmpty": "数据源不能为空",
-  "dna.error.lineage.nodeTypeEmpty": "节点类型不能为空",
-  "dna.error.lineage.tableNameEmpty": "表名不能为空",
-  "dna.error.lineage.invalidNodeType": "节点类型必须为 {0}",
-  "dna.error.lineage.catalogInvalid": "数据源不存在或未启用: {0}",
-  "dna.error.lineage.edgeEmpty": "血缘边不能为空",
-  "dna.error.lineage.sourceNodeEmpty": "源节点不能为空",
-  "dna.error.lineage.targetNodeEmpty": "目标节点不能为空",
-  "dna.error.lineage.edgeTypeEmpty": "边类型不能为空",
-  "dna.error.lineage.invalidEdgeType": "边类型必须为 {0}",
-  "dna.error.lineage.selfReference": "源节点和目标节点不能相同",
-  "dna.error.lineage.sourceNotFound": "源节点不存在: {0}",
-  "dna.error.lineage.targetNotFound": "目标节点不存在: {0}"
+  "dna.error.socket.concurrencyLimit": "服务器查询并发数已达上限，请稍后重试"
 }

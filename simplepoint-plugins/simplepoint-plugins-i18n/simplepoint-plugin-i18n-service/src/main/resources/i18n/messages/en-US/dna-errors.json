@@ -21,21 +21,5 @@
   "dna.error.socket.invalidFrameSize": "Invalid DNA JDBC socket request frame size: {0}",
   "dna.error.socket.missingAction": "DNA JDBC socket request is missing the action field",
   "dna.error.socket.notAuthenticated": "DNA JDBC socket connection is not authenticated; send CONNECT first",
-  "dna.error.socket.concurrencyLimit": "Server query concurrency limit reached; please retry later",
-  "dna.error.lineage.nodeEmpty": "Lineage node must not be null",
-  "dna.error.lineage.nodeNotFound": "Lineage node not found: {0}",
-  "dna.error.lineage.nodeNameEmpty": "Node name is required",
-  "dna.error.lineage.catalogIdEmpty": "Datasource is required",
-  "dna.error.lineage.nodeTypeEmpty": "Node type is required",
-  "dna.error.lineage.tableNameEmpty": "Table name is required",
-  "dna.error.lineage.invalidNodeType": "Node type must be one of: {0}",
-  "dna.error.lineage.catalogInvalid": "Datasource does not exist or is disabled: {0}",
-  "dna.error.lineage.edgeEmpty": "Lineage edge must not be null",
-  "dna.error.lineage.sourceNodeEmpty": "Source node is required",
-  "dna.error.lineage.targetNodeEmpty": "Target node is required",
-  "dna.error.lineage.edgeTypeEmpty": "Edge type is required",
-  "dna.error.lineage.invalidEdgeType": "Edge type must be one of: {0}",
-  "dna.error.lineage.selfReference": "Source and target nodes must be different",
-  "dna.error.lineage.sourceNotFound": "Source node not found: {0}",
-  "dna.error.lineage.targetNotFound": "Target node not found: {0}"
+  "dna.error.socket.concurrencyLimit": "Server query concurrency limit reached; please retry later"
 }

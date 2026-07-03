@@ -70,15 +70,5 @@ export default {
     baseUrl: `${contextPath}/platform/dna/federation/data-quality`,
     i18nNamespaces: ['dna-data-quality'],
     name: 'dna-data-quality'
-  },
-  'platform.dna-data-lineage-nodes': {
-    baseUrl: `${contextPath}/platform/dna/federation/data-lineage/nodes`,
-    i18nNamespaces: ['dna-data-lineage'],
-    name: 'dna-data-lineage-nodes'
-  },
-  'platform.dna-data-lineage-edges': {
-    baseUrl: `${contextPath}/platform/dna/federation/data-lineage/edges`,
-    i18nNamespaces: ['dna-data-lineage'],
-    name: 'dna-data-lineage-edges'
   }
 }

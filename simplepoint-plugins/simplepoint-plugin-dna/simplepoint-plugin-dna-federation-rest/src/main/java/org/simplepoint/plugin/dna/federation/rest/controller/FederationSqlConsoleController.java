@@ -1,5 +1,7 @@
 package org.simplepoint.plugin.dna.federation.rest.controller;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.ByteArrayOutputStream;
@@ -31,13 +33,20 @@ public class FederationSqlConsoleController {
 
   private final FederationSqlConsoleService service;
 
+  private final ObjectMapper objectMapper;
+
   /**
    * Creates a federation SQL console controller.
    *
    * @param service SQL console service
+   * @param objectMapper JSON serializer
    */
-  public FederationSqlConsoleController(final FederationSqlConsoleService service) {
+  public FederationSqlConsoleController(
+      final FederationSqlConsoleService service,
+      final ObjectMapper objectMapper
+  ) {
     this.service = service;
+    this.objectMapper = objectMapper;
   }
 
   /**
@@ -99,7 +108,7 @@ public class FederationSqlConsoleController {
   /**
    * Exports query results in the requested format.
    *
-   * @param request export request with catalogCode, sql and format (CSV/JSON)
+   * @param request export request with SQL console request fields and format (CSV/JSON)
    * @return byte array download
    */
   @PostMapping("/export")
@@ -108,15 +117,23 @@ public class FederationSqlConsoleController {
   public ResponseEntity<byte[]> export(
       @RequestBody final ExportRequest request
   ) {
-    FederationQueryModels.SqlQueryResult result = service.execute(
-        new FederationQueryModels.SqlConsoleRequest(request.catalogCode(), request.sql())
-    );
-    String format = request.format() == null ? "CSV" : request.format().toUpperCase();
     try {
+      FederationQueryModels.SqlQueryResult result = service.execute(
+          new FederationQueryModels.SqlConsoleRequest(
+              request.catalogCode(),
+              request.sql(),
+              request.defaultSchema(),
+              request.parameters(),
+              request.maxRows()
+          )
+      );
+      String format = request.format() == null ? "CSV" : request.format().toUpperCase();
       return switch (format) {
         case "JSON" -> buildJsonExport(result);
         default -> buildCsvExport(result);
       };
+    } catch (IllegalArgumentException | IllegalStateException ex) {
+      return badRequestBytes(ex.getMessage());
     } catch (IOException ex) {
       throw new IllegalStateException("导出失败: " + ex.getMessage(), ex);
     }
@@ -133,7 +150,7 @@ public class FederationSqlConsoleController {
         if (i > 0) {
           writer.write(',');
         }
-        writeCsvField(writer, columns.get(i).name());
+        writeCsvField(writer, exportColumnName(columns, i));
       }
       writer.write('\n');
       for (List<Object> row : result.rows()) {
@@ -157,28 +174,18 @@ public class FederationSqlConsoleController {
       final FederationQueryModels.SqlQueryResult result
   ) throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    try (Writer writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8)) {
+    try (JsonGenerator generator = objectMapper.getFactory().createGenerator(baos)) {
       List<FederationQueryModels.SqlColumn> columns = result.columns();
-      writer.write('[');
-      boolean first = true;
+      generator.writeStartArray();
       for (List<Object> row : result.rows()) {
-        if (!first) {
-          writer.write(',');
-        }
-        first = false;
-        writer.write('{');
+        generator.writeStartObject();
         for (int i = 0; i < columns.size() && i < row.size(); i++) {
-          if (i > 0) {
-            writer.write(',');
-          }
-          writeJsonString(writer, columns.get(i).name());
-          writer.write(':');
-          writeJsonValue(writer, row.get(i));
+          generator.writeFieldName(exportColumnName(columns, i));
+          generator.writeObject(row.get(i));
         }
-        writer.write('}');
+        generator.writeEndObject();
       }
-      writer.write(']');
-      writer.flush();
+      generator.writeEndArray();
     }
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=export.json")
@@ -186,52 +193,49 @@ public class FederationSqlConsoleController {
         .body(baos.toByteArray());
   }
 
+  private static String exportColumnName(
+      final List<FederationQueryModels.SqlColumn> columns,
+      final int index
+  ) {
+    if (columns == null || index < 0 || index >= columns.size()) {
+      return "column_" + (index + 1);
+    }
+    String name = trimToNull(columns.get(index).name());
+    return name == null ? "column_" + (index + 1) : name;
+  }
+
   private static void writeCsvField(final Writer writer, final String value) throws IOException {
-    if (value.indexOf(',') >= 0 || value.indexOf('"') >= 0 || value.indexOf('\n') >= 0) {
+    String normalized = value == null ? "" : value;
+    if (normalized.indexOf(',') >= 0
+        || normalized.indexOf('"') >= 0
+        || normalized.indexOf('\n') >= 0
+        || normalized.indexOf('\r') >= 0) {
       writer.write('"');
-      writer.write(value.replace("\"", "\"\""));
+      writer.write(normalized.replace("\"", "\"\""));
       writer.write('"');
     } else {
-      writer.write(value);
-    }
-  }
-
-  private static void writeJsonString(final Writer writer, final String s) throws IOException {
-    writer.write('"');
-    for (int i = 0; i < s.length(); i++) {
-      char c = s.charAt(i);
-      switch (c) {
-        case '"' -> writer.write("\\\"");
-        case '\\' -> writer.write("\\\\");
-        case '\n' -> writer.write("\\n");
-        case '\r' -> writer.write("\\r");
-        case '\t' -> writer.write("\\t");
-        default -> writer.write(c);
-      }
-    }
-    writer.write('"');
-  }
-
-  private static void writeJsonValue(final Writer writer, final Object value) throws IOException {
-    if (value == null) {
-      writer.write("null");
-    } else if (value instanceof Number) {
-      writer.write(value.toString());
-    } else if (value instanceof Boolean) {
-      writer.write(value.toString());
-    } else {
-      writeJsonString(writer, String.valueOf(value));
+      writer.write(normalized);
     }
   }
 
   /**
    * Export request body.
    *
-   * @param catalogCode datasource catalog code
-   * @param sql         SQL to export
-   * @param format      export format (CSV/JSON)
+   * @param catalogCode   datasource catalog code
+   * @param sql           SQL to export
+   * @param defaultSchema optional default schema for unqualified identifiers
+   * @param parameters    optional bind parameters for server-side prepared execution
+   * @param maxRows       optional per-export row limit
+   * @param format        export format (CSV/JSON)
    */
-  public record ExportRequest(String catalogCode, String sql, String format) {
+  public record ExportRequest(
+      String catalogCode,
+      String sql,
+      String defaultSchema,
+      List<Object> parameters,
+      Integer maxRows,
+      String format
+  ) {
   }
 
   private static Response<String> badRequest(final String message) {
@@ -240,5 +244,19 @@ public class FederationSqlConsoleController {
             .contentType(MediaType.TEXT_PLAIN)
             .body(message)
     );
+  }
+
+  private static ResponseEntity<byte[]> badRequestBytes(final String message) {
+    return ResponseEntity.badRequest()
+        .contentType(MediaType.TEXT_PLAIN)
+        .body((trimToNull(message) == null ? "请求参数错误" : message).getBytes(StandardCharsets.UTF_8));
+  }
+
+  private static String trimToNull(final String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
   }
 }
