@@ -15,6 +15,11 @@ import {request} from '@simplepoint/shared/api/client';
 import ColumnFilter, {ColumnFilterType} from './ColumnFilter';
 import ColumnSettings, {ColumnFixed, ColumnSetting} from './ColumnSettings';
 
+const MIN_COLUMN_WIDTH = 80;
+const DEFAULT_ICON_COLUMN_WIDTH = 80;
+const DEFAULT_NUMBER_COLUMN_WIDTH = 120;
+const DEFAULT_TEXT_COLUMN_WIDTH = 150;
+
 export type TableButtonProps = ButtonProps & {
   key: string;
   sort: number;
@@ -155,14 +160,28 @@ const normalizeTreeRows = <T extends object>(rows: T[]): T[] => {
   return changed ? normalizedRows : rows;
 };
 
+const toNumberWidth = (width: unknown): number | undefined => {
+  if (typeof width === 'number' && Number.isFinite(width)) return width;
+  if (typeof width !== 'string') return undefined;
+  const matched = width.trim().match(/^(\d+(?:\.\d+)?)px$/);
+  if (!matched) return undefined;
+  const parsed = Number(matched[1]);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
 const ResizableTitle = (props: React.HTMLAttributes<HTMLTableCellElement> & { onResize?: (e: React.SyntheticEvent, data: { size: { width: number; height: number } }) => void; width?: number }) => {
   const {onResize, width, ...restProps} = props;
-  if (!width) return <th {...restProps} />;
+  if (!width || !onResize) return <th {...restProps} />;
   return (
     <Resizable
       width={width}
       height={0}
-      handle={<span className="react-resizable-handle" onClick={e => e.stopPropagation()} />}
+      handle={
+        <span
+          className="react-resizable-handle sp-table-resize-handle"
+          onClick={e => e.stopPropagation()}
+        />
+      }
       onResize={onResize as any}
       draggableOpts={{enableUserSelectHack: false}}
     >
@@ -376,7 +395,8 @@ const App = <T extends object = any>(props: TableProps<T>) => {
   });
 
   const handleResize = useCallback((key: string) => (_: React.SyntheticEvent, {size}: {size: {width: number; height: number}}) => {
-    setColWidths(prev => ({...prev, [key]: size.width}));
+    const width = Math.max(MIN_COLUMN_WIDTH, Math.round(size.width));
+    setColWidths(prev => ({...prev, [key]: width}));
   }, []);
 
   // Async load column widths from backend (overrides localStorage if server has newer data)
@@ -484,7 +504,9 @@ const App = <T extends object = any>(props: TableProps<T>) => {
 
         const isActive = Boolean(filters[key]);
 
-        const defaultWidth = isBoolean || key === 'icon' ? 80 : isNumber ? 120 : 150;
+        const defaultWidth = isBoolean || key === 'icon'
+          ? DEFAULT_ICON_COLUMN_WIDTH
+          : isNumber ? DEFAULT_NUMBER_COLUMN_WIDTH : DEFAULT_TEXT_COLUMN_WIDTH;
 
         const column: ColumnType<T> = {
           title: baseTitle,
@@ -496,13 +518,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           sortOrder: key === sortField
             ? (sortDir === 'asc' ? 'ascend' : 'descend')
             : null,
-          width: colWidths[key] ?? defaultWidth,
-          onHeaderCell: (col: ColumnType<T>) => ({
-            width: col.width,
-            onResize: handleResize(key),
-          }),
           ...((!isBoolean && key !== 'icon') ? {ellipsis: true} : {}),
-          ...((!isBoolean && key !== 'icon') ? {onCell: () => ({style: {maxWidth: 200}})} : {}),
         };
 
         (column as any).filterDropdown = ({close}: any) => (
@@ -537,6 +553,9 @@ const App = <T extends object = any>(props: TableProps<T>) => {
 
         const override = props.columnOverrides?.[key] as (Partial<ColumnType<T>> & { order?: number }) | undefined;
         const {order: overrideOrder, ...overrideRest} = override || {};
+        const overrideOnHeaderCell = overrideRest.onHeaderCell;
+        const overrideWidth = toNumberWidth(overrideRest.width);
+        const columnWidth = colWidths[key] ?? overrideWidth ?? defaultWidth;
 
         // User config order takes precedence over schema/override order
         const userOrder = colConfigs[key]?.order;
@@ -553,6 +572,12 @@ const App = <T extends object = any>(props: TableProps<T>) => {
             ...(userFixed !== undefined ? {fixed: userFixed} : {}),
             key,
             dataIndex: key,
+            width: columnWidth,
+            onHeaderCell: (col: ColumnType<T>) => ({
+              ...((overrideOnHeaderCell as any)?.(col) ?? {}),
+              width: columnWidth,
+              onResize: handleResize(key),
+            }),
           },
         };
       });

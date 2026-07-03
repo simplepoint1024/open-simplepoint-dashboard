@@ -77,6 +77,7 @@ const App = (props: SimpleTableProps<any>) => {
             sorter={controller.table.sorter}
             onChange={controller.table.onChange}
             onFilterChange={controller.table.onFilterChange}
+            storageKey={`${props.baseUrl}:${props.name}`}
             onButtonEvents={{
               ...defaultEvents,
               ...(props.customButtonEvents ?? {}),

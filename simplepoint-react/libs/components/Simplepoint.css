@@ -127,6 +127,7 @@
 
 .sp-table-fill.ant-table-wrapper .ant-table-thead > tr > th,
 .sp-table-fill.ant-table-wrapper .ant-table-thead > tr > td {
+    position: relative;
     height: 42px;
     padding-top: 9px;
     padding-bottom: 9px;
@@ -139,6 +140,37 @@
 
 .sp-table-fill.ant-table-wrapper .ant-table-thead > tr > th::before {
     background-color: var(--ant-color-border-secondary, rgba(5, 5, 5, 0.08)) !important;
+}
+
+.sp-table-fill .sp-table-resize-handle.react-resizable-handle {
+    position: absolute;
+    top: 0;
+    right: -5px;
+    bottom: 0;
+    width: 10px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 3;
+    background-image: none;
+    user-select: none;
+    touch-action: none;
+}
+
+.sp-table-fill .sp-table-resize-handle::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: 5px;
+    width: 1px;
+    background: var(--ant-color-primary, #1677ff);
+    opacity: 0;
+    transition: opacity 0.16s ease;
+}
+
+.sp-table-fill .ant-table-thead > tr > th:hover .sp-table-resize-handle::after,
+.sp-table-fill .sp-table-resize-handle:hover::after {
+    opacity: 0.8;
 }
 
 .sp-table-fill.ant-table-wrapper .ant-table-tbody > tr > td {
