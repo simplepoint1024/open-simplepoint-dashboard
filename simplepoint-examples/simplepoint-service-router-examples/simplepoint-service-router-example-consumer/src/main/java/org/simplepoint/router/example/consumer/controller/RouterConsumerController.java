@@ -14,6 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class RouterConsumerController {
   private final GreetingService greetingService;
 
+  /**
+   * Creates a service-router consumer controller.
+   *
+   * @param greetingService routed greeting service
+   */
   public RouterConsumerController(final GreetingService greetingService) {
     this.greetingService = greetingService;
   }

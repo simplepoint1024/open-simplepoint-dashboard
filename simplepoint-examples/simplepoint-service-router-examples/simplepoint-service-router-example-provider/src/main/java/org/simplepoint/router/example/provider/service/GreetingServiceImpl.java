@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class GreetingServiceImpl implements GreetingService {
 
-    @Override
-    public String greet(final String name) {
-        return "Hello, " + name + " from provider";
-    }
+  @Override
+  public String greet(final String name) {
+    return "Hello, " + name + " from provider";
+  }
 }
