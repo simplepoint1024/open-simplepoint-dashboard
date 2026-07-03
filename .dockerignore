@@ -5,8 +5,14 @@
 .kotlin
 build
 **/build
+!simplepoint-services/simplepoint-service-authorization/build/
+!simplepoint-services/simplepoint-service-authorization/build/install/
 !simplepoint-services/simplepoint-service-authorization/build/install/**
+!simplepoint-services/simplepoint-service-common/build/
+!simplepoint-services/simplepoint-service-common/build/install/
 !simplepoint-services/simplepoint-service-common/build/install/**
+!simplepoint-services/simplepoint-service-host/build/
+!simplepoint-services/simplepoint-service-host/build/install/
 !simplepoint-services/simplepoint-service-host/build/install/**
 **/node_modules
 data
@@ -14,4 +20,3 @@ infrastructure/.terraform
 infrastructure/terraform.tfstate
 infrastructure/terraform.tfstate.backup
 scripts/shell/logs
-

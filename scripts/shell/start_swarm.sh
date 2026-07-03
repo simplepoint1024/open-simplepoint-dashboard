@@ -15,6 +15,18 @@ detect_host_ip() {
     fi
   fi
 
+  if command -v ip >/dev/null 2>&1; then
+    local route_ip
+    route_ip="$(
+      ip route get 1.1.1.1 2>/dev/null \
+        | awk '{ for (i = 1; i <= NF; i++) if ($i == "src") { print $(i + 1); exit } }'
+    )"
+    if [[ -n "${route_ip}" ]]; then
+      printf '%s\n' "${route_ip}"
+      return 0
+    fi
+  fi
+
   if command -v hostname >/dev/null 2>&1; then
     local host_ip
     host_ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
