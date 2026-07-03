@@ -33,11 +33,11 @@ services:
       - target: 8500
         published: 8500
         protocol: tcp
-        mode: ingress
+        mode: host
       - target: 8600
         published: 8600
         protocol: tcp
-        mode: ingress
+        mode: host
     networks:
       - simplepoint
     deploy:
@@ -63,7 +63,7 @@ services:
       - target: 9000
         published: 9000
         protocol: tcp
-        mode: ingress
+        mode: host
     networks:
       - simplepoint
     deploy:
@@ -88,7 +88,7 @@ services:
       - target: 8080
         published: 8080
         protocol: tcp
-        mode: ingress
+        mode: host
     networks:
       - simplepoint
     deploy:
