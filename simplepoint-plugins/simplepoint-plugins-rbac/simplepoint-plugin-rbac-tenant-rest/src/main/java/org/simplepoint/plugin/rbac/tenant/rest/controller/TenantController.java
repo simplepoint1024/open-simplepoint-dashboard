@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
@@ -113,6 +114,20 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
   }
 
   /**
+   * Retrieves roles available to the current user in the selected tenant.
+   *
+   * @param tenantId selected tenant
+   * @return current user's switchable roles
+   */
+  @GetMapping("/current-roles")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "获取当前用户的角色", description = "获取当前认证用户在指定租户下可切换的角色列表")
+  public Response<Collection<RoleGrantedAuthority>> getCurrentUserRoles(
+      @RequestParam(name = "tenantId", required = false) String tenantId) {
+    return ok(service.getCurrentUserRoles(tenantId));
+  }
+
+  /**
    * Calculates the permission context ID for a given tenant ID.
    *
    * @param tenantId the ID of the tenant for which to calculate the permission context ID
@@ -121,8 +136,10 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
   @GetMapping("/permission-context-id")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "计算权限上下文ID", description = "根据提供的租户ID，计算并返回权限上下文ID")
-  public Response<String> calculatePermissionContextId(@RequestParam(name = "tenantId", required = false) String tenantId) {
-    return ok(service.calculatePermissionContextId(tenantId));
+  public Response<String> calculatePermissionContextId(
+      @RequestParam(name = "tenantId", required = false) String tenantId,
+      @RequestParam(name = "roleId", required = false) String roleId) {
+    return ok(service.calculatePermissionContextId(tenantId, roleId));
   }
 
   /**
@@ -140,7 +157,7 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
    */
   @GetMapping("/users/items")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "获取租户成员候选项", description = "分页返回指定租户可配置的成员候选用户列表")
+  @Operation(summary = "获取租户成员候选项", description = "分页返回可配置到指定租户的全局用户候选列表")
   public Response<Page<UserRelevanceVo>> userItems(@RequestParam("tenantId") String tenantId, Pageable pageable) {
     return ok(service.userItems(tenantId, pageable));
   }

@@ -4,7 +4,7 @@ import { get, useData } from "../api/methods";
 import { RJSFSchema } from "@rjsf/utils";
 import { createIcon } from "../types/icon";
 import type { UseQueryOptions } from "@tanstack/react-query";
-import { getStoredContextId, getStoredTenantId, shouldUseTenantContext } from '../api/contextId';
+import { getStoredContextId, getStoredRoleId, getStoredTenantId, shouldUseTenantContext } from '../api/contextId';
 import { resolveClientI18nFallback } from '../i18n/fallbacks';
 
 export type TableSchemaProps = {
@@ -142,43 +142,63 @@ export function useSchema(
   options?: Omit<UseQueryOptions<TableSchemaProps, Error, TableSchemaProps, readonly unknown[]>, 'queryKey' | 'queryFn'>) {
   const useTenantContext = shouldUseTenantContext(baseUrl);
   const [tenantId, setTenantId] = useState(() => useTenantContext ? (getStoredTenantId() ?? "") : "");
-  const [contextId, setContextId] = useState(() => useTenantContext ? (getStoredContextId(getStoredTenantId()) ?? "") : "");
+  const [roleId, setRoleId] = useState(() => useTenantContext ? (getStoredRoleId(getStoredTenantId()) ?? "") : "");
+  const [contextId, setContextId] = useState(() => useTenantContext ? (getStoredContextId(getStoredTenantId(), getStoredRoleId(getStoredTenantId())) ?? "") : "");
 
   useEffect(() => {
     if (!useTenantContext) {
       setTenantId("");
+      setRoleId("");
       setContextId("");
       return;
     }
 
     const handleTenantChange = (event: Event) => {
       const nextTenantId = (event as CustomEvent<string | undefined>).detail ?? getStoredTenantId() ?? "";
+      const nextRoleId = getStoredRoleId(nextTenantId) ?? "";
       setTenantId(nextTenantId);
-      setContextId(getStoredContextId(nextTenantId) ?? "");
+      setRoleId(nextRoleId);
+      setContextId(getStoredContextId(nextTenantId, nextRoleId) ?? "");
+    };
+
+    const handleRoleChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ tenantId?: string; roleId?: string }>).detail;
+      const nextTenantId = detail?.tenantId ?? tenantId;
+      if ((nextTenantId ?? "") !== tenantId) {
+        return;
+      }
+      const nextRoleId = detail?.roleId ?? getStoredRoleId(nextTenantId) ?? "";
+      setRoleId(nextRoleId);
+      setContextId(getStoredContextId(nextTenantId, nextRoleId) ?? "");
     };
 
     const handleContextChange = (event: Event) => {
-      const detail = (event as CustomEvent<{ tenantId?: string; contextId?: string }>).detail;
+      const detail = (event as CustomEvent<{ tenantId?: string; roleId?: string; contextId?: string }>).detail;
       if (detail && typeof detail === "object") {
         if ((detail.tenantId ?? "") !== tenantId) {
+          return;
+        }
+        if ((detail.roleId ?? "") !== roleId) {
           return;
         }
         setContextId(detail.contextId ?? "");
         return;
       }
-      setContextId(getStoredContextId(tenantId) ?? "");
+      setContextId(getStoredContextId(tenantId, roleId) ?? "");
     };
 
     window.addEventListener("sp-set-tenant", handleTenantChange as EventListener);
+    window.addEventListener("sp-set-role", handleRoleChange as EventListener);
     window.addEventListener("sp-set-context-id", handleContextChange as EventListener);
 
     return () => {
       window.removeEventListener("sp-set-tenant", handleTenantChange as EventListener);
+      window.removeEventListener("sp-set-role", handleRoleChange as EventListener);
       window.removeEventListener("sp-set-context-id", handleContextChange as EventListener);
     };
-  }, [tenantId, useTenantContext]);
+  }, [tenantId, roleId, useTenantContext]);
 
-  return useData([`${baseUrl}/schema`, useTenantContext ? tenantId : "", useTenantContext ? contextId : ""], async () => {
+  return useData([`${baseUrl}/schema`, useTenantContext ? tenantId : "", useTenantContext ? roleId : "", useTenantContext ? contextId : ""], async () => {
     const res = await get<TableSchemaProps>(`${baseUrl}/schema`);
     if (!res) return res;
 

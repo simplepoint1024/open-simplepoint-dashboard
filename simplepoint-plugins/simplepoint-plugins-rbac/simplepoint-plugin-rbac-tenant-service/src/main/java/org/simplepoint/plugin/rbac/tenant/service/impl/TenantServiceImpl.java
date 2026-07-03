@@ -14,7 +14,9 @@ import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeGuards;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
@@ -47,6 +49,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
   private final TenantUserRelevanceRepository tenantUserRelevanceRepository;
   private final PermissionVersionRefreshService permissionVersionRefreshService;
+  private final UsersService usersService;
 
   /**
    * Tenant Service Impl.
@@ -56,12 +59,14 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       DetailsProviderService detailsProviderService,
       TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
       TenantUserRelevanceRepository tenantUserRelevanceRepository,
-      PermissionVersionRefreshService permissionVersionRefreshService
+      PermissionVersionRefreshService permissionVersionRefreshService,
+      UsersService usersService
   ) {
     super(repository, detailsProviderService);
     this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
     this.tenantUserRelevanceRepository = tenantUserRelevanceRepository;
     this.permissionVersionRefreshService = permissionVersionRefreshService;
+    this.usersService = usersService;
   }
 
   @Override
@@ -108,17 +113,24 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   }
 
   @Override
-  public String calculatePermissionContextId(String tenantId) {
+  public Collection<RoleGrantedAuthority> getCurrentUserRoles(String tenantId) {
     Authentication authentication = getRequiredAuthentication();
-    String normalizedTenantId = normalizeTenantId(tenantId);
-    if (normalizedTenantId != null && !getRepository().hasUser(normalizedTenantId, authentication.getName())) {
-      throw new AccessDeniedException("当前用户未加入指定租户");
+    String resolvedTenantId = resolveRequestedTenantId(tenantId, authentication);
+    return loadEffectiveRoles(resolvedTenantId, authentication.getName());
+  }
+
+  @Override
+  public String calculatePermissionContextId(String tenantId, String roleId) {
+    Authentication authentication = getRequiredAuthentication();
+    String resolvedTenantId = resolveRequestedTenantId(tenantId, authentication);
+    String normalizedRoleId = trimToNull(roleId);
+    if (normalizedRoleId != null) {
+      boolean roleAllowed = loadEffectiveRoles(resolvedTenantId, authentication.getName()).stream()
+          .anyMatch(role -> normalizedRoleId.equals(role.getId()));
+      if (!roleAllowed) {
+        throw new AccessDeniedException("当前用户未拥有指定角色");
+      }
     }
-    String resolvedTenantId = normalizedTenantId == null
-        ? Optional.ofNullable(ensurePersonalTenantExists(authentication.getName()))
-            .map(Tenant::getId)
-            .orElse(null)
-        : normalizedTenantId;
     Long permissionVersion = 0L;
     if (resolvedTenantId != null && !resolvedTenantId.isBlank()) {
       permissionVersion = getRepository().getTenantPermissionVersion(resolvedTenantId);
@@ -126,7 +138,22 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     if (permissionVersion == null) {
       permissionVersion = 0L;
     }
-    return sha256((resolvedTenantId != null ? resolvedTenantId : "") + ":" + authentication.getName() + ":" + permissionVersion);
+    return sha256((resolvedTenantId != null ? resolvedTenantId : "")
+        + ":" + authentication.getName()
+        + ":" + permissionVersion
+        + (normalizedRoleId == null ? "" : ":" + normalizedRoleId));
+  }
+
+  private String resolveRequestedTenantId(String tenantId, Authentication authentication) {
+    String normalizedTenantId = normalizeTenantId(tenantId);
+    if (normalizedTenantId != null && !getRepository().hasUser(normalizedTenantId, authentication.getName())) {
+      throw new AccessDeniedException("当前用户未加入指定租户");
+    }
+    return normalizedTenantId == null
+        ? Optional.ofNullable(ensurePersonalTenantExists(authentication.getName()))
+            .map(Tenant::getId)
+            .orElse(null)
+        : normalizedTenantId;
   }
 
   private String normalizeTenantId(String tenantId) {
@@ -149,21 +176,13 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
 
   @Override
   public Page<UserRelevanceVo> ownerItems(Pageable pageable) {
-    AuthorizationContext context = getAuthorizationContext();
-    if (context != null && context.getUserId() != null
-        && !AuthorizationScopeGuards.isPlatformAdministrator(context)) {
-      String tenantId = resolveCurrentTenantScope();
-      return tenantId == null || tenantId.isBlank()
-          ? Page.empty(pageable)
-          : tenantUserRelevanceRepository.items(tenantId, pageable);
-    }
     return tenantUserRelevanceRepository.items(pageable);
   }
 
   @Override
   public Page<UserRelevanceVo> userItems(String tenantId, Pageable pageable) {
-    Tenant tenant = requireTenantMemberManager(tenantId);
-    return tenantUserRelevanceRepository.items(tenant.getId(), pageable);
+    requireTenantMemberManager(tenantId);
+    return tenantUserRelevanceRepository.items(pageable);
   }
 
   @Override
@@ -441,6 +460,27 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     return codes.stream()
         .filter(code -> code != null && !code.isBlank())
         .collect(Collectors.toSet());
+  }
+
+  private Collection<RoleGrantedAuthority> loadEffectiveRoles(String tenantId, String userId) {
+    Map<String, RoleGrantedAuthority> rolesById = new java.util.LinkedHashMap<>();
+    usersService.loadRolesByUserId(tenantId, userId).stream()
+        .filter(role -> role.getId() != null && !role.getId().isBlank())
+        .forEach(role -> rolesById.putIfAbsent(role.getId(), role));
+    if (tenantId != null && !tenantId.isBlank()) {
+      usersService.loadRolesByUserId(null, userId).stream()
+          .filter(role -> role.getId() != null && !role.getId().isBlank())
+          .forEach(role -> rolesById.putIfAbsent(role.getId(), role));
+    }
+    return List.copyOf(rolesById.values());
+  }
+
+  private static String trimToNull(String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
   }
 
   private static String requireTenantId(String tenantId) {

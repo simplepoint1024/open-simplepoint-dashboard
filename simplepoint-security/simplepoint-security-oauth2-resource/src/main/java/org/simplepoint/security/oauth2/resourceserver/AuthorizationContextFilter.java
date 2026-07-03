@@ -29,11 +29,13 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
 
   private static final String HEADER_CONTEXT_ID = "X-Context-Id";
   private static final String HEADER_TENANT_ID = "X-Tenant-Id";
+  private static final String HEADER_ROLE_ID = "X-Role-Id";
   private static final String HEADER_USER_ID = "X-User-Id";
   private static final String HEADER_SCOPE_TYPE = "X-Scope-Type";
   private static final String HEADER_ACTOR_ROLE = "X-Actor-Role";
   private static final Set<String> CACHED_CONTEXT_PROTECTED_HEADERS = Set.of(
       HEADER_TENANT_ID,
+      HEADER_ROLE_ID,
       HEADER_USER_ID,
       HEADER_SCOPE_TYPE,
       HEADER_ACTOR_ROLE
@@ -70,14 +72,16 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
       String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
       String contextId = request.getHeader(HEADER_CONTEXT_ID);
       String tenantId = request.getHeader(HEADER_TENANT_ID);
+      String roleId = request.getHeader(HEADER_ROLE_ID);
       if (StringUtils.hasText(authorization)) {
-        Map<String, String> headers = collectHeaders(request, contextId, tenantId);
+        Map<String, String> headers = collectHeaders(request, contextId, tenantId, roleId);
         AuthorizationContext ctx = authorizationContextResolver.load(contextId);
         if (ctx == null) {
           ctx = authorizationContextResolver.resolve(headers);
         } else {
-          if (hasTenantMismatch(ctx, tenantId)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Authorization context tenant mismatch");
+          if (hasProtectedHeaderMismatch(ctx, HEADER_TENANT_ID, tenantId)
+              || hasProtectedHeaderMismatch(ctx, HEADER_ROLE_ID, roleId)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Authorization context mismatch");
             return;
           }
           ctx.mergeAttributes(filterCachedContextHeaders(headers));
@@ -94,7 +98,7 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
     }
   }
 
-  private Map<String, String> collectHeaders(HttpServletRequest request, String contextId, String tenantId) {
+  private Map<String, String> collectHeaders(HttpServletRequest request, String contextId, String tenantId, String roleId) {
     Enumeration<String> headerNames = request.getHeaderNames();
     Map<String, String> headers = new HashMap<>();
     while (headerNames.hasMoreElements()) {
@@ -107,16 +111,19 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
     if (tenantId != null && !tenantId.isBlank()) {
       headers.put(HEADER_TENANT_ID, tenantId);
     }
+    if (roleId != null && !roleId.isBlank()) {
+      headers.put(HEADER_ROLE_ID, roleId);
+    }
     return headers;
   }
 
-  private boolean hasTenantMismatch(AuthorizationContext context, String tenantId) {
-    String requestedTenantId = normalize(tenantId);
-    if (!StringUtils.hasText(requestedTenantId)) {
+  private boolean hasProtectedHeaderMismatch(AuthorizationContext context, String headerName, String requestedValue) {
+    String requested = normalize(requestedValue);
+    if (!StringUtils.hasText(requested)) {
       return false;
     }
-    String cachedTenantId = normalize(context.getAttribute(HEADER_TENANT_ID));
-    return StringUtils.hasText(cachedTenantId) && !requestedTenantId.equals(cachedTenantId);
+    String cached = normalize(context.getAttribute(headerName));
+    return StringUtils.hasText(cached) && !requested.equals(cached);
   }
 
   private Map<String, String> filterCachedContextHeaders(Map<String, String> headers) {
@@ -140,6 +147,9 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
   private String normalizeHeaderName(String headerName) {
     if (HEADER_TENANT_ID.equalsIgnoreCase(headerName)) {
       return HEADER_TENANT_ID;
+    }
+    if (HEADER_ROLE_ID.equalsIgnoreCase(headerName)) {
+      return HEADER_ROLE_ID;
     }
     if (HEADER_USER_ID.equalsIgnoreCase(headerName)) {
       return HEADER_USER_ID;

@@ -34,12 +34,21 @@ body {
 .nb-top-menu-right .ant-menu-item-selected::after,
 .nb-top-menu-right .ant-menu-item-active::after { display: none !important; }
 
-/* Header Logo 独立组件 */
+/* Header Logo 与上下文切换 */
+.nb-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    min-width: 0;
+    height: 100%;
+}
+
 .nb-header-logo {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 16px;
+    padding: 0 12px 0 16px;
     flex-shrink: 0;
     cursor: pointer;
     height: 100%;
@@ -278,23 +287,23 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
     overflow: hidden;
 }
 
-/* 顶部右侧租户选择器 */
+/* 顶部左侧租户与角色选择器 */
 .nb-header-tenant {
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    height: 52px;
-    padding: 0 4px;
+    min-width: 0;
+    height: 28px;
+    padding: 0 8px;
     border-left: 1px solid var(--nb-border);
-    border-right: 1px solid var(--nb-border);
-    margin: 0 4px;
+    margin-left: 2px;
+    border-radius: 4px;
+    line-height: 28px;
 }
 
-.nb-header-tenant > * {
-    white-space: nowrap;
-    max-width: 220px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.nb-header-tenant:hover,
+.nb-role-switcher:hover {
+    background: var(--nb-hover, rgba(0,0,0,0.04));
 }
 
 .nb-header-tenant .nb-tenant-type-tag,
@@ -310,7 +319,7 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 
 .nb-tenant-current-name {
     min-width: 0;
-    max-width: 128px;
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -334,6 +343,57 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.nb-role-switcher {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    min-width: 0;
+    height: 28px;
+    padding: 0 8px;
+    border-left: 1px solid var(--nb-border);
+    border-radius: 4px;
+    line-height: 28px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.nb-role-switcher-disabled {
+    cursor: default;
+    opacity: 0.72;
+}
+
+.nb-role-current-name {
+    min-width: 0;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    opacity: 0.86;
+}
+
+.nb-role-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 180px;
+}
+
+.nb-role-menu-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nb-role-menu-code {
+    flex-shrink: 0;
+    font-size: 11px;
+    opacity: 0.5;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
 .nb-tabs-bar {
@@ -588,6 +648,7 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
   .nb-header-search { display: none; }
   .nb-header-breadcrumb { display: none; }
   .nb-header-tenant .nb-tenant-current-name,
-  .nb-header-tenant .nb-tenant-type-tag { display: none; }
+  .nb-header-tenant .nb-tenant-type-tag,
+  .nb-role-current-name { display: none; }
   .nb-root .ant-layout-sider { width: 0 !important; min-width: 0 !important; }
 }

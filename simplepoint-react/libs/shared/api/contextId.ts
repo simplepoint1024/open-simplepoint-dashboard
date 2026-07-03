@@ -2,11 +2,14 @@
 // (contextId 自动补全是 best-effort，不需要抛自定义错误)
 
 export type TenantId = string;
+export type RoleId = string;
 export type ContextId = string;
 export type ApiScope = 'global' | 'tenant';
 
 // localStorage keys (keep backward compatible)
 const KEY_TENANT = 'sp.tenantId';
+const KEY_ROLE = 'sp.roleId';
+const KEY_ROLE_PREFIX = 'sp.roleId:';
 const KEY_CTX = 'sp.contextId';
 const KEY_CTX_PREFIX = 'sp.contextId:';
 
@@ -19,6 +22,7 @@ const API_SCOPE_RULES: ReadonlyArray<{ scope: ApiScope; prefix: string }> = [
   { scope: 'global', prefix: '/common/oidc/clients' },
   { scope: 'global', prefix: '/common/ops/microapps' },
   { scope: 'global', prefix: '/common/permissions' },
+  { scope: 'global', prefix: '/common/tenants/current-roles' },
   { scope: 'global', prefix: '/common/tenants/current' },
   { scope: 'global', prefix: '/common/tenants/page' },
   { scope: 'global', prefix: '/common/platform/dna' },
@@ -56,16 +60,40 @@ export function setStoredTenantId(tenantId: TenantId | undefined) {
   writeLS(KEY_TENANT, normalizedTenantId || undefined);
 }
 
-function getContextStorageKey(tenantId?: TenantId): string {
-  return tenantId ? `${KEY_CTX_PREFIX}${tenantId}` : KEY_CTX;
+function getRoleStorageKey(tenantId?: TenantId): string {
+  return tenantId ? `${KEY_ROLE_PREFIX}${tenantId}` : KEY_ROLE;
 }
 
-export function getStoredContextId(tenantId?: TenantId): ContextId | undefined {
-  return readLS(getContextStorageKey(tenantId)) as ContextId | undefined;
+export function getStoredRoleId(tenantId?: TenantId): RoleId | undefined {
+  const normalizedTenantId = tenantId?.trim();
+  const tenantRole = normalizedTenantId ? readLS(getRoleStorageKey(normalizedTenantId)) : undefined;
+  return (tenantRole || readLS(KEY_ROLE)) as RoleId | undefined;
 }
 
-export function setStoredContextId(contextId: ContextId | undefined, tenantId?: TenantId) {
-  writeLS(getContextStorageKey(tenantId), contextId);
+export function setStoredRoleId(roleId: RoleId | undefined, tenantId?: TenantId) {
+  const normalizedRoleId = roleId?.trim();
+  const normalizedTenantId = tenantId?.trim();
+  if (normalizedTenantId) {
+    writeLS(getRoleStorageKey(normalizedTenantId), normalizedRoleId || undefined);
+  }
+  writeLS(KEY_ROLE, normalizedRoleId || undefined);
+}
+
+function getContextStorageKey(tenantId?: TenantId, roleId?: RoleId): string {
+  const normalizedTenantId = tenantId?.trim();
+  const normalizedRoleId = roleId?.trim();
+  if (normalizedTenantId && normalizedRoleId) {
+    return `${KEY_CTX_PREFIX}${normalizedTenantId}:role:${normalizedRoleId}`;
+  }
+  return normalizedTenantId ? `${KEY_CTX_PREFIX}${normalizedTenantId}` : KEY_CTX;
+}
+
+export function getStoredContextId(tenantId?: TenantId, roleId?: RoleId): ContextId | undefined {
+  return readLS(getContextStorageKey(tenantId, roleId)) as ContextId | undefined;
+}
+
+export function setStoredContextId(contextId: ContextId | undefined, tenantId?: TenantId, roleId?: RoleId) {
+  writeLS(getContextStorageKey(tenantId, roleId), contextId);
   writeLS(KEY_CTX, contextId);
 }
 
@@ -128,26 +156,28 @@ const inflight = new Map<string, Promise<string | undefined>>();
 
 export async function ensureContextId(
   tenantId: TenantId | undefined,
-  opts?: { force?: boolean; signal?: AbortSignal; throwOnError?: boolean }
+  opts?: { force?: boolean; signal?: AbortSignal; throwOnError?: boolean; roleId?: RoleId }
 ): Promise<ContextId | undefined> {
   const normalizedTenantId = tenantId?.trim();
   if (!normalizedTenantId) {
     return undefined;
   }
+  const normalizedRoleId = (opts?.roleId ?? getStoredRoleId(normalizedTenantId))?.trim();
 
   // If not force, reuse stored value
   if (!opts?.force) {
-    const cached = getStoredContextId(normalizedTenantId);
+    const cached = getStoredContextId(normalizedTenantId, normalizedRoleId);
     if (cached) return cached;
   }
 
-  const key = normalizedTenantId;
+  const key = normalizedRoleId ? `${normalizedTenantId}:${normalizedRoleId}` : normalizedTenantId;
   const existing = inflight.get(key);
   if (existing) return existing;
 
   const p = (async () => {
     try {
-      const url = `${CTX_ENDPOINT_PATH}?tenantId=${encodeURIComponent(normalizedTenantId)}`;
+      const roleQuery = normalizedRoleId ? `&roleId=${encodeURIComponent(normalizedRoleId)}` : '';
+      const url = `${CTX_ENDPOINT_PATH}?tenantId=${encodeURIComponent(normalizedTenantId)}${roleQuery}`;
 
       const res = await fetch(url, {
         method: 'GET',
@@ -156,6 +186,7 @@ export async function ensureContextId(
         headers: {
           'Content-Type': 'application/json',
           'X-Tenant-Id': normalizedTenantId,
+          ...(normalizedRoleId ? { 'X-Role-Id': normalizedRoleId } : {}),
         },
       });
 
@@ -165,7 +196,7 @@ export async function ensureContextId(
 
       const text = await res.text();
       const ctx = parseContextId(text, res.headers.get('content-type'));
-      if (ctx) setStoredContextId(ctx, normalizedTenantId);
+      if (ctx) setStoredContextId(ctx, normalizedTenantId, normalizedRoleId);
       return ctx;
     } catch (e) {
       if (opts?.throwOnError) throw e;

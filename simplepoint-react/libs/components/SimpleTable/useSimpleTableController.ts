@@ -5,7 +5,7 @@ import { useSchema } from '@simplepoint/shared/hooks/useSchema';
 import { HttpError } from '@simplepoint/shared/api/client';
 import { del, get, post, put, usePage } from '@simplepoint/shared/api/methods';
 import { useI18n } from '@simplepoint/shared/hooks/useI18n';
-import { getStoredContextId, getStoredTenantId } from '@simplepoint/shared/api/contextId';
+import { getStoredContextId, getStoredRoleId, getStoredTenantId } from '@simplepoint/shared/api/contextId';
 import type { TableButtonProps } from '../Table';
 import type { SimpleTableAfterSubmitContext, SimpleTableBeforeSubmitContext, SimpleTableProps, SimpleTableRefreshTargets, SimpleTableSubmitAction } from './types';
 
@@ -59,7 +59,8 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   const [filters, setFilters] = useState<Record<string, string>>(props.initialFilters ?? {});
   const [sort, setSort] = useState<string | undefined>(undefined);
   const [tenantId, setTenantId] = useState<string>(() => getStoredTenantId() ?? '');
-  const [contextId, setContextId] = useState<string>(() => getStoredContextId(getStoredTenantId()) ?? '');
+  const [roleId, setRoleId] = useState<string>(() => getStoredRoleId(getStoredTenantId()) ?? '');
+  const [contextId, setContextId] = useState<string>(() => getStoredContextId(getStoredTenantId(), getStoredRoleId(getStoredTenantId())) ?? '');
   const [innerDrawerOpen, setInnerDrawerOpen] = useState(false);
   const [innerEditing, setInnerEditing] = useState<any | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -130,41 +131,59 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     });
 
   const { data: pageData, isLoading: pageLoading, error: pageError, refetch: refetchPage } = usePage(
-    [props.name, tenantId, contextId, page, size, filters, sort],
+    [props.name, tenantId, roleId, contextId, page, size, filters, sort],
     fetchPage
   );
 
   useEffect(() => {
     const handleTenantChange = (event: Event) => {
       const nextTenantId = (event as CustomEvent<string | undefined>).detail ?? getStoredTenantId() ?? '';
+      const nextRoleId = getStoredRoleId(nextTenantId) ?? '';
       setTenantId(nextTenantId);
-      setContextId(getStoredContextId(nextTenantId) ?? '');
+      setRoleId(nextRoleId);
+      setContextId(getStoredContextId(nextTenantId, nextRoleId) ?? '');
+    };
+
+    const handleRoleChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ tenantId?: string; roleId?: string }>).detail;
+      const nextTenantId = detail?.tenantId ?? tenantId;
+      if ((nextTenantId ?? '') !== tenantId) {
+        return;
+      }
+      const nextRoleId = detail?.roleId ?? getStoredRoleId(nextTenantId) ?? '';
+      setRoleId(nextRoleId);
+      setContextId(getStoredContextId(nextTenantId, nextRoleId) ?? '');
     };
 
     const handleContextChange = (event: Event) => {
-      const detail = (event as CustomEvent<{ tenantId?: string; contextId?: string }>).detail;
+      const detail = (event as CustomEvent<{ tenantId?: string; roleId?: string; contextId?: string }>).detail;
       if (detail && typeof detail === 'object') {
         if ((detail.tenantId ?? '') !== tenantId) {
+          return;
+        }
+        if ((detail.roleId ?? '') !== roleId) {
           return;
         }
         setContextId(detail.contextId ?? '');
         return;
       }
-      setContextId(getStoredContextId(tenantId) ?? '');
+      setContextId(getStoredContextId(tenantId, roleId) ?? '');
     };
 
     window.addEventListener('sp-set-tenant', handleTenantChange as EventListener);
+    window.addEventListener('sp-set-role', handleRoleChange as EventListener);
     window.addEventListener('sp-set-context-id', handleContextChange as EventListener);
 
     return () => {
       window.removeEventListener('sp-set-tenant', handleTenantChange as EventListener);
+      window.removeEventListener('sp-set-role', handleRoleChange as EventListener);
       window.removeEventListener('sp-set-context-id', handleContextChange as EventListener);
     };
-  }, [tenantId]);
+  }, [tenantId, roleId]);
 
   useEffect(() => {
     setPage(1);
-  }, [tenantId, contextId]);
+  }, [tenantId, roleId, contextId]);
 
   const bootLoading = !ready || !i18nReady || (schemaLoading && !schemaData) || (!pageData && pageLoading && !pageError);
   const tableLoading = !bootLoading && pageLoading;

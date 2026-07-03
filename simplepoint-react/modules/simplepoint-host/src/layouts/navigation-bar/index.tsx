@@ -18,7 +18,7 @@ import {createIcon} from '@simplepoint/shared/types/icon.ts';
 import {useSideNavigation} from "@/hooks/routes";
 import {useLocation, useNavigate} from "react-router-dom";
 import {findMenuChainByPath, flattenMenus, getMenuKey, MenuInfo} from "@/store/routes";
-import {aboutMeItem, HeaderLogo, HeaderSearchBar, TenantSwitcherTop, toolsSwitcherGroupItem} from "@/layouts/navigation-bar/top-bar.tsx";
+import {aboutMeItem, HeaderLogo, HeaderSearchBar, RoleSwitcherTop, TenantSwitcherTop, toolsSwitcherGroupItem} from "@/layouts/navigation-bar/top-bar.tsx";
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import MenuSearchModal from "@/layouts/navigation-bar/menu-search-modal.tsx";
 
@@ -511,6 +511,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<MenuInf
         {/* 租户选择器，搜索栏与工具按钮之间 */}
         <div className="nb-header-tenant">
           <TenantSwitcherTop />
+          <RoleSwitcherTop />
         </div>
         {/* 右：工具组 + 头像 */}
         <Menu

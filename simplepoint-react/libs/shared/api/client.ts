@@ -1,6 +1,7 @@
 import {
   ensureContextId,
   getStoredContextId,
+  getStoredRoleId,
   getStoredTenantId,
   shouldAutoEnsureContextId,
   shouldUseTenantContext,
@@ -110,7 +111,8 @@ export async function request<T>(url: string, options?: RequestInit): Promise<T>
   const useTenantContext = shouldUseTenantContext(url);
 
   const tenantId = getStoredTenantId()?.trim();
-  let contextId: string | undefined = useTenantContext ? getStoredContextId(tenantId) : undefined;
+  const roleId = useTenantContext ? getStoredRoleId(tenantId)?.trim() : undefined;
+  let contextId: string | undefined = useTenantContext ? getStoredContextId(tenantId, roleId) : undefined;
 
   const mergedHeaders: Record<string, any> = {
     ...(isFormDataBody ? {} : {'Content-Type': 'application/json'}),
@@ -129,6 +131,10 @@ export async function request<T>(url: string, options?: RequestInit): Promise<T>
     mergedHeaders['X-Tenant-Id'] = tenantId;
   }
 
+  if (useTenantContext && roleId && mergedHeaders['X-Role-Id'] == null) {
+    mergedHeaders['X-Role-Id'] = roleId;
+  }
+
   if (useTenantContext && !tenantId) {
     throw new Error('Tenant context is required');
   }
@@ -138,7 +144,7 @@ export async function request<T>(url: string, options?: RequestInit): Promise<T>
     // best-effort：不阻断主请求
     if (!contextId) {
       try {
-        contextId = await ensureContextId(tenantId);
+        contextId = await ensureContextId(tenantId, { roleId });
       } catch {
         // ignore
       }

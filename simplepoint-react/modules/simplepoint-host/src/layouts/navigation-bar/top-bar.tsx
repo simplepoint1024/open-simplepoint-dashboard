@@ -1,11 +1,12 @@
 import type {ItemType} from "antd/es/menu/interface";
 import {Avatar, Badge, Button, Drawer, Dropdown, List, MenuProps, Tooltip, Popconfirm, Tag, message} from "antd";
-import {BellOutlined, CreditCardOutlined, FontSizeOutlined, GithubOutlined, GlobalOutlined, LogoutOutlined, QuestionCircleOutlined, SearchOutlined, SettingOutlined, UserOutlined, MoonOutlined, SunOutlined, DesktopOutlined, DeleteOutlined, FullscreenOutlined, FullscreenExitOutlined, SwapOutlined} from "@ant-design/icons";
+import {BellOutlined, CreditCardOutlined, FontSizeOutlined, GithubOutlined, GlobalOutlined, LogoutOutlined, QuestionCircleOutlined, SearchOutlined, SettingOutlined, UserOutlined, MoonOutlined, SunOutlined, DesktopOutlined, DeleteOutlined, FullscreenOutlined, FullscreenExitOutlined, SwapOutlined, SafetyCertificateOutlined} from "@ant-design/icons";
 import React, {useEffect, useRef, useState} from 'react';
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import { useUserInfo } from '@/fetches/user';
-import { useCurrentTenants, type CurrentTenant } from '@/fetches/tenants';
+import { useCurrentRoles, useCurrentTenants, type CurrentRole, type CurrentTenant } from '@/fetches/tenants';
 import { getTenantId, setTenantId } from '@/store/tenant';
+import { getRoleId, setRoleId } from '@/store/role';
 import { ensureContextId } from '@simplepoint/shared/api/contextId';
 import { clearClientCaches, redirectToLogout } from '@simplepoint/shared/api/session';
 
@@ -74,6 +75,14 @@ function TenantTypeTag({
   );
 }
 
+function roleDisplayName(
+  t: (key: string, fallback?: string) => string,
+  role?: Pick<CurrentRole, 'roleId' | 'roleName' | 'authority'>,
+): string {
+  if (!role) return t('role.allRoles', '全部角色');
+  return role.roleName || role.authority || role.roleId || t('role.unknown', '未知角色');
+}
+
 /**
  * 顶部栏左侧：租户切换（显示在“平台”旁边）
  */
@@ -131,6 +140,7 @@ export const TenantSwitcherTop: React.FC = () => {
       // 先切租户：保证后续请求头 X-Tenant-Id 立即生效
       setTenantId(nextId);
       setTenantIdState(nextId);
+      setRoleId(undefined, nextId);
 
       // 预热权限上下文（best-effort，不阻断切换；真正的当前态由 App 内部按最新 tenant 决定）
       await ensureContextId(nextId, { force: true });
@@ -156,7 +166,6 @@ export const TenantSwitcherTop: React.FC = () => {
         style={{
           display: 'flex',
           alignItems: 'center',
-          padding: '0 8px',
           cursor: 'pointer',
           userSelect: 'none',
         }}
@@ -169,6 +178,130 @@ export const TenantSwitcherTop: React.FC = () => {
         <span className="nb-tenant-current-name">
           {currentName}
         </span>
+      </div>
+    </Dropdown>
+  );
+};
+
+/**
+ * 顶部栏左侧：角色切换（跟随当前租户）
+ */
+export const RoleSwitcherTop: React.FC = () => {
+  const { t } = useI18n();
+  const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
+  const [roleId, setRoleIdState] = useState<string | undefined>(() => getRoleId(getTenantId()));
+  const { data, isFetching, refetch } = useCurrentRoles(tenantId);
+
+  useEffect(() => {
+    const handleTenantChange = (event: Event) => {
+      const nextTenantId = (event as CustomEvent<string | undefined>).detail ?? getTenantId();
+      setTenantIdState(nextTenantId);
+      setRoleIdState(getRoleId(nextTenantId));
+    };
+    const handleRoleChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ tenantId?: string; roleId?: string }>).detail;
+      if (detail && typeof detail === 'object') {
+        if ((detail.tenantId ?? '') !== (tenantId ?? '')) return;
+        setRoleIdState(detail.roleId);
+        return;
+      }
+      setRoleIdState(getRoleId(tenantId));
+    };
+    window.addEventListener('sp-set-tenant', handleTenantChange as EventListener);
+    window.addEventListener('sp-set-role', handleRoleChange as EventListener);
+    return () => {
+      window.removeEventListener('sp-set-tenant', handleTenantChange as EventListener);
+      window.removeEventListener('sp-set-role', handleRoleChange as EventListener);
+    };
+  }, [tenantId]);
+
+  useEffect(() => {
+    const roles = data || [];
+    if (!tenantId || roles.length === 0) {
+      if (roleId) {
+        setRoleId(undefined, tenantId);
+        setRoleIdState(undefined);
+      }
+      return;
+    }
+    if (roleId && roles.some((role) => role.roleId === roleId)) {
+      return;
+    }
+    if (roles.length === 1) {
+      const onlyRoleId = roles[0]?.roleId;
+      setRoleId(onlyRoleId, tenantId);
+      setRoleIdState(onlyRoleId);
+      return;
+    }
+    setRoleId(undefined, tenantId);
+    setRoleIdState(undefined);
+  }, [data, roleId, tenantId]);
+
+  const roles = data || [];
+  const currentRole = roles.find((role) => role.roleId === roleId);
+  const currentName = roleDisplayName(t, currentRole);
+  const switchable = roles.length > 1;
+
+  const menu: MenuProps = {
+    items: isFetching
+      ? [{ key: 'loading', disabled: true, label: t('loading', '加载中...') }]
+      : [
+          {
+            key: '__all__',
+            label: t('role.allRoles', '全部角色'),
+          },
+          ...roles.map((role) => ({
+            key: role.roleId,
+            label: (
+              <div className="nb-role-menu-item">
+                <span className="nb-role-menu-name">{roleDisplayName(t, role)}</span>
+                {role.authority && <span className="nb-role-menu-code">{role.authority}</span>}
+              </div>
+            ),
+          })),
+        ],
+    onClick: async (info: any) => {
+      if (!tenantId) return;
+      const nextRoleId = info?.key === '__all__' ? undefined : String(info?.key || '');
+      if ((nextRoleId ?? '') === (roleId ?? '')) return;
+
+      setRoleId(nextRoleId, tenantId);
+      setRoleIdState(nextRoleId);
+      const nextContextId = await ensureContextId(tenantId, { force: true, roleId: nextRoleId });
+      window.dispatchEvent(new CustomEvent('sp-set-context-id', {
+        detail: { tenantId, roleId: nextRoleId, contextId: nextContextId },
+      }));
+
+      const nextRole = roles.find((role) => role.roleId === nextRoleId);
+      message.success(`${t('role.switchDone', '已切换角色')} · ${roleDisplayName(t, nextRole)}`).then(_ => {});
+    },
+  };
+
+  if (!tenantId || roles.length === 0) {
+    return null;
+  }
+
+  return (
+    <Dropdown
+      menu={menu}
+      trigger={['click']}
+      placement="bottomRight"
+      destroyOnHidden
+      disabled={!switchable}
+      onOpenChange={(open) => {
+        if (open) {
+          try { void refetch(); } catch {}
+        }
+      }}
+    >
+      <div
+        className={`nb-role-switcher${switchable ? '' : ' nb-role-switcher-disabled'}`}
+        onClick={(e) => { try { e.stopPropagation(); } catch {} }}
+        onMouseDown={(e) => { try { e.stopPropagation(); } catch {} }}
+        title={`${t('label.role', '角色')} · ${currentName}`}
+      >
+        <SafetyCertificateOutlined style={{ marginRight: 6, opacity: 0.75 }} />
+        <span className="nb-role-current-name">{currentName}</span>
       </div>
     </Dropdown>
   );
@@ -194,6 +327,7 @@ export const logoItem = (navigate: (path: string) => void): ItemType => {
         <img src="/svg.svg" alt="Logo" style={{ height: '32px', display: 'block' }} />
         <LogoTitle/>
         <TenantSwitcherTop />
+        <RoleSwitcherTop />
       </div>
     ),
     onClick: () => navigate('/')
@@ -204,15 +338,17 @@ export const logoItem = (navigate: (path: string) => void): ItemType => {
  * Header Logo 独立组件（不依赖 AntD Menu，避免溢出检测折叠）
  */
 export const HeaderLogo: React.FC<{ navigate: (path: string) => void }> = ({ navigate }) => (
-  <div
-    className="nb-header-logo"
-    onClick={() => navigate('/')}
-    role="button"
-    tabIndex={0}
-    onKeyDown={e => e.key === 'Enter' && navigate('/')}
-  >
-    <img src="/svg.svg" alt="Logo" style={{ height: '32px', display: 'block', flexShrink: 0 }} />
-    <LogoTitle />
+  <div className="nb-header-brand">
+    <div
+      className="nb-header-logo"
+      onClick={() => navigate('/')}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => e.key === 'Enter' && navigate('/')}
+    >
+      <img src="/svg.svg" alt="Logo" style={{ height: '32px', display: 'block', flexShrink: 0 }} />
+      <LogoTitle />
+    </div>
   </div>
 );
 

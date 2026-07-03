@@ -118,7 +118,11 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
         throw new AccessDeniedException("无法验证指定租户");
       }
     }
-    var roleAuthorityVos = loadEffectiveRoles(resolvedTenantId, userId);
+    String selectedRoleId = trimToNull(effectiveAttributes.get("X-Role-Id"));
+    var roleAuthorityVos = filterSelectedRole(loadEffectiveRoles(resolvedTenantId, userId), selectedRoleId);
+    if (selectedRoleId != null) {
+      effectiveAttributes.put("X-Role-Id", selectedRoleId);
+    }
     var permissions = new LinkedHashSet<String>();
     var roleIds = roleAuthorityVos.stream().map(RoleGrantedAuthority::getId).toList();
     if (!roleIds.isEmpty()) {
@@ -254,6 +258,25 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
           .forEach(role -> rolesById.putIfAbsent(role.getId(), role));
     }
     return List.copyOf(rolesById.values());
+  }
+
+  private List<RoleGrantedAuthority> filterSelectedRole(List<RoleGrantedAuthority> roles, String selectedRoleId) {
+    if (selectedRoleId == null) {
+      return roles;
+    }
+    return roles.stream()
+        .filter(role -> selectedRoleId.equals(role.getId()))
+        .findFirst()
+        .map(List::of)
+        .orElseThrow(() -> new AccessDeniedException("当前用户未拥有指定角色"));
+  }
+
+  private static String trimToNull(String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
   }
 
   /**

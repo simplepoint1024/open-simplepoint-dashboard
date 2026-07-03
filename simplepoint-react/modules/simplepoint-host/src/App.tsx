@@ -14,6 +14,7 @@ import {useData} from '@simplepoint/shared/api/methods';
 import {fetchServiceRoutes, ServiceMenuResult} from '@/fetches/routes';
 import {useCurrentTenants} from '@/fetches/tenants';
 import {getTenantId, setTenantId} from '@/store/tenant';
+import {getRoleId, setRoleId} from '@/store/role';
 import {getContextId, setContextId} from '@/store/contextId';
 import {ensureContextId} from '@simplepoint/shared/api/contextId';
 
@@ -75,6 +76,7 @@ const App: React.FC = () => {
 
     // 1) 租户优先：先取已存租户；没有则拉取 currentTenants 选第一个
     const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
+    const [roleId, setRoleIdState] = useState<string | undefined>(() => getRoleId(getTenantId()));
     const {data: currentTenants, isLoading: tenantsLoading} = useCurrentTenants();
     const selectedTenantExists = useMemo(() => {
         if (!tenantId || !currentTenants) return false;
@@ -89,7 +91,11 @@ const App: React.FC = () => {
 
     useEffect(() => {
         // 同步外部 tenant 变更（例如顶部切换器）
-        const handler = (e: any) => setTenantIdState((e?.detail as string) || undefined);
+        const handler = (e: any) => {
+            const nextTenantId = (e?.detail as string) || undefined;
+            setTenantIdState(nextTenantId);
+            setRoleIdState(getRoleId(nextTenantId));
+        };
         try {
             window.addEventListener('sp-set-tenant', handler as EventListener);
             return () => window.removeEventListener('sp-set-tenant', handler as EventListener);
@@ -99,12 +105,33 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        const handler = (e: Event) => {
+            const detail = (e as CustomEvent<{ tenantId?: string; roleId?: string }>).detail;
+            if (detail && typeof detail === 'object') {
+                if ((detail.tenantId ?? '') !== (tenantId ?? '')) {
+                    return;
+                }
+                setRoleIdState(detail.roleId);
+                return;
+            }
+            setRoleIdState(getRoleId(tenantId));
+        };
+        try {
+            window.addEventListener('sp-set-role', handler as EventListener);
+            return () => window.removeEventListener('sp-set-role', handler as EventListener);
+        } catch {
+            return;
+        }
+    }, [tenantId]);
+
+    useEffect(() => {
         if (!currentTenants) return;
 
         if (selectedTenantExists) return;
 
         if (tenantId) {
             setContextId(undefined, tenantId);
+            setRoleId(undefined, tenantId);
         }
 
         const first = currentTenants[0]?.tenantId;
@@ -122,7 +149,7 @@ const App: React.FC = () => {
     }, [tenantId, currentTenants, selectedTenantExists]);
 
     // 2) 上下文其次：tenant 确定后，优先加载/刷新 contextId
-    const [contextId, setContextIdState] = useState<string | undefined>(() => getContextId());
+    const [contextId, setContextIdState] = useState<string | undefined>(() => getContextId(undefined, getRoleId(getTenantId())));
     const [contextReady, setContextReady] = useState(false);
     const contextRequestSeq = useRef(0);
     useEffect(() => {
@@ -135,10 +162,16 @@ const App: React.FC = () => {
 
             if (!activeTenantId) return;
 
-            const ctxId = await ensureContextId(activeTenantId, {force: true});
-            if (cancelled || contextRequestSeq.current !== requestSeq || getTenantId() !== activeTenantId) return;
+            const activeRoleId = roleId;
+            const ctxId = await ensureContextId(activeTenantId, {force: true, roleId: activeRoleId});
+            if (
+                cancelled
+                || contextRequestSeq.current !== requestSeq
+                || getTenantId() !== activeTenantId
+                || (getRoleId(activeTenantId) ?? '') !== (activeRoleId ?? '')
+            ) return;
 
-            setContextId(ctxId, activeTenantId);
+            setContextId(ctxId, activeTenantId, activeRoleId);
             setContextIdState(ctxId);
             setContextReady(true);
         };
@@ -146,12 +179,12 @@ const App: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [tenantId, selectedTenantExists]);
+    }, [tenantId, roleId, selectedTenantExists]);
 
     // 3) 路由/菜单最后：必须在 contextId ready 后再加载
     const routesEnabled = Boolean(selectedTenantExists && contextReady);
     const {data: res, isLoading} = useData<ServiceMenuResult>(
-        useMemo(() => ['fetchServiceRoutes', tenantId, contextId] as const, [tenantId, contextId]),
+        useMemo(() => ['fetchServiceRoutes', tenantId, roleId, contextId] as const, [tenantId, roleId, contextId]),
         () => {
             if (!routesEnabled) return Promise.resolve(undefined as any);
             return fetchServiceRoutes();

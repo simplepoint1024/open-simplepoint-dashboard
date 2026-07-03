@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -342,6 +343,44 @@ class AuthorizationContextServiceImplTest {
     assertThat(ctx.getPermissions()).contains("perm.tenant", "perm.global");
     verify(usersService).loadRolesByUserId("tenant1", "u1");
     verify(usersService).loadRolesByUserId(null, "u1");
+  }
+
+  @Test
+  void calculate_selectedRole_usesOnlyThatRole() {
+    User user = new User();
+    user.setSuperAdmin(false);
+    final RoleGrantedAuthority role1 = new RoleGrantedAuthority("role1", "ROLE_USER");
+    final RoleGrantedAuthority role2 = new RoleGrantedAuthority("role2", "ROLE_MANAGER");
+    final FeaturePermissionRelevanceRepository featurePermRepo = mock(FeaturePermissionRelevanceRepository.class);
+
+    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
+    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role1, role2));
+    when(usersService.loadPermissionsInRoleIds(List.of("role2"))).thenReturn(Set.of("perm.manager"));
+    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(featurePermRepo);
+    when(featurePermRepo.findFeatureCodesByPermissionAuthorities(Set.of("perm.manager"))).thenReturn(Set.of());
+    when(featurePermRepo.findPublicAccessFeatureCodes()).thenReturn(Set.of());
+    when(featurePermRepo.findPermissionAuthoritiesByPublicAccessFeatures()).thenReturn(Set.of());
+    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
+
+    AuthorizationContext ctx = service.calculate(null, "u1", "ctx1", Map.of("X-Role-Id", "role2"));
+
+    assertThat(ctx.getRoles()).containsExactly("ROLE_MANAGER");
+    assertThat(ctx.getPermissions()).containsExactly("perm.manager");
+    assertThat(ctx.getAttribute("X-Role-Id")).isEqualTo("role2");
+  }
+
+  @Test
+  void calculate_selectedRoleNotOwned_throwsAccessDeniedException() {
+    User user = new User();
+    user.setSuperAdmin(false);
+    final RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_USER");
+
+    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
+    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role));
+
+    assertThatThrownBy(() -> service.calculate(null, "u1", "ctx1", Map.of("X-Role-Id", "role-missing")))
+        .isInstanceOf(AccessDeniedException.class)
+        .hasMessage("当前用户未拥有指定角色");
   }
 
   @Test

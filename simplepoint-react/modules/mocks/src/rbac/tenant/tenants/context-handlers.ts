@@ -14,6 +14,20 @@ export default [
     ]);
   }),
 
+  http.get('/common/tenants/current-roles', ({ request }) => {
+    const url = new URL(request.url);
+    const tenantId = url.searchParams.get('tenantId') || 'tenant-001';
+    if (tenantId === 'tenant-personal') {
+      return HttpResponse.json([
+        { id: 'role-personal-owner', authority: 'PERSONAL_OWNER' },
+      ]);
+    }
+    return HttpResponse.json([
+      { id: 'role-admin', authority: 'TENANT_ADMIN' },
+      { id: 'role-member', authority: 'TENANT_MEMBER' },
+    ]);
+  }),
+
   /**
    * GET /common/tenants/permission-context-id?tenantId=
    * 切换租户时用于获取权限上下文（按你的描述：返回结果“和租户一样”的结构）
@@ -21,6 +35,7 @@ export default [
   http.get('/common/tenants/permission-context-id', ({ request }) => {
     const url = new URL(request.url);
     const tenantId = url.searchParams.get('tenantId') || 'tenant-001';
-    return HttpResponse.text(`ctx-${tenantId}`);
+    const roleId = url.searchParams.get('roleId');
+    return HttpResponse.text(roleId ? `ctx-${tenantId}-${roleId}` : `ctx-${tenantId}`);
   }),
 ];

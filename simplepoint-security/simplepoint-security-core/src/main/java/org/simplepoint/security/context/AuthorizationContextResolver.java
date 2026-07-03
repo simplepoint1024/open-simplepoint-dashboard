@@ -119,6 +119,9 @@ public class AuthorizationContextResolver {
     if ("X-Context-Id".equalsIgnoreCase(headerName)) {
       return "X-Context-Id";
     }
+    if ("X-Role-Id".equalsIgnoreCase(headerName)) {
+      return "X-Role-Id";
+    }
     if ("X-User-Id".equalsIgnoreCase(headerName)) {
       return "X-User-Id";
     }

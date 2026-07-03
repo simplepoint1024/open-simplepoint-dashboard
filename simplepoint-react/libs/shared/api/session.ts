@@ -1,19 +1,31 @@
-import { ensureContextId, getStoredContextId, getStoredTenantId, setStoredContextId, setStoredTenantId } from './contextId';
+import {
+  ensureContextId,
+  getStoredContextId,
+  getStoredRoleId,
+  getStoredTenantId,
+  setStoredContextId,
+  setStoredRoleId,
+  setStoredTenantId,
+} from './contextId';
 
 export type SessionSnapshot = {
   tenantId?: string;
+  roleId?: string;
   contextId?: string;
 };
 
 const TENANT_EVENT = 'sp-set-tenant';
+const ROLE_EVENT = 'sp-set-role';
 const CONTEXT_EVENT = 'sp-set-context-id';
-type ContextEventDetail = { tenantId?: string; contextId?: string };
+type ContextEventDetail = { tenantId?: string; roleId?: string; contextId?: string };
 
 export function captureSessionSnapshot(): SessionSnapshot {
   const tenantId = getStoredTenantId();
+  const roleId = getStoredRoleId(tenantId);
   return {
     tenantId,
-    contextId: getStoredContextId(tenantId),
+    roleId,
+    contextId: getStoredContextId(tenantId, roleId),
   };
 }
 
@@ -22,8 +34,12 @@ function emitSessionEvents(snapshot: SessionSnapshot) {
     window.dispatchEvent(new CustomEvent(TENANT_EVENT, { detail: snapshot.tenantId }));
   } catch {}
   try {
+    window.dispatchEvent(new CustomEvent(ROLE_EVENT, { detail: { tenantId: snapshot.tenantId, roleId: snapshot.roleId } }));
+  } catch {}
+  try {
     const detail: ContextEventDetail = {
       tenantId: snapshot.tenantId,
+      roleId: snapshot.roleId,
       contextId: snapshot.contextId,
     };
     window.dispatchEvent(new CustomEvent(CONTEXT_EVENT, { detail }));
@@ -35,7 +51,8 @@ function restoreSessionSnapshot(snapshot?: SessionSnapshot) {
     return;
   }
   setStoredTenantId(snapshot.tenantId);
-  setStoredContextId(snapshot.contextId, snapshot.tenantId);
+  setStoredRoleId(snapshot.roleId, snapshot.tenantId);
+  setStoredContextId(snapshot.contextId, snapshot.tenantId, snapshot.roleId);
   emitSessionEvents(snapshot);
 }
 
@@ -97,9 +114,9 @@ export async function clearClientCaches(options?: {
   restoreSessionSnapshot(snapshot);
 
   if (options?.rebuildContextId && snapshot) {
-    const nextContextId = await ensureContextId(snapshot.tenantId, { force: true });
+    const nextContextId = await ensureContextId(snapshot.tenantId, { force: true, roleId: snapshot.roleId });
     if (nextContextId !== snapshot.contextId) {
-      const nextSnapshot = { tenantId: snapshot.tenantId, contextId: nextContextId };
+      const nextSnapshot = { tenantId: snapshot.tenantId, roleId: snapshot.roleId, contextId: nextContextId };
       restoreSessionSnapshot(nextSnapshot);
     }
   }

@@ -4,6 +4,7 @@ import {DownloadOutlined, ReloadOutlined} from '@ant-design/icons';
 import {
   ensureContextId,
   getStoredContextId,
+  getStoredRoleId,
   getStoredTenantId,
   shouldAutoEnsureContextId,
   shouldUseTenantContext,
@@ -232,10 +233,14 @@ const buildJsonHeaders = async (url: string) => {
   if (!tenantId) {
     throw new Error('Tenant context is required');
   }
-  let contextId = getStoredContextId(tenantId);
+  const roleId = getStoredRoleId(tenantId)?.trim();
+  let contextId = getStoredContextId(tenantId, roleId);
   headers['X-Tenant-Id'] = tenantId;
+  if (roleId) {
+    headers['X-Role-Id'] = roleId;
+  }
   if (shouldAutoEnsureContextId(url, contextId)) {
-    contextId = contextId || await ensureContextId(tenantId);
+    contextId = contextId || await ensureContextId(tenantId, { roleId });
   }
   if (contextId) {
     headers['X-Context-Id'] = contextId;

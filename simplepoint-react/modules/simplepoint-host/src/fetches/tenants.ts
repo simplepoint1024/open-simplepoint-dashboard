@@ -9,6 +9,12 @@ export type CurrentTenant = {
     tenantType: 'PERSONAL' | 'ORGANIZATION';
 };
 
+export type CurrentRole = {
+    roleId: string;
+    roleName?: string;
+    authority?: string;
+};
+
 function normalizeTenantType(tenant?: Partial<CurrentTenant>): CurrentTenant['tenantType'] {
     return tenant?.tenantType === 'PERSONAL' ? 'PERSONAL' : 'ORGANIZATION';
 }
@@ -29,6 +35,22 @@ export async function fetchCurrentTenants(): Promise<CurrentTenant[]> {
         }
         return (a.tenantName || '').localeCompare(b.tenantName || '');
     });
+}
+
+export async function fetchCurrentRoles(tenantId?: string): Promise<CurrentRole[]> {
+    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
+    const res = await get<Array<CurrentRole | {id?: string; name?: string; authority?: string}>>(`/common/tenants/current-roles${query}`);
+    if (!Array.isArray(res)) return [];
+    return res
+        .map((role) => {
+            const roleId = (role as CurrentRole).roleId ?? (role as {id?: string}).id;
+            return {
+                roleId: roleId?.trim() ?? '',
+                roleName: (role as CurrentRole).roleName ?? (role as {name?: string}).name,
+                authority: role.authority,
+            };
+        })
+        .filter((role) => role.roleId);
 }
 
 /**
@@ -77,6 +99,46 @@ export function useCurrentTenants() {
         if (process.env.NODE_ENV === 'development' && result.isError) {
             // eslint-disable-next-line no-console
             console.warn('fetchCurrentTenants failed:', result.error);
+        }
+    }, [result.isError, result.error]);
+
+    return result;
+}
+
+export function useCurrentRoles(tenantId?: string) {
+    const cacheKey = tenantId ? `sp.currentRoles:${tenantId}` : 'sp.currentRoles';
+
+    let cached: CurrentRole[] | undefined;
+    try {
+        const raw = sessionStorage.getItem(cacheKey);
+        cached = raw ? (JSON.parse(raw) as CurrentRole[]) : undefined;
+    } catch (e) {
+        console.warn('[tenants] Failed to read cached roles:', e);
+    }
+
+    const result = useQuery({
+        queryKey: ['common', 'tenants', 'current-roles', tenantId],
+        queryFn: () => fetchCurrentRoles(tenantId),
+        enabled: !!tenantId,
+        staleTime: 2 * 60 * 1000,
+        refetchOnWindowFocus: false,
+        initialData: cached,
+        initialDataUpdatedAt: cached ? 0 : undefined,
+    });
+
+    useEffect(() => {
+        if (result.data) {
+            try {
+                sessionStorage.setItem(cacheKey, JSON.stringify(result.data));
+            } catch (e) {
+                console.warn('[tenants] Failed to cache roles:', e);
+            }
+        }
+    }, [cacheKey, result.data]);
+
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development' && result.isError) {
+            console.warn('fetchCurrentRoles failed:', result.error);
         }
     }, [result.isError, result.error]);
 

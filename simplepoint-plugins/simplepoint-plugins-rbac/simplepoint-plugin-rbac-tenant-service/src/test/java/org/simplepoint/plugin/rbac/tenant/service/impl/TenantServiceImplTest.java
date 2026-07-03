@@ -18,6 +18,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
+import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
@@ -53,6 +55,9 @@ class TenantServiceImplTest {
 
   @Mock
   PermissionVersionRefreshService permissionVersionRefreshService;
+
+  @Mock
+  UsersService usersService;
 
   @InjectMocks
   TenantServiceImpl service;
@@ -124,6 +129,20 @@ class TenantServiceImplTest {
   // ── calculatePermissionContextId ──────────────────────────────────────────
 
   @Test
+  void getCurrentUserRoles_returnsTenantAndGlobalRoles() {
+    setAuthentication("user1");
+    RoleGrantedAuthority tenantRole = new RoleGrantedAuthority("role-tenant", "ROLE_TENANT");
+    RoleGrantedAuthority globalRole = new RoleGrantedAuthority("role-global", "ROLE_GLOBAL");
+    when(repository.hasUser("tenant1", "user1")).thenReturn(true);
+    when(usersService.loadRolesByUserId("tenant1", "user1")).thenReturn(List.of(tenantRole));
+    when(usersService.loadRolesByUserId(null, "user1")).thenReturn(List.of(globalRole));
+
+    Collection<RoleGrantedAuthority> result = service.getCurrentUserRoles("tenant1");
+
+    assertThat(result).extracting(RoleGrantedAuthority::getId).containsExactly("role-tenant", "role-global");
+  }
+
+  @Test
   void calculatePermissionContextId_throwsWhenNotAuthenticated() {
     SecurityContextHolder.clearContext();
     assertThatThrownBy(() -> service.calculatePermissionContextId("t1"))
@@ -158,6 +177,33 @@ class TenantServiceImplTest {
     assertThat(contextId).isNotBlank().hasSize(64);
     verify(repository).hasUser("tenant1", "user1");
     verify(repository).getTenantPermissionVersion("tenant1");
+  }
+
+  @Test
+  void calculatePermissionContextId_includesSelectedRoleInHash() {
+    setAuthentication("user1");
+    RoleGrantedAuthority role = new RoleGrantedAuthority("role-admin", "ROLE_ADMIN");
+    when(repository.hasUser("tenant1", "user1")).thenReturn(true);
+    when(usersService.loadRolesByUserId("tenant1", "user1")).thenReturn(List.of(role));
+    when(usersService.loadRolesByUserId(null, "user1")).thenReturn(List.of());
+    when(repository.getTenantPermissionVersion("tenant1")).thenReturn(5L);
+
+    String allRolesContextId = service.calculatePermissionContextId("tenant1");
+    String selectedRoleContextId = service.calculatePermissionContextId("tenant1", "role-admin");
+
+    assertThat(selectedRoleContextId).isNotEqualTo(allRolesContextId);
+  }
+
+  @Test
+  void calculatePermissionContextId_throwsWhenSelectedRoleNotOwned() {
+    setAuthentication("user1");
+    when(repository.hasUser("tenant1", "user1")).thenReturn(true);
+    when(usersService.loadRolesByUserId("tenant1", "user1")).thenReturn(List.of());
+    when(usersService.loadRolesByUserId(null, "user1")).thenReturn(List.of());
+
+    assertThatThrownBy(() -> service.calculatePermissionContextId("tenant1", "role-missing"))
+        .isInstanceOf(AccessDeniedException.class)
+        .hasMessage("当前用户未拥有指定角色");
   }
 
   @Test
@@ -254,6 +300,24 @@ class TenantServiceImplTest {
 
     assertThat(result).isNotNull();
     verify(tenantUserRelevanceRepository).items(pageable);
+  }
+
+  @Test
+  void userItems_validatesTenantButReturnsGlobalUserCandidates() {
+    setAdminRole();
+    Pageable pageable = Pageable.ofSize(10);
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    tenant.setOwnerId("owner1");
+    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
+    when(tenantUserRelevanceRepository.items(pageable)).thenReturn(new PageImpl<>(List.of()));
+
+    var result = service.userItems("tenant1", pageable);
+
+    assertThat(result).isNotNull();
+    verify(repository).findById("tenant1");
+    verify(tenantUserRelevanceRepository).items(pageable);
+    verify(tenantUserRelevanceRepository, never()).items("tenant1", pageable);
   }
 
   // ── authorizedUsers ───────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ package org.simplepoint.plugin.rbac.tenant.api.service;
 import java.util.Collection;
 import java.util.Set;
 import org.simplepoint.api.base.BaseService;
+import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
@@ -39,12 +40,31 @@ public interface TenantService extends BaseService<Tenant, String> {
   Set<NamedTenantVo> getCurrentUserTenants();
 
   /**
+   * Retrieves the roles available to the currently authenticated user within a tenant.
+   *
+   * @param tenantId selected tenant identifier
+   * @return role authorities available for switching
+   */
+  Collection<RoleGrantedAuthority> getCurrentUserRoles(String tenantId);
+
+  /**
    * Calculates the permission context ID for a given tenant ID.
    *
    * @param tenantId the ID of the tenant for which to calculate the permission context ID
    * @return the calculated permission context ID as a String
    */
-  String calculatePermissionContextId(String tenantId);
+  default String calculatePermissionContextId(String tenantId) {
+    return calculatePermissionContextId(tenantId, null);
+  }
+
+  /**
+   * Calculates the permission context ID for a given tenant and optional selected role.
+   *
+   * @param tenantId the ID of the tenant for which to calculate the permission context ID
+   * @param roleId selected role ID, or null to include all roles
+   * @return the calculated permission context ID as a String
+   */
+  String calculatePermissionContextId(String tenantId, String roleId);
 
   /**
    * Loads package codes assigned to the tenant.
@@ -79,11 +99,11 @@ public interface TenantService extends BaseService<Tenant, String> {
   Page<UserRelevanceVo> ownerItems(Pageable pageable);
 
   /**
-   * Loads user candidates for the specified tenant member configuration.
+   * Loads global user candidates for the specified tenant member configuration.
    *
-   * @param tenantId tenant identifier
+   * @param tenantId tenant identifier used for access checks
    * @param pageable pageable
-   * @return tenant member candidates
+   * @return user candidates
    */
   Page<UserRelevanceVo> userItems(String tenantId, Pageable pageable);
 
