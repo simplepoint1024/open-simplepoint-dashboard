@@ -2,13 +2,13 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Input, List, Modal, Typography} from 'antd';
 import {SearchOutlined} from '@ant-design/icons';
 import {createIcon} from '@simplepoint/shared/types/icon.ts';
-import type {MenuInfo} from '@/store/routes';
-import {flattenMenus} from '@/store/routes';
+import type {RouteInfo} from '@/store/routes';
+import {flattenRoutes} from '@/store/routes';
 
 interface MenuSearchModalProps {
   open: boolean;
   onClose: () => void;
-  menus: MenuInfo[];
+  menus: RouteInfo[];
   onNavigate: (path: string) => void;
   t: (key: string, fallback: string) => string;
 }
@@ -19,7 +19,7 @@ const MenuSearchModal: React.FC<MenuSearchModalProps> = ({open, onClose, menus, 
   const inputRef = useRef<ReturnType<typeof Input> | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
-  const leafMenus = useMemo(() => flattenMenus(menus), [menus]);
+  const leafMenus = useMemo(() => flattenRoutes(menus), [menus]);
 
   const filtered = useMemo(() => {
     if (!keyword.trim()) return leafMenus;
@@ -63,7 +63,7 @@ const MenuSearchModal: React.FC<MenuSearchModalProps> = ({open, onClose, menus, 
     item?.scrollIntoView({ block: 'nearest' });
   }, [activeIndex]);
 
-  const handleSelect = useCallback((menu: MenuInfo) => {
+  const handleSelect = useCallback((menu: RouteInfo) => {
     if (menu.path) {
       onNavigate(menu.path);
       onClose();

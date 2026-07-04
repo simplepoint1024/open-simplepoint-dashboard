@@ -4,20 +4,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.RoleResourceGrantDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.PermissionsRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.AccessCenterResourceNodeVo;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 
 class RbacCoreDtosAndVosTest {
 
   @Test
-  void rolePermissionsRelevanceDto_setterGetter() {
-    RolePermissionsRelevanceDto dto = new RolePermissionsRelevanceDto();
+  void roleResourceGrantDto_setterGetter() {
+    RoleResourceGrantDto dto = new RoleResourceGrantDto();
     dto.setRoleId("role1");
-    dto.setPermissionAuthority(Set.of("perm.read", "perm.write"));
+    dto.setResourceCodes(Set.of("resources.read", "resources.write"));
     assertThat(dto.getRoleId()).isEqualTo("role1");
-    assertThat(dto.getPermissionAuthority()).containsExactlyInAnyOrder("perm.read", "perm.write");
+    assertThat(dto.getResourceCodes()).containsExactlyInAnyOrder("resources.read", "resources.write");
   }
 
   @Test
@@ -30,33 +30,17 @@ class RbacCoreDtosAndVosTest {
   }
 
   @Test
-  void permissionsRelevanceVo_paramConstructor() {
-    PermissionsRelevanceVo vo = new PermissionsRelevanceVo("p1", "Read Users", "users.read", "Can read users", 0);
-    assertThat(vo.getId()).isEqualTo("p1");
-    assertThat(vo.getName()).isEqualTo("Read Users");
-    assertThat(vo.getAuthority()).isEqualTo("users.read");
-    assertThat(vo.getDescription()).isEqualTo("Can read users");
-    assertThat(vo.getType()).isEqualTo(0);
-  }
-
-  @Test
-  void permissionsRelevanceVo_defaultConstructor() {
-    PermissionsRelevanceVo vo = new PermissionsRelevanceVo();
-    assertThat(vo.getId()).isNull();
-    assertThat(vo.getName()).isNull();
-  }
-
-  @Test
-  void permissionsRelevanceVo_setterGetter() {
-    PermissionsRelevanceVo vo = new PermissionsRelevanceVo();
-    vo.setId("p2");
-    vo.setName("Write");
-    vo.setAuthority("users.write");
-    vo.setType(1);
-    assertThat(vo.getId()).isEqualTo("p2");
-    assertThat(vo.getName()).isEqualTo("Write");
-    assertThat(vo.getAuthority()).isEqualTo("users.write");
-    assertThat(vo.getType()).isEqualTo(1);
+  void accessCenterResourceNodeVo_setterGetter() {
+    AccessCenterResourceNodeVo vo = new AccessCenterResourceNodeVo();
+    vo.setId("res1");
+    vo.setCode("users.view");
+    vo.setResourceCode("users.view");
+    vo.setGrantable(true);
+    vo.getResourceCodes().add("users.view");
+    assertThat(vo.getId()).isEqualTo("res1");
+    assertThat(vo.getCode()).isEqualTo("users.view");
+    assertThat(vo.getResourceCodes()).containsExactly("users.view");
+    assertThat(vo.isGrantable()).isTrue();
   }
 
   @Test

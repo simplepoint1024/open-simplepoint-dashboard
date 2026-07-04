@@ -11,11 +11,11 @@ package org.simplepoint.plugin.rbac.core.api.service;
 import java.util.Collection;
 import java.util.Set;
 import org.simplepoint.api.base.BaseService;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.RoleResourceGrantDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleScopeAssignmentVo;
 import org.simplepoint.security.entity.Role;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
+import org.simplepoint.security.entity.RoleResourceGrant;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -36,28 +36,28 @@ public interface RoleService extends BaseService<Role, String> {
 
 
   /**
-   * Removes the specified permissionAuthority from the given role authority.
+   * Removes resource grants from a role.
    *
-   * @param roleId        the authority of the role
-   * @param permissionAuthority the set of permission permissionAuthority to be removed
+   * @param roleId the role id
+   * @param resourceCodes resource codes to be removed
    */
-  void unauthorized(String roleId, Set<String> permissionAuthority);
+  void unauthorized(String roleId, Set<String> resourceCodes);
 
   /**
-   * Retrieves a collection of authorized permission strings for the specified role authority.
+   * Retrieves resource codes granted to the specified role.
    *
    * @param roleId the authority of the role
-   * @return a collection of authorized permission strings
+   * @return resource codes granted to the role
    */
   Collection<String> authorized(String roleId);
 
   /**
-   * Authorizes permissions based on the provided RolePermissionsRelevanceDto.
+   * Grants resources based on the provided DTO.
    *
-   * @param dto the RolePermissionsRelevanceDto containing authorization details
-   * @return a collection of RolePermissionsRelevance entities representing the authorized permissions
+   * @param dto role resource grant DTO
+   * @return saved grants
    */
-  Collection<RolePermissionsRelevance> authorize(RolePermissionsRelevanceDto dto);
+  Collection<RoleResourceGrant> authorize(RoleResourceGrantDto dto);
 
   /**
    * Returns the current data scope and field scope assignment for a role.
@@ -68,7 +68,7 @@ public interface RoleService extends BaseService<Role, String> {
   RoleScopeAssignmentVo getScopeAssignment(String roleId);
 
   /**
-   * Updates the data scope and field scope for all permission records belonging to a role.
+   * Updates the data scope and field scope for all resource grants belonging to a role.
    *
    * @param vo VO containing roleId, dataScopeId, and fieldScopeId
    */

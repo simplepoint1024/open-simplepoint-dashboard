@@ -6,7 +6,7 @@ package org.simplepoint.security.cache;
  * and the authority string, respectively.
  *
  * <p>This class stores and manages authority information in the cache, allowing efficient
- * retrieval and management of user roles and permissions.
+ * retrieval and management of user roles and resource codes.
  */
 public record AuthorityRecord(
     String id,

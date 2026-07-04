@@ -24,8 +24,8 @@ import org.springframework.stereotype.Repository;
 /**
  * Repository interface for managing Role entities.
  *
- * <p>The relationship between roles and permissions in the RBAC (Role-Based Access Control) system
- * is many-to-many, meaning multiple roles can have multiple permissions associated with them.
+ * <p>The relationship between roles and resources is many-to-many, meaning
+ * multiple roles can have multiple resources associated with them.
  * This interface extends BaseRepository and provides basic CRUD functionality for roles.
  */
 @Repository
@@ -42,13 +42,13 @@ public interface JpaRolesRepository extends BaseRepository<Role, String>, RoleRe
   @Override
   @Modifying
   @Query("""
-      delete from RolePermissionsRelevance p
-      where p.tenantId = :tenantId and p.roleId = :roleId and p.permissionAuthority in :permissionAuthority
+      delete from RoleResourceGrant grant
+      where grant.tenantId = :tenantId and grant.roleId = :roleId and grant.resourceCode in :resourceCodes
       """)
   void unauthorized(@Param("tenantId") String tenantId, @Param("roleId") String roleId,
-                    @Param("permissionAuthority") Set<String> permissionAuthority);
+                    @Param("resourceCodes") Set<String> resourceCodes);
 
   @Override
-  @Query("select permissionAuthority from RolePermissionsRelevance where tenantId = :tenantId and roleId = :roleId")
+  @Query("select resourceCode from RoleResourceGrant where tenantId = :tenantId and roleId = :roleId")
   Collection<String> authorized(@Param("tenantId") String tenantId, @Param("roleId") String roleId);
 }

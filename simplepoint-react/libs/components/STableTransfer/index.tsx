@@ -6,8 +6,9 @@ import type {CSSProperties} from 'react';
 
 type TransferItem = GetProp<TransferProps, 'dataSource'>[number];
 type TableRowSelection<T extends object> = TableProps<T>['rowSelection'];
+type TransferSearchDirection = Parameters<NonNullable<TransferProps<TransferItem>['onSearch']>>[0];
 
-interface TableTransferProps<T> extends TransferProps<TransferItem> {
+export interface STableTransferProps<T> extends TransferProps<TransferItem> {
   dataSource: T[];
   leftColumns: TableColumnsType<T>;
   rightColumns: TableColumnsType<T>;
@@ -33,6 +34,14 @@ interface TableTransferProps<T> extends TransferProps<TransferItem> {
   leftPagination?: TableProps<T>['pagination'];
   /** 右侧分页配置 */
   rightPagination?: TableProps<T>['pagination'];
+  /** 面板搜索事件。上层需要远程搜索时可监听该事件。 */
+  onPanelSearch?: (direction: TransferSearchDirection, value: string) => void;
+  /** 是否允许双击行直接左右穿梭。默认开启 */
+  doubleClickToMove?: boolean;
+  /** 是否允许单击行切换勾选。默认开启 */
+  rowClickToSelect?: boolean;
+  /** 表格加载状态 */
+  loading?: TableProps<T>['loading'];
 }
 
 const App = <T,>({
@@ -47,10 +56,14 @@ const App = <T,>({
   searchable = false,
   highlight = true,
   highlightStyle,
-  leftPagination = false,
-  rightPagination = false,
+  leftPagination = {pageSize: 10, showSizeChanger: true, showQuickJumper: true},
+  rightPagination = {pageSize: 10, showSizeChanger: true, showQuickJumper: true},
+  onPanelSearch,
+  doubleClickToMove = true,
+  rowClickToSelect = true,
+  loading,
   ...restProps
-}: TableTransferProps<T>) => {
+}: STableTransferProps<T>) => {
   // 统一行主键：优先使用 item[itemKey]，其次使用 id、key，最终保证返回字符串（避免返回 'undefined'）
   const getRowKey = (item: any) => {
     const val = item?.[itemKey as string] ?? item?.id ?? item?.key;
@@ -185,7 +198,11 @@ const App = <T,>({
       listStyle={adaptiveHeight ? {height: '100%'} : (restProps as any).listStyle}
       showSearch={searchable}
       filterOption={restProps.filterOption ?? defaultFilterOption}
-      onSearch={(direction, value) => setSearchValues(prev => ({...prev, [direction]: value}))}
+      onSearch={(direction, value) => {
+        setSearchValues(prev => ({...prev, [direction]: value}));
+        onPanelSearch?.(direction, value);
+        restProps.onSearch?.(direction, value);
+      }}
     >
       {({
           direction,
@@ -230,12 +247,14 @@ const App = <T,>({
                rowSelection={rowSelection}
                columns={decoratedColumns as any}
                dataSource={filteredItems as any}
+               loading={loading}
                style={{pointerEvents: listDisabled ? 'none' : undefined}}
                // 独立滚动，不影响外层主布局
                scroll={{y: tableScrollY}}
                onRow={(record: any) => ({
                  onClick: () => {
                    // 单击切换勾选（不直接移动）
+                   if (!rowClickToSelect) return;
                    const key = getRowKey(record);
                    const itemDisabled = record?.disabled;
                    if (itemDisabled || listDisabled) return;
@@ -244,6 +263,7 @@ const App = <T,>({
                  // Ant Design Table 会读取 onDoubleClick 事件，此处用于穿梭双击移动。
                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
                  onDoubleClick: () => {
+                   if (!doubleClickToMove) return;
                    const key = getRowKey(record);
                    const itemDisabled = record?.disabled;
                    if (itemDisabled || listDisabled) return;

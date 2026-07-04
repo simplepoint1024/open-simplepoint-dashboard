@@ -41,22 +41,17 @@ frontend:
   remotes:
     - name: demo
       entry: http://127.0.0.1:8080/demo/mf/mf-manifest.json
-permissions:
-  - authority: demo.view
-    name: Demo View
-    resource: /demo/**
-features:
+resources:
   - code: demo.dashboard
     name: Demo Dashboard
-    permissions:
-      - demo.view
-menus:
-  - authority: demo.menu
     title: Demo
+    type: PAGE
     path: /demo
     component: demo/Dashboard
-    featureCodes:
-      - demo.dashboard
+    children:
+      - code: demo.dashboard.view
+        name: Demo View
+        type: ACTION
 ```
 
 ### 2) 依赖可见的类加载器
@@ -158,12 +153,12 @@ private Map<String, Set<Plugin.PluginInstance>> registerInstances(
 ### 4) Manifest lifecycle 贡献处理
 
 实例 handler 只处理运行时 class，声明式资源通过 `PluginLifecycleHandler` 扩展。RBAC 模块提供的
-`PluginRbacContributionHandler` 会把 manifest 中的微前端 remote、菜单、权限点、功能点写入对应表，并用
+`PluginResourceContributionHandler` 会把 manifest 中的微前端 remote、资源树写入对应表，并用
 `pluginId` 标记归属。卸载插件时先回滚这些声明式资源，再注销 Bean 和 MVC 映射。RBAC 贡献注册失败时，
-handler 会在抛回原始异常前按 `pluginId` 显式清理已经写入的资源；配合事务回滚，可避免半注册的菜单、
-权限、功能或 remote 残留。
+handler 会在抛回原始异常前按 `pluginId` 显式清理已经写入的资源；配合事务回滚，可避免半注册的
+resource 或 remote 残留。
 
-插件 remote 的 `entry` 在数据库中保存 manifest 声明的 canonical URL。`/menus/service-routes` 输出时会根据
+插件 remote 的 `entry` 在数据库中保存 manifest 声明的 canonical URL。`/resources/service-routes` 输出时会根据
 插件版本、remote 版本和 artifact SHA-256 追加 `_sp_plugin` / `_sp_v` query，隔离浏览器和 host 的 remote 缓存。
 
 如果运行时插件注册出的 Spring Bean 自身实现了 `PluginLifecycleHandler`，`SpringBeanPluginInstanceHandler` 会把它动态注册进 `PluginsManager`，并在插件卸载回滚时移除。

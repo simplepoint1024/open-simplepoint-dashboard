@@ -1,9 +1,9 @@
 // src/hooks/useRegisterRemotes.ts
 import {useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {registerRemotesIfAny, remoteRegistrySignature} from '@/utils/MfRoutes';
-import {ServiceMenuResult} from '@/fetches/routes';
+import {ServiceResourceRouteResult} from '@/fetches/routes';
 
-export function useRegisterRemotes(res: ServiceMenuResult | undefined, isLoading: boolean) {
+export function useRegisterRemotes(res: ServiceResourceRouteResult | undefined, isLoading: boolean) {
     const signatureRef = useRef('');
     const [registeredSignature, setRegisteredSignature] = useState('');
     const remoteRegistryKey = useMemo(

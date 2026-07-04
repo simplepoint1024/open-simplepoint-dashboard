@@ -48,23 +48,23 @@ public interface TenantService extends BaseService<Tenant, String> {
   Collection<RoleGrantedAuthority> getCurrentUserRoles(String tenantId);
 
   /**
-   * Calculates the permission context ID for a given tenant ID.
+   * Calculates the authorization context ID for a given tenant ID.
    *
-   * @param tenantId the ID of the tenant for which to calculate the permission context ID
-   * @return the calculated permission context ID as a String
+   * @param tenantId the ID of the tenant for which to calculate the authorization context ID
+   * @return the calculated authorization context ID as a String
    */
-  default String calculatePermissionContextId(String tenantId) {
-    return calculatePermissionContextId(tenantId, null);
+  default String calculateAuthorizationContextId(String tenantId) {
+    return calculateAuthorizationContextId(tenantId, null);
   }
 
   /**
-   * Calculates the permission context ID for a given tenant and optional selected role.
+   * Calculates the authorization context ID for a given tenant and optional selected role.
    *
-   * @param tenantId the ID of the tenant for which to calculate the permission context ID
+   * @param tenantId the ID of the tenant for which to calculate the authorization context ID
    * @param roleId selected role ID, or null to include all roles
-   * @return the calculated permission context ID as a String
+   * @return the calculated authorization context ID as a String
    */
-  String calculatePermissionContextId(String tenantId, String roleId);
+  String calculateAuthorizationContextId(String tenantId, String roleId);
 
   /**
    * Loads package codes assigned to the tenant.

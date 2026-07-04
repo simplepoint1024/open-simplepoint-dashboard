@@ -3,7 +3,7 @@ package org.simplepoint.security.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.simplepoint.security.MenuFeatureDefinition;
+import org.simplepoint.security.ResourceDeclaration;
 import org.simplepoint.security.cache.AuthorityRecord;
 
 class EntityFieldsTest {
@@ -24,30 +24,19 @@ class EntityFieldsTest {
   }
 
   @Test
-  void menuFeatureDefinition_setterGetter() {
-    MenuFeatureDefinition def = new MenuFeatureDefinition();
-    def.setName("My Feature");
-    def.setDescription("Feature description");
-    def.setCode("feature.code");
-    assertThat(def.getName()).isEqualTo("My Feature");
-    assertThat(def.getDescription()).isEqualTo("Feature description");
-    assertThat(def.getCode()).isEqualTo("feature.code");
-  }
+  void resourceDeclaration_toResourceCopiesFields() {
+    ResourceDeclaration declaration = new ResourceDeclaration();
+    declaration.setName("Users");
+    declaration.setCode("users.view");
+    declaration.setDescription("User resource");
+    declaration.setType(ResourceType.PAGE);
 
-  @Test
-  void permissions_constants() {
-    assertThat(Permissions.ACCESS_TYPE).isEqualTo(0);
-    assertThat(Permissions.OPERATION_TYPE).isEqualTo(1);
-    assertThat(Permissions.AUTHORITY_FIELD).isEqualTo("authority");
-  }
+    Resource resource = declaration.toResource();
 
-  @Test
-  void permissions_setterGetter() {
-    Permissions p = new Permissions();
-    p.setResource("user.list");
-    p.setType(Permissions.ACCESS_TYPE);
-    assertThat(p.getResource()).isEqualTo("user.list");
-    assertThat(p.getType()).isEqualTo(0);
+    assertThat(resource.getName()).isEqualTo("Users");
+    assertThat(resource.getDescription()).isEqualTo("User resource");
+    assertThat(resource.getCode()).isEqualTo("users.view");
+    assertThat(resource.getType()).isEqualTo(ResourceType.PAGE);
   }
 
   @Test
@@ -60,10 +49,10 @@ class EntityFieldsTest {
   }
 
   @Test
-  void treeMenu_hasChildrenList() {
-    TreeMenu tree = new TreeMenu();
+  void resourceNode_hasChildrenList() {
+    ResourceNode tree = new ResourceNode();
     assertThat(tree.getChildren()).isNotNull().isEmpty();
-    Menu child = new Menu();
+    ResourceNode child = new ResourceNode();
     child.setLabel("Child");
     tree.getChildren().add(child);
     assertThat(tree.getChildren()).hasSize(1);
@@ -79,14 +68,14 @@ class EntityFieldsTest {
   }
 
   @Test
-  void rolePermissionsRelevance_setterGetter() {
-    RolePermissionsRelevance rel = new RolePermissionsRelevance();
+  void roleResourceGrant_setterGetter() {
+    RoleResourceGrant rel = new RoleResourceGrant();
     rel.setRoleId("role1");
-    rel.setPermissionAuthority("perm.read");
+    rel.setResourceCode("resources.view");
     rel.setDataScopeId("scope1");
     rel.setFieldScopeId("field1");
     assertThat(rel.getRoleId()).isEqualTo("role1");
-    assertThat(rel.getPermissionAuthority()).isEqualTo("perm.read");
+    assertThat(rel.getResourceCode()).isEqualTo("resources.view");
     assertThat(rel.getDataScopeId()).isEqualTo("scope1");
     assertThat(rel.getFieldScopeId()).isEqualTo("field1");
   }
@@ -94,30 +83,16 @@ class EntityFieldsTest {
   @Test
   void resource_setterGetter() {
     Resource res = new Resource();
-    res.setResourceName("Users");
-    res.setResourceType("API");
-    res.setResourceParent("root");
-    res.setResourceAuthority("resource.users");
-    res.setResourceDescription("User management resource");
-    assertThat(res.getResourceName()).isEqualTo("Users");
-    assertThat(res.getResourceType()).isEqualTo("API");
-    assertThat(res.getResourceParent()).isEqualTo("root");
-    assertThat(res.getResourceAuthority()).isEqualTo("resource.users");
-    assertThat(res.getResourceDescription()).isEqualTo("User management resource");
-  }
-
-  @Test
-  void resourcesPermissionsRelevance_twoArgConstructor() {
-    ResourcesPermissionsRelevance rel = new ResourcesPermissionsRelevance("perm.read", "resource1");
-    assertThat(rel.getPermissionAuthority()).isEqualTo("perm.read");
-    assertThat(rel.getResourceId()).isEqualTo("resource1");
-  }
-
-  @Test
-  void resourcesPermissionsRelevance_defaultConstructor() {
-    ResourcesPermissionsRelevance rel = new ResourcesPermissionsRelevance();
-    assertThat(rel.getPermissionAuthority()).isNull();
-    assertThat(rel.getResourceId()).isNull();
+    res.setName("Users");
+    res.setType(ResourceType.API);
+    res.setParentId("root");
+    res.setCode("resources.users");
+    res.setDescription("User management resource");
+    assertThat(res.getName()).isEqualTo("Users");
+    assertThat(res.getType()).isEqualTo(ResourceType.API);
+    assertThat(res.getParentId()).isEqualTo("root");
+    assertThat(res.getCode()).isEqualTo("resources.users");
+    assertThat(res.getDescription()).isEqualTo("User management resource");
   }
 
   @Test

@@ -22,7 +22,7 @@ GET /schema
 因此，大多数继承 `BaseController` 的资源都天然拥有这个接口，例如：
 
 - `/common/roles/schema`
-- `/common/menus/schema`
+- `/common/resources/schema`
 - `/common/platform/tenants/schema`
 - `/common/platform/dictionaries/schema`
 
@@ -158,7 +158,7 @@ GET /schema
 前端共享 Hook `useSchema(baseUrl)` 会做下面几件事：
 
 1. 请求 `${baseUrl}/schema`
-2. 以 `tenantId + contextId` 为 query key 的一部分，确保租户或权限上下文变化时自动重查
+2. 以 `tenantId + contextId` 为 query key 的一部分，确保租户或授权上下文变化时自动重查
 3. 递归把 `title` / `description` 里的 `i18n:` 前缀解析成当前语言文本
 4. 把图标字符串转成前端组件图标
 5. 对字典字段补查选项
@@ -198,7 +198,7 @@ GET /common/platform/dictionaries/options?dictionaryCode=...
 
 ## 8. 当前使用方式的几个约束
 
-### 8.1 `/schema` 结果依赖当前权限上下文
+### 8.1 `/schema` 结果依赖当前授权上下文
 
 前端请求 `/schema` 时，请求层会自动附带：
 
@@ -244,6 +244,6 @@ GET /common/platform/dictionaries/options?dictionaryCode=...
 
 - Schema 驱动 UI：`doc/architecture/schema_driven_ui.md`
 - API 约定：`doc/api/api_conventions.md`
-- 授权上下文：`doc/permission/authorization_context.md`
-- 权限模型：`doc/permission/permission_model.md`
+- 授权上下文：`doc/resource/authorization_context.md`
+- 资源授权模型：`doc/resource/resource_model.md`
 - 常见问题：`doc/troubleshooting/common_issues.md`

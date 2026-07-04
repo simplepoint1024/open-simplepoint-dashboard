@@ -23,7 +23,7 @@ public class AuthorizationContext implements Serializable {
   private String userId;
   private Boolean isAdministrator;
   private Collection<String> roles;
-  private Collection<String> permissions;
+  private Collection<String> resources;
   private Long version;
   private Map<String, String> attributes;
 
@@ -58,7 +58,7 @@ public class AuthorizationContext implements Serializable {
   private Boolean dataScopeIncludeSelf;
 
   /**
-   * Field-level access permissions keyed by "ClassName#fieldName".
+   * Field-level access rules keyed by "ClassName#fieldName".
    * Values are the {@code FieldAccessType} name (VISIBLE, EDITABLE, MASKED, HIDDEN).
    * The most permissive access type across all of the user's roles is stored.
    */
@@ -109,13 +109,13 @@ public class AuthorizationContext implements Serializable {
   }
 
   /**
-   * Sets the permissions if they have not been set before.
+   * Sets the resources if they have not been set before.
    *
-   * @param permissions the list of permissions to set
+   * @param resources the resource codes to set
    */
-  public void setPermissions(Collection<String> permissions) {
-    if (this.permissions == null) {
-      this.permissions = permissions == null ? Collections.emptySet() : permissions;
+  public void setResources(Collection<String> resources) {
+    if (this.resources == null) {
+      this.resources = resources == null ? Collections.emptySet() : resources;
     }
   }
 
@@ -282,11 +282,6 @@ public class AuthorizationContext implements Serializable {
     }
   }
 
-  /**
-   * Sets the field permissions map if it has not been set before.
-   *
-   * @param fieldPermissions the map of field permissions to set
-   */
   public void setFieldPermissions(Map<String, String> fieldPermissions) {
     if (this.fieldPermissions == null) {
       this.fieldPermissions = fieldPermissions == null ? Collections.emptyMap() : fieldPermissions;
@@ -307,17 +302,17 @@ public class AuthorizationContext implements Serializable {
   }
 
   /**
-   * Converts the roles and permissions in the authorization context into a collection of GrantedAuthority objects.
+   * Converts roles and resource codes into Spring Security authorities.
    *
-   * @return a collection of GrantedAuthority objects representing the roles and permissions in the authorization context
+   * @return authorities representing the roles and resource codes in the authorization context
    */
   public Collection<GrantedAuthority> asAuthorities() {
     var authorities = new java.util.HashSet<GrantedAuthority>();
     if (this.isAdministrator != null && this.isAdministrator) {
       authorities.add(new SimpleGrantedAuthority("ROLE_Administrator"));
     }
-    if (this.permissions != null) {
-      this.permissions.forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission)));
+    if (this.resources != null) {
+      this.resources.forEach(resource -> authorities.add(new SimpleGrantedAuthority(resource)));
     }
     if (this.roles != null) {
       this.roles.forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role)));

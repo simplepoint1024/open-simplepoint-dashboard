@@ -11,23 +11,23 @@ export interface ApplicationRelevantVo {
   description: string;
 }
 
-export interface ApplicationFeaturesRelevanceDto {
+export interface ApplicationResourcesRelevanceDto {
   applicationCode: string | null;
-  featureCodes?: string[];
+  resourceCodes?: string[];
 }
 
 export async function fetchItems(params: Record<string, string>) {
   return await get<Page<ApplicationRelevantVo>>(`${baseUrl}/items`, params);
 }
 
-export async function fetchAuthorized(params: Pick<ApplicationFeaturesRelevanceDto, 'applicationCode'>) {
+export async function fetchAuthorized(params: Pick<ApplicationResourcesRelevanceDto, 'applicationCode'>) {
   return await get<string[]>(`${baseUrl}/authorized`, params as Record<string, string>);
 }
 
-export async function fetchAuthorize(data: ApplicationFeaturesRelevanceDto) {
-  return await post<ApplicationFeaturesRelevanceDto>(`${baseUrl}/authorize`, data);
+export async function fetchAuthorize(data: ApplicationResourcesRelevanceDto) {
+  return await post<ApplicationResourcesRelevanceDto>(`${baseUrl}/authorize`, data);
 }
 
-export async function fetchUnauthorized(data: ApplicationFeaturesRelevanceDto) {
-  return await post<ApplicationFeaturesRelevanceDto>(`${baseUrl}/unauthorized`, data);
+export async function fetchUnauthorized(data: ApplicationResourcesRelevanceDto) {
+  return await post<ApplicationResourcesRelevanceDto>(`${baseUrl}/unauthorized`, data);
 }

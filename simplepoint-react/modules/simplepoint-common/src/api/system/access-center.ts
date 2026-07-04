@@ -27,7 +27,7 @@ export interface AccessCenterUserImpact {
 
 export interface AccessCenterRoleOverview {
   role: AccessCenterRole;
-  permissionCount: number;
+  resourceCount: number;
   assignedUserCount: number;
   dataScope?: AccessCenterScope | null;
   fieldScope?: AccessCenterScope | null;
@@ -35,7 +35,7 @@ export interface AccessCenterRoleOverview {
 
 export interface AccessCenterRoleDetail {
   role: AccessCenterRole;
-  authorizedPermissions: string[];
+  authorizedResources: string[];
   scopeAssignment?: {
     roleId: string;
     dataScopeId?: string | null;
@@ -47,7 +47,7 @@ export interface AccessCenterRoleDetail {
   assignedUsers: AccessCenterUserImpact[];
 }
 
-export type AccessCenterResourceNodeType = 'GROUP' | 'MENU' | 'FEATURE' | 'PERMISSION';
+export type AccessCenterResourceNodeType = 'GROUP' | 'MODULE' | 'PAGE' | 'FEATURE' | 'ACTION' | 'API';
 
 export interface AccessCenterResourceNode {
   id: string;
@@ -56,17 +56,17 @@ export interface AccessCenterResourceNode {
   code?: string | null;
   path?: string | null;
   description?: string | null;
-  permissionAuthority?: string | null;
-  permissionType?: number | null;
+  resourceCode?: string | null;
+  grantable?: boolean | null;
   checked: boolean;
   partial: boolean;
-  permissionAuthorities: string[];
+  resourceCodes: string[];
   children: AccessCenterResourceNode[];
 }
 
 export interface AccessCenterRoleAuthorizationDto {
   roleId: string;
-  permissionAuthorities: string[];
+  resourceCodes: string[];
   dataScopeId?: string | null;
   fieldScopeId?: string | null;
 }

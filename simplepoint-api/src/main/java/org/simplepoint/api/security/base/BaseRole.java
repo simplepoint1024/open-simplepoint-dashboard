@@ -28,16 +28,16 @@ public interface BaseRole {
   void setRoleName(String roleName);
 
   /**
-   * Permission identifier.
+   * Role authority identifier.
    *
-   * @return Permission identifier
+   * @return role authority identifier
    */
   String getAuthority();
 
   /**
-   * Permission identifier.
+   * Role authority identifier.
    *
-   * @param roleScope Permission identifier
+   * @param roleScope role authority identifier
    */
   void setAuthority(String roleScope);
 }

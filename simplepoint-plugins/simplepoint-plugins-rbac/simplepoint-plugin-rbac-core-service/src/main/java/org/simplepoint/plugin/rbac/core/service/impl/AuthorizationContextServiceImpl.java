@@ -13,16 +13,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.core.AuthorizationActorRole;
 import org.simplepoint.core.AuthorizationContext;
-import org.simplepoint.core.AuthorizationPermissionNamespaces;
+import org.simplepoint.core.AuthorizationResourceNamespaces;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.plugin.rbac.core.api.repository.DataScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.FieldScopeRepository;
-import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
+import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
-import org.simplepoint.plugin.rbac.tenant.api.repository.FeaturePermissionRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
@@ -32,8 +31,9 @@ import org.simplepoint.security.entity.DataScope;
 import org.simplepoint.security.entity.DataScopeType;
 import org.simplepoint.security.entity.FieldAccessType;
 import org.simplepoint.security.entity.FieldScope;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
+import org.simplepoint.security.entity.RoleResourceGrant;
 import org.simplepoint.security.entity.User;
+import org.simplepoint.security.service.ResourceService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -48,10 +48,10 @@ import org.springframework.stereotype.Service;
 public class AuthorizationContextServiceImpl implements AuthorizationContextService {
 
   private final UsersService usersService;
-  private final ObjectProvider<FeaturePermissionRelevanceRepository> featurePermissionRelevanceRepositoryProvider;
+  private final ObjectProvider<ResourceService> resourceServiceProvider;
   private final ObjectProvider<TenantPackageRelevanceRepository> tenantPackageRelevanceRepositoryProvider;
   private final ObjectProvider<TenantRepository> tenantRepositoryProvider;
-  private final ObjectProvider<RolePermissionsRelevanceRepository> rolePermissionsRelevanceRepositoryProvider;
+  private final ObjectProvider<RoleResourceGrantRepository> roleResourceGrantRepositoryProvider;
   private final ObjectProvider<DataScopeRepository> dataScopeRepositoryProvider;
   private final ObjectProvider<FieldScopeRepository> fieldScopeRepositoryProvider;
   private final ObjectProvider<OrganizationRepository> organizationRepositoryProvider;
@@ -59,23 +59,23 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
   /**
    * Constructs an AuthorizationContextServiceImpl with the specified UsersService.
    *
-   * @param usersService the UsersService to be used for loading user roles and permissions
+   * @param usersService the UsersService to be used for loading user roles and resources
    */
   public AuthorizationContextServiceImpl(
       UsersService usersService,
-      ObjectProvider<FeaturePermissionRelevanceRepository> featurePermissionRelevanceRepositoryProvider,
+      ObjectProvider<ResourceService> resourceServiceProvider,
       ObjectProvider<TenantPackageRelevanceRepository> tenantPackageRelevanceRepositoryProvider,
       ObjectProvider<TenantRepository> tenantRepositoryProvider,
-      ObjectProvider<RolePermissionsRelevanceRepository> rolePermissionsRelevanceRepositoryProvider,
+      ObjectProvider<RoleResourceGrantRepository> roleResourceGrantRepositoryProvider,
       ObjectProvider<DataScopeRepository> dataScopeRepositoryProvider,
       ObjectProvider<FieldScopeRepository> fieldScopeRepositoryProvider,
       ObjectProvider<OrganizationRepository> organizationRepositoryProvider
   ) {
     this.usersService = usersService;
-    this.featurePermissionRelevanceRepositoryProvider = featurePermissionRelevanceRepositoryProvider;
+    this.resourceServiceProvider = resourceServiceProvider;
     this.tenantPackageRelevanceRepositoryProvider = tenantPackageRelevanceRepositoryProvider;
     this.tenantRepositoryProvider = tenantRepositoryProvider;
-    this.rolePermissionsRelevanceRepositoryProvider = rolePermissionsRelevanceRepositoryProvider;
+    this.roleResourceGrantRepositoryProvider = roleResourceGrantRepositoryProvider;
     this.dataScopeRepositoryProvider = dataScopeRepositoryProvider;
     this.fieldScopeRepositoryProvider = fieldScopeRepositoryProvider;
     this.organizationRepositoryProvider = organizationRepositoryProvider;
@@ -123,23 +123,16 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     if (selectedRoleId != null) {
       effectiveAttributes.put("X-Role-Id", selectedRoleId);
     }
-    var permissions = new LinkedHashSet<String>();
+    var resources = new LinkedHashSet<String>();
     var roleIds = roleAuthorityVos.stream().map(RoleGrantedAuthority::getId).toList();
     if (!roleIds.isEmpty()) {
-      permissions.addAll(usersService.loadPermissionsInRoleIds(roleIds));
+      resources.addAll(usersService.loadResourcesInRoleIds(roleIds));
     }
-    var featurePermissionRelevanceRepository = featurePermissionRelevanceRepositoryProvider.getIfAvailable();
-    if (featurePermissionRelevanceRepository != null && !permissions.isEmpty()) {
-      permissions.addAll(featurePermissionRelevanceRepository.findFeatureCodesByPermissionAuthorities(permissions));
-    }
-    if (featurePermissionRelevanceRepository != null) {
-      Collection<String> publicFeatureCodes = featurePermissionRelevanceRepository.findPublicAccessFeatureCodes();
-      if (publicFeatureCodes != null) {
-        permissions.addAll(publicFeatureCodes);
-      }
-      Collection<String> publicPermissions = featurePermissionRelevanceRepository.findPermissionAuthoritiesByPublicAccessFeatures();
-      if (publicPermissions != null) {
-        permissions.addAll(publicPermissions);
+    var resourceService = resourceServiceProvider.getIfAvailable();
+    if (resourceService != null) {
+      Collection<String> publicResourceCodes = resourceService.findPublicAccessCodes();
+      if (publicResourceCodes != null) {
+        resources.addAll(publicResourceCodes);
       }
     }
     var tenantPackageRelevanceRepository = tenantPackageRelevanceRepositoryProvider.getIfAvailable();
@@ -147,26 +140,20 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
         && resolvedTenantId != null
         && !resolvedTenantId.isBlank()
         && tenantOwner) {
-      permissions.addAll(tenantPackageRelevanceRepository.findFeatureCodesByTenantId(resolvedTenantId));
-    }
-    if (featurePermissionRelevanceRepository != null
-        && resolvedTenantId != null
-        && !resolvedTenantId.isBlank()
-        && tenantOwner) {
-      permissions.addAll(featurePermissionRelevanceRepository.findPermissionAuthoritiesByTenantId(resolvedTenantId));
+      resources.addAll(tenantPackageRelevanceRepository.findResourceCodesByTenantId(resolvedTenantId));
     }
     AuthorizationScopeType scopeType = resolveScopeType(administrator, resolvedTenantId, resolvedTenant);
-    boolean tenantAdmin = hasTenantAdminAuthority(roleAuthorityVos, permissions);
+    boolean tenantAdmin = hasTenantAdminAuthority(roleAuthorityVos, resources);
     AuthorizationActorRole actorRole = resolveActorRole(administrator, resolvedTenantId, resolvedTenant, tenantOwner, tenantAdmin);
     effectiveAttributes.put("X-Scope-Type", scopeType.name());
     effectiveAttributes.put("X-Actor-Role", actorRole.name());
     AuthorizationContext authorizationContext = new AuthorizationContext();
     authorizationContext.setUserId(userId);
     authorizationContext.setContextId(contextId);
-    authorizationContext.setPermissions(permissions);
+    authorizationContext.setResources(resources);
     authorizationContext.setIsAdministrator(administrator);
     authorizationContext.setRoles(roleAuthorityVos.stream().map(RoleGrantedAuthority::getAuthority).toList());
-    authorizationContext.setVersion(resolvePermissionVersion(resolvedTenantId, tenantRepository));
+    authorizationContext.setVersion(resolveAuthorizationVersion(resolvedTenantId, tenantRepository));
     authorizationContext.setAttributes(effectiveAttributes);
     authorizationContext.setScopeType(scopeType);
     authorizationContext.setActorRole(actorRole);
@@ -203,12 +190,12 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     return AuthorizationScopeType.TENANT;
   }
 
-  private Long resolvePermissionVersion(String tenantId, TenantRepository tenantRepository) {
+  private Long resolveAuthorizationVersion(String tenantId, TenantRepository tenantRepository) {
     if (tenantId == null || tenantId.isBlank() || tenantRepository == null) {
       return 0L;
     }
-    Long permissionVersion = tenantRepository.getTenantPermissionVersion(tenantId);
-    return permissionVersion == null ? 0L : permissionVersion;
+    Long authorizationVersion = tenantRepository.getTenantAuthorizationVersion(tenantId);
+    return authorizationVersion == null ? 0L : authorizationVersion;
   }
 
   private AuthorizationActorRole resolveActorRole(
@@ -234,8 +221,8 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     return AuthorizationActorRole.TENANT_MEMBER;
   }
 
-  private boolean hasTenantAdminAuthority(Collection<RoleGrantedAuthority> roles, Collection<String> permissions) {
-    if (permissions != null && permissions.contains(AuthorizationPermissionNamespaces.TENANT_ADMIN)) {
+  private boolean hasTenantAdminAuthority(Collection<RoleGrantedAuthority> roles, Collection<String> resources) {
+    if (resources != null && resources.contains(AuthorizationResourceNamespaces.TENANT_ADMIN)) {
       return true;
     }
     if (roles == null) {
@@ -246,7 +233,7 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
         .filter(Objects::nonNull)
         .anyMatch(authority -> "TENANT_ADMIN".equals(authority)
             || "ROLE_TENANT_ADMIN".equals(authority)
-            || AuthorizationPermissionNamespaces.TENANT_ADMIN.equals(authority));
+            || AuthorizationResourceNamespaces.TENANT_ADMIN.equals(authority));
   }
 
   private List<RoleGrantedAuthority> loadEffectiveRoles(String tenantId, String userId) {
@@ -290,17 +277,17 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
    */
   private void resolveDataAndFieldScope(
       List<String> roleIds, String userId, String tenantId, User user, AuthorizationContext ctx) {
-    var rolePermissionsRepo = rolePermissionsRelevanceRepositoryProvider.getIfAvailable();
-    if (rolePermissionsRepo == null) {
+    var roleResourceGrantRepository = roleResourceGrantRepositoryProvider.getIfAvailable();
+    if (roleResourceGrantRepository == null) {
       return;
     }
-    List<RolePermissionsRelevance> relevances = rolePermissionsRepo.findByRoleIdIn(roleIds);
+    List<RoleResourceGrant> grants = roleResourceGrantRepository.findByRoleIdIn(roleIds);
 
     // --- Data scope resolution ---
     var dataScopeRepo = dataScopeRepositoryProvider.getIfAvailable();
     if (dataScopeRepo != null) {
-      Set<String> dataScopeIds = relevances.stream()
-          .map(RolePermissionsRelevance::getDataScopeId)
+      Set<String> dataScopeIds = grants.stream()
+          .map(RoleResourceGrant::getDataScopeId)
           .filter(Objects::nonNull)
           .collect(Collectors.toSet());
 
@@ -358,8 +345,8 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     // --- Field scope resolution ---
     var fieldScopeRepo = fieldScopeRepositoryProvider.getIfAvailable();
     if (fieldScopeRepo != null) {
-      Set<String> fieldScopeIds = relevances.stream()
-          .map(RolePermissionsRelevance::getFieldScopeId)
+      Set<String> fieldScopeIds = grants.stream()
+          .map(RoleResourceGrant::getFieldScopeId)
           .filter(Objects::nonNull)
           .collect(Collectors.toSet());
 

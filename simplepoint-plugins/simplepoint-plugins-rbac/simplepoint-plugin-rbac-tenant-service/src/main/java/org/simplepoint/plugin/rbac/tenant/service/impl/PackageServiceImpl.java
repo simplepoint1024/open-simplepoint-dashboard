@@ -21,7 +21,7 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.PackageRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.PackageService;
-import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -38,7 +38,7 @@ public class PackageServiceImpl
   private final PackageApplicationRelevanceRepository packageApplicationRelevanceRepository;
   private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
   private final TenantRepository tenantRepository;
-  private final PermissionVersionRefreshService permissionVersionRefreshService;
+  private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
   /**
    * Package Service Impl.
@@ -49,13 +49,13 @@ public class PackageServiceImpl
       PackageApplicationRelevanceRepository packageApplicationRelevanceRepository,
       TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
       TenantRepository tenantRepository,
-      PermissionVersionRefreshService permissionVersionRefreshService
+      ResourceAuthorizationVersionService resourceAuthorizationVersionService
   ) {
     super(repository, detailsProviderService);
     this.packageApplicationRelevanceRepository = packageApplicationRelevanceRepository;
     this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
     this.tenantRepository = tenantRepository;
-    this.permissionVersionRefreshService = permissionVersionRefreshService;
+    this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
   }
 
   @Override
@@ -110,7 +110,7 @@ public class PackageServiceImpl
     }
 
     Collection<PackageApplicationRelevance> saved = packageApplicationRelevanceRepository.saveAll(relations);
-    permissionVersionRefreshService.refreshByPackageCodes(Set.of(packageCode));
+    resourceAuthorizationVersionService.refreshByPackageCodes(Set.of(packageCode));
     return saved;
   }
 
@@ -124,7 +124,7 @@ public class PackageServiceImpl
     }
     String requiredPackageCode = requireCode(packageCode, "套餐编码不能为空");
     packageApplicationRelevanceRepository.unauthorized(requiredPackageCode, normalizedApplicationCodes);
-    permissionVersionRefreshService.refreshByPackageCodes(Set.of(requiredPackageCode));
+    resourceAuthorizationVersionService.refreshByPackageCodes(Set.of(requiredPackageCode));
   }
 
   @Override
@@ -138,7 +138,7 @@ public class PackageServiceImpl
     if (!Objects.equals(oldCode, updated.getCode())) {
       packageApplicationRelevanceRepository.updatePackageCode(oldCode, updated.getCode());
       tenantPackageRelevanceRepository.updatePackageCode(oldCode, updated.getCode());
-      permissionVersionRefreshService.refreshTenants(affectedTenantIds);
+      resourceAuthorizationVersionService.refreshTenants(affectedTenantIds);
     }
     return updated;
   }
@@ -164,7 +164,7 @@ public class PackageServiceImpl
     packageApplicationRelevanceRepository.deleteAllByPackageCodes(packageCodes);
     tenantPackageRelevanceRepository.deleteAllByPackageCodes(packageCodes);
     super.removeByIds(ids);
-    permissionVersionRefreshService.refreshTenants(affectedTenantIds);
+    resourceAuthorizationVersionService.refreshTenants(affectedTenantIds);
   }
 
   private static Set<String> normalizeCodes(Collection<String> codes) {

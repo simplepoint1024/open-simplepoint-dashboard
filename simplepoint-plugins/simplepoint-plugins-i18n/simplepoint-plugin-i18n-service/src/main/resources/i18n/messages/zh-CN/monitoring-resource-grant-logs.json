@@ -1,0 +1,5 @@
+{
+  "monitoring.resourceGrantLog.action.assign": "授权",
+  "monitoring.resourceGrantLog.action.revoke": "撤销",
+  "monitoring.resourceGrantLog.action.update": "更新"
+}

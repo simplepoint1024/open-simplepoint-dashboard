@@ -31,7 +31,7 @@ const App = () => {
   const recentActivities = useMemo(() => ([
     {id: 1, title: t('dashboard.activity.1.title','新增应用 @simplepoint-common'), tag: t('dashboard.activity.tag.change','变更'), ts: t('dashboard.activity.1.ts','5 分钟前')},
     {id: 2, title: t('dashboard.activity.2.title','同步国际化字典 134 条'), tag: t('dashboard.activity.tag.task','任务'), ts: t('dashboard.activity.2.ts','20 分钟前')},
-    {id: 3, title: t('dashboard.activity.3.title','用户 jack 授予 ROLE_ADMIN'), tag: t('dashboard.activity.tag.permission','权限'), ts: t('dashboard.activity.3.ts','1 小时前')},
+    {id: 3, title: t('dashboard.activity.3.title','用户 jack 授予 ROLE_ADMIN'), tag: t('dashboard.activity.tag.resource','资源授权'), ts: t('dashboard.activity.3.ts','1 小时前')},
     {id: 4, title: t('dashboard.activity.4.title','服务 micro-auth 健康检查通过'), tag: t('dashboard.activity.tag.system','系统'), ts: t('dashboard.activity.4.ts','2 小时前')},
   ]), [t]);
 

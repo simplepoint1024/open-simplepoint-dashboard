@@ -47,6 +47,8 @@ public class I18nAutoRegistrationInitializer {
 
   private static final String I18N_INIT_SUPPLEMENT_MODULE = "i18n-messages-supplement-v1";
 
+  private static final String I18N_RESOURCE_MODEL_MODULE = "i18n-resource-model-v1";
+
   private static final String I18N_BOOTSTRAP_REPAIR_MODULE = "i18n-bootstrap-v2";
 
   private static final String I18N_COUNTRIES_PATH = "/i18n/countries/";
@@ -65,9 +67,20 @@ public class I18nAutoRegistrationInitializer {
    * the data-permission module already ran (existing keys are skipped via pre-filter).
    */
   private static final Set<String> SUPPLEMENT_NAMESPACES = Set.of(
-      "users", "roles", "permissions", "menus", "messages", "namespaces",
+      "users", "roles", "resources", "messages", "namespaces",
       "clients", "countries", "languages", "profile", "regions", "settings", "timezones",
       "data-scopes", "field-scopes"
+  );
+
+  private static final Set<String> RESOURCE_MODEL_NAMESPACES = Set.of(
+      "resources",
+      "roles",
+      "access-center",
+      "applications",
+      "monitoring-resource-grant-logs",
+      "table",
+      "tenants",
+      "menu"
   );
 
   /**
@@ -128,7 +141,7 @@ public class I18nAutoRegistrationInitializer {
    * Register a DataInitRegister bean for supplementing missing or updated i18n messages.
    *
    * <p>Loads namespaces that were missing en-US translations or had new fields added after the
-   * initial i18n-messages run (e.g. users.orgId, roles en-US, permissions en-US, etc.).
+   * initial i18n-messages run (e.g. users.orgId, roles and resources en-US, etc.).
    * Also covers data-scopes and field-scopes idempotently: if the data-permission module already
    * inserted some entries, this module skips them to avoid unique-constraint violations.</p>
    *
@@ -142,6 +155,17 @@ public class I18nAutoRegistrationInitializer {
   ) {
     return () -> new InitTask(I18N_INIT_SUPPLEMENT_MODULE, () ->
         importMessages(loadMessages(), namespaceService, messageService, messageRepository, SUPPLEMENT_NAMESPACES::contains)
+    );
+  }
+
+  @Bean
+  public DataInitRegister resourceModelMessagesRegister(
+      I18nNamespaceService namespaceService,
+      I18nMessageService messageService,
+      I18nMessageRepository messageRepository
+  ) {
+    return () -> new InitTask(I18N_RESOURCE_MODEL_MODULE, () ->
+        importMessages(loadMessages(), namespaceService, messageService, messageRepository, RESOURCE_MODEL_NAMESPACES::contains)
     );
   }
 

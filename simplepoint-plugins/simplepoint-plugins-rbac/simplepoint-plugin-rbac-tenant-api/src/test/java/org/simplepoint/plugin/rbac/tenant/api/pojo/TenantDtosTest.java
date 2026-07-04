@@ -4,8 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationFeaturesRelevanceDto;
-import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.FeaturePermissionsRelevanceDto;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationResourcesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.PackageApplicationsRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantPackagesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
@@ -13,21 +12,12 @@ import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 class TenantDtosTest {
 
   @Test
-  void applicationFeaturesRelevanceDto_setterGetter() {
-    ApplicationFeaturesRelevanceDto dto = new ApplicationFeaturesRelevanceDto();
+  void applicationResourcesRelevanceDto_setterGetter() {
+    ApplicationResourcesRelevanceDto dto = new ApplicationResourcesRelevanceDto();
     dto.setApplicationCode("app1");
-    dto.setFeatureCodes(Set.of("f1", "f2"));
+    dto.setResourceCodes(Set.of("resources.view", "resources.edit"));
     assertThat(dto.getApplicationCode()).isEqualTo("app1");
-    assertThat(dto.getFeatureCodes()).containsExactlyInAnyOrder("f1", "f2");
-  }
-
-  @Test
-  void featurePermissionsRelevanceDto_setterGetter() {
-    FeaturePermissionsRelevanceDto dto = new FeaturePermissionsRelevanceDto();
-    dto.setFeatureCode("feature1");
-    dto.setPermissionAuthority(Set.of("perm.read"));
-    assertThat(dto.getFeatureCode()).isEqualTo("feature1");
-    assertThat(dto.getPermissionAuthority()).containsExactly("perm.read");
+    assertThat(dto.getResourceCodes()).containsExactlyInAnyOrder("resources.view", "resources.edit");
   }
 
   @Test

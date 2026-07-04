@@ -1,6 +1,6 @@
 import {getInstance} from '@module-federation/runtime';
 import {ServiceEntry} from '@/fetches/routes';
-import {MenuInfo} from "@/store/routes";
+import {RouteInfo} from "@/store/routes";
 
 type RuntimeRemote = {
     name: string;
@@ -67,13 +67,13 @@ function resolveMfEntry(serviceEntry: ServiceEntry, entryPoint: string): Runtime
     };
 }
 
-export type MenuNode = MenuInfo & { children?: MenuNode[] };
+export type ResourceRouteNode = RouteInfo & { children?: ResourceRouteNode[] };
 
-export function flattenLeafRoutes(nodes: MenuNode[] = []): MenuNode[] {
-    const res: MenuNode[] = [];
-    const dfs = (arr: MenuNode[]) => {
+export function flattenLeafRoutes(nodes: ResourceRouteNode[] = []): ResourceRouteNode[] {
+    const res: ResourceRouteNode[] = [];
+    const dfs = (arr: ResourceRouteNode[]) => {
         arr.forEach((n) => {
-            const children = n.children as MenuNode[] | undefined;
+            const children = n.children as ResourceRouteNode[] | undefined;
             if (Array.isArray(children) && children.length > 0) {
                 dfs(children);
             } else {

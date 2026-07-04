@@ -221,5 +221,5 @@ Swarm 方案会把 PostgreSQL、Redis、RabbitMQ、Consul、bootstrap、authoriz
 - 快速开始：`doc/quick_start.md`
 - 服务拓扑：`doc/architecture/service_topology.md`
 - Docker Swarm 部署：`doc/deployment/docker_swarm_deployment.md`
-- 权限模型：`doc/permission/permission_model.md`
+- 资源授权模型：`doc/resource/resource_model.md`
 - 常见问题：`doc/troubleshooting/common_issues.md`

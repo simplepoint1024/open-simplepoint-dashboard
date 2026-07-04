@@ -4,35 +4,26 @@ import java.util.Collection;
 import java.util.Set;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Application;
-import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationFeatureRelevance;
-import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationFeaturesRelevanceDto;
+import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationResourceRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationResourcesRelevanceDto;
 
 /**
- * ApplicationService is an interface that defines methods for managing application-related operations.
+ * Application service.
  */
 public interface ApplicationService extends BaseService<Application, String> {
 
   /**
-   * Loads feature codes assigned to the application.
-   *
-   * @param applicationCode application code
-   * @return feature codes
+   * Loads resource codes assigned to the application.
    */
-  Collection<String> authorizedFeatures(String applicationCode);
+  Collection<String> authorizedResources(String applicationCode);
 
   /**
-   * Assigns features to the application.
-   *
-   * @param dto application feature dto
-   * @return saved relation rows
+   * Assigns resources to the application.
    */
-  Collection<ApplicationFeatureRelevance> authorizeFeatures(ApplicationFeaturesRelevanceDto dto);
+  Collection<ApplicationResourceRelevance> authorizeResources(ApplicationResourcesRelevanceDto dto);
 
   /**
-   * Removes feature assignments from the application.
-   *
-   * @param applicationCode application code
-   * @param featureCodes feature codes to remove
+   * Removes resource assignments from the application.
    */
-  void unauthorizedFeatures(String applicationCode, Set<String> featureCodes);
+  void unauthorizedResources(String applicationCode, Set<String> resourceCodes);
 }

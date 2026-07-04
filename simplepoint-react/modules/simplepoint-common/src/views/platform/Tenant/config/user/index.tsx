@@ -1,8 +1,7 @@
+import {useCallback, useEffect} from 'react';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {useEffect, useMemo, useState} from 'react';
-import {GetProp, TableColumnsType, TransferProps} from 'antd';
-import STableTransfer from '@simplepoint/components/STableTransfer';
-import {useData, usePage} from '@simplepoint/shared/api/methods';
+import {UserTransferSelect, type EntityTransferQuery} from '@simplepoint/components/EntityTransfer';
+import type {Page} from '@simplepoint/shared/types/request';
 import {
   fetchAuthorizedUsers,
   fetchAuthorizeUsers,
@@ -11,91 +10,98 @@ import {
   UserRelevanceVo,
 } from '@/api/platform/tenant';
 
-type TransferItem = GetProp<TransferProps, 'dataSource'>[number];
-
 export interface TenantUserConfigProps {
   tenantId: string;
   ownerId?: string;
 }
 
-interface TableTransferProps extends TransferProps<TransferItem> {
-  dataSource: UserRelevanceVo[];
-  leftColumns: TableColumnsType<UserRelevanceVo>;
-  rightColumns: TableColumnsType<UserRelevanceVo>;
+function buildPageParams(tenantId: string, query: EntityTransferQuery) {
+  const params: {tenantId: string; page: string; size: string; keyword?: string} = {
+    tenantId,
+    page: String(query.page),
+    size: String(query.pageSize),
+  };
+  const search = query.search.trim();
+  if (search) {
+    params.keyword = search;
+  }
+  return params;
+}
+
+function pageUserCandidates(items: UserRelevanceVo[], query: EntityTransferQuery): Page<UserRelevanceVo> {
+  const keyword = query.search.trim().toLowerCase();
+  const filtered = keyword
+    ? items.filter((item) =>
+      item.id.toLowerCase().includes(keyword) ||
+      item.name.toLowerCase().includes(keyword) ||
+      (item.email ?? '').toLowerCase().includes(keyword) ||
+      (item.phoneNumber ?? '').includes(keyword)
+    )
+    : items;
+  const start = query.page * query.pageSize;
+  const content = filtered.slice(start, start + query.pageSize);
+  return {
+    content,
+    page: {
+      size: query.pageSize,
+      number: query.page,
+      totalElements: filtered.length,
+      totalPages: Math.ceil(filtered.length / query.pageSize),
+    },
+  };
 }
 
 const App = ({tenantId, ownerId}: TenantUserConfigProps) => {
-  const {t, messages, ensure, locale} = useI18n();
+  const {t, ensure, locale} = useI18n();
 
   useEffect(() => {
     void ensure(['users', 'table', 'common']);
   }, [ensure, locale]);
 
-  const {data: page} = usePage<UserRelevanceVo>(
-    tenantId ? ['platform-tenant-user-items', tenantId] : '',
-    () => fetchUserItems({tenantId, page: '0', size: '10000000'}),
-    {enabled: !!tenantId}
-  );
-  const content = useMemo(
-    () => (page?.content ?? []).map((item) => ({...item, disabled: item.id === ownerId})),
-    [page?.content, ownerId]
+  const fetchItems = useCallback(
+    async (query: EntityTransferQuery) => {
+      const page = await fetchUserItems(buildPageParams(tenantId, {...query, page: 0, pageSize: 100000}));
+      return pageUserCandidates(page.content ?? [], query);
+    },
+    [tenantId],
   );
 
-  const columns: TableColumnsType<UserRelevanceVo> = useMemo(
-    () => [
-      {key: 'name', dataIndex: 'name', title: t('users.title.nickname', '用户')},
-      {key: 'email', dataIndex: 'email', title: t('users.title.email', '邮箱')},
-      {key: 'phoneNumber', dataIndex: 'phoneNumber', title: t('users.title.phoneNumber', '手机号')},
-    ],
-    [messages],
-  );
-
-  const [targetKeys, setTargetKeys] = useState<TransferProps['targetKeys']>([]);
-
-  const {data: authorized} = useData<string[]>(
-    tenantId ? ['fetchAuthorizedTenantUsers', tenantId] : '',
+  const fetchAuthorizedKeys = useCallback(
     () => fetchAuthorizedUsers({tenantId}),
-    {enabled: !!tenantId},
+    [tenantId],
   );
 
-  useEffect(() => {
-    setTargetKeys([]);
-  }, [tenantId]);
+  const handleAuthorize = useCallback(
+    (userIds: string[]) => fetchAuthorizeUsers({tenantId, userIds}),
+    [tenantId],
+  );
 
-  useEffect(() => {
-    if (authorized) {
-      setTargetKeys(authorized);
-    }
-  }, [authorized]);
-
-  const onChange: TableTransferProps['onChange'] = (nextTargetKeys, direction, moveKeys) => {
-    setTargetKeys(nextTargetKeys);
-    if (!tenantId) return;
-
-    if (direction === 'right') {
-      void fetchAuthorizeUsers({tenantId, userIds: moveKeys as string[]});
-    } else {
-      void fetchUnauthorizedUsers({tenantId, userIds: moveKeys as string[]});
-    }
-  };
+  const handleUnauthorize = useCallback(
+    (userIds: string[]) => fetchUnauthorizedUsers({tenantId, userIds}),
+    [tenantId],
+  );
 
   if (!tenantId) {
-    return <div style={{flex: 1, minHeight: 0}}/>;
+    return <div style={{flex: 1, minHeight: 0}} />;
   }
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0}}>
       <div style={{flex: 1, minHeight: 0}}>
-        <STableTransfer
-          dataSource={content}
-          targetKeys={targetKeys}
-          showSelectAll={false}
-          onChange={onChange}
-          leftColumns={columns}
-          rightColumns={columns}
-          itemKey="id"
+        <UserTransferSelect<UserRelevanceVo>
+          fetchItems={fetchItems}
+          fetchAuthorizedKeys={fetchAuthorizedKeys}
+          onAuthorize={handleAuthorize}
+          onUnauthorize={handleUnauthorize}
+          disabledKeys={ownerId ? [ownerId] : undefined}
+          enabled={!!tenantId}
+          queryDeps={[tenantId]}
           adaptiveHeight
-          searchable
+          selectedLookupPageSize={100000}
+          titles={[
+            t('tenants.userConfig.availableUsers', '可选用户'),
+            t('tenants.userConfig.authorizedUsers', '租户用户'),
+          ]}
         />
       </div>
     </div>

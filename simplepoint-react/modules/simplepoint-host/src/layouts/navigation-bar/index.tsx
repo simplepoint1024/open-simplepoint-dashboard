@@ -17,7 +17,7 @@ import {CSS} from '@dnd-kit/utilities';
 import {createIcon} from '@simplepoint/shared/types/icon.ts';
 import {useSideNavigation} from "@/hooks/routes";
 import {useLocation, useNavigate} from "react-router-dom";
-import {findMenuChainByPath, flattenMenus, getMenuKey, MenuInfo} from "@/store/routes";
+import {findRouteChainByPath, flattenRoutes, getRouteKey, RouteInfo} from "@/store/routes";
 import {aboutMeItem, HeaderLogo, HeaderSearchBar, RoleSwitcherTop, TenantSwitcherTop, toolsSwitcherGroupItem} from "@/layouts/navigation-bar/top-bar.tsx";
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import MenuSearchModal from "@/layouts/navigation-bar/menu-search-modal.tsx";
@@ -42,7 +42,7 @@ const DraggableTabNode: React.FC<DraggableTabNodeProps> = ({className, ...props}
   return <div ref={setNodeRef} style={style} {...attributes} {...listeners} {...props} className={className} />;
 };
 
-const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<MenuInfo> }> = ({children, data}) => {
+const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteInfo> }> = ({children, data}) => {
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768);
   const navigate = useNavigate();
   const location = useLocation();
@@ -131,7 +131,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<MenuInf
   const STORAGE_KEY = 'sp.nav.tabs';
   const DASHBOARD_PATH = '/dashboard';
   // 统一拍平叶子菜单，供后续映射复用
-  const leafNodes = useMemo(() => flattenMenus(data || []), [data]);
+  const leafNodes = useMemo(() => flattenRoutes(data || []), [data]);
 
   // 补充：对未在菜单中的内部路由，提供固定的名称与图标
   const extraTabs = useMemo(() => ([
@@ -333,7 +333,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<MenuInf
   }, [getCurrentPath, getTabLabel, normalizeTabs, persistTabs]);
 
   const activeKey = getCurrentPath();
-  const activeMenuChain = useMemo(() => findMenuChainByPath(data || [], activeKey), [data, activeKey]);
+  const activeMenuChain = useMemo(() => findRouteChainByPath(data || [], activeKey), [data, activeKey]);
 
   // 面包屑 items：放在 Header Logo 后面，只显示菜单路径链（无首页图标）
   const breadcrumbItems = useMemo(() => {
@@ -376,7 +376,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<MenuInf
   );
   const selectedMenuKeys = useMemo(() => {
     const current = activeMenuChain[activeMenuChain.length - 1];
-    const key = getMenuKey(current);
+    const key = getRouteKey(current);
     return key ? [key] : [];
   }, [activeMenuChain]);
 
@@ -391,7 +391,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<MenuInf
   useEffect(() => {
     if (activeKey !== lastSyncedPath.current) {
       lastSyncedPath.current = activeKey;
-      const chainKeys = activeMenuChain.slice(0, -1).map(menu => getMenuKey(menu)).filter((k): k is string => !!k);
+      const chainKeys = activeMenuChain.slice(0, -1).map(menu => getRouteKey(menu)).filter((k): k is string => !!k);
       setOpenMenuKeys(chainKeys);
     }
   }, [activeKey, activeMenuChain]);

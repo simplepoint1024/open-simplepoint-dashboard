@@ -16,12 +16,12 @@ import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.RoleResourceGrantDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleScopeAssignmentVo;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.security.entity.Role;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
+import org.simplepoint.security.entity.RoleResourceGrant;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -116,51 +116,48 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @GetMapping("/items")
   @Operation(summary = "获取角色下拉列表数据", description = "检索用于角色选择的角色下拉列表数据")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.permission') or hasAuthority('users.config.permission')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.resource') or hasAuthority('users.config.role')")
   public Response<Page<RoleRelevanceVo>> items(Pageable pageable) {
     return ok(service.roleSelectItems(pageable));
   }
 
   /**
-   * 获取角色权限
-   * Retrieves authorized permissions for a given role.
+   * Retrieves authorized resources for a given role.
    *
-   * @param roleId 角色权限标识 Role authority identifier.
-   * @return 角色权限响应 Response containing authorized permissions.
+   * @param roleId role id.
+   * @return authorized resource codes.
    */
   @GetMapping("/authorized")
-  @Operation(summary = "获取角色权限", description = "根据角色权限标识获取该用户")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.permission')")
+  @Operation(summary = "获取角色资源", description = "获取指定角色已授权的资源编码")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.resource')")
   public Response<Collection<String>> authorized(@RequestParam("roleId") String roleId) {
     return ok(service.authorized(roleId));
   }
 
   /**
-   * 授权角色权限关联关系
-   * Authorizes role-permission associations.
+   * Authorizes role-resource associations.
    *
-   * @param dto 角色权限关联关系数据传输对象 Role-permission relevance data transfer object.
-   * @return 授权操作的响应 Response containing authorized role-permission associations.
+   * @param dto role resource grant dto.
+   * @return saved grants.
    */
   @PostMapping("/authorize")
-  @Operation(summary = "授权角色权限关联关系", description = "根据一组角色权限关联关系进行授权")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.permission')")
-  public Response<Collection<RolePermissionsRelevance>> authorize(@RequestBody RolePermissionsRelevanceDto dto) {
+  @Operation(summary = "授权角色资源", description = "为角色分配资源编码")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.resource')")
+  public Response<Collection<RoleResourceGrant>> authorize(@RequestBody RoleResourceGrantDto dto) {
     return ok(service.authorize(dto));
   }
 
   /**
-   * 授权角色权限关联关系
-   * Authorizes role-permission associations.
+   * Revokes role-resource associations.
    *
-   * @param dto 角色权限关联关系数据传输对象
+   * @param dto role resource grant dto.
    * @return 操作响应
    */
   @PostMapping("/unauthorized")
-  @Operation(summary = "取消授权角色权限关联关系", description = "根据角色权限关联关系取消授权")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.permission')")
-  public Response<Void> unauthorized(@RequestBody RolePermissionsRelevanceDto dto) {
-    service.unauthorized(dto.getRoleId(), dto.getPermissionAuthority());
+  @Operation(summary = "取消角色资源授权", description = "取消角色已授权的资源编码")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.resource')")
+  public Response<Void> unauthorized(@RequestBody RoleResourceGrantDto dto) {
+    service.unauthorized(dto.getRoleId(), dto.getResourceCodes());
     return Response.okay();
   }
 
@@ -172,7 +169,7 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    */
   @GetMapping("/scope-assignment")
   @Operation(summary = "查询角色数据/字段权限分配", description = "获取指定角色当前配置的数据权限和字段权限")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.permission')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.resource')")
   public Response<RoleScopeAssignmentVo> getScopeAssignment(@RequestParam("roleId") String roleId) {
     return ok(service.getScopeAssignment(roleId));
   }
@@ -184,8 +181,8 @@ public class RoleController extends BaseController<RoleService, Role, String> {
    * @return 操作响应
    */
   @PutMapping("/scope-assignment")
-  @Operation(summary = "更新角色数据/字段权限分配", description = "将角色下所有权限记录的数据权限和字段权限更新为指定值")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.permission')")
+  @Operation(summary = "更新角色数据/字段权限分配", description = "将角色下所有资源授权记录的数据权限和字段权限更新为指定值")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.resource')")
   public Response<Void> updateScopeAssignment(@RequestBody RoleScopeAssignmentVo vo) {
     service.updateScopeAssignment(vo);
     return Response.okay();

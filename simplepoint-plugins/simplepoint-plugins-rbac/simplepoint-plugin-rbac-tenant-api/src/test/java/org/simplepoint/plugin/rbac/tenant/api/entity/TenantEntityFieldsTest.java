@@ -43,15 +43,6 @@ class TenantEntityFieldsTest {
   }
 
   @Test
-  void feature_setterGetter() {
-    Feature feature = new Feature();
-    feature.setName("User Management");
-    feature.setCode("user.management");
-    assertThat(feature.getName()).isEqualTo("User Management");
-    assertThat(feature.getCode()).isEqualTo("user.management");
-  }
-
-  @Test
   void application_setterGetter() {
     Application app = new Application();
     app.setName("My App");
@@ -61,21 +52,12 @@ class TenantEntityFieldsTest {
   }
 
   @Test
-  void applicationFeatureRelevance_setterGetter() {
-    ApplicationFeatureRelevance rel = new ApplicationFeatureRelevance();
+  void applicationResourceRelevance_setterGetter() {
+    ApplicationResourceRelevance rel = new ApplicationResourceRelevance();
     rel.setApplicationCode("app1");
-    rel.setFeatureCode("feature1");
+    rel.setResourceCode("resources.view");
     assertThat(rel.getApplicationCode()).isEqualTo("app1");
-    assertThat(rel.getFeatureCode()).isEqualTo("feature1");
-  }
-
-  @Test
-  void featurePermissionRelevance_setterGetter() {
-    FeaturePermissionRelevance rel = new FeaturePermissionRelevance();
-    rel.setFeatureCode("feature1");
-    rel.setPermissionAuthority("perm.read");
-    assertThat(rel.getFeatureCode()).isEqualTo("feature1");
-    assertThat(rel.getPermissionAuthority()).isEqualTo("perm.read");
+    assertThat(rel.getResourceCode()).isEqualTo("resources.view");
   }
 
   @Test

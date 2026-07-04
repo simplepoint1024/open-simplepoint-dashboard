@@ -2,7 +2,7 @@ id: org.simplepoint.rbac.core.service
 name: RBAC Core Service
 version: "1.0"
 author: simplepoint
-description: RBAC permission and user service layer
+description: RBAC resource grant, role, and user service layer
 backend:
   packageScan:
     service: org.simplepoint.plugin.rbac.core.service.impl

@@ -478,7 +478,7 @@ class BaseServiceImplTest {
     setupSchemaGeneratorMocks(AnnotatedEntity.class, om);
     AuthorizationContext ctx = new AuthorizationContext();
     ctx.setIsAdministrator(true);
-    ctx.setPermissions(java.util.Collections.emptySet());
+    ctx.setResources(java.util.Collections.emptySet());
     service.injectedContext = ctx;
 
     Map<String, Object> result = service.schema();
@@ -492,7 +492,7 @@ class BaseServiceImplTest {
     setupSchemaGeneratorMocks(AnnotatedEntity.class, om);
     AuthorizationContext ctx = new AuthorizationContext();
     ctx.setIsAdministrator(false);
-    ctx.setPermissions(Set.of("test:add"));
+    ctx.setResources(Set.of("test:add"));
     service.injectedContext = ctx;
 
     Set<Map<String, Object>> result = service.getButtonDeclarationsSchema(
@@ -508,7 +508,7 @@ class BaseServiceImplTest {
     setupSchemaGeneratorMocks(AnnotatedEntity.class, om);
     AuthorizationContext ctx = new AuthorizationContext();
     ctx.setIsAdministrator(false);
-    ctx.setPermissions(java.util.Collections.emptySet());
+    ctx.setResources(java.util.Collections.emptySet());
     service.injectedContext = ctx;
 
     Set<Map<String, Object>> result = service.getButtonDeclarationsSchema(

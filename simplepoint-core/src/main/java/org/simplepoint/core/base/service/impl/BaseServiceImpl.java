@@ -192,7 +192,7 @@ public class BaseServiceImpl
   protected Set<Map<String, Object>> getButtonDeclarationsSchema(Class<T> domainClass) {
     boolean annotationPresent = domainClass.isAnnotationPresent(ButtonDeclarations.class);
     AuthorizationContext authorizationContext = getAuthorizationContext();
-    Collection<String> permissions = authorizationContext.getPermissions();
+    Collection<String> resources = authorizationContext.getResources();
     if (annotationPresent) {
       ButtonDeclarations annotation = domainClass.getAnnotation(ButtonDeclarations.class);
       ButtonDeclaration[] buttonDeclarations = annotation.value();
@@ -200,7 +200,7 @@ public class BaseServiceImpl
         Set<Map<String, Object>> result = new HashSet<>();
         for (ButtonDeclaration buttonDeclaration : buttonDeclarations) {
           // 检查用户是否具有按钮声明所需的权限
-          if (permissions.contains(buttonDeclaration.authority()) || authorizationContext.getIsAdministrator()) {
+          if (resources.contains(buttonDeclaration.authority()) || authorizationContext.getIsAdministrator()) {
             result.add(extractAnnotationAttributes(buttonDeclaration));
           }
         }

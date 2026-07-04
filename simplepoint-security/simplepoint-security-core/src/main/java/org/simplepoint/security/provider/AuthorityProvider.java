@@ -16,9 +16,9 @@ public interface AuthorityProvider {
    *
    * @param userDetails the UserDetails object representing the user
    * @param roles       a list of roles associated with the user
-   * @param permissions a list of permissions associated with the user
+   * @param resources a list of resource codes associated with the user
    * @return a collection of GrantedAuthority objects representing the user's authorities
    * @throws Exception if an error occurs while retrieving the authorities
    */
-  Collection<GrantedAuthority> getAuthorities(UserDetails userDetails, List<String> roles, List<String> permissions) throws Exception;
+  Collection<GrantedAuthority> getAuthorities(UserDetails userDetails, List<String> roles, List<String> resources) throws Exception;
 }

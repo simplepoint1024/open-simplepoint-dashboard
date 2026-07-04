@@ -1,12 +1,12 @@
 // src/hooks/useLeafRoutes.ts
 import {useMemo} from 'react';
 import {flattenLeafRoutes} from '@/utils/MfRoutes';
-import {MenuInfo} from '@/store/routes';
+import {RouteInfo} from '@/store/routes';
 
 /**
  * 从菜单树中提取所有叶子路由（有 path + component）
  */
-export function useLeafRoutes(routes?: MenuInfo[]) {
+export function useLeafRoutes(routes?: RouteInfo[]) {
     return useMemo(() => {
         if (!routes || routes.length === 0) return [];
 

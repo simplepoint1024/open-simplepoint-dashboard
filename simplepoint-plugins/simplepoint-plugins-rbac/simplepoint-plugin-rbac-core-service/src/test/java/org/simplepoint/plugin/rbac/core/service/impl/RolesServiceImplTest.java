@@ -3,6 +3,7 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -31,15 +32,14 @@ import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.api.security.service.JsonSchemaDetailsService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
-import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.RoleResourceGrantDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
-import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
+import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
-import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.entity.Role;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
+import org.simplepoint.security.entity.RoleResourceGrant;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -61,16 +61,16 @@ class RolesServiceImplTest {
   JsonSchemaGenerator jsonSchemaGenerator;
 
   @Mock
-  RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository;
+  RoleResourceGrantRepository roleResourceGrantRepository;
 
   @Mock
   TenantRepository tenantRepository;
 
   @Mock
-  PermissionVersionRefreshService permissionVersionRefreshService;
+  ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
   @Mock
-  PermissionChangeLogRemoteService permissionChangeLogRemoteService;
+  org.simplepoint.plugin.auditing.logging.api.service.ResourceGrantLogRemoteService resourceGrantLogRemoteService;
 
   @InjectMocks
   RolesServiceImpl service;
@@ -110,7 +110,9 @@ class RolesServiceImplTest {
   private static AuthorizationContext tenantAdminContext() {
     AuthorizationContext ctx = new AuthorizationContext();
     ctx.setIsAdministrator(true);
-    ctx.setPermissions(Set.of());
+    ctx.setUserId("user1");
+    ctx.setContextId("context1");
+    ctx.setResources(Set.of());
     ctx.setAttributes(Map.of("X-Tenant-Id", "tenant1"));
     return ctx;
   }
@@ -130,11 +132,11 @@ class RolesServiceImplTest {
   @Test
   void authorized_roleExists_delegatesToRepository() {
     when(roleRepository.findById("r1")).thenReturn(Optional.of(roleWithTenant("r1")));
-    when(roleRepository.authorized("tenant1", "r1")).thenReturn(List.of("perm1"));
+    when(roleRepository.authorized("tenant1", "r1")).thenReturn(List.of("resources.view"));
 
     Collection<String> result = service.authorized("r1");
 
-    assertThat(result).containsExactly("perm1");
+    assertThat(result).containsExactly("resources.view");
   }
 
   @Test
@@ -148,34 +150,52 @@ class RolesServiceImplTest {
   @Test
   void authorize_createsRelevanceAndSaves() {
     when(roleRepository.findById("r1")).thenReturn(Optional.of(roleWithTenant("r1")));
-    RolePermissionsRelevanceDto dto = new RolePermissionsRelevanceDto();
+    RoleResourceGrantDto dto = new RoleResourceGrantDto();
     dto.setRoleId("r1");
-    dto.setPermissionAuthority(Set.of("perm1", "perm2"));
-    RolePermissionsRelevance saved = new RolePermissionsRelevance();
-    when(rolePermissionsRelevanceRepository.saveAll(any())).thenReturn(List.of(saved));
+    dto.setResourceCodes(Set.of("resources.view", "resources.edit"));
+    RoleResourceGrant saved = new RoleResourceGrant();
+    when(roleResourceGrantRepository.saveAll(any())).thenReturn(List.of(saved));
 
-    Collection<RolePermissionsRelevance> result = service.authorize(dto);
+    Collection<RoleResourceGrant> result = service.authorize(dto);
 
     assertThat(result).contains(saved);
-    ArgumentCaptor<Iterable<RolePermissionsRelevance>> captor = ArgumentCaptor.forClass(Iterable.class);
-    verify(rolePermissionsRelevanceRepository).saveAll(captor.capture());
+    ArgumentCaptor<Iterable<RoleResourceGrant>> captor = ArgumentCaptor.forClass(Iterable.class);
+    verify(roleResourceGrantRepository).saveAll(captor.capture());
     assertThat(captor.getValue())
-        .extracting(RolePermissionsRelevance::getTenantId)
+        .extracting(RoleResourceGrant::getTenantId)
         .containsOnly("tenant1");
+  }
+
+  @Test
+  void authorize_ignoresResourceGrantLogFailure() {
+    when(roleRepository.findById("r1")).thenReturn(Optional.of(roleWithTenant("r1")));
+    RoleResourceGrantDto dto = new RoleResourceGrantDto();
+    dto.setRoleId("r1");
+    dto.setResourceCodes(Set.of("resources.view"));
+    RoleResourceGrant saved = new RoleResourceGrant();
+    when(roleResourceGrantRepository.saveAll(any())).thenReturn(List.of(saved));
+    doThrow(new RuntimeException("audit unavailable"))
+        .when(resourceGrantLogRemoteService).record(any());
+
+    Collection<RoleResourceGrant> result = service.authorize(dto);
+
+    assertThat(result).contains(saved);
+    verify(resourceAuthorizationVersionService).refreshTenant("tenant1");
+    verify(resourceGrantLogRemoteService).record(any());
   }
 
   @Test
   void unauthorized_delegatesToRepository() {
     when(roleRepository.findById("r1")).thenReturn(Optional.of(roleWithTenant("r1")));
-    Set<String> perms = Set.of("perm1");
+    Set<String> resources = Set.of("resources.view");
 
-    service.unauthorized("r1", perms);
+    service.unauthorized("r1", resources);
 
-    verify(roleRepository).unauthorized("tenant1", "r1", perms);
+    verify(roleRepository).unauthorized("tenant1", "r1", resources);
   }
 
   @Test
-  void create_tenantRole_refreshesPermissionVersion() {
+  void create_tenantRole_refreshesAuthorizationVersion() {
     Role role = new Role();
     role.setTenantId("tenant1");
     when(roleRepository.save(role)).thenReturn(role);
@@ -183,11 +203,11 @@ class RolesServiceImplTest {
     Role result = service.create(role);
 
     assertThat(result).isSameAs(role);
-    verify(permissionVersionRefreshService).refreshTenants(Set.of("tenant1"));
+    verify(resourceAuthorizationVersionService).refreshTenants(Set.of("tenant1"));
   }
 
   @Test
-  void modifyById_tenantRole_refreshesPermissionVersion() {
+  void modifyById_tenantRole_refreshesAuthorizationVersion() {
     Role current = new Role();
     current.setId("r1");
     current.setTenantId("tenant1");
@@ -200,7 +220,7 @@ class RolesServiceImplTest {
     Role result = service.modifyById(update);
 
     assertThat(result).isSameAs(update);
-    verify(permissionVersionRefreshService).refreshTenants(Set.of("tenant1"));
+    verify(resourceAuthorizationVersionService).refreshTenants(Set.of("tenant1"));
   }
 
   @Test
@@ -213,6 +233,6 @@ class RolesServiceImplTest {
     service.removeByIds(Set.of("r1"));
 
     verify(roleRepository).deleteByIds(Set.of("r1"));
-    verify(permissionVersionRefreshService).refreshTenants(Set.of("tenant1"));
+    verify(resourceAuthorizationVersionService).refreshTenants(Set.of("tenant1"));
   }
 }

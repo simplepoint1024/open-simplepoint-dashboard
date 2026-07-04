@@ -7,7 +7,7 @@
 1. 本地依赖没起全
 2. OIDC 登录链路不通
 3. 菜单 / remote / Schema 按钮异常
-4. 租户与权限上下文异常
+4. 租户与授权上下文异常
 
 本文只记录**当前实现里真实存在的高频问题**，不追求列出所有理论故障。
 
@@ -139,7 +139,7 @@ X-Context-Id: <contextId>
 **典型现象**
 
 - 页面能进
-- 但 `/common/menus/service-routes` 返回空 routes
+- 但 `/common/resources/service-routes` 返回空 routes
 
 **常见原因**
 
@@ -151,8 +151,8 @@ X-Context-Id: <contextId>
 **建议排查**
 
 1. 先查当前租户是否正确
-2. 再看 `/common/tenants/permission-context-id` 是否拿到了新的 `contextId`
-3. 再看 `/common/menus/service-routes` 返回结果
+2. 再看 `/common/tenants/authorization-context-id` 是否拿到了新的 `contextId`
+3. 再看 `/common/resources/service-routes` 返回结果
 4. 最后回看菜单 - 功能 - 权限绑定链路
 
 ### 5.2 菜单有了，但 remote 页面加载失败 / `mf-manifest.json` 404
@@ -273,11 +273,11 @@ x-ui.dictCode
 **常见原因**
 
 - 前端缓存里的 `contextId` 还没刷新
-- 当前权限变更后 `permissionVersion` 已变化，但浏览器还在沿用旧上下文
+- 当前权限变更后 `authorizationVersion` 已变化，但浏览器还在沿用旧上下文
 
 **建议处理**
 
-1. 重新调用 `/common/tenants/permission-context-id`
+1. 重新调用 `/common/tenants/authorization-context-id`
 2. 重新登录
 3. 清理前端缓存后再进入系统
 
@@ -300,8 +300,8 @@ x-ui.dictCode
 2. `start_developer.sh` / `init_profile.sh` 是否执行过
 3. `authorization`、`common`、`host` 是否按顺序启动
 4. 是否严格使用 `127.0.0.1` 的开发地址
-5. `/common/tenants/permission-context-id` 是否正常
-6. `/common/menus/service-routes` 是否正常
+5. `/common/tenants/authorization-context-id` 是否正常
+6. `/common/resources/service-routes` 是否正常
 7. `/{service}/mf/mf-manifest.json` 是否存在
 8. 对应资源的 `/schema` 是否已经在后端响应里缺按钮
 
@@ -309,7 +309,7 @@ x-ui.dictCode
 
 - 本地开发：`doc/deployment/local_development.md`
 - Docker Swarm 部署：`doc/deployment/docker_swarm_deployment.md`
-- 授权上下文：`doc/permission/authorization_context.md`
+- 授权上下文：`doc/resource/authorization_context.md`
 - 授权流程：`doc/design/authorization_flow.md`
 - API 约定：`doc/api/api_conventions.md`
 - Schema API：`doc/api/schema_api.md`

@@ -1,75 +1,79 @@
-import React, {useEffect, useMemo, useState} from 'react';
-import {TreeSelect} from 'antd';
 import type {WidgetProps} from '@rjsf/utils';
 import {get} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import type {Page} from '@simplepoint/shared/types/request';
+import {
+  OrganizationTransferSelect,
+  type EntityTransferQuery,
+  type OrganizationTransferItem,
+} from '../../EntityTransfer';
 
-type OrgNode = {
-  id: string;
-  name: string;
-  parentId?: string | null;
-};
-
-const contextPath = '/common';
-
-async function fetchOrgs(): Promise<OrgNode[]> {
-  try {
-    const data = await get<{content: OrgNode[]}>(`${contextPath}/platform/organizations`, {size: '1000'});
-    return data?.content ?? [];
-  } catch {
-    return [];
-  }
+function pageOrganizations(
+  items: OrganizationTransferItem[],
+  query: EntityTransferQuery,
+): Page<OrganizationTransferItem> {
+  const keyword = query.search.trim().toLowerCase();
+  const filtered = keyword
+    ? items.filter((item) =>
+      item.id.toLowerCase().includes(keyword) ||
+      item.name.toLowerCase().includes(keyword) ||
+      (item.code ?? '').toLowerCase().includes(keyword) ||
+      (item.type ?? '').toLowerCase().includes(keyword) ||
+      (item.description ?? '').toLowerCase().includes(keyword)
+    )
+    : items;
+  const start = query.page * query.pageSize;
+  return {
+    content: filtered.slice(start, start + query.pageSize),
+    page: {
+      size: query.pageSize,
+      number: query.page,
+      totalElements: filtered.length,
+      totalPages: Math.ceil(filtered.length / query.pageSize),
+    },
+  };
 }
 
-function buildTreeData(nodes: OrgNode[]): any[] {
-  const map = new Map<string, any>();
-  nodes.forEach(n => map.set(n.id, {value: n.id, title: n.name, children: []}));
-  const roots: any[] = [];
-  nodes.forEach(n => {
-    if (n.parentId && map.has(n.parentId)) {
-      map.get(n.parentId)!.children.push(map.get(n.id));
-    } else {
-      roots.push(map.get(n.id));
-    }
+async function fetchOrganizationPage(query: EntityTransferQuery) {
+  const page = await get<Page<OrganizationTransferItem>>('/common/platform/organizations', {
+    page: '0',
+    size: '1000',
   });
-  return roots;
+  return pageOrganizations(page.content ?? [], query);
 }
 
-/**
- * RJSF custom widget that renders an organisation multi-select tree.
- * Loads organisations from /common/platform/organizations and builds a tree
- * from the parentId relation. Selected values are stored as an array of IDs.
- */
-const OrgTreeMultiSelect: React.FC<WidgetProps> = ({id, value, disabled, readonly, onChange, rawErrors}) => {
+const OrgTreeMultiSelect = ({value, disabled, readonly, onChange, rawErrors}: WidgetProps) => {
   const {t} = useI18n();
-  const [orgs, setOrgs] = useState<OrgNode[]>([]);
-
-  useEffect(() => {
-    void fetchOrgs().then(setOrgs);
-  }, []);
-
-  const treeData = useMemo(() => buildTreeData(orgs), [orgs]);
-
-  const status = rawErrors && rawErrors.length > 0 ? 'error' : undefined;
-
-  const selectedValues: string[] = Array.isArray(value) ? value : [];
+  const selectedValues = Array.isArray(value) ? value.map(String) : [];
 
   return (
-    <TreeSelect
-      id={id}
-      treeData={treeData}
-      value={selectedValues}
-      multiple
-      treeCheckable
-      showCheckedStrategy={TreeSelect.SHOW_CHILD}
-      disabled={disabled || readonly}
-      status={status}
-      style={{width: '100%'}}
-      treeNodeFilterProp="title"
-      showSearch
-      placeholder={t('organizations.placeholder.selectDepartment', '选择部门')}
-      onChange={(vals: string[]) => onChange(vals.length > 0 ? vals : undefined)}
-    />
+    <div
+      style={{
+        border: rawErrors && rawErrors.length > 0 ? '1px solid #ff4d4f' : undefined,
+        borderRadius: rawErrors && rawErrors.length > 0 ? 6 : undefined,
+        padding: rawErrors && rawErrors.length > 0 ? 4 : undefined,
+      }}
+    >
+      <OrganizationTransferSelect
+        fetchItems={fetchOrganizationPage}
+        value={selectedValues}
+        onValueChange={(nextKeys) => onChange(nextKeys.length > 0 ? nextKeys : undefined)}
+        disabled={disabled || readonly}
+        listHeight={280}
+        defaultPageSize={5}
+        selectedLookupPageSize={1000}
+        titles={[
+          t('organizations.selector.available', '可选组织'),
+          t('organizations.selector.selected', '已选组织'),
+        ]}
+        locale={{
+          itemUnit: t('organizations.selector.itemUnit', '项'),
+          itemsUnit: t('organizations.selector.itemsUnit', '项'),
+          searchPlaceholder: t('organizations.selector.searchPlaceholder', '搜索组织'),
+          notFoundContent: t('table.emptyText', '暂无数据'),
+        }}
+      />
+    </div>
   );
 };
 

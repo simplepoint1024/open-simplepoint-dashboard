@@ -26,9 +26,9 @@ export default {
     i18nNamespaces: ['monitoring-redis'],
     name: 'redis'
   },
-  'monitoring-permission-change-logs': {
-    baseUrl: `${contextPath}/logging/permission-change-logs`,
-    i18nNamespaces: ['monitoring-permission-change-logs'],
-    name: 'permission-change-logs'
+  'monitoring-resource-grant-logs': {
+    baseUrl: `${contextPath}/logging/resource-grant-logs`,
+    i18nNamespaces: ['monitoring-resource-grant-logs'],
+    name: 'resource-grant-logs'
   }
 }

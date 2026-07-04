@@ -23,9 +23,9 @@ const applications = [
   },
 ];
 
-let applicationFeatures: Record<string, string[]> = {
-  COLLAB: ['DASHBOARD'],
-  HR: ['APPROVAL'],
+let applicationResources: Record<string, string[]> = {
+  COLLAB: ['dashboard.view', 'resources.view'],
+  HR: ['dashboard.view'],
 };
 
 const schema = {
@@ -33,7 +33,7 @@ const schema = {
     {key: 'add', title: 'i18n:table.button.add', authority: 'applications.create', sort: 0, argumentMinSize: 0, argumentMaxSize: 0},
     {key: 'edit', title: 'i18n:table.button.edit', authority: 'applications.edit', sort: 1, argumentMinSize: 1, argumentMaxSize: 1},
     {key: 'delete', title: 'i18n:table.button.delete', authority: 'applications.delete', sort: 2, argumentMinSize: 1, argumentMaxSize: 10},
-    {key: 'config.feature', title: 'i18n:table.button.config.feature', authority: 'applications.config.feature', sort: 3, argumentMinSize: 1, argumentMaxSize: 1},
+    {key: 'config.resource', title: 'i18n:table.button.config.resource', authority: 'applications.config.resource', sort: 3, argumentMinSize: 1, argumentMaxSize: 1},
   ],
   schema: {
     type: 'object',
@@ -76,19 +76,19 @@ export default [
   http.get(`${base}/items`, () => HttpResponse.json(itemsData)),
   http.get(`${base}/authorized`, ({request}) => {
     const applicationCode = new URL(request.url).searchParams.get('applicationCode') ?? '';
-    return HttpResponse.json(applicationFeatures[applicationCode] ?? []);
+    return HttpResponse.json(applicationResources[applicationCode] ?? []);
   }),
   http.post(`${base}/authorize`, async ({request}) => {
-    const payload = await request.json() as {applicationCode?: string | null; featureCodes?: string[]};
+    const payload = await request.json() as {applicationCode?: string | null; resourceCodes?: string[]};
     const applicationCode = payload.applicationCode ?? '';
-    applicationFeatures[applicationCode] = unique([...(applicationFeatures[applicationCode] ?? []), ...(payload.featureCodes ?? [])]);
-    return HttpResponse.json((applicationFeatures[applicationCode] ?? []).map((featureCode) => ({applicationCode, featureCode})));
+    applicationResources[applicationCode] = unique([...(applicationResources[applicationCode] ?? []), ...(payload.resourceCodes ?? [])]);
+    return HttpResponse.json((applicationResources[applicationCode] ?? []).map((resourceCode) => ({applicationCode, resourceCode})));
   }),
   http.post(`${base}/unauthorized`, async ({request}) => {
-    const payload = await request.json() as {applicationCode?: string | null; featureCodes?: string[]};
+    const payload = await request.json() as {applicationCode?: string | null; resourceCodes?: string[]};
     const applicationCode = payload.applicationCode ?? '';
-    const removing = new Set(payload.featureCodes ?? []);
-    applicationFeatures[applicationCode] = (applicationFeatures[applicationCode] ?? []).filter((code) => !removing.has(code));
+    const removing = new Set(payload.resourceCodes ?? []);
+    applicationResources[applicationCode] = (applicationResources[applicationCode] ?? []).filter((code) => !removing.has(code));
     return HttpResponse.json(null);
   }),
 ];

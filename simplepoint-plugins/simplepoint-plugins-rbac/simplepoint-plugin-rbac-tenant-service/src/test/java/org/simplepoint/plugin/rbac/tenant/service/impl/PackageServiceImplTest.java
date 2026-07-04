@@ -31,7 +31,7 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.PackageApplicationRelev
 import org.simplepoint.plugin.rbac.tenant.api.repository.PackageRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
-import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 
 @ExtendWith(MockitoExtension.class)
 class PackageServiceImplTest {
@@ -52,7 +52,7 @@ class PackageServiceImplTest {
   TenantRepository tenantRepository;
 
   @Mock
-  PermissionVersionRefreshService permissionVersionRefreshService;
+  ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
   @InjectMocks
   PackageServiceImpl service;

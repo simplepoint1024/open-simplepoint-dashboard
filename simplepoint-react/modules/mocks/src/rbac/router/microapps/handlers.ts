@@ -54,10 +54,10 @@ export default [
             "argumentMaxSize": 1,
             "sort": 2,
             "type": "primary",
-            "title": "i18n:roles.config.permission",
+            "title": "i18n:roles.config.resource",
             "danger": false,
             "argumentMinSize": 1,
-            "key": "config.permission"
+            "key": "config.resource"
           }
         ],
         "schema": {
@@ -176,4 +176,3 @@ export default [
     return HttpResponse.json(["COMMON"])
   })
 ];
-

@@ -47,17 +47,17 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
   Optional<Tenant> findPersonalTenantByOwnerId(@Param("ownerId") String ownerId);
 
   @Override
-  @Query("select coalesce(t.permissionVersion, 0) from Tenant t where t.id = :tenantId")
-  Long getTenantPermissionVersion(@Param("tenantId") String tenantId);
+  @Query("select coalesce(t.authorizationVersion, 0) from Tenant t where t.id = :tenantId")
+  Long getTenantAuthorizationVersion(@Param("tenantId") String tenantId);
 
   @Override
   @Modifying
   @Query("""
       update Tenant t
-      set t.permissionVersion = coalesce(t.permissionVersion, 0) + 1
+      set t.authorizationVersion = coalesce(t.authorizationVersion, 0) + 1
       where t.id in :tenantIds
       """)
-  void increasePermissionVersion(@Param("tenantIds") Collection<String> tenantIds);
+  void increaseAuthorizationVersion(@Param("tenantIds") Collection<String> tenantIds);
 
   @Override
   @Query("select t.id from Tenant t")

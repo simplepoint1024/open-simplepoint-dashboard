@@ -72,7 +72,7 @@ http://127.0.0.1:2555/login/oauth2/code/oidc
 
 1. `useCurrentTenants()`：取当前用户可切换租户列表。
 2. `ensureContextId(tenantId, { force: true })`：为当前租户重建上下文 ID。
-3. `fetchServiceRoutes()`：请求 `/common/menus/service-routes`。
+3. `fetchServiceRoutes()`：请求 `/common/resources/service-routes`。
 4. `useRegisterRemotes()`：按返回结果注册远程模块。
 
 ## 5. host 到资源服务的授权转发
@@ -145,10 +145,10 @@ sequenceDiagram
 host 前端实际加载的是：
 
 ```text
-/common/menus/service-routes
+/common/resources/service-routes
 ```
 
-`MenuServiceImpl.routes()` 会读取当前 `AuthorizationContext.permissions`，按菜单 - 功能绑定关系筛出当前用户可以看到的路由树和需要注册的 remote。
+`ResourceServiceImpl.routes()` 会读取当前 `AuthorizationContext.resources`，按资源树和路由元数据筛出当前用户可以看到的路由树和需要注册的 remote。
 
 ### 7.3 `/schema` 按钮显示
 
@@ -194,7 +194,7 @@ host 浏览器请求默认使用 `credentials: include`。
 ### 10.3 授权成功不代表菜单一定有内容
 
 登录只是第一步。  
-如果当前租户、角色、功能、菜单绑定关系不对，用户仍然可能登录成功但拿到空菜单或缺少页面入口。
+如果当前租户、角色或资源授权关系不对，用户仍然可能登录成功但拿到空资源路由或缺少页面入口。
 
 ## 11. 推荐阅读顺序
 
@@ -206,14 +206,14 @@ host 浏览器请求默认使用 `credentials: include`。
 4. authorization `templates/login.html`
 5. `AuthorizationContextFilter` / `AuthorizationContextResolver`
 6. `AuthorizationContextServiceImpl`
-7. `MenuServiceImpl.routes()`
+7. `ResourceServiceImpl.routes()`
 8. `BaseServiceImpl.getButtonDeclarationsSchema(...)`
 9. 前端 `App.tsx` / `fetchServiceRoutes()` / `useRegisterRemotes()`
 
 ## 12. 关联文档
 
-- 授权上下文：`doc/permission/authorization_context.md`
-- 权限模型：`doc/permission/permission_model.md`
+- 授权上下文：`doc/resource/authorization_context.md`
+- 资源授权模型：`doc/resource/resource_model.md`
 - 服务拓扑：`doc/architecture/service_topology.md`
 - Schema API：`doc/api/schema_api.md`
 - API 约定：`doc/api/api_conventions.md`

@@ -53,7 +53,7 @@ sequenceDiagram
   HostSvc->>Auth: OAuth2/OIDC 登录跳转
   Auth-->>Browser: 会话 / Token
   Browser->>HostUI: 加载 host shell
-  HostUI->>Common: GET /common/menus/service-routes
+  HostUI->>Common: GET /common/resources/service-routes
   Common-->>HostUI: routes + services + entryPoint
   HostUI->>Remote: 按 /{service}/mf/mf-manifest.json 注册 remote
   Remote-->>Browser: 暴露页面组件
@@ -61,14 +61,14 @@ sequenceDiagram
 
 这条链路里的几个关键约定：
 
-1. `MenusController` 暴露 `/menus/service-routes`，`simplepoint-host` 前端实际请求的是 `/common/menus/service-routes`。
-2. `MenuServiceImpl.routes()` 会从菜单的 `component` 字段提取首段作为服务名，例如 `common/platform/Tenant` 会提取出 `common`。
-3. `ServiceMenuResult.of(...)` 默认把远程入口约定为 `/mf/mf-manifest.json`。
+1. `ResourcesController` 暴露 `/resources/service-routes`，`simplepoint-host` 前端实际请求的是 `/common/resources/service-routes`。
+2. `ResourceServiceImpl.routes()` 会从资源的 `component` 字段提取首段作为服务名，例如 `common/platform/Tenant` 会提取出 `common`。
+3. `ServiceResourceRouteResult.of(...)` 默认把远程入口约定为 `/mf/mf-manifest.json`。
 4. host 前端的 `formatMfEntry()` 会把服务名解析为 `/{name}/mf/mf-manifest.json`；如果后端显式返回 `entry`，则以显式值为准。
 
 这意味着：
 
-- 菜单配置里的 `component` 命名必须和 remote 名称保持一致。
+- 资源配置里的 `component` 命名必须和 remote 名称保持一致。
 - remote 构建产物的公开路径必须和后端服务暴露路径保持一致。
 
 ## 5. 服务边界怎么划
@@ -82,8 +82,8 @@ sequenceDiagram
 ### `common`
 
 - 是当前默认的平台业务聚合服务。
-- 菜单、权限、角色、用户、租户、字典、i18n、对象存储等常见后台能力都在这里组合。
-- host 前端依赖它返回菜单树和服务路由。
+- 资源、角色、用户、租户、字典、i18n、对象存储等常见后台能力都在这里组合。
+- host 前端依赖它返回资源路由树和服务路由。
 
 ### `authorization`
 
@@ -102,9 +102,9 @@ sequenceDiagram
 
 ## 6. 当前实现里的两个重要事实
 
-### 6.1 远程模块运行时以菜单结果为准
+### 6.1 远程模块运行时以资源路由结果为准
 
-仓库里虽然存在 `MicroModule` 实体和 `/ops/microapps` 管理接口，但 host 壳应用当前实际使用的是 `/common/menus/service-routes` 的结果来注册 remote，而不是直接读取 `microapps` 列表。
+仓库里虽然存在 `MicroModule` 实体和 `/ops/microapps` 管理接口，但 host 壳应用当前实际使用的是 `/common/resources/service-routes` 的结果来注册 remote，而不是直接读取 `microapps` 列表。
 
 ### 6.2 服务组合主要靠 Gradle 依赖，不靠单独“业务框架层”
 
@@ -115,7 +115,7 @@ sequenceDiagram
 如果你要追某个页面是怎么显示出来的，推荐按下面顺序看：
 
 1. `simplepoint-host` 前端的 `fetchServiceRoutes()`、`useRegisterRemotes()`、`RouteRenderer`
-2. `common` 服务的 `MenusController`、`MenuServiceImpl.routes()`
+2. `common` 服务的 `ResourcesController`、`ResourceServiceImpl.routes()`
 3. 对应 remote 的 `module.exposes.ts` 和 `rslib.config.ts`
 4. 对应后端服务的 `src/main/resources/static/` 产物目录
 

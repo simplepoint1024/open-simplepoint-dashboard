@@ -11,7 +11,7 @@ import NavigateBar from '@/layouts/navigation-bar';
 
 import {useI18n} from '@/layouts/i18n/useI18n';
 import {useData} from '@simplepoint/shared/api/methods';
-import {fetchServiceRoutes, ServiceMenuResult} from '@/fetches/routes';
+import {fetchServiceRoutes, ServiceResourceRouteResult} from '@/fetches/routes';
 import {useCurrentTenants} from '@/fetches/tenants';
 import {getTenantId, setTenantId} from '@/store/tenant';
 import {getRoleId, setRoleId} from '@/store/role';
@@ -182,7 +182,7 @@ const App: React.FC = () => {
 
     // 3) 路由/菜单最后：必须在 contextId ready 后再加载
     const routesEnabled = Boolean(selectedTenantExists && contextReady);
-    const {data: res, isLoading} = useData<ServiceMenuResult>(
+    const {data: res, isLoading} = useData<ServiceResourceRouteResult>(
         useMemo(() => ['fetchServiceRoutes', tenantId, roleId, contextId] as const, [tenantId, roleId, contextId]),
         () => {
             if (!routesEnabled) return Promise.resolve(undefined as any);

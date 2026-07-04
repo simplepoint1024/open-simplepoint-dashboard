@@ -61,7 +61,7 @@ docker compose up -d
 ## 6. 常用路径速查
 - 架构与设计：`doc/architecture/`
 - 设计细节：`doc/design/`
-- 权限：`doc/permission/`
+- 权限：`doc/resource/`
 - 数据库：`doc/database/`
 - API：`doc/api/`
 - 部署：`doc/deployment/`

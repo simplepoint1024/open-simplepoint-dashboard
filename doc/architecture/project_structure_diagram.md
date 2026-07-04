@@ -137,7 +137,7 @@ graph LR
 - Schema 驱动 UI：`doc/architecture/schema_driven_ui.md`
 - 部署架构：`doc/architecture/deployment_diagram.md`
 - 前端微前端指引：`doc/architecture/frontend_microfrontend.md`
-- 权限模型：`doc/permission/`
+- 资源授权模型：`doc/resource/`
 - 数据库设计：`doc/database/`
 - API 契约：`doc/api/`
 - 部署指南：`doc/deployment/`

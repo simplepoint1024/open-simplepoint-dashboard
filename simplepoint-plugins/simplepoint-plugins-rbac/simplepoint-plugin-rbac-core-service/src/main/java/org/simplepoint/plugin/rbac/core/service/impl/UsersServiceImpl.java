@@ -25,8 +25,8 @@ import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeGuards;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChangeLogRecordCommand;
-import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
+import org.simplepoint.plugin.auditing.logging.api.pojo.command.ResourceGrantLogRecordCommand;
+import org.simplepoint.plugin.auditing.logging.api.service.ResourceGrantLogRemoteService;
 import org.simplepoint.plugin.rbac.core.api.pojo.command.ChangePasswordCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
@@ -39,7 +39,7 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.remoting.RemoteProvider;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.User;
@@ -71,8 +71,8 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   private final TenantRepository tenantRepository;
   private final TenantUserRelevanceRepository tenantUserRelevanceRepository;
   private final RoleRepository roleRepository;
-  private final PermissionVersionRefreshService permissionVersionRefreshService;
-  private final PermissionChangeLogRemoteService permissionChangeLogRemoteService;
+  private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
+  private final ResourceGrantLogRemoteService resourceGrantLogRemoteService;
 
   /**
      * Optional password encoder for encrypting user passwords.
@@ -85,7 +85,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
      *
      * @param passwordEncoder             the optional PasswordEncoder for encrypting user passwords
      * @param usersRepository             the repository used for user operations
-     * @param detailsProviderService      the access control service for managing permissions
+     * @param detailsProviderService      the access control service for managing resource grants
      * @param userRoleRelevanceRepository the repository for managing UserRoleRelevance entities
      */
   public UsersServiceImpl(
@@ -96,8 +96,8 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
       @Autowired(required = false) final TenantRepository tenantRepository,
       @Autowired(required = false) final TenantUserRelevanceRepository tenantUserRelevanceRepository,
       final RoleRepository roleRepository,
-      final PermissionVersionRefreshService permissionVersionRefreshService,
-      final PermissionChangeLogRemoteService permissionChangeLogRemoteService
+      final ResourceAuthorizationVersionService resourceAuthorizationVersionService,
+      final ResourceGrantLogRemoteService resourceGrantLogRemoteService
   ) {
     super(usersRepository, detailsProviderService);
     this.passwordEncoder = passwordEncoder;
@@ -105,8 +105,8 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     this.tenantRepository = tenantRepository;
     this.tenantUserRelevanceRepository = tenantUserRelevanceRepository;
     this.roleRepository = roleRepository;
-    this.permissionVersionRefreshService = permissionVersionRefreshService;
-    this.permissionChangeLogRemoteService = permissionChangeLogRemoteService;
+    this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
+    this.resourceGrantLogRemoteService = resourceGrantLogRemoteService;
   }
 
   @Override
@@ -173,14 +173,14 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   }
 
   /**
-     * Loads permissions associated with the given role authorities.
-     *
-     * @param roleIds a list of role authorities
-     * @return a list of RolePermissionsRelevance entities representing permissions assigned to the specified roles
-     */
+   * Loads resources associated with the given roles.
+   *
+   * @param roleIds a list of role ids
+   * @return resource codes granted to the specified roles
+   */
   @Override
-  public Collection<String> loadPermissionsInRoleIds(List<String> roleIds) {
-    return getRepository().loadPermissionsInRoleIds(roleIds);
+  public Collection<String> loadResourcesInRoleIds(List<String> roleIds) {
+    return getRepository().loadResourcesInRoleIds(roleIds);
   }
 
   /**
@@ -201,7 +201,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     ensurePersonalTenantExists(created);
     if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
       ensureTenantMembership(resolveCurrentTenantScope(), created.getId());
-      refreshCurrentTenantPermissionVersion();
+      refreshCurrentTenantAuthorizationVersion();
     }
     return created;
   }
@@ -227,7 +227,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     tenant.setDescription("个人租户");
     tenant.setTenantType(TenantType.PERSONAL);
     tenant.setOwnerId(user.getId());
-    tenant.setPermissionVersion(0L);
+    tenant.setAuthorizationVersion(0L);
     Tenant saved = tenantRepository.save(tenant);
     ensureTenantMembership(saved.getId(), user.getId());
   }
@@ -314,8 +314,8 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
       authorities.add(relevance);
     }
     Collection<UserRoleRelevance> saved = userRoleRelevanceRepository.saveAll(authorities);
-    refreshCurrentTenantPermissionVersion();
-    recordPermissionChange("AUTHORIZE", dto);
+    refreshCurrentTenantAuthorizationVersion();
+    recordResourceGrantChange("AUTHORIZE", dto);
     return saved;
   }
 
@@ -329,8 +329,8 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     }
     validateRolesBelongToCurrentTenant(roleIds);
     userRoleRelevanceRepository.unauthorized(resolveCurrentTenantScope(), dto.getUserId(), roleIds);
-    refreshCurrentTenantPermissionVersion();
-    recordPermissionChange("UNAUTHORIZE", dto);
+    refreshCurrentTenantAuthorizationVersion();
+    recordResourceGrantChange("UNAUTHORIZE", dto);
   }
 
   @Override
@@ -463,22 +463,22 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
         .orElse(null);
   }
 
-  private void refreshCurrentTenantPermissionVersion() {
+  private void refreshCurrentTenantAuthorizationVersion() {
     String tenantId = resolveCurrentTenantScope();
     if (tenantId == null || tenantId.isBlank()) {
       return;
     }
-    permissionVersionRefreshService.refreshTenant(tenantId);
+    resourceAuthorizationVersionService.refreshTenant(tenantId);
   }
 
-  private void recordPermissionChange(String action, UserRoleRelevanceDto dto) {
+  private void recordResourceGrantChange(String action, UserRoleRelevanceDto dto) {
     AuthorizationContext authorizationContext = getAuthorizationContext();
     if (authorizationContext == null || authorizationContext.getUserId() == null || authorizationContext.getUserId().isBlank()) {
       return;
     }
 
     Set<String> roleIds = dto.getRoleIds() == null ? Set.of() : dto.getRoleIds();
-    PermissionChangeLogRecordCommand command = new PermissionChangeLogRecordCommand();
+    ResourceGrantLogRecordCommand command = new ResourceGrantLogRecordCommand();
     command.setChangedAt(Instant.now());
     command.setChangeType("USER_ROLE");
     command.setAction(action);
@@ -493,7 +493,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     command.setContextId(authorizationContext.getContextId());
     command.setSourceService("common");
     command.setDescription(action + " USER_ROLE [" + command.getSubjectLabel() + "] -> [" + command.getTargetSummary() + "]");
-    permissionChangeLogRemoteService.record(command);
+    resourceGrantLogRemoteService.record(command);
   }
 
   private String resolveUserLabel(String userId) {

@@ -14,21 +14,21 @@ import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.core.api.repository.DataScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.service.DataScopeService;
-import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.entity.DataScope;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service implementation for managing {@link DataScope} entities.
- * Invalidates the tenant permission cache on every mutation so that
+ * Invalidates the tenant authorization cache on every mutation so that
  * AuthorizationContext rebuild picks up the updated scope immediately.
  */
 @Service
 public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, DataScope, String>
     implements DataScopeService {
 
-  private final PermissionVersionRefreshService permissionVersionRefreshService;
+  private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
   /**
    * Data Scope Service Impl.
@@ -36,17 +36,17 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   public DataScopeServiceImpl(
       DataScopeRepository repository,
       DetailsProviderService detailsProviderService,
-      PermissionVersionRefreshService permissionVersionRefreshService
+      ResourceAuthorizationVersionService resourceAuthorizationVersionService
   ) {
     super(repository, detailsProviderService);
-    this.permissionVersionRefreshService = permissionVersionRefreshService;
+    this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends DataScope> S create(S entity) {
     S result = super.create(entity);
-    refreshCurrentTenantPermissionVersion();
+    refreshCurrentTenantAuthorizationVersion();
     return result;
   }
 
@@ -54,7 +54,7 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   @Transactional(rollbackFor = Exception.class)
   public List<DataScope> create(Collection<DataScope> entities) {
     List<DataScope> result = super.create(entities);
-    refreshCurrentTenantPermissionVersion();
+    refreshCurrentTenantAuthorizationVersion();
     return result;
   }
 
@@ -62,7 +62,7 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   @Transactional(rollbackFor = Exception.class)
   public <S extends DataScope> DataScope modifyById(S entity) {
     DataScope result = super.modifyById(entity);
-    refreshCurrentTenantPermissionVersion();
+    refreshCurrentTenantAuthorizationVersion();
     return result;
   }
 
@@ -70,11 +70,11 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   @Transactional(rollbackFor = Exception.class)
   public void removeByIds(Collection<String> ids) {
     super.removeByIds(ids);
-    refreshCurrentTenantPermissionVersion();
+    refreshCurrentTenantAuthorizationVersion();
   }
 
-  private void refreshCurrentTenantPermissionVersion() {
+  private void refreshCurrentTenantAuthorizationVersion() {
     String tenantId = currentTenantId();
-    permissionVersionRefreshService.refreshTenant(tenantId);
+    resourceAuthorizationVersionService.refreshTenant(tenantId);
   }
 }

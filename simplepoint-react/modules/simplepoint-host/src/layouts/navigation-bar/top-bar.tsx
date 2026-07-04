@@ -142,7 +142,7 @@ export const TenantSwitcherTop: React.FC = () => {
       setTenantIdState(nextId);
       setRoleId(undefined, nextId);
 
-      // 预热权限上下文（best-effort，不阻断切换；真正的当前态由 App 内部按最新 tenant 决定）
+      // 预热授权上下文（best-effort，不阻断切换；真正的当前态由 App 内部按最新 tenant 决定）
       await ensureContextId(nextId, { force: true });
 
       message.success(`${t('tenant.switchDone', '已切换租户，后续请求将生效')} · ${nextType}: ${nextName}`).then(_ => {});

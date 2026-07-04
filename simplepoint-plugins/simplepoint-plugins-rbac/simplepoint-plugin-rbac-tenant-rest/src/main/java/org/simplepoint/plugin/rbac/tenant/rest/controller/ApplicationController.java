@@ -9,8 +9,8 @@ import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Application;
-import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationFeatureRelevance;
-import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationFeaturesRelevanceDto;
+import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationResourceRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationResourcesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.service.ApplicationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -100,7 +100,7 @@ public class ApplicationController extends BaseController<ApplicationService, Ap
    * @ Get Mapping.
    */
   @GetMapping("/items")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('packages.config.application') or hasAuthority('applications.config.feature')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('packages.config.application') or hasAuthority('applications.config.resource')")
   @Operation(summary = "获取应用候选列表", description = "获取用于套餐应用配置的应用候选列表")
   public Response<Page<Application>> items(Pageable pageable) {
     return ok(service.limit(Map.of(), pageable));
@@ -110,30 +110,30 @@ public class ApplicationController extends BaseController<ApplicationService, Ap
    * @ Get Mapping.
    */
   @GetMapping("/authorized")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature')")
-  @Operation(summary = "获取应用已分配功能", description = "获取指定应用已授权的功能编码列表")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.resource')")
+  @Operation(summary = "获取应用已分配资源", description = "获取指定应用已授权的资源编码列表")
   public Response<Collection<String>> authorized(@RequestParam("applicationCode") String applicationCode) {
-    return ok(service.authorizedFeatures(applicationCode));
+    return ok(service.authorizedResources(applicationCode));
   }
 
   /**
    * @ Post Mapping.
    */
   @PostMapping("/authorize")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature')")
-  @Operation(summary = "配置应用功能", description = "为指定应用分配功能编码")
-  public Response<Collection<ApplicationFeatureRelevance>> authorize(@RequestBody ApplicationFeaturesRelevanceDto dto) {
-    return ok(service.authorizeFeatures(dto));
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.resource')")
+  @Operation(summary = "配置应用资源", description = "为指定应用分配资源编码")
+  public Response<Collection<ApplicationResourceRelevance>> authorize(@RequestBody ApplicationResourcesRelevanceDto dto) {
+    return ok(service.authorizeResources(dto));
   }
 
   /**
    * @ Post Mapping.
    */
   @PostMapping("/unauthorized")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.feature')")
-  @Operation(summary = "取消应用功能", description = "取消指定应用已分配的功能编码")
-  public Response<Void> unauthorized(@RequestBody ApplicationFeaturesRelevanceDto dto) {
-    service.unauthorizedFeatures(dto.getApplicationCode(), dto.getFeatureCodes());
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('applications.config.resource')")
+  @Operation(summary = "取消应用资源", description = "取消指定应用已分配的资源编码")
+  public Response<Void> unauthorized(@RequestBody ApplicationResourcesRelevanceDto dto) {
+    service.unauthorizedResources(dto.getApplicationCode(), dto.getResourceCodes());
     return Response.okay();
   }
 }

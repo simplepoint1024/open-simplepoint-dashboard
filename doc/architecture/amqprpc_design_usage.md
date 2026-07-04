@@ -108,5 +108,5 @@ curl http://localhost:8080/message
 - 组件设计：`doc/architecture/component_design.md`
 - 项目结构：`doc/architecture/project_structure_diagram.md`
 - 部署指南：`doc/deployment/`
-- 数据库/权限/API：`doc/database/`、`doc/permission/`、`doc/api/`
+- 数据库/权限/API：`doc/database/`、`doc/resource/`、`doc/api/`
 

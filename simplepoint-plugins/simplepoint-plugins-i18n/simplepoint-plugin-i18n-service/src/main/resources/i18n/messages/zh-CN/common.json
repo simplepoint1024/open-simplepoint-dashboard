@@ -11,7 +11,7 @@
   "dashboard.activity.4.title": "服务 micro-auth 健康检查通过",
   "dashboard.activity.4.ts": "2 小时前",
   "dashboard.activity.tag.change": "变更",
-  "dashboard.activity.tag.permission": "权限",
+  "dashboard.activity.tag.resource": "资源授权",
   "dashboard.activity.tag.system": "系统",
   "dashboard.activity.tag.task": "任务",
   "dashboard.health.authService": "认证服务",

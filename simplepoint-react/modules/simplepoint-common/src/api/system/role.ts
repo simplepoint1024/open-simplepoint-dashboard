@@ -14,16 +14,12 @@ export interface RoleRelevantVo {
 }
 
 /**
- * 角色权限分配接口
+ * 角色资源授权接口
  */
-export interface RolePermissionRelevantDto {
-  // 所选角色
+export interface RoleResourceGrantDto {
   roleId: string | null;
-  // 权限列表
-  permissionAuthority?: string[];
-  // 数据权限ID（可选）
+  resourceCodes?: string[];
   dataScopeId?: string | null;
-  // 字段权限ID（可选）
   fieldScopeId?: string | null;
 }
 
@@ -45,7 +41,7 @@ export async function fetchItems(params: Record<string, string>) {
 }
 
 /**
- * 获取已分配角色的权限下拉分页
+ * 获取已分配角色的资源编码
  */
 export async function fetchAuthorized(roleId: string) {
   return await get<string[]>(`${baseUrl}/authorized?roleId=${roleId}`);
@@ -55,16 +51,16 @@ export async function fetchAuthorized(roleId: string) {
  * 取消分配角色权限
  * @param data 请求数据
  */
-export async function fetchUnauthorized(data: RolePermissionRelevantDto) {
-  return await post<RolePermissionRelevantDto>(`${baseUrl}/unauthorized`, data);
+export async function fetchUnauthorized(data: RoleResourceGrantDto) {
+  return await post<RoleResourceGrantDto>(`${baseUrl}/unauthorized`, data);
 }
 
 /**
  * 分配角色权限
  * @param data 请求数据
  */
-export async function fetchAuthorize(data: RolePermissionRelevantDto) {
-  return await post<RolePermissionRelevantDto>(`${baseUrl}/authorize`, data);
+export async function fetchAuthorize(data: RoleResourceGrantDto) {
+  return await post<RoleResourceGrantDto>(`${baseUrl}/authorize`, data);
 }
 
 /**

@@ -1,0 +1,15 @@
+[
+  {
+    "code": "dna.view",
+    "name": "DNA",
+    "label": "DNA",
+    "title": "menu.dna",
+    "path": "/dna",
+    "component": "dna/Dashboard",
+    "type": "PAGE",
+    "routeKind": "item",
+    "sort": 0,
+    "grantable": true,
+    "disabled": false
+  }
+]

@@ -6,7 +6,7 @@
 
 1. 让新用户可以在最短时间内完成本地启动、登录和基本功能验证。
 2. 让开发者理解项目定位：它不是传统后台模板，而是偏平台内核、插件化、可扩展的企业应用框架。
-3. 让二开开发者能快速定位服务边界、权限模型、插件机制、Schema 驱动前端和多租户能力。
+3. 让二开开发者能快速定位服务边界、资源授权模型、插件机制、Schema 驱动前端和多租户能力。
 4. 让运维人员能理解配置中心、依赖中间件、部署方式和故障排查路径。
 5. 让贡献者清楚模块分层、编码约定、测试边界和提交流程。
 
@@ -25,7 +25,7 @@
 3. `doc/architecture/system_overview.md`：系统目标、角色和核心能力。
 4. `doc/architecture/project_structure_diagram.md`：模块分层与源码入口。
 5. `doc/architecture/service_topology.md`：核心服务职责与调用关系。
-6. `doc/permission/permission_model.md`：权限、角色、资源、菜单关系。
+6. `doc/resource/resource_model.md`：权限、角色、资源、菜单关系。
 7. `doc/design/plugin_architecture.md`：插件加载、依赖与生命周期。
 8. `doc/deployment/local_development.md` / `docker_swarm_deployment.md`：本地与部署说明。
 9. `doc/troubleshooting/common_issues.md`：常见问题与排障路径。
@@ -64,10 +64,10 @@
 | `doc/database/` | `tenant_and_security_schema.md` | 新增 | 租户、安全、角色、用户、权限相关表说明 | P1 |
 | `doc/database/` | `audit_schema.md` | 新增 | 审计日志与留存相关模型说明 | P2 |
 | `doc/database/` | `migration_strategy.md` | 完善 | 版本升级、数据迁移与兼容策略 | P2 |
-| `doc/permission/` | `permission_model.md` | 新增或完善 | RBAC、资源、菜单、按钮、数据权限之间的关系 | P0 |
-| `doc/permission/` | `authorization_context.md` | 新增 | `AuthorizationContext` 的解析来源与生效范围 | P0 |
-| `doc/permission/` | `resource_menu_mapping.md` | 新增 | 资源、菜单、按钮、路由映射规则 | P1 |
-| `doc/permission/` | `best_practices.md` | 新增 | 权限命名规范、菜单设计规范、常见误区 | P1 |
+| `doc/resource/` | `resource_model.md` | 新增或完善 | RBAC、资源、菜单、按钮、数据权限之间的关系 | P0 |
+| `doc/resource/` | `authorization_context.md` | 新增 | `AuthorizationContext` 的解析来源与生效范围 | P0 |
+| `doc/resource/` | `resource_menu_mapping.md` | 新增 | 资源、菜单、按钮、路由映射规则 | P1 |
+| `doc/resource/` | `best_practices.md` | 新增 | 权限命名规范、菜单设计规范、常见误区 | P1 |
 | `doc/deployment/` | `local_development.md` | 新增 | 本地依赖、启动顺序、联调方式、最小 smoke check | P0 |
 | `doc/deployment/` | `docker_swarm_deployment.md` | 完善 | 当前仓库已有能力的推荐部署文档 | P0 |
 | `doc/deployment/` | `docker_compose_deployment.md` | 新增 | 适合开发和演示环境的轻量部署方式 | P1 |
@@ -98,8 +98,8 @@
 - `doc/design/extending_a_business_module.md`
 - `doc/api/api_conventions.md`
 - `doc/api/schema_api.md`
-- `doc/permission/permission_model.md`
-- `doc/permission/authorization_context.md`
+- `doc/resource/resource_model.md`
+- `doc/resource/authorization_context.md`
 - `doc/deployment/local_development.md`
 - `doc/deployment/configuration_matrix.md`
 - `doc/troubleshooting/common_issues.md`
@@ -121,8 +121,8 @@
 - `doc/api/examples.http.md`
 - `doc/database/core_domain_model.md`
 - `doc/database/tenant_and_security_schema.md`
-- `doc/permission/resource_menu_mapping.md`
-- `doc/permission/best_practices.md`
+- `doc/resource/resource_menu_mapping.md`
+- `doc/resource/best_practices.md`
 - `doc/deployment/docker_compose_deployment.md`
 - `doc/deployment/production_checklist.md`
 - `doc/troubleshooting/debug_guide.md`

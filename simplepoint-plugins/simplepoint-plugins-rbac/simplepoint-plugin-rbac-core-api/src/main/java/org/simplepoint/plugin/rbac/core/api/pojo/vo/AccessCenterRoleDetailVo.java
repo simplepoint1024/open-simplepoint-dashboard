@@ -13,7 +13,7 @@ public class AccessCenterRoleDetailVo implements Serializable {
 
   private RoleRelevanceVo role;
 
-  private Collection<String> authorizedPermissions = new LinkedHashSet<>();
+  private Collection<String> authorizedResources = new LinkedHashSet<>();
 
   private RoleScopeAssignmentVo scopeAssignment;
 

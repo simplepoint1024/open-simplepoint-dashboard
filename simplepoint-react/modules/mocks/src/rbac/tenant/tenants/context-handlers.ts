@@ -29,10 +29,10 @@ export default [
   }),
 
   /**
-   * GET /common/tenants/permission-context-id?tenantId=
-   * 切换租户时用于获取权限上下文（按你的描述：返回结果“和租户一样”的结构）
+   * GET /common/tenants/authorization-context-id?tenantId=
+   * 切换租户时用于获取授权上下文（按你的描述：返回结果“和租户一样”的结构）
    */
-  http.get('/common/tenants/permission-context-id', ({ request }) => {
+  http.get('/common/tenants/authorization-context-id', ({ request }) => {
     const url = new URL(request.url);
     const tenantId = url.searchParams.get('tenantId') || 'tenant-001';
     const roleId = url.searchParams.get('roleId');

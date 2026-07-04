@@ -35,7 +35,7 @@ class AuthorizationContextFilterTest {
     when(resolver.resolve(org.mockito.ArgumentMatchers.anyMap())).thenReturn(context);
 
     final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/menus/service-routes");
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/resources/service-routes");
     request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
     MockHttpServletResponse response = new MockHttpServletResponse();
     org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request, response));
@@ -55,7 +55,7 @@ class AuthorizationContextFilterTest {
   void doFilterInternal_ignoresContextHeadersWithoutAuthorization() throws ServletException, IOException {
     AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
     final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/menus/service-routes");
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/resources/service-routes");
     request.addHeader("X-Context-Id", "ctx1");
     request.addHeader("X-Tenant-Id", "tenant-a");
     MockHttpServletResponse response = new MockHttpServletResponse();
@@ -99,7 +99,7 @@ class AuthorizationContextFilterTest {
     when(resolver.load("ctx1")).thenReturn(cached);
 
     final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/menus/service-routes");
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/resources/service-routes");
     request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
     request.addHeader("X-Context-Id", "ctx1");
     request.addHeader("X-Tenant-Id", "tenant-b");
@@ -125,7 +125,7 @@ class AuthorizationContextFilterTest {
     when(resolver.load("ctx1")).thenReturn(cached);
 
     final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/menus/service-routes");
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/resources/service-routes");
     request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
     request.addHeader("X-Context-Id", "ctx1");
     request.addHeader("X-Tenant-Id", "tenant-a");
@@ -155,7 +155,7 @@ class AuthorizationContextFilterTest {
     ));
     when(resolver.load("ctx1")).thenReturn(cached);
 
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/menus/service-routes");
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/resources/service-routes");
     request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
     request.addHeader("X-Context-Id", "ctx1");
     request.addHeader("X-Tenant-Id", "tenant-a");

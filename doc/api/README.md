@@ -64,5 +64,5 @@ curl http://localhost:8082/v3/api-docs > doc/api/openapi/permission.json
 - 组件设计：`doc/architecture/component_design.md`
 - 项目结构：`doc/architecture/project_structure_diagram.md`
 - 前端微前端：`doc/architecture/frontend_microfrontend.md`
-- 权限模型：`doc/permission/`
+- 资源授权模型：`doc/resource/`
 - 部署：`doc/deployment/`

@@ -59,14 +59,14 @@ import org.springframework.core.annotation.Order;
         authority = "applications.delete"
     ),
     @ButtonDeclaration(
-        title = "配置功能",
-        key = "config.feature",
+        title = "配置资源",
+        key = "config.resource",
         color = "orange",
         icon = Icons.SAFETY_OUTLINED,
         sort = 3,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "applications.config.feature"
+        authority = "applications.config.resource"
     )
 })
 @NoArgsConstructor

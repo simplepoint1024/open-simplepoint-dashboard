@@ -25,14 +25,14 @@ import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Application;
-import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationFeatureRelevance;
-import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationFeaturesRelevanceDto;
-import org.simplepoint.plugin.rbac.tenant.api.repository.ApplicationFeatureRelevanceRepository;
+import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationResourceRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationResourcesRelevanceDto;
+import org.simplepoint.plugin.rbac.tenant.api.repository.ApplicationResourceRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.ApplicationRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.PackageApplicationRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
-import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 
 @ExtendWith(MockitoExtension.class)
 class ApplicationServiceImplTest {
@@ -44,7 +44,7 @@ class ApplicationServiceImplTest {
   DetailsProviderService detailsProviderService;
 
   @Mock
-  ApplicationFeatureRelevanceRepository applicationFeatureRelevanceRepository;
+  ApplicationResourceRelevanceRepository applicationResourceRelevanceRepository;
 
   @Mock
   PackageApplicationRelevanceRepository packageApplicationRelevanceRepository;
@@ -56,7 +56,7 @@ class ApplicationServiceImplTest {
   TenantRepository tenantRepository;
 
   @Mock
-  PermissionVersionRefreshService permissionVersionRefreshService;
+  ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
   @InjectMocks
   ApplicationServiceImpl service;
@@ -74,102 +74,102 @@ class ApplicationServiceImplTest {
     contextHolder.close();
   }
 
-  // ── authorizedFeatures ────────────────────────────────────────────────────
+  // ── authorizedResources ───────────────────────────────────────────────────
 
   @Test
-  void authorizedFeatures_throwsWhenCodeIsNull() {
-    assertThatThrownBy(() -> service.authorizedFeatures(null))
+  void authorizedResources_throwsWhenCodeIsNull() {
+    assertThatThrownBy(() -> service.authorizedResources(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("应用编码不能为空");
   }
 
   @Test
-  void authorizedFeatures_throwsWhenCodeIsBlank() {
-    assertThatThrownBy(() -> service.authorizedFeatures("  "))
+  void authorizedResources_throwsWhenCodeIsBlank() {
+    assertThatThrownBy(() -> service.authorizedResources("  "))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("应用编码不能为空");
   }
 
   @Test
-  void authorizedFeatures_delegatesToRepository() {
-    List<String> expected = List.of("feature.a", "feature.b");
-    when(applicationFeatureRelevanceRepository.authorized("app.code")).thenReturn(expected);
+  void authorizedResources_delegatesToRepository() {
+    List<String> expected = List.of("resources.a", "resources.b");
+    when(applicationResourceRelevanceRepository.authorized("app.code")).thenReturn(expected);
 
-    Collection<String> result = service.authorizedFeatures("app.code");
+    Collection<String> result = service.authorizedResources("app.code");
 
     assertThat(result).isEqualTo(expected);
-    verify(applicationFeatureRelevanceRepository).authorized("app.code");
+    verify(applicationResourceRelevanceRepository).authorized("app.code");
   }
 
-  // ── authorizeFeatures ─────────────────────────────────────────────────────
+  // ── authorizeResources ────────────────────────────────────────────────────
 
   @Test
-  void authorizeFeatures_throwsWhenApplicationCodeIsBlank() {
-    ApplicationFeaturesRelevanceDto dto = new ApplicationFeaturesRelevanceDto();
+  void authorizeResources_throwsWhenApplicationCodeIsBlank() {
+    ApplicationResourcesRelevanceDto dto = new ApplicationResourcesRelevanceDto();
     dto.setApplicationCode("");
-    dto.setFeatureCodes(Set.of("f1"));
+    dto.setResourceCodes(Set.of("r1"));
 
-    assertThatThrownBy(() -> service.authorizeFeatures(dto))
+    assertThatThrownBy(() -> service.authorizeResources(dto))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("应用编码不能为空");
   }
 
   @Test
-  void authorizeFeatures_returnsEmptyWhenFeatureCodesIsNull() {
-    ApplicationFeaturesRelevanceDto dto = new ApplicationFeaturesRelevanceDto();
+  void authorizeResources_returnsEmptyWhenResourceCodesIsNull() {
+    ApplicationResourcesRelevanceDto dto = new ApplicationResourcesRelevanceDto();
     dto.setApplicationCode("app.code");
-    dto.setFeatureCodes(null);
+    dto.setResourceCodes(null);
 
-    Collection<ApplicationFeatureRelevance> result = service.authorizeFeatures(dto);
+    Collection<ApplicationResourceRelevance> result = service.authorizeResources(dto);
 
     assertThat(result).isEmpty();
-    verify(applicationFeatureRelevanceRepository, never()).saveAll(any());
+    verify(applicationResourceRelevanceRepository, never()).saveAll(any());
   }
 
   @Test
-  void authorizeFeatures_returnsEmptyWhenFeatureCodesIsEmpty() {
-    ApplicationFeaturesRelevanceDto dto = new ApplicationFeaturesRelevanceDto();
+  void authorizeResources_returnsEmptyWhenResourceCodesIsEmpty() {
+    ApplicationResourcesRelevanceDto dto = new ApplicationResourcesRelevanceDto();
     dto.setApplicationCode("app.code");
-    dto.setFeatureCodes(Set.of());
+    dto.setResourceCodes(Set.of());
 
-    Collection<ApplicationFeatureRelevance> result = service.authorizeFeatures(dto);
+    Collection<ApplicationResourceRelevance> result = service.authorizeResources(dto);
 
     assertThat(result).isEmpty();
-    verify(applicationFeatureRelevanceRepository, never()).saveAll(any());
+    verify(applicationResourceRelevanceRepository, never()).saveAll(any());
   }
 
   @Test
-  void authorizeFeatures_savesRelationsAndRefreshTenants() {
-    ApplicationFeaturesRelevanceDto dto = new ApplicationFeaturesRelevanceDto();
+  void authorizeResources_savesRelationsAndRefreshTenants() {
+    ApplicationResourcesRelevanceDto dto = new ApplicationResourcesRelevanceDto();
     dto.setApplicationCode("app.code");
-    dto.setFeatureCodes(Set.of("f1"));
+    dto.setResourceCodes(Set.of("r1"));
 
-    ApplicationFeatureRelevance saved = new ApplicationFeatureRelevance();
-    when(applicationFeatureRelevanceRepository.saveAll(any())).thenReturn(List.of(saved));
+    ApplicationResourceRelevance saved = new ApplicationResourceRelevance();
+    when(applicationResourceRelevanceRepository.saveAll(any())).thenReturn(List.of(saved));
 
-    Collection<ApplicationFeatureRelevance> result = service.authorizeFeatures(dto);
+    Collection<ApplicationResourceRelevance> result = service.authorizeResources(dto);
 
     assertThat(result).containsExactly(saved);
-    verify(applicationFeatureRelevanceRepository).saveAll(any());
+    verify(applicationResourceRelevanceRepository).saveAll(any());
   }
 
-  // ── unauthorizedFeatures ──────────────────────────────────────────────────
+  // ── unauthorizedResources ─────────────────────────────────────────────────
 
   @Test
-  void unauthorizedFeatures_returnsEarlyWhenFeatureCodesIsNull() {
-    service.unauthorizedFeatures("app.code", null);
-    verify(applicationFeatureRelevanceRepository, never()).unauthorized(any(), any());
-  }
-
-  @Test
-  void unauthorizedFeatures_returnsEarlyWhenFeatureCodesIsEmpty() {
-    service.unauthorizedFeatures("app.code", Set.of());
-    verify(applicationFeatureRelevanceRepository, never()).unauthorized(any(), any());
+  void unauthorizedResources_returnsEarlyWhenResourceCodesIsNull() {
+    service.unauthorizedResources("app.code", null);
+    verify(applicationResourceRelevanceRepository, never()).unauthorized(any(), any());
   }
 
   @Test
-  void unauthorizedFeatures_throwsWhenApplicationCodeIsBlankAfterNormalize() {
-    assertThatThrownBy(() -> service.unauthorizedFeatures("", Set.of("f1")))
+  void unauthorizedResources_returnsEarlyWhenResourceCodesIsEmpty() {
+    service.unauthorizedResources("app.code", Set.of());
+    verify(applicationResourceRelevanceRepository, never()).unauthorized(any(), any());
+  }
+
+  @Test
+  void unauthorizedResources_throwsWhenApplicationCodeIsBlankAfterNormalize() {
+    assertThatThrownBy(() -> service.unauthorizedResources("", Set.of("r1")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("应用编码不能为空");
   }
@@ -202,13 +202,13 @@ class ApplicationServiceImplTest {
   }
 
   @Test
-  void authorizeFeatures_rejectsTenantContext() {
+  void authorizeResources_rejectsTenantContext() {
     contextHolder.when(AuthorizationContextHolder::getContext).thenReturn(tenantContext());
-    ApplicationFeaturesRelevanceDto dto = new ApplicationFeaturesRelevanceDto();
+    ApplicationResourcesRelevanceDto dto = new ApplicationResourcesRelevanceDto();
     dto.setApplicationCode("app.code");
-    dto.setFeatureCodes(Set.of("feature.code"));
+    dto.setResourceCodes(Set.of("resources.view"));
 
-    assertThatThrownBy(() -> service.authorizeFeatures(dto))
+    assertThatThrownBy(() -> service.authorizeResources(dto))
         .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
   }
 

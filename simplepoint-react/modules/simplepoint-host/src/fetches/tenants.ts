@@ -59,7 +59,7 @@ export async function fetchCurrentRoles(tenantId?: string): Promise<CurrentRole[
  * 已收敛到 @simplepoint/shared/api/contextId.ensureContextId。
  */
 // export async function fetchGetContextId(tenantId:string): Promise<string | undefined> {
-//     const res = await get<string>('/common/tenants/permission-context-id?tenantId='+tenantId);
+//     const res = await get<string>('/common/tenants/authorization-context-id?tenantId='+tenantId);
 //     return res ? res : undefined;
 // }
 

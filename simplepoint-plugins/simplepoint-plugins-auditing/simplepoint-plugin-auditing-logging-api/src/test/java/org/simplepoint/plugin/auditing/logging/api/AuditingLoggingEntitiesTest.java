@@ -6,10 +6,10 @@ import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.plugin.auditing.logging.api.entity.ErrorLog;
 import org.simplepoint.plugin.auditing.logging.api.entity.LoginLog;
-import org.simplepoint.plugin.auditing.logging.api.entity.PermissionChangeLog;
+import org.simplepoint.plugin.auditing.logging.api.entity.ResourceGrantLog;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.ErrorLogRecordCommand;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.LoginLogRecordCommand;
-import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChangeLogRecordCommand;
+import org.simplepoint.plugin.auditing.logging.api.pojo.command.ResourceGrantLogRecordCommand;
 
 class AuditingLoggingEntitiesTest {
 
@@ -63,11 +63,11 @@ class AuditingLoggingEntitiesTest {
     assertThat(log.getClientIp()).isEqualTo("10.0.0.1");
   }
 
-  // ---- PermissionChangeLog ----
+  // ---- ResourceGrantLog ----
 
   @Test
-  void permissionChangeLog_setterGetter() {
-    PermissionChangeLog log = new PermissionChangeLog();
+  void resourceGrantLog_setterGetter() {
+    ResourceGrantLog log = new ResourceGrantLog();
     log.setOperatorId("op1");
     log.setSubjectId("subj1");
     log.setChangeType("GRANT");

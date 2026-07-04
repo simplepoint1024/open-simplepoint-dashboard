@@ -6,14 +6,14 @@ export default {
     i18nNamespaces: ['clients'],
     name: 'oidc-clients',
   },
-  'rbac-menus':{
-    baseUrl: `${contextPath}/menus`,
-    i18nNamespaces: ['menus','permissions'],
-    name: 'rbac-menus',
+  'rbac-resources':{
+    baseUrl: `${contextPath}/resources`,
+    i18nNamespaces: ['resources'],
+    name: 'resources',
   },
   'rbac-roles':{
     baseUrl: `${contextPath}/roles`,
-    i18nNamespaces: ['roles','permissions'],
+    i18nNamespaces: ['roles','resources'],
     name: 'roles'
   },
   'rbac-users':{
@@ -21,14 +21,9 @@ export default {
     i18nNamespaces: ['users','roles'],
     name: 'users'
   },
-  'rbac-permissions':{
-    baseUrl: `${contextPath}/permissions`,
-    i18nNamespaces: ['permissions'],
-    name: 'permissions'
-  },
   'rbac-access-center': {
     baseUrl: `${contextPath}/access-center`,
-    i18nNamespaces: ['access-center', 'roles', 'permissions', 'data-scopes', 'field-scopes', 'table', 'common'],
+    i18nNamespaces: ['access-center', 'roles', 'resources', 'data-scopes', 'field-scopes', 'table', 'common'],
     name: 'access-center'
   },
   'i18n-countries': {
@@ -76,11 +71,6 @@ export default {
     i18nNamespaces: ['tenants', 'packages', 'users'],
     name: 'tenants'
   },
-  'platform.features': {
-    baseUrl: `${contextPath}/platform/features`,
-    i18nNamespaces: ['features', 'permissions'],
-    name: 'features'
-  },
   'platform.dictionaries': {
     baseUrl: `${contextPath}/platform/dictionaries`,
     i18nNamespaces: ['dictionaries'],
@@ -103,7 +93,7 @@ export default {
   },
   'platform.applications': {
     baseUrl: `${contextPath}/platform/applications`,
-    i18nNamespaces: ['applications', 'features'],
+    i18nNamespaces: ['applications', 'resources'],
     name: 'applications'
   },
   'rbac-data-scopes': {

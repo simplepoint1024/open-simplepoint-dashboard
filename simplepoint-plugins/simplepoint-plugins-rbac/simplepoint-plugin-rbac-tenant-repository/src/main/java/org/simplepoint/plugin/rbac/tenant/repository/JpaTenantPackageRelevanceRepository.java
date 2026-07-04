@@ -58,20 +58,20 @@ public interface JpaTenantPackageRelevanceRepository
       select distinct tpr.tenantId
       from TenantPackageRelevance tpr
       join PackageApplicationRelevance par on par.packageCode = tpr.packageCode
-      join ApplicationFeatureRelevance afr on afr.applicationCode = par.applicationCode
-      where afr.featureCode in ?1
+      join ApplicationResourceRelevance arr on arr.applicationCode = par.applicationCode
+      where arr.resourceCode in ?1
       """)
-  Set<String> findTenantIdsByFeatureCodes(Collection<String> featureCodes);
+  Set<String> findTenantIdsByResourceCodes(Collection<String> resourceCodes);
 
   @Override
   @Query("""
-      select distinct afr.featureCode
+      select distinct arr.resourceCode
       from TenantPackageRelevance tpr
       join PackageApplicationRelevance par on par.packageCode = tpr.packageCode
-      join ApplicationFeatureRelevance afr on afr.applicationCode = par.applicationCode
+      join ApplicationResourceRelevance arr on arr.applicationCode = par.applicationCode
       where tpr.tenantId = ?1
       """)
-  Set<String> findFeatureCodesByTenantId(String tenantId);
+  Set<String> findResourceCodesByTenantId(String tenantId);
 
   @Override
   @Query("""

@@ -94,6 +94,25 @@ const ALL_USERS: MockUser[] = (() => {
     return users;
 })();
 
+const ROLE_CANDIDATES = [
+    {id: '1', name: '超级管理员', description: '拥有系统内所有权限'},
+    {id: '2', name: '用户', description: '普通用户'},
+];
+
+function buildPage<T>(request: Request, records: T[], matcher: (item: T, keyword: string) => boolean) {
+    const url = new URL(request.url);
+    const page = Math.max(0, parseInt(url.searchParams.get('page') ?? '0', 10));
+    const size = Math.max(1, parseInt(url.searchParams.get('size') ?? '20', 10));
+    const keyword = (url.searchParams.get('keyword') ?? '').toLowerCase();
+    const result = keyword ? records.filter((item) => matcher(item, keyword)) : [...records];
+    const totalElements = result.length;
+    const totalPages = Math.ceil(totalElements / size);
+    return {
+        content: result.slice(page * size, page * size + size),
+        page: {size, number: page, totalElements, totalPages},
+    };
+}
+
 export default [
     http.get('/common/users/schema', () => {
         return HttpResponse.json(
@@ -321,6 +340,13 @@ export default [
             content,
             page: {size, number: page, totalElements, totalPages},
         });
+    }),
+    http.get('/common/users/role-candidates', ({request}) => {
+        return HttpResponse.json(buildPage(request, ROLE_CANDIDATES, (role, keyword) =>
+            role.name.toLowerCase().includes(keyword) ||
+            role.description.toLowerCase().includes(keyword) ||
+            role.id.includes(keyword)
+        ));
     }),
     http.get('/common/users/authorized', () => {
         return HttpResponse.json(["1"])

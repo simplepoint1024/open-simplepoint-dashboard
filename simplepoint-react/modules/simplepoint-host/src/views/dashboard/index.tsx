@@ -54,11 +54,11 @@ export const Dashboard: React.FC = () => {
       title: t('host.dashboard.category.security', '权限与安全'),
       color: '#1677ff',
       features: [
-        {label: t('host.dashboard.feature.security.rbac', 'RBAC 角色权限体系')},
-        {label: t('host.dashboard.feature.security.management', '用户 / 角色 / 权限 / 菜单管理')},
+        {label: t('host.dashboard.feature.security.rbac', 'RBAC 角色资源授权体系')},
+        {label: t('host.dashboard.feature.security.management', '用户 / 角色 / 资源管理')},
         {label: t('host.dashboard.feature.security.oidc', 'OAuth2 / OIDC 授权服务器')},
         {label: t('host.dashboard.feature.security.jwt', 'JWT 资源服务器')},
-        {label: t('host.dashboard.feature.security.buttonLevel', '操作权限按钮级控制')},
+        {label: t('host.dashboard.feature.security.buttonLevel', '操作资源按钮级控制')},
       ],
     },
     {
@@ -78,7 +78,7 @@ export const Dashboard: React.FC = () => {
       color: '#722ed1',
       features: [
         {label: t('host.dashboard.feature.microFrontend.federation', 'Module Federation (Rsbuild)')},
-        {label: t('host.dashboard.feature.microFrontend.dynamicRoutes', '动态路由从后端菜单加载')},
+        {label: t('host.dashboard.feature.microFrontend.dynamicRoutes', '动态路由从后端资源加载')},
         {label: t('host.dashboard.feature.microFrontend.apps', 'Host + Common + Audit + DNA 四端')},
         {label: t('host.dashboard.feature.microFrontend.skeleton', '骨架屏 + 懒加载边界')},
         {label: t('host.dashboard.feature.microFrontend.tabs', '可拖拽排序 Tab 页签')},
@@ -170,7 +170,7 @@ export const Dashboard: React.FC = () => {
         {label: t('host.dashboard.feature.form.rjsf', 'RJSF + AntD 渲染')},
         {label: t('host.dashboard.feature.form.dict', '字典下拉 x-ui.dictCode')},
         {label: t('host.dashboard.feature.form.button', '按钮声明 @ButtonDeclarations')},
-        {label: t('host.dashboard.feature.form.permission', '权限按钮过滤')},
+        {label: t('host.dashboard.feature.form.resourceFilter', '资源授权按钮过滤')},
       ],
     },
     {

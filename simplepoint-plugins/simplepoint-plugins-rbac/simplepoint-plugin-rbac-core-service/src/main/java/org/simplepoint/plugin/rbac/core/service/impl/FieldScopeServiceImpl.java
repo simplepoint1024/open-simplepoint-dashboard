@@ -14,7 +14,7 @@ import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.core.api.repository.FieldScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.service.FieldScopeService;
-import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.entity.FieldScope;
 import org.simplepoint.security.entity.FieldScopeEntry;
 import org.springframework.stereotype.Service;
@@ -22,14 +22,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service implementation for managing {@link FieldScope} entities.
- * Invalidates the tenant permission cache on every mutation so that
+ * Invalidates the tenant authorization cache on every mutation so that
  * AuthorizationContext rebuild picks up the updated scope immediately.
  */
 @Service
 public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository, FieldScope, String>
     implements FieldScopeService {
 
-  private final PermissionVersionRefreshService permissionVersionRefreshService;
+  private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
   /**
    * Field Scope Service Impl.
@@ -37,10 +37,10 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   public FieldScopeServiceImpl(
       FieldScopeRepository repository,
       DetailsProviderService detailsProviderService,
-      PermissionVersionRefreshService permissionVersionRefreshService
+      ResourceAuthorizationVersionService resourceAuthorizationVersionService
   ) {
     super(repository, detailsProviderService);
-    this.permissionVersionRefreshService = permissionVersionRefreshService;
+    this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
   }
 
   @Override
@@ -56,7 +56,7 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
       });
     }
     FieldScope result = getRepository().save(fieldScope);
-    refreshCurrentTenantPermissionVersion();
+    refreshCurrentTenantAuthorizationVersion();
     return result;
   }
 
@@ -64,7 +64,7 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   @Transactional(rollbackFor = Exception.class)
   public <S extends FieldScope> S create(S entity) {
     S result = super.create(entity);
-    refreshCurrentTenantPermissionVersion();
+    refreshCurrentTenantAuthorizationVersion();
     return result;
   }
 
@@ -72,7 +72,7 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   @Transactional(rollbackFor = Exception.class)
   public List<FieldScope> create(Collection<FieldScope> entities) {
     List<FieldScope> result = super.create(entities);
-    refreshCurrentTenantPermissionVersion();
+    refreshCurrentTenantAuthorizationVersion();
     return result;
   }
 
@@ -80,7 +80,7 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   @Transactional(rollbackFor = Exception.class)
   public <S extends FieldScope> FieldScope modifyById(S entity) {
     FieldScope result = super.modifyById(entity);
-    refreshCurrentTenantPermissionVersion();
+    refreshCurrentTenantAuthorizationVersion();
     return result;
   }
 
@@ -88,11 +88,11 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   @Transactional(rollbackFor = Exception.class)
   public void removeByIds(Collection<String> ids) {
     super.removeByIds(ids);
-    refreshCurrentTenantPermissionVersion();
+    refreshCurrentTenantAuthorizationVersion();
   }
 
-  private void refreshCurrentTenantPermissionVersion() {
+  private void refreshCurrentTenantAuthorizationVersion() {
     String tenantId = currentTenantId();
-    permissionVersionRefreshService.refreshTenant(tenantId);
+    resourceAuthorizationVersionService.refreshTenant(tenantId);
   }
 }

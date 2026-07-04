@@ -13,7 +13,7 @@
 
 ```mermaid
 flowchart LR
-  UI[host 前端选择 tenant] --> CID[请求 /common/tenants/permission-context-id]
+  UI[host 前端选择 tenant] --> CID[请求 /common/tenants/authorization-context-id]
   CID --> REQ[请求自动附带 X-Tenant-Id / X-Context-Id]
   REQ --> FILTER[AuthorizationContextFilter]
   FILTER --> RESOLVER[AuthorizationContextResolver]
@@ -40,9 +40,9 @@ flowchart LR
 
 前端会调用：
 
-- `/common/tenants/permission-context-id`
+- `/common/tenants/authorization-context-id`
 
-来获取当前租户的权限上下文标识。  
+来获取当前租户的授权上下文标识。
 `ensureContextId(...)` 允许 `tenantId` 为空，这表示某些场景下后端可以根据当前 session 直接推导上下文。
 
 ### 3.3 请求头自动补齐
@@ -119,7 +119,7 @@ tenant_id = :tenantId
 - `Role`
 - `Organization`
 - `UserRoleRelevance`
-- `RolePermissionsRelevance`
+- `RoleResourceGrant`
 - `ObjectStorageObject`
 
 而不是所有实体都租户化，例如 `MicroModule` 仍然继承 `BaseEntityImpl<String>`，更像平台级全局配置。
@@ -207,6 +207,6 @@ tenant_id = :tenantId
 
 ## 10. 关联文档
 
-- 权限模型：`doc/permission/`
+- 资源授权模型：`doc/resource/`
 - 服务拓扑：`doc/architecture/service_topology.md`
 - Schema 驱动 UI：`doc/architecture/schema_driven_ui.md`

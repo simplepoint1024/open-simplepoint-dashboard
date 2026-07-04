@@ -128,18 +128,18 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
   }
 
   /**
-   * Calculates the permission context ID for a given tenant ID.
+   * Calculates the authorization context ID for a given tenant ID.
    *
-   * @param tenantId the ID of the tenant for which to calculate the permission context ID
-   * @return the calculated permission context ID as a String
+   * @param tenantId the ID of the tenant for which to calculate the authorization context ID
+   * @return the calculated authorization context ID as a String
    */
-  @GetMapping("/permission-context-id")
+  @GetMapping("/authorization-context-id")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "计算权限上下文ID", description = "根据提供的租户ID，计算并返回权限上下文ID")
-  public Response<String> calculatePermissionContextId(
+  @Operation(summary = "计算授权上下文ID", description = "根据提供的租户ID，计算并返回授权上下文ID")
+  public Response<String> calculateAuthorizationContextId(
       @RequestParam(name = "tenantId", required = false) String tenantId,
       @RequestParam(name = "roleId", required = false) String roleId) {
-    return ok(service.calculatePermissionContextId(tenantId, roleId));
+    return ok(service.calculateAuthorizationContextId(tenantId, roleId));
   }
 
   /**

@@ -1,29 +1,29 @@
 import {createIcon} from "@simplepoint/shared/types/icon.ts";
-import {MenuInfo, MenuItemType} from "@/store/routes";
+import {RouteInfo, MenuItemType} from "@/store/routes";
 import type {MenuProps} from "antd";
 import I18nText from '@/i18n/Text';
 
 /**
- * Build a single menu item from a MenuInfo node.
+ * Build a single menu item from a resource route node.
  */
 const toMenuItem = (
-  menu: MenuInfo,
+  route: RouteInfo,
   navigate: (path: string) => void,
   children?: MenuItemType[],
 ): MenuItemType => {
   const existsChildren = !!children && children.length > 0;
-  const keyText = menu.title ?? menu.label ?? '';
-  const component = menu.component;
+  const keyText = route.title ?? route.label ?? '';
+  const component = route.component;
   const isExternal = typeof component === 'string' && component.startsWith('external:');
   const externalUrl = isExternal ? component!.slice('external:'.length) : undefined;
 
   return {
-    key: menu.uuid || menu.path || (menu.id != null ? String(menu.id) : '') || keyText,
-    label: <I18nText k={menu.title || ''} fallback={menu.label || ''} />,
-    icon: menu.icon ? createIcon(menu.icon) : undefined,
-    type: menu.type ?? undefined,
-    danger: menu.danger ?? undefined,
-    disabled: menu.disabled ?? undefined,
+    key: route.uuid || route.path || (route.id != null ? String(route.id) : '') || keyText,
+    label: <I18nText k={route.title || ''} fallback={route.label || ''} />,
+    icon: route.icon ? createIcon(route.icon) : undefined,
+    type: route.routeKind ?? undefined,
+    danger: route.danger ?? undefined,
+    disabled: route.disabled ?? undefined,
     component,
     ...(existsChildren ? { children } : {}),
     ...(!existsChildren ? {
@@ -32,54 +32,54 @@ const toMenuItem = (
           try { window.open(externalUrl, '_blank', 'noopener,noreferrer'); } catch { /* blocked */ }
           return;
         }
-        if (menu.path) navigate(menu.path);
+        if (route.path) navigate(route.path);
       }
     } : {}),
   } as MenuItemType;
 };
 
 /**
- * 基于拍平(parent)关系构建菜单（保持返回数据原始顺序）
+ * 基于拍平(parentId)关系构建导航（保持返回数据原始顺序）
  */
-const buildMenusFromFlat = (
-  menus: MenuInfo[],
+const buildNavigationFromFlat = (
+  routes: RouteInfo[],
   navigate: (path: string) => void,
   parent: string | number | undefined = undefined,
 ): MenuItemType[] => {
-  return menus
-    .filter((m) => m.parent === parent)
-    .map((menu) => {
-      const children = buildMenusFromFlat(menus, navigate, menu.id);
-      return toMenuItem(menu, navigate, children.length > 0 ? children : undefined);
+  return routes
+    .filter((route) => route.parentId === parent)
+    .map((route) => {
+      const children = buildNavigationFromFlat(routes, navigate, route.id);
+      return toMenuItem(route, navigate, children.length > 0 ? children : undefined);
     });
 };
 
 /**
- * 基于树结构(children)构建菜单（保持返回数据原始顺序）
+ * 基于树结构(children)构建导航（保持返回数据原始顺序）
  */
-const buildMenusFromTree = (
-  nodes: MenuInfo[],
+const buildNavigationFromTree = (
+  nodes: RouteInfo[],
   navigate: (path: string) => void,
 ): MenuItemType[] => {
-  return (nodes || []).map((menu) => {
-    const raw = menu.children;
-    const builtChildren = Array.isArray(raw) && raw.length > 0 ? buildMenusFromTree(raw, navigate) : undefined;
-    return toMenuItem(menu, navigate, builtChildren);
+  return (nodes || []).map((route) => {
+    const raw = route.children;
+    const builtChildren = Array.isArray(raw) && raw.length > 0 ? buildNavigationFromTree(raw, navigate) : undefined;
+    return toMenuItem(route, navigate, builtChildren);
   });
 };
 
 /**
- * 构建路由菜单：自动识别传入数据为拍平还是树结构
+ * 构建导航菜单：自动识别传入数据为拍平还是树结构
  */
-export const buildMenus = (
-  menus: MenuInfo[],
+export const buildNavigation = (
+  routes: RouteInfo[],
   navigate: (path: string) => void,
 ): MenuItemType[] => {
-  const isTreeData = Array.isArray(menus) && menus.some(m => Array.isArray(m.children));
-  return isTreeData ? buildMenusFromTree(menus, navigate) : buildMenusFromFlat(menus, navigate, undefined);
+  const isTreeData = Array.isArray(routes) && routes.some(route => Array.isArray(route.children));
+  return isTreeData ? buildNavigationFromTree(routes, navigate) : buildNavigationFromFlat(routes, navigate, undefined);
 };
 
 /** 侧边菜单 */
-export const useSideNavigation = (navigate: (path: string) => void, menuData: MenuInfo[]): MenuProps => {
-  return { items: buildMenus(menuData, navigate) };
+export const useSideNavigation = (navigate: (path: string) => void, routeData: RouteInfo[]): MenuProps => {
+  return { items: buildNavigation(routeData, navigate) };
 };

@@ -51,14 +51,14 @@ public interface TenantPackageRelevanceRepository {
   Set<String> findTenantIdsByApplicationCodes(Collection<String> applicationCodes);
 
   /**
-   * Find Tenant Ids By Feature Codes.
+   * Find Tenant Ids By Resource Codes.
    */
-  Set<String> findTenantIdsByFeatureCodes(Collection<String> featureCodes);
+  Set<String> findTenantIdsByResourceCodes(Collection<String> resourceCodes);
 
   /**
-   * Find Feature Codes By Tenant Id.
+   * Find Resource Codes By Tenant Id.
    */
-  Set<String> findFeatureCodesByTenantId(String tenantId);
+  Set<String> findResourceCodesByTenantId(String tenantId);
 
   /**
    * Find Application Codes By Tenant Id.

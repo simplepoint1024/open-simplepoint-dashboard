@@ -219,7 +219,7 @@ pnpm dev:dna
 | `doc/architecture/multi_tenant_model.md` | 多租户约定与上下文传递 |
 | `doc/architecture/schema_driven_ui.md` | Schema 驱动 UI 的后端与前端约定 |
 | `doc/architecture/frontend_microfrontend.md` | 微前端与模块联邦约定 |
-| `doc/permission/` | 权限模型、授权上下文等说明 |
+| `doc/resource/` | 资源授权模型、授权上下文等说明 |
 | `doc/troubleshooting/` | 常见问题与排障路径 |
 
 `doc/quick_start.md` 正在持续完善；当前以 `local_development.md` 和 `service_topology.md` 作为更可靠的入口。

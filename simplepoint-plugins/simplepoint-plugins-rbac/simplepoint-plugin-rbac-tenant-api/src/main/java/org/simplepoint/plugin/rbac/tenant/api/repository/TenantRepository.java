@@ -23,19 +23,19 @@ public interface TenantRepository extends BaseRepository<Tenant, String> {
   Set<NamedTenantVo> getTenantsByUserId(String userId);
 
   /**
-   * Retrieves the permission version for a given tenant ID.
+   * Retrieves the authorization version for a given tenant ID.
    *
-   * @param tenantId the ID of the tenant for which to retrieve the permission version
-   * @return the permission version as a String
+   * @param tenantId the ID of the tenant for which to retrieve the authorization version
+   * @return the authorization version as a String
    */
-  Long getTenantPermissionVersion(String tenantId);
+  Long getTenantAuthorizationVersion(String tenantId);
 
   /**
-   * Increments the permission version for the specified tenants.
+   * Increments the authorization version for the specified tenants.
    *
    * @param tenantIds the tenant IDs to refresh
    */
-  void increasePermissionVersion(Collection<String> tenantIds);
+  void increaseAuthorizationVersion(Collection<String> tenantIds);
 
   /**
    * Returns all tenant identifiers.

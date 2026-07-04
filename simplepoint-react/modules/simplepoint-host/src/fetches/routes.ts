@@ -1,9 +1,9 @@
-import {MenuInfo} from '@/store/routes';
+import {RouteInfo} from '@/store/routes';
 import {get} from '@simplepoint/shared/api/methods';
 
-export type ServiceMenuResult = {
+export type ServiceResourceRouteResult = {
     services: ServiceEntry[];
-    routes: MenuInfo[];
+    routes: RouteInfo[];
     entryPoint: string;
     authorizationContext?: AuthorizationContextInfo;
 }
@@ -13,6 +13,7 @@ export type AuthorizationContextInfo = {
     actorRole?: 'PLATFORM_ADMIN' | 'TENANT_ADMIN' | 'TENANT_OWNER' | 'TENANT_MEMBER' | 'PERSONAL_OWNER' | 'PERSONAL_MEMBER' | string;
     tenantId?: string;
     userId?: string;
+    resources?: string[];
 }
 
 export type ServiceEntry = {
@@ -24,5 +25,5 @@ export type ServiceEntry = {
 }
 
 export function fetchServiceRoutes() {
-    return get<ServiceMenuResult>('/common/menus/service-routes');
+    return get<ServiceResourceRouteResult>('/common/resources/service-routes');
 }

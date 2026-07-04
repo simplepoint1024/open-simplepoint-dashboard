@@ -80,22 +80,22 @@ class AuthorizationContextTest {
   }
 
   @Test
-  void setPermissions_setsWhenNull() {
-    ctx.setPermissions(Arrays.asList("read", "write"));
-    assertThat(ctx.getPermissions()).containsExactlyInAnyOrder("read", "write");
+  void setResources_setsWhenNull() {
+    ctx.setResources(Arrays.asList("read", "write"));
+    assertThat(ctx.getResources()).containsExactlyInAnyOrder("read", "write");
   }
 
   @Test
-  void setPermissions_withNullInput_setsEmptyCollection() {
-    ctx.setPermissions(null);
-    assertThat(ctx.getPermissions()).isEmpty();
+  void setResources_withNullInput_setsEmptyCollection() {
+    ctx.setResources(null);
+    assertThat(ctx.getResources()).isEmpty();
   }
 
   @Test
-  void setPermissions_doesNotOverwriteExistingValue() {
-    ctx.setPermissions(Arrays.asList("read"));
-    ctx.setPermissions(Arrays.asList("write"));
-    assertThat(ctx.getPermissions()).containsExactly("read");
+  void setResources_doesNotOverwriteExistingValue() {
+    ctx.setResources(Arrays.asList("read"));
+    ctx.setResources(Arrays.asList("write"));
+    assertThat(ctx.getResources()).containsExactly("read");
   }
 
   @Test
@@ -273,12 +273,12 @@ class AuthorizationContextTest {
   }
 
   @Test
-  void asAuthorities_withPermissions_includesPermissionsAsIs() {
-    ctx.setPermissions(Arrays.asList("read:users", "write:users"));
+  void asAuthorities_withResources_includesResourceCodesAsIs() {
+    ctx.setResources(Arrays.asList("users.read", "users.write"));
     var authorities = ctx.asAuthorities().stream()
         .map(GrantedAuthority::getAuthority)
         .toList();
-    assertThat(authorities).contains("read:users", "write:users");
+    assertThat(authorities).contains("users.read", "users.write");
   }
 
   @Test
@@ -290,10 +290,10 @@ class AuthorizationContextTest {
   void asAuthorities_combined_returnsAllAuthorities() {
     ctx.setIsAdministrator(true);
     ctx.setRoles(Arrays.asList("EDITOR"));
-    ctx.setPermissions(Arrays.asList("post:create"));
+    ctx.setResources(Arrays.asList("posts.create"));
     var authorities = ctx.asAuthorities().stream()
         .map(GrantedAuthority::getAuthority)
         .toList();
-    assertThat(authorities).contains("ROLE_Administrator", "ROLE_EDITOR", "post:create");
+    assertThat(authorities).contains("ROLE_Administrator", "ROLE_EDITOR", "posts.create");
   }
 }

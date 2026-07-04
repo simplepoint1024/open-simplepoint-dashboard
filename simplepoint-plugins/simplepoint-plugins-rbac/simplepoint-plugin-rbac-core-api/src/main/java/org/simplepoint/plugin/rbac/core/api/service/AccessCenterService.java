@@ -14,7 +14,7 @@ import org.springframework.data.domain.Pageable;
 public interface AccessCenterService {
 
   /**
-   * Returns role rows enriched with permission, user and scope summaries.
+   * Returns role rows enriched with resource, user and scope summaries.
    *
    * @param pageable pagination information
    * @return paged role overviews
@@ -30,7 +30,7 @@ public interface AccessCenterService {
   AccessCenterRoleDetailVo roleDetail(String roleId);
 
   /**
-   * Returns a menu-feature-permission resource tree for a role.
+   * Returns the unified resource tree for a role.
    *
    * @param roleId role identifier
    * @return resource tree nodes with role authorization state
@@ -38,7 +38,7 @@ public interface AccessCenterService {
   List<AccessCenterResourceNodeVo> resourceTree(String roleId);
 
   /**
-   * Replaces the permission and scope assignment for a role.
+   * Replaces the resource and scope assignment for a role.
    *
    * @param dto role authorization payload
    * @return refreshed role authorization detail

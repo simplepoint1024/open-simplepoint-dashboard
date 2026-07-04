@@ -49,19 +49,21 @@ type ScopeOption = {
 
 type ResourceIndex = {
   nodeMap: Map<string, AccessCenterResourceNode>;
-  permissionNodesByAuthority: Map<string, AccessCenterResourceNode[]>;
-  permissionOrder: Map<string, number>;
+  resourceNodesByCode: Map<string, AccessCenterResourceNode[]>;
+  resourceOrder: Map<string, number>;
 };
 
 const baseConfig = api['rbac-access-center'];
 const ROLE_PAGE_SIZE = 100;
 const TYPE_FALLBACK: Record<AccessCenterResourceNodeType, string> = {
   GROUP: '分组',
-  MENU: '菜单',
+  MODULE: '模块',
+  PAGE: '页面',
   FEATURE: '功能',
-  PERMISSION: '动作',
+  ACTION: '动作',
+  API: '接口',
 };
-const HIGH_RISK_AUTHORITY = /(delete|remove|revoke|grant|authorize|admin|config|disable|drop)/i;
+const HIGH_RISK_RESOURCE = /(delete|remove|revoke|grant|authorize|admin|config|disable|drop)/i;
 
 function roleTitle(item?: AccessCenterRoleOverview) {
   const role = item?.role;
@@ -72,12 +74,12 @@ function userTitle(user: {name?: string | null; email?: string | null; phoneNumb
   return user.name || user.email || user.phoneNumber || user.id || '-';
 }
 
-function normalizeAuthorities(authorities?: readonly string[]) {
-  return Array.from(new Set((authorities ?? []).map(String).filter(Boolean)));
+function normalizeResourceCodes(resourceCodes?: readonly string[]) {
+  return Array.from(new Set((resourceCodes ?? []).map(String).filter(Boolean)));
 }
 
-function orderAuthorities(authorities: readonly string[], orderMap: Map<string, number>) {
-  return normalizeAuthorities(authorities).sort((left, right) => {
+function orderResourceCodes(resourceCodes: readonly string[], orderMap: Map<string, number>) {
+  return normalizeResourceCodes(resourceCodes).sort((left, right) => {
     const leftOrder = orderMap.get(left) ?? Number.MAX_SAFE_INTEGER;
     const rightOrder = orderMap.get(right) ?? Number.MAX_SAFE_INTEGER;
     if (leftOrder !== rightOrder) return leftOrder - rightOrder;
@@ -89,21 +91,24 @@ function sameStringArray(left: readonly string[], right: readonly string[]) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
-function getNodeAuthorities(node?: AccessCenterResourceNode) {
+function getNodeResourceCodes(node?: AccessCenterResourceNode) {
   if (!node) return [];
-  if (node.type === 'PERMISSION' && node.permissionAuthority) {
-    return [node.permissionAuthority];
+  if (node.resourceCode) {
+    return [node.resourceCode];
   }
-  return node.permissionAuthorities ?? [];
+  if (node.code && node.grantable !== false) {
+    return [node.code];
+  }
+  return node.resourceCodes ?? [];
 }
 
-function collectPermissionNodes(node?: AccessCenterResourceNode) {
+function collectGrantableNodes(node?: AccessCenterResourceNode) {
   const result = new Map<string, AccessCenterResourceNode>();
   const visit = (current?: AccessCenterResourceNode) => {
     if (!current) return;
-    if (current.type === 'PERMISSION' && current.permissionAuthority) {
-      result.set(current.permissionAuthority, current);
-      return;
+    const code = current.resourceCode || current.code;
+    if (code && current.grantable !== false) {
+      result.set(code, current);
     }
     current.children?.forEach(visit);
   };
@@ -113,18 +118,19 @@ function collectPermissionNodes(node?: AccessCenterResourceNode) {
 
 function buildResourceIndex(nodes: AccessCenterResourceNode[]): ResourceIndex {
   const nodeMap = new Map<string, AccessCenterResourceNode>();
-  const permissionNodesByAuthority = new Map<string, AccessCenterResourceNode[]>();
-  const permissionOrder = new Map<string, number>();
+  const resourceNodesByCode = new Map<string, AccessCenterResourceNode[]>();
+  const resourceOrder = new Map<string, number>();
   let order = 0;
 
   const visit = (node: AccessCenterResourceNode) => {
     nodeMap.set(node.id, node);
-    if (node.type === 'PERMISSION' && node.permissionAuthority) {
-      const items = permissionNodesByAuthority.get(node.permissionAuthority) ?? [];
+    const code = node.resourceCode || node.code;
+    if (code && node.grantable !== false) {
+      const items = resourceNodesByCode.get(code) ?? [];
       items.push(node);
-      permissionNodesByAuthority.set(node.permissionAuthority, items);
-      if (!permissionOrder.has(node.permissionAuthority)) {
-        permissionOrder.set(node.permissionAuthority, order);
+      resourceNodesByCode.set(code, items);
+      if (!resourceOrder.has(code)) {
+        resourceOrder.set(code, order);
         order += 1;
       }
     }
@@ -132,7 +138,7 @@ function buildResourceIndex(nodes: AccessCenterResourceNode[]): ResourceIndex {
   };
 
   nodes.forEach(visit);
-  return {nodeMap, permissionNodesByAuthority, permissionOrder};
+  return {nodeMap, resourceNodesByCode, resourceOrder};
 }
 
 function allNodeIds(nodes: AccessCenterResourceNode[]) {
@@ -145,11 +151,11 @@ function allNodeIds(nodes: AccessCenterResourceNode[]) {
   return result;
 }
 
-function collectAuthoritiesFromKeys(keys: readonly Key[], nodeMap: Map<string, AccessCenterResourceNode>) {
+function collectResourceCodesFromKeys(keys: readonly Key[], nodeMap: Map<string, AccessCenterResourceNode>) {
   const result = new Set<string>();
   keys.forEach((key) => {
     const node = nodeMap.get(String(key));
-    getNodeAuthorities(node).forEach((authority) => result.add(authority));
+    getNodeResourceCodes(node).forEach((code) => result.add(code));
   });
   return Array.from(result);
 }
@@ -159,15 +165,17 @@ function resourceTypeLabel(type: AccessCenterResourceNodeType, t: Translate) {
 }
 
 function resourceTypeColor(type: AccessCenterResourceNodeType) {
-  if (type === 'MENU') return 'blue';
-  if (type === 'FEATURE') return 'purple';
-  if (type === 'PERMISSION') return 'green';
+  if (type === 'MODULE') return 'blue';
+  if (type === 'PAGE') return 'green';
+  if (type === 'FEATURE') return 'cyan';
+  if (type === 'ACTION') return 'orange';
+  if (type === 'API') return 'purple';
   return 'default';
 }
 
 function matchesKeyword(node: AccessCenterResourceNode, keyword: string) {
   if (!keyword) return true;
-  return [node.label, node.code, node.path, node.description, node.permissionAuthority]
+  return [node.label, node.code, node.path, node.description, node.resourceCode]
     .filter(Boolean)
     .some((value) => String(value).toLowerCase().includes(keyword));
 }
@@ -190,9 +198,9 @@ function filterResourceTree(
         authorizedOnly,
         changedOnly,
       );
-      const authorities = getNodeAuthorities(node);
-      const authorizedMatched = !authorizedOnly || authorities.some((authority) => selectedSet.has(authority));
-      const changedMatched = !changedOnly || authorities.some((authority) => changedSet.has(authority));
+      const resourceCodes = getNodeResourceCodes(node);
+      const authorizedMatched = !authorizedOnly || resourceCodes.some((code) => selectedSet.has(code));
+      const changedMatched = !changedOnly || resourceCodes.some((code) => changedSet.has(code));
       const selfMatched = matchesKeyword(node, keyword) && authorizedMatched && changedMatched;
       if (!selfMatched && children.length === 0) return null;
       return {...node, children};
@@ -202,20 +210,20 @@ function filterResourceTree(
 
 function buildTreeData(nodes: AccessCenterResourceNode[], selectedSet: Set<string>, t: Translate): DataNode[] {
   return nodes.map((node) => {
-    const authorities = getNodeAuthorities(node);
-    const selectedCount = authorities.filter((authority) => selectedSet.has(authority)).length;
-    const showCount = authorities.length > 0 && node.type !== 'PERMISSION';
+    const resourceCodes = getNodeResourceCodes(node);
+    const selectedCount = resourceCodes.filter((code) => selectedSet.has(code)).length;
+    const showCount = resourceCodes.length > 0 && !node.resourceCode;
 
     return {
       key: node.id,
       title: (
         <span className="access-center-tree-title">
-          <span className="access-center-tree-label">{node.label || node.code || node.permissionAuthority || '-'}</span>
-          {node.type === 'PERMISSION' && node.permissionAuthority ? (
-            <Typography.Text code className="access-center-tree-code">{node.permissionAuthority}</Typography.Text>
+          <span className="access-center-tree-label">{node.label || node.code || node.resourceCode || '-'}</span>
+          {node.resourceCode ? (
+            <Typography.Text code className="access-center-tree-code">{node.resourceCode}</Typography.Text>
           ) : null}
           <Tag color={resourceTypeColor(node.type)}>{resourceTypeLabel(node.type, t)}</Tag>
-          {showCount ? <Tag>{selectedCount}/{authorities.length}</Tag> : null}
+          {showCount ? <Tag>{selectedCount}/{resourceCodes.length}</Tag> : null}
         </span>
       ),
       children: buildTreeData(node.children ?? [], selectedSet, t),
@@ -237,8 +245,8 @@ const AccessCenter = () => {
   const [changedOnly, setChangedOnly] = useState(false);
   const [selectedResourceId, setSelectedResourceId] = useState('');
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
-  const [baselineAuthorities, setBaselineAuthorities] = useState<string[]>([]);
-  const [selectedAuthorities, setSelectedAuthorities] = useState<string[]>([]);
+  const [baselineResourceCodes, setBaselineResourceCodes] = useState<string[]>([]);
+  const [selectedResourceCodes, setSelectedResourceCodes] = useState<string[]>([]);
   const [baselineDataScopeId, setBaselineDataScopeId] = useState<string | null>(null);
   const [baselineFieldScopeId, setBaselineFieldScopeId] = useState<string | null>(null);
   const [dataScopeId, setDataScopeId] = useState<string | null>(null);
@@ -292,8 +300,8 @@ const AccessCenter = () => {
   const resourceIndex = useMemo(() => buildResourceIndex(resourceNodes), [resourceNodes]);
 
   useEffect(() => {
-    setBaselineAuthorities([]);
-    setSelectedAuthorities([]);
+    setBaselineResourceCodes([]);
+    setSelectedResourceCodes([]);
     setBaselineDataScopeId(null);
     setBaselineFieldScopeId(null);
     setDataScopeId(null);
@@ -307,16 +315,16 @@ const AccessCenter = () => {
 
   useEffect(() => {
     if (!detail) return;
-    const nextAuthorities = orderAuthorities(detail.authorizedPermissions ?? [], resourceIndex.permissionOrder);
+    const nextResourceCodes = orderResourceCodes(detail.authorizedResources ?? [], resourceIndex.resourceOrder);
     const nextDataScopeId = detail.scopeAssignment?.dataScopeId ?? null;
     const nextFieldScopeId = detail.scopeAssignment?.fieldScopeId ?? null;
-    setBaselineAuthorities(nextAuthorities);
-    setSelectedAuthorities(nextAuthorities);
+    setBaselineResourceCodes(nextResourceCodes);
+    setSelectedResourceCodes(nextResourceCodes);
     setBaselineDataScopeId(nextDataScopeId);
     setBaselineFieldScopeId(nextFieldScopeId);
     setDataScopeId(nextDataScopeId);
     setFieldScopeId(nextFieldScopeId);
-  }, [detail, resourceIndex.permissionOrder]);
+  }, [detail, resourceIndex.resourceOrder]);
 
   useEffect(() => {
     const firstNode = resourceNodes[0];
@@ -352,22 +360,22 @@ const AccessCenter = () => {
     [fieldScopeQuery.data],
   );
 
-  const baselineSet = useMemo(() => new Set(baselineAuthorities), [baselineAuthorities]);
-  const selectedSet = useMemo(() => new Set(selectedAuthorities), [selectedAuthorities]);
-  const addedAuthorities = useMemo(
-    () => selectedAuthorities.filter((authority) => !baselineSet.has(authority)),
-    [baselineSet, selectedAuthorities],
+  const baselineSet = useMemo(() => new Set(baselineResourceCodes), [baselineResourceCodes]);
+  const selectedSet = useMemo(() => new Set(selectedResourceCodes), [selectedResourceCodes]);
+  const addedResourceCodes = useMemo(
+    () => selectedResourceCodes.filter((code) => !baselineSet.has(code)),
+    [baselineSet, selectedResourceCodes],
   );
-  const removedAuthorities = useMemo(
-    () => baselineAuthorities.filter((authority) => !selectedSet.has(authority)),
-    [baselineAuthorities, selectedSet],
+  const removedResourceCodes = useMemo(
+    () => baselineResourceCodes.filter((code) => !selectedSet.has(code)),
+    [baselineResourceCodes, selectedSet],
   );
-  const changedAuthoritySet = useMemo(
-    () => new Set([...addedAuthorities, ...removedAuthorities]),
-    [addedAuthorities, removedAuthorities],
+  const changedCodeSet = useMemo(
+    () => new Set([...addedResourceCodes, ...removedResourceCodes]),
+    [addedResourceCodes, removedResourceCodes],
   );
   const hasScopeChanges = dataScopeId !== baselineDataScopeId || fieldScopeId !== baselineFieldScopeId;
-  const hasChanges = addedAuthorities.length > 0 || removedAuthorities.length > 0 || hasScopeChanges;
+  const hasChanges = addedResourceCodes.length > 0 || removedResourceCodes.length > 0 || hasScopeChanges;
 
   const filteredResourceNodes = useMemo(
     () =>
@@ -375,11 +383,11 @@ const AccessCenter = () => {
         resourceNodes,
         resourceSearch.trim().toLowerCase(),
         selectedSet,
-        changedAuthoritySet,
+        changedCodeSet,
         authorizedOnly,
         changedOnly,
       ),
-    [authorizedOnly, changedAuthoritySet, changedOnly, resourceNodes, resourceSearch, selectedSet],
+    [authorizedOnly, changedCodeSet, changedOnly, resourceNodes, resourceSearch, selectedSet],
   );
 
   const treeData = useMemo(
@@ -388,26 +396,26 @@ const AccessCenter = () => {
   );
   const checkedTreeKeys = useMemo(
     () =>
-      selectedAuthorities.flatMap((authority) =>
-        (resourceIndex.permissionNodesByAuthority.get(authority) ?? []).map((node) => node.id),
+      selectedResourceCodes.flatMap((code) =>
+        (resourceIndex.resourceNodesByCode.get(code) ?? []).map((node) => node.id),
       ),
-    [resourceIndex.permissionNodesByAuthority, selectedAuthorities],
+    [resourceIndex.resourceNodesByCode, selectedResourceCodes],
   );
   const visibleExpandedKeys = resourceSearch.trim() ? allNodeIds(filteredResourceNodes) : expandedKeys;
   const selectedResource = resourceIndex.nodeMap.get(selectedResourceId);
-  const selectedResourcePermissions = useMemo(() => collectPermissionNodes(selectedResource), [selectedResource]);
-  const selectedResourceAuthorities = getNodeAuthorities(selectedResource);
-  const selectedResourceSelectedCount = selectedResourceAuthorities.filter((authority) => selectedSet.has(authority)).length;
+  const selectedGrantableNodes = useMemo(() => collectGrantableNodes(selectedResource), [selectedResource]);
+  const selectedResourceResourceCodes = getNodeResourceCodes(selectedResource);
+  const selectedResourceSelectedCount = selectedResourceResourceCodes.filter((code) => selectedSet.has(code)).length;
   const dataScopeLabel = getScopeLabel(
     dataScopeOptions,
     dataScopeId,
-    t('roles.permissionConfig.noDataScope', '不限制数据范围'),
+    t('roles.resourceConfig.noDataScope', '不限制数据范围'),
     detail?.dataScope?.name,
   );
   const fieldScopeLabel = getScopeLabel(
     fieldScopeOptions,
     fieldScopeId,
-    t('roles.permissionConfig.noFieldScope', '不限制字段范围'),
+    t('roles.resourceConfig.noFieldScope', '不限制字段范围'),
     detail?.fieldScope?.name,
   );
 
@@ -417,33 +425,34 @@ const AccessCenter = () => {
       info?: {checked?: boolean; node?: {key?: Key}},
     ) => {
       const checkedKeys = Array.isArray(checked) ? checked : checked.checked;
-      let nextAuthorities = collectAuthoritiesFromKeys(checkedKeys, resourceIndex.nodeMap);
+      let nextResourceCodes = collectResourceCodesFromKeys(checkedKeys, resourceIndex.nodeMap);
       const toggledNode = info?.node?.key ? resourceIndex.nodeMap.get(String(info.node.key)) : undefined;
-      if (info?.checked === false && toggledNode?.type === 'PERMISSION' && toggledNode.permissionAuthority) {
-        nextAuthorities = nextAuthorities.filter((authority) => authority !== toggledNode.permissionAuthority);
+      const toggledCode = toggledNode?.resourceCode || toggledNode?.code;
+      if (info?.checked === false && toggledCode) {
+        nextResourceCodes = nextResourceCodes.filter((code) => code !== toggledCode);
       }
-      setSelectedAuthorities(orderAuthorities(nextAuthorities, resourceIndex.permissionOrder));
+      setSelectedResourceCodes(orderResourceCodes(nextResourceCodes, resourceIndex.resourceOrder));
     },
-    [resourceIndex.nodeMap, resourceIndex.permissionOrder],
+    [resourceIndex.nodeMap, resourceIndex.resourceOrder],
   );
 
-  const handlePermissionToggle = useCallback(
-    (authority: string, checked: boolean) => {
-      setSelectedAuthorities((previous) => {
+  const handleResourceToggle = useCallback(
+    (code: string, checked: boolean) => {
+      setSelectedResourceCodes((previous) => {
         const next = checked
-          ? [...previous, authority]
-          : previous.filter((current) => current !== authority);
-        return orderAuthorities(next, resourceIndex.permissionOrder);
+          ? [...previous, code]
+          : previous.filter((current) => current !== code);
+        return orderResourceCodes(next, resourceIndex.resourceOrder);
       });
     },
-    [resourceIndex.permissionOrder],
+    [resourceIndex.resourceOrder],
   );
 
   const handleReset = useCallback(() => {
-    setSelectedAuthorities(baselineAuthorities);
+    setSelectedResourceCodes(baselineResourceCodes);
     setDataScopeId(baselineDataScopeId);
     setFieldScopeId(baselineFieldScopeId);
-  }, [baselineAuthorities, baselineDataScopeId, baselineFieldScopeId]);
+  }, [baselineResourceCodes, baselineDataScopeId, baselineFieldScopeId]);
 
   const handleSave = useCallback(async () => {
     if (!selectedRoleId) return;
@@ -451,15 +460,15 @@ const AccessCenter = () => {
     try {
       const saved = await saveRoleAuthorization({
         roleId: selectedRoleId,
-        permissionAuthorities: selectedAuthorities,
+        resourceCodes: selectedResourceCodes,
         dataScopeId,
         fieldScopeId,
       });
-      const savedAuthorities = orderAuthorities(saved.authorizedPermissions ?? [], resourceIndex.permissionOrder);
+      const savedResourceCodes = orderResourceCodes(saved.authorizedResources ?? [], resourceIndex.resourceOrder);
       const savedDataScopeId = saved.scopeAssignment?.dataScopeId ?? null;
       const savedFieldScopeId = saved.scopeAssignment?.fieldScopeId ?? null;
-      setBaselineAuthorities(savedAuthorities);
-      setSelectedAuthorities(savedAuthorities);
+      setBaselineResourceCodes(savedResourceCodes);
+      setSelectedResourceCodes(savedResourceCodes);
       setBaselineDataScopeId(savedDataScopeId);
       setBaselineFieldScopeId(savedFieldScopeId);
       setDataScopeId(savedDataScopeId);
@@ -475,10 +484,10 @@ const AccessCenter = () => {
     dataScopeId,
     detailQuery,
     fieldScopeId,
-    resourceIndex.permissionOrder,
+    resourceIndex.resourceOrder,
     resourceTreeQuery,
     roleQuery,
-    selectedAuthorities,
+    selectedResourceCodes,
     selectedRoleId,
     t,
   ]);
@@ -525,7 +534,7 @@ const AccessCenter = () => {
                   <span className="access-center-role-name">{roleTitle(item)}</span>
                   <span className="access-center-role-code">{item.role.authority || item.role.id}</span>
                   <span className="access-center-role-meta">
-                    <Tag icon={<KeyOutlined />} color="blue">{item.permissionCount}</Tag>
+                    <Tag icon={<KeyOutlined />} color="blue">{item.resourceCount}</Tag>
                     <Tag icon={<UserOutlined />} color="green">{item.assignedUserCount}</Tag>
                   </span>
                 </button>
@@ -566,32 +575,32 @@ const AccessCenter = () => {
           <Alert
             type="error"
             showIcon
-            message={t('accessCenter.message.loadFailed', '权限中心加载失败')}
+            message={t('accessCenter.message.loadFailed', '资源中心加载失败')}
           />
         ) : null}
 
         <section className="access-center-scope-band">
           <label className="access-center-field">
-            <span>{t('roles.permissionConfig.dataScope', '数据权限')}</span>
+            <span>{t('roles.resourceConfig.dataScope', '数据权限')}</span>
             <Select
               allowClear
               value={dataScopeId}
               options={dataScopeOptions}
               loading={dataScopeQuery.isFetching}
               disabled={!selectedRoleId || saving}
-              placeholder={t('roles.permissionConfig.noDataScope', '不限制数据范围')}
+              placeholder={t('roles.resourceConfig.noDataScope', '不限制数据范围')}
               onChange={(value) => setDataScopeId(value ?? null)}
             />
           </label>
           <label className="access-center-field">
-            <span>{t('roles.permissionConfig.fieldScope', '字段权限')}</span>
+            <span>{t('roles.resourceConfig.fieldScope', '字段权限')}</span>
             <Select
               allowClear
               value={fieldScopeId}
               options={fieldScopeOptions}
               loading={fieldScopeQuery.isFetching}
               disabled={!selectedRoleId || saving}
-              placeholder={t('roles.permissionConfig.noFieldScope', '不限制字段范围')}
+              placeholder={t('roles.resourceConfig.noFieldScope', '不限制字段范围')}
               onChange={(value) => setFieldScopeId(value ?? null)}
             />
           </label>
@@ -614,7 +623,7 @@ const AccessCenter = () => {
                 <Input
                   allowClear
                   prefix={<SearchOutlined />}
-                  placeholder={t('accessCenter.resource.search', '搜索菜单、功能或权限')}
+                  placeholder={t('accessCenter.resource.search', '搜索资源编码、路径或名称')}
                   value={resourceSearch}
                   onChange={(event) => setResourceSearch(event.target.value)}
                 />
@@ -660,8 +669,8 @@ const AccessCenter = () => {
                         </Tag>
                       </div>
                       <div className="access-center-detail-meta">
-                        <span>{t('accessCenter.metric.permissions', '权限')}</span>
-                        <strong>{selectedResourceSelectedCount}/{selectedResourceAuthorities.length}</strong>
+                        <span>{t('accessCenter.metric.resources', '资源')}</span>
+                        <strong>{selectedResourceSelectedCount}/{selectedResourceResourceCodes.length}</strong>
                       </div>
                       {selectedResource.description ? (
                         <Typography.Paragraph type="secondary" ellipsis={{rows: 2}}>
@@ -669,38 +678,38 @@ const AccessCenter = () => {
                         </Typography.Paragraph>
                       ) : null}
                       <div className="access-center-action-head">
-                        <Typography.Text strong>{t('accessCenter.resource.permissions', '动作权限')}</Typography.Text>
-                        <Typography.Text type="secondary">{selectedResourcePermissions.length}</Typography.Text>
+                        <Typography.Text strong>{t('accessCenter.resource.grantableResources', '可授权资源')}</Typography.Text>
+                        <Typography.Text type="secondary">{selectedGrantableNodes.length}</Typography.Text>
                       </div>
                       <div className="access-center-action-list">
-                        {selectedResourcePermissions.length === 0 ? (
+                        {selectedGrantableNodes.length === 0 ? (
                           <Empty
                             image={Empty.PRESENTED_IMAGE_SIMPLE}
-                            description={t('accessCenter.resource.emptyPermissions', '暂无动作权限')}
+                            description={t('accessCenter.resource.emptyResources', '暂无可授权资源')}
                           />
                         ) : (
-                          selectedResourcePermissions.map((permission) => {
-                            const authority = permission.permissionAuthority || permission.code || '';
-                            const selected = selectedSet.has(authority);
-                            const baseline = baselineSet.has(authority);
+                          selectedGrantableNodes.map((resource) => {
+                            const code = resource.resourceCode || resource.code || '';
+                            const selected = selectedSet.has(code);
+                            const baseline = baselineSet.has(code);
                             const changed = selected !== baseline;
                             return (
                               <div
-                                key={authority}
+                                key={code}
                                 className={`access-center-action-row${changed ? ' access-center-action-row-changed' : ''}`}
                               >
                                 <Checkbox
                                   checked={selected}
                                   disabled={saving}
-                                  onChange={(event) => handlePermissionToggle(authority, event.target.checked)}
+                                  onChange={(event) => handleResourceToggle(code, event.target.checked)}
                                 />
                                 <span className="access-center-action-info">
-                                  <strong>{permission.label || authority}</strong>
-                                  <Typography.Text code>{authority}</Typography.Text>
-                                  {permission.description ? <small>{permission.description}</small> : null}
+                                  <strong>{resource.label || code}</strong>
+                                  <Typography.Text code>{code}</Typography.Text>
+                                  {resource.description ? <small>{resource.description}</small> : null}
                                 </span>
                                 <span className="access-center-action-tags">
-                                  {HIGH_RISK_AUTHORITY.test(authority) ? (
+                                  {HIGH_RISK_RESOURCE.test(code) ? (
                                     <Tag color="red">{t('accessCenter.resource.highRisk', '敏感')}</Tag>
                                   ) : null}
                                   {changed ? (
@@ -737,8 +746,8 @@ const AccessCenter = () => {
         <div className="access-center-metric-grid">
           <div className="access-center-metric">
             <KeyOutlined />
-            <span>{selectedAuthorities.length}</span>
-            <small>{t('accessCenter.metric.permissions', '权限')}</small>
+            <span>{selectedResourceCodes.length}</span>
+            <small>{t('accessCenter.metric.resources', '资源')}</small>
           </div>
           <div className="access-center-metric">
             <TeamOutlined />
@@ -746,21 +755,21 @@ const AccessCenter = () => {
             <small>{t('accessCenter.metric.users', '用户')}</small>
           </div>
           <div className="access-center-metric">
-            <span className="access-center-metric-added">+{addedAuthorities.length}</span>
-            <small>{t('accessCenter.metric.added', '新增权限')}</small>
+            <span className="access-center-metric-added">+{addedResourceCodes.length}</span>
+            <small>{t('accessCenter.metric.added', '新增资源')}</small>
           </div>
           <div className="access-center-metric">
-            <span className="access-center-metric-removed">-{removedAuthorities.length}</span>
-            <small>{t('accessCenter.metric.removed', '移除权限')}</small>
+            <span className="access-center-metric-removed">-{removedResourceCodes.length}</span>
+            <small>{t('accessCenter.metric.removed', '移除资源')}</small>
           </div>
         </div>
         <div className="access-center-impact-section">
-          <Typography.Text type="secondary">{t('roles.permissionConfig.dataScope', '数据权限')}</Typography.Text>
+          <Typography.Text type="secondary">{t('roles.resourceConfig.dataScope', '数据权限')}</Typography.Text>
           <div>{dataScopeLabel}</div>
           {dataScopeId !== baselineDataScopeId ? <Tag color="gold">{t('accessCenter.diff.changed', '已变更')}</Tag> : null}
         </div>
         <div className="access-center-impact-section">
-          <Typography.Text type="secondary">{t('roles.permissionConfig.fieldScope', '字段权限')}</Typography.Text>
+          <Typography.Text type="secondary">{t('roles.resourceConfig.fieldScope', '字段权限')}</Typography.Text>
           <div>{fieldScopeLabel}</div>
           {fieldScopeId !== baselineFieldScopeId ? <Tag color="gold">{t('accessCenter.diff.changed', '已变更')}</Tag> : null}
         </div>
@@ -782,7 +791,7 @@ const AccessCenter = () => {
         </div>
         <div className="access-center-impact-section access-center-status-line">
           <CheckOutlined />
-          <span>{t('accessCenter.impact.auditReady', '变更会写入权限审计')}</span>
+          <span>{t('accessCenter.impact.auditReady', '变更会写入资源授权审计')}</span>
         </div>
       </aside>
     </div>

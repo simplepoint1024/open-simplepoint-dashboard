@@ -11,9 +11,9 @@ package org.simplepoint.plugin.rbac.core.api.pojo.vo;
 /**
  * Value object representing the data scope and field scope assignment for a role.
  *
- * <p>A role's permissions can be associated with a {@code DataScope} (row-level filtering)
+ * <p>A role's resource grants can be associated with a {@code DataScope} (row-level filtering)
  * and a {@code FieldScope} (field-level access control). This VO is used to read or update
- * the current scope assignment for all permission records belonging to a role.</p>
+ * the current scope assignment for all resource grant records belonging to a role.</p>
  */
 public class RoleScopeAssignmentVo {
 

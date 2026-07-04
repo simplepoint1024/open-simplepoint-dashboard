@@ -78,7 +78,7 @@ flowchart LR
 - 开发环境与规范：`doc/architecture/dev_environment.md`
 - 详细设计：`doc/design/`
 - 授权流程：`doc/design/authorization_flow.md`
-- 权限模型：`doc/permission/`
+- 资源授权模型：`doc/resource/`
 - 数据库：`doc/database/`
 - API：`doc/api/`
 - 部署：`doc/deployment/`

@@ -4,11 +4,11 @@ import React, {lazy, Suspense, useCallback, useEffect, useState} from 'react';
 import {Drawer, Spin} from "antd";
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 
-const PermissionConfig = lazy(() => import('./config/permission'));
+const ResourceConfig = lazy(() => import('./config/resource'));
 
 // 获取基础表格配置
 const baseConfig = api['rbac-roles'];
-const permissionConfigNamespaces = [...baseConfig.i18nNamespaces, 'data-scopes', 'field-scopes', 'table', 'common'];
+const resourceConfigNamespaces = [...baseConfig.i18nNamespaces, 'data-scopes', 'field-scopes', 'table', 'common'];
 
 const getDefaultDrawerHeight = () => {
     if (typeof window === 'undefined') return 620;
@@ -25,7 +25,7 @@ const App = () => {
     const {t, ensure, locale} = useI18n();
     // 确保本页所需命名空间加载（roles），语言切换后也会自动增量加载
     useEffect(() => {
-        void ensure(permissionConfigNamespaces);
+        void ensure(resourceConfigNamespaces);
     }, [ensure, locale]);
 
     // 关闭时重置高度，避免下次打开异常
@@ -60,8 +60,7 @@ const App = () => {
 
     // 自定义按钮事件
     const customButtonEvents = {
-        // 角色权限配置
-        'config.permission': (_keys: React.Key[], rows: any[]) => {
+        'config.resource': (_keys: React.Key[], rows: any[]) => {
             if (!rows[0]?.id) return;
             setOpenRoleConfig(true);
             setRoleId(rows[0].id);
@@ -86,8 +85,8 @@ const App = () => {
                 deleteRefreshTargets={{page: true, schema: false}}
             />
             <Drawer
-                className="role-permission-drawer"
-                title={t("roles.config.permission", "权限配置")}
+                className="role-resource-drawer"
+                title={t("roles.config.resource", "资源授权")}
                 open={openRoleConfig}
                 onClose={() => {
                     setOpenRoleConfig(false);
@@ -116,7 +115,7 @@ const App = () => {
                 {/* 不使用 key 强制重建，避免闪退；组件内部通过 useEffect([roleId]) 重置状态 */}
                 {openRoleConfig && roleId ? (
                     <Suspense fallback={<div style={{display: 'flex', justifyContent: 'center', padding: 24}}><Spin/></div>}>
-                        <PermissionConfig roleId={roleId}/>
+                        <ResourceConfig roleId={roleId}/>
                     </Suspense>
                 ) : null}
             </Drawer>

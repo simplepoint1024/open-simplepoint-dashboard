@@ -113,13 +113,12 @@ public class Tenant extends BaseEntityImpl<String> {
   private String description;
 
   /**
-   * The version of the tenant's permissions.
-   * This field is used for optimistic locking to prevent concurrent modifications of permissions.
+   * Version marker for tenant-scoped authorization snapshots.
    */
-  @Column(nullable = false)
+  @Column(name = "authorization_version", nullable = false)
   @Schema(
-      title = "i18n:tenants.title.permissionVersion",
-      description = "i18n:tenants.description.permissionVersion",
+      title = "i18n:tenants.title.authorizationVersion",
+      description = "i18n:tenants.description.authorizationVersion",
       example = "0",
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -127,7 +126,7 @@ public class Tenant extends BaseEntityImpl<String> {
           })
       }
   )
-  private Long permissionVersion;
+  private Long authorizationVersion;
 
   /**
    * The ID of the tenant owner.

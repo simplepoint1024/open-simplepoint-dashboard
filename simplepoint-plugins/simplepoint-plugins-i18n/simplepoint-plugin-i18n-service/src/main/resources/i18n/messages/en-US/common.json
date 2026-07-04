@@ -11,7 +11,7 @@
   "dashboard.activity.4.title": "Service micro-auth passed health check",
   "dashboard.activity.4.ts": "2 hours ago",
   "dashboard.activity.tag.change": "Change",
-  "dashboard.activity.tag.permission": "Permission",
+  "dashboard.activity.tag.resource": "Resource Grant",
   "dashboard.activity.tag.system": "System",
   "dashboard.activity.tag.task": "Task",
   "dashboard.health.authService": "Authentication Service",

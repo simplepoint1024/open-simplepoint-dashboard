@@ -13,16 +13,16 @@ import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationScopeGuards;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Application;
-import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationFeatureRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationResourceRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
-import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationFeaturesRelevanceDto;
-import org.simplepoint.plugin.rbac.tenant.api.repository.ApplicationFeatureRelevanceRepository;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationResourcesRelevanceDto;
+import org.simplepoint.plugin.rbac.tenant.api.repository.ApplicationResourceRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.ApplicationRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.PackageApplicationRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ApplicationService;
-import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -36,11 +36,11 @@ public class ApplicationServiceImpl
     extends BaseServiceImpl<ApplicationRepository, Application, String>
     implements ApplicationService {
 
-  private final ApplicationFeatureRelevanceRepository applicationFeatureRelevanceRepository;
+  private final ApplicationResourceRelevanceRepository applicationResourceRelevanceRepository;
   private final PackageApplicationRelevanceRepository packageApplicationRelevanceRepository;
   private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
   private final TenantRepository tenantRepository;
-  private final PermissionVersionRefreshService permissionVersionRefreshService;
+  private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
   /**
    * Application Service Impl.
@@ -48,18 +48,18 @@ public class ApplicationServiceImpl
   public ApplicationServiceImpl(
       ApplicationRepository repository,
       DetailsProviderService detailsProviderService,
-      ApplicationFeatureRelevanceRepository applicationFeatureRelevanceRepository,
+      ApplicationResourceRelevanceRepository applicationResourceRelevanceRepository,
       PackageApplicationRelevanceRepository packageApplicationRelevanceRepository,
       TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
       TenantRepository tenantRepository,
-      PermissionVersionRefreshService permissionVersionRefreshService
+      ResourceAuthorizationVersionService resourceAuthorizationVersionService
   ) {
     super(repository, detailsProviderService);
-    this.applicationFeatureRelevanceRepository = applicationFeatureRelevanceRepository;
+    this.applicationResourceRelevanceRepository = applicationResourceRelevanceRepository;
     this.packageApplicationRelevanceRepository = packageApplicationRelevanceRepository;
     this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
     this.tenantRepository = tenantRepository;
-    this.permissionVersionRefreshService = permissionVersionRefreshService;
+    this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
   }
 
   @Override
@@ -87,48 +87,48 @@ public class ApplicationServiceImpl
   }
 
   @Override
-  public Collection<String> authorizedFeatures(String applicationCode) {
+  public Collection<String> authorizedResources(String applicationCode) {
     if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())
         && !tenantPackageRelevanceRepository.findApplicationCodesByTenantId(resolveTenantScope()).contains(applicationCode)) {
       throw new IllegalArgumentException("应用不存在或不属于当前租户");
     }
-    return applicationFeatureRelevanceRepository.authorized(requireCode(applicationCode, "应用编码不能为空"));
+    return applicationResourceRelevanceRepository.authorized(requireCode(applicationCode, "应用编码不能为空"));
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public Collection<ApplicationFeatureRelevance> authorizeFeatures(ApplicationFeaturesRelevanceDto dto) {
+  public Collection<ApplicationResourceRelevance> authorizeResources(ApplicationResourcesRelevanceDto dto) {
     requirePlatformAdministrator();
     String applicationCode = requireCode(dto.getApplicationCode(), "应用编码不能为空");
-    Set<String> featureCodes = normalizeCodes(dto.getFeatureCodes());
-    if (featureCodes.isEmpty()) {
+    Set<String> resourceCodes = normalizeCodes(dto.getResourceCodes());
+    if (resourceCodes.isEmpty()) {
       return List.of();
     }
 
-    Set<ApplicationFeatureRelevance> relations = new LinkedHashSet<>(featureCodes.size());
-    for (String featureCode : featureCodes) {
-      ApplicationFeatureRelevance relevance = new ApplicationFeatureRelevance();
+    Set<ApplicationResourceRelevance> relations = new LinkedHashSet<>(resourceCodes.size());
+    for (String resourceCode : resourceCodes) {
+      ApplicationResourceRelevance relevance = new ApplicationResourceRelevance();
       relevance.setApplicationCode(applicationCode);
-      relevance.setFeatureCode(featureCode);
+      relevance.setResourceCode(resourceCode);
       relations.add(relevance);
     }
 
-    Collection<ApplicationFeatureRelevance> saved = applicationFeatureRelevanceRepository.saveAll(relations);
-    permissionVersionRefreshService.refreshByApplicationCodes(Set.of(applicationCode));
+    Collection<ApplicationResourceRelevance> saved = applicationResourceRelevanceRepository.saveAll(relations);
+    resourceAuthorizationVersionService.refreshByApplicationCodes(Set.of(applicationCode));
     return saved;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public void unauthorizedFeatures(String applicationCode, Set<String> featureCodes) {
+  public void unauthorizedResources(String applicationCode, Set<String> resourceCodes) {
     requirePlatformAdministrator();
-    Set<String> normalizedFeatureCodes = normalizeCodes(featureCodes);
-    if (normalizedFeatureCodes.isEmpty()) {
+    Set<String> normalizedResourceCodes = normalizeCodes(resourceCodes);
+    if (normalizedResourceCodes.isEmpty()) {
       return;
     }
     String requiredApplicationCode = requireCode(applicationCode, "应用编码不能为空");
-    applicationFeatureRelevanceRepository.unauthorized(requiredApplicationCode, normalizedFeatureCodes);
-    permissionVersionRefreshService.refreshByApplicationCodes(Set.of(requiredApplicationCode));
+    applicationResourceRelevanceRepository.unauthorized(requiredApplicationCode, normalizedResourceCodes);
+    resourceAuthorizationVersionService.refreshByApplicationCodes(Set.of(requiredApplicationCode));
   }
 
   @Override
@@ -141,8 +141,8 @@ public class ApplicationServiceImpl
     Application updated = (Application) super.modifyById(entity);
     if (!Objects.equals(oldCode, updated.getCode())) {
       packageApplicationRelevanceRepository.updateApplicationCode(oldCode, updated.getCode());
-      applicationFeatureRelevanceRepository.updateApplicationCode(oldCode, updated.getCode());
-      permissionVersionRefreshService.refreshTenants(affectedTenantIds);
+      applicationResourceRelevanceRepository.updateApplicationCode(oldCode, updated.getCode());
+      resourceAuthorizationVersionService.refreshTenants(affectedTenantIds);
     }
     return updated;
   }
@@ -165,10 +165,10 @@ public class ApplicationServiceImpl
     }
 
     final Set<String> affectedTenantIds = tenantPackageRelevanceRepository.findTenantIdsByApplicationCodes(applicationCodes);
-    applicationFeatureRelevanceRepository.deleteAllByApplicationCodes(applicationCodes);
+    applicationResourceRelevanceRepository.deleteAllByApplicationCodes(applicationCodes);
     packageApplicationRelevanceRepository.deleteAllByApplicationCodes(applicationCodes);
     super.removeByIds(ids);
-    permissionVersionRefreshService.refreshTenants(affectedTenantIds);
+    resourceAuthorizationVersionService.refreshTenants(affectedTenantIds);
   }
 
   private static Set<String> normalizeCodes(Collection<String> codes) {

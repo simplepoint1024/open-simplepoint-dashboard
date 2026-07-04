@@ -29,7 +29,7 @@ import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -54,7 +54,7 @@ class TenantServiceImplTest {
   TenantUserRelevanceRepository tenantUserRelevanceRepository;
 
   @Mock
-  PermissionVersionRefreshService permissionVersionRefreshService;
+  ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
   @Mock
   UsersService usersService;
@@ -126,7 +126,7 @@ class TenantServiceImplTest {
     verify(tenantUserRelevanceRepository).saveAll(any(Collection.class));
   }
 
-  // ── calculatePermissionContextId ──────────────────────────────────────────
+  // ── calculateAuthorizationContextId ──────────────────────────────────────────
 
   @Test
   void getCurrentUserRoles_returnsTenantAndGlobalRoles() {
@@ -143,118 +143,118 @@ class TenantServiceImplTest {
   }
 
   @Test
-  void calculatePermissionContextId_throwsWhenNotAuthenticated() {
+  void calculateAuthorizationContextId_throwsWhenNotAuthenticated() {
     SecurityContextHolder.clearContext();
-    assertThatThrownBy(() -> service.calculatePermissionContextId("t1"))
+    assertThatThrownBy(() -> service.calculateAuthorizationContextId("t1"))
         .isInstanceOf(IllegalStateException.class)
         .hasMessage("当前未认证用户");
   }
 
   @Test
-  void calculatePermissionContextId_returnsHashForDefaultTenant() {
+  void calculateAuthorizationContextId_returnsHashForDefaultTenant() {
     setAuthentication("user1");
     Tenant personalTenant = new Tenant();
     personalTenant.setId("personal-1");
     when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.of(personalTenant));
     when(tenantUserRelevanceRepository.authorized("personal-1")).thenReturn(List.of("user1"));
-    when(repository.getTenantPermissionVersion("personal-1")).thenReturn(3L);
+    when(repository.getTenantAuthorizationVersion("personal-1")).thenReturn(3L);
 
-    String contextId = service.calculatePermissionContextId("default");
+    String contextId = service.calculateAuthorizationContextId("default");
 
     assertThat(contextId).isNotBlank().hasSize(64); // SHA-256 hex is 64 chars
     verify(repository).findPersonalTenantByOwnerId("user1");
-    verify(repository).getTenantPermissionVersion("personal-1");
+    verify(repository).getTenantAuthorizationVersion("personal-1");
   }
 
   @Test
-  void calculatePermissionContextId_withNonDefaultTenantAndVersion() {
+  void calculateAuthorizationContextId_withNonDefaultTenantAndVersion() {
     setAuthentication("user1");
     when(repository.hasUser("tenant1", "user1")).thenReturn(true);
-    when(repository.getTenantPermissionVersion("tenant1")).thenReturn(5L);
+    when(repository.getTenantAuthorizationVersion("tenant1")).thenReturn(5L);
 
-    String contextId = service.calculatePermissionContextId("tenant1");
+    String contextId = service.calculateAuthorizationContextId("tenant1");
 
     assertThat(contextId).isNotBlank().hasSize(64);
     verify(repository).hasUser("tenant1", "user1");
-    verify(repository).getTenantPermissionVersion("tenant1");
+    verify(repository).getTenantAuthorizationVersion("tenant1");
   }
 
   @Test
-  void calculatePermissionContextId_includesSelectedRoleInHash() {
+  void calculateAuthorizationContextId_includesSelectedRoleInHash() {
     setAuthentication("user1");
     RoleGrantedAuthority role = new RoleGrantedAuthority("role-admin", "ROLE_ADMIN");
     when(repository.hasUser("tenant1", "user1")).thenReturn(true);
     when(usersService.loadRolesByUserId("tenant1", "user1")).thenReturn(List.of(role));
     when(usersService.loadRolesByUserId(null, "user1")).thenReturn(List.of());
-    when(repository.getTenantPermissionVersion("tenant1")).thenReturn(5L);
+    when(repository.getTenantAuthorizationVersion("tenant1")).thenReturn(5L);
 
-    String allRolesContextId = service.calculatePermissionContextId("tenant1");
-    String selectedRoleContextId = service.calculatePermissionContextId("tenant1", "role-admin");
+    String allRolesContextId = service.calculateAuthorizationContextId("tenant1");
+    String selectedRoleContextId = service.calculateAuthorizationContextId("tenant1", "role-admin");
 
     assertThat(selectedRoleContextId).isNotEqualTo(allRolesContextId);
   }
 
   @Test
-  void calculatePermissionContextId_throwsWhenSelectedRoleNotOwned() {
+  void calculateAuthorizationContextId_throwsWhenSelectedRoleNotOwned() {
     setAuthentication("user1");
     when(repository.hasUser("tenant1", "user1")).thenReturn(true);
     when(usersService.loadRolesByUserId("tenant1", "user1")).thenReturn(List.of());
     when(usersService.loadRolesByUserId(null, "user1")).thenReturn(List.of());
 
-    assertThatThrownBy(() -> service.calculatePermissionContextId("tenant1", "role-missing"))
+    assertThatThrownBy(() -> service.calculateAuthorizationContextId("tenant1", "role-missing"))
         .isInstanceOf(AccessDeniedException.class)
         .hasMessage("当前用户未拥有指定角色");
   }
 
   @Test
-  void calculatePermissionContextId_withNullPermissionVersion() {
+  void calculateAuthorizationContextId_withNullAuthorizationVersion() {
     setAuthentication("user1");
     when(repository.hasUser("tenant1", "user1")).thenReturn(true);
-    when(repository.getTenantPermissionVersion("tenant1")).thenReturn(null);
+    when(repository.getTenantAuthorizationVersion("tenant1")).thenReturn(null);
 
-    String contextId = service.calculatePermissionContextId("tenant1");
+    String contextId = service.calculateAuthorizationContextId("tenant1");
 
     assertThat(contextId).isNotBlank().hasSize(64);
   }
 
   @Test
-  void calculatePermissionContextId_throwsWhenUserNotInTenant() {
+  void calculateAuthorizationContextId_throwsWhenUserNotInTenant() {
     setAuthentication("user1");
     when(repository.hasUser("tenant1", "user1")).thenReturn(false);
 
-    assertThatThrownBy(() -> service.calculatePermissionContextId("tenant1"))
+    assertThatThrownBy(() -> service.calculateAuthorizationContextId("tenant1"))
         .isInstanceOf(AccessDeniedException.class)
         .hasMessage("当前用户未加入指定租户");
   }
 
   @Test
-  void calculatePermissionContextId_usesDefaultContextWhenBlankTenantId() {
+  void calculateAuthorizationContextId_usesDefaultContextWhenBlankTenantId() {
     setAuthentication("user1");
     Tenant personalTenant = new Tenant();
     personalTenant.setId("personal-1");
     when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.of(personalTenant));
-    when(repository.getTenantPermissionVersion("personal-1")).thenReturn(2L);
+    when(repository.getTenantAuthorizationVersion("personal-1")).thenReturn(2L);
 
-    String contextId = service.calculatePermissionContextId(null);
+    String contextId = service.calculateAuthorizationContextId(null);
 
     assertThat(contextId).isNotBlank().hasSize(64);
     verify(repository).findPersonalTenantByOwnerId("user1");
-    verify(repository).getTenantPermissionVersion("personal-1");
+    verify(repository).getTenantAuthorizationVersion("personal-1");
   }
 
   @Test
-  void calculatePermissionContextId_usesPersonalTenantWhenTenantIdBlankString() {
+  void calculateAuthorizationContextId_usesPersonalTenantWhenTenantIdBlankString() {
     setAuthentication("user1");
     Tenant personalTenant = new Tenant();
     personalTenant.setId("personal-1");
     when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.of(personalTenant));
-    when(repository.getTenantPermissionVersion("personal-1")).thenReturn(4L);
+    when(repository.getTenantAuthorizationVersion("personal-1")).thenReturn(4L);
 
-    String contextId = service.calculatePermissionContextId("   ");
+    String contextId = service.calculateAuthorizationContextId("   ");
 
     assertThat(contextId).isNotBlank().hasSize(64);
     verify(repository).findPersonalTenantByOwnerId("user1");
-    verify(repository).getTenantPermissionVersion("personal-1");
+    verify(repository).getTenantAuthorizationVersion("personal-1");
   }
 
   // ── authorizedPackages ────────────────────────────────────────────────────
@@ -416,7 +416,7 @@ class TenantServiceImplTest {
 
     assertThat(result).containsExactly(saved);
     verify(tenantPackageRelevanceRepository).saveAll(any());
-    verify(permissionVersionRefreshService).refreshTenant("tenant1");
+    verify(resourceAuthorizationVersionService).refreshTenant("tenant1");
   }
 
   // ── unauthorizedPackages ──────────────────────────────────────────────────
@@ -453,7 +453,7 @@ class TenantServiceImplTest {
     service.unauthorizedPackages("tenant1", Set.of("pkg.standard"));
 
     verify(tenantPackageRelevanceRepository).unauthorized("tenant1", Set.of("pkg.standard"));
-    verify(permissionVersionRefreshService).refreshTenant("tenant1");
+    verify(resourceAuthorizationVersionService).refreshTenant("tenant1");
   }
 
   @Test
@@ -508,7 +508,7 @@ class TenantServiceImplTest {
     Collection<TenantUserRelevance> result = service.authorizeUsers(dto);
 
     assertThat(result).containsExactly(rel);
-    verify(permissionVersionRefreshService).refreshTenant("tenant1");
+    verify(resourceAuthorizationVersionService).refreshTenant("tenant1");
   }
 
   @Test
@@ -581,7 +581,7 @@ class TenantServiceImplTest {
     service.unauthorizedUsers("tenant1", Set.of("user2"));
 
     verify(tenantUserRelevanceRepository).unauthorized("tenant1", Set.of("user2"));
-    verify(permissionVersionRefreshService).refreshTenant("tenant1");
+    verify(resourceAuthorizationVersionService).refreshTenant("tenant1");
   }
 
   // ── create ────────────────────────────────────────────────────────────────
@@ -649,19 +649,19 @@ class TenantServiceImplTest {
   }
 
   @Test
-  void modifyById_preservesPermissionVersionFromCurrentWhenNull() {
+  void modifyById_preservesAuthorizationVersionFromCurrentWhenNull() {
     setAdminRole();
     Tenant current = new Tenant();
     current.setId("t1");
     current.setOwnerId("owner1");
-    current.setPermissionVersion(3L);
+    current.setAuthorizationVersion(3L);
     // First call: TenantServiceImpl reads current version; second call: BaseServiceImpl skips field-merge (avoids FormSchemaGenerator init)
     when(repository.findById("t1")).thenReturn(Optional.of(current), Optional.empty());
 
     Tenant entity = new Tenant();
     entity.setId("t1");
     entity.setOwnerId("owner1");
-    entity.setPermissionVersion(null);
+    entity.setAuthorizationVersion(null);
 
     when(tenantUserRelevanceRepository.existingUserIds(Set.of("owner1"))).thenReturn(Set.of("owner1"));
     when(repository.updateById(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -669,7 +669,7 @@ class TenantServiceImplTest {
 
     Tenant result = service.modifyById(entity);
 
-    assertThat(result.getPermissionVersion()).isEqualTo(3L);
+    assertThat(result.getAuthorizationVersion()).isEqualTo(3L);
   }
 
   // ── removeByIds ───────────────────────────────────────────────────────────

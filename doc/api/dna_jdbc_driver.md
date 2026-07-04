@@ -145,7 +145,7 @@ simplepoint.dna.jdbc.socket.port=15432
 | `password` | 是 | 系统用户密码。 |
 | `catalogCode` | 否 | 目标联邦目录编码。省略时列出全部授权目录。 |
 | `tenantId` | 否 | 指定租户 ID。 |
-| `contextId` | 否 | 指定权限上下文 ID。 |
+| `contextId` | 否 | 指定授权上下文 ID。 |
 | `schema` | 否 | 默认 Schema。 |
 
 #### 高级连接属性
@@ -358,7 +358,7 @@ try (Statement stmt = connection.createStatement()) {
 ### 7.2 `tenantId` 和 `contextId` 的默认行为
 
 - `tenantId` 未传时，服务端会优先从当前用户可访问租户中按 `tenantName → tenantId` 排序后取第一个；如果没有可用租户，则回退为 `default`。
-- `contextId` 未传时，服务端会自动计算当前租户下的权限上下文。
+- `contextId` 未传时，服务端会自动计算当前租户下的授权上下文。
 
 ### 7.3 默认 Schema
 

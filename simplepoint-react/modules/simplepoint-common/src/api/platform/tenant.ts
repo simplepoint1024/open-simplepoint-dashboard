@@ -37,7 +37,7 @@ export async function fetchOwnerItems(params: {page: string; size: string}) {
   return await get<Page<UserRelevanceVo>>(`${baseUrl}/owners/items`, params as Record<string, string>);
 }
 
-export async function fetchUserItems(params: {tenantId: string; page: string; size: string}) {
+export async function fetchUserItems(params: {tenantId: string; page: string; size: string; keyword?: string}) {
   return await get<Page<UserRelevanceVo>>(`${baseUrl}/users/items`, params as Record<string, string>);
 }
 

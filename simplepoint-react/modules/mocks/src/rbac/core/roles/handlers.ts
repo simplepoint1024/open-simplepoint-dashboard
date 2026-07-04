@@ -1,8 +1,8 @@
 import {http, HttpResponse} from 'msw';
 
 const base = '/common/roles';
-const authorizedPermissionsByRole = new Map<string, string[]>([
-  ['1', ['dashboard.view', 'system.role.view']],
+const authorizedResourcesByRole = new Map<string, string[]>([
+  ['1', ['dashboard.view', 'roles.view', 'roles.config.resource']],
   ['2', ['dashboard.view']],
 ]);
 const scopeAssignmentsByRole = new Map<string, { dataScopeId: string | null; fieldScopeId: string | null }>([
@@ -62,10 +62,10 @@ export default [
             "argumentMaxSize": 1,
             "sort": 2,
             "type": "primary",
-            "title": "i18n:roles.config.permission",
+            "title": "i18n:roles.config.resource",
             "danger": false,
             "argumentMinSize": 1,
-            "key": "config.permission"
+            "key": "config.resource"
           }
         ],
         "schema": {
@@ -163,7 +163,7 @@ export default [
       'content': [
         {
           'name': '超级管理员',
-          'description': '拥有系统内所有权限',
+          'description': '拥有系统内所有资源授权',
           'id': '1'
         },
         {
@@ -182,37 +182,37 @@ export default [
   }),
   http.get(`${base}/authorized`, ({request})=> {
     const roleId = new URL(request.url).searchParams.get('roleId') ?? '';
-    return HttpResponse.json(authorizedPermissionsByRole.get(roleId) ?? []);
+    return HttpResponse.json(authorizedResourcesByRole.get(roleId) ?? []);
   }),
   http.post(`${base}/authorize`, async ({request}) => {
     const payload = await request.json() as {
       roleId?: string | null;
-      permissionAuthority?: string[];
+      resourceCodes?: string[];
       dataScopeId?: string | null;
       fieldScopeId?: string | null;
     };
     const roleId = payload.roleId ?? '';
-    const current = new Set(authorizedPermissionsByRole.get(roleId) ?? []);
-    (payload.permissionAuthority ?? []).forEach((authority) => current.add(authority));
-    authorizedPermissionsByRole.set(roleId, Array.from(current));
+    const current = new Set(authorizedResourcesByRole.get(roleId) ?? []);
+    (payload.resourceCodes ?? []).forEach((authority) => current.add(authority));
+    authorizedResourcesByRole.set(roleId, Array.from(current));
     scopeAssignmentsByRole.set(roleId, {
       dataScopeId: payload.dataScopeId ?? scopeAssignmentsByRole.get(roleId)?.dataScopeId ?? null,
       fieldScopeId: payload.fieldScopeId ?? scopeAssignmentsByRole.get(roleId)?.fieldScopeId ?? null,
     });
-    return HttpResponse.json(Array.from(current).map((permissionAuthority) => ({
+    return HttpResponse.json(Array.from(current).map((resourceCodes) => ({
       roleId,
-      permissionAuthority,
+      resourceCodes,
       dataScopeId: scopeAssignmentsByRole.get(roleId)?.dataScopeId ?? null,
       fieldScopeId: scopeAssignmentsByRole.get(roleId)?.fieldScopeId ?? null,
     })));
   }),
   http.post(`${base}/unauthorized`, async ({request}) => {
-    const payload = await request.json() as { roleId?: string | null; permissionAuthority?: string[] };
+    const payload = await request.json() as { roleId?: string | null; resourceCodes?: string[] };
     const roleId = payload.roleId ?? '';
-    const removing = new Set(payload.permissionAuthority ?? []);
-    authorizedPermissionsByRole.set(
+    const removing = new Set(payload.resourceCodes ?? []);
+    authorizedResourcesByRole.set(
       roleId,
-      (authorizedPermissionsByRole.get(roleId) ?? []).filter((authority) => !removing.has(authority)),
+      (authorizedResourcesByRole.get(roleId) ?? []).filter((authority) => !removing.has(authority)),
     );
     return HttpResponse.json({});
   }),

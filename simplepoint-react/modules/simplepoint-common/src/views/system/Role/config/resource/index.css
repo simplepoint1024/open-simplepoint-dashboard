@@ -1,0 +1,109 @@
+.role-resource-drawer .ant-drawer-header {
+  padding: 12px 16px;
+}
+
+.role-resource-drawer .ant-drawer-body {
+  background: var(--ant-color-bg-layout, #f5f7fb);
+}
+
+.role-resource-config {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.role-resource-scope {
+  flex-shrink: 0;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--ant-color-border-secondary, rgba(5, 5, 5, 0.08));
+  background: var(--ant-color-bg-container, #fff);
+}
+
+.role-resource-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.role-resource-section-subtitle {
+  margin-top: 2px;
+  color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.role-resource-scope-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.role-resource-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
+  font-size: 12px;
+}
+
+.role-resource-select {
+  width: 100%;
+}
+
+.role-resource-alert {
+  flex-shrink: 0;
+  margin: 12px 16px 0;
+}
+
+.role-resource-tree-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px 16px;
+}
+
+.role-resource-tree-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--ant-color-border-secondary, rgba(5, 5, 5, 0.08));
+  border-radius: 6px;
+  background: var(--ant-color-bg-container, #fff);
+}
+
+.role-resource-tree-wrap .ant-tree {
+  background: transparent;
+}
+
+.role-resource-tree-wrap .ant-tree-title {
+  min-width: 0;
+}
+
+.role-resource-spin {
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-dark .role-resource-drawer .ant-drawer-body {
+  background: var(--ant-color-bg-layout, #000);
+}
+
+.theme-dark .role-resource-scope,
+.theme-dark .role-resource-tree-wrap {
+  background: var(--ant-color-bg-container, #141414);
+}
+
+@media (max-width: 900px) {
+  .role-resource-scope-grid {
+    grid-template-columns: 1fr;
+  }
+}

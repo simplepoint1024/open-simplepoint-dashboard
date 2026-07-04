@@ -52,12 +52,11 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
   @Override
   @Query("""
       select
-        ps.authority
-      from RolePermissionsRelevance pr
-      join Permissions ps on pr.permissionAuthority = ps.authority
-      where pr.roleId in :roleIds
+        grant.resourceCode
+      from RoleResourceGrant grant
+      where grant.roleId in :roleIds
       """)
-  Collection<String> loadPermissionsInRoleIds(@Param("roleIds") List<String> roleIds);
+  Collection<String> loadResourcesInRoleIds(@Param("roleIds") List<String> roleIds);
 
   @Override
   @Query("select roleId from UserRoleRelevance where tenantId = :tenantId and userId = :userId")

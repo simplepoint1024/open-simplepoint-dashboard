@@ -17,21 +17,22 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChangeLogRecordCommand;
-import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
-import org.simplepoint.plugin.rbac.core.api.pojo.dto.RolePermissionsRelevanceDto;
+import org.simplepoint.plugin.auditing.logging.api.pojo.command.ResourceGrantLogRecordCommand;
+import org.simplepoint.plugin.auditing.logging.api.service.ResourceGrantLogRemoteService;
+import org.simplepoint.plugin.rbac.core.api.pojo.dto.RoleResourceGrantDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleScopeAssignmentVo;
-import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
+import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
-import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.entity.Role;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
+import org.simplepoint.security.entity.RoleResourceGrant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -44,36 +45,37 @@ import org.springframework.transaction.annotation.Transactional;
  * This class extends the BaseServiceImpl to inherit common CRUD operations and implements the RolesService
  * interface for defining role-specific business logic.
  */
+@Slf4j
 @Service
 public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, String>
     implements RoleService {
 
-  private final RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository;
+  private final RoleResourceGrantRepository roleResourceGrantRepository;
   private final TenantRepository tenantRepository;
-  private final PermissionVersionRefreshService permissionVersionRefreshService;
-  private final PermissionChangeLogRemoteService permissionChangeLogRemoteService;
+  private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
+  private final ResourceGrantLogRemoteService resourceGrantLogRemoteService;
 
   /**
    * Constructs a new RolesServiceImpl with the specified repository, user context, and details provider service.
    *
    * @param repository                         the RoleRepository instance for data access
    * @param detailsProviderService             the service for providing user details
-   * @param rolePermissionsRelevanceRepository the RolePermissionsRelevanceRepository for role-permission relations
+   * @param roleResourceGrantRepository the repository for role-resource grants
    */
   public RolesServiceImpl(
       RoleRepository repository,
       DetailsProviderService detailsProviderService,
-      RolePermissionsRelevanceRepository rolePermissionsRelevanceRepository,
+      RoleResourceGrantRepository roleResourceGrantRepository,
       @Autowired(required = false)
       TenantRepository tenantRepository,
-      PermissionVersionRefreshService permissionVersionRefreshService,
-      PermissionChangeLogRemoteService permissionChangeLogRemoteService
+      ResourceAuthorizationVersionService resourceAuthorizationVersionService,
+      ResourceGrantLogRemoteService resourceGrantLogRemoteService
   ) {
     super(repository, detailsProviderService);
-    this.rolePermissionsRelevanceRepository = rolePermissionsRelevanceRepository;
+    this.roleResourceGrantRepository = roleResourceGrantRepository;
     this.tenantRepository = tenantRepository;
-    this.permissionVersionRefreshService = permissionVersionRefreshService;
-    this.permissionChangeLogRemoteService = permissionChangeLogRemoteService;
+    this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
+    this.resourceGrantLogRemoteService = resourceGrantLogRemoteService;
   }
 
   /**
@@ -103,7 +105,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       ensureTenantContextAttribute(resolveCurrentTenantScope());
     }
     S saved = super.create(entity);
-    refreshPermissionVersionByRoleTenantIds(List.of(saved));
+    refreshAuthorizationVersionByRoleTenantIds(List.of(saved));
     return saved;
   }
 
@@ -114,7 +116,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       ensureTenantContextAttribute(resolveCurrentTenantScope());
     }
     List<Role> saved = super.create(entities);
-    refreshPermissionVersionByRoleTenantIds(saved);
+    refreshAuthorizationVersionByRoleTenantIds(saved);
     return saved;
   }
 
@@ -126,7 +128,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       validateRoleBelongsToCurrentTenant(entity.getId());
     }
     Role updated = (Role) super.modifyById(entity);
-    refreshPermissionVersionByRoleTenantIds(List.of(updated));
+    refreshAuthorizationVersionByRoleTenantIds(List.of(updated));
     return updated;
   }
 
@@ -142,32 +144,32 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     }
     Collection<Role> roles = findAllByIds(ids);
     super.removeByIds(ids);
-    refreshPermissionVersionByRoleTenantIds(roles);
+    refreshAuthorizationVersionByRoleTenantIds(roles);
   }
 
 
   /**
-   * Removes the authorization of specified permissions from a role.
+   * Removes the authorization of specified resources from a role.
    *
-   * @param roleId        the authority of the role
-   * @param permissionAuthority the set of permission permissionAuthority to be unauthorized
+   * @param roleId the role id
+   * @param resourceCodes resource codes to revoke
    */
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public void unauthorized(String roleId, Set<String> permissionAuthority) {
+  public void unauthorized(String roleId, Set<String> resourceCodes) {
     requireTenantOwnerOrAdministratorIfTenantScoped();
     validateRoleBelongsToCurrentTenant(roleId);
     String tenantId = resolveCurrentTenantScope();
-    this.getRepository().unauthorized(tenantId, roleId, permissionAuthority);
-    refreshCurrentTenantPermissionVersion();
-    recordPermissionChange("UNAUTHORIZE", roleId, permissionAuthority);
+    this.getRepository().unauthorized(tenantId, roleId, resourceCodes);
+    refreshCurrentTenantAuthorizationVersion();
+    recordResourceGrantChange("UNAUTHORIZE", roleId, resourceCodes);
   }
 
   /**
-   * Retrieves a collection of authorized permission permissionAuthority for a given role authority.
+   * Retrieves resources granted to a role.
    *
-   * @param roleId the authority of the role
-   * @return a collection of authorized permission permissionAuthority
+   * @param roleId the role id
+   * @return resource codes granted to the role
    */
   @Override
   public Collection<String> authorized(String roleId) {
@@ -177,31 +179,31 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   }
 
   /**
-   * Authorizes a set of permissions to a role based on the provided DTO.
+   * Grants a set of resources to a role based on the provided DTO.
    *
-   * @param dto the RolePermissionsRelevanceDto containing role authority and permission authorities
-   * @return a collection of RolePermissionsRelevance representing the authorized permissions
+   * @param dto role resource grant DTO
+   * @return saved grants
    */
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public Collection<RolePermissionsRelevance> authorize(RolePermissionsRelevanceDto dto) {
+  public Collection<RoleResourceGrant> authorize(RoleResourceGrantDto dto) {
     requireTenantOwnerOrAdministratorIfTenantScoped();
     validateRoleBelongsToCurrentTenant(dto.getRoleId());
-    Set<String> pms = dto.getPermissionAuthority();
-    Set<RolePermissionsRelevance> rels = new HashSet<>();
+    Set<String> resourceCodes = dto.getResourceCodes();
+    Set<RoleResourceGrant> grants = new HashSet<>();
     String roleId = dto.getRoleId();
-    for (String pm : pms) {
-      RolePermissionsRelevance relevance = new RolePermissionsRelevance();
-      relevance.setRoleId(roleId);
-      relevance.setPermissionAuthority(pm);
-      relevance.setDataScopeId(dto.getDataScopeId());
-      relevance.setFieldScopeId(dto.getFieldScopeId());
-      applyCurrentTenantIdIfNecessary(relevance);
-      rels.add(relevance);
+    for (String resourceCode : resourceCodes) {
+      RoleResourceGrant grant = new RoleResourceGrant();
+      grant.setRoleId(roleId);
+      grant.setResourceCode(resourceCode);
+      grant.setDataScopeId(dto.getDataScopeId());
+      grant.setFieldScopeId(dto.getFieldScopeId());
+      applyCurrentTenantIdIfNecessary(grant);
+      grants.add(grant);
     }
-    Collection<RolePermissionsRelevance> saved = this.rolePermissionsRelevanceRepository.saveAll(rels);
-    refreshCurrentTenantPermissionVersion();
-    recordPermissionChange("AUTHORIZE", roleId, pms);
+    Collection<RoleResourceGrant> saved = this.roleResourceGrantRepository.saveAll(grants);
+    refreshCurrentTenantAuthorizationVersion();
+    recordResourceGrantChange("AUTHORIZE", roleId, resourceCodes);
     return saved;
   }
 
@@ -253,15 +255,15 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     }
   }
 
-  private void refreshCurrentTenantPermissionVersion() {
+  private void refreshCurrentTenantAuthorizationVersion() {
     String tenantId = resolveCurrentTenantScope();
     if (tenantId == null || tenantId.isBlank()) {
       return;
     }
-    permissionVersionRefreshService.refreshTenant(tenantId);
+    resourceAuthorizationVersionService.refreshTenant(tenantId);
   }
 
-  private void refreshPermissionVersionByRoleTenantIds(Collection<Role> roles) {
+  private void refreshAuthorizationVersionByRoleTenantIds(Collection<Role> roles) {
     if (roles == null || roles.isEmpty()) {
       return;
     }
@@ -270,33 +272,42 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
         .filter(tenantId -> tenantId != null && !tenantId.isBlank())
         .collect(Collectors.toSet());
     if (!tenantIds.isEmpty()) {
-      permissionVersionRefreshService.refreshTenants(tenantIds);
+      resourceAuthorizationVersionService.refreshTenants(tenantIds);
     }
   }
 
-  private void recordPermissionChange(String action, String roleId, Set<String> permissionAuthorities) {
+  private void recordResourceGrantChange(String action, String roleId, Set<String> resourceCodes) {
     AuthorizationContext authorizationContext = getAuthorizationContext();
     if (authorizationContext == null || authorizationContext.getUserId() == null || authorizationContext.getUserId().isBlank()) {
       return;
     }
 
-    Set<String> normalizedAuthorities = permissionAuthorities == null ? Set.of() : permissionAuthorities;
-    PermissionChangeLogRecordCommand command = new PermissionChangeLogRecordCommand();
+    Set<String> normalizedResources = resourceCodes == null ? Set.of() : resourceCodes;
+    ResourceGrantLogRecordCommand command = new ResourceGrantLogRecordCommand();
     command.setChangedAt(Instant.now());
-    command.setChangeType("ROLE_PERMISSION");
+    command.setChangeType("ROLE_RESOURCE");
     command.setAction(action);
     command.setSubjectType("ROLE");
     command.setSubjectId(roleId);
     command.setSubjectLabel(resolveRoleLabel(roleId));
-    command.setTargetType("PERMISSION");
-    command.setTargetSummary(joinValues(normalizedAuthorities));
-    command.setTargetCount(normalizedAuthorities.size());
+    command.setTargetType("RESOURCE");
+    command.setTargetSummary(joinValues(normalizedResources));
+    command.setTargetCount(normalizedResources.size());
     command.setOperatorId(authorizationContext.getUserId());
     command.setTenantId(resolveCurrentTenantScope());
     command.setContextId(authorizationContext.getContextId());
     command.setSourceService("common");
-    command.setDescription(action + " ROLE_PERMISSION [" + command.getSubjectLabel() + "] -> [" + command.getTargetSummary() + "]");
-    permissionChangeLogRemoteService.record(command);
+    command.setDescription(action + " ROLE_RESOURCE [" + command.getSubjectLabel() + "] -> [" + command.getTargetSummary() + "]");
+    try {
+      resourceGrantLogRemoteService.record(command);
+    } catch (RuntimeException ex) {
+      log.warn(
+          "Failed to record role resource change log: action={}, roleId={}",
+          action,
+          roleId,
+          ex
+      );
+    }
   }
 
   private String resolveRoleLabel(String roleId) {
@@ -333,7 +344,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     String tenantId = resolveCurrentTenantScope();
     RoleScopeAssignmentVo vo = new RoleScopeAssignmentVo();
     vo.setRoleId(roleId);
-    rolePermissionsRelevanceRepository.findFirstByTenantIdAndRoleId(tenantId, roleId)
+    roleResourceGrantRepository.findFirstByTenantIdAndRoleId(tenantId, roleId)
         .ifPresent(record -> {
           vo.setDataScopeId(record.getDataScopeId());
           vo.setFieldScopeId(record.getFieldScopeId());
@@ -347,8 +358,8 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     requireTenantOwnerOrAdministratorIfTenantScoped();
     validateRoleBelongsToCurrentTenant(vo.getRoleId());
     String tenantId = resolveCurrentTenantScope();
-    rolePermissionsRelevanceRepository.updateScopeForRole(
+    roleResourceGrantRepository.updateScopeForRole(
         tenantId, vo.getRoleId(), vo.getDataScopeId(), vo.getFieldScopeId());
-    refreshCurrentTenantPermissionVersion();
+    refreshCurrentTenantAuthorizationVersion();
   }
 }

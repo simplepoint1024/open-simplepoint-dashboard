@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.simplepoint.api.base.BaseRepository;
-import org.simplepoint.core.authority.PermissionGrantedAuthority;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.security.entity.User;
 
@@ -16,7 +15,7 @@ import org.simplepoint.security.entity.User;
 public interface UserRepository extends BaseRepository<User, String> {
 
   /**
-   * Loads a user for permission-context calculation using only the user ID.
+   * Loads a user for authorization-context calculation using only the user ID.
    *
    * @param userId the user ID to load
    * @return the user when present
@@ -33,12 +32,12 @@ public interface UserRepository extends BaseRepository<User, String> {
   Collection<RoleGrantedAuthority> loadRolesByUserId(String tenantId, String userId);
 
   /**
-   * Loads permissions associated with the given role authorities.
+   * Loads resource codes associated with the given role ids.
    *
-   * @param roleIds a list of role authorities for which to load permissions
-   * @return a list of SimplePermissions associated with the specified role authorities
+   * @param roleIds a list of role ids
+   * @return resource codes granted to the specified roles
    */
-  Collection<String> loadPermissionsInRoleIds(List<String> roleIds);
+  Collection<String> loadResourcesInRoleIds(List<String> roleIds);
 
   /**
    * Retrieve a collection of role authorities associated with a specific userId.

@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/access-center")
-@Tag(name = "权限中心", description = "统一角色授权与权限影响范围查询")
+@Tag(name = "权限中心", description = "统一角色资源授权与影响范围查询")
 public class AccessCenterController {
 
   private final AccessCenterService service;
@@ -44,8 +44,8 @@ public class AccessCenterController {
    * @return role authorization overview page
    */
   @GetMapping("/roles")
-  @Operation(summary = "角色授权概览", description = "分页获取角色、权限数量、用户数量与权限范围摘要")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('access-center.view') or hasAuthority('roles.config.permission')")
+  @Operation(summary = "角色授权概览", description = "分页获取角色、资源数量、用户数量与授权范围摘要")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('access-center.view') or hasAuthority('roles.config.resource')")
   public Response<Page<AccessCenterRoleOverviewVo>> roleOverviews(Pageable pageable) {
     return Response.okay(service.roleOverviews(pageable));
   }
@@ -57,21 +57,21 @@ public class AccessCenterController {
    * @return role authorization details
    */
   @GetMapping("/roles/{roleId}")
-  @Operation(summary = "角色授权详情", description = "获取角色已授权权限、数据权限、字段权限和影响用户")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('access-center.view') or hasAuthority('roles.config.permission')")
+  @Operation(summary = "角色授权详情", description = "获取角色已授权资源、数据权限、字段权限和影响用户")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('access-center.view') or hasAuthority('roles.config.resource')")
   public Response<AccessCenterRoleDetailVo> roleDetail(@PathVariable("roleId") String roleId) {
     return Response.okay(service.roleDetail(roleId));
   }
 
   /**
-   * Returns menu-feature-permission resource tree for a role.
+   * Returns resource tree for a role.
    *
    * @param roleId role id
    * @return resource tree
    */
   @GetMapping("/roles/{roleId}/resource-tree")
   @Operation(summary = "角色资源树", description = "获取可授权资源树以及当前角色授权状态")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('access-center.view') or hasAuthority('roles.config.permission')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('access-center.view') or hasAuthority('roles.config.resource')")
   public Response<java.util.List<AccessCenterResourceNodeVo>> resourceTree(@PathVariable("roleId") String roleId) {
     return Response.okay(service.resourceTree(roleId));
   }
@@ -84,8 +84,8 @@ public class AccessCenterController {
    * @return updated role authorization details
    */
   @PutMapping("/roles/{roleId}/authorization")
-  @Operation(summary = "保存角色授权", description = "统一保存角色权限、数据权限和字段权限")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('access-center.manage') or hasAuthority('roles.config.permission')")
+  @Operation(summary = "保存角色授权", description = "统一保存角色资源、数据权限和字段权限")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('access-center.manage') or hasAuthority('roles.config.resource')")
   public Response<AccessCenterRoleDetailVo> saveRoleAuthorization(
       @PathVariable("roleId") String roleId,
       @RequestBody AccessCenterRoleAuthorizationDto dto

@@ -63,17 +63,17 @@ import org.simplepoint.core.constants.PublicButtonKeys;
         authority = "roles.delete"
     ),
     @ButtonDeclaration(
-        title = "i18n:roles.config.permission",
-        key = "config.permission",
+        title = "i18n:roles.config.resource",
+        key = "config.resource",
         color = "orange",
         icon = Icons.SAFETY_OUTLINED,
         sort = 3,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "roles.config.permission"
+        authority = "roles.config.resource"
     )
 })
-@Schema(title = "角色对象", description = "用于定义系统中的角色及其权限")
+@Schema(title = "角色对象", description = "用于定义系统中的角色及其资源授权")
 public class Role extends TenantBaseEntityImpl<String> implements BaseRole {
 
   /**
@@ -89,7 +89,7 @@ public class Role extends TenantBaseEntityImpl<String> implements BaseRole {
 
   /**
    * The authority associated with the role.
-   * This field specifies the permissions or scope tied to the role.
+   * This field specifies the role authority identifier.
    */
   @Schema(title = "i18n:roles.title.authority", description = "i18n:roles.description.authority", maxLength = 100, minLength = 1, extensions = {
       @Extension(name = "x-ui", properties = {

@@ -13,21 +13,19 @@ const KEY_ROLE_PREFIX = 'sp.roleId:';
 const KEY_CTX = 'sp.contextId';
 const KEY_CTX_PREFIX = 'sp.contextId:';
 
-const CTX_ENDPOINT_PATH = '/common/tenants/permission-context-id';
+const CTX_ENDPOINT_PATH = '/common/tenants/authorization-context-id';
 const API_SCOPE_RULES: ReadonlyArray<{ scope: ApiScope; prefix: string }> = [
-  { scope: 'tenant', prefix: '/common/menus/service-routes' },
+  { scope: 'tenant', prefix: '/common/resources/service-routes' },
   { scope: 'global', prefix: '/common/i18n' },
   { scope: 'global', prefix: '/common/logging' },
-  { scope: 'global', prefix: '/common/menus' },
+  { scope: 'global', prefix: '/common/resources' },
   { scope: 'global', prefix: '/common/oidc/clients' },
   { scope: 'global', prefix: '/common/ops/microapps' },
-  { scope: 'global', prefix: '/common/permissions' },
   { scope: 'global', prefix: '/common/tenants/current-roles' },
   { scope: 'global', prefix: '/common/tenants/current' },
   { scope: 'global', prefix: '/common/tenants/page' },
   { scope: 'global', prefix: '/common/platform/dna' },
   { scope: 'global', prefix: '/common/platform/applications' },
-  { scope: 'global', prefix: '/common/platform/features' },
   { scope: 'global', prefix: '/common/platform/packages' },
   { scope: 'global', prefix: '/common/platform/dictionaries' },
   { scope: 'global', prefix: '/common/platform/dictionary-items' },

@@ -25,18 +25,18 @@ public interface RoleRepository extends BaseRepository<Role, String> {
   Page<RoleRelevanceVo> roleSelectItems(String tenantId, Pageable pageable);
 
   /**
-   * Removes the specified permissionAuthority from the given role authority.
+   * Removes resource grants from the given role.
    *
-   * @param roleId        the authority of the role
-   * @param permissionAuthority the set of permission permissionAuthority to be removed
+   * @param roleId the role id
+   * @param resourceCodes resource codes to be removed
    */
-  void unauthorized(String tenantId, String roleId, Set<String> permissionAuthority);
+  void unauthorized(String tenantId, String roleId, Set<String> resourceCodes);
 
   /**
-   * Retrieve a collection of permission permissionAuthority associated with a specific roleId.
+   * Retrieve resource codes granted to a role.
    *
-   * @param roleId The roleId to filter the permission permissionAuthority.
-   * @return A collection of permission permissionAuthority for the given roleId.
+   * @param roleId The roleId to filter.
+   * @return resource codes granted to the role.
    */
   Collection<String> authorized(String tenantId, String roleId);
 }

@@ -39,9 +39,9 @@
 | 范围 | 内容 |
 | --- | --- |
 | 本文覆盖 | 本地开发环境准备、核心服务启动顺序、前端工作区的可选启动方式、默认访问入口、最小验证步骤 |
-| 本文暂不覆盖 | 生产部署、高可用架构、完整权限模型、插件开发细节、数据库设计细节、复杂二开流程 |
+| 本文暂不覆盖 | 生产部署、高可用架构、完整资源授权模型、插件开发细节、数据库设计细节、复杂二开流程 |
 
-对于第一次接触项目的读者，建议先把本文走通，再继续阅读系统概览、项目结构、服务拓扑、权限模型和插件架构相关文档。
+对于第一次接触项目的读者，建议先把本文走通，再继续阅读系统概览、项目结构、服务拓扑、资源授权模型和插件架构相关文档。
 
 ## 2. 适用对象
 
@@ -147,9 +147,9 @@
 - `doc/architecture/project_structure_diagram.md`
 - `doc/architecture/service_topology.md`
 - `doc/architecture/plugin_architecture.md`
-- `doc/permission/permission_model.md`
+- `doc/resource/resource_model.md`
 - `doc/deployment/local_development.md`
-- `doc/permission/authorization_context.md`
+- `doc/resource/authorization_context.md`
 - `doc/design/authorization_flow.md`
 - `doc/api/schema_api.md`
 - `doc/api/api_conventions.md`

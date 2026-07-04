@@ -9,7 +9,7 @@ const contract = defineResource({
   contextPath: '/common',
   paths: ['/roles'],
   entity: 'Role',
-  i18nNamespaces: ['roles', 'permissions'],
+  i18nNamespaces: ['roles', 'resources'],
 });
 
 export default defineMockModule(contract, handlers);

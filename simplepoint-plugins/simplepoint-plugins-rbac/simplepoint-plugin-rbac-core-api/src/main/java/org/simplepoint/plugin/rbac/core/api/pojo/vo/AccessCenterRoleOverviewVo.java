@@ -11,7 +11,7 @@ public class AccessCenterRoleOverviewVo implements Serializable {
 
   private RoleRelevanceVo role;
 
-  private long permissionCount;
+  private long resourceCount;
 
   private long assignedUserCount;
 
@@ -29,20 +29,20 @@ public class AccessCenterRoleOverviewVo implements Serializable {
    * Creates a role overview.
    *
    * @param role role summary
-   * @param permissionCount authorized permission count
+   * @param resourceCount authorized resource count
    * @param assignedUserCount assigned user count
    * @param dataScope data scope summary
    * @param fieldScope field scope summary
    */
   public AccessCenterRoleOverviewVo(
       RoleRelevanceVo role,
-      long permissionCount,
+      long resourceCount,
       long assignedUserCount,
       AccessCenterScopeVo dataScope,
       AccessCenterScopeVo fieldScope
   ) {
     this.role = role;
-    this.permissionCount = permissionCount;
+    this.resourceCount = resourceCount;
     this.assignedUserCount = assignedUserCount;
     this.dataScope = dataScope;
     this.fieldScope = fieldScope;

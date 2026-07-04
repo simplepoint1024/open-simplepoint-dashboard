@@ -71,25 +71,27 @@ final class PluginManifestValidator {
       }
     }
 
-    if (manifest.getMenus() != null) {
-      for (PluginManifest.MenuContribution menu : manifest.getMenus()) {
-        requireText(menu.getAuthority(), "Menu authority is required");
-        requireText(menu.getPath(), "Menu path is required for " + menu.getAuthority());
-        requireText(menu.getTitle(), "Menu title is required for " + menu.getAuthority());
-      }
+    if (manifest.getResources() != null) {
+      validateResources(manifest.getResources(), new HashSet<>(), new HashSet<>());
     }
+  }
 
-    if (manifest.getPermissions() != null) {
-      for (PluginManifest.PermissionContribution permission : manifest.getPermissions()) {
-        requireText(permission.getAuthority(), "Permission authority is required");
-        requireText(permission.getName(), "Permission name is required for " + permission.getAuthority());
+  private static void validateResources(
+      List<PluginManifest.ResourceContribution> resources,
+      Set<String> codes,
+      Set<String> paths
+  ) {
+    for (PluginManifest.ResourceContribution resource : resources) {
+      requireText(resource.getCode(), "Resource code is required");
+      requireText(resource.getName(), "Resource name is required for " + resource.getCode());
+      if (!codes.add(resource.getCode())) {
+        throw new IllegalArgumentException("Duplicate resource code " + resource.getCode());
       }
-    }
-
-    if (manifest.getFeatures() != null) {
-      for (PluginManifest.FeatureContribution feature : manifest.getFeatures()) {
-        requireText(feature.getCode(), "Feature code is required");
-        requireText(feature.getName(), "Feature name is required for " + feature.getCode());
+      if (resource.getPath() != null && !resource.getPath().isBlank() && !paths.add(resource.getPath())) {
+        throw new IllegalArgumentException("Duplicate resource path " + resource.getPath());
+      }
+      if (resource.getChildren() != null) {
+        validateResources(resource.getChildren(), codes, paths);
       }
     }
   }

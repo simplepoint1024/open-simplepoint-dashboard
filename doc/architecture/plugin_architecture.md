@@ -171,8 +171,8 @@ plugin:
 
 `PluginLifecycleHandler` 是插件级生命周期扩展点，用于处理不属于 Java class 注册的声明式资源。当前 RBAC 集成由 `PluginRbacContributionHandler` 完成：
 
-- `frontend.remotes` 写入 `MicroModule`，`/menus/service-routes` 会返回真实 remote entry。
-- 插件 remote 的数据库 entry 保持 manifest 中的 canonical URL；`/menus/service-routes` 输出时会追加
+- `frontend.remotes` 写入 `MicroModule`，`/resources/service-routes` 会返回真实 remote entry。
+- 插件 remote 的数据库 entry 保持 manifest 中的 canonical URL；`/resources/service-routes` 输出时会追加
   `_sp_plugin` 和 `_sp_v` query，用插件版本、remote 版本和 artifact SHA-256 做浏览器缓存隔离。
 - `permissions` 写入 `Permissions`，按 `authority` 查重。
 - `features` 写入 `Feature`，并建立 feature -> permission 关系。

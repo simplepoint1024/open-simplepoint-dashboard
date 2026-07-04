@@ -18,7 +18,7 @@ import lombok.Data;
  * Declarative plugin manifest.
  *
  * <p>The manifest is the stable contract used by the plugin control plane. It
- * describes backend artifacts, frontend remotes, menus, permissions, features,
+ * describes backend artifacts, frontend remotes, resources,
  * i18n bundles, and runtime compatibility without requiring plugin code to run.
  */
 @Data
@@ -34,9 +34,7 @@ public class PluginManifest implements Serializable {
   private List<PluginDependency> dependencies;
   private Backend backend;
   private Frontend frontend;
-  private List<MenuContribution> menus;
-  private List<PermissionContribution> permissions;
-  private List<FeatureContribution> features;
+  private List<ResourceContribution> resources;
   private List<I18nContribution> i18n;
   private Map<String, Object> configSchema;
 
@@ -101,48 +99,30 @@ public class PluginManifest implements Serializable {
   }
 
   /**
-   * RBAC menu contribution.
+   * RBAC resource contribution.
    */
   @Data
-  public static class MenuContribution implements Serializable {
-    private String authority;
-    private String title;
-    private String label;
-    private String path;
-    private String component;
-    private String parent;
-    private String icon;
-    private Integer sort;
-    private String type;
-    private Boolean danger;
-    private Boolean disabled;
-    private Set<String> featureCodes;
-  }
-
-  /**
-   * RBAC permission contribution.
-   */
-  @Data
-  public static class PermissionContribution implements Serializable {
-    private String authority;
-    private String name;
-    private String resource;
-    private String description;
-    private Integer type;
-  }
-
-  /**
-   * RBAC feature contribution.
-   */
-  @Data
-  public static class FeatureContribution implements Serializable {
+  public static class ResourceContribution implements Serializable {
     private String code;
     private String name;
+    private String title;
+    private String label;
+    private String type;
+    private String parent;
+    private String path;
+    private String component;
+    private String icon;
+    private String routeKind;
+    private String method;
+    private String pattern;
     private String description;
     private Integer sort;
     private Boolean publicAccess;
     private Boolean requireOrgTenant;
-    private Set<String> permissions;
+    private Boolean grantable;
+    private Boolean disabled;
+    private Boolean danger;
+    private List<ResourceContribution> children;
   }
 
   /**

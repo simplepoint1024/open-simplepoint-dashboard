@@ -11,5 +11,10 @@
   "applications.description.sort": "Lower values appear earlier",
   "applications.title.enabled": "Enabled",
   "applications.description.enabled": "Whether the application is enabled",
-  "applications.button.config.feature": "Configure Features"
+  "applications.button.config.resource": "Configure Resources",
+  "applications.resourceConfig.title": "Application Resources",
+  "applications.resourceConfig.selectedCount": "{count} resources assigned",
+  "applications.resourceConfig.loadFailed": "Failed to load application resources",
+  "applications.resourceConfig.updateSuccess": "Application resources updated",
+  "applications.resourceConfig.updateFailed": "Failed to update application resources"
 }

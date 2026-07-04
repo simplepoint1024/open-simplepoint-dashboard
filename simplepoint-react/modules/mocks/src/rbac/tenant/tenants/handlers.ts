@@ -8,14 +8,14 @@ const tenants = [
     name: '演示租户',
     description: '默认演示租户，用于平台租户能力联调。',
     ownerId: 'admin',
-    permissionVersion: 0,
+    authorizationVersion: 0,
   },
   {
     id: 'tenant-channel',
     name: '渠道伙伴租户',
     description: '模拟企业外部合作伙伴租户。',
     ownerId: 'operator',
-    permissionVersion: 3,
+    authorizationVersion: 3,
   },
 ];
 
@@ -49,7 +49,7 @@ const schema = {
       name: {type: 'string', title: '租户名称'},
       description: {type: 'string', title: '租户描述'},
       ownerId: {type: 'string', title: '负责人', 'x-list-visible': false},
-      permissionVersion: {type: 'integer', title: '权限版本', readOnly: true, 'x-list-visible': false},
+      authorizationVersion: {type: 'integer', title: '授权版本', readOnly: true, 'x-list-visible': false},
     },
   },
 };
@@ -65,6 +65,27 @@ const pageData = {
 };
 
 const unique = (values: string[]) => Array.from(new Set(values));
+
+function buildUserPage(request: Request) {
+  const url = new URL(request.url);
+  const page = Math.max(0, parseInt(url.searchParams.get('page') ?? '0', 10));
+  const size = Math.max(1, parseInt(url.searchParams.get('size') ?? '20', 10));
+  const keyword = (url.searchParams.get('keyword') ?? '').toLowerCase();
+  const result = keyword
+    ? users.filter((user) =>
+      user.id.toLowerCase().includes(keyword) ||
+      user.name.toLowerCase().includes(keyword) ||
+      user.email.toLowerCase().includes(keyword) ||
+      user.phoneNumber.includes(keyword)
+    )
+    : [...users];
+  const totalElements = result.length;
+  const totalPages = Math.ceil(totalElements / size);
+  return {
+    content: result.slice(page * size, page * size + size),
+    page: {size, number: page, totalElements, totalPages},
+  };
+}
 
 export default [
   http.get(`${base}/schema`, () => HttpResponse.json(schema)),
@@ -95,18 +116,7 @@ export default [
     tenantPackages[tenantId] = (tenantPackages[tenantId] ?? []).filter((code) => !removing.has(code));
     return HttpResponse.json(null);
   }),
-  http.get(`${base}/users/items`, () => {
-    const data = users;
-    return HttpResponse.json({
-      content: data,
-      page: {
-        size: data.length,
-        number: 0,
-        totalElements: data.length,
-        totalPages: 1,
-      },
-    });
-  }),
+  http.get(`${base}/users/items`, ({request}) => HttpResponse.json(buildUserPage(request))),
   http.get(`${base}/users/authorized`, ({request}) => {
     const tenantId = new URL(request.url).searchParams.get('tenantId') ?? '';
     const ownerId = tenants.find((tenant) => tenant.id === tenantId)?.ownerId;

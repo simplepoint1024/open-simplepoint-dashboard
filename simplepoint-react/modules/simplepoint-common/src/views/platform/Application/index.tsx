@@ -3,25 +3,25 @@ import SimpleTable from '@simplepoint/components/SimpleTable';
 import React, {useCallback, useEffect, useState} from 'react';
 import {Drawer} from 'antd';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import FeatureConfig from './config/feature';
+import ResourceConfig from './config/resource';
 
 const baseConfig = api['platform.applications'];
 
 const App = () => {
-  const [openFeatureConfig, setOpenFeatureConfig] = useState(false);
+  const [openResourceConfig, setOpenResourceConfig] = useState(false);
   const [applicationCode, setApplicationCode] = useState<string>('');
   const [drawerHeight, setDrawerHeight] = useState<number>(480);
   const {t, ensure, locale} = useI18n();
 
   useEffect(() => {
-    void ensure([...baseConfig.i18nNamespaces, 'features', 'table', 'common']);
+    void ensure([...baseConfig.i18nNamespaces, 'resources', 'table', 'common']);
   }, [ensure, locale]);
 
   useEffect(() => {
-    if (!openFeatureConfig) {
+    if (!openResourceConfig) {
       setDrawerHeight(480);
     }
-  }, [openFeatureConfig]);
+  }, [openResourceConfig]);
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -46,8 +46,8 @@ const App = () => {
   }, [drawerHeight]);
 
   const customButtonEvents = {
-    'config.feature': (_keys: React.Key[], rows: any[]) => {
-      setOpenFeatureConfig(true);
+    'config.resource': (_keys: React.Key[], rows: any[]) => {
+      setOpenResourceConfig(true);
       setApplicationCode(rows?.[0]?.code ?? '');
     },
   };
@@ -56,10 +56,10 @@ const App = () => {
     <div>
       <SimpleTable {...baseConfig} customButtonEvents={customButtonEvents}/>
       <Drawer
-        title={t('applications.button.config.feature', '配置功能')}
-        open={openFeatureConfig}
+        title={t('applications.button.config.resource', '配置资源')}
+        open={openResourceConfig}
         onClose={() => {
-          setOpenFeatureConfig(false);
+          setOpenResourceConfig(false);
           setApplicationCode('');
         }}
         placement="bottom"
@@ -73,7 +73,7 @@ const App = () => {
           onMouseDown={startResize}
         />
         {/* 不使用 key 强制重建，避免闪退；组件内部通过 useEffect([applicationCode]) 重置状态 */}
-        {applicationCode && <FeatureConfig applicationCode={applicationCode}/>}
+        {applicationCode && <ResourceConfig applicationCode={applicationCode}/>}
       </Drawer>
     </div>
   );

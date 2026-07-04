@@ -36,7 +36,7 @@
 经过 host 转发后，浏览器看到的完整路径才会变成：
 
 - `/common/roles`
-- `/common/menus`
+- `/common/resources`
 - `/common/platform/dictionaries`
 
 ### 2.3 存在别名路径
@@ -332,7 +332,7 @@ GET /common/platform/dictionaries/options?dictionaryCode=organization_type
 
 - Schema API：`doc/api/schema_api.md`
 - 授权流程：`doc/design/authorization_flow.md`
-- 授权上下文：`doc/permission/authorization_context.md`
-- 权限模型：`doc/permission/permission_model.md`
+- 授权上下文：`doc/resource/authorization_context.md`
+- 资源授权模型：`doc/resource/resource_model.md`
 - 本地开发：`doc/deployment/local_development.md`
 - 常见问题：`doc/troubleshooting/common_issues.md`

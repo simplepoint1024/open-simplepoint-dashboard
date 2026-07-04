@@ -1,0 +1,5 @@
+{
+  "monitoring.resourceGrantLog.action.assign": "Assign",
+  "monitoring.resourceGrantLog.action.revoke": "Revoke",
+  "monitoring.resourceGrantLog.action.update": "Update"
+}

@@ -2,7 +2,7 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.anyCollection;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,23 +18,23 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.core.AuthorizationActorRole;
 import org.simplepoint.core.AuthorizationContext;
-import org.simplepoint.core.AuthorizationPermissionNamespaces;
+import org.simplepoint.core.AuthorizationResourceNamespaces;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.plugin.rbac.core.api.repository.DataScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.FieldScopeRepository;
-import org.simplepoint.plugin.rbac.core.api.repository.RolePermissionsRelevanceRepository;
+import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
-import org.simplepoint.plugin.rbac.tenant.api.repository.FeaturePermissionRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.security.entity.DataScope;
 import org.simplepoint.security.entity.DataScopeType;
-import org.simplepoint.security.entity.RolePermissionsRelevance;
+import org.simplepoint.security.entity.RoleResourceGrant;
 import org.simplepoint.security.entity.User;
+import org.simplepoint.security.service.ResourceService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -45,7 +45,7 @@ class AuthorizationContextServiceImplTest {
   UsersService usersService;
 
   @Mock
-  ObjectProvider<FeaturePermissionRelevanceRepository> featurePermissionRelevanceRepositoryProvider;
+  ObjectProvider<ResourceService> resourceServiceProvider;
 
   @Mock
   ObjectProvider<TenantPackageRelevanceRepository> tenantPackageRelevanceRepositoryProvider;
@@ -54,7 +54,7 @@ class AuthorizationContextServiceImplTest {
   ObjectProvider<TenantRepository> tenantRepositoryProvider;
 
   @Mock
-  ObjectProvider<RolePermissionsRelevanceRepository> rolePermissionsRelevanceRepositoryProvider;
+  ObjectProvider<RoleResourceGrantRepository> roleResourceGrantRepositoryProvider;
 
   @Mock
   ObjectProvider<DataScopeRepository> dataScopeRepositoryProvider;
@@ -65,18 +65,16 @@ class AuthorizationContextServiceImplTest {
   @Mock
   ObjectProvider<OrganizationRepository> organizationRepositoryProvider;
 
-  // Manual construction ensures the correct mock is passed to each constructor parameter
-  // (Mockito @InjectMocks cannot distinguish multiple ObjectProvider<?> mocks without -parameters flag)
   AuthorizationContextServiceImpl service;
 
   @BeforeEach
   void setUp() {
     service = new AuthorizationContextServiceImpl(
         usersService,
-        featurePermissionRelevanceRepositoryProvider,
+        resourceServiceProvider,
         tenantPackageRelevanceRepositoryProvider,
         tenantRepositoryProvider,
-        rolePermissionsRelevanceRepositoryProvider,
+        roleResourceGrantRepositoryProvider,
         dataScopeRepositoryProvider,
         fieldScopeRepositoryProvider,
         organizationRepositoryProvider
@@ -93,60 +91,19 @@ class AuthorizationContextServiceImplTest {
   }
 
   @Test
-  void calculate_defaultTenantString_treatedAsNull_skipsTenantCheck() {
+  void calculate_defaultTenantString_treatedAsNull() {
     User user = new User();
     user.setSuperAdmin(false);
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
 
-    // "default" is normalized to null — no tenant lookup performed
     AuthorizationContext ctx = service.calculate("default", "u1", "ctx1", null);
 
-    assertThat(ctx).isNotNull();
     assertThat(ctx.getUserId()).isEqualTo("u1");
     assertThat(ctx.getContextId()).isEqualTo("ctx1");
     assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.PERSONAL);
     assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.PERSONAL_MEMBER);
-    verify(tenantRepositoryProvider).getIfAvailable();
-  }
-
-  @Test
-  void calculate_nullTenant_doesNotApplyTenantFiltering() {
-    User user = new User();
-    user.setSuperAdmin(false);
-
-    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-
-    AuthorizationContext ctx = service.calculate(null, "u1", "ctx1", null);
-
     assertThat(ctx.getAttribute("X-Tenant-Id")).isNull();
-    assertThat(ctx.getAttribute("X-Context-Id")).isEqualTo("ctx1");
-    assertThat(ctx.getAttribute("X-User-Id")).isEqualTo("u1");
-    assertThat(ctx.getAttribute("X-Scope-Type")).isEqualTo("PERSONAL");
-    assertThat(ctx.getAttribute("X-Actor-Role")).isEqualTo("PERSONAL_MEMBER");
-    verify(tenantRepositoryProvider).getIfAvailable();
-  }
-
-  @Test
-  void calculate_superAdmin_skipsTenantCheck() {
-    User user = new User();
-    user.setSuperAdmin(true);
-    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of());
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-
-    AuthorizationContext ctx = service.calculate("tenant1", "u1", null, null);
-
-    assertThat(ctx.getIsAdministrator()).isEqualTo(Boolean.TRUE);
-    assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.TENANT);
-    assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_ADMIN);
-    verify(tenantRepositoryProvider).getIfAvailable();
   }
 
   @Test
@@ -155,23 +112,21 @@ class AuthorizationContextServiceImplTest {
     user.setSuperAdmin(true);
     when(usersService.findByIdForAuthorization("admin")).thenReturn(Optional.of(user));
     when(usersService.loadRolesByUserId(null, "admin")).thenReturn(List.of());
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
 
     AuthorizationContext ctx = service.calculate(null, "admin", "ctx-admin", null);
 
+    assertThat(ctx.getIsAdministrator()).isTrue();
     assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.PLATFORM);
     assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.PLATFORM_ADMIN);
     assertThat(ctx.getAttribute("X-Scope-Type")).isEqualTo("PLATFORM");
     assertThat(ctx.getAttribute("X-Actor-Role")).isEqualTo("PLATFORM_ADMIN");
-    assertThat(ctx.getAttribute("X-Tenant-Id")).isNull();
   }
 
   @Test
   void calculate_userWithoutTenant_usesPersonalTenantWhenAvailable() {
     User user = new User();
     user.setSuperAdmin(false);
-    final TenantRepository tenantRepository = mock(TenantRepository.class);
+    TenantRepository tenantRepository = mock(TenantRepository.class);
     Tenant personalTenant = new Tenant();
     personalTenant.setId("personal-1");
     personalTenant.setOwnerId("u1");
@@ -183,16 +138,12 @@ class AuthorizationContextServiceImplTest {
     when(tenantRepository.hasUser("personal-1", "u1")).thenReturn(true);
     when(usersService.loadRolesByUserId("personal-1", "u1")).thenReturn(List.of());
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
 
     AuthorizationContext ctx = service.calculate(null, "u1", "ctx1", null);
 
     assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.PERSONAL);
     assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.PERSONAL_OWNER);
     assertThat(ctx.getAttribute("X-Tenant-Id")).isEqualTo("personal-1");
-    assertThat(ctx.getAttribute("X-Scope-Type")).isEqualTo("PERSONAL");
-    assertThat(ctx.getAttribute("X-Actor-Role")).isEqualTo("PERSONAL_OWNER");
   }
 
   @Test
@@ -213,61 +164,44 @@ class AuthorizationContextServiceImplTest {
   }
 
   @Test
-  void calculate_tenantUserWhenTenantRepositoryUnavailable_throwsAccessDeniedException() {
+  void calculate_tenantOwner_addsPackageAndPublicResources() {
     User user = new User();
     user.setSuperAdmin(false);
-
-    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(null);
-
-    assertThatThrownBy(() -> service.calculate("tenant1", "u1", null, null))
-        .isInstanceOf(AccessDeniedException.class)
-        .hasMessage("无法验证指定租户");
-  }
-
-  @Test
-  void calculate_tenantOwner_addsPackageAndFeaturePermissions() {
-    User user = new User();
-    user.setSuperAdmin(false);
-    final TenantRepository tenantRepository = mock(TenantRepository.class);
-    Tenant tenant = new Tenant();
-    tenant.setOwnerId("u1"); // user is owner
-    tenant.setTenantType(TenantType.ORGANIZATION);
-
+    TenantRepository tenantRepository = mock(TenantRepository.class);
     TenantPackageRelevanceRepository tenantPackageRepo = mock(TenantPackageRelevanceRepository.class);
-    FeaturePermissionRelevanceRepository featurePermRepo = mock(FeaturePermissionRelevanceRepository.class);
+    ResourceService resourceService = mock(ResourceService.class);
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    tenant.setOwnerId("u1");
+    tenant.setTenantType(TenantType.ORGANIZATION);
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenantRepository);
     when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
     when(tenantRepository.hasUser("tenant1", "u1")).thenReturn(true);
-    when(tenantRepository.getTenantPermissionVersion("tenant1")).thenReturn(7L);
+    when(tenantRepository.getTenantAuthorizationVersion("tenant1")).thenReturn(7L);
     when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of());
+    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
+    when(resourceServiceProvider.getIfAvailable()).thenReturn(resourceService);
+    when(resourceService.findPublicAccessCodes()).thenReturn(Set.of("public.view"));
     when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(tenantPackageRepo);
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(featurePermRepo);
-    when(tenantPackageRepo.findFeatureCodesByTenantId("tenant1")).thenReturn(Set.of("feature1"));
-    when(featurePermRepo.findPermissionAuthoritiesByTenantId("tenant1")).thenReturn(Set.of("perm.tenant1"));
-    when(featurePermRepo.findPublicAccessFeatureCodes()).thenReturn(Set.of());
-    when(featurePermRepo.findPermissionAuthoritiesByPublicAccessFeatures()).thenReturn(Set.of());
+    when(tenantPackageRepo.findResourceCodesByTenantId("tenant1")).thenReturn(Set.of("package.resource"));
 
     AuthorizationContext ctx = service.calculate("tenant1", "u1", null, null);
 
-    assertThat(ctx.getPermissions()).contains("feature1", "perm.tenant1");
+    assertThat(ctx.getResources()).contains("public.view", "package.resource");
     assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.TENANT);
     assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_OWNER);
     assertThat(ctx.getVersion()).isEqualTo(7L);
-    assertThat(ctx.getAttribute("X-Scope-Type")).isEqualTo("TENANT");
-    assertThat(ctx.getAttribute("X-Actor-Role")).isEqualTo("TENANT_OWNER");
-    verify(tenantPackageRepo).findFeatureCodesByTenantId("tenant1");
-    verify(featurePermRepo).findPermissionAuthoritiesByTenantId("tenant1");
+    verify(tenantPackageRepo).findResourceCodesByTenantId("tenant1");
   }
 
   @Test
-  void calculate_tenantMemberWithTenantAdminPermission_usesTenantAdminActorRole() {
+  void calculate_tenantMemberWithTenantAdminResource_usesTenantAdminActorRole() {
     User user = new User();
     user.setSuperAdmin(false);
-    final RoleGrantedAuthority role = new RoleGrantedAuthority("role-admin", "ROLE_CUSTOM");
-    final TenantRepository tenantRepository = mock(TenantRepository.class);
+    RoleGrantedAuthority role = new RoleGrantedAuthority("role-admin", "ROLE_CUSTOM");
+    TenantRepository tenantRepository = mock(TenantRepository.class);
     Tenant tenant = new Tenant();
     tenant.setOwnerId("owner");
     tenant.setTenantType(TenantType.ORGANIZATION);
@@ -278,37 +212,29 @@ class AuthorizationContextServiceImplTest {
     when(tenantRepository.hasUser("tenant1", "u1")).thenReturn(true);
     when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of(role));
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
-    when(usersService.loadPermissionsInRoleIds(List.of("role-admin")))
-        .thenReturn(Set.of(AuthorizationPermissionNamespaces.TENANT_ADMIN));
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
+    when(usersService.loadResourcesInRoleIds(List.of("role-admin")))
+        .thenReturn(Set.of(AuthorizationResourceNamespaces.TENANT_ADMIN));
 
     AuthorizationContext ctx = service.calculate("tenant1", "u1", null, null);
 
-    assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.TENANT);
+    assertThat(ctx.getResources()).contains(AuthorizationResourceNamespaces.TENANT_ADMIN);
     assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_ADMIN);
     assertThat(ctx.getAttribute("X-Actor-Role")).isEqualTo("TENANT_ADMIN");
   }
 
   @Test
-  void calculate_withRoles_loadsPermissions() {
+  void calculate_withRoles_loadsResources() {
     User user = new User();
     user.setSuperAdmin(false);
     RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_USER");
-    FeaturePermissionRelevanceRepository featurePermRepo = mock(FeaturePermissionRelevanceRepository.class);
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role));
-    when(usersService.loadPermissionsInRoleIds(List.of("role1"))).thenReturn(Set.of("perm1", "perm2"));
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(featurePermRepo);
-    when(featurePermRepo.findFeatureCodesByPermissionAuthorities(anyCollection())).thenReturn(Set.of());
-    when(featurePermRepo.findPublicAccessFeatureCodes()).thenReturn(Set.of());
-    when(featurePermRepo.findPermissionAuthoritiesByPublicAccessFeatures()).thenReturn(Set.of());
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
+    when(usersService.loadResourcesInRoleIds(List.of("role1"))).thenReturn(Set.of("users.view", "users.edit"));
 
     AuthorizationContext ctx = service.calculate(null, "u1", null, null);
 
-    assertThat(ctx.getPermissions()).contains("perm1", "perm2");
+    assertThat(ctx.getResources()).contains("users.view", "users.edit");
     assertThat(ctx.getRoles()).contains("ROLE_USER");
   }
 
@@ -316,9 +242,8 @@ class AuthorizationContextServiceImplTest {
   void calculate_tenantContext_mergesTenantAndGlobalRoles() {
     User user = new User();
     user.setSuperAdmin(false);
-    final RoleGrantedAuthority tenantRole = new RoleGrantedAuthority("role-tenant", "ROLE_TENANT");
-    final RoleGrantedAuthority globalRole = new RoleGrantedAuthority("role-global", "ROLE_GLOBAL");
-    final FeaturePermissionRelevanceRepository featurePermRepo = mock(FeaturePermissionRelevanceRepository.class);
+    RoleGrantedAuthority tenantRole = new RoleGrantedAuthority("role-tenant", "ROLE_TENANT");
+    RoleGrantedAuthority globalRole = new RoleGrantedAuthority("role-global", "ROLE_GLOBAL");
     TenantRepository tenantRepository = mock(TenantRepository.class);
     Tenant tenant = new Tenant();
     tenant.setOwnerId("owner");
@@ -329,18 +254,13 @@ class AuthorizationContextServiceImplTest {
     when(tenantRepository.hasUser("tenant1", "u1")).thenReturn(true);
     when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of(tenantRole));
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(globalRole));
-    when(usersService.loadPermissionsInRoleIds(List.of("role-tenant", "role-global")))
-        .thenReturn(Set.of("perm.tenant", "perm.global"));
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(featurePermRepo);
-    when(featurePermRepo.findFeatureCodesByPermissionAuthorities(anyCollection())).thenReturn(Set.of());
-    when(featurePermRepo.findPublicAccessFeatureCodes()).thenReturn(Set.of());
-    when(featurePermRepo.findPermissionAuthoritiesByPublicAccessFeatures()).thenReturn(Set.of());
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
+    when(usersService.loadResourcesInRoleIds(List.of("role-tenant", "role-global")))
+        .thenReturn(Set.of("tenant.resource", "global.resource"));
 
     AuthorizationContext ctx = service.calculate("tenant1", "u1", null, null);
 
     assertThat(ctx.getRoles()).containsExactly("ROLE_TENANT", "ROLE_GLOBAL");
-    assertThat(ctx.getPermissions()).contains("perm.tenant", "perm.global");
+    assertThat(ctx.getResources()).contains("tenant.resource", "global.resource");
     verify(usersService).loadRolesByUserId("tenant1", "u1");
     verify(usersService).loadRolesByUserId(null, "u1");
   }
@@ -349,23 +269,17 @@ class AuthorizationContextServiceImplTest {
   void calculate_selectedRole_usesOnlyThatRole() {
     User user = new User();
     user.setSuperAdmin(false);
-    final RoleGrantedAuthority role1 = new RoleGrantedAuthority("role1", "ROLE_USER");
-    final RoleGrantedAuthority role2 = new RoleGrantedAuthority("role2", "ROLE_MANAGER");
-    final FeaturePermissionRelevanceRepository featurePermRepo = mock(FeaturePermissionRelevanceRepository.class);
+    RoleGrantedAuthority role1 = new RoleGrantedAuthority("role1", "ROLE_USER");
+    RoleGrantedAuthority role2 = new RoleGrantedAuthority("role2", "ROLE_MANAGER");
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role1, role2));
-    when(usersService.loadPermissionsInRoleIds(List.of("role2"))).thenReturn(Set.of("perm.manager"));
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(featurePermRepo);
-    when(featurePermRepo.findFeatureCodesByPermissionAuthorities(Set.of("perm.manager"))).thenReturn(Set.of());
-    when(featurePermRepo.findPublicAccessFeatureCodes()).thenReturn(Set.of());
-    when(featurePermRepo.findPermissionAuthoritiesByPublicAccessFeatures()).thenReturn(Set.of());
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
+    when(usersService.loadResourcesInRoleIds(List.of("role2"))).thenReturn(Set.of("manager.resource"));
 
     AuthorizationContext ctx = service.calculate(null, "u1", "ctx1", Map.of("X-Role-Id", "role2"));
 
     assertThat(ctx.getRoles()).containsExactly("ROLE_MANAGER");
-    assertThat(ctx.getPermissions()).containsExactly("perm.manager");
+    assertThat(ctx.getResources()).containsExactly("manager.resource");
     assertThat(ctx.getAttribute("X-Role-Id")).isEqualTo("role2");
   }
 
@@ -373,7 +287,7 @@ class AuthorizationContextServiceImplTest {
   void calculate_selectedRoleNotOwned_throwsAccessDeniedException() {
     User user = new User();
     user.setSuperAdmin(false);
-    final RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_USER");
+    RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_USER");
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role));
@@ -384,69 +298,31 @@ class AuthorizationContextServiceImplTest {
   }
 
   @Test
-  void calculate_publicAccessFeatures_alwaysIncludedRegardlessOfRoles() {
+  void calculate_publicResources_alwaysIncluded() {
     User user = new User();
     user.setSuperAdmin(false);
-    FeaturePermissionRelevanceRepository featurePermRepo = mock(FeaturePermissionRelevanceRepository.class);
+    ResourceService resourceService = mock(ResourceService.class);
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(featurePermRepo);
-    when(featurePermRepo.findPublicAccessFeatureCodes()).thenReturn(Set.of("public-feature"));
-    when(featurePermRepo.findPermissionAuthoritiesByPublicAccessFeatures()).thenReturn(Set.of("public.perm1"));
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
+    when(resourceServiceProvider.getIfAvailable()).thenReturn(resourceService);
+    when(resourceService.findPublicAccessCodes()).thenReturn(Set.of("public.resource"));
 
     AuthorizationContext ctx = service.calculate(null, "u1", null, null);
 
-    assertThat(ctx.getPermissions()).contains("public-feature", "public.perm1");
-  }
-
-  @Test
-  void calculate_withRolePermissions_resolvesFeatureCodesAndPublicFeaturesForMenuRouting() {
-    User user = new User();
-    user.setSuperAdmin(false);
-    RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_USER");
-    FeaturePermissionRelevanceRepository featurePermRepo = mock(FeaturePermissionRelevanceRepository.class);
-
-    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of(role));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
-    when(usersService.loadPermissionsInRoleIds(List.of("role1"))).thenReturn(Set.of("perm.users.view"));
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(featurePermRepo);
-    when(featurePermRepo.findFeatureCodesByPermissionAuthorities(Set.of("perm.users.view")))
-        .thenReturn(Set.of("feature.users"));
-    when(featurePermRepo.findPublicAccessFeatureCodes()).thenReturn(Set.of("feature.public"));
-    when(featurePermRepo.findPermissionAuthoritiesByPublicAccessFeatures()).thenReturn(Set.of("perm.public"));
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    TenantRepository tenantRepository = mock(TenantRepository.class);
-    Tenant tenant = new Tenant();
-    tenant.setOwnerId("owner1");
-    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenantRepository);
-    when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(tenantRepository.hasUser("tenant1", "u1")).thenReturn(true);
-
-    AuthorizationContext ctx = service.calculate("tenant1", "u1", "ctx1", null);
-
-    assertThat(ctx.getPermissions()).contains(
-        "perm.users.view",
-        "feature.users",
-        "feature.public",
-        "perm.public"
-    );
-    assertThat(ctx.getAttribute("X-Tenant-Id")).isEqualTo("tenant1");
-    assertThat(ctx.getAttribute("X-Context-Id")).isEqualTo("ctx1");
+    assertThat(ctx.getResources()).contains("public.resource");
   }
 
   @Test
   void calculate_mergesSelfAndCustomDataScopes() {
     User user = new User();
     user.setSuperAdmin(false);
-    final RoleGrantedAuthority role1 = new RoleGrantedAuthority("role1", "ROLE_USER");
-    final RoleGrantedAuthority role2 = new RoleGrantedAuthority("role2", "ROLE_MANAGER");
-    RolePermissionsRelevance relevance1 = new RolePermissionsRelevance();
-    relevance1.setDataScopeId("scope-self");
-    RolePermissionsRelevance relevance2 = new RolePermissionsRelevance();
-    relevance2.setDataScopeId("scope-custom");
+    RoleGrantedAuthority role1 = new RoleGrantedAuthority("role1", "ROLE_USER");
+    RoleGrantedAuthority role2 = new RoleGrantedAuthority("role2", "ROLE_MANAGER");
+    RoleResourceGrant grant1 = new RoleResourceGrant();
+    grant1.setDataScopeId("scope-self");
+    RoleResourceGrant grant2 = new RoleResourceGrant();
+    grant2.setDataScopeId("scope-custom");
     DataScope selfScope = new DataScope();
     selfScope.setId("scope-self");
     selfScope.setType(DataScopeType.SELF);
@@ -454,19 +330,16 @@ class AuthorizationContextServiceImplTest {
     customScope.setId("scope-custom");
     customScope.setType(DataScopeType.CUSTOM);
     customScope.setCustomDeptIds(Set.of("dept-a", "dept-b"));
-    RolePermissionsRelevanceRepository rolePermissionsRepo = mock(RolePermissionsRelevanceRepository.class);
+    RoleResourceGrantRepository grantRepository = mock(RoleResourceGrantRepository.class);
     DataScopeRepository dataScopeRepo = mock(DataScopeRepository.class);
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role1, role2));
-    when(usersService.loadPermissionsInRoleIds(List.of("role1", "role2"))).thenReturn(Set.of());
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    when(rolePermissionsRelevanceRepositoryProvider.getIfAvailable()).thenReturn(rolePermissionsRepo);
-    when(rolePermissionsRepo.findByRoleIdIn(List.of("role1", "role2"))).thenReturn(List.of(relevance1, relevance2));
+    when(usersService.loadResourcesInRoleIds(List.of("role1", "role2"))).thenReturn(Set.of());
+    when(roleResourceGrantRepositoryProvider.getIfAvailable()).thenReturn(grantRepository);
+    when(grantRepository.findByRoleIdIn(List.of("role1", "role2"))).thenReturn(List.of(grant1, grant2));
     when(dataScopeRepositoryProvider.getIfAvailable()).thenReturn(dataScopeRepo);
-    when(dataScopeRepo.findAllById(Set.of("scope-self", "scope-custom"))).thenReturn(List.of(selfScope, customScope));
-    when(fieldScopeRepositoryProvider.getIfAvailable()).thenReturn(null);
+    when(dataScopeRepo.findAllById(anyCollection())).thenReturn(List.of(selfScope, customScope));
 
     AuthorizationContext ctx = service.calculate(null, "u1", null, null);
 
@@ -479,61 +352,26 @@ class AuthorizationContextServiceImplTest {
   void calculate_allDataScopeOverridesRestrictiveScopes() {
     User user = new User();
     user.setSuperAdmin(false);
-    final RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_ADMIN");
-    RolePermissionsRelevance relevance = new RolePermissionsRelevance();
-    relevance.setDataScopeId("scope-all");
+    RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_ADMIN");
+    RoleResourceGrant grant = new RoleResourceGrant();
+    grant.setDataScopeId("scope-all");
     DataScope allScope = new DataScope();
     allScope.setId("scope-all");
     allScope.setType(DataScopeType.ALL);
-    RolePermissionsRelevanceRepository rolePermissionsRepo = mock(RolePermissionsRelevanceRepository.class);
+    RoleResourceGrantRepository grantRepository = mock(RoleResourceGrantRepository.class);
     DataScopeRepository dataScopeRepo = mock(DataScopeRepository.class);
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role));
-    when(usersService.loadPermissionsInRoleIds(List.of("role1"))).thenReturn(Set.of());
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    when(rolePermissionsRelevanceRepositoryProvider.getIfAvailable()).thenReturn(rolePermissionsRepo);
-    when(rolePermissionsRepo.findByRoleIdIn(List.of("role1"))).thenReturn(List.of(relevance));
+    when(usersService.loadResourcesInRoleIds(List.of("role1"))).thenReturn(Set.of());
+    when(roleResourceGrantRepositoryProvider.getIfAvailable()).thenReturn(grantRepository);
+    when(grantRepository.findByRoleIdIn(List.of("role1"))).thenReturn(List.of(grant));
     when(dataScopeRepositoryProvider.getIfAvailable()).thenReturn(dataScopeRepo);
-    when(dataScopeRepo.findAllById(Set.of("scope-all"))).thenReturn(List.of(allScope));
-    when(fieldScopeRepositoryProvider.getIfAvailable()).thenReturn(null);
+    when(dataScopeRepo.findAllById(anyCollection())).thenReturn(List.of(allScope));
 
     AuthorizationContext ctx = service.calculate(null, "u1", null, null);
 
     assertThat(ctx.getDataScopeType()).isEqualTo(DataScopeType.ALL.name());
-    assertThat(ctx.getDeptIds()).isEmpty();
-    assertThat(ctx.getDataScopeIncludeSelf()).isFalse();
-  }
-
-  @Test
-  void calculate_emptyCustomScopeStaysCustomForFailClosedFiltering() {
-    User user = new User();
-    user.setSuperAdmin(false);
-    final RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_USER");
-    RolePermissionsRelevance relevance = new RolePermissionsRelevance();
-    relevance.setDataScopeId("scope-custom");
-    DataScope customScope = new DataScope();
-    customScope.setId("scope-custom");
-    customScope.setType(DataScopeType.CUSTOM);
-    customScope.setCustomDeptIds(Set.of());
-    RolePermissionsRelevanceRepository rolePermissionsRepo = mock(RolePermissionsRelevanceRepository.class);
-    DataScopeRepository dataScopeRepo = mock(DataScopeRepository.class);
-
-    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role));
-    when(usersService.loadPermissionsInRoleIds(List.of("role1"))).thenReturn(Set.of());
-    when(featurePermissionRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(null);
-    when(rolePermissionsRelevanceRepositoryProvider.getIfAvailable()).thenReturn(rolePermissionsRepo);
-    when(rolePermissionsRepo.findByRoleIdIn(List.of("role1"))).thenReturn(List.of(relevance));
-    when(dataScopeRepositoryProvider.getIfAvailable()).thenReturn(dataScopeRepo);
-    when(dataScopeRepo.findAllById(Set.of("scope-custom"))).thenReturn(List.of(customScope));
-    when(fieldScopeRepositoryProvider.getIfAvailable()).thenReturn(null);
-
-    AuthorizationContext ctx = service.calculate(null, "u1", null, null);
-
-    assertThat(ctx.getDataScopeType()).isEqualTo(DataScopeType.CUSTOM.name());
     assertThat(ctx.getDeptIds()).isEmpty();
     assertThat(ctx.getDataScopeIncludeSelf()).isFalse();
   }

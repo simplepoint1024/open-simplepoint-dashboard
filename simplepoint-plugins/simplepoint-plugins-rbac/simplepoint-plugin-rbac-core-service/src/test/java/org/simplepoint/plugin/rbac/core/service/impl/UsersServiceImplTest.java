@@ -29,7 +29,7 @@ import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
-import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
+import org.simplepoint.plugin.auditing.logging.api.service.ResourceGrantLogRemoteService;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
@@ -37,7 +37,7 @@ import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceReposito
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
@@ -67,13 +67,13 @@ class UsersServiceImplTest {
   TenantUserRelevanceRepository tenantUserRelevanceRepository;
 
   @Mock
-  PermissionVersionRefreshService permissionVersionRefreshService;
+  ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
   @Mock
   RoleRepository roleRepository;
 
   @Mock
-  PermissionChangeLogRemoteService permissionChangeLogRemoteService;
+  ResourceGrantLogRemoteService resourceGrantLogRemoteService;
 
   @InjectMocks
   UsersServiceImpl service;
@@ -136,15 +136,15 @@ class UsersServiceImplTest {
     assertThat(result).containsExactly(role);
   }
 
-  // ── loadPermissionsInRoleIds ──────────────────────────────────────────────
+  // ── loadResourcesInRoleIds ────────────────────────────────────────────────
 
   @Test
-  void loadPermissionsInRoleIds_delegatesToRepository() {
-    when(userRepository.loadPermissionsInRoleIds(List.of("r1"))).thenReturn(Set.of("perm1"));
+  void loadResourcesInRoleIds_delegatesToRepository() {
+    when(userRepository.loadResourcesInRoleIds(List.of("r1"))).thenReturn(Set.of("resources.view"));
 
-    Collection<String> result = service.loadPermissionsInRoleIds(List.of("r1"));
+    Collection<String> result = service.loadResourcesInRoleIds(List.of("r1"));
 
-    assertThat(result).containsExactly("perm1");
+    assertThat(result).containsExactly("resources.view");
   }
 
   // ── create ────────────────────────────────────────────────────────────────
@@ -323,7 +323,7 @@ class UsersServiceImplTest {
         return "tenant1".equals(item.getTenantId());
       }));
       // Permission version is refreshed for the active tenant context
-      verify(permissionVersionRefreshService).refreshTenant("tenant1");
+      verify(resourceAuthorizationVersionService).refreshTenant("tenant1");
     }
   }
 
@@ -369,8 +369,8 @@ class UsersServiceImplTest {
 
       // Uses the current tenant scope
       verify(userRoleRelevanceRepository).unauthorized("tenant1", "u1", Set.of("r1"));
-      // Refreshes permission version for the active tenant
-      verify(permissionVersionRefreshService).refreshTenant("tenant1");
+      // Refreshes authorization version for the active tenant
+      verify(resourceAuthorizationVersionService).refreshTenant("tenant1");
     }
   }
 

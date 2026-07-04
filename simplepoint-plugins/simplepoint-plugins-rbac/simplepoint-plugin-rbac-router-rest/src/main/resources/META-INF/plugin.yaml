@@ -2,10 +2,10 @@ id: org.simplepoint.rbac.router.rest
 name: RBAC Router REST
 version: "1.0"
 author: simplepoint
-description: RBAC menu and remote module REST endpoints
+description: RBAC resource route and remote module REST endpoints
 dependencies:
   - id: org.simplepoint.rbac.router.service
 backend:
   packageScan:
-    controller: org.simplepoint.plugin.rbac.menu.rest.endpoint
+    controller: org.simplepoint.plugin.rbac.resource.rest.endpoint
   instances: {}

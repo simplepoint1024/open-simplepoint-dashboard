@@ -81,6 +81,6 @@ graph LR
 - 服务拓扑：`doc/architecture/service_topology.md`
 - 组件设计：`doc/architecture/component_design.md`
 - 部署指南：`doc/deployment/`
-- 权限模型：`doc/permission/`
+- 资源授权模型：`doc/resource/`
 - 数据库：`doc/database/`
 - API：`doc/api/`

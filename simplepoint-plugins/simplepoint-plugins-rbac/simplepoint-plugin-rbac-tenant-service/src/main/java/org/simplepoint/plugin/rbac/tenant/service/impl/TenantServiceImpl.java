@@ -25,7 +25,7 @@ import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.service.PermissionVersionRefreshService;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.simplepoint.plugin.rbac.tenant.api.vo.UserRelevanceVo;
@@ -48,7 +48,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
 
   private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
   private final TenantUserRelevanceRepository tenantUserRelevanceRepository;
-  private final PermissionVersionRefreshService permissionVersionRefreshService;
+  private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
   private final UsersService usersService;
 
   /**
@@ -59,13 +59,13 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       DetailsProviderService detailsProviderService,
       TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
       TenantUserRelevanceRepository tenantUserRelevanceRepository,
-      PermissionVersionRefreshService permissionVersionRefreshService,
+      ResourceAuthorizationVersionService resourceAuthorizationVersionService,
       UsersService usersService
   ) {
     super(repository, detailsProviderService);
     this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
     this.tenantUserRelevanceRepository = tenantUserRelevanceRepository;
-    this.permissionVersionRefreshService = permissionVersionRefreshService;
+    this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.usersService = usersService;
   }
 
@@ -120,7 +120,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   }
 
   @Override
-  public String calculatePermissionContextId(String tenantId, String roleId) {
+  public String calculateAuthorizationContextId(String tenantId, String roleId) {
     Authentication authentication = getRequiredAuthentication();
     String resolvedTenantId = resolveRequestedTenantId(tenantId, authentication);
     String normalizedRoleId = trimToNull(roleId);
@@ -131,16 +131,16 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
         throw new AccessDeniedException("当前用户未拥有指定角色");
       }
     }
-    Long permissionVersion = 0L;
+    Long authorizationVersion = 0L;
     if (resolvedTenantId != null && !resolvedTenantId.isBlank()) {
-      permissionVersion = getRepository().getTenantPermissionVersion(resolvedTenantId);
+      authorizationVersion = getRepository().getTenantAuthorizationVersion(resolvedTenantId);
     }
-    if (permissionVersion == null) {
-      permissionVersion = 0L;
+    if (authorizationVersion == null) {
+      authorizationVersion = 0L;
     }
     return sha256((resolvedTenantId != null ? resolvedTenantId : "")
         + ":" + authentication.getName()
-        + ":" + permissionVersion
+        + ":" + authorizationVersion
         + (normalizedRoleId == null ? "" : ":" + normalizedRoleId));
   }
 
@@ -214,7 +214,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     }
 
     Collection<TenantPackageRelevance> saved = tenantPackageRelevanceRepository.saveAll(relations);
-    permissionVersionRefreshService.refreshTenant(tenantId);
+    resourceAuthorizationVersionService.refreshTenant(tenantId);
     return saved;
   }
 
@@ -228,7 +228,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     String requiredTenantId = requireTenant(tenantId).getId();
     requirePlatformAdministrator();
     tenantPackageRelevanceRepository.unauthorized(requiredTenantId, normalizedPackageCodes);
-    permissionVersionRefreshService.refreshTenant(requiredTenantId);
+    resourceAuthorizationVersionService.refreshTenant(requiredTenantId);
   }
 
   @Override
@@ -258,7 +258,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     }
 
     Collection<TenantUserRelevance> saved = tenantUserRelevanceRepository.saveAll(relations);
-    permissionVersionRefreshService.refreshTenant(tenant.getId());
+    resourceAuthorizationVersionService.refreshTenant(tenant.getId());
     return saved;
   }
 
@@ -274,7 +274,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       throw new IllegalArgumentException("租户所有者不能移出租户成员");
     }
     tenantUserRelevanceRepository.unauthorized(tenant.getId(), normalizedUserIds);
-    permissionVersionRefreshService.refreshTenant(tenant.getId());
+    resourceAuthorizationVersionService.refreshTenant(tenant.getId());
   }
 
   @Override
@@ -282,8 +282,8 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   public <S extends Tenant> S create(S entity) {
     requirePlatformAdministrator();
     Authentication authentication = getRequiredAuthentication();
-    if (entity.getPermissionVersion() == null) {
-      entity.setPermissionVersion(0L);
+    if (entity.getAuthorizationVersion() == null) {
+      entity.setAuthorizationVersion(0L);
     }
     if (entity.getOwnerId() == null || entity.getOwnerId().isBlank()) {
       entity.setOwnerId(authentication.getName());
@@ -299,8 +299,8 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   public <S extends Tenant> Tenant modifyById(S entity) {
     requirePlatformAdministrator();
     Tenant current = super.findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("租户不存在"));
-    if (entity.getPermissionVersion() == null) {
-      entity.setPermissionVersion(current.getPermissionVersion());
+    if (entity.getAuthorizationVersion() == null) {
+      entity.setAuthorizationVersion(current.getAuthorizationVersion());
     }
     if (entity.getOwnerId() == null || entity.getOwnerId().isBlank()) {
       entity.setOwnerId(current.getOwnerId());
@@ -310,7 +310,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     Tenant modified = super.modifyById(entity);
     boolean ownerMembershipAdded = ensureOwnerMembership(modified.getId(), modified.getOwnerId());
     if (ownerChanged || ownerMembershipAdded) {
-      permissionVersionRefreshService.refreshTenant(modified.getId());
+      resourceAuthorizationVersionService.refreshTenant(modified.getId());
     }
     return modified;
   }
@@ -433,7 +433,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     tenant.setDescription("个人租户");
     tenant.setOwnerId(userId);
     tenant.setTenantType(org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL);
-    tenant.setPermissionVersion(0L);
+    tenant.setAuthorizationVersion(0L);
     Tenant saved = getRepository().save(tenant);
     ensureOwnerMembership(saved.getId(), userId);
     return saved;

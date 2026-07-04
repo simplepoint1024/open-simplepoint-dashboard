@@ -25,15 +25,15 @@ public class AccessCenterResourceNodeVo implements Serializable {
 
   private String description;
 
-  private String permissionAuthority;
+  private String resourceCode;
 
-  private Integer permissionType;
+  private boolean grantable;
 
   private boolean checked;
 
   private boolean partial;
 
-  private Set<String> permissionAuthorities = new LinkedHashSet<>();
+  private Set<String> resourceCodes = new LinkedHashSet<>();
 
   private List<AccessCenterResourceNodeVo> children = new ArrayList<>();
 }

@@ -1,6 +1,6 @@
 # 📘 项目文档（doc/）
 
-本目录用于存放后台系统的所有设计文档、架构文档、数据库文档、权限模型文档、API 文档等内容。  
+本目录用于存放后台系统的所有设计文档、架构文档、数据库文档、资源授权模型文档、API 文档等内容。
 文档结构遵循企业级 SaaS / IAM 系统的最佳实践，便于团队协作、系统维护与长期演进。
 
 ---
@@ -26,7 +26,7 @@ doc/
 │   ├── rest_api.md         # REST API 说明
 │   ├── graphql_api.md      # GraphQL API 说明
 │   └── api_versioning.md    # API 版本管理策略
-├── permissions/           # 权限模型文档
+├── permissions/           # 资源授权模型文档
 │   ├── role_definitions.md  # 角色定义
 │   ├── access_control.md    # 访问控制策略
 │   └── permission_matrix.md # 权限矩阵
@@ -124,7 +124,7 @@ doc/
 
 ### **permission/**
 权限体系文档（重点），包括：
-- 权限模型（RBAC + PBAC + ABAC）
+- 资源授权模型（RBAC + PBAC + ABAC）
 - 权限点设计规范
 - 权限点与资源绑定规则
 - 数据权限（ABAC）表达式
@@ -267,7 +267,7 @@ doc/
 如果你愿意，我还能继续帮你：
 
 ### ✔ 生成每个子目录的 README 模板
-### ✔ 自动生成权限模型文档
+### ✔ 自动生成资源授权模型文档
 ### ✔ 自动生成 ER 图（Mermaid）
 ### ✔ 生成 API 文档模板
 

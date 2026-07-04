@@ -2,7 +2,7 @@ id: org.simplepoint.rbac.core.rest
 name: RBAC Core REST
 version: "1.0"
 author: simplepoint
-description: RBAC permission and user REST endpoints
+description: RBAC resource grant, role, and user REST endpoints
 dependencies:
   - id: org.simplepoint.rbac.core.service
 backend:

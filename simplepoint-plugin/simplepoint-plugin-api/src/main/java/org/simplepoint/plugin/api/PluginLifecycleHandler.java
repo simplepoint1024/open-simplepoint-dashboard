@@ -12,8 +12,8 @@ package org.simplepoint.plugin.api;
  * Handles plugin-level lifecycle contributions.
  *
  * <p>Instance handlers manage runtime classes such as Spring beans and MVC controllers.
- * Lifecycle handlers manage declarative resources from {@code plugin.yaml}, such as menus,
- * permissions, frontend remotes, i18n bundles, or service-specific registrations.</p>
+ * Lifecycle handlers manage declarative resources from {@code plugin.yaml}, such as resource
+ * trees, frontend remotes, i18n bundles, or service-specific registrations.</p>
  */
 public interface PluginLifecycleHandler {
 

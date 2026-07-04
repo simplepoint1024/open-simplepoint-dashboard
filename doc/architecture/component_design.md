@@ -85,6 +85,6 @@ sequenceDiagram
 - 多租户模型：`doc/architecture/multi_tenant_model.md`
 - Schema 驱动 UI：`doc/architecture/schema_driven_ui.md`
 - 授权流程：`doc/design/authorization_flow.md`
-- 权限模型：`doc/permission/`
+- 资源授权模型：`doc/resource/`
 - 数据库设计：`doc/database/`
 - API 契约：`doc/api/`
