@@ -1,6 +1,6 @@
 .access-center {
   display: grid;
-  grid-template-columns: minmax(240px, 280px) minmax(560px, 1fr) minmax(260px, 320px);
+  grid-template-columns: minmax(240px, 280px) minmax(680px, 1fr) minmax(280px, 340px);
   gap: 16px;
   min-height: calc(100vh - 154px);
   height: calc(100vh - 154px);
@@ -25,7 +25,10 @@
 
 .access-center-toolbar,
 .access-center-main-head,
-.access-center-impact-head {
+.access-center-impact-head,
+.access-center-resource-toolbar,
+.access-center-detail-head,
+.access-center-action-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -146,9 +149,162 @@
   white-space: nowrap;
 }
 
-.access-center-transfer {
+.access-center-resource {
+  display: flex;
   flex: 1;
-  min-height: 360px;
+  flex-direction: column;
+  min-height: 420px;
+}
+
+.access-center-resource-toolbar {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.access-center-resource-toolbar .ant-input-affix-wrapper {
+  max-width: 360px;
+}
+
+.access-center-resource-toolbar .ant-checkbox-wrapper {
+  flex-shrink: 0;
+}
+
+.access-center-resource-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 44%) minmax(320px, 1fr);
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.access-center-resource-tree,
+.access-center-resource-detail {
+  min-width: 0;
+  min-height: 0;
+  padding: 12px;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  background: #fbfcfd;
+  overflow: auto;
+}
+
+.access-center-resource-tree .ant-tree {
+  min-width: 100%;
+  background: transparent;
+}
+
+.access-center-tree-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: middle;
+}
+
+.access-center-tree-label,
+.access-center-tree-code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-center-tree-label {
+  max-width: 220px;
+}
+
+.access-center-tree-code {
+  max-width: 220px;
+  font-size: 12px;
+}
+
+.access-center-detail-head {
+  align-items: flex-start;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.access-center-detail-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.access-center-detail-head .ant-typography {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-center-detail-meta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 10px 0;
+  color: #667085;
+}
+
+.access-center-detail-meta strong {
+  color: #172033;
+}
+
+.access-center-action-head {
+  padding: 10px 0;
+  border-top: 1px solid #edf0f3;
+}
+
+.access-center-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.access-center-action-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.access-center-action-row-changed {
+  border-color: #ffd666;
+  background: #fffbe6;
+}
+
+.access-center-action-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.access-center-action-info strong,
+.access-center-action-info small,
+.access-center-action-info .ant-typography {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-center-action-info small {
+  color: #667085;
+}
+
+.access-center-action-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
 }
 
 .access-center-impact {
@@ -166,6 +322,7 @@
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 2px 8px;
+  min-width: 0;
   padding: 10px;
   border: 1px solid #edf0f3;
   border-radius: 8px;
@@ -183,6 +340,14 @@
   color: #667085;
 }
 
+.access-center-metric-added {
+  color: #237804;
+}
+
+.access-center-metric-removed {
+  color: #cf1322;
+}
+
 .access-center-impact-section {
   padding-top: 12px;
   border-top: 1px solid #edf0f3;
@@ -191,6 +356,10 @@
 .access-center-impact-section > div {
   margin-top: 6px;
   color: #172033;
+}
+
+.access-center-impact-section > .ant-tag {
+  margin-top: 8px;
 }
 
 .access-center-user-impact {
@@ -239,7 +408,7 @@
   color: #237804;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1280px) {
   .access-center {
     grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
     height: auto;
@@ -251,20 +420,32 @@
   }
 }
 
+@media (max-width: 980px) {
+  .access-center-resource-layout,
+  .access-center-scope-band {
+    grid-template-columns: 1fr;
+  }
+
+  .access-center-resource-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .access-center-resource-toolbar .ant-input-affix-wrapper {
+    max-width: none;
+  }
+}
+
 @media (max-width: 840px) {
   .access-center {
     grid-template-columns: 1fr;
   }
 
+  .access-center-main-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .access-center-impact {
     grid-column: auto;
-  }
-
-  .access-center-scope-band {
-    grid-template-columns: 1fr;
-  }
-
-  .access-center-save-state {
-    justify-content: flex-start;
   }
 }

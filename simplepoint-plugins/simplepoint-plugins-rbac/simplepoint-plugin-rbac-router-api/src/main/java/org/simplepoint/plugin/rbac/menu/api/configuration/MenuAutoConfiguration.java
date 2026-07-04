@@ -35,7 +35,7 @@ public class MenuAutoConfiguration implements InitializingBean {
      * Constructor for MenuAutoConfiguration.
      * This constructor initializes the MenuService that will be used for menu management.
      *
-     * @param menuService     the service used for managing menus
+     * @param menuServiceProvider provider for the service used for managing menus
      * @param applicationName the application name
      * @param menuConfigPath  the classpath location of the menu configuration JSON
      */

@@ -1,16 +1,15 @@
 import {
   Alert,
   Button,
+  Checkbox,
   Empty,
-  GetProp,
   Input,
   message,
   Select,
+  Skeleton,
   Space,
-  TableColumnsType,
-  TableProps,
   Tag,
-  TransferProps,
+  Tree,
   Typography,
 } from 'antd';
 import {
@@ -22,32 +21,47 @@ import {
   TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons';
+import type {DataNode} from 'antd/es/tree';
+import type {Key} from 'react';
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import STableTransfer from '@simplepoint/components/STableTransfer';
 import {useData, usePage} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import api from '@/api';
 import {
+  AccessCenterResourceNode,
+  AccessCenterResourceNodeType,
   AccessCenterRoleOverview,
+  fetchResourceTree,
   fetchRoleDetail,
   fetchRoleOverviews,
   saveRoleAuthorization,
 } from '@/api/system/access-center';
 import {fetchItems as fetchDataScopeItems, DataScopeRelevantVo} from '@/api/system/data-scope';
 import {fetchItems as fetchFieldScopeItems, FieldScopeRelevantVo} from '@/api/system/field-scope';
-import {fetchItems as fetchPermissionItems, fetchSelectedItems, PermissionRelevantVo} from '@/api/system/permission';
 import './index.css';
 
-type TransferItem = GetProp<TransferProps, 'dataSource'>[number];
+type Translate = (key: string, defaultMessage?: string) => string;
 
-interface TableTransferProps extends TransferProps<TransferItem> {
-  dataSource: PermissionRelevantVo[];
-  leftColumns: TableColumnsType<PermissionRelevantVo>;
-  rightColumns: TableColumnsType<PermissionRelevantVo>;
-}
+type ScopeOption = {
+  label: string;
+  value: string;
+};
+
+type ResourceIndex = {
+  nodeMap: Map<string, AccessCenterResourceNode>;
+  permissionNodesByAuthority: Map<string, AccessCenterResourceNode[]>;
+  permissionOrder: Map<string, number>;
+};
 
 const baseConfig = api['rbac-access-center'];
 const ROLE_PAGE_SIZE = 100;
+const TYPE_FALLBACK: Record<AccessCenterResourceNodeType, string> = {
+  GROUP: '分组',
+  MENU: '菜单',
+  FEATURE: '功能',
+  PERMISSION: '动作',
+};
+const HIGH_RISK_AUTHORITY = /(delete|remove|revoke|grant|authorize|admin|config|disable|drop)/i;
 
 function roleTitle(item?: AccessCenterRoleOverview) {
   const role = item?.role;
@@ -58,14 +72,175 @@ function userTitle(user: {name?: string | null; email?: string | null; phoneNumb
   return user.name || user.email || user.phoneNumber || user.id || '-';
 }
 
+function normalizeAuthorities(authorities?: readonly string[]) {
+  return Array.from(new Set((authorities ?? []).map(String).filter(Boolean)));
+}
+
+function orderAuthorities(authorities: readonly string[], orderMap: Map<string, number>) {
+  return normalizeAuthorities(authorities).sort((left, right) => {
+    const leftOrder = orderMap.get(left) ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = orderMap.get(right) ?? Number.MAX_SAFE_INTEGER;
+    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+    return left.localeCompare(right);
+  });
+}
+
+function sameStringArray(left: readonly string[], right: readonly string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function getNodeAuthorities(node?: AccessCenterResourceNode) {
+  if (!node) return [];
+  if (node.type === 'PERMISSION' && node.permissionAuthority) {
+    return [node.permissionAuthority];
+  }
+  return node.permissionAuthorities ?? [];
+}
+
+function collectPermissionNodes(node?: AccessCenterResourceNode) {
+  const result = new Map<string, AccessCenterResourceNode>();
+  const visit = (current?: AccessCenterResourceNode) => {
+    if (!current) return;
+    if (current.type === 'PERMISSION' && current.permissionAuthority) {
+      result.set(current.permissionAuthority, current);
+      return;
+    }
+    current.children?.forEach(visit);
+  };
+  visit(node);
+  return Array.from(result.values());
+}
+
+function buildResourceIndex(nodes: AccessCenterResourceNode[]): ResourceIndex {
+  const nodeMap = new Map<string, AccessCenterResourceNode>();
+  const permissionNodesByAuthority = new Map<string, AccessCenterResourceNode[]>();
+  const permissionOrder = new Map<string, number>();
+  let order = 0;
+
+  const visit = (node: AccessCenterResourceNode) => {
+    nodeMap.set(node.id, node);
+    if (node.type === 'PERMISSION' && node.permissionAuthority) {
+      const items = permissionNodesByAuthority.get(node.permissionAuthority) ?? [];
+      items.push(node);
+      permissionNodesByAuthority.set(node.permissionAuthority, items);
+      if (!permissionOrder.has(node.permissionAuthority)) {
+        permissionOrder.set(node.permissionAuthority, order);
+        order += 1;
+      }
+    }
+    node.children?.forEach(visit);
+  };
+
+  nodes.forEach(visit);
+  return {nodeMap, permissionNodesByAuthority, permissionOrder};
+}
+
+function allNodeIds(nodes: AccessCenterResourceNode[]) {
+  const result: string[] = [];
+  const visit = (node: AccessCenterResourceNode) => {
+    result.push(node.id);
+    node.children?.forEach(visit);
+  };
+  nodes.forEach(visit);
+  return result;
+}
+
+function collectAuthoritiesFromKeys(keys: readonly Key[], nodeMap: Map<string, AccessCenterResourceNode>) {
+  const result = new Set<string>();
+  keys.forEach((key) => {
+    const node = nodeMap.get(String(key));
+    getNodeAuthorities(node).forEach((authority) => result.add(authority));
+  });
+  return Array.from(result);
+}
+
+function resourceTypeLabel(type: AccessCenterResourceNodeType, t: Translate) {
+  return t(`accessCenter.resource.type.${type}`, TYPE_FALLBACK[type]);
+}
+
+function resourceTypeColor(type: AccessCenterResourceNodeType) {
+  if (type === 'MENU') return 'blue';
+  if (type === 'FEATURE') return 'purple';
+  if (type === 'PERMISSION') return 'green';
+  return 'default';
+}
+
+function matchesKeyword(node: AccessCenterResourceNode, keyword: string) {
+  if (!keyword) return true;
+  return [node.label, node.code, node.path, node.description, node.permissionAuthority]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(keyword));
+}
+
+function filterResourceTree(
+  nodes: AccessCenterResourceNode[],
+  keyword: string,
+  selectedSet: Set<string>,
+  changedSet: Set<string>,
+  authorizedOnly: boolean,
+  changedOnly: boolean,
+): AccessCenterResourceNode[] {
+  return nodes
+    .map((node) => {
+      const children: AccessCenterResourceNode[] = filterResourceTree(
+        node.children ?? [],
+        keyword,
+        selectedSet,
+        changedSet,
+        authorizedOnly,
+        changedOnly,
+      );
+      const authorities = getNodeAuthorities(node);
+      const authorizedMatched = !authorizedOnly || authorities.some((authority) => selectedSet.has(authority));
+      const changedMatched = !changedOnly || authorities.some((authority) => changedSet.has(authority));
+      const selfMatched = matchesKeyword(node, keyword) && authorizedMatched && changedMatched;
+      if (!selfMatched && children.length === 0) return null;
+      return {...node, children};
+    })
+    .filter((node): node is AccessCenterResourceNode => !!node);
+}
+
+function buildTreeData(nodes: AccessCenterResourceNode[], selectedSet: Set<string>, t: Translate): DataNode[] {
+  return nodes.map((node) => {
+    const authorities = getNodeAuthorities(node);
+    const selectedCount = authorities.filter((authority) => selectedSet.has(authority)).length;
+    const showCount = authorities.length > 0 && node.type !== 'PERMISSION';
+
+    return {
+      key: node.id,
+      title: (
+        <span className="access-center-tree-title">
+          <span className="access-center-tree-label">{node.label || node.code || node.permissionAuthority || '-'}</span>
+          {node.type === 'PERMISSION' && node.permissionAuthority ? (
+            <Typography.Text code className="access-center-tree-code">{node.permissionAuthority}</Typography.Text>
+          ) : null}
+          <Tag color={resourceTypeColor(node.type)}>{resourceTypeLabel(node.type, t)}</Tag>
+          {showCount ? <Tag>{selectedCount}/{authorities.length}</Tag> : null}
+        </span>
+      ),
+      children: buildTreeData(node.children ?? [], selectedSet, t),
+    };
+  });
+}
+
+function getScopeLabel(options: ScopeOption[], value: string | null, emptyText: string, fallback?: string | null) {
+  if (!value) return emptyText;
+  return options.find((option) => option.value === value)?.label ?? fallback ?? value;
+}
+
 const AccessCenter = () => {
-  const {t, messages, ensure, locale} = useI18n();
+  const {t, ensure, locale} = useI18n();
   const [roleSearch, setRoleSearch] = useState('');
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
-  const [leftPage, setLeftPage] = useState({current: 1, pageSize: 10});
-  const [rightPage, setRightPage] = useState({current: 1, pageSize: 10});
-  const [targetKeys, setTargetKeys] = useState<TransferProps['targetKeys']>([]);
-  const [selectedItems, setSelectedItems] = useState<PermissionRelevantVo[]>([]);
+  const [resourceSearch, setResourceSearch] = useState('');
+  const [authorizedOnly, setAuthorizedOnly] = useState(false);
+  const [changedOnly, setChangedOnly] = useState(false);
+  const [selectedResourceId, setSelectedResourceId] = useState('');
+  const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
+  const [baselineAuthorities, setBaselineAuthorities] = useState<string[]>([]);
+  const [selectedAuthorities, setSelectedAuthorities] = useState<string[]>([]);
+  const [baselineDataScopeId, setBaselineDataScopeId] = useState<string | null>(null);
+  const [baselineFieldScopeId, setBaselineFieldScopeId] = useState<string | null>(null);
   const [dataScopeId, setDataScopeId] = useState<string | null>(null);
   const [fieldScopeId, setFieldScopeId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -108,54 +283,53 @@ const AccessCenter = () => {
   );
   const detail = detailQuery.data;
 
-  const selectedAuthorities = useMemo(
-    () => (targetKeys ?? []).map((key) => String(key)),
-    [targetKeys],
+  const resourceTreeQuery = useData<AccessCenterResourceNode[]>(
+    selectedRoleId ? ['accessCenterResourceTree', selectedRoleId] : ['accessCenterResourceTree', 'empty'],
+    () => fetchResourceTree(selectedRoleId),
+    {enabled: !!selectedRoleId},
   );
+  const resourceNodes = resourceTreeQuery.data ?? [];
+  const resourceIndex = useMemo(() => buildResourceIndex(resourceNodes), [resourceNodes]);
 
   useEffect(() => {
-    setTargetKeys([]);
-    setSelectedItems([]);
+    setBaselineAuthorities([]);
+    setSelectedAuthorities([]);
+    setBaselineDataScopeId(null);
+    setBaselineFieldScopeId(null);
     setDataScopeId(null);
     setFieldScopeId(null);
-    setLeftPage((prev) => ({...prev, current: 1}));
-    setRightPage((prev) => ({...prev, current: 1}));
+    setResourceSearch('');
+    setAuthorizedOnly(false);
+    setChangedOnly(false);
+    setSelectedResourceId('');
+    setExpandedKeys([]);
   }, [selectedRoleId]);
 
   useEffect(() => {
     if (!detail) return;
-    setTargetKeys(detail.authorizedPermissions ?? []);
-    setDataScopeId(detail.scopeAssignment?.dataScopeId ?? null);
-    setFieldScopeId(detail.scopeAssignment?.fieldScopeId ?? null);
-  }, [detail]);
-
-  const permissionQuery = usePage<PermissionRelevantVo>(
-    ['accessCenterPermissionItems', leftPage.current, leftPage.pageSize],
-    () => fetchPermissionItems({page: String(leftPage.current - 1), size: String(leftPage.pageSize)}),
-  );
-  const permissionContent = permissionQuery.data?.content ?? [];
-
-  const selectedDetailsQuery = useData<PermissionRelevantVo[]>(
-    selectedRoleId && selectedAuthorities.length > 0
-      ? ['accessCenterSelectedPermissions', selectedRoleId, ...selectedAuthorities]
-      : ['accessCenterSelectedPermissions', selectedRoleId || 'empty'],
-    () => fetchSelectedItems(selectedAuthorities),
-    {enabled: !!selectedRoleId && selectedAuthorities.length > 0},
-  );
+    const nextAuthorities = orderAuthorities(detail.authorizedPermissions ?? [], resourceIndex.permissionOrder);
+    const nextDataScopeId = detail.scopeAssignment?.dataScopeId ?? null;
+    const nextFieldScopeId = detail.scopeAssignment?.fieldScopeId ?? null;
+    setBaselineAuthorities(nextAuthorities);
+    setSelectedAuthorities(nextAuthorities);
+    setBaselineDataScopeId(nextDataScopeId);
+    setBaselineFieldScopeId(nextFieldScopeId);
+    setDataScopeId(nextDataScopeId);
+    setFieldScopeId(nextFieldScopeId);
+  }, [detail, resourceIndex.permissionOrder]);
 
   useEffect(() => {
-    if (!selectedAuthorities.length) {
-      setSelectedItems([]);
-      return;
-    }
-    if (!selectedDetailsQuery.data) return;
-    const detailMap = new Map(selectedDetailsQuery.data.map((item) => [item.authority, item]));
-    setSelectedItems(
-      selectedAuthorities
-        .map((authority) => detailMap.get(authority))
-        .filter((item): item is PermissionRelevantVo => !!item),
-    );
-  }, [selectedAuthorities, selectedDetailsQuery.data]);
+    const firstNode = resourceNodes[0];
+    const nodeIds = new Set(resourceIndex.nodeMap.keys());
+    setSelectedResourceId((previous) => {
+      if (previous && nodeIds.has(previous)) return previous;
+      return firstNode?.id ?? '';
+    });
+    setExpandedKeys((previous) => {
+      const next = previous.length ? previous.filter((key) => nodeIds.has(key)) : resourceNodes.map((node) => node.id);
+      return sameStringArray(previous, next) ? previous : next;
+    });
+  }, [resourceIndex.nodeMap, resourceNodes]);
 
   const dataScopeQuery = useData(['accessCenterDataScopes'], () => fetchDataScopeItems());
   const fieldScopeQuery = useData(['accessCenterFieldScopes'], () => fetchFieldScopeItems());
@@ -178,133 +352,141 @@ const AccessCenter = () => {
     [fieldScopeQuery.data],
   );
 
-  const columns: TableColumnsType<PermissionRelevantVo> = useMemo(
-    () => [
-      {
-        key: 'name',
-        dataIndex: 'name',
-        title: t('permissions.title.name', '权限名称'),
-        width: 160,
-        ellipsis: true,
-      },
-      {
-        key: 'authority',
-        dataIndex: 'authority',
-        title: t('permissions.title.authority', '权限标识'),
-        width: 230,
-        ellipsis: true,
-        render: (value: string) => <Typography.Text code>{value || '-'}</Typography.Text>,
-      },
-      {
-        key: 'description',
-        dataIndex: 'description',
-        title: t('permissions.title.description', '描述'),
-        ellipsis: true,
-      },
-    ],
-    [messages, t],
+  const baselineSet = useMemo(() => new Set(baselineAuthorities), [baselineAuthorities]);
+  const selectedSet = useMemo(() => new Set(selectedAuthorities), [selectedAuthorities]);
+  const addedAuthorities = useMemo(
+    () => selectedAuthorities.filter((authority) => !baselineSet.has(authority)),
+    [baselineSet, selectedAuthorities],
+  );
+  const removedAuthorities = useMemo(
+    () => baselineAuthorities.filter((authority) => !selectedSet.has(authority)),
+    [baselineAuthorities, selectedSet],
+  );
+  const changedAuthoritySet = useMemo(
+    () => new Set([...addedAuthorities, ...removedAuthorities]),
+    [addedAuthorities, removedAuthorities],
+  );
+  const hasScopeChanges = dataScopeId !== baselineDataScopeId || fieldScopeId !== baselineFieldScopeId;
+  const hasChanges = addedAuthorities.length > 0 || removedAuthorities.length > 0 || hasScopeChanges;
+
+  const filteredResourceNodes = useMemo(
+    () =>
+      filterResourceTree(
+        resourceNodes,
+        resourceSearch.trim().toLowerCase(),
+        selectedSet,
+        changedAuthoritySet,
+        authorizedOnly,
+        changedOnly,
+      ),
+    [authorizedOnly, changedAuthoritySet, changedOnly, resourceNodes, resourceSearch, selectedSet],
   );
 
-  const transferDataSource = useMemo(() => {
-    const map = new Map<string, PermissionRelevantVo>();
-    permissionContent.forEach((item) => map.set(item.authority, item));
-    selectedItems.forEach((item) => map.set(item.authority, item));
-    return Array.from(map.values());
-  }, [permissionContent, selectedItems]);
+  const treeData = useMemo(
+    () => buildTreeData(filteredResourceNodes, selectedSet, t),
+    [filteredResourceNodes, selectedSet, t],
+  );
+  const checkedTreeKeys = useMemo(
+    () =>
+      selectedAuthorities.flatMap((authority) =>
+        (resourceIndex.permissionNodesByAuthority.get(authority) ?? []).map((node) => node.id),
+      ),
+    [resourceIndex.permissionNodesByAuthority, selectedAuthorities],
+  );
+  const visibleExpandedKeys = resourceSearch.trim() ? allNodeIds(filteredResourceNodes) : expandedKeys;
+  const selectedResource = resourceIndex.nodeMap.get(selectedResourceId);
+  const selectedResourcePermissions = useMemo(() => collectPermissionNodes(selectedResource), [selectedResource]);
+  const selectedResourceAuthorities = getNodeAuthorities(selectedResource);
+  const selectedResourceSelectedCount = selectedResourceAuthorities.filter((authority) => selectedSet.has(authority)).length;
+  const dataScopeLabel = getScopeLabel(
+    dataScopeOptions,
+    dataScopeId,
+    t('roles.permissionConfig.noDataScope', '不限制数据范围'),
+    detail?.dataScope?.name,
+  );
+  const fieldScopeLabel = getScopeLabel(
+    fieldScopeOptions,
+    fieldScopeId,
+    t('roles.permissionConfig.noFieldScope', '不限制字段范围'),
+    detail?.fieldScope?.name,
+  );
 
-  const leftPagination: TableProps<PermissionRelevantVo>['pagination'] = {
-    current: leftPage.current,
-    pageSize: leftPage.pageSize,
-    total: permissionQuery.data?.page.totalElements ?? 0,
-    showSizeChanger: true,
-    showQuickJumper: true,
-    onChange: (current, pageSize) => setLeftPage({current, pageSize}),
-  };
-
-  const rightPagination: TableProps<PermissionRelevantVo>['pagination'] = {
-    current: rightPage.current,
-    pageSize: rightPage.pageSize,
-    total: selectedItems.length,
-    showSizeChanger: true,
-    showQuickJumper: true,
-    onChange: (current, pageSize) => setRightPage({current, pageSize}),
-  };
-
-  const persistAuthorization = useCallback(
-    async (nextAuthorities: string[], nextDataScopeId: string | null, nextFieldScopeId: string | null) => {
-      if (!selectedRoleId) return undefined;
-      setSaving(true);
-      try {
-        const saved = await saveRoleAuthorization({
-          roleId: selectedRoleId,
-          permissionAuthorities: nextAuthorities,
-          dataScopeId: nextDataScopeId,
-          fieldScopeId: nextFieldScopeId,
-        });
-        setTargetKeys(saved.authorizedPermissions ?? []);
-        setDataScopeId(saved.scopeAssignment?.dataScopeId ?? null);
-        setFieldScopeId(saved.scopeAssignment?.fieldScopeId ?? null);
-        await Promise.all([roleQuery.refetch(), detailQuery.refetch()]);
-        message.success(t('accessCenter.message.saved', '授权已保存'));
-        return saved;
-      } catch (error) {
-        message.error(t('accessCenter.message.saveFailed', '授权保存失败'));
-        throw error;
-      } finally {
-        setSaving(false);
+  const handleTreeCheck = useCallback(
+    (
+      checked: Key[] | {checked: Key[]; halfChecked: Key[]},
+      info?: {checked?: boolean; node?: {key?: Key}},
+    ) => {
+      const checkedKeys = Array.isArray(checked) ? checked : checked.checked;
+      let nextAuthorities = collectAuthoritiesFromKeys(checkedKeys, resourceIndex.nodeMap);
+      const toggledNode = info?.node?.key ? resourceIndex.nodeMap.get(String(info.node.key)) : undefined;
+      if (info?.checked === false && toggledNode?.type === 'PERMISSION' && toggledNode.permissionAuthority) {
+        nextAuthorities = nextAuthorities.filter((authority) => authority !== toggledNode.permissionAuthority);
       }
+      setSelectedAuthorities(orderAuthorities(nextAuthorities, resourceIndex.permissionOrder));
     },
-    [detailQuery, roleQuery, selectedRoleId, t],
+    [resourceIndex.nodeMap, resourceIndex.permissionOrder],
   );
 
-  const handleTransferChange: TableTransferProps['onChange'] = async (nextTargetKeys) => {
-    const previousTargetKeys = targetKeys;
-    const previousSelectedItems = selectedItems;
-    const nextAuthorities = (nextTargetKeys ?? []).map((key) => String(key));
+  const handlePermissionToggle = useCallback(
+    (authority: string, checked: boolean) => {
+      setSelectedAuthorities((previous) => {
+        const next = checked
+          ? [...previous, authority]
+          : previous.filter((current) => current !== authority);
+        return orderAuthorities(next, resourceIndex.permissionOrder);
+      });
+    },
+    [resourceIndex.permissionOrder],
+  );
 
-    setTargetKeys(nextTargetKeys);
-    setRightPage((prev) => ({...prev, current: 1}));
-    const mergedItemMap = new Map<string, PermissionRelevantVo>();
-    transferDataSource.forEach((item) => mergedItemMap.set(item.authority, item));
-    setSelectedItems(
-      nextAuthorities
-        .map((authority) => mergedItemMap.get(authority))
-        .filter((item): item is PermissionRelevantVo => !!item),
-    );
+  const handleReset = useCallback(() => {
+    setSelectedAuthorities(baselineAuthorities);
+    setDataScopeId(baselineDataScopeId);
+    setFieldScopeId(baselineFieldScopeId);
+  }, [baselineAuthorities, baselineDataScopeId, baselineFieldScopeId]);
 
+  const handleSave = useCallback(async () => {
+    if (!selectedRoleId) return;
+    setSaving(true);
     try {
-      await persistAuthorization(nextAuthorities, dataScopeId, fieldScopeId);
+      const saved = await saveRoleAuthorization({
+        roleId: selectedRoleId,
+        permissionAuthorities: selectedAuthorities,
+        dataScopeId,
+        fieldScopeId,
+      });
+      const savedAuthorities = orderAuthorities(saved.authorizedPermissions ?? [], resourceIndex.permissionOrder);
+      const savedDataScopeId = saved.scopeAssignment?.dataScopeId ?? null;
+      const savedFieldScopeId = saved.scopeAssignment?.fieldScopeId ?? null;
+      setBaselineAuthorities(savedAuthorities);
+      setSelectedAuthorities(savedAuthorities);
+      setBaselineDataScopeId(savedDataScopeId);
+      setBaselineFieldScopeId(savedFieldScopeId);
+      setDataScopeId(savedDataScopeId);
+      setFieldScopeId(savedFieldScopeId);
+      await Promise.all([roleQuery.refetch(), detailQuery.refetch(), resourceTreeQuery.refetch()]);
+      message.success(t('accessCenter.message.saved', '授权已保存'));
     } catch {
-      setTargetKeys(previousTargetKeys);
-      setSelectedItems(previousSelectedItems);
+      message.error(t('accessCenter.message.saveFailed', '授权保存失败'));
+    } finally {
+      setSaving(false);
     }
-  };
-
-  const handleDataScopeChange = async (value?: string | null) => {
-    const previous = dataScopeId;
-    const nextValue = value ?? null;
-    setDataScopeId(nextValue);
-    try {
-      await persistAuthorization(selectedAuthorities, nextValue, fieldScopeId);
-    } catch {
-      setDataScopeId(previous);
-    }
-  };
-
-  const handleFieldScopeChange = async (value?: string | null) => {
-    const previous = fieldScopeId;
-    const nextValue = value ?? null;
-    setFieldScopeId(nextValue);
-    try {
-      await persistAuthorization(selectedAuthorities, dataScopeId, nextValue);
-    } catch {
-      setFieldScopeId(previous);
-    }
-  };
+  }, [
+    dataScopeId,
+    detailQuery,
+    fieldScopeId,
+    resourceIndex.permissionOrder,
+    resourceTreeQuery,
+    roleQuery,
+    selectedAuthorities,
+    selectedRoleId,
+    t,
+  ]);
 
   const selectedRole = roleRows.find((item) => item.role.id === selectedRoleId);
-  const loading = roleQuery.isFetching || detailQuery.isFetching;
-  const transferLoading = permissionQuery.isFetching || selectedDetailsQuery.isFetching || saving;
+  const loading = roleQuery.isFetching || detailQuery.isFetching || resourceTreeQuery.isFetching;
+  const resourceLoading = resourceTreeQuery.isFetching || saving;
+  const loadFailed = detailQuery.error || resourceTreeQuery.error;
 
   return (
     <div className="access-center">
@@ -362,16 +544,25 @@ const AccessCenter = () => {
           <Space>
             <Button
               icon={<ReloadOutlined />}
-              onClick={() => detailQuery.refetch()}
+              onClick={() => {
+                void detailQuery.refetch();
+                void resourceTreeQuery.refetch();
+              }}
               loading={loading}
               disabled={!selectedRoleId}
             >
               {t('common.refresh', '刷新')}
             </Button>
+            <Button onClick={handleReset} disabled={!hasChanges || saving}>
+              {t('accessCenter.action.reset', '重置')}
+            </Button>
+            <Button type="primary" onClick={handleSave} disabled={!hasChanges || !selectedRoleId} loading={saving}>
+              {t('accessCenter.action.save', '保存授权')}
+            </Button>
           </Space>
         </div>
 
-        {detailQuery.error ? (
+        {loadFailed ? (
           <Alert
             type="error"
             showIcon
@@ -389,7 +580,7 @@ const AccessCenter = () => {
               loading={dataScopeQuery.isFetching}
               disabled={!selectedRoleId || saving}
               placeholder={t('roles.permissionConfig.noDataScope', '不限制数据范围')}
-              onChange={handleDataScopeChange}
+              onChange={(value) => setDataScopeId(value ?? null)}
             />
           </label>
           <label className="access-center-field">
@@ -401,45 +592,137 @@ const AccessCenter = () => {
               loading={fieldScopeQuery.isFetching}
               disabled={!selectedRoleId || saving}
               placeholder={t('roles.permissionConfig.noFieldScope', '不限制字段范围')}
-              onChange={handleFieldScopeChange}
+              onChange={(value) => setFieldScopeId(value ?? null)}
             />
           </label>
           <div className="access-center-save-state">
-            {saving ? t('roles.permissionConfig.saving', '保存中...') : t('accessCenter.state.synced', '已同步')}
+            {hasChanges ? (
+              <Tag color="gold">{t('accessCenter.state.unsaved', '有未保存变更')}</Tag>
+            ) : (
+              <span className="access-center-status-line">
+                <CheckOutlined />
+                {t('accessCenter.state.synced', '已同步')}
+              </span>
+            )}
           </div>
         </section>
 
-        <section className="access-center-transfer">
+        <section className="access-center-resource">
           {selectedRoleId ? (
-            <STableTransfer
-              dataSource={transferDataSource}
-              targetKeys={targetKeys}
-              showSelectAll={false}
-              disabled={transferLoading}
-              loading={transferLoading}
-              onChange={handleTransferChange}
-              leftColumns={columns}
-              rightColumns={columns}
-              itemKey="authority"
-              adaptiveHeight
-              searchable
-              titles={[
-                t('roles.permissionConfig.availablePermissions', '可选权限'),
-                t('roles.permissionConfig.authorizedPermissions', '已授权权限'),
-              ]}
-              operations={[
-                t('roles.permissionConfig.assign', '授权'),
-                t('roles.permissionConfig.revoke', '移除'),
-              ]}
-              locale={{
-                itemUnit: t('roles.permissionConfig.itemUnit', '项'),
-                itemsUnit: t('roles.permissionConfig.itemsUnit', '项'),
-                searchPlaceholder: t('roles.permissionConfig.searchPlaceholder', '搜索权限'),
-                notFoundContent: t('table.emptyText', '暂无数据'),
-              }}
-              leftPagination={leftPagination}
-              rightPagination={rightPagination}
-            />
+            <>
+              <div className="access-center-resource-toolbar">
+                <Input
+                  allowClear
+                  prefix={<SearchOutlined />}
+                  placeholder={t('accessCenter.resource.search', '搜索菜单、功能或权限')}
+                  value={resourceSearch}
+                  onChange={(event) => setResourceSearch(event.target.value)}
+                />
+                <Checkbox checked={authorizedOnly} onChange={(event) => setAuthorizedOnly(event.target.checked)}>
+                  {t('accessCenter.filter.authorizedOnly', '已授权')}
+                </Checkbox>
+                <Checkbox checked={changedOnly} onChange={(event) => setChangedOnly(event.target.checked)}>
+                  {t('accessCenter.filter.changedOnly', '有变更')}
+                </Checkbox>
+              </div>
+              <div className="access-center-resource-layout">
+                <div className="access-center-resource-tree">
+                  {resourceLoading && resourceNodes.length === 0 ? (
+                    <Skeleton active paragraph={{rows: 8}} />
+                  ) : treeData.length === 0 ? (
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('accessCenter.resource.empty', '暂无资源')} />
+                  ) : (
+                    <Tree
+                      checkable
+                      blockNode
+                      disabled={saving}
+                      treeData={treeData}
+                      checkedKeys={checkedTreeKeys}
+                      selectedKeys={selectedResourceId ? [selectedResourceId] : []}
+                      expandedKeys={visibleExpandedKeys}
+                      autoExpandParent={!!resourceSearch.trim()}
+                      onCheck={handleTreeCheck}
+                      onSelect={(keys) => setSelectedResourceId(keys[0] ? String(keys[0]) : '')}
+                      onExpand={(keys) => setExpandedKeys(keys.map(String))}
+                    />
+                  )}
+                </div>
+                <div className="access-center-resource-detail">
+                  {selectedResource ? (
+                    <>
+                      <div className="access-center-detail-head">
+                        <div>
+                          <Typography.Text strong>{selectedResource.label}</Typography.Text>
+                          <Typography.Text type="secondary">{selectedResource.code || selectedResource.path || '-'}</Typography.Text>
+                        </div>
+                        <Tag color={resourceTypeColor(selectedResource.type)}>
+                          {resourceTypeLabel(selectedResource.type, t)}
+                        </Tag>
+                      </div>
+                      <div className="access-center-detail-meta">
+                        <span>{t('accessCenter.metric.permissions', '权限')}</span>
+                        <strong>{selectedResourceSelectedCount}/{selectedResourceAuthorities.length}</strong>
+                      </div>
+                      {selectedResource.description ? (
+                        <Typography.Paragraph type="secondary" ellipsis={{rows: 2}}>
+                          {selectedResource.description}
+                        </Typography.Paragraph>
+                      ) : null}
+                      <div className="access-center-action-head">
+                        <Typography.Text strong>{t('accessCenter.resource.permissions', '动作权限')}</Typography.Text>
+                        <Typography.Text type="secondary">{selectedResourcePermissions.length}</Typography.Text>
+                      </div>
+                      <div className="access-center-action-list">
+                        {selectedResourcePermissions.length === 0 ? (
+                          <Empty
+                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                            description={t('accessCenter.resource.emptyPermissions', '暂无动作权限')}
+                          />
+                        ) : (
+                          selectedResourcePermissions.map((permission) => {
+                            const authority = permission.permissionAuthority || permission.code || '';
+                            const selected = selectedSet.has(authority);
+                            const baseline = baselineSet.has(authority);
+                            const changed = selected !== baseline;
+                            return (
+                              <div
+                                key={authority}
+                                className={`access-center-action-row${changed ? ' access-center-action-row-changed' : ''}`}
+                              >
+                                <Checkbox
+                                  checked={selected}
+                                  disabled={saving}
+                                  onChange={(event) => handlePermissionToggle(authority, event.target.checked)}
+                                />
+                                <span className="access-center-action-info">
+                                  <strong>{permission.label || authority}</strong>
+                                  <Typography.Text code>{authority}</Typography.Text>
+                                  {permission.description ? <small>{permission.description}</small> : null}
+                                </span>
+                                <span className="access-center-action-tags">
+                                  {HIGH_RISK_AUTHORITY.test(authority) ? (
+                                    <Tag color="red">{t('accessCenter.resource.highRisk', '敏感')}</Tag>
+                                  ) : null}
+                                  {changed ? (
+                                    <Tag color={selected ? 'green' : 'volcano'}>
+                                      {selected
+                                        ? t('accessCenter.diff.added', '新增')
+                                        : t('accessCenter.diff.removed', '移除')}
+                                    </Tag>
+                                  ) : null}
+                                </span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('accessCenter.resource.empty', '暂无资源')} />
+                  )}
+                </div>
+              </div>
+            </>
           ) : (
             <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('accessCenter.empty.role', '请选择角色')} />
           )}
@@ -462,14 +745,24 @@ const AccessCenter = () => {
             <span>{detail?.assignedUserCount ?? 0}</span>
             <small>{t('accessCenter.metric.users', '用户')}</small>
           </div>
+          <div className="access-center-metric">
+            <span className="access-center-metric-added">+{addedAuthorities.length}</span>
+            <small>{t('accessCenter.metric.added', '新增权限')}</small>
+          </div>
+          <div className="access-center-metric">
+            <span className="access-center-metric-removed">-{removedAuthorities.length}</span>
+            <small>{t('accessCenter.metric.removed', '移除权限')}</small>
+          </div>
         </div>
         <div className="access-center-impact-section">
           <Typography.Text type="secondary">{t('roles.permissionConfig.dataScope', '数据权限')}</Typography.Text>
-          <div>{detail?.dataScope?.name || t('roles.permissionConfig.noDataScope', '不限制数据范围')}</div>
+          <div>{dataScopeLabel}</div>
+          {dataScopeId !== baselineDataScopeId ? <Tag color="gold">{t('accessCenter.diff.changed', '已变更')}</Tag> : null}
         </div>
         <div className="access-center-impact-section">
           <Typography.Text type="secondary">{t('roles.permissionConfig.fieldScope', '字段权限')}</Typography.Text>
-          <div>{detail?.fieldScope?.name || t('roles.permissionConfig.noFieldScope', '不限制字段范围')}</div>
+          <div>{fieldScopeLabel}</div>
+          {fieldScopeId !== baselineFieldScopeId ? <Tag color="gold">{t('accessCenter.diff.changed', '已变更')}</Tag> : null}
         </div>
         <div className="access-center-impact-section access-center-user-impact">
           <Typography.Text type="secondary">{t('accessCenter.impact.users', '已分配用户')}</Typography.Text>

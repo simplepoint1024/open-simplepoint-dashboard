@@ -19,9 +19,21 @@ public class AccessCenterRoleOverviewVo implements Serializable {
 
   private AccessCenterScopeVo fieldScope;
 
+  /**
+   * Creates an empty role overview.
+   */
   public AccessCenterRoleOverviewVo() {
   }
 
+  /**
+   * Creates a role overview.
+   *
+   * @param role role summary
+   * @param permissionCount authorized permission count
+   * @param assignedUserCount assigned user count
+   * @param dataScope data scope summary
+   * @param fieldScope field scope summary
+   */
   public AccessCenterRoleOverviewVo(
       RoleRelevanceVo role,
       long permissionCount,

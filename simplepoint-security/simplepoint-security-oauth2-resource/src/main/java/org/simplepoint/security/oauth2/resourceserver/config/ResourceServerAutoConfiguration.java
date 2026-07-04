@@ -78,7 +78,10 @@ public class ResourceServerAutoConfiguration {
     );
     return http
         .authorizeHttpRequests(request -> {
-          request.requestMatchers("/actuator/**", "/static/**", "/mf/**", "/v3/api-docs/**", "/swagger-ui/**", "/error", "/css/**", "/js/**", "/images/**")
+          request.requestMatchers(
+                  "/actuator/**", "/static/**", "/mf/**", "/v3/api-docs/**", "/swagger-ui/**",
+                  "/error", "/css/**", "/js/**", "/images/**"
+              )
               .permitAll();
           if (StringUtils.hasText(serviceRouterToken)) {
             request.requestMatchers(new ServiceRouterInternalRequestMatcher(

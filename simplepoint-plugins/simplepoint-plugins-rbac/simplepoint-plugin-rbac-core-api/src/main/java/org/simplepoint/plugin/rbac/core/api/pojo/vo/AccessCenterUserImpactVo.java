@@ -17,9 +17,20 @@ public class AccessCenterUserImpactVo implements Serializable {
 
   private String phoneNumber;
 
+  /**
+   * Creates an empty user impact view.
+   */
   public AccessCenterUserImpactVo() {
   }
 
+  /**
+   * Creates a user impact view.
+   *
+   * @param id user identifier
+   * @param name user display name
+   * @param email user email
+   * @param phoneNumber user phone number
+   */
   public AccessCenterUserImpactVo(String id, String name, String email, String phoneNumber) {
     this.id = id;
     this.name = name;

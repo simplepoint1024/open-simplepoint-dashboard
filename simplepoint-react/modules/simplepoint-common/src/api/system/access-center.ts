@@ -47,6 +47,23 @@ export interface AccessCenterRoleDetail {
   assignedUsers: AccessCenterUserImpact[];
 }
 
+export type AccessCenterResourceNodeType = 'GROUP' | 'MENU' | 'FEATURE' | 'PERMISSION';
+
+export interface AccessCenterResourceNode {
+  id: string;
+  type: AccessCenterResourceNodeType;
+  label: string;
+  code?: string | null;
+  path?: string | null;
+  description?: string | null;
+  permissionAuthority?: string | null;
+  permissionType?: number | null;
+  checked: boolean;
+  partial: boolean;
+  permissionAuthorities: string[];
+  children: AccessCenterResourceNode[];
+}
+
 export interface AccessCenterRoleAuthorizationDto {
   roleId: string;
   permissionAuthorities: string[];
@@ -60,6 +77,10 @@ export async function fetchRoleOverviews(params?: Record<string, string>) {
 
 export async function fetchRoleDetail(roleId: string) {
   return await get<AccessCenterRoleDetail>(`${baseUrl}/roles/${encodeURIComponent(roleId)}`);
+}
+
+export async function fetchResourceTree(roleId: string) {
+  return await get<AccessCenterResourceNode[]>(`${baseUrl}/roles/${encodeURIComponent(roleId)}/resource-tree`);
 }
 
 export async function saveRoleAuthorization(data: AccessCenterRoleAuthorizationDto) {

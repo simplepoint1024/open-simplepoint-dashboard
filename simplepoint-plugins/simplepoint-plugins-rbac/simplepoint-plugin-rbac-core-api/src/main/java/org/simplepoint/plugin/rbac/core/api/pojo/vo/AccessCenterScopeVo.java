@@ -17,9 +17,20 @@ public class AccessCenterScopeVo implements Serializable {
 
   private String description;
 
+  /**
+   * Creates an empty scope view.
+   */
   public AccessCenterScopeVo() {
   }
 
+  /**
+   * Creates a scope view.
+   *
+   * @param id scope identifier
+   * @param name scope name
+   * @param type scope type
+   * @param description scope description
+   */
   public AccessCenterScopeVo(String id, String name, String type, String description) {
     this.id = id;
     this.name = name;

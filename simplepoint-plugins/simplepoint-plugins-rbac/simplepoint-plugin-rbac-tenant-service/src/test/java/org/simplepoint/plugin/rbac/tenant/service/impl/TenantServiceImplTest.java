@@ -305,10 +305,10 @@ class TenantServiceImplTest {
   @Test
   void userItems_validatesTenantButReturnsGlobalUserCandidates() {
     setAdminRole();
-    Pageable pageable = Pageable.ofSize(10);
     Tenant tenant = new Tenant();
     tenant.setId("tenant1");
     tenant.setOwnerId("owner1");
+    Pageable pageable = Pageable.ofSize(10);
     when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
     when(tenantUserRelevanceRepository.items(pageable)).thenReturn(new PageImpl<>(List.of()));
 

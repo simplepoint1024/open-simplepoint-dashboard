@@ -9,7 +9,7 @@ class ResourceServerAutoConfigurationTest {
 
   @Test
   void serviceRouterInternalMatcherAcceptsConfiguredPostPathAndToken() {
-    ResourceServerAutoConfiguration.ServiceRouterInternalRequestMatcher matcher =
+    final ResourceServerAutoConfiguration.ServiceRouterInternalRequestMatcher matcher =
         new ResourceServerAutoConfiguration.ServiceRouterInternalRequestMatcher(
             "/_simplepoint/service-router/invoke",
             "X-SimplePoint-Service-Router-Token",
@@ -40,16 +40,16 @@ class ResourceServerAutoConfigurationTest {
 
   @Test
   void serviceRouterInternalMatcherMatchesContextPathRequestUri() {
+    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/_simplepoint/service-router/invoke");
+    request.setContextPath("/api");
+    request.setServletPath("/_simplepoint/service-router/invoke");
+    request.addHeader("X-SimplePoint-Service-Router-Token", "secret-token");
     ResourceServerAutoConfiguration.ServiceRouterInternalRequestMatcher matcher =
         new ResourceServerAutoConfiguration.ServiceRouterInternalRequestMatcher(
             "/_simplepoint/service-router/invoke",
             "X-SimplePoint-Service-Router-Token",
             "secret-token"
         );
-    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/_simplepoint/service-router/invoke");
-    request.setContextPath("/api");
-    request.setServletPath("/_simplepoint/service-router/invoke");
-    request.addHeader("X-SimplePoint-Service-Router-Token", "secret-token");
 
     assertThat(matcher.matches(request)).isTrue();
   }
