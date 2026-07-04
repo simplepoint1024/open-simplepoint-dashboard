@@ -66,6 +66,7 @@ export function getLazyComponent(
         }
         return await loadRemote(`${candidate}`) as { default: React.ComponentType<any> };
       } catch (error) {
+        console.warn(`[Mf] Failed to load remote component: ${candidate}`, error);
         if (candidate === candidates[candidates.length - 1]) {
           return fallback as any;
         }

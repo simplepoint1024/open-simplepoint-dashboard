@@ -25,7 +25,6 @@ import {useRefreshKeyMap} from '@/hooks/useRefreshKeyMap';
 import {useGlobalLoading} from '@/hooks/useGlobalLoading';
 import {useGlobalSize} from '@/hooks/useGlobalSize';
 import {useThemeMode} from '@/hooks/useThemeMode';
-import {remoteRegistrySignature} from '@/utils/MfRoutes';
 
 import {GlobalLoading} from '@/components/GlobalLoading';
 import {TitleSync} from '@/components/TitleSync';
@@ -195,11 +194,7 @@ const App: React.FC = () => {
     );
 
     // 远程模块注册
-    useRegisterRemotes(res, isLoading);
-    const remoteRegistryKey = useMemo(
-        () => remoteRegistrySignature(res?.services ?? [], res?.entryPoint),
-        [res?.services, res?.entryPoint],
-    );
+    const {remoteRegistryKey, remotesReady} = useRegisterRemotes(res, isLoading);
 
     useEffect(() => {
         const detail: RuntimeScopeContext = res?.authorizationContext || {};
@@ -214,7 +209,7 @@ const App: React.FC = () => {
     const refreshKeyMap = useRefreshKeyMap();
 
     // 全局 loading 状态：租户、上下文、路由任一未就绪都保持 loading
-    const showLoading = useGlobalLoading(i18nLoading, i18nReady, isLoading || tenantsLoading || !routesEnabled);
+    const showLoading = useGlobalLoading(i18nLoading, i18nReady, isLoading || tenantsLoading || !routesEnabled || !remotesReady);
 
     return (
         <div className="content" style={{position: 'relative'}}>
@@ -247,7 +242,7 @@ const App: React.FC = () => {
                         <TitleSync leafRoutes={leafRoutes} t={t}/>
                         <NavigateBar data={res?.routes ?? []}>
                             <Routes>
-                                {renderRoutes(leafRoutes, refreshKeyMap, t, currentTenantType, remoteRegistryKey)}
+                                {remotesReady ? renderRoutes(leafRoutes, refreshKeyMap, t, currentTenantType, remoteRegistryKey) : null}
                             </Routes>
                         </NavigateBar>
                     </HashRouter>
