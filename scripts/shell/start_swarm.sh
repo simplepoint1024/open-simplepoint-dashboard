@@ -85,6 +85,11 @@ main() {
   export SIMPLEPOINT_APP_USE_PREBUILT="${SIMPLEPOINT_APP_USE_PREBUILT:-false}"
   export SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN="${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}"
 
+  local stack_exists=false
+  if docker stack services "${STACK_NAME}" >/dev/null 2>&1; then
+    stack_exists=true
+  fi
+
   build_image "${SIMPLEPOINT_BOOTSTRAP_IMAGE}" -f "${ROOT_DIR}/docker/swarm/bootstrap/Dockerfile" "${ROOT_DIR}"
   build_image "${SIMPLEPOINT_AUTH_IMAGE}" \
     --build-arg APP_GRADLE_PATH=":simplepoint-services:simplepoint-service-authorization" \
@@ -120,10 +125,12 @@ main() {
   echo "Deploying stack ${STACK_NAME} with PUBLIC_HOST=${SIMPLEPOINT_PUBLIC_HOST}..."
   docker stack deploy -c "${ROOT_DIR}/docker/swarm/stack.yml" "${STACK_NAME}"
 
-  echo "Forcing application services to pick up local image tag updates..."
-  for service in authorization common auditing dna host; do
-    docker service update --force "${STACK_NAME}_${service}" >/dev/null
-  done
+  if [[ "${stack_exists}" == "true" ]]; then
+    echo "Forcing application services to pick up local image tag updates..."
+    for service in authorization common auditing dna host; do
+      docker service update --force "${STACK_NAME}_${service}" >/dev/null
+    done
+  fi
 
   cat <<EOF
 
