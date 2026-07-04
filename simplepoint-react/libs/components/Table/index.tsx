@@ -20,6 +20,8 @@ const DEFAULT_ICON_COLUMN_WIDTH = 80;
 const DEFAULT_NUMBER_COLUMN_WIDTH = 120;
 const DEFAULT_TEXT_COLUMN_WIDTH = 150;
 
+const preferenceUrl = (key: string) => `/common/users/preferences?key=${encodeURIComponent(key)}`;
+
 export type TableButtonProps = ButtonProps & {
   key: string;
   sort: number;
@@ -296,7 +298,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
 
     // Async override from backend
     if (apiColsKey) {
-      get<{data?: string}>(`/common/users/preferences/${encodeURIComponent(apiColsKey)}`)
+      get<{data?: string}>(preferenceUrl(apiColsKey))
         .then(res => {
           const raw = res?.data;
           if (!raw) return;
@@ -332,7 +334,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
         if (apiColsKey) {
           if (colSaveTimer.current) clearTimeout(colSaveTimer.current);
           colSaveTimer.current = setTimeout(() => {
-            put(`/common/users/preferences/${encodeURIComponent(apiColsKey)}`, {value: json})
+            put(preferenceUrl(apiColsKey), {value: json})
               .catch(() => { /* ignore */ });
           }, 800);
         }
@@ -372,11 +374,11 @@ const App = <T extends object = any>(props: TableProps<T>) => {
       if (widthStorageKey) localStorage.removeItem(widthStorageKey);
     } catch { /* ignore */ }
     if (apiColsKey) {
-      request(`/common/users/preferences/${encodeURIComponent(apiColsKey)}`, {method: 'DELETE'})
+      request(preferenceUrl(apiColsKey), {method: 'DELETE'})
         .catch(() => { /* ignore */ });
     }
     if (apiWidthsKey) {
-      request(`/common/users/preferences/${encodeURIComponent(apiWidthsKey)}`, {method: 'DELETE'})
+      request(preferenceUrl(apiWidthsKey), {method: 'DELETE'})
         .catch(() => { /* ignore */ });
     }
     const next: Record<string, StoredColConfig> = {};
@@ -403,7 +405,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
   useEffect(() => {
     colWidthsInitialized.current = false;
     if (!apiWidthsKey) { colWidthsInitialized.current = true; return; }
-    get<{data?: string}>(`/common/users/preferences/${encodeURIComponent(apiWidthsKey)}`)
+    get<{data?: string}>(preferenceUrl(apiWidthsKey))
       .then(res => {
         const raw = res?.data;
         if (!raw) return;
@@ -428,7 +430,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     if (apiWidthsKey) {
       if (widthSaveTimer.current) clearTimeout(widthSaveTimer.current);
       widthSaveTimer.current = setTimeout(() => {
-        put(`/common/users/preferences/${encodeURIComponent(apiWidthsKey)}`, {value: JSON.stringify(colWidths)})
+        put(preferenceUrl(apiWidthsKey), {value: JSON.stringify(colWidths)})
           .catch(() => { /* ignore */ });
       }, 800);
     }

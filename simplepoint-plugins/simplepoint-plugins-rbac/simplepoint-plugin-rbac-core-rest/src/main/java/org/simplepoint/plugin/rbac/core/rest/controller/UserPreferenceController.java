@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -50,6 +51,16 @@ public class UserPreferenceController {
   @GetMapping("/{key}")
   @Operation(summary = "获取用户偏好", description = "获取当前用户指定 key 的偏好值")
   public Response<String> get(@PathVariable("key") String key) {
+    return getPreference(key);
+  }
+
+  @GetMapping
+  @Operation(summary = "获取用户偏好", description = "通过查询参数获取当前用户指定 key 的偏好值，支持包含路径分隔符的 key")
+  public Response<String> getByQuery(@RequestParam("key") String key) {
+    return getPreference(key);
+  }
+
+  private Response<String> getPreference(String key) {
     return Response.okay(service.getPreference(key).orElse(null));
   }
 
@@ -62,6 +73,16 @@ public class UserPreferenceController {
   @PutMapping("/{key}")
   @Operation(summary = "保存用户偏好", description = "保存当前用户指定 key 的偏好值")
   public Response<Void> set(@PathVariable("key") String key, @RequestBody UserPreferenceDto dto) {
+    return setPreference(key, dto);
+  }
+
+  @PutMapping
+  @Operation(summary = "保存用户偏好", description = "通过查询参数保存当前用户指定 key 的偏好值，支持包含路径分隔符的 key")
+  public Response<Void> setByQuery(@RequestParam("key") String key, @RequestBody UserPreferenceDto dto) {
+    return setPreference(key, dto);
+  }
+
+  private Response<Void> setPreference(String key, UserPreferenceDto dto) {
     service.setPreference(key, dto.value());
     return Response.okay();
   }
@@ -75,6 +96,16 @@ public class UserPreferenceController {
   @DeleteMapping("/{key}")
   @Operation(summary = "删除用户偏好", description = "删除当前用户指定 key 的偏好值")
   public Response<Void> delete(@PathVariable("key") String key) {
+    return deletePreference(key);
+  }
+
+  @DeleteMapping
+  @Operation(summary = "删除用户偏好", description = "通过查询参数删除当前用户指定 key 的偏好值，支持包含路径分隔符的 key")
+  public Response<Void> deleteByQuery(@RequestParam("key") String key) {
+    return deletePreference(key);
+  }
+
+  private Response<Void> deletePreference(String key) {
     service.deletePreference(key);
     return Response.okay();
   }
