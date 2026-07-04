@@ -82,6 +82,7 @@ main() {
   export SIMPLEPOINT_AUDITING_IMAGE="${SIMPLEPOINT_AUDITING_IMAGE:-simplepoint/auditing:swarm}"
   export SIMPLEPOINT_DNA_IMAGE="${SIMPLEPOINT_DNA_IMAGE:-simplepoint/dna:swarm}"
   export SIMPLEPOINT_HOST_IMAGE="${SIMPLEPOINT_HOST_IMAGE:-simplepoint/host:swarm}"
+  export SIMPLEPOINT_APP_USE_PREBUILT="${SIMPLEPOINT_APP_USE_PREBUILT:-false}"
   export SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN="${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}"
 
   build_image "${SIMPLEPOINT_BOOTSTRAP_IMAGE}" -f "${ROOT_DIR}/docker/swarm/bootstrap/Dockerfile" "${ROOT_DIR}"
@@ -89,30 +90,40 @@ main() {
     --build-arg APP_GRADLE_PATH=":simplepoint-services:simplepoint-service-authorization" \
     --build-arg APP_INSTALL_DIR="simplepoint-services/simplepoint-service-authorization/build/install/simplepoint-service-authorization" \
     --build-arg APP_START_SCRIPT="/opt/simplepoint/bin/simplepoint-service-authorization" \
+    --build-arg APP_USE_PREBUILT="${SIMPLEPOINT_APP_USE_PREBUILT}" \
     -f "${ROOT_DIR}/docker/swarm/app/Dockerfile" "${ROOT_DIR}"
   build_image "${SIMPLEPOINT_COMMON_IMAGE}" \
     --build-arg APP_GRADLE_PATH=":simplepoint-services:simplepoint-service-common" \
     --build-arg APP_INSTALL_DIR="simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common" \
     --build-arg APP_START_SCRIPT="/opt/simplepoint/bin/simplepoint-service-common" \
+    --build-arg APP_USE_PREBUILT="${SIMPLEPOINT_APP_USE_PREBUILT}" \
     -f "${ROOT_DIR}/docker/swarm/app/Dockerfile" "${ROOT_DIR}"
   build_image "${SIMPLEPOINT_AUDITING_IMAGE}" \
     --build-arg APP_GRADLE_PATH=":simplepoint-services:simplepoint-service-auditing" \
     --build-arg APP_INSTALL_DIR="simplepoint-services/simplepoint-service-auditing/build/install/simplepoint-service-auditing" \
     --build-arg APP_START_SCRIPT="/opt/simplepoint/bin/simplepoint-service-auditing" \
+    --build-arg APP_USE_PREBUILT="${SIMPLEPOINT_APP_USE_PREBUILT}" \
     -f "${ROOT_DIR}/docker/swarm/app/Dockerfile" "${ROOT_DIR}"
   build_image "${SIMPLEPOINT_DNA_IMAGE}" \
     --build-arg APP_GRADLE_PATH=":simplepoint-services:simplepoint-service-dna" \
     --build-arg APP_INSTALL_DIR="simplepoint-services/simplepoint-service-dna/build/install/simplepoint-service-dna" \
     --build-arg APP_START_SCRIPT="/opt/simplepoint/bin/simplepoint-service-dna" \
+    --build-arg APP_USE_PREBUILT="${SIMPLEPOINT_APP_USE_PREBUILT}" \
     -f "${ROOT_DIR}/docker/swarm/app/Dockerfile" "${ROOT_DIR}"
   build_image "${SIMPLEPOINT_HOST_IMAGE}" \
     --build-arg APP_GRADLE_PATH=":simplepoint-services:simplepoint-service-host" \
     --build-arg APP_INSTALL_DIR="simplepoint-services/simplepoint-service-host/build/install/simplepoint-service-host" \
     --build-arg APP_START_SCRIPT="/opt/simplepoint/bin/simplepoint-service-host" \
+    --build-arg APP_USE_PREBUILT="${SIMPLEPOINT_APP_USE_PREBUILT}" \
     -f "${ROOT_DIR}/docker/swarm/app/Dockerfile" "${ROOT_DIR}"
 
   echo "Deploying stack ${STACK_NAME} with PUBLIC_HOST=${SIMPLEPOINT_PUBLIC_HOST}..."
   docker stack deploy -c "${ROOT_DIR}/docker/swarm/stack.yml" "${STACK_NAME}"
+
+  echo "Forcing application services to pick up local image tag updates..."
+  for service in authorization common auditing dna host; do
+    docker service update --force "${STACK_NAME}_${service}" >/dev/null
+  done
 
   cat <<EOF
 
