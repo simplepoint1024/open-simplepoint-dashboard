@@ -30,6 +30,6 @@
   "accessCenter.resource.type.MODULE": "模块",
   "accessCenter.resource.type.PAGE": "页面",
   "accessCenter.resource.type.FEATURE": "功能",
-  "accessCenter.resource.type.ACTION": "动作",
+  "accessCenter.resource.type.ACTION": "操作",
   "accessCenter.resource.type.API": "接口"
 }

@@ -53,6 +53,7 @@ export interface AccessCenterResourceNode {
   id: string;
   type: AccessCenterResourceNodeType;
   label: string;
+  alias?: string | null;
   code?: string | null;
   path?: string | null;
   description?: string | null;

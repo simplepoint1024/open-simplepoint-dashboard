@@ -71,7 +71,7 @@ import org.springframework.core.annotation.Order;
         authority = "resources.delete"
     )
 })
-@Schema(name = "资源对象", description = "统一描述菜单、页面、功能、动作和接口资源")
+@Schema(name = "资源对象", description = "统一描述菜单、页面、功能、操作和接口资源")
 public class Resource extends BaseEntityImpl<String> {
 
   public static final String CODE_FIELD = "code";
@@ -104,6 +104,18 @@ public class Resource extends BaseEntityImpl<String> {
   @Column(length = 100, nullable = false)
   private String name;
 
+  @Order(2)
+  @Schema(
+      title = "i18n:resources.title.alias",
+      description = "i18n:resources.description.alias",
+      maxLength = 120,
+      extensions = @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true")
+      })
+  )
+  @Column(name = "resource_alias", length = 120)
+  private String alias;
+
   @Schema(title = "i18n:resources.title.title", description = "i18n:resources.description.title")
   @Column(length = 120)
   private String title;
@@ -112,7 +124,7 @@ public class Resource extends BaseEntityImpl<String> {
   @Column(length = 120)
   private String label;
 
-  @Order(2)
+  @Order(3)
   @Schema(
       title = "i18n:resources.title.type",
       description = "i18n:resources.description.type",
@@ -132,7 +144,7 @@ public class Resource extends BaseEntityImpl<String> {
   @Column(length = 128)
   private String pluginId;
 
-  @Order(3)
+  @Order(4)
   @Schema(
       title = "i18n:resources.title.path",
       description = "i18n:resources.description.path",
@@ -144,7 +156,7 @@ public class Resource extends BaseEntityImpl<String> {
   @Column(length = 200, unique = true)
   private String path;
 
-  @Order(4)
+  @Order(5)
   @Schema(
       title = "i18n:resources.title.component",
       description = "i18n:resources.description.component",
@@ -156,7 +168,7 @@ public class Resource extends BaseEntityImpl<String> {
   @Column(length = 160)
   private String component;
 
-  @Order(5)
+  @Order(6)
   @Schema(
       title = "i18n:resources.title.icon",
       description = "i18n:resources.description.icon",
@@ -169,7 +181,7 @@ public class Resource extends BaseEntityImpl<String> {
   @Column(length = 100)
   private String icon;
 
-  @Order(6)
+  @Order(7)
   @Schema(
       title = "i18n:resources.title.sort",
       description = "i18n:resources.description.sort",

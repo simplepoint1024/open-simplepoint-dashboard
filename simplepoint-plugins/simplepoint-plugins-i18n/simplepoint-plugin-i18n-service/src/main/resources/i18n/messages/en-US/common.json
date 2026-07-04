@@ -100,6 +100,7 @@
   "action.search": "Search",
   "common.yes": "Yes",
   "common.no": "No",
+  "common.delete": "Delete",
   "common.refresh": "Refresh",
   "error.403": "Sorry, you do not have permission to access this page",
   "error.backHome": "Back Home",

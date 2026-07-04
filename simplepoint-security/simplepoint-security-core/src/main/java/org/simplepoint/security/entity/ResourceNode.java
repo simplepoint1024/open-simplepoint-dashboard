@@ -12,4 +12,5 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class ResourceNode extends Resource {
   private List<ResourceNode> children = new ArrayList<>();
+  private Boolean hasChildren;
 }

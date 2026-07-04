@@ -237,6 +237,28 @@ public class ResourceServiceImpl
   }
 
   @Override
+  public Page<ResourceNode> children(Map<String, String> attributes, Pageable pageable) {
+    String parentId = firstNonBlank(attribute(attributes, "parentId"), attribute(attributes, "parent"));
+    String keyword = firstNonBlank(attribute(attributes, "keyword"), attribute(attributes, "search"));
+    Page<Resource> page = hasText(keyword) && !hasText(parentId)
+        ? getRepository().findMatches(pageable, keyword)
+        : getRepository().findChildren(pageable, parentId, keyword);
+    List<ResourceNode> nodes = page.getContent().stream()
+        .map(this::toResourceNode)
+        .toList();
+    Set<String> parentIds = nodes.stream()
+        .map(ResourceNode::getId)
+        .filter(this::hasText)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+    Collection<String> idsWithChildren = parentIds.isEmpty()
+        ? List.of()
+        : getRepository().findParentIdsWithChildren(parentIds);
+    Set<String> idsWithChildrenSet = new HashSet<>(idsWithChildren);
+    nodes.forEach(node -> node.setHasChildren(idsWithChildrenSet.contains(node.getId())));
+    return new PageImpl<>(nodes, pageable, page.getTotalElements());
+  }
+
+  @Override
   public Collection<Resource> findAllByCodes(Collection<String> codes) {
     Set<String> normalizedCodes = normalizeCodes(codes);
     if (normalizedCodes.isEmpty()) {
@@ -316,6 +338,15 @@ public class ResourceServiceImpl
       roots.forEach(this::clearRouteFields);
     }
     return roots;
+  }
+
+  private ResourceNode toResourceNode(Resource resource) {
+    ResourceNode node = new ResourceNode();
+    BeanUtils.copyProperties(resource, node);
+    node.setLabel(firstNonBlank(resource.getLabel(), resource.getName(), resource.getTitle(), resource.getCode()));
+    node.setChildren(List.of());
+    node.setHasChildren(Boolean.FALSE);
+    return node;
   }
 
   private void clearRouteFields(ResourceNode node) {
@@ -471,6 +502,13 @@ public class ResourceServiceImpl
     if (resource.getDisabled() == null) {
       resource.setDisabled(Boolean.FALSE);
     }
+  }
+
+  private String attribute(Map<String, String> attributes, String key) {
+    if (attributes == null || key == null) {
+      return null;
+    }
+    return attributes.get(key);
   }
 
   private boolean isRouteResource(Resource resource) {

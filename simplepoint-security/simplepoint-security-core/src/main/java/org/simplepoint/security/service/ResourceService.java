@@ -32,6 +32,11 @@ public interface ResourceService extends BaseService<Resource, String> {
   Page<ResourceNode> limitTree(Map<String, String> attributes, Pageable pageable);
 
   /**
+   * Returns one paged tree level for lazy resource assignment UIs.
+   */
+  Page<ResourceNode> children(Map<String, String> attributes, Pageable pageable);
+
+  /**
    * Finds resources by stable codes.
    */
   Collection<Resource> findAllByCodes(Collection<String> codes);

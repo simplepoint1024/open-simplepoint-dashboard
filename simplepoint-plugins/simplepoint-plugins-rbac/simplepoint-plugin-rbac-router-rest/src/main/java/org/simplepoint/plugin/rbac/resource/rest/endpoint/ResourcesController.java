@@ -2,6 +2,7 @@ package org.simplepoint.plugin.rbac.resource.rest.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
@@ -30,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/resources")
-@Tag(name = "资源管理", description = "统一管理页面、功能、动作和接口资源")
+@Tag(name = "资源管理", description = "统一管理页面、功能、操作和接口资源")
 public class ResourcesController extends BaseController<ResourceService, Resource, String> {
 
   public ResourcesController(ResourceService service) {
@@ -45,6 +46,23 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
       pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.ASC, "sort"));
     }
     return Response.limit(service.limitTree(attributes, pageable), ResourceNode.class);
+  }
+
+  @GetMapping("/children")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.view')")
+  @Operation(summary = "分页查询资源子节点", description = "按父资源分页查询一层资源节点，用于懒加载分配界面")
+  public Response<Page<ResourceNode>> children(@RequestParam Map<String, String> attributes, Pageable pageable) {
+    if (!pageable.getSort().isSorted()) {
+      pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.ASC, "sort"));
+    }
+    return Response.limit(service.children(attributes, pageable), ResourceNode.class);
+  }
+
+  @PostMapping("/by-codes")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.view')")
+  @Operation(summary = "按编码查询资源", description = "根据资源编码批量查询资源明细")
+  public Response<Collection<Resource>> byCodes(@RequestBody Set<String> codes) {
+    return ok(service.findAllByCodes(codes));
   }
 
   @GetMapping("/service-routes")

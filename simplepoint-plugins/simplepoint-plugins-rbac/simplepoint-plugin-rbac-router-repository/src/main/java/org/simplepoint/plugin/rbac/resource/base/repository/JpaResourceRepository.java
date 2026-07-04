@@ -30,6 +30,46 @@ public interface JpaResourceRepository extends BaseRepository<Resource, String>,
   Collection<Resource> findAllByCodes(@Param("codes") Collection<String> codes);
 
   @Override
+  @Query("""
+      select r
+      from Resource r
+      where ((:parentId is null and r.parentId is null) or (:parentId is not null and r.parentId = :parentId))
+        and (
+          :keyword is null
+          or :keyword = ''
+          or lower(coalesce(r.code, '')) like lower(concat('%', :keyword, '%'))
+          or lower(coalesce(r.name, '')) like lower(concat('%', :keyword, '%'))
+          or lower(coalesce(r.alias, '')) like lower(concat('%', :keyword, '%'))
+          or lower(coalesce(r.label, '')) like lower(concat('%', :keyword, '%'))
+          or lower(coalesce(r.title, '')) like lower(concat('%', :keyword, '%'))
+          or lower(coalesce(r.path, '')) like lower(concat('%', :keyword, '%'))
+          or lower(coalesce(r.component, '')) like lower(concat('%', :keyword, '%'))
+        )
+      order by r.sort asc, r.name asc
+      """)
+  Page<Resource> findChildren(Pageable pageable, @Param("parentId") String parentId, @Param("keyword") String keyword);
+
+  @Override
+  @Query("""
+      select r
+      from Resource r
+      where
+        lower(coalesce(r.code, '')) like lower(concat('%', :keyword, '%'))
+        or lower(coalesce(r.name, '')) like lower(concat('%', :keyword, '%'))
+        or lower(coalesce(r.alias, '')) like lower(concat('%', :keyword, '%'))
+        or lower(coalesce(r.label, '')) like lower(concat('%', :keyword, '%'))
+        or lower(coalesce(r.title, '')) like lower(concat('%', :keyword, '%'))
+        or lower(coalesce(r.path, '')) like lower(concat('%', :keyword, '%'))
+        or lower(coalesce(r.component, '')) like lower(concat('%', :keyword, '%'))
+      order by r.sort asc, r.name asc
+      """)
+  Page<Resource> findMatches(Pageable pageable, @Param("keyword") String keyword);
+
+  @Override
+  @Query("select distinct r.parentId from Resource r where r.parentId in :parentIds")
+  Collection<String> findParentIdsWithChildren(@Param("parentIds") Collection<String> parentIds);
+
+  @Override
   @Query("select r.code from Resource r where r.requireOrgTenant = true")
   Collection<String> findCodesByRequireOrgTenant();
 

@@ -77,7 +77,7 @@ public class Dictionary extends BaseEntityImpl<String> {
   @Schema(
       title = "i18n:dictionaries.title.name",
       description = "i18n:dictionaries.description.name",
-      example = "功能类型",
+      example = "资源类型",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -93,7 +93,7 @@ public class Dictionary extends BaseEntityImpl<String> {
   @Schema(
       title = "i18n:dictionaries.title.code",
       description = "i18n:dictionaries.description.code",
-      example = "feature.type",
+      example = "resource.type",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -109,7 +109,7 @@ public class Dictionary extends BaseEntityImpl<String> {
   @Schema(
       title = "i18n:dictionaries.title.description",
       description = "i18n:dictionaries.description.description",
-      example = "定义系统中的功能类型枚举",
+      example = "定义统一资源模型中的类型枚举",
       maxLength = 512,
       extensions = {
           @Extension(name = "x-ui", properties = {

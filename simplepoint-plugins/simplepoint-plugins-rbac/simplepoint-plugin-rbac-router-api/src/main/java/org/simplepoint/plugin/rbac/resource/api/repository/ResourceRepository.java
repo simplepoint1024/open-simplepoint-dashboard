@@ -18,6 +18,12 @@ public interface ResourceRepository extends BaseRepository<Resource, String> {
 
   Collection<Resource> findAllByCodes(Collection<String> codes);
 
+  Page<Resource> findChildren(Pageable pageable, String parentId, String keyword);
+
+  Page<Resource> findMatches(Pageable pageable, String keyword);
+
+  Collection<String> findParentIdsWithChildren(Collection<String> parentIds);
+
   Collection<String> findCodesByRequireOrgTenant();
 
   Collection<String> findPublicAccessCodes();

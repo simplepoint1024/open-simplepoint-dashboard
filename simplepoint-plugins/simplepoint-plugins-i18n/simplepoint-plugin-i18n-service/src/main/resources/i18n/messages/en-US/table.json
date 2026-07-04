@@ -44,6 +44,7 @@
   "table.filter.notNull": "Not Null",
   "table.filter.null": "Null",
   "table.loadFail": "Failed to load",
+  "table.loadMore": "Load More",
   "table.resetColumns": "Reset Columns",
   "table.selectAll": "Select All",
   "table.action": "Actions",
@@ -68,5 +69,6 @@
   "table.schemaLoadFail": "Failed to load the page schema. Try again later.",
   "table.retry": "Retry",
   "table.selectedCount": "{count} selected",
+  "table.total": "{total} total",
   "table.emptyText": "No data"
 }

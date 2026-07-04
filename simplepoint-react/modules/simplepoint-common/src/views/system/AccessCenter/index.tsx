@@ -60,7 +60,7 @@ const TYPE_FALLBACK: Record<AccessCenterResourceNodeType, string> = {
   MODULE: '模块',
   PAGE: '页面',
   FEATURE: '功能',
-  ACTION: '动作',
+  ACTION: '操作',
   API: '接口',
 };
 const HIGH_RISK_RESOURCE = /(delete|remove|revoke|grant|authorize|admin|config|disable|drop)/i;
@@ -100,6 +100,11 @@ function getNodeResourceCodes(node?: AccessCenterResourceNode) {
     return [node.code];
   }
   return node.resourceCodes ?? [];
+}
+
+function resourceDisplayName(node?: AccessCenterResourceNode) {
+  if (!node) return '-';
+  return node.alias || node.label || node.code || node.resourceCode || node.id || '-';
 }
 
 function collectGrantableNodes(node?: AccessCenterResourceNode) {
@@ -175,7 +180,7 @@ function resourceTypeColor(type: AccessCenterResourceNodeType) {
 
 function matchesKeyword(node: AccessCenterResourceNode, keyword: string) {
   if (!keyword) return true;
-  return [node.label, node.code, node.path, node.description, node.resourceCode]
+  return [node.alias, node.label, node.code, node.path, node.description, node.resourceCode]
     .filter(Boolean)
     .some((value) => String(value).toLowerCase().includes(keyword));
 }
@@ -218,7 +223,7 @@ function buildTreeData(nodes: AccessCenterResourceNode[], selectedSet: Set<strin
       key: node.id,
       title: (
         <span className="access-center-tree-title">
-          <span className="access-center-tree-label">{node.label || node.code || node.resourceCode || '-'}</span>
+          <span className="access-center-tree-label">{resourceDisplayName(node)}</span>
           {node.resourceCode ? (
             <Typography.Text code className="access-center-tree-code">{node.resourceCode}</Typography.Text>
           ) : null}
@@ -661,7 +666,7 @@ const AccessCenter = () => {
                     <>
                       <div className="access-center-detail-head">
                         <div>
-                          <Typography.Text strong>{selectedResource.label}</Typography.Text>
+                          <Typography.Text strong>{resourceDisplayName(selectedResource)}</Typography.Text>
                           <Typography.Text type="secondary">{selectedResource.code || selectedResource.path || '-'}</Typography.Text>
                         </div>
                         <Tag color={resourceTypeColor(selectedResource.type)}>
@@ -704,7 +709,7 @@ const AccessCenter = () => {
                                   onChange={(event) => handleResourceToggle(code, event.target.checked)}
                                 />
                                 <span className="access-center-action-info">
-                                  <strong>{resource.label || code}</strong>
+                                  <strong>{resourceDisplayName(resource) || code}</strong>
                                   <Typography.Text code>{code}</Typography.Text>
                                   {resource.description ? <small>{resource.description}</small> : null}
                                 </span>

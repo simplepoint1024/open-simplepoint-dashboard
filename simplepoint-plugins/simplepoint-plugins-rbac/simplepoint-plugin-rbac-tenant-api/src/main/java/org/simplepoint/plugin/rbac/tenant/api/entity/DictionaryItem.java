@@ -76,7 +76,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
   @Schema(
       title = "i18n:dictionaries.title.dictionaryCode",
       description = "i18n:dictionaries.description.dictionaryCode",
-      example = "feature.type",
+      example = "resource.type",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -92,7 +92,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
   @Schema(
       title = "i18n:dictionaries.title.itemName",
       description = "i18n:dictionaries.description.itemName",
-      example = "菜单",
+      example = "页面",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -123,7 +123,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
   @Schema(
       title = "i18n:dictionaries.title.value",
       description = "i18n:dictionaries.description.value",
-      example = "1",
+      example = "PAGE",
       maxLength = 128,
       minLength = 1,
       extensions = {
@@ -139,7 +139,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
   @Schema(
       title = "i18n:dictionaries.title.description",
       description = "i18n:dictionaries.description.description",
-      example = "用于展示页面导航的功能",
+      example = "用于展示前端路由页面",
       maxLength = 512,
       extensions = {
           @Extension(name = "x-ui", properties = {

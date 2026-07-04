@@ -51,6 +51,8 @@ public class I18nAutoRegistrationInitializer {
 
   private static final String I18N_BOOTSTRAP_REPAIR_MODULE = "i18n-bootstrap-v2";
 
+  private static final String I18N_RESOURCE_ASSIGNMENT_MODULE = "i18n-resource-assignment-v1";
+
   private static final String I18N_COUNTRIES_PATH = "/i18n/countries/";
 
   private static final String I18N_MESSAGES_PATH = "/i18n/messages/";
@@ -81,6 +83,14 @@ public class I18nAutoRegistrationInitializer {
       "table",
       "tenants",
       "menu"
+  );
+
+  private static final Set<String> RESOURCE_ASSIGNMENT_NAMESPACES = Set.of(
+      "resources",
+      "access-center",
+      "applications",
+      "table",
+      "common"
   );
 
   /**
@@ -192,6 +202,17 @@ public class I18nAutoRegistrationInitializer {
       }
       importMessages(loadMessages(), namespaceService, messageService, messageRepository, namespace -> true);
     });
+  }
+
+  @Bean
+  public DataInitRegister resourceAssignmentMessagesRegister(
+      I18nNamespaceService namespaceService,
+      I18nMessageService messageService,
+      I18nMessageRepository messageRepository
+  ) {
+    return () -> new InitTask(I18N_RESOURCE_ASSIGNMENT_MODULE, () ->
+        importMessages(loadMessages(), namespaceService, messageService, messageRepository, RESOURCE_ASSIGNMENT_NAMESPACES::contains)
+    );
   }
 
   private Map<String, I18nInitializeProperties> loadBaseI18nData() throws Exception {

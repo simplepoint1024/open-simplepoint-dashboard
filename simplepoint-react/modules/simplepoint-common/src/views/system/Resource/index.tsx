@@ -12,7 +12,7 @@ const RESOURCE_TYPE_CONFIG: Record<string, { color: string; labelKey: string; fa
   MODULE: {color: 'blue', labelKey: 'resources.type.MODULE', fallback: '模块'},
   PAGE: {color: 'green', labelKey: 'resources.type.PAGE', fallback: '页面'},
   FEATURE: {color: 'cyan', labelKey: 'resources.type.FEATURE', fallback: '功能'},
-  ACTION: {color: 'orange', labelKey: 'resources.type.ACTION', fallback: '动作'},
+  ACTION: {color: 'orange', labelKey: 'resources.type.ACTION', fallback: '操作'},
   API: {color: 'purple', labelKey: 'resources.type.API', fallback: '接口'},
 };
 
@@ -38,6 +38,11 @@ const App = () => {
       width: 260,
       ellipsis: true,
       render: (value: string) => value ? <Typography.Text code>{value}</Typography.Text> : '-',
+    },
+    alias: {
+      width: 160,
+      ellipsis: true,
+      render: (value: string) => value || '-',
     },
     type: {
       width: 120,

@@ -13,6 +13,7 @@
   "applications.description.enabled": "当前应用是否启用",
   "applications.button.config.resource": "配置资源",
   "applications.resourceConfig.title": "应用资源",
+  "applications.resourceConfig.assignedTitle": "已分配资源",
   "applications.resourceConfig.selectedCount": "已分配 {count} 项资源",
   "applications.resourceConfig.loadFailed": "应用资源加载失败",
   "applications.resourceConfig.updateSuccess": "应用资源已更新",

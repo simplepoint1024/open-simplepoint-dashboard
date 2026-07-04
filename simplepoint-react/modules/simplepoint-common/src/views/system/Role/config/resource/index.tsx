@@ -31,6 +31,10 @@ const TYPE_COLOR: Record<string, string> = {
 
 const nodeKey = (node: AccessCenterResourceNode) => node.resourceCode || node.code || node.id;
 
+const nodeDisplayName = (node: AccessCenterResourceNode) => (
+  node.alias || node.label || node.code || node.resourceCode || node.id
+);
+
 const flattenNodes = (nodes: AccessCenterResourceNode[]) => {
   const result: AccessCenterResourceNode[] = [];
   const visit = (node: AccessCenterResourceNode) => {
@@ -115,7 +119,7 @@ const App = ({roleId}: RoleResourceConfigProps) => {
         key,
         title: (
           <Space size={8}>
-            <Typography.Text>{node.label || code || node.id}</Typography.Text>
+            <Typography.Text>{nodeDisplayName(node)}</Typography.Text>
             <Tag color={TYPE_COLOR[node.type] ?? 'default'}>
               {t(`resources.type.${node.type}`, node.type)}
             </Tag>

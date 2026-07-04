@@ -30,6 +30,6 @@
   "accessCenter.resource.type.MODULE": "Module",
   "accessCenter.resource.type.PAGE": "Page",
   "accessCenter.resource.type.FEATURE": "Feature",
-  "accessCenter.resource.type.ACTION": "Action",
+  "accessCenter.resource.type.ACTION": "Operation",
   "accessCenter.resource.type.API": "API"
 }
