@@ -5,7 +5,7 @@ dependencies{
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-api"))
     implementation("org.springframework.security:spring-security-oauth2-core")
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-api"))
-    implementation(project(":simplepoint-data:simplepoint-data-initializer"))
+    implementation(project(":simplepoint-platform:simplepoint-platform-bootstrap"))
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-api"))
     testImplementation("org.springframework.boot:spring-boot-starter-test")

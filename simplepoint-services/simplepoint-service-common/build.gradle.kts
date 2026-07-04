@@ -112,8 +112,8 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-rest"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-s3"))
 
-    // 引入初始化数据插件
-    implementation(project(":simplepoint-data:simplepoint-data-initializer"))
+    // 引入平台启动编排
+    implementation(project(":simplepoint-platform:simplepoint-platform-bootstrap"))
 
     implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-monitor"))
 

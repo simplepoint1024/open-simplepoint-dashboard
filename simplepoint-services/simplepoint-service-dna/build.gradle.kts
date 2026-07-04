@@ -74,6 +74,7 @@ dependencies {
 
     // 引入菜单API,用于自动初始化菜单
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api"))
 
     // 引入服务路由远程调用支持
     implementation(project(":simplepoint-service-router:simplepoint-service-router-core"))

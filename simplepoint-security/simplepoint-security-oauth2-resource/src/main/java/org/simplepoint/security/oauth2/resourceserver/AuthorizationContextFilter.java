@@ -56,13 +56,29 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
 
   private final AuthorizationContextResolver authorizationContextResolver;
 
+  private final String serviceRouterExposePath;
+
   /**
    * Constructs an AuthorizationContextFilter with the specified AuthorizationContextResolver.
    *
    * @param authorizationContextResolver the AuthorizationContextResolver used to resolve the authorization context for incoming requests
    */
   public AuthorizationContextFilter(AuthorizationContextResolver authorizationContextResolver) {
+    this(authorizationContextResolver, "/_simplepoint/service-router/invoke");
+  }
+
+  /**
+   * Constructs an AuthorizationContextFilter with the specified AuthorizationContextResolver.
+   *
+   * @param authorizationContextResolver the resolver used to resolve the authorization context
+   * @param serviceRouterExposePath internal service-router invocation path
+   */
+  public AuthorizationContextFilter(
+      AuthorizationContextResolver authorizationContextResolver,
+      String serviceRouterExposePath
+  ) {
     this.authorizationContextResolver = authorizationContextResolver;
+    this.serviceRouterExposePath = serviceRouterExposePath;
   }
 
   /**
@@ -78,6 +94,7 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
   protected boolean shouldNotFilter(@Nonnull HttpServletRequest request) {
     String path = requestPath(request);
     return CONTEXT_EXCLUDED_EXACT_PATHS.contains(path)
+        || path.equals(serviceRouterExposePath)
         || CONTEXT_EXCLUDED_PATH_PREFIXES.stream().anyMatch(path::startsWith);
   }
 

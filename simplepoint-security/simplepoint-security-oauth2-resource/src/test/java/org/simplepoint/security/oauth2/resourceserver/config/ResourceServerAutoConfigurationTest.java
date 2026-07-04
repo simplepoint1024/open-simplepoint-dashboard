@@ -53,4 +53,19 @@ class ResourceServerAutoConfigurationTest {
 
     assertThat(matcher.matches(request)).isTrue();
   }
+
+  @Test
+  void serviceRouterPathMatcherMatchesOnlyConfiguredPostPath() {
+    ResourceServerAutoConfiguration.ServiceRouterPathRequestMatcher matcher =
+        new ResourceServerAutoConfiguration.ServiceRouterPathRequestMatcher(
+            "/_simplepoint/service-router/invoke"
+        );
+    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/_simplepoint/service-router/invoke");
+    MockHttpServletRequest wrongMethod = new MockHttpServletRequest("GET", "/_simplepoint/service-router/invoke");
+    MockHttpServletRequest wrongPath = new MockHttpServletRequest("POST", "/_simplepoint/other");
+
+    assertThat(matcher.matches(request)).isTrue();
+    assertThat(matcher.matches(wrongMethod)).isFalse();
+    assertThat(matcher.matches(wrongPath)).isFalse();
+  }
 }

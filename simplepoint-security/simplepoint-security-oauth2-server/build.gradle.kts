@@ -3,6 +3,7 @@ dependencies {
     api(libs.oauth2.oidc.sdk)
     api(libs.spring.authorization.server)
     api(project(":simplepoint-security:simplepoint-security-core"))
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation(project(":simplepoint-cache:simplepoint-cache-core"))
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-api"))

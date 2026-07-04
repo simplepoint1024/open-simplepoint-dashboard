@@ -6,7 +6,7 @@ import App from '@/App';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {applyInitialHtmlAttributes} from "@/utils/initHtmlAttributes.ts";
 import {I18nProvider} from "@/layouts/i18n/I18nProvider.tsx";
-import {HttpError} from '@simplepoint/shared/api/client';
+import {isHttpError} from '@simplepoint/shared/api/client';
 
 applyInitialHtmlAttributes();
 
@@ -14,7 +14,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error) => {
-        if (error instanceof HttpError && [401, 403, 500].includes(error.status)) {
+        if (isHttpError(error) && [401, 403, 500].includes(error.status)) {
           return false;
         }
         return failureCount < 1;
@@ -23,7 +23,7 @@ const queryClient = new QueryClient({
     },
     mutations: {
       retry: (failureCount, error) => {
-        if (error instanceof HttpError && [401, 403, 500].includes(error.status)) {
+        if (isHttpError(error) && [401, 403, 500].includes(error.status)) {
           return false;
         }
         return failureCount < 1;

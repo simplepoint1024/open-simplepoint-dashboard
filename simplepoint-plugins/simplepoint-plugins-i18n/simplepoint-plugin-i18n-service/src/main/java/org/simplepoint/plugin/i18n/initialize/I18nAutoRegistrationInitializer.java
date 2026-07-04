@@ -4,11 +4,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import org.simplepoint.api.data.DataInitRegister;
-import org.simplepoint.api.data.InitTask;
 import org.simplepoint.core.entity.Message;
 import org.simplepoint.core.locale.I18nMessageService;
 import org.simplepoint.core.utils.ClassPathResourceUtil;
+import org.simplepoint.platform.bootstrap.BootstrapContribution;
+import org.simplepoint.platform.bootstrap.PlatformBootstrapContribution;
 import org.simplepoint.plugin.i18n.api.entity.Countries;
 import org.simplepoint.plugin.i18n.api.entity.Language;
 import org.simplepoint.plugin.i18n.api.entity.Namespace;
@@ -27,8 +27,8 @@ import org.springframework.stereotype.Component;
 /**
  * I18nAutoRegistrationInitializer automatically registers internationalization data.
  *
- * <p>This class defines DataInitRegister beans for base i18n data and i18n messages. The
- * initialization tasks read classpath JSON files and populate the corresponding services.
+ * <p>This class defines platform bootstrap contributions for base i18n data and i18n messages.
+ * The bootstrap contributions read classpath JSON files and populate the corresponding services.
  */
 @Component
 public class I18nAutoRegistrationInitializer {
@@ -43,69 +43,25 @@ public class I18nAutoRegistrationInitializer {
 
   private static final String I18N_INIT_MSG_MODULE = "i18n-messages";
 
-  private static final String I18N_INIT_DATA_PERMISSION_MODULE = "i18n-messages-data-permission";
-
-  private static final String I18N_INIT_SUPPLEMENT_MODULE = "i18n-messages-supplement-v1";
-
-  private static final String I18N_RESOURCE_MODEL_MODULE = "i18n-resource-model-v1";
-
   private static final String I18N_BOOTSTRAP_REPAIR_MODULE = "i18n-bootstrap-v2";
-
-  private static final String I18N_RESOURCE_ASSIGNMENT_MODULE = "i18n-resource-assignment-v1";
 
   private static final String I18N_COUNTRIES_PATH = "/i18n/countries/";
 
-  private static final String I18N_MESSAGES_PATH = "/i18n/messages/";
-
-  private static final Set<String> DATA_PERMISSION_NAMESPACES = Set.of(
-      "data-scopes",
-      "field-scopes"
-  );
+  private static final String I18N_MODULE_MESSAGES_PATH = "/META-INF/simplepoint/i18n/";
 
   /**
-   * Namespaces that were missing en-US translations or had new fields added after the initial
-   * i18n-messages run. Loaded by the supplement init module.
-   * Includes data-scopes and field-scopes so this module covers them idempotently even if
-   * the data-permission module already ran (existing keys are skipped via pre-filter).
-   */
-  private static final Set<String> SUPPLEMENT_NAMESPACES = Set.of(
-      "users", "roles", "resources", "messages", "namespaces",
-      "clients", "countries", "languages", "profile", "regions", "settings", "timezones",
-      "data-scopes", "field-scopes"
-  );
-
-  private static final Set<String> RESOURCE_MODEL_NAMESPACES = Set.of(
-      "resources",
-      "roles",
-      "access-center",
-      "applications",
-      "monitoring-resource-grant-logs",
-      "table",
-      "tenants",
-      "menu"
-  );
-
-  private static final Set<String> RESOURCE_ASSIGNMENT_NAMESPACES = Set.of(
-      "resources",
-      "access-center",
-      "applications",
-      "table",
-      "common"
-  );
-
-  /**
-   * Register a DataInitRegister bean for initializing i18n data.
+   * Registers a bootstrap contribution for base i18n data.
    *
-   * @return a DataInitRegister instance that initializes i18n data
+   * @return a platform bootstrap contribution
    */
   @Bean
-  public DataInitRegister i18nRegister(
+  public PlatformBootstrapContribution i18nBaseBootstrapContribution(
       I18nCountriesService countriesService,
       I18nLanguageService languageService,
       I18nRegionService regionService,
       I18nTimeZoneService timeZoneService
   ) {
-    return () -> new InitTask(I18N_INIT_MODULE, () -> {
+    return () -> BootstrapContribution.versioned("i18n", "base", I18N_INIT_MODULE, "1", 200, () -> {
       if (languageService.findAll(Map.of()).isEmpty()) {
         importBaseI18nData(loadBaseI18nData(), countriesService, languageService, regionService, timeZoneService);
       }
@@ -113,78 +69,29 @@ public class I18nAutoRegistrationInitializer {
   }
 
   /**
-   * Register a DataInitRegister bean for initializing i18n messages.
+   * Registers a bootstrap contribution for i18n messages.
    *
-   * @return a DataInitRegister instance that initializes i18n messages
+   * @return a platform bootstrap contribution
    */
   @Bean
-  public DataInitRegister messagesRegister(
+  public PlatformBootstrapContribution i18nMessagesBootstrapContribution(
       I18nNamespaceService namespaceService,
       I18nMessageService messageService,
       I18nMessageRepository messageRepository
   ) {
-    return () -> new InitTask(I18N_INIT_MSG_MODULE, () ->
+    return () -> BootstrapContribution.versioned("i18n", "messages", I18N_INIT_MSG_MODULE, "1", 210, () ->
         importMessages(loadMessages(), namespaceService, messageService, messageRepository, namespace -> true)
-    );
-  }
-
-  /**
-   * Register a DataInitRegister bean for initializing data-permission-related i18n messages.
-   *
-   * <p>This runs after the base i18n-messages module and loads the data-scopes and field-scopes
-   * namespaces that were added for the data permission feature.
-   *
-   * @return a DataInitRegister instance that initializes data-permission i18n messages
-   */
-  @Bean
-  public DataInitRegister dataPermissionMessagesRegister(
-      I18nNamespaceService namespaceService,
-      I18nMessageService messageService,
-      I18nMessageRepository messageRepository
-  ) {
-    return () -> new InitTask(I18N_INIT_DATA_PERMISSION_MODULE, () ->
-        importMessages(loadMessages(), namespaceService, messageService, messageRepository, DATA_PERMISSION_NAMESPACES::contains)
-    );
-  }
-
-  /**
-   * Register a DataInitRegister bean for supplementing missing or updated i18n messages.
-   *
-   * <p>Loads namespaces that were missing en-US translations or had new fields added after the
-   * initial i18n-messages run (e.g. users.orgId, roles and resources en-US, etc.).
-   * Also covers data-scopes and field-scopes idempotently: if the data-permission module already
-   * inserted some entries, this module skips them to avoid unique-constraint violations.</p>
-   *
-   * @return a DataInitRegister instance that supplements i18n messages
-   */
-  @Bean
-  public DataInitRegister supplementMessagesRegister(
-      I18nNamespaceService namespaceService,
-      I18nMessageService messageService,
-      I18nMessageRepository messageRepository
-  ) {
-    return () -> new InitTask(I18N_INIT_SUPPLEMENT_MODULE, () ->
-        importMessages(loadMessages(), namespaceService, messageService, messageRepository, SUPPLEMENT_NAMESPACES::contains)
-    );
-  }
-
-  @Bean
-  public DataInitRegister resourceModelMessagesRegister(
-      I18nNamespaceService namespaceService,
-      I18nMessageService messageService,
-      I18nMessageRepository messageRepository
-  ) {
-    return () -> new InitTask(I18N_RESOURCE_MODEL_MODULE, () ->
-        importMessages(loadMessages(), namespaceService, messageService, messageRepository, RESOURCE_MODEL_NAMESPACES::contains)
     );
   }
 
   /**
    * Repairs persisted environments where old i18n initialization was marked done even though
    * resource scanning imported no rows.
+   *
+   * @return a platform bootstrap contribution
    */
   @Bean
-  public DataInitRegister bootstrapRepairRegister(
+  public PlatformBootstrapContribution i18nBootstrapRepairContribution(
       I18nCountriesService countriesService,
       I18nLanguageService languageService,
       I18nRegionService regionService,
@@ -193,7 +100,7 @@ public class I18nAutoRegistrationInitializer {
       I18nMessageService messageService,
       I18nMessageRepository messageRepository
   ) {
-    return () -> new InitTask(I18N_BOOTSTRAP_REPAIR_MODULE, () -> {
+    return () -> BootstrapContribution.versioned("i18n", "repair", I18N_BOOTSTRAP_REPAIR_MODULE, "1", 220, () -> {
       if (!messageRepository.findAvailableLocales().isEmpty()) {
         return;
       }
@@ -202,17 +109,6 @@ public class I18nAutoRegistrationInitializer {
       }
       importMessages(loadMessages(), namespaceService, messageService, messageRepository, namespace -> true);
     });
-  }
-
-  @Bean
-  public DataInitRegister resourceAssignmentMessagesRegister(
-      I18nNamespaceService namespaceService,
-      I18nMessageService messageService,
-      I18nMessageRepository messageRepository
-  ) {
-    return () -> new InitTask(I18N_RESOURCE_ASSIGNMENT_MODULE, () ->
-        importMessages(loadMessages(), namespaceService, messageService, messageRepository, RESOURCE_ASSIGNMENT_NAMESPACES::contains)
-    );
   }
 
   private Map<String, I18nInitializeProperties> loadBaseI18nData() throws Exception {
@@ -224,7 +120,7 @@ public class I18nAutoRegistrationInitializer {
 
   private Map<String, Map<String, Map<String, String>>> loadMessages() throws Exception {
     Map<String, Map<String, Map<String, String>>> messages = ClassPathResourceUtil
-        .readJsonPathMap(I18N_MESSAGES_PATH);
+        .readJsonPathMap(I18N_MODULE_MESSAGES_PATH);
     verifyMessages(messages);
     return messages;
   }
@@ -325,7 +221,7 @@ public class I18nAutoRegistrationInitializer {
 
   private void verifyMessages(Map<String, Map<String, Map<String, String>>> data) {
     if (data == null || data.isEmpty()) {
-      throw new IllegalStateException("No i18n message resources found under " + I18N_MESSAGES_PATH);
+      throw new IllegalStateException("No i18n message resources found under " + I18N_MODULE_MESSAGES_PATH);
     }
   }
 }

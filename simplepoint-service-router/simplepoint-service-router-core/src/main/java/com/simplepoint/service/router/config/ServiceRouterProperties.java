@@ -1,7 +1,9 @@
 package com.simplepoint.service.router.config;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -205,9 +207,21 @@ public class ServiceRouterProperties {
    */
   public static class InternalAuth {
 
+    private String mode = "shared-token";
+
     private String headerName = "X-SimplePoint-Service-Router-Token";
 
     private String token;
+
+    private Oauth2 oauth2 = new Oauth2();
+
+    public String getMode() {
+      return mode;
+    }
+
+    public void setMode(final String mode) {
+      this.mode = mode;
+    }
 
     public String getHeaderName() {
       return headerName;
@@ -223,6 +237,70 @@ public class ServiceRouterProperties {
 
     public void setToken(final String token) {
       this.token = token;
+    }
+
+    public Oauth2 getOauth2() {
+      return oauth2;
+    }
+
+    public void setOauth2(final Oauth2 oauth2) {
+      this.oauth2 = oauth2;
+    }
+
+    /**
+     * OAuth2 client credentials settings for service-to-service calls.
+     */
+    public static class Oauth2 {
+
+      private String tokenUri;
+
+      private String clientId;
+
+      private String clientSecret;
+
+      private List<String> scopes = new ArrayList<>(List.of("service-router.invoke"));
+
+      private Duration tokenRefreshSkew = Duration.ofSeconds(30);
+
+      public String getTokenUri() {
+        return tokenUri;
+      }
+
+      public void setTokenUri(final String tokenUri) {
+        this.tokenUri = tokenUri;
+      }
+
+      public String getClientId() {
+        return clientId;
+      }
+
+      public void setClientId(final String clientId) {
+        this.clientId = clientId;
+      }
+
+      public String getClientSecret() {
+        return clientSecret;
+      }
+
+      public void setClientSecret(final String clientSecret) {
+        this.clientSecret = clientSecret;
+      }
+
+      public List<String> getScopes() {
+        return scopes;
+      }
+
+      public void setScopes(final List<String> scopes) {
+        this.scopes = scopes;
+      }
+
+      public Duration getTokenRefreshSkew() {
+        return tokenRefreshSkew;
+      }
+
+      public void setTokenRefreshSkew(final Duration tokenRefreshSkew) {
+        this.tokenRefreshSkew = tokenRefreshSkew;
+      }
     }
   }
 }

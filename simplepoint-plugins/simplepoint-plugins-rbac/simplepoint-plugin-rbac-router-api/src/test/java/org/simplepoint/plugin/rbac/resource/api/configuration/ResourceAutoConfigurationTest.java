@@ -15,15 +15,31 @@ class ResourceAutoConfigurationTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void initializesResourcesWhenResourceServiceBecomesAvailable() throws Exception {
+  void initializesModuleResourcesFromClasspath() throws Exception {
+    ResourceService resourceService = mock(ResourceService.class);
+    ObjectProvider<ResourceService> provider = mock(ObjectProvider.class);
+    when(provider.getIfAvailable()).thenReturn(resourceService);
+
+    ResourceAutoConfiguration configuration = new ResourceAutoConfiguration(provider, "dna", "conf/missing-resources.json");
+
+    configuration.run(null);
+
+    verify(resourceService).sync(eq("test-module"), anySet());
+    verify(resourceService, never()).sync(eq("dna"), anySet());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void initializesLegacyResourcesWhenConfigured() throws Exception {
     ResourceService resourceService = mock(ResourceService.class);
     ObjectProvider<ResourceService> provider = mock(ObjectProvider.class);
     when(provider.getIfAvailable()).thenReturn(resourceService);
 
     ResourceAutoConfiguration configuration = new ResourceAutoConfiguration(provider, "dna", "conf/test-resources.json");
 
-    configuration.afterPropertiesSet();
+    configuration.run(null);
 
+    verify(resourceService).sync(eq("test-module"), anySet());
     verify(resourceService).sync(eq("dna"), anySet());
   }
 
@@ -35,22 +51,8 @@ class ResourceAutoConfigurationTest {
 
     ResourceAutoConfiguration configuration = new ResourceAutoConfiguration(provider, "dna", "conf/test-resources.json");
 
-    configuration.afterPropertiesSet();
+    configuration.run(null);
 
     verify(provider).getIfAvailable();
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  void skipsResourceInitializationWhenConfigIsMissing() throws Exception {
-    ResourceService resourceService = mock(ResourceService.class);
-    ObjectProvider<ResourceService> provider = mock(ObjectProvider.class);
-    when(provider.getIfAvailable()).thenReturn(resourceService);
-
-    ResourceAutoConfiguration configuration = new ResourceAutoConfiguration(provider, "dna", "conf/missing-resources.json");
-
-    configuration.afterPropertiesSet();
-
-    verify(resourceService, never()).sync(eq("dna"), anySet());
   }
 }

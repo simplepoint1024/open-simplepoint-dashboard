@@ -9,10 +9,7 @@ const checkOnly = args.has('--check');
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const reactRoot = path.resolve(scriptDir, '..');
 const repoRoot = path.resolve(reactRoot, '..');
-const backendMessagesDir = path.join(
-  repoRoot,
-  'simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-service/src/main/resources/i18n/messages'
-);
+const moduleMessagesPath = path.join('src', 'main', 'resources', 'META-INF', 'simplepoint', 'i18n');
 const frontendBundlesDir = path.join(
   reactRoot,
   'modules/mocks/src/i18n/bundles/local'
@@ -27,30 +24,65 @@ const frontendNamespaceSources = [
 
 const readJson = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 
+const ignoredDirectories = new Set([
+  '.git',
+  '.gradle',
+  '.idea',
+  'build',
+  'dist',
+  'node_modules',
+  'out',
+]);
+
 const sortObject = obj => Object.fromEntries(
   Object.entries(obj).sort(([left], [right]) => left.localeCompare(right))
 );
 
 const stringify = obj => `${JSON.stringify(obj, null, 2)}\n`;
 
-const readBackendBundles = () => {
-  if (!fs.existsSync(backendMessagesDir)) {
-    throw new Error(`Missing backend i18n resources: ${backendMessagesDir}`);
-  }
+const findBackendMessageDirs = () => {
+  const result = [];
+  const visit = dir => {
+    const baseName = path.basename(dir);
+    if (ignoredDirectories.has(baseName)) return;
 
-  const bundles = {};
-  for (const locale of fs.readdirSync(backendMessagesDir).sort()) {
-    const localeDir = path.join(backendMessagesDir, locale);
-    if (!fs.statSync(localeDir).isDirectory()) continue;
-
-    const namespaces = {};
-    for (const fileName of fs.readdirSync(localeDir).filter(file => file.endsWith('.json')).sort()) {
-      const namespace = fileName.replace(/\.json$/, '');
-      namespaces[namespace] = sortObject(readJson(path.join(localeDir, fileName)));
+    const candidate = path.join(dir, moduleMessagesPath);
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+      result.push(candidate);
     }
-    bundles[locale] = sortObject(namespaces);
+
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      if (!entry.isDirectory() || ignoredDirectories.has(entry.name)) continue;
+      visit(path.join(dir, entry.name));
+    }
+  };
+
+  visit(repoRoot);
+  return result.sort();
+};
+
+const readBackendBundles = () => {
+  const backendMessagesDirs = findBackendMessageDirs();
+  if (!backendMessagesDirs.length) throw new Error('No backend i18n resources found');
+  const bundles = {};
+
+  for (const backendMessagesDir of backendMessagesDirs) {
+    for (const locale of fs.readdirSync(backendMessagesDir).sort()) {
+      const localeDir = path.join(backendMessagesDir, locale);
+      if (!fs.statSync(localeDir).isDirectory()) continue;
+
+      const namespaces = bundles[locale] ?? {};
+      for (const fileName of fs.readdirSync(localeDir).filter(file => file.endsWith('.json')).sort()) {
+        const namespace = fileName.replace(/\.json$/, '');
+        if (namespaces[namespace]) {
+          throw new Error(`Duplicate backend i18n namespace: ${locale}/${namespace}`);
+        }
+        namespaces[namespace] = sortObject(readJson(path.join(localeDir, fileName)));
+      }
+      bundles[locale] = sortObject(namespaces);
+    }
   }
-  return bundles;
+  return sortObject(bundles);
 };
 
 const collectDeclaredNamespaces = () => {

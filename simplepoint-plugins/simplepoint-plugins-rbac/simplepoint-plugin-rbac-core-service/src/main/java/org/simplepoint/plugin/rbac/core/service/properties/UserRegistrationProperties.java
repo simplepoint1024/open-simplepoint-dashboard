@@ -12,11 +12,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.Data;
-import org.simplepoint.api.data.DataInitializeManager;
 import org.simplepoint.security.entity.User;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 

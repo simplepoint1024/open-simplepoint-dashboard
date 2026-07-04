@@ -1,0 +1,18 @@
+{
+  "module": "test-module",
+  "resources": [
+    {
+      "code": "test.module.view",
+      "name": "Test Module",
+      "label": "Test Module",
+      "title": "menu.testModule",
+      "path": "/test-module",
+      "component": "test/Module",
+      "type": "PAGE",
+      "routeKind": "item",
+      "sort": 0,
+      "grantable": true,
+      "disabled": false
+    }
+  ]
+}

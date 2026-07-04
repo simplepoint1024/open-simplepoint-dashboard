@@ -67,7 +67,11 @@ services:
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
-      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+      SIMPLEPOINT_AUTHORIZATION_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AUTHORIZATION_SERVICE_CLIENT_SECRET:-dev-authorization-service-secret}
+      SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET:-dev-common-service-secret}
+      SIMPLEPOINT_AUDITING_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AUDITING_SERVICE_CLIENT_SECRET:-dev-auditing-service-secret}
+      SIMPLEPOINT_DNA_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_DNA_SERVICE_CLIENT_SECRET:-dev-dna-service-secret}
+      SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET:-dev-host-service-secret}
     ports:
       - "9000:9000"
     depends_on:
@@ -100,7 +104,7 @@ services:
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
-      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+      SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET:-dev-common-service-secret}
     ports:
       - "7000:7000"
     depends_on:
@@ -131,7 +135,7 @@ services:
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
-      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+      SIMPLEPOINT_AUDITING_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AUDITING_SERVICE_CLIENT_SECRET:-dev-auditing-service-secret}
     ports:
       - "6000:6000"
     depends_on:
@@ -164,7 +168,7 @@ services:
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
-      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+      SIMPLEPOINT_DNA_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_DNA_SERVICE_CLIENT_SECRET:-dev-dna-service-secret}
     ports:
       - "2777:2777"
       - "15432:15432"
@@ -198,7 +202,7 @@ services:
       SIMPLEPOINT_WAIT_FOR: redis:6379,consul:8500
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
-      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+      SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET:-dev-host-service-secret}
     ports:
       - "8080:8080"
     depends_on:

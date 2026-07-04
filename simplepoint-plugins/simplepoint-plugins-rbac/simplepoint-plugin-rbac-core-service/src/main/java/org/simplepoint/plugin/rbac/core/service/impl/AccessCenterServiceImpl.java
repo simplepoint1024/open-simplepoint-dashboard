@@ -194,7 +194,7 @@ public class AccessCenterServiceImpl implements AccessCenterService {
       Map<String, List<Resource>> childrenByParent,
       Set<String> authorizedCodes
   ) {
-    List<AccessCenterResourceNodeVo> children = childrenByParent.getOrDefault(resource.getId(), List.of()).stream()
+    final List<AccessCenterResourceNodeVo> children = childrenByParent.getOrDefault(resource.getId(), List.of()).stream()
         .sorted(this::compareResources)
         .map(child -> buildResourceNode(child, childrenByParent, authorizedCodes))
         .toList();

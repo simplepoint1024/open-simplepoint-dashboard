@@ -8,6 +8,7 @@
 
 package org.simplepoint.cloud.oauth.server.configuration;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationFailureHandler;
@@ -17,8 +18,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -32,6 +35,7 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
 
 /**
@@ -42,6 +46,35 @@ import org.springframework.util.StringUtils;
 @Configuration
 @EnableWebSecurity
 public class AuthorizationServerConfiguration {
+
+  /**
+   * Protects the internal service-router endpoint with service JWTs.
+   *
+   * @param http the HTTP security configuration
+   * @param environment Spring environment
+   * @return the service-router security filter chain
+   * @throws Exception if security configuration fails
+   */
+  @Bean
+  @Order(0)
+  public SecurityFilterChain serviceRouterSecurityFilterChain(
+      final HttpSecurity http,
+      final Environment environment
+  ) throws Exception {
+    final String serviceRouterExposePath = environment.getProperty(
+        "simplepoint.service-router.provider.expose-path",
+        "/_simplepoint/service-router/invoke"
+    );
+    final String requiredAuthority = environment.getProperty(
+        "simplepoint.service-router.internal-auth.oauth2.required-authority",
+        "SCOPE_service-router.invoke"
+    );
+    http.csrf(AbstractHttpConfigurer::disable);
+    http.securityMatcher(new ServiceRouterPathRequestMatcher(serviceRouterExposePath))
+        .authorizeHttpRequests(authorize -> authorize.anyRequest().hasAuthority(requiredAuthority))
+        .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+    return http.build();
+  }
 
   /**
    * Defines the security filter chain for the authorization server.
@@ -159,5 +192,30 @@ public class AuthorizationServerConfiguration {
       builder.issuer(issuer);
     }
     return builder.build();
+  }
+
+  record ServiceRouterPathRequestMatcher(String exposePath) implements RequestMatcher {
+
+    @Override
+    public boolean matches(final HttpServletRequest request) {
+      return HttpMethod.POST.matches(request.getMethod()) && matchesPath(request, exposePath);
+    }
+  }
+
+  private static boolean matchesPath(
+      final HttpServletRequest request,
+      final String exposePath
+  ) {
+    final String servletPath = request.getServletPath();
+    final String requestUri = request.getRequestURI();
+    final String contextPath = request.getContextPath();
+    if (exposePath.equals(servletPath)) {
+      return true;
+    }
+    if (exposePath.equals(requestUri)) {
+      return true;
+    }
+    return StringUtils.hasText(contextPath) && requestUri.startsWith(contextPath)
+        && exposePath.equals(requestUri.substring(contextPath.length()));
   }
 }

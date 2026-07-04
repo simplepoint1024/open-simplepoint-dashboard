@@ -66,15 +66,26 @@ public class ResourceServerAutoConfiguration {
       Environment environment
   ) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable);
-    http.addFilterBefore(new AuthorizationContextFilter(authorizationContextResolver), BearerTokenAuthenticationFilter.class);
-    String serviceRouterToken = environment.getProperty("simplepoint.service-router.internal-auth.token");
-    String serviceRouterHeaderName = environment.getProperty(
+    final String serviceRouterMode = environment.getProperty(
+        "simplepoint.service-router.internal-auth.mode",
+        "shared-token"
+    );
+    final String serviceRouterToken = environment.getProperty("simplepoint.service-router.internal-auth.token");
+    final String serviceRouterHeaderName = environment.getProperty(
         "simplepoint.service-router.internal-auth.header-name",
         "X-SimplePoint-Service-Router-Token"
     );
-    String serviceRouterExposePath = environment.getProperty(
+    final String serviceRouterExposePath = environment.getProperty(
         "simplepoint.service-router.provider.expose-path",
         "/_simplepoint/service-router/invoke"
+    );
+    final String serviceRouterRequiredAuthority = environment.getProperty(
+        "simplepoint.service-router.internal-auth.oauth2.required-authority",
+        "SCOPE_service-router.invoke"
+    );
+    http.addFilterBefore(
+        new AuthorizationContextFilter(authorizationContextResolver, serviceRouterExposePath),
+        BearerTokenAuthenticationFilter.class
     );
     return http
         .authorizeHttpRequests(request -> {
@@ -83,7 +94,10 @@ public class ResourceServerAutoConfiguration {
                   "/error", "/css/**", "/js/**", "/images/**"
               )
               .permitAll();
-          if (StringUtils.hasText(serviceRouterToken)) {
+          if ("oauth2".equalsIgnoreCase(serviceRouterMode)) {
+            request.requestMatchers(new ServiceRouterPathRequestMatcher(serviceRouterExposePath))
+                .hasAuthority(serviceRouterRequiredAuthority);
+          } else if (StringUtils.hasText(serviceRouterToken)) {
             request.requestMatchers(new ServiceRouterInternalRequestMatcher(
                     serviceRouterExposePath,
                     serviceRouterHeaderName,
@@ -107,6 +121,14 @@ public class ResourceServerAutoConfiguration {
         .build();
   }
 
+  record ServiceRouterPathRequestMatcher(String exposePath) implements RequestMatcher {
+
+    @Override
+    public boolean matches(final HttpServletRequest request) {
+      return HttpMethod.POST.matches(request.getMethod()) && matchesPath(request, exposePath);
+    }
+  }
+
   record ServiceRouterInternalRequestMatcher(
       String exposePath,
       String headerName,
@@ -118,25 +140,11 @@ public class ResourceServerAutoConfiguration {
       if (!HttpMethod.POST.matches(request.getMethod())) {
         return false;
       }
-      if (!matchesPath(request)) {
+      if (!matchesPath(request, exposePath)) {
         return false;
       }
       String providedToken = request.getHeader(headerName);
       return StringUtils.hasText(providedToken) && constantTimeEquals(providedToken, token);
-    }
-
-    private boolean matchesPath(final HttpServletRequest request) {
-      String servletPath = request.getServletPath();
-      String requestUri = request.getRequestURI();
-      String contextPath = request.getContextPath();
-      if (exposePath.equals(servletPath)) {
-        return true;
-      }
-      if (exposePath.equals(requestUri)) {
-        return true;
-      }
-      return StringUtils.hasText(contextPath) && requestUri.startsWith(contextPath)
-          && exposePath.equals(requestUri.substring(contextPath.length()));
     }
 
     private boolean constantTimeEquals(final String left, final String right) {
@@ -145,6 +153,20 @@ public class ResourceServerAutoConfiguration {
           right.getBytes(StandardCharsets.UTF_8)
       );
     }
+  }
+
+  private static boolean matchesPath(final HttpServletRequest request, final String exposePath) {
+    String servletPath = request.getServletPath();
+    String requestUri = request.getRequestURI();
+    String contextPath = request.getContextPath();
+    if (exposePath.equals(servletPath)) {
+      return true;
+    }
+    if (exposePath.equals(requestUri)) {
+      return true;
+    }
+    return StringUtils.hasText(contextPath) && requestUri.startsWith(contextPath)
+        && exposePath.equals(requestUri.substring(contextPath.length()));
   }
 
   /**

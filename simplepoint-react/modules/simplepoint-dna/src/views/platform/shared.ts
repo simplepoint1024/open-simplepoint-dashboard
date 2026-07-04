@@ -1,4 +1,4 @@
-import {HttpError} from '@simplepoint/shared/api/client';
+import {isHttpError, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 
 export const formatDateTime = (value?: string | null) => {
   if (!value) {
@@ -9,8 +9,8 @@ export const formatDateTime = (value?: string | null) => {
 };
 
 export const resolveErrorMessage = (error: unknown, fallback: string) => {
-  if (error instanceof HttpError && error.body?.trim()) {
-    return error.body.trim();
+  if (isHttpError(error)) {
+    return resolveApiErrorMessage(error, fallback);
   }
   if (error instanceof Error && error.message) {
     return error.message;

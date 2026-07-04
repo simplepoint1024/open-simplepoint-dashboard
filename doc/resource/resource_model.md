@@ -90,10 +90,20 @@ flowchart LR
 
 ## 6. 初始化和插件注册
 
-平台模块通过 `conf/simple-resources.json` 声明资源。`ResourceAutoConfiguration` 在服务首次启动时读取该文件，并调用：
+内置模块通过 `src/main/resources/META-INF/simplepoint/resources/*.json` 声明资源。
+`ResourceAutoConfiguration` 会扫描 classpath 上所有模块声明，并按声明的 `module` 调用：
 
 ```java
-resourceService.sync(applicationName, declarations)
+resourceService.sync(module, declarations)
+```
+
+推荐格式：
+
+```json
+{
+  "module": "simplepoint-dna",
+  "resources": []
+}
 ```
 
 插件通过 `plugin.yaml` 的 `resources` 段声明资源。`PluginResourceContributionHandler` 在插件安装时完成：

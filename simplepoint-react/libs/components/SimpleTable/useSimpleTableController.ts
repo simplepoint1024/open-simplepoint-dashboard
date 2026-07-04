@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { IChangeEvent } from '@rjsf/core';
 import { Modal, message } from 'antd';
 import { useSchema } from '@simplepoint/shared/hooks/useSchema';
-import { HttpError } from '@simplepoint/shared/api/client';
+import { isHttpError, resolveApiErrorMessage } from '@simplepoint/shared/api/client';
 import { del, get, post, put, usePage } from '@simplepoint/shared/api/methods';
 import { useI18n } from '@simplepoint/shared/hooks/useI18n';
 import { getStoredContextId, getStoredRoleId, getStoredTenantId } from '@simplepoint/shared/api/contextId';
@@ -245,10 +245,10 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
           message.success(t('table.deleteSuccess', '删除成功'));
           await refreshTargets(deleteRefreshTargets);
         } catch (e: any) {
-          if (e instanceof HttpError && e.status === 401) {
+          if (isHttpError(e) && e.status === 401) {
             return;
           }
-          message.error(t('table.deleteFail', '删除失败: {msg}', { msg: e?.userMessage || e?.message || '' }));
+          message.error(t('table.deleteFail', '删除失败: {msg}', { msg: resolveApiErrorMessage(e, '') }));
         } finally {
           setSubmitLoading(false);
         }
@@ -299,10 +299,10 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
       setEditingRecord(null);
       await refreshTargets(submitRefreshTargets);
     } catch (e: any) {
-      if (e instanceof HttpError && e.status === 401) {
+      if (isHttpError(e) && e.status === 401) {
         return;
       }
-      message.error(t('table.actionFail', '操作失败: {msg}', { msg: e?.userMessage || e?.message || '' }));
+      message.error(t('table.actionFail', '操作失败: {msg}', { msg: resolveApiErrorMessage(e, '') }));
     } finally {
       setSubmitLoading(false);
     }

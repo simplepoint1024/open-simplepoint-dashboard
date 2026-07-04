@@ -1,14 +1,7 @@
 import api from '@/api';
 import {contextPath} from '@/services';
 import {DownloadOutlined, ReloadOutlined} from '@ant-design/icons';
-import {
-  ensureContextId,
-  getStoredContextId,
-  getStoredRoleId,
-  getStoredTenantId,
-  shouldAutoEnsureContextId,
-  shouldUseTenantContext,
-} from '@simplepoint/shared/api/contextId';
+import {request} from '@simplepoint/shared/api/client';
 import {get, post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {Page} from '@simplepoint/shared/types/request';
@@ -222,30 +215,6 @@ const saveBlob = (blob: Blob, fileName: string) => {
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
-};
-
-const buildJsonHeaders = async (url: string) => {
-  const headers: Record<string, string> = {'Content-Type': 'application/json'};
-  if (!shouldUseTenantContext(url)) {
-    return headers;
-  }
-  const tenantId = getStoredTenantId()?.trim();
-  if (!tenantId) {
-    throw new Error('Tenant context is required');
-  }
-  const roleId = getStoredRoleId(tenantId)?.trim();
-  let contextId = getStoredContextId(tenantId, roleId);
-  headers['X-Tenant-Id'] = tenantId;
-  if (roleId) {
-    headers['X-Role-Id'] = roleId;
-  }
-  if (shouldAutoEnsureContextId(url, contextId)) {
-    contextId = contextId || await ensureContextId(tenantId, { roleId });
-  }
-  if (contextId) {
-    headers['X-Context-Id'] = contextId;
-  }
-  return headers;
 };
 
 const pageContainerStyle = {
@@ -527,16 +496,11 @@ const App = () => {
     setExportFormat(format);
     const hide = message.loading(t('dna.federation.sqlConsole.page.progress.export', '正在导出查询结果...'), 0);
     try {
-      const response = await fetch(exportUrl, {
+      const response = await request<Response>(exportUrl, {
         method: 'POST',
-        credentials: 'include',
-        headers: await buildJsonHeaders(exportUrl),
-        body: JSON.stringify({...payload, format}),
+        json: {...payload, format},
+        responseType: 'response',
       });
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `${response.status} ${response.statusText}`);
-      }
       const blob = await response.blob();
       const fileName = resolveDownloadFileName(
         response.headers.get('content-disposition'),

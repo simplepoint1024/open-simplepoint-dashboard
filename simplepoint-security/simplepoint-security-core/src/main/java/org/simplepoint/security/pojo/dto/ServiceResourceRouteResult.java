@@ -54,12 +54,21 @@ public record ServiceResourceRouteResult(
 
   /**
    * Remote service entry.
+   *
+   * @param name service name
+   * @param entry module federation manifest entry
    */
   public record ServiceEntry(String name, String entry) {
+    /**
+     * Creates a remote service entry with an explicit manifest entry.
+     */
     public static ServiceEntry of(String name, String entry) {
       return new ServiceEntry(name, entry);
     }
 
+    /**
+     * Creates a remote service entry using the default manifest entry.
+     */
     public static ServiceEntry of(String name) {
       return ServiceEntry.of(name, null);
     }

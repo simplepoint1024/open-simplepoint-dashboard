@@ -25,6 +25,7 @@ class RestClientRemoteInvokerTest {
     RestClient.Builder builder = RestClient.builder();
     MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
     ServiceRouterProperties properties = new ServiceRouterProperties();
+    properties.getInternalAuth().setMode("shared-token");
     properties.getInternalAuth().setToken("secret-token");
     RestClientRemoteInvoker invoker = new RestClientRemoteInvoker(builder.build(), properties);
 
@@ -67,6 +68,37 @@ class RestClientRemoteInvokerTest {
     );
 
     assertThat(response.success()).isTrue();
+    server.verify();
+  }
+
+  @Test
+  void invokeAddsBearerTokenWhenOauth2ModeConfigured() {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    ServiceRouterProperties properties = new ServiceRouterProperties();
+    properties.getInternalAuth().setMode("oauth2");
+    RestClientRemoteInvoker invoker = new RestClientRemoteInvoker(
+        builder.build(),
+        properties,
+        () -> "jwt-token"
+    );
+
+    server.expect(requestTo("http://common/_simplepoint/service-router/invoke"))
+        .andExpect(method(HttpMethod.POST))
+        .andExpect(header("Authorization", "Bearer jwt-token"))
+        .andExpect(headerDoesNotExist("X-SimplePoint-Service-Router-Token"))
+        .andRespond(withSuccess(
+            "{\"success\":true,\"data\":\"ok\",\"errorCode\":null,\"message\":null}",
+            MediaType.APPLICATION_JSON
+        ));
+
+    RemoteResponse response = invoker.invoke(
+        new ServiceRoute("common", "common-1", URI.create("http://common"), Map.of()),
+        new RemoteRequest("sample.Service", "1.0", "sync", List.of(), "trace-1")
+    );
+
+    assertThat(response.success()).isTrue();
+    assertThat(response.data()).isEqualTo("ok");
     server.verify();
   }
 }

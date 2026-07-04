@@ -1,9 +1,13 @@
 package com.simplepoint.service.router.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.simplepoint.service.router.invocation.ClientCredentialsServiceRouterAccessTokenProvider;
+import com.simplepoint.service.router.invocation.NoOpServiceRouterAccessTokenProvider;
 import com.simplepoint.service.router.invocation.RemoteInvoker;
 import com.simplepoint.service.router.invocation.RestClientRemoteInvoker;
 import com.simplepoint.service.router.invocation.ServiceInvocationDispatcher;
+import com.simplepoint.service.router.invocation.ServiceRouterAccessTokenProvider;
 import com.simplepoint.service.router.loadbalance.LoadBalancer;
 import com.simplepoint.service.router.loadbalance.RoundRobinLoadBalancer;
 import com.simplepoint.service.router.registry.ApplicationContextLocalServiceRegistry;
@@ -37,7 +41,9 @@ public class ServiceRouterRuntimeConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public ObjectMapper serviceRouterObjectMapper() {
-    return new ObjectMapper();
+    ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new JavaTimeModule());
+    return objectMapper;
   }
 
   /**
@@ -113,19 +119,43 @@ public class ServiceRouterRuntimeConfiguration {
   }
 
   /**
+   * Creates the default service access token provider.
+   *
+   * @param serviceRouterRestClient HTTP client
+   * @param properties router properties
+   * @return access token provider
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public ServiceRouterAccessTokenProvider serviceRouterAccessTokenProvider(
+      final RestClient serviceRouterRestClient,
+      final ServiceRouterProperties properties
+  ) {
+    if ("oauth2".equalsIgnoreCase(properties.getInternalAuth().getMode())) {
+      return new ClientCredentialsServiceRouterAccessTokenProvider(
+          serviceRouterRestClient,
+          properties.getInternalAuth().getOauth2()
+      );
+    }
+    return new NoOpServiceRouterAccessTokenProvider();
+  }
+
+  /**
    * Creates the default remote invoker.
    *
    * @param serviceRouterRestClient HTTP client
    * @param properties router properties
+   * @param accessTokenProvider service access token provider
    * @return remote invoker
    */
   @Bean
   @ConditionalOnMissingBean
   public RemoteInvoker remoteInvoker(
       final RestClient serviceRouterRestClient,
-      final ServiceRouterProperties properties
+      final ServiceRouterProperties properties,
+      final ServiceRouterAccessTokenProvider accessTokenProvider
   ) {
-    return new RestClientRemoteInvoker(serviceRouterRestClient, properties);
+    return new RestClientRemoteInvoker(serviceRouterRestClient, properties, accessTokenProvider);
   }
 
   /**

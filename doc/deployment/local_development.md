@@ -137,7 +137,7 @@ docker compose -f docker/docker-compose.yaml up -d
 补充说明：
 
 - `authorization` 先起来，OIDC issuer 和登录入口就先就位了。
-- `common` 在 `dev` 下会执行数据初始化；默认超级管理员账号也是在这里灌进去的。
+- `common` 在 `dev` 下会执行平台启动贡献；默认超级管理员账号也是在这里注册进去的。
 - `host` 最后起来后，浏览器可以直接从 `http://127.0.0.1:8080` 进入完整登录链路。
 
 ### 5.5 可选：单独启动前端工作区
@@ -170,9 +170,9 @@ pnpm dev:common
 - issuer：`http://127.0.0.1:9000`
 - redirect：`http://127.0.0.1:2555/login/oauth2/code/oidc`
 
-## 7. 初始化数据与默认账号
+## 7. 平台启动贡献与默认账号
 
-`simplepoint-service-common` 的 `application-dev.properties` 会打开开发态数据初始化，并内置一个超级管理员账号：
+`simplepoint-service-common` 的 `application-dev.properties` 会打开开发态平台启动贡献，并内置一个超级管理员账号：
 
 | 项目 | 默认值 |
 | --- | --- |
@@ -183,7 +183,7 @@ pnpm dev:common
 
 首次验证时，建议按下面顺序做：
 
-1. 确认 `common` 已经启动完成并完成初始化。
+1. 确认 `common` 已经启动完成并完成平台启动贡献。
 2. 打开 `http://127.0.0.1:8080`。
 3. 走 host -> authorization 的登录跳转。
 4. 用默认账号登录，确认菜单、路由和页面能正常加载。

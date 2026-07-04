@@ -298,9 +298,9 @@ const App = <T extends object = any>(props: TableProps<T>) => {
 
     // Async override from backend
     if (apiColsKey) {
-      get<{data?: string}>(preferenceUrl(apiColsKey))
+      get<string | undefined>(preferenceUrl(apiColsKey))
         .then(res => {
-          const raw = res?.data;
+          const raw = res;
           if (!raw) return;
           const saved = JSON.parse(raw) as Record<string, any>;
           setColConfigs(prev => {
@@ -405,9 +405,9 @@ const App = <T extends object = any>(props: TableProps<T>) => {
   useEffect(() => {
     colWidthsInitialized.current = false;
     if (!apiWidthsKey) { colWidthsInitialized.current = true; return; }
-    get<{data?: string}>(preferenceUrl(apiWidthsKey))
+    get<string | undefined>(preferenceUrl(apiWidthsKey))
       .then(res => {
-        const raw = res?.data;
+        const raw = res;
         if (!raw) return;
         const saved = JSON.parse(raw) as Record<string, number>;
         setColWidths(saved);

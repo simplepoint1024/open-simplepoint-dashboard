@@ -72,6 +72,9 @@ dependencies {
     implementation(project(":simplepoint-security:simplepoint-security-oauth2-resource"))
     implementation(project(":simplepoint-cache:simplepoint-cache-redis"))
 
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api"))
+
     // 引入服务路由远程调用支持
     implementation(project(":simplepoint-service-router:simplepoint-service-router-core"))
     implementation(project(":simplepoint-service-router:simplepoint-service-router-consul"))

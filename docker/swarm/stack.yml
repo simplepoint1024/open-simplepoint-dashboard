@@ -59,7 +59,11 @@ services:
     image: ${SIMPLEPOINT_AUTH_IMAGE:-simplepoint/authorization:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
-      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+      SIMPLEPOINT_AUTHORIZATION_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AUTHORIZATION_SERVICE_CLIENT_SECRET:-dev-authorization-service-secret}
+      SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET:-dev-common-service-secret}
+      SIMPLEPOINT_AUDITING_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AUDITING_SERVICE_CLIENT_SECRET:-dev-auditing-service-secret}
+      SIMPLEPOINT_DNA_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_DNA_SERVICE_CLIENT_SECRET:-dev-dna-service-secret}
+      SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET:-dev-host-service-secret}
     ports:
       - target: 9000
         published: 9000
@@ -75,7 +79,7 @@ services:
     image: ${SIMPLEPOINT_COMMON_IMAGE:-simplepoint/common:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
-      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+      SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET:-dev-common-service-secret}
     networks:
       - simplepoint
     deploy:
@@ -89,7 +93,7 @@ services:
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
-      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+      SIMPLEPOINT_AUDITING_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AUDITING_SERVICE_CLIENT_SECRET:-dev-auditing-service-secret}
     networks:
       - simplepoint
     deploy:
@@ -103,7 +107,7 @@ services:
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
-      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+      SIMPLEPOINT_DNA_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_DNA_SERVICE_CLIENT_SECRET:-dev-dna-service-secret}
     ports:
       - target: 15432
         published: 15432
@@ -119,7 +123,7 @@ services:
     image: ${SIMPLEPOINT_HOST_IMAGE:-simplepoint/host:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
-      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+      SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET:-dev-host-service-secret}
     ports:
       - target: 8080
         published: 8080

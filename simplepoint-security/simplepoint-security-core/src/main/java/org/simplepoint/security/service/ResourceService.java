@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.api.base.BaseService;
+import org.simplepoint.remoting.RemoteContract;
 import org.simplepoint.security.ResourceDeclaration;
 import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.ResourceNode;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 /**
  * Resource service.
  */
+@RemoteContract(name = "security.resource")
 public interface ResourceService extends BaseService<Resource, String> {
 
   /**

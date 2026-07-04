@@ -1,7 +1,8 @@
 package org.simplepoint.plugin.rbac.core.service.configuration;
 
 import lombok.extern.slf4j.Slf4j;
-import org.simplepoint.api.data.DataInitRegister;
+import org.simplepoint.platform.bootstrap.BootstrapContribution;
+import org.simplepoint.platform.bootstrap.PlatformBootstrapContribution;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.core.service.properties.UserRegistrationProperties;
 import org.springframework.context.annotation.Bean;
@@ -16,22 +17,26 @@ import org.springframework.stereotype.Component;
 public class UserAutoRegistrationInitializer {
 
   /**
-   * Registers a data initialization task for user registration.
+   * Registers a bootstrap contribution for user registration.
    *
-   * <p>This method creates a data initialization task that checks for the existence of specified users
-   * and creates them if they do not already exist in the system. The task is registered under the module name "system-user".</p>
+   * <p>This method creates a bootstrap contribution that checks for the existence of specified users
+   * and creates them if they do not already exist in the system.</p>
    *
    * @param usersService               the service used to manage user details
    * @param userRegistrationProperties the properties containing user registration information
-   * @return a DataInitRegister instance that registers the user registration initialization task
+   * @return a platform bootstrap contribution
    */
   @Bean
-  public DataInitRegister userRegistrationDataInitRegister(
+  public PlatformBootstrapContribution userRegistrationBootstrapContribution(
       UsersService usersService,
       UserRegistrationProperties userRegistrationProperties
   ) {
-    return () -> new org.simplepoint.api.data.InitTask(
+    return () -> BootstrapContribution.versioned(
+        "rbac-core",
+        "system",
         "system-user",
+        "1",
+        100,
         () -> userRegistrationProperties.getUsers().forEach(user -> {
           boolean exists = false;
           try {
@@ -48,6 +53,7 @@ public class UserAutoRegistrationInitializer {
           if (!exists) {
             usersService.create(user);
           }
-        }));
+        })
+    );
   }
 }

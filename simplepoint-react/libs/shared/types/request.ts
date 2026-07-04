@@ -1,37 +1,3 @@
-import {useEffect, useState} from "react";
-import {request as sharedRequest} from '../api/client';
-
-export async function request<T>(url: string, options?: RequestInit): Promise<T> {
-    return await sharedRequest<T>(url, options);
-}
-
-export async function post<T>(url: string, data: any): Promise<T> {
-    return await request<T>(url, {
-        method: 'POST',
-        body: JSON.stringify(data),
-    });
-}
-
-export async function get<T>(url: string, params?: Record<string, any>): Promise<T> {
-    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
-    return await request<T>(`${url}${query}`, {
-        method: 'GET'
-    });
-}
-
-export async function put<T>(url: string, data: any): Promise<T> {
-    return await request<T>(url, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-    });
-}
-
-export async function del<T>(url: string, ids: string[]): Promise<T> {
-    return await request<T>(`${url}?ids=${ids.join(',')}`, {
-        method: 'DELETE',
-    });
-}
-
 /**
  * 空分页
  */
@@ -77,21 +43,4 @@ export function toPagination(page: Page<any>) {
         pageSizeOptions: ['10', '20', '50', '100'],
         showTotal: (total: number) => `共 ${total} 条`,
     }
-}
-
-/**
- * 使用自定义 hook 来获取数据
- * @param fn 返回一个 Promise<Pageable<T>> 的函数
- * @returns 返回数据数组
- */
-export function use<T>(fn: () => Promise<Page<T>>): Array<T> {
-    const [data, setData] = useState<Array<T>>([]);
-    useEffect(() => {
-        const fetch = async () => {
-            const {content} = await fn();
-            setData(content);
-        };
-        fetch().then();
-    }, []);
-    return data;
 }
