@@ -26,6 +26,11 @@ export default {
     i18nNamespaces: ['permissions'],
     name: 'permissions'
   },
+  'rbac-access-center': {
+    baseUrl: `${contextPath}/access-center`,
+    i18nNamespaces: ['access-center', 'roles', 'permissions', 'data-scopes', 'field-scopes', 'table', 'common'],
+    name: 'access-center'
+  },
   'i18n-countries': {
     baseUrl: `${contextPath}/i18n/countries`,
     i18nNamespaces: ['countries'],

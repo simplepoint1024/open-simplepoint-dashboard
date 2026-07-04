@@ -1,0 +1,270 @@
+.access-center {
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) minmax(560px, 1fr) minmax(260px, 320px);
+  gap: 16px;
+  min-height: calc(100vh - 154px);
+  height: calc(100vh - 154px);
+  color: #1f2933;
+}
+
+.access-center-roles,
+.access-center-main,
+.access-center-impact {
+  min-height: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.access-center-roles,
+.access-center-impact {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+
+.access-center-toolbar,
+.access-center-main-head,
+.access-center-impact-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.access-center-toolbar {
+  margin-bottom: 12px;
+}
+
+.access-center-role-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  margin-top: 12px;
+  overflow: auto;
+}
+
+.access-center-role-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 8px;
+  width: 100%;
+  min-height: 72px;
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.access-center-role-item:hover {
+  border-color: #91caff;
+  background: #f6fbff;
+}
+
+.access-center-role-item-active {
+  border-color: #1677ff;
+  background: #eef6ff;
+}
+
+.access-center-role-name {
+  min-width: 0;
+  font-weight: 600;
+  color: #172033;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-center-role-code {
+  grid-column: 1 / span 2;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  color: #667085;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-center-role-meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.access-center-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 16px;
+}
+
+.access-center-main-head {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.access-center-main-head h4 {
+  margin: 0 0 4px;
+}
+
+.access-center-scope-band {
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) minmax(180px, 280px) auto;
+  align-items: end;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.access-center-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.access-center-field > span {
+  font-size: 12px;
+  color: #667085;
+}
+
+.access-center-save-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 32px;
+  color: #667085;
+  white-space: nowrap;
+}
+
+.access-center-transfer {
+  flex: 1;
+  min-height: 360px;
+}
+
+.access-center-impact {
+  gap: 14px;
+  overflow: auto;
+}
+
+.access-center-metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.access-center-metric {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  padding: 10px;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.access-center-metric > span {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.access-center-metric > small {
+  grid-column: 1 / span 2;
+  color: #667085;
+}
+
+.access-center-impact-section {
+  padding-top: 12px;
+  border-top: 1px solid #edf0f3;
+}
+
+.access-center-impact-section > div {
+  margin-top: 6px;
+  color: #172033;
+}
+
+.access-center-user-impact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.access-center-user-row {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.access-center-user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f3f6f8;
+  color: #42526d;
+}
+
+.access-center-user-row strong,
+.access-center-user-row small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-center-user-row small {
+  margin-top: 2px;
+  color: #667085;
+}
+
+.access-center-status-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #237804;
+}
+
+@media (max-width: 1180px) {
+  .access-center {
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+    height: auto;
+  }
+
+  .access-center-impact {
+    grid-column: 1 / span 2;
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 840px) {
+  .access-center {
+    grid-template-columns: 1fr;
+  }
+
+  .access-center-impact {
+    grid-column: auto;
+  }
+
+  .access-center-scope-band {
+    grid-template-columns: 1fr;
+  }
+
+  .access-center-save-state {
+    justify-content: flex-start;
+  }
+}

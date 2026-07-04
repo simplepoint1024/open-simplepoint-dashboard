@@ -1,0 +1,14 @@
+{
+  "accessCenter.roleList.title": "Roles",
+  "accessCenter.roleList.search": "Search roles",
+  "accessCenter.message.saved": "Authorization saved",
+  "accessCenter.message.saveFailed": "Failed to save authorization",
+  "accessCenter.message.loadFailed": "Failed to load access center",
+  "accessCenter.state.synced": "Synced",
+  "accessCenter.empty.role": "Select a role",
+  "accessCenter.impact.title": "Impact",
+  "accessCenter.impact.users": "Assigned Users",
+  "accessCenter.impact.auditReady": "Changes are recorded in permission audit",
+  "accessCenter.metric.permissions": "Permissions",
+  "accessCenter.metric.users": "Users"
+}

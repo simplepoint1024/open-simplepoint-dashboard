@@ -7,7 +7,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyCollection;
 import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -34,6 +33,7 @@ import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.data.initialize.DataInitializeExecutor;
 import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
+import org.simplepoint.plugin.rbac.core.api.repository.PermissionsRepository;
 import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuAncestorRepository;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuFeatureRelevanceRepository;
@@ -64,6 +64,9 @@ class MenuServiceImplTest {
 
   @Mock
   PermissionsService permissionsService;
+
+  @Mock
+  PermissionsRepository permissionsRepository;
 
   @Mock
   FeatureService featureService;
@@ -403,22 +406,31 @@ class MenuServiceImplTest {
   // ── sync ─────────────────────────────────────────────────────────────────
 
   @Test
-  void sync_callsDataInitializeExecutorForBothTasks() {
+  void sync_withConfiguredMenu_upsertsMenuDirectly() {
     MenuChildren child = new MenuChildren();
     child.setPath("/home");
     child.setPermissions(null);
     child.setChildren(null);
 
+    when(menuRepository.loadAll()).thenReturn(Collections.emptyList()).thenReturn(Collections.emptyList());
+    when(menuRepository.save(any())).thenAnswer(inv -> {
+      Menu menu = inv.getArgument(0);
+      menu.setId("home-menu");
+      return menu;
+    });
+    when(detailsProviderService.getDialects(any())).thenReturn(Collections.emptySet());
+
     service.sync("test-service", Set.of(child));
 
-    verify(dataInitializeManager, times(2)).execute(any(), any());
+    verify(menuRepository).save(any());
+    verifyNoInteractions(dataInitializeManager);
   }
 
   @Test
-  void sync_withEmptyData_callsInitializeManager() {
+  void sync_withEmptyData_skipsPersistenceAndInitializer() {
     service.sync("test-service", Collections.emptySet());
 
-    verify(dataInitializeManager, times(2)).execute(any(), any());
+    verifyNoInteractions(dataInitializeManager, menuRepository, permissionsService, featureService);
   }
 
   // ── buildMenuTree with clearUnnecessaryFields ─────────────────────────────
@@ -551,25 +563,16 @@ class MenuServiceImplTest {
     }
   }
 
-  // ── sync with executor running lambdas (covers private init methods) ─────
+  // ── sync init methods ───────────────────────────────────────────────────
 
   @Test
-  void sync_withExecutorRunningLambdas_coversInitMethods() throws Exception {
-    // Make dataInitializeManager.execute() actually invoke the lambda
-    doAnswer(inv -> {
-      org.simplepoint.api.data.InitTask.Initializer initializer = inv.getArgument(1);
-      initializer.run();
-      return true;
-    }).when(dataInitializeManager).execute(any(), any());
-
-    // Minimal MenuChildren with no permissions, no children
+  void sync_withConfiguredMenu_coversInitMethods() {
     MenuChildren child = new MenuChildren();
     child.setPath("/home");
     child.setAuthority(".home");
     child.setPermissions(null);
     child.setChildren(null);
 
-    // Stubs for initializeMenusAndPermissions -> this.create()
     when(menuRepository.save(any())).thenAnswer(inv -> {
       Menu m = inv.getArgument(0);
       m.setId("generated-id");
@@ -577,25 +580,18 @@ class MenuServiceImplTest {
     });
     when(detailsProviderService.getDialects(any())).thenReturn(Collections.emptySet());
 
-    // Stubs for initializeFeaturesAndRelations -> menuRepository.loadAll()
     Menu loaded = menuWithPath("generated-id", "/home");
     loaded.setAuthority(".home");
-    when(menuRepository.loadAll()).thenReturn(List.of(loaded));
+    when(menuRepository.loadAll()).thenReturn(Collections.emptyList()).thenReturn(List.of(loaded));
 
     service.sync("test-service", Set.of(child));
 
-    verify(dataInitializeManager, times(2)).execute(any(), any());
     verify(menuRepository).save(any());
+    verifyNoInteractions(dataInitializeManager);
   }
 
   @Test
-  void sync_withExistingFeatureDefinition_doesNotCreateDuplicateFeature() throws Exception {
-    doAnswer(inv -> {
-      org.simplepoint.api.data.InitTask.Initializer initializer = inv.getArgument(1);
-      initializer.run();
-      return true;
-    }).when(dataInitializeManager).execute(any(), any());
-
+  void sync_withExistingFeatureDefinition_doesNotCreateDuplicateFeature() {
     org.simplepoint.security.MenuFeatureDefinition definition = new org.simplepoint.security.MenuFeatureDefinition();
     definition.setCode("dashboard");
     definition.setName("Dashboard");
@@ -620,7 +616,7 @@ class MenuServiceImplTest {
 
     Menu loaded = menuWithPath("dashboard-menu", "/dashboard");
     loaded.setAuthority("dashboard");
-    when(menuRepository.loadAll()).thenReturn(List.of(loaded));
+    when(menuRepository.loadAll()).thenReturn(Collections.emptyList()).thenReturn(List.of(loaded));
 
     org.simplepoint.plugin.rbac.tenant.api.entity.Feature existing = new org.simplepoint.plugin.rbac.tenant.api.entity.Feature();
     existing.setId("existing-feature");
@@ -633,7 +629,6 @@ class MenuServiceImplTest {
     when(featureService.findAllByCodes(Set.of("dashboard"))).thenReturn(List.of(existing));
     when(featureService.authorizedPermissions("dashboard")).thenReturn(List.of("dashboard.view"));
     when(menuFeatureRelevanceRepository.authorized("dashboard-menu")).thenReturn(List.of("dashboard"));
-    when(permissionsService.findAll(any())).thenReturn(Collections.emptyList());
 
     service.sync("svc", Set.of(child));
 
@@ -642,13 +637,29 @@ class MenuServiceImplTest {
   }
 
   @Test
-  void sync_withPermissionsAndChildren_executesAll() throws Exception {
-    doAnswer(inv -> {
-      org.simplepoint.api.data.InitTask.Initializer initializer = inv.getArgument(1);
-      initializer.run();
-      return true;
-    }).when(dataInitializeManager).execute(any(), any());
+  void sync_withExistingMenu_updatesInsteadOfCreatingDuplicate() {
+    Menu existing = menuWithPath("existing-menu", "/home");
+    existing.setAuthority(".home");
 
+    MenuChildren child = new MenuChildren();
+    child.setPath("/home");
+    child.setAuthority(".home");
+    child.setPermissions(null);
+    child.setChildren(null);
+
+    when(menuRepository.loadAll()).thenReturn(List.of(existing)).thenReturn(List.of(existing));
+    when(menuRepository.updateById(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    service.sync("svc", Set.of(child));
+
+    verify(menuRepository, never()).save(any());
+    verify(menuRepository).updateById(argThat(menu ->
+        "existing-menu".equals(menu.getId()) && "/home".equals(menu.getPath())
+    ));
+  }
+
+  @Test
+  void sync_withPermissionsAndChildren_executesAll() {
     org.simplepoint.security.entity.Permissions perm = new org.simplepoint.security.entity.Permissions();
     perm.setAuthority("menu.view");
     perm.setType(1);
@@ -667,8 +678,7 @@ class MenuServiceImplTest {
     // permissionsService.create(Collection) - no stub needed, return null is fine since result unused
 
     Menu loaded = menuWithPath("s-id", "/settings");
-    when(menuRepository.loadAll()).thenReturn(List.of(loaded));
-    when(permissionsService.findAll(any())).thenReturn(Collections.emptyList());
+    when(menuRepository.loadAll()).thenReturn(Collections.emptyList()).thenReturn(List.of(loaded));
 
     service.sync("svc", Set.of(child));
 

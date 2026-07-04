@@ -29,6 +29,7 @@
   "menu.ops.microApplication": "Micro Application Management",
 
   "menu.system": "System Configuration",
+  "menu.system.accessCenter": "Access Center",
   "menu.system.permission": "Permission Management",
   "menu.system.oauthClient": "OAuth Client Management",
   "menu.system.client": "Application Management",

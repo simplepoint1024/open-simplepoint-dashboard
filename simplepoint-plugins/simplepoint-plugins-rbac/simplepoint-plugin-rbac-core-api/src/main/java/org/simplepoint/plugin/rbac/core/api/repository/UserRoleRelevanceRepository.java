@@ -2,6 +2,7 @@ package org.simplepoint.plugin.rbac.core.api.repository;
 
 import java.util.List;
 import java.util.Set;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.AccessCenterUserImpactVo;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 
@@ -28,6 +29,24 @@ public interface UserRoleRelevanceRepository {
    * @param authorities a set of authorities to be removed from the user
    */
   void unauthorized(String tenantId, String userId, Set<String> authorities);
+
+  /**
+   * Counts users assigned to a role in the tenant scope.
+   *
+   * @param tenantId tenant scope
+   * @param roleId role identifier
+   * @return number of users assigned to the role
+   */
+  long countByTenantIdAndRoleId(String tenantId, String roleId);
+
+  /**
+   * Loads users assigned to a role in the tenant scope.
+   *
+   * @param tenantId tenant scope
+   * @param roleId role identifier
+   * @return assigned user summaries
+   */
+  List<AccessCenterUserImpactVo> findUsersByTenantIdAndRoleId(String tenantId, String roleId);
 
   /**
    * Load a user by their phone number or email address.

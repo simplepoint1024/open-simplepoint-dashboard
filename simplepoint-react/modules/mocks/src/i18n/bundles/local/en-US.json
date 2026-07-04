@@ -1,4 +1,18 @@
 {
+  "access-center": {
+    "accessCenter.empty.role": "Select a role",
+    "accessCenter.impact.auditReady": "Changes are recorded in permission audit",
+    "accessCenter.impact.title": "Impact",
+    "accessCenter.impact.users": "Assigned Users",
+    "accessCenter.message.loadFailed": "Failed to load access center",
+    "accessCenter.message.saveFailed": "Failed to save authorization",
+    "accessCenter.message.saved": "Authorization saved",
+    "accessCenter.metric.permissions": "Permissions",
+    "accessCenter.metric.users": "Users",
+    "accessCenter.roleList.search": "Search roles",
+    "accessCenter.roleList.title": "Roles",
+    "accessCenter.state.synced": "Synced"
+  },
   "applications": {
     "applications.button.config.feature": "Configure Features",
     "applications.description.code": "Unique application code used by the system",
@@ -45,6 +59,7 @@
     "app.title": "Simple·Point Platform",
     "cancel": "Cancel",
     "common.no": "No",
+    "common.refresh": "Refresh",
     "common.yes": "Yes",
     "dashboard.activities.title": "Recent Activities",
     "dashboard.activity.1.title": "Added application @simplepoint-common",
@@ -1267,6 +1282,7 @@
     "menu.profile": "Profile",
     "menu.settings": "System Settings",
     "menu.system": "System Configuration",
+    "menu.system.accessCenter": "Access Center",
     "menu.system.auth": "Authorization Management",
     "menu.system.client": "Application Management",
     "menu.system.data": "Data Permissions",

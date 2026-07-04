@@ -28,6 +28,7 @@ import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.data.initialize.DataInitializeExecutor;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.PermissionChangeLogRecordCommand;
 import org.simplepoint.plugin.auditing.logging.api.service.PermissionChangeLogRemoteService;
+import org.simplepoint.plugin.rbac.core.api.repository.PermissionsRepository;
 import org.simplepoint.plugin.rbac.core.api.service.PermissionsService;
 import org.simplepoint.plugin.rbac.menu.api.entity.MenuFeatureRelevance;
 import org.simplepoint.plugin.rbac.menu.api.repository.MenuAncestorRepository;
@@ -76,6 +77,8 @@ public class MenuServiceImpl
 
   private final PermissionsService permissionsService;
 
+  private final PermissionsRepository permissionsRepository;
+
   private final FeatureService featureService;
 
   private final MenuFeatureRelevanceRepository menuFeatureRelevanceRepository;
@@ -106,6 +109,7 @@ public class MenuServiceImpl
       final DetailsProviderService detailsProviderService,
       final MenuAncestorRepository menuAncestorRepository,
       final PermissionsService permissionsService,
+      final PermissionsRepository permissionsRepository,
       final FeatureService featureService,
       final MenuFeatureRelevanceRepository menuFeatureRelevanceRepository,
       final MicroAppService microAppService,
@@ -115,6 +119,7 @@ public class MenuServiceImpl
     super(repository, detailsProviderService);
     this.menuAncestorRepository = menuAncestorRepository;
     this.permissionsService = permissionsService;
+    this.permissionsRepository = permissionsRepository;
     this.featureService = featureService;
     this.menuFeatureRelevanceRepository = menuFeatureRelevanceRepository;
     this.microAppService = microAppService;
@@ -214,26 +219,39 @@ public class MenuServiceImpl
      * @param data the set of menu children to synchronize
      */
   @Override
-  @Transactional(propagation = Propagation.SUPPORTS, rollbackFor = Exception.class)
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
   public void sync(String serviceName, Set<MenuChildren> data) {
     log.info("Menu sync started for service: {}", serviceName);
     adminRoutesCache = null;
-    dataInitializeManager.execute("menu-[" + serviceName + "]-permission-initialize", () -> initializeMenusAndPermissions(data));
-    dataInitializeManager.execute("menu-[" + serviceName + "]feature-initialize", () -> initializeFeaturesAndRelations(data));
+    initializeMenusAndPermissions(data);
+    initializeFeaturesAndRelations(data);
     synchronizePermissionTypes(data);
     log.info("Menu sync completed for service: {}", serviceName);
   }
 
   private void initializeMenusAndPermissions(Set<MenuChildren> data) {
+    if (data == null || data.isEmpty()) {
+      return;
+    }
+    Map<String, Menu> menusByAuthority = new HashMap<>();
+    Map<String, Menu> menusByPath = new HashMap<>();
+    for (Menu menu : getRepository().loadAll()) {
+      indexMenu(menusByAuthority, menusByPath, menu);
+    }
+    Set<String> knownPermissionAuthorities = loadExistingPermissionAuthorities();
+
     var blockingQueue = new ArrayDeque<>(data);
     while (!blockingQueue.isEmpty()) {
       MenuChildren current = blockingQueue.poll();
-      Menu currentMenu = this.create(current.toMenu());
-      Set<Permissions> permissions = current.getPermissions();
-      if (permissions != null && !permissions.isEmpty()) {
-        permissionsService.create(permissions);
-        permissionsService.flush();
+      Menu currentMenu = current.toMenu();
+      Menu existing = resolveMenu(menusByAuthority, menusByPath, current);
+      if (existing != null) {
+        currentMenu.setId(existing.getId());
       }
+      currentMenu = this.initializeMenu(currentMenu);
+      indexMenu(menusByAuthority, menusByPath, currentMenu);
+      initializePermissions(current.getPermissions(), knownPermissionAuthorities);
+
       Set<MenuChildren> children = current.getChildren();
       if (children != null && !children.isEmpty()) {
         for (MenuChildren child : children) {
@@ -244,7 +262,60 @@ public class MenuServiceImpl
     }
   }
 
+  private void initializePermissions(Set<Permissions> permissions, Set<String> knownPermissionAuthorities) {
+    if (permissions == null || permissions.isEmpty()) {
+      return;
+    }
+    Set<String> authorities = permissions.stream()
+        .map(Permissions::getAuthority)
+        .filter(authority -> authority != null && !authority.isBlank())
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+    if (authorities.isEmpty()) {
+      return;
+    }
+    List<Permissions> missing = permissions.stream()
+        .filter(permission -> permission.getAuthority() != null && !permission.getAuthority().isBlank())
+        .filter(permission -> !knownPermissionAuthorities.contains(permission.getAuthority()))
+        .toList();
+    if (missing.isEmpty()) {
+      return;
+    }
+    permissionsService.create(new ArrayList<>(missing));
+    permissionsService.flush();
+    knownPermissionAuthorities.addAll(missing.stream()
+        .map(Permissions::getAuthority)
+        .filter(authority -> authority != null && !authority.isBlank())
+        .collect(Collectors.toSet()));
+  }
+
+  private Set<String> loadExistingPermissionAuthorities() {
+    return loadAllPermissionsForInitialization().stream()
+        .map(Permissions::getAuthority)
+        .filter(authority -> authority != null && !authority.isBlank())
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  private List<Permissions> loadAllPermissionsForInitialization() {
+    List<Permissions> permissions = permissionsRepository.findAll(Map.of());
+    return permissions == null ? List.of() : permissions;
+  }
+
+  private void indexMenu(Map<String, Menu> menusByAuthority, Map<String, Menu> menusByPath, Menu menu) {
+    if (menu == null) {
+      return;
+    }
+    if (menu.getAuthority() != null && !menu.getAuthority().isBlank()) {
+      menusByAuthority.put(menu.getAuthority(), menu);
+    }
+    if (menu.getPath() != null && !menu.getPath().isBlank()) {
+      menusByPath.put(menu.getPath(), menu);
+    }
+  }
+
   private void initializeFeaturesAndRelations(Set<MenuChildren> data) {
+    if (data == null || data.isEmpty()) {
+      return;
+    }
     Collection<Menu> initializedMenus = getRepository().loadAll();
     Map<String, Menu> menusByAuthority = initializedMenus.stream()
         .filter(menu -> menu.getAuthority() != null && !menu.getAuthority().isBlank())
@@ -280,7 +351,7 @@ public class MenuServiceImpl
       return;
     }
 
-    List<Permissions> updates = permissionsService.findAll(Map.of()).stream()
+    List<Permissions> updates = loadAllPermissionsForInitialization().stream()
         .filter(permission -> permission.getAuthority() != null && configuredTypes.containsKey(permission.getAuthority()))
         .filter(permission -> !Objects.equals(permission.getType(), configuredTypes.get(permission.getAuthority())))
         .map(permission -> {
@@ -297,9 +368,9 @@ public class MenuServiceImpl
 
     log.info("Synchronizing permission types for {} permissions from menu configuration", updates.size());
     for (Permissions update : updates) {
-      permissionsService.modifyById(update);
+      permissionsRepository.save(update);
     }
-    permissionsService.flush();
+    permissionsRepository.flush();
   }
 
   private void collectPermissionTypes(Set<MenuChildren> menus, Map<String, Integer> configuredTypes) {

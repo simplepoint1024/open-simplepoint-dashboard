@@ -25,6 +25,7 @@
   "menu.ops.microPlugin": "插件市场",
   "menu.ops.microApplication": "微应用管理",
   "menu.system": "系统配置",
+  "menu.system.accessCenter": "权限中心",
   "menu.system.permission": "权限管理",
   "menu.system.oauthClient": "客户端管理",
   "menu.system.client": "应用管理",

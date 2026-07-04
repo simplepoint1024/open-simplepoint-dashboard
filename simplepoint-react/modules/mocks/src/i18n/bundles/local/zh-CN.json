@@ -1,4 +1,18 @@
 {
+  "access-center": {
+    "accessCenter.empty.role": "请选择角色",
+    "accessCenter.impact.auditReady": "变更会写入权限审计",
+    "accessCenter.impact.title": "影响范围",
+    "accessCenter.impact.users": "已分配用户",
+    "accessCenter.message.loadFailed": "权限中心加载失败",
+    "accessCenter.message.saveFailed": "授权保存失败",
+    "accessCenter.message.saved": "授权已保存",
+    "accessCenter.metric.permissions": "权限",
+    "accessCenter.metric.users": "用户",
+    "accessCenter.roleList.search": "搜索角色",
+    "accessCenter.roleList.title": "角色",
+    "accessCenter.state.synced": "已同步"
+  },
   "applications": {
     "applications.button.config.feature": "配置功能",
     "applications.description.code": "用于系统识别的唯一应用编码",
@@ -45,6 +59,7 @@
     "app.title": "Simple·Point 平台",
     "cancel": "取消",
     "common.no": "否",
+    "common.refresh": "刷新",
     "common.yes": "是",
     "dashboard.activities.title": "最近动态",
     "dashboard.activity.1.title": "新增应用 @simplepoint-common",
@@ -1267,6 +1282,7 @@
     "menu.profile": "个人资料",
     "menu.settings": "系统设置",
     "menu.system": "系统配置",
+    "menu.system.accessCenter": "权限中心",
     "menu.system.auth": "授权管理",
     "menu.system.client": "应用管理",
     "menu.system.data": "数据权限",

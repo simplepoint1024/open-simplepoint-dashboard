@@ -44,6 +44,38 @@
     ],
     "children": [
       {
+        "label": "权限中心",
+        "title": "menu.system.accessCenter",
+        "icon": "SafetyCertificateOutlined",
+        "path": "/system/access-center",
+        "authority": "access-center.view",
+        "sort": -1,
+        "type": "item",
+        "component": "common/system/AccessCenter",
+        "disabled": false,
+        "permissions": [
+          {
+            "name": "Access Center View",
+            "authority": "access-center.view",
+            "resource": "/system/access-center",
+            "description": "允许访问权限中心",
+            "type": 0,
+            "feature": {
+              "name": "Access Center",
+              "description": "Unified access-control workbench",
+              "code": "access-center"
+            }
+          },
+          {
+            "name": "Access Center Manage",
+            "authority": "access-center.manage",
+            "resource": "/system/access-center",
+            "description": "允许在权限中心统一配置角色授权",
+            "type": 1
+          }
+        ]
+      },
+      {
         "label": "用户管理",
         "title": "menu.system.user",
         "icon": "UserOutlined",

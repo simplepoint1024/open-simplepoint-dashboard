@@ -100,6 +100,7 @@
   "action.search": "查询",
   "common.yes": "是",
   "common.no": "否",
+  "common.refresh": "刷新",
   "error.403": "抱歉，您没有访问该页面的权限",
   "error.backHome": "返回首页",
   "error.componentCrashedSub": "组件渲染异常，请刷新后重试",
