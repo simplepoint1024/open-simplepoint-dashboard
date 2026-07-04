@@ -33,6 +33,19 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
   private static final String HEADER_USER_ID = "X-User-Id";
   private static final String HEADER_SCOPE_TYPE = "X-Scope-Type";
   private static final String HEADER_ACTOR_ROLE = "X-Actor-Role";
+  private static final Set<String> CONTEXT_EXCLUDED_EXACT_PATHS = Set.of(
+      "/error"
+  );
+  private static final Set<String> CONTEXT_EXCLUDED_PATH_PREFIXES = Set.of(
+      "/actuator/",
+      "/static/",
+      "/mf/",
+      "/v3/api-docs/",
+      "/swagger-ui/",
+      "/css/",
+      "/js/",
+      "/images/"
+  );
   private static final Set<String> CACHED_CONTEXT_PROTECTED_HEADERS = Set.of(
       HEADER_TENANT_ID,
       HEADER_ROLE_ID,
@@ -59,6 +72,13 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
   @Override
   protected boolean shouldNotFilterErrorDispatch() {
     return true;
+  }
+
+  @Override
+  protected boolean shouldNotFilter(@Nonnull HttpServletRequest request) {
+    String path = requestPath(request);
+    return CONTEXT_EXCLUDED_EXACT_PATHS.contains(path)
+        || CONTEXT_EXCLUDED_PATH_PREFIXES.stream().anyMatch(path::startsWith);
   }
 
   @Override
@@ -134,6 +154,19 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
       }
     });
     return safeHeaders;
+  }
+
+  private String requestPath(HttpServletRequest request) {
+    String servletPath = request.getServletPath();
+    if (StringUtils.hasText(servletPath)) {
+      return servletPath;
+    }
+    String requestUri = request.getRequestURI();
+    String contextPath = request.getContextPath();
+    if (StringUtils.hasText(contextPath) && requestUri.startsWith(contextPath)) {
+      return requestUri.substring(contextPath.length());
+    }
+    return requestUri;
   }
 
   private String normalize(String value) {

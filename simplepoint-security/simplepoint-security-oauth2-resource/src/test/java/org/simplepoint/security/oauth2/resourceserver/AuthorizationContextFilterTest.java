@@ -73,6 +73,25 @@ class AuthorizationContextFilterTest {
   }
 
   @Test
+  void doFilter_skipsMfAssetsEvenWhenAuthorizationHeaderPresent() throws ServletException, IOException {
+    AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
+    final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/mf/mf-manifest.json");
+    request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
+    MockHttpServletResponse response = new MockHttpServletResponse();
+
+    final boolean[] chainCalled = new boolean[1];
+    FilterChain chain = (req, res) -> chainCalled[0] = true;
+
+    filter.doFilter(request, response, chain);
+
+    assertThat(chainCalled[0]).isTrue();
+    verifyNoInteractions(resolver);
+    assertThat(RequestContextHolder.getContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, AuthorizationContext.class))
+        .isNull();
+  }
+
+  @Test
   void doFilterInternal_rejectsCachedContextWhenTenantDoesNotMatch() throws ServletException, IOException {
     AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
     AuthorizationContext cached = new AuthorizationContext();
