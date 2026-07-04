@@ -11,6 +11,12 @@ build
 !simplepoint-services/simplepoint-service-common/build/
 !simplepoint-services/simplepoint-service-common/build/install/
 !simplepoint-services/simplepoint-service-common/build/install/**
+!simplepoint-services/simplepoint-service-auditing/build/
+!simplepoint-services/simplepoint-service-auditing/build/install/
+!simplepoint-services/simplepoint-service-auditing/build/install/**
+!simplepoint-services/simplepoint-service-dna/build/
+!simplepoint-services/simplepoint-service-dna/build/install/
+!simplepoint-services/simplepoint-service-dna/build/install/**
 !simplepoint-services/simplepoint-service-host/build/
 !simplepoint-services/simplepoint-service-host/build/install/
 !simplepoint-services/simplepoint-service-host/build/install/**

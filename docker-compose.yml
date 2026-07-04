@@ -67,6 +67,7 @@ services:
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
+      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
     ports:
       - "9000:9000"
     depends_on:
@@ -99,6 +100,7 @@ services:
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
+      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
     ports:
       - "7000:7000"
     depends_on:
@@ -110,6 +112,73 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:7000/actuator/health >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  auditing:
+    build:
+      context: .
+      dockerfile: docker/swarm/app/Dockerfile
+      args:
+        APP_GRADLE_PATH: :simplepoint-services:simplepoint-service-auditing
+        APP_INSTALL_DIR: simplepoint-services/simplepoint-service-auditing/build/install/simplepoint-service-auditing
+        APP_START_SCRIPT: /opt/simplepoint/bin/simplepoint-service-auditing
+        APP_USE_PREBUILT: ${SIMPLEPOINT_USE_PREBUILT:-true}
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
+      SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
+      SIMPLEPOINT_WAIT_TIMEOUT: 240
+      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+    ports:
+      - "6000:6000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      authorization:
+        condition: service_healthy
+      common:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:6000/actuator/health >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  dna:
+    build:
+      context: .
+      dockerfile: docker/swarm/app/Dockerfile
+      args:
+        APP_GRADLE_PATH: :simplepoint-services:simplepoint-service-dna
+        APP_INSTALL_DIR: simplepoint-services/simplepoint-service-dna/build/install/simplepoint-service-dna
+        APP_START_SCRIPT: /opt/simplepoint/bin/simplepoint-service-dna
+        APP_USE_PREBUILT: ${SIMPLEPOINT_USE_PREBUILT:-true}
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
+      SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
+      SIMPLEPOINT_WAIT_TIMEOUT: 240
+      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+    ports:
+      - "2777:2777"
+      - "15432:15432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      authorization:
+        condition: service_healthy
+      common:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:2777/actuator/health >/dev/null"]
       interval: 15s
       timeout: 5s
       retries: 20
@@ -129,6 +198,7 @@ services:
       SIMPLEPOINT_WAIT_FOR: redis:6379,consul:8500
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
+      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
     ports:
       - "8080:8080"
     depends_on:

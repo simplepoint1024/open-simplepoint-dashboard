@@ -79,7 +79,10 @@ main() {
   export SIMPLEPOINT_BOOTSTRAP_IMAGE="${SIMPLEPOINT_BOOTSTRAP_IMAGE:-simplepoint/bootstrap:swarm}"
   export SIMPLEPOINT_AUTH_IMAGE="${SIMPLEPOINT_AUTH_IMAGE:-simplepoint/authorization:swarm}"
   export SIMPLEPOINT_COMMON_IMAGE="${SIMPLEPOINT_COMMON_IMAGE:-simplepoint/common:swarm}"
+  export SIMPLEPOINT_AUDITING_IMAGE="${SIMPLEPOINT_AUDITING_IMAGE:-simplepoint/auditing:swarm}"
+  export SIMPLEPOINT_DNA_IMAGE="${SIMPLEPOINT_DNA_IMAGE:-simplepoint/dna:swarm}"
   export SIMPLEPOINT_HOST_IMAGE="${SIMPLEPOINT_HOST_IMAGE:-simplepoint/host:swarm}"
+  export SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN="${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}"
 
   build_image "${SIMPLEPOINT_BOOTSTRAP_IMAGE}" -f "${ROOT_DIR}/docker/swarm/bootstrap/Dockerfile" "${ROOT_DIR}"
   build_image "${SIMPLEPOINT_AUTH_IMAGE}" \
@@ -91,6 +94,16 @@ main() {
     --build-arg APP_GRADLE_PATH=":simplepoint-services:simplepoint-service-common" \
     --build-arg APP_INSTALL_DIR="simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common" \
     --build-arg APP_START_SCRIPT="/opt/simplepoint/bin/simplepoint-service-common" \
+    -f "${ROOT_DIR}/docker/swarm/app/Dockerfile" "${ROOT_DIR}"
+  build_image "${SIMPLEPOINT_AUDITING_IMAGE}" \
+    --build-arg APP_GRADLE_PATH=":simplepoint-services:simplepoint-service-auditing" \
+    --build-arg APP_INSTALL_DIR="simplepoint-services/simplepoint-service-auditing/build/install/simplepoint-service-auditing" \
+    --build-arg APP_START_SCRIPT="/opt/simplepoint/bin/simplepoint-service-auditing" \
+    -f "${ROOT_DIR}/docker/swarm/app/Dockerfile" "${ROOT_DIR}"
+  build_image "${SIMPLEPOINT_DNA_IMAGE}" \
+    --build-arg APP_GRADLE_PATH=":simplepoint-services:simplepoint-service-dna" \
+    --build-arg APP_INSTALL_DIR="simplepoint-services/simplepoint-service-dna/build/install/simplepoint-service-dna" \
+    --build-arg APP_START_SCRIPT="/opt/simplepoint/bin/simplepoint-service-dna" \
     -f "${ROOT_DIR}/docker/swarm/app/Dockerfile" "${ROOT_DIR}"
   build_image "${SIMPLEPOINT_HOST_IMAGE}" \
     --build-arg APP_GRADLE_PATH=":simplepoint-services:simplepoint-service-host" \

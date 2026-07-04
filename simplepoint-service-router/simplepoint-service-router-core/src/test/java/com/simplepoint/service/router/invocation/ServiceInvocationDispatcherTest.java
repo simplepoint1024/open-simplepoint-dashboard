@@ -11,7 +11,9 @@ import com.simplepoint.service.router.registry.LocalRoutedService;
 import com.simplepoint.service.router.registry.LocalServiceRegistry;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ServiceInvocationDispatcherTest {
@@ -32,11 +34,44 @@ class ServiceInvocationDispatcherTest {
     assertThat(response.data()).isEqualTo("Hello Ada");
   }
 
+  @Test
+  void dispatchesGenericCollectionArgumentToLocalBean() {
+    RoutedServiceMetadata metadata = RoutedServiceMetadataResolver.resolve(MenuLikeService.class).orElseThrow();
+    MenuLikeServiceImpl bean = new MenuLikeServiceImpl();
+    LocalRoutedService local = new LocalRoutedService(metadata, () -> bean, MenuLikeService.class);
+    LocalServiceRegistry registry = new SingleServiceRegistry(local);
+    ServiceInvocationDispatcher dispatcher = new ServiceInvocationDispatcher(registry, new ObjectMapper());
+
+    RemoteResponse response = dispatcher.dispatch(new RemoteRequest(
+        "sample.MenuLikeService",
+        "1.0",
+        "sync",
+        List.of(List.of(Map.of(
+            "code",
+            "root",
+            "children",
+            List.of(Map.of("code", "child"))
+        ))),
+        "trace-1"
+    ));
+
+    assertThat(response.success()).isTrue();
+    assertThat(response.data()).isEqualTo(1);
+    assertThat(bean.firstChildCode).isEqualTo("child");
+  }
+
   @RoutedService(name = "sample.GreetingService")
   interface GreetingService {
 
     @RoutedMethod("hello")
     String sayHello(String name);
+  }
+
+  @RoutedService(name = "sample.MenuLikeService")
+  interface MenuLikeService {
+
+    @RoutedMethod("sync")
+    int sync(Set<MenuNode> data);
   }
 
   static class GreetingServiceImpl implements GreetingService {
@@ -45,6 +80,25 @@ class ServiceInvocationDispatcherTest {
     public String sayHello(final String name) {
       return "Hello " + name;
     }
+  }
+
+  static class MenuLikeServiceImpl implements MenuLikeService {
+
+    private String firstChildCode;
+
+    @Override
+    public int sync(final Set<MenuNode> data) {
+      MenuNode root = data.iterator().next();
+      firstChildCode = root.children.iterator().next().code;
+      return data.size();
+    }
+  }
+
+  static class MenuNode {
+
+    public String code;
+
+    public Set<MenuNode> children;
   }
 
   private record SingleServiceRegistry(LocalRoutedService local) implements LocalServiceRegistry {

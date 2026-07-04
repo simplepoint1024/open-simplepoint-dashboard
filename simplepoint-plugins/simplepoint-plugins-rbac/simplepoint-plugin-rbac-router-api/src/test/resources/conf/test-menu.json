@@ -1,0 +1,11 @@
+[
+  {
+    "label": "DNA",
+    "title": "menu.dna",
+    "path": "/dna",
+    "authority": "dna.view",
+    "type": "item",
+    "sort": 0,
+    "disabled": false
+  }
+]

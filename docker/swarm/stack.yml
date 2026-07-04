@@ -59,6 +59,7 @@ services:
     image: ${SIMPLEPOINT_AUTH_IMAGE:-simplepoint/authorization:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
     ports:
       - target: 9000
         published: 9000
@@ -74,6 +75,40 @@ services:
     image: ${SIMPLEPOINT_COMMON_IMAGE:-simplepoint/common:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: any
+
+  auditing:
+    image: ${SIMPLEPOINT_AUDITING_IMAGE:-simplepoint/auditing:swarm}
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
+      SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
+      SIMPLEPOINT_WAIT_TIMEOUT: 240
+      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: any
+
+  dna:
+    image: ${SIMPLEPOINT_DNA_IMAGE:-simplepoint/dna:swarm}
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
+      SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
+      SIMPLEPOINT_WAIT_TIMEOUT: 240
+      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
+    ports:
+      - target: 15432
+        published: 15432
+        protocol: tcp
+        mode: host
     networks:
       - simplepoint
     deploy:
@@ -84,6 +119,7 @@ services:
     image: ${SIMPLEPOINT_HOST_IMAGE:-simplepoint/host:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN: ${SIMPLEPOINT_SERVICE_ROUTER_INTERNAL_AUTH_TOKEN:-dev-swarm-service-router}
     ports:
       - target: 8080
         published: 8080

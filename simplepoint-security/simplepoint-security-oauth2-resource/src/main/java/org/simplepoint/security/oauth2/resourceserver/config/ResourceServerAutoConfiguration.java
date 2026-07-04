@@ -3,8 +3,11 @@ package org.simplepoint.security.oauth2.resourceserver.config;
 import com.nimbusds.oauth2.sdk.GeneralException;
 import com.nimbusds.oauth2.sdk.id.Issuer;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Collections;
 import org.simplepoint.cache.CacheService;
 import org.simplepoint.core.AuthorizationContext;
@@ -20,10 +23,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
 
 /**
@@ -62,12 +67,29 @@ public class ResourceServerAutoConfiguration {
   ) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable);
     http.addFilterBefore(new AuthorizationContextFilter(authorizationContextResolver), BearerTokenAuthenticationFilter.class);
+    String serviceRouterToken = environment.getProperty("simplepoint.service-router.internal-auth.token");
+    String serviceRouterHeaderName = environment.getProperty(
+        "simplepoint.service-router.internal-auth.header-name",
+        "X-SimplePoint-Service-Router-Token"
+    );
+    String serviceRouterExposePath = environment.getProperty(
+        "simplepoint.service-router.provider.expose-path",
+        "/_simplepoint/service-router/invoke"
+    );
     return http
-        .authorizeHttpRequests(request -> request
-            .requestMatchers("/actuator/**", "/static/**", "/v3/api-docs/**", "/swagger-ui/**", "/error", "/css/**", "/js/**", "/images/**")
-            .permitAll()
-            .anyRequest().authenticated()
-        )
+        .authorizeHttpRequests(request -> {
+          request.requestMatchers("/actuator/**", "/static/**", "/mf/**", "/v3/api-docs/**", "/swagger-ui/**", "/error", "/css/**", "/js/**", "/images/**")
+              .permitAll();
+          if (StringUtils.hasText(serviceRouterToken)) {
+            request.requestMatchers(new ServiceRouterInternalRequestMatcher(
+                    serviceRouterExposePath,
+                    serviceRouterHeaderName,
+                    serviceRouterToken
+                ))
+                .permitAll();
+          }
+          request.anyRequest().authenticated();
+        })
         .oauth2ResourceServer(configurer ->
             configurer.jwt(
                 jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(
@@ -80,6 +102,46 @@ public class ResourceServerAutoConfiguration {
             )
         )
         .build();
+  }
+
+  record ServiceRouterInternalRequestMatcher(
+      String exposePath,
+      String headerName,
+      String token
+  ) implements RequestMatcher {
+
+    @Override
+    public boolean matches(final HttpServletRequest request) {
+      if (!HttpMethod.POST.matches(request.getMethod())) {
+        return false;
+      }
+      if (!matchesPath(request)) {
+        return false;
+      }
+      String providedToken = request.getHeader(headerName);
+      return StringUtils.hasText(providedToken) && constantTimeEquals(providedToken, token);
+    }
+
+    private boolean matchesPath(final HttpServletRequest request) {
+      String servletPath = request.getServletPath();
+      String requestUri = request.getRequestURI();
+      String contextPath = request.getContextPath();
+      if (exposePath.equals(servletPath)) {
+        return true;
+      }
+      if (exposePath.equals(requestUri)) {
+        return true;
+      }
+      return StringUtils.hasText(contextPath) && requestUri.startsWith(contextPath)
+          && exposePath.equals(requestUri.substring(contextPath.length()));
+    }
+
+    private boolean constantTimeEquals(final String left, final String right) {
+      return MessageDigest.isEqual(
+          left.getBytes(StandardCharsets.UTF_8),
+          right.getBytes(StandardCharsets.UTF_8)
+      );
+    }
   }
 
   /**

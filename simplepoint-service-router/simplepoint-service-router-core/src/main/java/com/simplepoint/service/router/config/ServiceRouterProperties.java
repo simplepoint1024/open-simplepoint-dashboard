@@ -21,6 +21,8 @@ public class ServiceRouterProperties {
 
   private Http http = new Http();
 
+  private InternalAuth internalAuth = new InternalAuth();
+
   /**
    * Explicit routed service to discovery service id mappings.
    *
@@ -66,6 +68,14 @@ public class ServiceRouterProperties {
 
   public void setHttp(final Http http) {
     this.http = http;
+  }
+
+  public InternalAuth getInternalAuth() {
+    return internalAuth;
+  }
+
+  public void setInternalAuth(final InternalAuth internalAuth) {
+    this.internalAuth = internalAuth;
   }
 
   public Map<String, String> getRoutes() {
@@ -187,6 +197,32 @@ public class ServiceRouterProperties {
 
     public void setReadTimeout(final Duration readTimeout) {
       this.readTimeout = readTimeout;
+    }
+  }
+
+  /**
+   * Internal service-router authentication settings.
+   */
+  public static class InternalAuth {
+
+    private String headerName = "X-SimplePoint-Service-Router-Token";
+
+    private String token;
+
+    public String getHeaderName() {
+      return headerName;
+    }
+
+    public void setHeaderName(final String headerName) {
+      this.headerName = headerName;
+    }
+
+    public String getToken() {
+      return token;
+    }
+
+    public void setToken(final String token) {
+      this.token = token;
     }
   }
 }

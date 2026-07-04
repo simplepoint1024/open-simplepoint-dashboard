@@ -3,6 +3,7 @@ package com.simplepoint.service.router.invocation;
 import com.simplepoint.service.router.config.ServiceRouterProperties;
 import com.simplepoint.service.router.routing.ServiceRoute;
 import java.net.URI;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -28,10 +29,11 @@ public class RestClientRemoteInvoker implements RemoteInvoker {
   @Override
   public RemoteResponse invoke(final ServiceRoute route, final RemoteRequest request) {
     URI uri = route.uri().resolve(properties.getProvider().getExposePath());
-    return restClient.post()
-        .uri(uri)
-        .body(request)
-        .retrieve()
-        .body(RemoteResponse.class);
+    RestClient.RequestBodySpec spec = restClient.post().uri(uri);
+    String token = properties.getInternalAuth().getToken();
+    if (StringUtils.hasText(token)) {
+      spec.header(properties.getInternalAuth().getHeaderName(), token);
+    }
+    return spec.body(request).retrieve().body(RemoteResponse.class);
   }
 }

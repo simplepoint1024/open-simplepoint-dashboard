@@ -239,12 +239,16 @@ export const RoleSwitcherTop: React.FC = () => {
 
   const roles = data || [];
   const currentRole = roles.find((role) => role.roleId === roleId);
-  const currentName = roleDisplayName(t, currentRole);
+  const currentName = roles.length === 0
+    ? (isFetching ? t('loading', '加载中...') : t('role.none', '无可用角色'))
+    : roleDisplayName(t, currentRole);
   const switchable = roles.length > 1;
 
   const menu: MenuProps = {
     items: isFetching
       ? [{ key: 'loading', disabled: true, label: t('loading', '加载中...') }]
+      : roles.length === 0
+        ? [{ key: 'empty', disabled: true, label: t('role.none', '无可用角色') }]
       : [
           {
             key: '__all__',
@@ -277,7 +281,7 @@ export const RoleSwitcherTop: React.FC = () => {
     },
   };
 
-  if (!tenantId || roles.length === 0) {
+  if (!tenantId) {
     return null;
   }
 

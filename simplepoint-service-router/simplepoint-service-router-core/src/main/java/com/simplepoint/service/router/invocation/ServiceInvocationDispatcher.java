@@ -7,6 +7,7 @@ import com.simplepoint.service.router.registry.LocalRoutedService;
 import com.simplepoint.service.router.registry.LocalServiceRegistry;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Objects;
 
@@ -44,7 +45,7 @@ public class ServiceInvocationDispatcher {
       LocalRoutedService routedService = localServiceRegistry.find(request.service(), request.version())
           .orElseThrow(() -> new ServiceRouteNotFoundException(request.service(), request.version()));
       Method method = resolveMethod(routedService, request);
-      Object[] args = convertArgs(request.args(), method.getParameterTypes());
+      Object[] args = convertArgs(request.args(), method.getGenericParameterTypes());
       Object result = method.invoke(routedService.bean(), args);
       return RemoteResponse.success(result);
     } catch (InvocationTargetException ex) {
@@ -66,11 +67,14 @@ public class ServiceInvocationDispatcher {
     throw new IllegalArgumentException("No routed method found: " + request.service() + "#" + request.method());
   }
 
-  private Object[] convertArgs(final List<Object> args, final Class<?>[] parameterTypes) {
+  private Object[] convertArgs(final List<Object> args, final Type[] parameterTypes) {
     Object[] result = new Object[parameterTypes.length];
     for (int i = 0; i < parameterTypes.length; i++) {
       Object value = args == null ? null : args.get(i);
-      result[i] = objectMapper.convertValue(value, parameterTypes[i]);
+      result[i] = objectMapper.convertValue(
+          value,
+          objectMapper.getTypeFactory().constructType(parameterTypes[i])
+      );
     }
     return result;
   }

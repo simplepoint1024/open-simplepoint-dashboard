@@ -8,10 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.security.MenuChildren;
 import org.simplepoint.security.service.MenuService;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.core.io.ClassPathResource;
 
 /**
@@ -23,9 +22,8 @@ import org.springframework.core.io.ClassPathResource;
  */
 @Slf4j
 @AutoConfiguration
-@ConditionalOnBean(MenuService.class)
 public class MenuAutoConfiguration implements InitializingBean {
-  private final MenuService menuService;
+  private final ObjectProvider<MenuService> menuServiceProvider;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -42,13 +40,13 @@ public class MenuAutoConfiguration implements InitializingBean {
      * @param menuConfigPath  the classpath location of the menu configuration JSON
      */
   public MenuAutoConfiguration(
-      @Autowired(required = false) MenuService menuService,
+      ObjectProvider<MenuService> menuServiceProvider,
       @Value("${spring.application.name}")
       String applicationName,
       @Value("${simplepoint.menu.config-path:conf/simple-menu.json}")
       String menuConfigPath
   ) {
-    this.menuService = menuService;
+    this.menuServiceProvider = menuServiceProvider;
     this.applicationName = applicationName;
     this.resource = new ClassPathResource(menuConfigPath);
   }
@@ -62,6 +60,11 @@ public class MenuAutoConfiguration implements InitializingBean {
 
   @Override
   public void afterPropertiesSet() throws Exception {
+    MenuService availableMenuService = menuServiceProvider.getIfAvailable();
+    if (availableMenuService == null) {
+      log.debug("MenuService bean not available, skipping menu initialization");
+      return;
+    }
     if (!resource.exists()) {
       log.debug("Menu config not found: {}, skipping menu initialization", resource.getPath());
       return;
@@ -69,7 +72,7 @@ public class MenuAutoConfiguration implements InitializingBean {
     var menus = readConf();
     if (menus != null && !menus.isEmpty()) {
       log.info("Initializing menu data from configuration file: {}", resource.getPath());
-      this.menuService.sync(applicationName, menus);
+      availableMenuService.sync(applicationName, menus);
       log.info("Finished initializing menu data from configuration file: {}", resource.getPath());
     }
   }

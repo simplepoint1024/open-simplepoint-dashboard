@@ -62,6 +62,7 @@ public class SecurityConfig {
                 "/authorization/**",
                 "/actuator/**",
                 "/static/**",
+                "/{service}/mf/**",
                 "/svg.svg",
                 "/.well-known/appspecific/**"
             ).permitAll()
