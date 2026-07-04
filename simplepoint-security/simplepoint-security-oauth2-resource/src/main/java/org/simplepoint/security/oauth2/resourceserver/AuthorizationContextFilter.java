@@ -14,7 +14,6 @@ import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.RequestContextHolder;
 import org.simplepoint.security.context.AuthorizationContextResolver;
 import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -24,7 +23,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * <p>注意：这个 Filter 必须在 Spring Security 的 JWT 认证发生之前执行，否则 JwtGrantedAuthoritiesConverter
  * 拿不到 AuthorizationContext。</p>
  */
-@Component
 public class AuthorizationContextFilter extends OncePerRequestFilter {
 
   private static final String HEADER_CONTEXT_ID = "X-Context-Id";
