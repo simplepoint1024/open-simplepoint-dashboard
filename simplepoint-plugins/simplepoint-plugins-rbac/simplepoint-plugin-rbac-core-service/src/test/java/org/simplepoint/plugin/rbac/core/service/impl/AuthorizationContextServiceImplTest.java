@@ -37,6 +37,7 @@ import org.simplepoint.security.entity.User;
 import org.simplepoint.security.service.ResourceService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 
 @ExtendWith(MockitoExtension.class)
 class AuthorizationContextServiceImplTest {
@@ -82,12 +83,19 @@ class AuthorizationContextServiceImplTest {
   }
 
   @Test
-  void calculate_userNotFound_throwsRuntimeException() {
+  void calculate_userNotFound_throwsBadCredentialsException() {
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> service.calculate(null, "u1", null, null))
-        .isInstanceOf(RuntimeException.class)
+        .isInstanceOf(BadCredentialsException.class)
         .hasMessageContaining("用户不存在");
+  }
+
+  @Test
+  void calculate_blankUserId_throwsBadCredentialsException() {
+    assertThatThrownBy(() -> service.calculate(null, " ", null, null))
+        .isInstanceOf(BadCredentialsException.class)
+        .hasMessageContaining("认证主体缺少用户标识");
   }
 
   @Test
@@ -126,7 +134,7 @@ class AuthorizationContextServiceImplTest {
   void calculate_userWithoutTenant_usesPersonalTenantWhenAvailable() {
     User user = new User();
     user.setSuperAdmin(false);
-    TenantRepository tenantRepository = mock(TenantRepository.class);
+    final TenantRepository tenantRepository = mock(TenantRepository.class);
     Tenant personalTenant = new Tenant();
     personalTenant.setId("personal-1");
     personalTenant.setOwnerId("u1");
@@ -167,9 +175,9 @@ class AuthorizationContextServiceImplTest {
   void calculate_tenantOwner_addsPackageAndPublicResources() {
     User user = new User();
     user.setSuperAdmin(false);
-    TenantRepository tenantRepository = mock(TenantRepository.class);
-    TenantPackageRelevanceRepository tenantPackageRepo = mock(TenantPackageRelevanceRepository.class);
-    ResourceService resourceService = mock(ResourceService.class);
+    final TenantRepository tenantRepository = mock(TenantRepository.class);
+    final TenantPackageRelevanceRepository tenantPackageRepo = mock(TenantPackageRelevanceRepository.class);
+    final ResourceService resourceService = mock(ResourceService.class);
     Tenant tenant = new Tenant();
     tenant.setId("tenant1");
     tenant.setOwnerId("u1");
@@ -200,8 +208,8 @@ class AuthorizationContextServiceImplTest {
   void calculate_tenantMemberWithTenantAdminResource_usesTenantAdminActorRole() {
     User user = new User();
     user.setSuperAdmin(false);
-    RoleGrantedAuthority role = new RoleGrantedAuthority("role-admin", "ROLE_CUSTOM");
-    TenantRepository tenantRepository = mock(TenantRepository.class);
+    final RoleGrantedAuthority role = new RoleGrantedAuthority("role-admin", "ROLE_CUSTOM");
+    final TenantRepository tenantRepository = mock(TenantRepository.class);
     Tenant tenant = new Tenant();
     tenant.setOwnerId("owner");
     tenant.setTenantType(TenantType.ORGANIZATION);
@@ -242,9 +250,9 @@ class AuthorizationContextServiceImplTest {
   void calculate_tenantContext_mergesTenantAndGlobalRoles() {
     User user = new User();
     user.setSuperAdmin(false);
-    RoleGrantedAuthority tenantRole = new RoleGrantedAuthority("role-tenant", "ROLE_TENANT");
-    RoleGrantedAuthority globalRole = new RoleGrantedAuthority("role-global", "ROLE_GLOBAL");
-    TenantRepository tenantRepository = mock(TenantRepository.class);
+    final RoleGrantedAuthority tenantRole = new RoleGrantedAuthority("role-tenant", "ROLE_TENANT");
+    final RoleGrantedAuthority globalRole = new RoleGrantedAuthority("role-global", "ROLE_GLOBAL");
+    final TenantRepository tenantRepository = mock(TenantRepository.class);
     Tenant tenant = new Tenant();
     tenant.setOwnerId("owner");
 
@@ -269,8 +277,8 @@ class AuthorizationContextServiceImplTest {
   void calculate_selectedRole_usesOnlyThatRole() {
     User user = new User();
     user.setSuperAdmin(false);
-    RoleGrantedAuthority role1 = new RoleGrantedAuthority("role1", "ROLE_USER");
-    RoleGrantedAuthority role2 = new RoleGrantedAuthority("role2", "ROLE_MANAGER");
+    final RoleGrantedAuthority role1 = new RoleGrantedAuthority("role1", "ROLE_USER");
+    final RoleGrantedAuthority role2 = new RoleGrantedAuthority("role2", "ROLE_MANAGER");
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role1, role2));
@@ -317,8 +325,8 @@ class AuthorizationContextServiceImplTest {
   void calculate_mergesSelfAndCustomDataScopes() {
     User user = new User();
     user.setSuperAdmin(false);
-    RoleGrantedAuthority role1 = new RoleGrantedAuthority("role1", "ROLE_USER");
-    RoleGrantedAuthority role2 = new RoleGrantedAuthority("role2", "ROLE_MANAGER");
+    final RoleGrantedAuthority role1 = new RoleGrantedAuthority("role1", "ROLE_USER");
+    final RoleGrantedAuthority role2 = new RoleGrantedAuthority("role2", "ROLE_MANAGER");
     RoleResourceGrant grant1 = new RoleResourceGrant();
     grant1.setDataScopeId("scope-self");
     RoleResourceGrant grant2 = new RoleResourceGrant();
@@ -352,7 +360,7 @@ class AuthorizationContextServiceImplTest {
   void calculate_allDataScopeOverridesRestrictiveScopes() {
     User user = new User();
     user.setSuperAdmin(false);
-    RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_ADMIN");
+    final RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_ADMIN");
     RoleResourceGrant grant = new RoleResourceGrant();
     grant.setDataScopeId("scope-all");
     DataScope allScope = new DataScope();

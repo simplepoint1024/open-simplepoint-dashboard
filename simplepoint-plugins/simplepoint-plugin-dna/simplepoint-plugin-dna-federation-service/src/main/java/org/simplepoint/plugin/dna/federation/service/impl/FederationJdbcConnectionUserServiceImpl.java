@@ -235,7 +235,7 @@ public class FederationJdbcConnectionUserServiceImpl
         ))
         .filter(item -> Boolean.TRUE.equals(item.getEnabled()))
         .orElseThrow(() -> new IllegalArgumentException("数据源不存在或未启用: " + entity.getCatalogId()));
-    User user = usersService.findById(requireValue(entity.getUserId(), "系统用户ID不能为空"))
+    User user = findUserById(requireValue(entity.getUserId(), "系统用户ID不能为空"))
         .orElseThrow(() -> new IllegalArgumentException("系统用户不存在: " + entity.getUserId()));
     if (!Boolean.TRUE.equals(user.getEnabled())) {
       throw new IllegalArgumentException("系统用户已禁用: " + entity.getUserId());
@@ -304,12 +304,22 @@ public class FederationJdbcConnectionUserServiceImpl
   }
 
   private User requireActiveUser(final String userId) {
-    User user = usersService.findById(requireValue(userId, "系统用户ID不能为空"))
+    User user = findUserById(requireValue(userId, "系统用户ID不能为空"))
         .orElseThrow(() -> new IllegalArgumentException("系统用户不存在: " + userId));
     if (!Boolean.TRUE.equals(user.getEnabled())) {
       throw new IllegalArgumentException("系统用户已禁用: " + userId);
     }
     return user;
+  }
+
+  private Optional<User> findUserById(final String userId) {
+    String normalizedUserId = requireValue(userId, "系统用户ID不能为空");
+    Optional<User> user = usersService.findByIdForAuthorization(normalizedUserId);
+    if (user != null && user.isPresent()) {
+      return user;
+    }
+    user = usersService.findById(normalizedUserId);
+    return user == null ? Optional.empty() : user;
   }
 
   private static Set<String> normalizeDataSourceIds(final Collection<String> dataSourceIds) {
@@ -327,7 +337,8 @@ public class FederationJdbcConnectionUserServiceImpl
     if (userId == null) {
       return Set.of();
     }
-    return enabledGrants(userId).stream()
+    return repository.findAllByUserIdAndDeletedAtIsNull(userId).stream()
+        .filter(grant -> Boolean.TRUE.equals(grant.getEnabled()))
         .map(FederationJdbcConnectionUser::getCatalogId)
         .filter(value -> value != null && !value.isBlank())
         .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));

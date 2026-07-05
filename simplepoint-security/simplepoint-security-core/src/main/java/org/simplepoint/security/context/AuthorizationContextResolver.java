@@ -12,6 +12,9 @@ import java.util.Map;
 import org.simplepoint.cache.CacheService;
 import org.simplepoint.core.AuthorizationContext;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.util.StringUtils;
 
 /**
  * AuthorizationContextResolver is responsible for resolving the authorization context for a given user ID and HTTP
@@ -78,7 +81,7 @@ public class AuthorizationContextResolver {
       final String contextId = getHeader(httpHeaders, "X-Context-Id");
       final String tenantId = getHeader(httpHeaders, "X-Tenant-Id");
       Map<String, Object> userInfo = getUserInfo(authorization);
-      final String userId = (String) userInfo.get("sub");
+      final String userId = resolveSubject(userInfo);
       final Map<String, String> attributes = new HashMap<>();
       attributes.put("X-User-Id", userId);
       httpHeaders.forEach((k, v) -> {
@@ -101,6 +104,14 @@ public class AuthorizationContextResolver {
       throw new RuntimeException("无法解析授权上下文");
     }
     return null;
+  }
+
+  private String resolveSubject(Map<String, Object> userInfo) {
+    Object subject = userInfo == null ? null : userInfo.get("sub");
+    if (subject instanceof String userId && StringUtils.hasText(userId)) {
+      return userId;
+    }
+    throw new BadCredentialsException("无法解析认证主体");
   }
 
   private static String getHeader(Map<String, String> httpHeaders, String headerName) {
@@ -144,10 +155,16 @@ public class AuthorizationContextResolver {
     HttpClient httpClient = HttpClient.newHttpClient();
     try {
       HttpResponse<String> send = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      if (send.statusCode() >= 400) {
+        throw new BadCredentialsException("无法获取用户信息");
+      }
       return objectMapper.readValue(send.body(), new TypeReference<HashMap<String, Object>>() {
       });
-    } catch (IOException | InterruptedException e) {
-      throw new RuntimeException(e);
+    } catch (IOException e) {
+      throw new AuthenticationServiceException("无法获取用户信息", e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new AuthenticationServiceException("无法获取用户信息", e);
     }
   }
 }

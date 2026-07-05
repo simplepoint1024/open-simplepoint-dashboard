@@ -14,6 +14,8 @@ import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.RequestContextHolder;
 import org.simplepoint.security.context.AuthorizationContextResolver;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -127,9 +129,19 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
       }
 
       filterChain.doFilter(request, response);
+    } catch (AuthenticationException ex) {
+      sendError(response, HttpServletResponse.SC_UNAUTHORIZED, ex);
+    } catch (AccessDeniedException ex) {
+      sendError(response, HttpServletResponse.SC_FORBIDDEN, ex);
     } finally {
       // 避免 request 重用/二次 dispatch 带来脏数据
       RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+    }
+  }
+
+  private void sendError(HttpServletResponse response, int status, RuntimeException ex) throws IOException {
+    if (!response.isCommitted()) {
+      response.sendError(status, ex.getMessage());
     }
   }
 

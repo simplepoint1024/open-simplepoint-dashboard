@@ -60,6 +60,48 @@ class ServiceInvocationDispatcherTest {
     assertThat(bean.firstChildCode).isEqualTo("child");
   }
 
+  @Test
+  void dispatchUnwrapsOptionalReturnValue() {
+    RoutedServiceMetadata metadata = RoutedServiceMetadataResolver.resolve(LookupService.class).orElseThrow();
+    LocalRoutedService local = new LocalRoutedService(metadata, LookupServiceImpl::new, LookupService.class);
+    ServiceInvocationDispatcher dispatcher = new ServiceInvocationDispatcher(
+        new SingleServiceRegistry(local),
+        new ObjectMapper()
+    );
+
+    RemoteResponse response = dispatcher.dispatch(new RemoteRequest(
+        "sample.LookupService",
+        "1.0",
+        "find",
+        List.of("u1"),
+        "trace-1"
+    ));
+
+    assertThat(response.success()).isTrue();
+    assertThat(response.data()).isEqualTo(new LookupValue("u1", "Ada"));
+  }
+
+  @Test
+  void dispatchUnwrapsEmptyOptionalReturnValue() {
+    RoutedServiceMetadata metadata = RoutedServiceMetadataResolver.resolve(LookupService.class).orElseThrow();
+    LocalRoutedService local = new LocalRoutedService(metadata, LookupServiceImpl::new, LookupService.class);
+    ServiceInvocationDispatcher dispatcher = new ServiceInvocationDispatcher(
+        new SingleServiceRegistry(local),
+        new ObjectMapper()
+    );
+
+    RemoteResponse response = dispatcher.dispatch(new RemoteRequest(
+        "sample.LookupService",
+        "1.0",
+        "find",
+        List.of("missing"),
+        "trace-1"
+    ));
+
+    assertThat(response.success()).isTrue();
+    assertThat(response.data()).isNull();
+  }
+
   @RoutedService(name = "sample.GreetingService")
   interface GreetingService {
 
@@ -72,6 +114,13 @@ class ServiceInvocationDispatcherTest {
 
     @RoutedMethod("sync")
     int sync(Set<MenuNode> data);
+  }
+
+  @RoutedService(name = "sample.LookupService")
+  interface LookupService {
+
+    @RoutedMethod("find")
+    Optional<LookupValue> find(String id);
   }
 
   static class GreetingServiceImpl implements GreetingService {
@@ -92,6 +141,20 @@ class ServiceInvocationDispatcherTest {
       firstChildCode = root.children.iterator().next().code;
       return data.size();
     }
+  }
+
+  static class LookupServiceImpl implements LookupService {
+
+    @Override
+    public Optional<LookupValue> find(final String id) {
+      if ("missing".equals(id)) {
+        return Optional.empty();
+      }
+      return Optional.of(new LookupValue(id, "Ada"));
+    }
+  }
+
+  record LookupValue(String id, String name) {
   }
 
   static class MenuNode {

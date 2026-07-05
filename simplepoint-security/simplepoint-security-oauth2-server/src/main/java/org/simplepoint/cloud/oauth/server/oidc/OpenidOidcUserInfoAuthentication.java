@@ -13,12 +13,14 @@ import static org.springframework.security.oauth2.jwt.JwtClaimNames.SUB;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.AbstractOidcUserInfoAuthentication;
 import org.simplepoint.core.oidc.OidcScopes;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationContext;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationToken;
@@ -68,9 +70,10 @@ public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthen
       claims.put(SUB, principal.getName());
       Collection<GrantedAuthority> scopeAuthorities = principal.getAuthorities();
       if (scopeAuthorities.contains(OidcScopes.getScopeAuthority(OidcScopes.OPENID))) {
-        UserDetails userDetails = usersService.loadUserByUsername(principal.getName());
-        if (userDetails instanceof User user) {
-          setClaims(claims, user, principal);
+        Optional<User> user = loadUser(principal.getName());
+        if (user.isPresent()) {
+          claims.put(SUB, user.get().getId());
+          setClaims(claims, user.get(), principal);
         }
       }
     }
@@ -78,6 +81,22 @@ public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthen
     // Construct OIDC user information from token claims
     // 从令牌声明构造 OIDC 用户信息
     return new OidcUserInfo(claims);
+  }
+
+  private Optional<User> loadUser(String subject) {
+    if (subject == null || subject.isBlank()) {
+      return Optional.empty();
+    }
+    Optional<User> user = usersService.findByIdForAuthorization(subject);
+    if (user.isPresent()) {
+      return user;
+    }
+    try {
+      UserDetails userDetails = usersService.loadUserByUsername(subject);
+      return userDetails instanceof User loaded ? Optional.of(loaded) : Optional.empty();
+    } catch (UsernameNotFoundException ex) {
+      return Optional.empty();
+    }
   }
 
   private void setClaims(Map<String, Object> claims, User user, JwtAuthenticationToken principal) {

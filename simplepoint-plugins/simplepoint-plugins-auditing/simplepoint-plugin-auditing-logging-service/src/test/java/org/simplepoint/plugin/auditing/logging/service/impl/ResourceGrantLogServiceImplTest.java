@@ -21,34 +21,34 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
-import org.simplepoint.plugin.auditing.logging.api.entity.ErrorLog;
-import org.simplepoint.plugin.auditing.logging.api.repository.ErrorLogRepository;
+import org.simplepoint.plugin.auditing.logging.api.entity.ResourceGrantLog;
+import org.simplepoint.plugin.auditing.logging.api.repository.ResourceGrantLogRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
-class ErrorLogServiceImplTest {
+class ResourceGrantLogServiceImplTest {
 
   @Mock
-  private ErrorLogRepository repository;
+  private ResourceGrantLogRepository repository;
 
   @Mock
   private DetailsProviderService detailsProviderService;
 
   @InjectMocks
-  private ErrorLogServiceImpl service;
+  private ResourceGrantLogServiceImpl service;
 
   @Test
   void limitShouldNotInjectTenantIdWhenContextIsAbsent() {
     Pageable pageable = PageRequest.of(0, 10);
-    Page<ErrorLog> emptyPage = new PageImpl<>(java.util.List.of());
+    Page<ResourceGrantLog> emptyPage = new PageImpl<>(java.util.List.of());
 
     when(repository.limit(argThat(attrs -> !attrs.containsKey("tenantId")), eq(pageable)))
         .thenReturn(emptyPage);
 
-    Page<ErrorLog> result = service.limit(null, pageable);
+    Page<ResourceGrantLog> result = service.limit(null, pageable);
 
     assertNotNull(result);
     verify(repository).limit(argThat(attrs -> !attrs.containsKey("tenantId")), eq(pageable));
@@ -57,13 +57,13 @@ class ErrorLogServiceImplTest {
   @Test
   void limitShouldNotInjectImplicitTenantIdWhenContextHasTenant() {
     Pageable pageable = PageRequest.of(0, 10);
-    Page<ErrorLog> emptyPage = new PageImpl<>(java.util.List.of());
-    ErrorLogServiceImpl tenantAwareService = serviceWithCurrentTenant("tenant-1");
+    Page<ResourceGrantLog> emptyPage = new PageImpl<>(java.util.List.of());
+    ResourceGrantLogServiceImpl tenantAwareService = serviceWithCurrentTenant("tenant-1");
 
     when(repository.limit(argThat(attrs -> !attrs.containsKey("tenantId")), eq(pageable)))
         .thenReturn(emptyPage);
 
-    Page<ErrorLog> result = tenantAwareService.limit(null, pageable);
+    Page<ResourceGrantLog> result = tenantAwareService.limit(null, pageable);
 
     assertNotNull(result);
     verify(repository).limit(argThat(attrs -> !attrs.containsKey("tenantId")), eq(pageable));
@@ -72,33 +72,20 @@ class ErrorLogServiceImplTest {
   @Test
   void limitShouldMergeCallerAttributesAndForwardToRepository() {
     Pageable pageable = PageRequest.of(0, 5);
-    Map<String, String> attrs = Map.of("errorCode", "500");
-    Page<ErrorLog> emptyPage = new PageImpl<>(java.util.List.of());
+    Map<String, String> attrs = Map.of("subjectType", "ROLE");
+    Page<ResourceGrantLog> emptyPage = new PageImpl<>(java.util.List.of());
 
-    when(repository.limit(argThat(m -> "500".equals(m.get("errorCode"))), eq(pageable)))
+    when(repository.limit(argThat(m -> "ROLE".equals(m.get("subjectType"))), eq(pageable)))
         .thenReturn(emptyPage);
 
-    Page<ErrorLog> result = service.limit(attrs, pageable);
+    Page<ResourceGrantLog> result = service.limit(attrs, pageable);
 
     assertNotNull(result);
-    verify(repository).limit(argThat(m -> "500".equals(m.get("errorCode"))), eq(pageable));
+    verify(repository).limit(argThat(m -> "ROLE".equals(m.get("subjectType"))), eq(pageable));
   }
 
-  @Test
-  void limitShouldHandleNullAttributesGracefully() {
-    Pageable pageable = PageRequest.of(0, 10);
-    Page<ErrorLog> emptyPage = new PageImpl<>(java.util.List.of());
-
-    when(repository.limit(argThat(m -> m != null && !m.containsKey("tenantId")), eq(pageable)))
-        .thenReturn(emptyPage);
-
-    Page<ErrorLog> result = service.limit(null, pageable);
-
-    assertNotNull(result);
-  }
-
-  private ErrorLogServiceImpl serviceWithCurrentTenant(String tenantId) {
-    return new ErrorLogServiceImpl(repository, detailsProviderService) {
+  private ResourceGrantLogServiceImpl serviceWithCurrentTenant(String tenantId) {
+    return new ResourceGrantLogServiceImpl(repository, detailsProviderService) {
       @Override
       protected String currentTenantId() {
         return tenantId;

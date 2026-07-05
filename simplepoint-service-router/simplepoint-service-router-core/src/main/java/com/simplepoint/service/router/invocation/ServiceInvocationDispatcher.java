@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Dispatches inbound service router requests to local providers.
@@ -47,7 +48,7 @@ public class ServiceInvocationDispatcher {
       Method method = resolveMethod(routedService, request);
       Object[] args = convertArgs(request.args(), method.getGenericParameterTypes());
       Object result = method.invoke(routedService.bean(), args);
-      return RemoteResponse.success(result);
+      return RemoteResponse.success(unwrapOptional(result));
     } catch (InvocationTargetException ex) {
       Throwable target = ex.getTargetException() == null ? ex : ex.getTargetException();
       return RemoteResponse.failure("REMOTE_SERVICE_ERROR", target.getMessage());
@@ -77,5 +78,12 @@ public class ServiceInvocationDispatcher {
       );
     }
     return result;
+  }
+
+  private Object unwrapOptional(final Object value) {
+    if (value instanceof Optional<?> optional) {
+      return optional.orElse(null);
+    }
+    return value;
   }
 }

@@ -19,8 +19,11 @@ import com.simplepoint.service.router.tracing.TraceContext;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.context.ApplicationContext;
 
 /**
@@ -127,7 +130,7 @@ public class ServiceRouterInvocationHandler implements InvocationHandler {
         if (method.getReturnType() == void.class) {
           return null;
         }
-        return objectMapper.convertValue(response.data(), method.getReturnType());
+        return convertResponseData(response.data(), method);
       } catch (RuntimeException ex) {
         last = ex;
       }
@@ -171,5 +174,29 @@ public class ServiceRouterInvocationHandler implements InvocationHandler {
       case "equals" -> proxy == args[0];
       default -> throw new IllegalStateException("Unsupported Object method: " + method.getName());
     };
+  }
+
+  private Object convertResponseData(final Object data, final Method method) {
+    if (method.getReturnType() == Optional.class) {
+      if (data == null) {
+        return Optional.empty();
+      }
+      return Optional.of(convertOptionalValue(data, method.getGenericReturnType()));
+    }
+    return objectMapper.convertValue(
+        data,
+        objectMapper.getTypeFactory().constructType(method.getGenericReturnType())
+    );
+  }
+
+  private Object convertOptionalValue(final Object data, final Type returnType) {
+    if (returnType instanceof ParameterizedType parameterizedType
+        && parameterizedType.getActualTypeArguments().length > 0) {
+      return objectMapper.convertValue(
+          data,
+          objectMapper.getTypeFactory().constructType(parameterizedType.getActualTypeArguments()[0])
+      );
+    }
+    return data;
   }
 }

@@ -36,6 +36,7 @@ import org.simplepoint.security.entity.User;
 import org.simplepoint.security.service.ResourceService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
 /**
@@ -83,7 +84,11 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
 
   @Override
   public AuthorizationContext calculate(String tenantId, String userId, String contextId, Map<String, String> attributes) {
-    User user = usersService.findByIdForAuthorization(userId).orElseThrow(() -> new RuntimeException("用户不存在"));
+    if (userId == null || userId.isBlank()) {
+      throw new BadCredentialsException("认证主体缺少用户标识");
+    }
+    User user = usersService.findByIdForAuthorization(userId)
+        .orElseThrow(() -> new BadCredentialsException("用户不存在"));
     String resolvedTenantId = normalizeTenantId(tenantId);
     Tenant resolvedTenant = null;
     boolean administrator = Boolean.TRUE.equals(user.superAdmin());

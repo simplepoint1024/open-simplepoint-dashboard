@@ -26,6 +26,7 @@ import {
   message,
 } from 'antd';
 import type {TabsProps} from 'antd';
+import type {ColumnsType} from 'antd/es/table';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {Key, ReactNode} from 'react';
 import {SqlEditor, type SqlEditorRef} from './SqlEditor';
@@ -256,6 +257,12 @@ const scrollAreaStyle = {
   overflow: 'auto',
 };
 
+const renderTextCellValue = (value: string) => (
+  <span className="dna-sql-console-result-cell" title={value}>
+    {value}
+  </span>
+);
+
 const renderCellValue = (value: unknown) => {
   if (value === null || value === undefined) {
     return <Tag>NULL</Tag>;
@@ -265,12 +272,12 @@ const renderCellValue = (value: unknown) => {
   }
   if (typeof value === 'object') {
     try {
-      return JSON.stringify(value);
+      return renderTextCellValue(JSON.stringify(value));
     } catch {
-      return String(value);
+      return renderTextCellValue(String(value));
     }
   }
-  return String(value);
+  return renderTextCellValue(String(value));
 };
 
 const App = () => {
@@ -519,12 +526,19 @@ const App = () => {
 
   const analysisResult = queryResult ?? explainResult;
 
-  const resultColumns = useMemo(() => (queryResult?.columns ?? []).map((column, index) => ({
-    title: column.typeName ? `${column.name} (${column.typeName})` : column.name,
-    dataIndex: ['values', index],
-    key: `${column.name}-${index}`,
-    render: (value: unknown) => renderCellValue(value),
-  })), [queryResult]);
+  const resultColumns = useMemo<ColumnsType<ResultRow>>(() => (queryResult?.columns ?? []).map((column, index) => {
+    const title = column.typeName ? `${column.name} (${column.typeName})` : column.name;
+    return {
+      title: (
+        <span className="dna-sql-console-result-header" title={title}>
+          {title}
+        </span>
+      ),
+      dataIndex: ['values', index],
+      key: `${column.name}-${index}`,
+      render: (value: unknown) => renderCellValue(value),
+    };
+  }), [queryResult]);
 
   const resultData = useMemo<ResultRow[]>(() => (queryResult?.rows ?? []).map((row, index) => ({
     key: index,
@@ -648,7 +662,7 @@ const App = () => {
       key: 'result',
       label: t('dna.federation.sqlConsole.page.tab.result', '执行结果'),
       children: renderScrollPane(queryResult ? (
-        <Space direction="vertical" size={16} style={{display: 'flex'}}>
+        <Space className="dna-sql-console-result-content" direction="vertical" size={16} style={{display: 'flex'}}>
           {queryResult.truncated ? (
             <Alert
               type="warning"
@@ -671,10 +685,11 @@ const App = () => {
             </Descriptions.Item>
           </Descriptions>
           <Table<ResultRow>
+            className="dna-sql-console-result-table"
             size="small"
             rowKey="key"
-            scroll={{x: 'max-content'}}
-            pagination={{pageSize: 20, showSizeChanger: true}}
+            scroll={{x: 'max-content', y: 260}}
+            pagination={{pageSize: 20, showSizeChanger: true, size: 'small'}}
             columns={resultColumns}
             dataSource={resultData}
           />

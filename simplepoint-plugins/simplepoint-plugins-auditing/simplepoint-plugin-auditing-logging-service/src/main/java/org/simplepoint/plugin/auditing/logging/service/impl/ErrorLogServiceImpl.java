@@ -44,10 +44,6 @@ public class ErrorLogServiceImpl extends BaseServiceImpl<ErrorLogRepository, Err
     if (attributes != null) {
       normalizedAttributes.putAll(attributes);
     }
-    String tenantId = currentTenantId();
-    if (tenantId != null && !tenantId.isBlank()) {
-      normalizedAttributes.putIfAbsent("tenantId", tenantId);
-    }
     return super.limit(normalizedAttributes, pageable);
   }
 }

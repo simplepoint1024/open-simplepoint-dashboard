@@ -20,9 +20,10 @@ import {
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
 import { get, post, put } from "@simplepoint/shared/api/methods";
 import { request } from "@simplepoint/shared/api/client";
-import type { Page } from "@simplepoint/shared/types/request";
+import { normalizePage, type Page } from "@simplepoint/shared/types/request";
 import { useI18n } from "@simplepoint/shared/hooks/useI18n";
 import api from "@/api";
+import "./index.css";
 
 const { Paragraph, Text } = Typography;
 const baseConfig = api["monitoring-redis"];
@@ -95,8 +96,7 @@ const App = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"create" | "edit">("create");
   const [detail, setDetail] = useState<RedisEntryDetail | null>(null);
-  const pageRef = useRef<HTMLDivElement>(null);
-  const controlsRef = useRef<HTMLDivElement>(null);
+  const tablePanelRef = useRef<HTMLDivElement>(null);
   const [tableScrollY, setTableScrollY] = useState(420);
 
   useEffect(() => {
@@ -105,22 +105,18 @@ const App = () => {
 
   useLayoutEffect(() => {
     const updateTableHeight = () => {
-      const pageHeight = pageRef.current?.getBoundingClientRect().height ?? 0;
-      const controlsHeight = controlsRef.current?.getBoundingClientRect().height ?? 0;
-      if (!pageHeight) {
+      const panelHeight = tablePanelRef.current?.getBoundingClientRect().height ?? 0;
+      if (!panelHeight) {
         return;
       }
       const tableHeaderHeight = 55;
-      const paginationHeight = 64;
-      const verticalGaps = 24;
-      setTableScrollY(Math.max(240, pageHeight - controlsHeight - tableHeaderHeight - paginationHeight - verticalGaps));
+      const paginationHeight = 62;
+      const panelPadding = 8;
+      setTableScrollY(Math.max(220, panelHeight - tableHeaderHeight - paginationHeight - panelPadding));
     };
     const observer = new ResizeObserver(updateTableHeight);
-    if (pageRef.current) {
-      observer.observe(pageRef.current);
-    }
-    if (controlsRef.current) {
-      observer.observe(controlsRef.current);
+    if (tablePanelRef.current) {
+      observer.observe(tablePanelRef.current);
     }
     updateTableHeight();
     return () => observer.disconnect();
@@ -152,7 +148,7 @@ const App = () => {
           baseConfig.baseUrl,
           buildListParams(pageNumber, pageSize)
         );
-        setPageData(data);
+        setPageData(normalizePage(data, pageSize));
       } finally {
         setLoading(false);
       }
@@ -374,8 +370,8 @@ const App = () => {
   );
 
   return (
-    <div ref={pageRef} style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, gap: 12 }}>
-      <div ref={controlsRef} style={{ display: "flex", flexDirection: "column", gap: 12, flexShrink: 0 }}>
+    <div className="monitoring-redis-page">
+      <div className="monitoring-redis-controls">
         <Alert
           showIcon
           type="info"
@@ -386,7 +382,7 @@ const App = () => {
           )}
         />
 
-        <Card>
+        <Card className="monitoring-redis-filter-card">
           <Space wrap>
             <Input
               allowClear
@@ -421,20 +417,23 @@ const App = () => {
       </div>
 
       <Card
-        style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
-        bodyStyle={{ padding: 0, flex: 1, minHeight: 0 }}
+        className="monitoring-redis-table-card"
+        bodyStyle={{ padding: 0, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
       >
-        <Table<RedisEntrySummary>
-          rowKey="key"
-          loading={loading}
-          columns={columns}
-          dataSource={pageData.content}
-          pagination={pagination}
-          scroll={{ x: 980, y: tableScrollY }}
-          onChange={(nextPagination) =>
-            void loadEntries(nextPagination.current ?? 1, nextPagination.pageSize ?? 10)
-          }
-        />
+        <div ref={tablePanelRef} className="monitoring-redis-table-panel">
+          <Table<RedisEntrySummary>
+            className="monitoring-redis-table"
+            rowKey="key"
+            loading={loading}
+            columns={columns}
+            dataSource={pageData.content}
+            pagination={pagination}
+            scroll={{ x: 980, y: tableScrollY }}
+            onChange={(nextPagination) =>
+              void loadEntries(nextPagination.current ?? 1, nextPagination.pageSize ?? 10)
+            }
+          />
+        </div>
       </Card>
 
       <Modal

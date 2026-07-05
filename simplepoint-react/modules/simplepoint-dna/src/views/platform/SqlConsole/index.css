@@ -13,6 +13,7 @@
 
 .dna-sql-console-tabs > .ant-tabs-content-holder,
 .dna-sql-console-tabs > .ant-tabs-content-holder > .ant-tabs-content,
+.dna-sql-console-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane,
 .dna-sql-console-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane-active {
   display: flex;
   flex: 1 1 auto;
@@ -30,4 +31,40 @@
   min-width: 0;
   overflow: auto;
   padding-right: 4px;
+}
+
+.dna-sql-console-scroll-pane > .ant-space,
+.dna-sql-console-scroll-pane .ant-space-item {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dna-sql-console-result-content {
+  min-height: 0;
+}
+
+.dna-sql-console-result-table.ant-table-wrapper {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dna-sql-console-result-table .ant-table-container {
+  min-width: 0;
+}
+
+.dna-sql-console-result-table .ant-table-body {
+  overflow: auto !important;
+}
+
+.dna-sql-console-result-header,
+.dna-sql-console-result-cell {
+  display: block;
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dna-sql-console-result-header {
+  max-width: 260px;
 }

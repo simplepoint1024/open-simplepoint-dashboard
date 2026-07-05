@@ -64,7 +64,7 @@ public class OidcClientController extends BaseController<OidcClientService, Clie
    */
   @GetMapping("/{id}/configuration")
   @Operation(summary = "查询客户端配置", description = "查询结构化OAuth2客户端配置")
-  public Response<OidcClientConfigurationDto> configuration(@PathVariable String id) {
+  public Response<OidcClientConfigurationDto> configuration(@PathVariable("id") String id) {
     return ok(service.configuration(id));
   }
 
@@ -90,7 +90,7 @@ public class OidcClientController extends BaseController<OidcClientService, Clie
   @PutMapping("/{id}/configuration")
   @Operation(summary = "更新客户端配置", description = "使用结构化配置更新OAuth2客户端")
   public Response<Client> modifyConfiguration(
-      @PathVariable String id,
+      @PathVariable("id") String id,
       @RequestBody OidcClientConfigurationDto dto
   ) {
     return ok(service.updateConfiguration(id, dto));

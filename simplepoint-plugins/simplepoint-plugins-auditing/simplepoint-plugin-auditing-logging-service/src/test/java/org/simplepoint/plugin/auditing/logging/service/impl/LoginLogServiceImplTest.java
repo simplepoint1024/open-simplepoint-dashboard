@@ -40,10 +40,6 @@ class LoginLogServiceImplTest {
   @InjectMocks
   private LoginLogServiceImpl service;
 
-  /**
-   * When there is no tenant context (unauthenticated / no RequestContext),
-   * currentTenantId() returns null so no "tenantId" key is injected.
-   */
   @Test
   void limitShouldNotInjectTenantIdWhenContextIsAbsent() {
     Pageable pageable = PageRequest.of(0, 10);
@@ -53,6 +49,21 @@ class LoginLogServiceImplTest {
         .thenReturn(emptyPage);
 
     Page<LoginLog> result = service.limit(null, pageable);
+
+    assertNotNull(result);
+    verify(repository).limit(argThat(attrs -> !attrs.containsKey("tenantId")), eq(pageable));
+  }
+
+  @Test
+  void limitShouldNotInjectImplicitTenantIdWhenContextHasTenant() {
+    Pageable pageable = PageRequest.of(0, 10);
+    Page<LoginLog> emptyPage = new PageImpl<>(java.util.List.of());
+    LoginLogServiceImpl tenantAwareService = serviceWithCurrentTenant("tenant-1");
+
+    when(repository.limit(argThat(attrs -> !attrs.containsKey("tenantId")), eq(pageable)))
+        .thenReturn(emptyPage);
+
+    Page<LoginLog> result = tenantAwareService.limit(null, pageable);
 
     assertNotNull(result);
     verify(repository).limit(argThat(attrs -> !attrs.containsKey("tenantId")), eq(pageable));
@@ -84,5 +95,14 @@ class LoginLogServiceImplTest {
     Page<LoginLog> result = service.limit(null, pageable);
 
     assertNotNull(result);
+  }
+
+  private LoginLogServiceImpl serviceWithCurrentTenant(String tenantId) {
+    return new LoginLogServiceImpl(repository, detailsProviderService) {
+      @Override
+      protected String currentTenantId() {
+        return tenantId;
+      }
+    };
   }
 }

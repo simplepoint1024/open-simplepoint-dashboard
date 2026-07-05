@@ -114,6 +114,27 @@ class FederationJdbcConnectionUserServiceImplTest {
   }
 
   @Test
+  void authorizedShouldFallbackWhenAuthorizationUserLookupReturnsNull() {
+    User user = enabledUser("user-1");
+    when(usersService.findByIdForAuthorization("user-1")).thenReturn(null);
+    when(usersService.findById("user-1")).thenReturn(Optional.of(user));
+    when(repository.findAllByUserIdAndDeletedAtIsNull("user-1"))
+        .thenReturn(List.of(enabledGrant("g1", "ds-1", "user-1")));
+
+    Collection<String> result = service().authorized("user-1");
+
+    assertThat(result).containsExactly("ds-1");
+  }
+
+  @Test
+  void authorizedShouldRejectNullUserLookupWithoutNpe() {
+    when(usersService.findByIdForAuthorization("user-1")).thenReturn(null);
+    when(usersService.findById("user-1")).thenReturn(null);
+
+    assertThrows(IllegalArgumentException.class, () -> service().authorized("user-1"));
+  }
+
+  @Test
   void enabledGrantsShouldReturnOnlyEnabledGrantsForUser() {
     User user = enabledUser("user-1");
     when(usersService.findById("user-1")).thenReturn(Optional.of(user));
@@ -362,7 +383,6 @@ class FederationJdbcConnectionUserServiceImplTest {
     JdbcDataSourceDefinition ds2 = enabledDataSource("ds-2", "mysql", "MySQL");
     Page<JdbcDataSourceDefinition> page = new PageImpl<>(List.of(ds1, ds2));
     when(dataSourceService.limit(any(), any())).thenReturn(page);
-    when(usersService.findById("user-1")).thenReturn(Optional.of(enabledUser("user-1")));
     when(repository.findAllByUserIdAndDeletedAtIsNull("user-1"))
         .thenReturn(List.of(enabledGrant("g1", "ds-1", "user-1")));
 
@@ -373,6 +393,19 @@ class FederationJdbcConnectionUserServiceImplTest {
 
     assertThat(result.getTotalElements()).isEqualTo(1);
     assertThat(result.getContent()).extracting(item -> item.id()).containsExactly("ds-2");
+  }
+
+  @Test
+  void dataSourceItemsShouldNotRequireUserLookupWhenExcludingAuthorized() {
+    JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "pg", "PostgreSQL");
+    when(dataSourceService.limit(any(), any())).thenReturn(new PageImpl<>(List.of(dataSource)));
+    when(repository.findAllByUserIdAndDeletedAtIsNull("user-1")).thenReturn(List.of());
+
+    var result = service().dataSourceItems(Map.of("userId", "user-1"), PageRequest.of(0, 10));
+
+    assertThat(result.getContent()).extracting(item -> item.id()).containsExactly("ds-1");
+    verify(usersService, never()).findByIdForAuthorization(anyString());
+    verify(usersService, never()).findById(anyString());
   }
 
   @Test
