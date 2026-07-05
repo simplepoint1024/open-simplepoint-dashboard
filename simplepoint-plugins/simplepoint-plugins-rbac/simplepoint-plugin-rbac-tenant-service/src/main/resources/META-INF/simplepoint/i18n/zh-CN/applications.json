@@ -15,6 +15,7 @@
   "applications.resourceConfig.title": "应用资源",
   "applications.resourceConfig.assignedTitle": "已分配资源",
   "applications.resourceConfig.selectedCount": "已分配 {count} 项资源",
+  "applications.resourceConfig.treeAncestor": "父级",
   "applications.resourceConfig.loadFailed": "应用资源加载失败",
   "applications.resourceConfig.updateSuccess": "应用资源已更新",
   "applications.resourceConfig.updateFailed": "应用资源更新失败"

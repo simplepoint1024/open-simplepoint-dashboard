@@ -589,20 +589,6 @@ const App = <T extends object = any>(props: TableProps<T>) => {
       .map((item) => item.column);
   }, [properties, colConfigs, visibleKeys, filters, sortField, sortDir, colWidths, handleResize, props.onFilterChange, props.refresh, props.columnOverrides, t, locale])
 
-  const rawDataSource = props.pageable?.content ?? [];
-  const dataSource = useMemo(() => normalizeTreeRows(rawDataSource), [rawDataSource]);
-
-  const pagination = toPagination(props.pageable);
-
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>(props.rowSelection?.selectedKeys ?? []);
-  const [selectedRows, setSelectedRows] = useState<T[]>([]);
-
-  useEffect(() => {
-    if (props.rowSelection?.selectedKeys) {
-      setSelectedRowKeys(props.rowSelection.selectedKeys);
-    }
-  }, [props.rowSelection?.selectedKeys]);
-
   const anonKeyMapRef = useRef(new WeakMap<object, number>());
   const anonKeySeqRef = useRef(1);
   const keyOfRecord = useCallback((record: T): React.Key => {
@@ -618,6 +604,42 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     return `~${n}`;
   }, []);
 
+  const rawDataSource = props.pageable?.content ?? [];
+  const dataSource = useMemo(() => normalizeTreeRows(rawDataSource), [rawDataSource]);
+  const rowByKey = useMemo(() => {
+    const rowsByKey = new Map<React.Key, T>();
+    const visit = (rows: T[]) => {
+      rows.forEach((row) => {
+        rowsByKey.set(keyOfRecord(row), row);
+        const children = (row as any)?.children;
+        if (Array.isArray(children) && children.length) {
+          visit(children);
+        }
+      });
+    };
+    visit(dataSource);
+    return rowsByKey;
+  }, [dataSource, keyOfRecord]);
+
+  const pagination = toPagination(props.pageable);
+
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>(props.rowSelection?.selectedKeys ?? []);
+  const [selectedRows, setSelectedRows] = useState<T[]>([]);
+
+  useEffect(() => {
+    if (props.rowSelection?.selectedKeys) {
+      setSelectedRowKeys(props.rowSelection.selectedKeys);
+    }
+  }, [props.rowSelection?.selectedKeys]);
+
+  const getSelectedRowsForEvent = useCallback(() => {
+    if (!selectedRowKeys.length) return [];
+    const currentRows = selectedRowKeys
+      .map((key) => rowByKey.get(key))
+      .filter((row): row is T => !!row);
+    return currentRows.length === selectedRowKeys.length ? currentRows : selectedRows;
+  }, [rowByKey, selectedRowKeys, selectedRows]);
+
   const onSelectChange = useCallback(
     (keys: React.Key[], rows: T[]) => {
       setSelectedRowKeys(keys);
@@ -631,7 +653,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     if (button.onClick) return button.onClick as MouseEventHandler<HTMLElement>;
     if (props.onButtonEvents && props.onButtonEvents[button.key]) {
       return () => {
-        props.onButtonEvents![button.key](selectedRowKeys, selectedRows, button);
+        props.onButtonEvents![button.key](selectedRowKeys, getSelectedRowsForEvent(), button);
       };
     }
     return undefined;

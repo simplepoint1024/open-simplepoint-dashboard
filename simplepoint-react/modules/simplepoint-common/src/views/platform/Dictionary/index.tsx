@@ -1,7 +1,7 @@
 import api from '@/api/index';
 import SimpleTable from '@simplepoint/components/SimpleTable';
-import React, {useCallback, useEffect, useState} from 'react';
-import {Drawer} from 'antd';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {Drawer, message} from 'antd';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import ItemConfig from './config/item';
 
@@ -45,12 +45,17 @@ const App = () => {
     window.addEventListener('mouseup', onUp);
   }, [drawerHeight]);
 
-  const customButtonEvents = {
+  const customButtonEvents = useMemo(() => ({
     'config.item': (_keys: React.Key[], rows: any[]) => {
+      const nextDictionaryCode = String(rows?.[0]?.code ?? '').trim();
+      if (!nextDictionaryCode) {
+        message.warning(t('table.selectOne', '请先选择一条记录'));
+        return;
+      }
+      setDictionaryCode(nextDictionaryCode);
       setOpenItemConfig(true);
-      setDictionaryCode(rows?.[0]?.code ?? '');
     },
-  };
+  }), [t]);
 
   return (
     <div>
@@ -73,7 +78,7 @@ const App = () => {
           onMouseDown={startResize}
         />
         {/* 不使用 key 强制重建，避免闪退；组件内部通过 useEffect([dictionaryCode]) 重置状态 */}
-        {dictionaryCode && <ItemConfig dictionaryCode={dictionaryCode}/>}
+        {openItemConfig && dictionaryCode ? <ItemConfig dictionaryCode={dictionaryCode}/> : null}
       </Drawer>
     </div>
   );

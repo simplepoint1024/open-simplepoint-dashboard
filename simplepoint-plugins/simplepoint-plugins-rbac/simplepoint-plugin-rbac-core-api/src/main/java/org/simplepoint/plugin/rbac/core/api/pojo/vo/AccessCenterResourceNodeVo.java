@@ -21,6 +21,8 @@ public class AccessCenterResourceNodeVo implements Serializable {
 
   private String alias;
 
+  private String icon;
+
   private String code;
 
   private String path;

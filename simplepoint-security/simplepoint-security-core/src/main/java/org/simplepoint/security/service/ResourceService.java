@@ -39,9 +39,19 @@ public interface ResourceService extends BaseService<Resource, String> {
   Page<ResourceNode> children(Map<String, String> attributes, Pageable pageable);
 
   /**
+   * Returns one paged level of resources that are assigned or ancestors of assigned resources.
+   */
+  Page<ResourceNode> assignedTree(Collection<String> codes, Map<String, String> attributes, Pageable pageable);
+
+  /**
    * Finds resources by stable codes.
    */
   Collection<Resource> findAllByCodes(Collection<String> codes);
+
+  /**
+   * Finds grantable resource codes for the root resource and all of its descendants.
+   */
+  Collection<String> findSubtreeGrantableCodes(String rootId);
 
   /**
    * Finds resource codes requiring organization tenant context.

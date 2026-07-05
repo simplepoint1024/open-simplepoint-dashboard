@@ -1,7 +1,7 @@
 import api from '@/api/index';
 import SimpleTable from '@simplepoint/components/SimpleTable';
-import React, {useCallback, useEffect, useState} from 'react';
-import {Drawer} from 'antd';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {Drawer, message} from 'antd';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import ApplicationConfig from './config/application';
 
@@ -45,12 +45,17 @@ const App = () => {
     window.addEventListener('mouseup', onUp);
   }, [drawerHeight]);
 
-  const customButtonEvents = {
+  const customButtonEvents = useMemo(() => ({
     'config.application': (_keys: React.Key[], rows: any[]) => {
+      const nextPackageCode = String(rows?.[0]?.code ?? '').trim();
+      if (!nextPackageCode) {
+        message.warning(t('table.selectOne', '请先选择一条记录'));
+        return;
+      }
+      setPackageCode(nextPackageCode);
       setOpenApplicationConfig(true);
-      setPackageCode(rows?.[0]?.code ?? '');
     },
-  };
+  }), [t]);
 
   return (
     <div>
@@ -73,7 +78,7 @@ const App = () => {
           onMouseDown={startResize}
         />
         {/* 不使用 key 强制重建，避免闪退；组件内部通过 useEffect([packageCode]) 重置状态 */}
-        {packageCode && <ApplicationConfig packageCode={packageCode}/>}
+        {openApplicationConfig && packageCode ? <ApplicationConfig packageCode={packageCode}/> : null}
       </Drawer>
     </div>
   );

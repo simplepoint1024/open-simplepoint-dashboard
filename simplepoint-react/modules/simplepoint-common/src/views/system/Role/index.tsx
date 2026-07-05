@@ -62,8 +62,8 @@ const App = () => {
     const customButtonEvents = {
         'config.resource': (_keys: React.Key[], rows: any[]) => {
             if (!rows[0]?.id) return;
-            setOpenRoleConfig(true);
             setRoleId(rows[0].id);
+            setOpenRoleConfig(true);
         },
     };
 

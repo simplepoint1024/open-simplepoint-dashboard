@@ -68,6 +68,7 @@
   "table.pageLoadFail": "Failed to load table data. Try again later.",
   "table.schemaLoadFail": "Failed to load the page schema. Try again later.",
   "table.retry": "Retry",
+  "table.selectOne": "Select one record first",
   "table.selectedCount": "{count} selected",
   "table.total": "{total} total",
   "table.emptyText": "No data"

@@ -204,6 +204,7 @@ public class AccessCenterServiceImpl implements AccessCenterService {
     node.setType(resource.getType() == null ? null : resource.getType().name());
     node.setLabel(firstNonBlank(resource.getLabel(), resource.getName(), resource.getTitle(), resource.getCode(), resource.getId()));
     node.setAlias(resource.getAlias());
+    node.setIcon(resource.getIcon());
     node.setCode(resource.getCode());
     node.setPath(resource.getPath());
     node.setDescription(resource.getDescription());

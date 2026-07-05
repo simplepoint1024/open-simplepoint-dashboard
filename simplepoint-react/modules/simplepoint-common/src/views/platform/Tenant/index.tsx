@@ -1,7 +1,7 @@
 import api from '@/api/index';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Drawer} from 'antd';
+import {Drawer, message} from 'antd';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import PackageConfig from './config/package';
 import UserConfig from './config/user';
@@ -95,20 +95,26 @@ const App = () => {
     window.addEventListener('mouseup', onUp);
   }, [drawerHeight]);
 
-  const customButtonEvents = {
+  const openTenantConfig = useCallback((row: any, target: 'package' | 'user') => {
+    const nextTenantId = String(row?.id ?? '').trim();
+    if (!nextTenantId) {
+      message.warning(t('table.selectOne', '请先选择一条记录'));
+      return;
+    }
+    setTenantId(nextTenantId);
+    setTenantOwnerId(String(row?.ownerId ?? '').trim());
+    setOpenPackageConfig(target === 'package');
+    setOpenUserConfig(target === 'user');
+  }, [t]);
+
+  const customButtonEvents = useMemo(() => ({
     'config.package': (_keys: React.Key[], rows: any[]) => {
-      setOpenPackageConfig(true);
-      setOpenUserConfig(false);
-      setTenantId(rows?.[0]?.id ?? '');
-      setTenantOwnerId(rows?.[0]?.ownerId ?? '');
+      openTenantConfig(rows?.[0], 'package');
     },
     'config.user': (_keys: React.Key[], rows: any[]) => {
-      setOpenUserConfig(true);
-      setOpenPackageConfig(false);
-      setTenantId(rows?.[0]?.id ?? '');
-      setTenantOwnerId(rows?.[0]?.ownerId ?? '');
+      openTenantConfig(rows?.[0], 'user');
     },
-  };
+  }), [openTenantConfig]);
 
   const customButtons = useMemo<TableButtonProps[]>(
     () => [
@@ -159,7 +165,7 @@ const App = () => {
           onMouseDown={startResize}
         />
         {/* 不使用 key 强制重建，避免闪退；组件内部通过 useEffect([tenantId]) 重置状态 */}
-        {tenantId && <PackageConfig tenantId={tenantId}/>}
+        {openPackageConfig && tenantId ? <PackageConfig tenantId={tenantId}/> : null}
       </Drawer>
       <Drawer
         title={t('tenants.button.config.user', '配置成员')}
@@ -180,7 +186,7 @@ const App = () => {
           onMouseDown={startResize}
         />
         {/* 不使用 key 强制重建，避免闪退；组件内部通过 useEffect([tenantId]) 重置状态 */}
-        {tenantId && <UserConfig tenantId={tenantId} ownerId={tenantOwnerId}/>}
+        {openUserConfig && tenantId ? <UserConfig tenantId={tenantId} ownerId={tenantOwnerId}/> : null}
       </Drawer>
     </div>
   );

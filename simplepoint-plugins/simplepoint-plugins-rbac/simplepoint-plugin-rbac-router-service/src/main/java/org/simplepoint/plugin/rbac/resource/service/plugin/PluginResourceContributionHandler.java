@@ -221,6 +221,7 @@ public class PluginResourceContributionHandler
     declaration.setPluginId(pluginId);
     declaration.setCode(contribution.getCode());
     declaration.setName(contribution.getName());
+    declaration.setAlias(contribution.getAlias());
     declaration.setTitle(contribution.getTitle());
     declaration.setLabel(contribution.getLabel());
     declaration.setType(parseType(contribution.getType()));

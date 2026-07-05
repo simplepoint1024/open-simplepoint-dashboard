@@ -3,6 +3,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {Alert, Button, Select, Space, Spin, Tag, Tree, Typography, message} from 'antd';
 import type {DataNode} from 'antd/es/tree';
 import {useData} from '@simplepoint/shared/api/methods';
+import {createIcon} from '@simplepoint/shared/types/icon';
 import {
   AccessCenterResourceNode,
   fetchResourceTree,
@@ -31,9 +32,29 @@ const TYPE_COLOR: Record<string, string> = {
 
 const nodeKey = (node: AccessCenterResourceNode) => node.resourceCode || node.code || node.id;
 
-const nodeDisplayName = (node: AccessCenterResourceNode) => (
-  node.alias || node.label || node.code || node.resourceCode || node.id
+type Translate = (key: string, fallback?: string) => string;
+
+const resolveI18nText = (value: unknown, t?: Translate) => {
+  if (typeof value !== 'string') return String(value ?? '');
+  if (!value.startsWith('i18n:')) return value;
+  const key = value.slice(5);
+  return t?.(key, key) ?? key;
+};
+
+const nodeDisplayName = (node: AccessCenterResourceNode, t?: Translate) => (
+  resolveI18nText(node.alias || node.label || node.code || node.resourceCode || node.id, t)
 );
+
+const renderResourceIcon = (node: AccessCenterResourceNode) => {
+  if (!node.icon) return null;
+  const icon = createIcon(node.icon);
+  if (!icon) return null;
+  return (
+    <span style={{display: 'inline-flex', alignItems: 'center', color: 'var(--ant-color-text-secondary)'}}>
+      {icon}
+    </span>
+  );
+};
 
 const flattenNodes = (nodes: AccessCenterResourceNode[]) => {
   const result: AccessCenterResourceNode[] = [];
@@ -119,7 +140,8 @@ const App = ({roleId}: RoleResourceConfigProps) => {
         key,
         title: (
           <Space size={8}>
-            <Typography.Text>{nodeDisplayName(node)}</Typography.Text>
+            {renderResourceIcon(node)}
+            <Typography.Text>{nodeDisplayName(node, t)}</Typography.Text>
             <Tag color={TYPE_COLOR[node.type] ?? 'default'}>
               {t(`resources.type.${node.type}`, node.type)}
             </Tag>

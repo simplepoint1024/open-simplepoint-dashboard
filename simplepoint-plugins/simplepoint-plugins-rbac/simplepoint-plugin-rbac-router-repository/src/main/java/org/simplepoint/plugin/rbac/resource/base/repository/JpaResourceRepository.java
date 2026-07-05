@@ -53,6 +53,20 @@ public interface JpaResourceRepository extends BaseRepository<Resource, String>,
   @Query("""
       select r
       from Resource r
+      where r.id in :ids
+        and ((:parentId is null and r.parentId is null) or (:parentId is not null and r.parentId = :parentId))
+      order by r.sort asc, r.name asc
+      """)
+  Page<Resource> findChildrenByIds(
+      Pageable pageable,
+      @Param("ids") Collection<String> ids,
+      @Param("parentId") String parentId
+  );
+
+  @Override
+  @Query("""
+      select r
+      from Resource r
       where
         lower(coalesce(r.code, '')) like lower(concat('%', :keyword, '%'))
         or lower(coalesce(r.name, '')) like lower(concat('%', :keyword, '%'))
@@ -68,6 +82,13 @@ public interface JpaResourceRepository extends BaseRepository<Resource, String>,
   @Override
   @Query("select distinct r.parentId from Resource r where r.parentId in :parentIds")
   Collection<String> findParentIdsWithChildren(@Param("parentIds") Collection<String> parentIds);
+
+  @Override
+  @Query("select distinct r.parentId from Resource r where r.id in :ids and r.parentId in :parentIds")
+  Collection<String> findParentIdsWithChildrenIn(
+      @Param("ids") Collection<String> ids,
+      @Param("parentIds") Collection<String> parentIds
+  );
 
   @Override
   @Query("select r.code from Resource r where r.requireOrgTenant = true")

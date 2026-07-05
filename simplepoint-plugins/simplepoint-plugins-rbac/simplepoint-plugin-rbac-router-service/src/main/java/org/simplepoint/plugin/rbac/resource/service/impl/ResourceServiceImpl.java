@@ -22,6 +22,7 @@ import org.simplepoint.plugin.rbac.resource.api.repository.ResourceAncestorRepos
 import org.simplepoint.plugin.rbac.resource.api.repository.ResourceRepository;
 import org.simplepoint.plugin.rbac.resource.api.service.MicroAppService;
 import org.simplepoint.plugin.rbac.resource.api.vo.MicroModuleItemVo;
+import org.simplepoint.plugin.rbac.resource.service.support.ButtonResourceMetadataRegistry;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
@@ -58,6 +59,7 @@ public class ResourceServiceImpl
   private final ObjectProvider<TenantRepository> tenantRepositoryProvider;
   private final ObjectProvider<RoleResourceGrantRepository> roleResourceGrantRepositoryProvider;
   private final ObjectProvider<ResourceAuthorizationVersionService> resourceAuthorizationVersionServiceProvider;
+  private final ObjectProvider<ButtonResourceMetadataRegistry> buttonResourceMetadataRegistryProvider;
 
   private volatile ServiceResourceRouteResult adminRoutesCache;
   private volatile long adminRoutesCacheExpiry;
@@ -73,7 +75,8 @@ public class ResourceServiceImpl
       ObjectProvider<TenantPackageRelevanceRepository> tenantPackageRelevanceRepositoryProvider,
       ObjectProvider<TenantRepository> tenantRepositoryProvider,
       ObjectProvider<RoleResourceGrantRepository> roleResourceGrantRepositoryProvider,
-      ObjectProvider<ResourceAuthorizationVersionService> resourceAuthorizationVersionServiceProvider
+      ObjectProvider<ResourceAuthorizationVersionService> resourceAuthorizationVersionServiceProvider,
+      ObjectProvider<ButtonResourceMetadataRegistry> buttonResourceMetadataRegistryProvider
   ) {
     super(repository, detailsProviderService);
     this.resourceAncestorRepository = resourceAncestorRepository;
@@ -82,6 +85,7 @@ public class ResourceServiceImpl
     this.tenantRepositoryProvider = tenantRepositoryProvider;
     this.roleResourceGrantRepositoryProvider = roleResourceGrantRepositoryProvider;
     this.resourceAuthorizationVersionServiceProvider = resourceAuthorizationVersionServiceProvider;
+    this.buttonResourceMetadataRegistryProvider = buttonResourceMetadataRegistryProvider;
   }
 
   @Override
@@ -259,6 +263,46 @@ public class ResourceServiceImpl
   }
 
   @Override
+  public Page<ResourceNode> assignedTree(Collection<String> codes, Map<String, String> attributes, Pageable pageable) {
+    Set<String> normalizedCodes = normalizeCodes(codes);
+    if (normalizedCodes.isEmpty()) {
+      return Page.empty(pageable);
+    }
+    if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
+      Set<String> visibleCodes = visibleTenantResourceCodes();
+      normalizedCodes.retainAll(visibleCodes);
+      if (normalizedCodes.isEmpty()) {
+        return Page.empty(pageable);
+      }
+    }
+
+    Set<String> selectedIds = new LinkedHashSet<>(getRepository().findIdsByCodes(normalizedCodes));
+    if (selectedIds.isEmpty()) {
+      return Page.empty(pageable);
+    }
+    Set<String> includedIds = new LinkedHashSet<>(selectedIds);
+    includedIds.addAll(resourceAncestorRepository.findAncestorIdsByChildIdIn(selectedIds));
+    String parentId = firstNonBlank(attribute(attributes, "parentId"), attribute(attributes, "parent"));
+    Page<Resource> page = getRepository().findChildrenByIds(pageable, includedIds, parentId);
+    List<ResourceNode> nodes = page.getContent().stream()
+        .map(this::toResourceNode)
+        .toList();
+    Set<String> parentIds = nodes.stream()
+        .map(ResourceNode::getId)
+        .filter(this::hasText)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+    Collection<String> idsWithChildren = parentIds.isEmpty()
+        ? List.of()
+        : getRepository().findParentIdsWithChildrenIn(includedIds, parentIds);
+    Set<String> idsWithChildrenSet = new HashSet<>(idsWithChildren);
+    nodes.forEach(node -> {
+      node.setHasChildren(idsWithChildrenSet.contains(node.getId()));
+      node.setChecked(hasText(node.getCode()) && normalizedCodes.contains(node.getCode()));
+    });
+    return new PageImpl<>(nodes, pageable, page.getTotalElements());
+  }
+
+  @Override
   public Collection<Resource> findAllByCodes(Collection<String> codes) {
     Set<String> normalizedCodes = normalizeCodes(codes);
     if (normalizedCodes.isEmpty()) {
@@ -272,6 +316,30 @@ public class ResourceServiceImpl
       }
     }
     return getRepository().findAllByCodes(normalizedCodes);
+  }
+
+  @Override
+  public Collection<String> findSubtreeGrantableCodes(String rootId) {
+    if (!hasText(rootId)) {
+      return List.of();
+    }
+    Set<String> ids = new LinkedHashSet<>();
+    ids.add(rootId);
+    ids.addAll(resourceAncestorRepository.findChildIdsByAncestorIds(Set.of(rootId)));
+    if (ids.isEmpty()) {
+      return List.of();
+    }
+
+    Set<String> visibleCodes = AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())
+        ? null
+        : visibleTenantResourceCodes();
+    return getRepository().loadByIds(ids).stream()
+        .filter(resource -> Boolean.TRUE.equals(resource.getGrantable()))
+        .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
+        .map(Resource::getCode)
+        .filter(this::hasText)
+        .filter(code -> visibleCodes == null || visibleCodes.contains(code))
+        .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   @Override
@@ -501,6 +569,36 @@ public class ResourceServiceImpl
     }
     if (resource.getDisabled() == null) {
       resource.setDisabled(Boolean.FALSE);
+    }
+    applyButtonMetadata(resource);
+  }
+
+  private void applyButtonMetadata(Resource resource) {
+    if (resource == null || resource.getType() != ResourceType.ACTION || !hasText(resource.getCode())) {
+      return;
+    }
+    ButtonResourceMetadataRegistry registry = buttonResourceMetadataRegistryProvider.getIfAvailable();
+    if (registry == null) {
+      return;
+    }
+    ButtonResourceMetadataRegistry.ButtonResourceMetadata metadata = registry.find(resource.getCode());
+    if (metadata == null) {
+      return;
+    }
+    if (!hasText(resource.getAlias()) && hasText(metadata.title())) {
+      resource.setAlias(metadata.title());
+    }
+    if (!hasText(resource.getTitle()) && hasText(metadata.title())) {
+      resource.setTitle(metadata.title());
+    }
+    if (!hasText(resource.getIcon()) && hasText(metadata.icon())) {
+      resource.setIcon(metadata.icon());
+    }
+    if (resource.getDanger() == null) {
+      resource.setDanger(metadata.danger());
+    }
+    if (resource.getSort() == null) {
+      resource.setSort(metadata.sort());
     }
   }
 

@@ -68,6 +68,7 @@
   "table.pageLoadFail": "列表数据加载失败，请稍后重试。",
   "table.schemaLoadFail": "页面结构加载失败，请稍后重试。",
   "table.retry": "重试",
+  "table.selectOne": "请先选择一条记录",
   "table.selectedCount": "已选 {count} 条",
   "table.total": "共 {total} 条",
   "table.emptyText": "暂无数据"

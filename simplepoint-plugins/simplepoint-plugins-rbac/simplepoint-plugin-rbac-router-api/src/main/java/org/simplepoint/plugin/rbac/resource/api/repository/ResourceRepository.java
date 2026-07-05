@@ -33,6 +33,11 @@ public interface ResourceRepository extends BaseRepository<Resource, String> {
   Page<Resource> findChildren(Pageable pageable, String parentId, String keyword);
 
   /**
+   * Finds direct children inside a constrained id set.
+   */
+  Page<Resource> findChildrenByIds(Pageable pageable, Collection<String> ids, String parentId);
+
+  /**
    * Finds resources matching a keyword.
    */
   Page<Resource> findMatches(Pageable pageable, String keyword);
@@ -41,6 +46,11 @@ public interface ResourceRepository extends BaseRepository<Resource, String> {
    * Finds parent ids that have child resources.
    */
   Collection<String> findParentIdsWithChildren(Collection<String> parentIds);
+
+  /**
+   * Finds parent ids that have child resources inside a constrained id set.
+   */
+  Collection<String> findParentIdsWithChildrenIn(Collection<String> ids, Collection<String> parentIds);
 
   /**
    * Finds resource codes that require organization tenant context.

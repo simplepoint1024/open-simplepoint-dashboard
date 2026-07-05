@@ -46,6 +46,7 @@
     "applications.resourceConfig.loadFailed": "Failed to load application resources",
     "applications.resourceConfig.selectedCount": "{count} resources assigned",
     "applications.resourceConfig.title": "Application Resources",
+    "applications.resourceConfig.treeAncestor": "Parent",
     "applications.resourceConfig.updateFailed": "Failed to update application resources",
     "applications.resourceConfig.updateSuccess": "Application resources updated",
     "applications.title.code": "Application Code",
@@ -1761,6 +1762,7 @@
     "table.schemaLoadFail": "Failed to load the page schema. Try again later.",
     "table.selectAll": "Select All",
     "table.selectedCount": "{count} selected",
+    "table.selectOne": "Select one record first",
     "table.total": "{total} total"
   },
   "tenants": {

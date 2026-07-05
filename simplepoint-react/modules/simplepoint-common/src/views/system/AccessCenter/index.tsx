@@ -26,6 +26,7 @@ import type {Key} from 'react';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useData, usePage} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {createIcon} from '@simplepoint/shared/types/icon';
 import api from '@/api';
 import {
   AccessCenterResourceNode,
@@ -74,6 +75,13 @@ function userTitle(user: {name?: string | null; email?: string | null; phoneNumb
   return user.name || user.email || user.phoneNumber || user.id || '-';
 }
 
+function resolveI18nText(value: unknown, t?: Translate) {
+  if (typeof value !== 'string') return String(value ?? '');
+  if (!value.startsWith('i18n:')) return value;
+  const key = value.slice(5);
+  return t?.(key, key) ?? key;
+}
+
 function normalizeResourceCodes(resourceCodes?: readonly string[]) {
   return Array.from(new Set((resourceCodes ?? []).map(String).filter(Boolean)));
 }
@@ -102,9 +110,20 @@ function getNodeResourceCodes(node?: AccessCenterResourceNode) {
   return node.resourceCodes ?? [];
 }
 
-function resourceDisplayName(node?: AccessCenterResourceNode) {
+function resourceDisplayName(node?: AccessCenterResourceNode, t?: Translate) {
   if (!node) return '-';
-  return node.alias || node.label || node.code || node.resourceCode || node.id || '-';
+  return resolveI18nText(node.alias || node.label || node.code || node.resourceCode || node.id || '-', t);
+}
+
+function renderResourceIcon(node?: AccessCenterResourceNode) {
+  if (!node?.icon) return null;
+  const icon = createIcon(node.icon);
+  if (!icon) return null;
+  return (
+    <span style={{display: 'inline-flex', alignItems: 'center', color: 'var(--ant-color-text-secondary)'}}>
+      {icon}
+    </span>
+  );
 }
 
 function collectGrantableNodes(node?: AccessCenterResourceNode) {
@@ -223,7 +242,8 @@ function buildTreeData(nodes: AccessCenterResourceNode[], selectedSet: Set<strin
       key: node.id,
       title: (
         <span className="access-center-tree-title">
-          <span className="access-center-tree-label">{resourceDisplayName(node)}</span>
+          {renderResourceIcon(node)}
+          <span className="access-center-tree-label">{resourceDisplayName(node, t)}</span>
           {node.resourceCode ? (
             <Typography.Text code className="access-center-tree-code">{node.resourceCode}</Typography.Text>
           ) : null}
@@ -666,7 +686,7 @@ const AccessCenter = () => {
                     <>
                       <div className="access-center-detail-head">
                         <div>
-                          <Typography.Text strong>{resourceDisplayName(selectedResource)}</Typography.Text>
+                          <Typography.Text strong>{resourceDisplayName(selectedResource, t)}</Typography.Text>
                           <Typography.Text type="secondary">{selectedResource.code || selectedResource.path || '-'}</Typography.Text>
                         </div>
                         <Tag color={resourceTypeColor(selectedResource.type)}>
@@ -709,7 +729,7 @@ const AccessCenter = () => {
                                   onChange={(event) => handleResourceToggle(code, event.target.checked)}
                                 />
                                 <span className="access-center-action-info">
-                                  <strong>{resourceDisplayName(resource) || code}</strong>
+                                  <strong>{resourceDisplayName(resource, t) || code}</strong>
                                   <Typography.Text code>{code}</Typography.Text>
                                   {resource.description ? <small>{resource.description}</small> : null}
                                 </span>

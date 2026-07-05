@@ -99,6 +99,54 @@ const resources = [
 ];
 
 const flatten = (nodes: any[]): any[] => nodes.flatMap((node) => [node, ...flatten(node.children ?? [])]);
+const allResources = () => flatten(resources);
+const findResource = (id?: string | null) => allResources().find((item) => item.id === id || item.code === id);
+const grantableCodes = (nodes: any[]) => flatten(nodes)
+  .filter((item) => item.code && item.grantable !== false && item.disabled !== true)
+  .map((item) => item.code);
+
+const toPage = (items: any[], page: number, size: number) => {
+  const start = page * size;
+  const content = items.slice(start, start + size).map((item) => ({
+    ...item,
+    hasChildren: (item.children ?? []).length > 0,
+    children: [],
+  }));
+  return {
+    content,
+    page: {
+      size,
+      number: page,
+      totalElements: items.length,
+      totalPages: Math.max(1, Math.ceil(items.length / size)),
+    },
+  };
+};
+
+const hasAssignedDescendant = (node: any, codes: Set<string>): boolean => (
+  codes.has(node.code) || (node.children ?? []).some((child: any) => hasAssignedDescendant(child, codes))
+);
+
+const toAssignedTreePage = (items: any[], codes: Set<string>, page: number, size: number) => {
+  const matched = items
+    .filter((item) => hasAssignedDescendant(item, codes))
+    .map((item) => ({
+      ...item,
+      checked: codes.has(item.code),
+      hasChildren: (item.children ?? []).some((child: any) => hasAssignedDescendant(child, codes)),
+      children: [],
+    }));
+  const start = page * size;
+  return {
+    content: matched.slice(start, start + size),
+    page: {
+      size,
+      number: page,
+      totalElements: matched.length,
+      totalPages: Math.max(1, Math.ceil(matched.length / size)),
+    },
+  };
+};
 
 export default [
   http.get(`${base}/schema`, () => HttpResponse.json({
@@ -127,10 +175,42 @@ export default [
     const url = new URL(request.url);
     const page = Number(url.searchParams.get('page') ?? '0');
     const size = Number(url.searchParams.get('size') ?? '20');
-    return HttpResponse.json({
-      content: resources,
-      page: {size, number: page, totalElements: resources.length, totalPages: 1},
-    });
+    return HttpResponse.json(toPage(resources, page, size));
+  }),
+  http.get(`${base}/children`, ({request}) => {
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get('page') ?? '0');
+    const size = Number(url.searchParams.get('size') ?? '20');
+    const keyword = (url.searchParams.get('keyword') ?? '').trim().toLowerCase();
+    const parentId = url.searchParams.get('parentId');
+    const parent = findResource(parentId);
+    const source = parentId ? (parent?.children ?? []) : resources;
+    const matched = keyword
+      ? allResources().filter((item) => [item.code, item.name, item.label, item.title, item.path, item.component]
+        .some((value) => String(value ?? '').toLowerCase().includes(keyword)))
+      : source;
+    return HttpResponse.json(toPage(matched, page, size));
+  }),
+  http.post(`${base}/by-codes`, async ({request}) => {
+    const codes = await request.json() as string[];
+    const codeSet = new Set(codes);
+    return HttpResponse.json(allResources().filter((item) => codeSet.has(item.code)));
+  }),
+  http.post(`${base}/assigned-tree`, async ({request}) => {
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get('page') ?? '0');
+    const size = Number(url.searchParams.get('size') ?? '20');
+    const parentId = url.searchParams.get('parentId');
+    const codes = await request.json() as string[];
+    const codeSet = new Set(codes);
+    const parent = findResource(parentId);
+    const source = parentId ? (parent?.children ?? []) : resources;
+    return HttpResponse.json(toAssignedTreePage(source, codeSet, page, size));
+  }),
+  http.get(`${base}/subtree-codes`, ({request}) => {
+    const url = new URL(request.url);
+    const root = findResource(url.searchParams.get('rootId'));
+    return HttpResponse.json(root ? grantableCodes([root]) : []);
   }),
   http.get(`${base}/service-routes`, () => HttpResponse.json({
     services: [],

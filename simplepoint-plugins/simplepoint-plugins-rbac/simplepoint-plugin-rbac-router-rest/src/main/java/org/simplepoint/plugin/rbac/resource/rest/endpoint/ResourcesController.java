@@ -58,11 +58,32 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
     return Response.limit(service.children(attributes, pageable), ResourceNode.class);
   }
 
+  @PostMapping("/assigned-tree")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.view')")
+  @Operation(summary = "分页查询已分配资源树", description = "按已分配资源编码查询资源及必要父级结构，用于懒加载分配界面")
+  public Response<Page<ResourceNode>> assignedTree(
+      @RequestBody Set<String> codes,
+      @RequestParam Map<String, String> attributes,
+      Pageable pageable
+  ) {
+    if (!pageable.getSort().isSorted()) {
+      pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.ASC, "sort"));
+    }
+    return Response.limit(service.assignedTree(codes, attributes, pageable), ResourceNode.class);
+  }
+
   @PostMapping("/by-codes")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.view')")
   @Operation(summary = "按编码查询资源", description = "根据资源编码批量查询资源明细")
   public Response<Collection<Resource>> byCodes(@RequestBody Set<String> codes) {
     return ok(service.findAllByCodes(codes));
+  }
+
+  @GetMapping("/subtree-codes")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.view')")
+  @Operation(summary = "查询资源子树编码", description = "查询指定资源及其子资源下可授权的资源编码")
+  public Response<Collection<String>> subtreeCodes(@RequestParam("rootId") String rootId) {
+    return ok(service.findSubtreeGrantableCodes(rootId));
   }
 
   @GetMapping("/service-routes")

@@ -105,6 +105,7 @@ public class PluginManifest implements Serializable {
   public static class ResourceContribution implements Serializable {
     private String code;
     private String name;
+    private String alias;
     private String title;
     private String label;
     private String type;
