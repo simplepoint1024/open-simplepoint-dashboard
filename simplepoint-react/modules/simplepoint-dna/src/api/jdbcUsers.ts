@@ -23,7 +23,7 @@ export interface JdbcUserGrant {
   operationPermissions?: string[];
 }
 
-export async function fetchItems(params: Record<string, string>) {
+export async function fetchItems(params: Record<string, string | number | undefined>) {
   return await get<Page<JdbcUserDataSourceItem>>(`${baseUrl}/items`, params);
 }
 
@@ -40,7 +40,7 @@ export async function fetchGrants(userId: string) {
 }
 
 export async function fetchAuthorize(data: JdbcUserDataSourceAssignDto) {
-  return await post(`${baseUrl}/authorize`, data);
+  return await post<JdbcUserGrant[]>(`${baseUrl}/authorize`, data);
 }
 
 export async function fetchUnauthorized(data: JdbcUserDataSourceAssignDto) {

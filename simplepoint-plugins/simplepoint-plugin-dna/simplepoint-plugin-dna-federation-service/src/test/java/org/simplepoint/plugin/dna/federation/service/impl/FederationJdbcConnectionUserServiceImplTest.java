@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -349,10 +350,29 @@ class FederationJdbcConnectionUserServiceImplTest {
     Page<JdbcDataSourceDefinition> page = new PageImpl<>(List.of(dataSource));
     when(dataSourceService.limit(any(), any())).thenReturn(page);
 
-    var result = service().dataSourceItems(PageRequest.of(0, 10));
+    var result = service().dataSourceItems(Map.of(), PageRequest.of(0, 10));
 
     assertThat(result.getContent()).hasSize(1);
     assertThat(result.getContent().get(0).code()).isEqualTo("pg");
+  }
+
+  @Test
+  void dataSourceItemsShouldExcludeAuthorizedAndFilterByKeyword() {
+    JdbcDataSourceDefinition ds1 = enabledDataSource("ds-1", "pg", "PostgreSQL");
+    JdbcDataSourceDefinition ds2 = enabledDataSource("ds-2", "mysql", "MySQL");
+    Page<JdbcDataSourceDefinition> page = new PageImpl<>(List.of(ds1, ds2));
+    when(dataSourceService.limit(any(), any())).thenReturn(page);
+    when(usersService.findById("user-1")).thenReturn(Optional.of(enabledUser("user-1")));
+    when(repository.findAllByUserIdAndDeletedAtIsNull("user-1"))
+        .thenReturn(List.of(enabledGrant("g1", "ds-1", "user-1")));
+
+    var result = service().dataSourceItems(
+        Map.of("userId", "user-1", "keyword", "mysql"),
+        PageRequest.of(0, 10)
+    );
+
+    assertThat(result.getTotalElements()).isEqualTo(1);
+    assertThat(result.getContent()).extracting(item -> item.id()).containsExactly("ds-2");
   }
 
   @Test

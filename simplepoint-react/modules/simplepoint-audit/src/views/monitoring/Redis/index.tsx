@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Button,
@@ -95,10 +95,36 @@ const App = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"create" | "edit">("create");
   const [detail, setDetail] = useState<RedisEntryDetail | null>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef<HTMLDivElement>(null);
+  const [tableScrollY, setTableScrollY] = useState(420);
 
   useEffect(() => {
     void ensure(baseConfig.i18nNamespaces);
   }, [ensure, locale]);
+
+  useLayoutEffect(() => {
+    const updateTableHeight = () => {
+      const pageHeight = pageRef.current?.getBoundingClientRect().height ?? 0;
+      const controlsHeight = controlsRef.current?.getBoundingClientRect().height ?? 0;
+      if (!pageHeight) {
+        return;
+      }
+      const tableHeaderHeight = 55;
+      const paginationHeight = 64;
+      const verticalGaps = 24;
+      setTableScrollY(Math.max(240, pageHeight - controlsHeight - tableHeaderHeight - paginationHeight - verticalGaps));
+    };
+    const observer = new ResizeObserver(updateTableHeight);
+    if (pageRef.current) {
+      observer.observe(pageRef.current);
+    }
+    if (controlsRef.current) {
+      observer.observe(controlsRef.current);
+    }
+    updateTableHeight();
+    return () => observer.disconnect();
+  }, []);
 
   const buildListParams = useCallback(
     (pageNumber: number, pageSize: number, nextPattern = pattern, nextType = typeFilter) => {
@@ -340,63 +366,71 @@ const App = () => {
       pageSize: pageData.page.size || 10,
       total: pageData.page.totalElements || 0,
       showSizeChanger: true,
+      showQuickJumper: true,
+      pageSizeOptions: ["10", "20", "50", "100"],
+      showTotal: (total) => t("table.total", "共 {total} 条", { total }),
     }),
-    [pageData.page.number, pageData.page.size, pageData.page.totalElements]
+    [pageData.page.number, pageData.page.size, pageData.page.totalElements, t]
   );
 
   return (
-    <Space direction="vertical" size={12} style={{ display: "flex" }}>
-      <Alert
-        showIcon
-        type="info"
-        message={t("monitoring.redis.noticeTitle", "Redis 管理")}
-        description={t(
-          "monitoring.redis.noticeDesc",
-          "列表使用 SCAN 查询当前 Redis 键；支持查看常见 Redis 类型，新增/编辑当前先支持 STRING 类型键值对。"
-        )}
-      />
+    <div ref={pageRef} style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, gap: 12 }}>
+      <div ref={controlsRef} style={{ display: "flex", flexDirection: "column", gap: 12, flexShrink: 0 }}>
+        <Alert
+          showIcon
+          type="info"
+          message={t("monitoring.redis.noticeTitle", "Redis 管理")}
+          description={t(
+            "monitoring.redis.noticeDesc",
+            "列表使用 SCAN 查询当前 Redis 键；支持查看常见 Redis 类型，新增/编辑当前先支持 STRING 类型键值对。"
+          )}
+        />
 
-      <Card>
-        <Space wrap>
-          <Input
-            allowClear
-            value={pattern}
-            onChange={(event) => setPattern(event.target.value)}
-            onPressEnter={() => void handleSearch()}
-            placeholder={t(
-              "monitoring.redis.patternPlaceholder",
-              "输入 Redis 模式，如 simplepoint:*"
-            )}
-            style={{ width: 280 }}
-          />
-          <Select<RedisEntryType>
-            allowClear
-            value={typeFilter}
-            onChange={(value) => setTypeFilter(value)}
-            placeholder={t("monitoring.redis.typePlaceholder", "选择数据类型")}
-            options={typeOptions}
-            style={{ width: 180 }}
-          />
-          <Button type="primary" onClick={() => void handleSearch()}>
-            {t("action.search", "查询")}
-          </Button>
-          <Button onClick={() => void refreshCurrentPage()}>
-            {t("action.refresh", "刷新")}
-          </Button>
-          <Button type="primary" ghost onClick={openCreateEditor}>
-            {t("table.button.add", "新增")}
-          </Button>
-        </Space>
-      </Card>
+        <Card>
+          <Space wrap>
+            <Input
+              allowClear
+              value={pattern}
+              onChange={(event) => setPattern(event.target.value)}
+              onPressEnter={() => void handleSearch()}
+              placeholder={t(
+                "monitoring.redis.patternPlaceholder",
+                "输入 Redis 模式，如 simplepoint:*"
+              )}
+              style={{ width: 280 }}
+            />
+            <Select<RedisEntryType>
+              allowClear
+              value={typeFilter}
+              onChange={(value) => setTypeFilter(value)}
+              placeholder={t("monitoring.redis.typePlaceholder", "选择数据类型")}
+              options={typeOptions}
+              style={{ width: 180 }}
+            />
+            <Button type="primary" onClick={() => void handleSearch()}>
+              {t("action.search", "查询")}
+            </Button>
+            <Button onClick={() => void refreshCurrentPage()}>
+              {t("action.refresh", "刷新")}
+            </Button>
+            <Button type="primary" ghost onClick={openCreateEditor}>
+              {t("table.button.add", "新增")}
+            </Button>
+          </Space>
+        </Card>
+      </div>
 
-      <Card bodyStyle={{ padding: 0 }}>
+      <Card
+        style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
+        bodyStyle={{ padding: 0, flex: 1, minHeight: 0 }}
+      >
         <Table<RedisEntrySummary>
           rowKey="key"
           loading={loading}
           columns={columns}
           dataSource={pageData.content}
           pagination={pagination}
-          scroll={{ x: 980 }}
+          scroll={{ x: 980, y: tableScrollY }}
           onChange={(nextPagination) =>
             void loadEntries(nextPagination.current ?? 1, nextPagination.pageSize ?? 10)
           }
@@ -524,7 +558,7 @@ const App = () => {
           </Space>
         ) : null}
       </Modal>
-    </Space>
+    </div>
   );
 };
 

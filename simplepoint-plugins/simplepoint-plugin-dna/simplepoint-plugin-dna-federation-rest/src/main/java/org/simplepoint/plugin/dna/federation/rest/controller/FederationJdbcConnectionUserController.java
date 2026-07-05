@@ -66,14 +66,18 @@ public class FederationJdbcConnectionUserController
   /**
    * Pages datasource options for one-user multi-datasource assignment.
    *
+   * @param attributes query filters
    * @param pageable pageable
    * @return paged datasource items
    */
   @GetMapping("/items")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.federation.jdbc-users.view')")
   @Operation(summary = "分页查询可分配数据源", description = "返回 JDBC 连接用户授权页左侧可分配的数据源分页")
-  public Response<Page<FederationJdbcUserDataSourceItemVo>> items(final Pageable pageable) {
-    return ok(service.dataSourceItems(pageable));
+  public Response<Page<FederationJdbcUserDataSourceItemVo>> items(
+      @RequestParam final Map<String, String> attributes,
+      final Pageable pageable
+  ) {
+    return ok(service.dataSourceItems(attributes, pageable));
   }
 
   /**

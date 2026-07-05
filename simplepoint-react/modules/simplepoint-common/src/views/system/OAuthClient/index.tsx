@@ -79,15 +79,21 @@ const defaultFormData: OidcClientFormData = {
   deviceCodeTtlMinutes: 5,
 };
 
-const parseCsv = (value?: string) => {
+const parseCsv = (value?: string | string[]) => {
   if (!value) return [];
-  return value
+  const source = Array.isArray(value) ? value.join(',') : value;
+  return source
     .split(/[,\n\r]+/)
     .map((item) => item.trim())
     .filter(Boolean);
 };
 
-const formatCsv = (value?: string[]) => (value ?? []).join(',');
+const formatCsv = (value?: string[] | string) => {
+  if (Array.isArray(value)) {
+    return value.join(',');
+  }
+  return value ?? '';
+};
 
 const secondsToMinutes = (seconds?: number, fallback = 5) => Math.max(1, Math.round((seconds ?? fallback * 60) / 60));
 
@@ -333,7 +339,7 @@ const App = () => {
     () => ({
       add: () => {
         setEditingRecord(null);
-        setInitialValues(defaultFormData);
+        setInitialValues({...defaultFormData});
         setDrawerOpen(true);
       },
       edit: async (_keys, rows) => {
@@ -341,7 +347,9 @@ const App = () => {
         if (!id) return;
         try {
           const configuration = await get<OidcClientConfiguration>(`${baseConfig.baseUrl}/${id}/configuration`);
-          setEditingRecord(configurationToForm(configuration));
+          const formData = configurationToForm(configuration);
+          setEditingRecord(formData);
+          setInitialValues(formData);
           setDrawerOpen(true);
         } catch (error) {
           message.error(t('table.actionFail', '操作失败: {msg}', {msg: resolveApiErrorMessage(error, '')}));
@@ -358,7 +366,10 @@ const App = () => {
   ) => {
     const payload = formToConfiguration(formData, currentEditing);
     if (action === 'edit') {
-      await put(`${baseConfig.baseUrl}/${currentEditing?.id}/configuration`, payload);
+      if (!currentEditing?.id) {
+        throw new Error(t('clients.error.missingId', '缺少客户端记录ID'));
+      }
+      await put(`${baseConfig.baseUrl}/${currentEditing.id}/configuration`, payload);
       message.success(t('table.editSuccess', '修改成功'));
       return;
     }
@@ -383,7 +394,13 @@ const App = () => {
       <SimpleTable
         {...baseConfig}
         drawerOpen={drawerOpen}
-        onDrawerOpenChange={setDrawerOpen}
+        onDrawerOpenChange={(open) => {
+          setDrawerOpen(open);
+          if (!open) {
+            setEditingRecord(null);
+            setInitialValues({...defaultFormData});
+          }
+        }}
         editingRecord={editingRecord}
         onEditingRecordChange={setEditingRecord}
         initialValues={initialValues}

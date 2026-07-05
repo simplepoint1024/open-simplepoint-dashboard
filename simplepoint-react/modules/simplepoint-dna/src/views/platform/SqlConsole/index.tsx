@@ -27,8 +27,9 @@ import {
 } from 'antd';
 import type {TabsProps} from 'antd';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import type {Key} from 'react';
+import type {Key, ReactNode} from 'react';
 import {SqlEditor, type SqlEditorRef} from './SqlEditor';
+import './index.css';
 import {
   findMetadataTreeNodeByKey,
   normalizeMetadataTreeNodes,
@@ -171,13 +172,13 @@ const toExplainSnapshot = (result: SqlExplainResult | SqlQueryResult): SqlExplai
   timeoutMs: result.timeoutMs,
   allowCrossSourceJoin: result.allowCrossSourceJoin,
   crossSourceJoin: result.crossSourceJoin,
-  dataSources: result.dataSources,
+  dataSources: result.dataSources ?? [],
   planText: result.planText,
   pushedSqls: result.pushedSqls ?? [],
   pushdownSummary: result.pushdownSummary,
   schemaCacheHit: result.schemaCacheHit ?? false,
   schemaAssemblyTimeMs: result.schemaAssemblyTimeMs ?? 0,
-  mountedDataSourceCount: result.mountedDataSourceCount ?? result.dataSources.length,
+  mountedDataSourceCount: result.mountedDataSourceCount ?? (result.dataSources ?? []).length,
   pushedDownOperators: result.pushedDownOperators ?? [],
   platformJoin: result.platformJoin ?? false,
 });
@@ -530,11 +531,17 @@ const App = () => {
     values: row ?? [],
   })), [queryResult]);
 
+  const renderScrollPane = useCallback((children: ReactNode) => (
+    <div className="dna-sql-console-scroll-pane">
+      {children}
+    </div>
+  ), []);
+
   const resultTabs = useMemo<TabsProps['items']>(() => [
     {
       key: 'analysis',
       label: t('dna.federation.sqlConsole.page.tab.analysis', '执行分析'),
-      children: analysisResult ? (
+      children: renderScrollPane(analysisResult ? (
         <Space direction="vertical" size={16} style={{display: 'flex'}}>
           <Descriptions bordered size="small" column={2}>
             <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.catalog', '数据目录')}>{analysisResult.catalogCode}</Descriptions.Item>
@@ -563,8 +570,8 @@ const App = () => {
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.dataSources', '命中数据源')} span={2}>
-              {analysisResult.dataSources.length > 0
-                ? analysisResult.dataSources.map((code) => <Tag key={code}>{code}</Tag>)
+              {(analysisResult.dataSources ?? []).length > 0
+                ? (analysisResult.dataSources ?? []).map((code) => <Tag key={code}>{code}</Tag>)
                 : '-'}
             </Descriptions.Item>
             <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.pushedDownOperators', '下推算子')} span={2}>
@@ -605,15 +612,15 @@ const App = () => {
         </Space>
       ) : (
         <Empty description={t('dna.federation.sqlConsole.page.empty.analysis', '查看执行计划或执行 SQL 后展示分析结果')} />
-      ),
+      )),
     },
     {
       key: 'pushedSql',
       label: t('dna.federation.sqlConsole.page.tab.pushedSql', 'JDBC 下推 SQL'),
-      children: queryResult ? (
-        queryResult.pushedSqls.length > 0 ? (
+      children: renderScrollPane(queryResult ? (
+        (queryResult.pushedSqls ?? []).length > 0 ? (
           <Paragraph style={{whiteSpace: 'pre-wrap', marginBottom: 0}}>
-            {formatPushedSqls(queryResult.pushedSqls)}
+            {formatPushedSqls(queryResult.pushedSqls ?? [])}
           </Paragraph>
         ) : (
           <Empty description={t('dna.federation.sqlConsole.page.empty.noPushedSqlCollected', '本次执行未采集到 JDBC 下推 SQL')} />
@@ -624,23 +631,23 @@ const App = () => {
         </Paragraph>
       ) : (
         <Empty description={t('dna.federation.sqlConsole.page.empty.pushedSqlPending', '执行 SQL 后展示 JDBC 下推 SQL')} />
-      ),
+      )),
     },
     {
       key: 'plan',
       label: t('dna.federation.sqlConsole.page.tab.plan', 'Calcite 计划'),
-      children: analysisResult ? (
+      children: renderScrollPane(analysisResult ? (
         <Paragraph style={{whiteSpace: 'pre-wrap', marginBottom: 0}}>
           {analysisResult.planText || t('dna.federation.sqlConsole.page.empty.noPlan', '暂无执行计划')}
         </Paragraph>
       ) : (
         <Empty description={t('dna.federation.sqlConsole.page.empty.planPending', '查看执行计划或执行 SQL 后展示 Calcite 执行计划')} />
-      ),
+      )),
     },
     {
       key: 'result',
       label: t('dna.federation.sqlConsole.page.tab.result', '执行结果'),
-      children: queryResult ? (
+      children: renderScrollPane(queryResult ? (
         <Space direction="vertical" size={16} style={{display: 'flex'}}>
           {queryResult.truncated ? (
             <Alert
@@ -666,7 +673,7 @@ const App = () => {
           <Table<ResultRow>
             size="small"
             rowKey="key"
-            scroll={{x: true}}
+            scroll={{x: 'max-content'}}
             pagination={{pageSize: 20, showSizeChanger: true}}
             columns={resultColumns}
             dataSource={resultData}
@@ -700,15 +707,15 @@ const App = () => {
         />
       ) : (
         <Empty description={t('dna.federation.sqlConsole.page.empty.resultPending', '执行 SQL 后展示结果集')} />
-      ),
+      )),
     },
-  ], [analysisResult, executeMessage, executeType, queryResult, resultColumns, resultData, t, updateResult]);
+  ], [analysisResult, executeMessage, executeType, queryResult, renderScrollPane, resultColumns, resultData, t, updateResult]);
 
   return (
     <div style={pageContainerStyle}>
       <div style={workspaceStyle}>
         <Row gutter={16} align="stretch" style={{height: '100%', minHeight: 0}}>
-          <Col span={8} style={{height: '100%'}}>
+          <Col span={8} style={{height: '100%', minWidth: 0}}>
             <Card
               title={t('dna.federation.sqlConsole.page.card.tree', '数据源树')}
               extra={(
@@ -747,7 +754,7 @@ const App = () => {
               ) : null}
             </Card>
           </Col>
-          <Col span={16} style={{height: '100%'}}>
+          <Col span={16} style={{height: '100%', minWidth: 0}}>
             <Card title={t('dna.federation.sqlConsole.page.card.editor', 'SQL 编辑器')} style={cardStyle} bodyStyle={cardBodyStyle}>
               <Space direction="vertical" size={12} style={{display: 'flex', flex: 1, minHeight: 0}}>
                 <Space.Compact style={{width: '100%'}}>
@@ -864,13 +871,12 @@ const App = () => {
         </Row>
 
         <Card title={t('dna.federation.sqlConsole.page.card.output', '执行输出')} style={cardStyle} bodyStyle={{...cardBodyStyle, paddingTop: 8}}>
-          <div style={scrollAreaStyle}>
-            <Tabs
-              activeKey={activeTabKey}
-              onChange={(key) => setActiveTabKey(key as ResultTabKey)}
-              items={resultTabs}
-            />
-          </div>
+          <Tabs
+            className="dna-sql-console-tabs"
+            activeKey={activeTabKey}
+            onChange={(key) => setActiveTabKey(key as ResultTabKey)}
+            items={resultTabs}
+          />
         </Card>
       </div>
     </div>

@@ -42,18 +42,25 @@ const App = ({userId}: JdbcUserDataSourceConfigProps) => {
   const {t} = useI18n();
   const [leftPage, setLeftPage] = useState({current: 1, pageSize: 8});
   const [leftSearch, setLeftSearch] = useState('');
+  const [leftKeyword, setLeftKeyword] = useState('');
   const [targetKeys, setTargetKeys] = useState<string[]>([]);
   const [grants, setGrants] = useState<JdbcUserGrant[]>([]);
   const [authorizedItems, setAuthorizedItems] = useState<JdbcUserDataSourceItem[]>([]);
   const [authorizing, setAuthorizing] = useState<Set<string>>(new Set());
 
-  const {data: page} = usePage<JdbcUserDataSourceItem>(
-    ['dna-jdbc-user-items', leftPage.current, leftPage.pageSize],
-    () => fetchItems({page: String(leftPage.current - 1), size: String(leftPage.pageSize)}),
+  const {data: page, refetch: refetchItems} = usePage<JdbcUserDataSourceItem>(
+    ['dna-jdbc-user-items', userId, leftPage.current, leftPage.pageSize, leftKeyword],
+    () => fetchItems({
+      page: leftPage.current - 1,
+      size: leftPage.pageSize,
+      userId: userId ?? undefined,
+      keyword: leftKeyword || undefined,
+    }),
+    {enabled: !!userId},
   );
   const allItems = page?.content ?? [];
 
-  const {data: authorized} = useData<string[]>(
+  const {data: authorized, refetch: refetchAuthorized} = useData<string[]>(
     userId ? ['dna-jdbc-user-authorized', userId] : ['dna-jdbc-user-authorized', 'pending'],
     () => fetchAuthorized(userId as string),
     {enabled: !!userId},
@@ -61,7 +68,7 @@ const App = ({userId}: JdbcUserDataSourceConfigProps) => {
 
   const {data: selectedDetails} = useData<JdbcUserDataSourceItem[]>(
     userId && targetKeys.length > 0
-      ? ['dna-jdbc-user-selected-items', ...targetKeys]
+      ? ['dna-jdbc-user-selected-items', userId, ...targetKeys]
       : ['dna-jdbc-user-selected-items', userId ?? 'empty'],
     () => fetchSelectedItems(targetKeys),
     {enabled: !!userId && targetKeys.length > 0},
@@ -73,6 +80,7 @@ const App = ({userId}: JdbcUserDataSourceConfigProps) => {
     setGrants([]);
     setLeftPage({current: 1, pageSize: 8});
     setLeftSearch('');
+    setLeftKeyword('');
   }, [userId]);
 
   useEffect(() => {
@@ -84,7 +92,7 @@ const App = ({userId}: JdbcUserDataSourceConfigProps) => {
   }, [userId]);
 
   useEffect(() => {
-    if (authorized) setTargetKeys(authorized);
+    if (authorized) setTargetKeys(Array.from(new Set(authorized)));
   }, [authorized]);
 
   useEffect(() => {
@@ -103,15 +111,30 @@ const App = ({userId}: JdbcUserDataSourceConfigProps) => {
     [allItems, authorizedSet],
   );
 
+  const applyLeftSearch = useCallback(() => {
+    setLeftKeyword(leftSearch.trim());
+    setLeftPage((current) => ({...current, current: 1}));
+  }, [leftSearch]);
+
   const handleAuthorize = useCallback(async (item: JdbcUserDataSourceItem) => {
     if (!userId) return;
+    if (authorizedSet.has(item.id) || authorizing.has(item.id)) return;
     setAuthorizing((prev) => new Set(prev).add(item.id));
     try {
-      await fetchAuthorize({userId, dataSourceIds: [item.id]});
-      setTargetKeys((prev) => [...prev, item.id]);
-      setAuthorizedItems((prev) => [...prev, item]);
-      const updatedGrants = await fetchGrants(userId);
-      setGrants(updatedGrants);
+      const updated = await fetchAuthorize({userId, dataSourceIds: [item.id]});
+      setTargetKeys((prev) => Array.from(new Set([...prev, item.id])));
+      setAuthorizedItems((prev) => {
+        if (prev.some((existing) => existing.id === item.id)) {
+          return prev;
+        }
+        return [...prev, item];
+      });
+      setGrants((prev) => {
+        const next = new Map(prev.map((grant) => [grant.id, grant]));
+        (updated ?? []).forEach((grant) => next.set(grant.id, grant));
+        return Array.from(next.values());
+      });
+      await Promise.allSettled([refetchAuthorized(), refetchItems()]);
     } catch (error: unknown) {
       message.error(resolveErrorMessage(error, t('dna.federation.jdbcUsers.page.error.authorize', '数据源授权失败')));
     } finally {
@@ -121,7 +144,7 @@ const App = ({userId}: JdbcUserDataSourceConfigProps) => {
         return next;
       });
     }
-  }, [userId, t]);
+  }, [authorizedSet, authorizing, refetchAuthorized, refetchItems, userId, t]);
 
   const handleUnauthorize = useCallback(async (itemId: string) => {
     if (!userId) return;
@@ -133,13 +156,14 @@ const App = ({userId}: JdbcUserDataSourceConfigProps) => {
     setGrants((prev) => prev.filter((g) => g.catalogId !== itemId));
     try {
       await fetchUnauthorized({userId, dataSourceIds: [itemId]});
+      await Promise.allSettled([refetchAuthorized(), refetchItems()]);
     } catch (error: unknown) {
       setTargetKeys(prevKeys);
       setAuthorizedItems(prevItems);
       setGrants(prevGrants);
       message.error(resolveErrorMessage(error, t('dna.federation.jdbcUsers.page.error.unauthorized', '取消数据源授权失败')));
     }
-  }, [userId, targetKeys, authorizedItems, grants, t]);
+  }, [userId, targetKeys, authorizedItems, grants, refetchAuthorized, refetchItems, t]);
 
   const handlePermissionChange = useCallback((grant: JdbcUserGrant, operation: OperationType, checked: boolean) => {
     const current = new Set(grant.operationPermissions ?? []);
@@ -294,7 +318,15 @@ const App = ({userId}: JdbcUserDataSourceConfigProps) => {
             allowClear
             style={{width: 150}}
             value={leftSearch}
-            onChange={(e) => setLeftSearch(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setLeftSearch(value);
+              if (!value.trim()) {
+                setLeftKeyword('');
+                setLeftPage((current) => ({...current, current: 1}));
+              }
+            }}
+            onPressEnter={applyLeftSearch}
           />
         }
       >

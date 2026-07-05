@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -25,6 +26,7 @@ import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcUserDataSource
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.entity.User;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -91,9 +93,28 @@ public class FederationJdbcConnectionUserServiceImpl
   }
 
   @Override
-  public Page<FederationJdbcUserDataSourceItemVo> dataSourceItems(final Pageable pageable) {
-    return dataSourceService.limit(Map.of("enabled", "equals:true"), pageable)
-        .map(FederationJdbcConnectionUserServiceImpl::toDataSourceItem);
+  public Page<FederationJdbcUserDataSourceItemVo> dataSourceItems(
+      final Map<String, String> attributes,
+      final Pageable pageable
+  ) {
+    String keyword = trimToNull(attributes == null ? null : attributes.get("keyword"));
+    Set<String> excludedDataSourceIds = resolveExcludedDataSourceIds(attributes);
+    List<FederationJdbcUserDataSourceItemVo> items = dataSourceService.limit(
+            Map.of("enabled", "equals:true"),
+            Pageable.unpaged()
+        )
+        .getContent()
+        .stream()
+        .filter(dataSource -> dataSource != null && !excludedDataSourceIds.contains(dataSource.getId()))
+        .map(FederationJdbcConnectionUserServiceImpl::toDataSourceItem)
+        .filter(item -> matchesKeyword(item, keyword))
+        .toList();
+    if (pageable == null || pageable.isUnpaged()) {
+      return new PageImpl<>(items);
+    }
+    int fromIndex = Math.toIntExact(Math.min(pageable.getOffset(), items.size()));
+    int toIndex = Math.min(fromIndex + pageable.getPageSize(), items.size());
+    return new PageImpl<>(items.subList(fromIndex, toIndex), pageable, items.size());
   }
 
   @Override
@@ -299,6 +320,31 @@ public class FederationJdbcConnectionUserServiceImpl
         .map(value -> trimToNull(value))
         .filter(value -> value != null && !value.isBlank())
         .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  private Set<String> resolveExcludedDataSourceIds(final Map<String, String> attributes) {
+    String userId = trimToNull(attributes == null ? null : attributes.get("userId"));
+    if (userId == null) {
+      return Set.of();
+    }
+    return enabledGrants(userId).stream()
+        .map(FederationJdbcConnectionUser::getCatalogId)
+        .filter(value -> value != null && !value.isBlank())
+        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  private static boolean matchesKeyword(final FederationJdbcUserDataSourceItemVo item, final String keyword) {
+    if (keyword == null) {
+      return true;
+    }
+    String normalized = keyword.toLowerCase(Locale.ROOT);
+    return containsIgnoreCase(item.code(), normalized)
+        || containsIgnoreCase(item.name(), normalized)
+        || containsIgnoreCase(item.databaseProductName(), normalized);
+  }
+
+  private static boolean containsIgnoreCase(final String value, final String normalizedKeyword) {
+    return value != null && value.toLowerCase(Locale.ROOT).contains(normalizedKeyword);
   }
 
   private static FederationJdbcUserDataSourceItemVo toDataSourceItem(final JdbcDataSourceDefinition dataSource) {

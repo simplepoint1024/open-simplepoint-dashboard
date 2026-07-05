@@ -37,10 +37,11 @@ public interface FederationJdbcConnectionUserService extends BaseService<Federat
   /**
    * Pages enabled datasource options for assignment.
    *
+   * @param attributes query filters
    * @param pageable paging arguments
    * @return paged datasource items
    */
-  Page<FederationJdbcUserDataSourceItemVo> dataSourceItems(Pageable pageable);
+  Page<FederationJdbcUserDataSourceItemVo> dataSourceItems(Map<String, String> attributes, Pageable pageable);
 
   /**
    * Returns datasource items for the supplied ids.
