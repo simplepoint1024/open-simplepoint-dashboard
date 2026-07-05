@@ -1,5 +1,42 @@
 import {http, HttpResponse} from 'msw';
 
+const mockClient = {
+  id: '1',
+  clientId: 'simplepoint-client',
+  clientIdIssuedAt: '2025-09-22T13:08:42.826Z',
+  clientName: 'simplepoint-client',
+  clientSecret: '$2a$10$mockedmockedmockedmockedmockedmockedmockedmockedmocked',
+  clientSecretExpiresAt: null,
+  clientAuthenticationMethods: 'client_secret_basic',
+  authorizationGrantTypes: 'authorization_code,refresh_token',
+  redirectUris: 'http://localhost:8080/login/oauth2/code/oidc',
+  postLogoutRedirectUris: 'http://localhost:8080',
+  scopes: 'openid,profile,roles,tenant,organs,email,address,phone',
+  clientSettings: '{}',
+  tokenSettings: '{}',
+};
+
+const mockConfiguration = {
+  ...mockClient,
+  clientAuthenticationMethods: ['client_secret_basic'],
+  authorizationGrantTypes: ['authorization_code', 'refresh_token'],
+  redirectUris: ['http://localhost:8080/login/oauth2/code/oidc'],
+  postLogoutRedirectUris: ['http://localhost:8080'],
+  scopes: ['openid', 'profile', 'roles', 'tenant', 'organs', 'email', 'address', 'phone'],
+  requireProofKey: true,
+  requireAuthorizationConsent: false,
+  jwkSetUrl: 'http://authorization:9000/oauth2/jwks',
+  tokenEndpointAuthenticationSigningAlgorithm: 'PS256',
+  reuseRefreshTokens: true,
+  x509CertificateBoundAccessTokens: false,
+  idTokenSignatureAlgorithm: 'PS256',
+  accessTokenFormat: 'self-contained',
+  accessTokenTtlSeconds: 1800,
+  refreshTokenTtlSeconds: 28800,
+  authorizationCodeTtlSeconds: 300,
+  deviceCodeTtlSeconds: 300,
+};
+
 export default [
   http.get('/common/oidc/clients/schema', () => {
     return HttpResponse.json(
@@ -132,17 +169,7 @@ export default [
     return HttpResponse.json(
       {
         "content": [
-          {
-            "id": "1",
-            "createdBy": null,
-            "updatedBy": null,
-            "createdAt": "2025-09-22T13:08:42.826Z",
-            "updatedAt": "2025-09-22T13:08:45.546Z",
-            "roleName": "超级管理员",
-            "authority": "SYSTEM_ADMIN",
-            "description": null,
-            "priority": null
-          }
+          mockClient
         ],
         "page": {
           "size": 20,
@@ -153,5 +180,17 @@ export default [
       }
     )
   }),
-];
 
+  http.get('/common/oidc/clients/:id/configuration', () => {
+    return HttpResponse.json(mockConfiguration);
+  }),
+
+  http.post('/common/oidc/clients/configuration', async ({request}) => {
+    return HttpResponse.json(await request.json());
+  }),
+
+  http.put('/common/oidc/clients/:id/configuration', async ({request, params}) => {
+    const body = await request.json() as Record<string, unknown>;
+    return HttpResponse.json({...body, id: params.id});
+  }),
+];

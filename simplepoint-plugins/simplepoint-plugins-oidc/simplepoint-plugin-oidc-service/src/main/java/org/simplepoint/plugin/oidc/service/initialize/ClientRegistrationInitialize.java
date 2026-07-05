@@ -116,8 +116,6 @@ public class ClientRegistrationInitialize implements ApplicationRunner {
         default ->
             builder.authorizationGrantType(new AuthorizationGrantType(registration.getAuthorizationGrantType()));
       }
-      builder.authorizationGrantType(
-          new AuthorizationGrantType(registration.getAuthorizationGrantType()));
     }
 
     if (registration.getRedirectUri() != null) {
@@ -132,34 +130,53 @@ public class ClientRegistrationInitialize implements ApplicationRunner {
       builder.scopes(scopes -> scopes.addAll(registration.getScope()));
     }
 
-    if (provider != null) {
-      ClientSettings.Builder clientSettingsBuilder = ClientSettings.builder()
-          .requireProofKey(true)
-          .tokenEndpointAuthenticationSigningAlgorithm(SignatureAlgorithm.PS256)
-          .requireAuthorizationConsent(true);
-      if (provider.getJwkSetUri() != null) {
-        clientSettingsBuilder.jwkSetUrl(provider.getJwkSetUri());
-      }
-      builder.clientSettings(clientSettingsBuilder.build());
-      builder.tokenSettings(TokenSettings.builder()
-          // 是否复用 Refresh Token
-          .reuseRefreshTokens(true)
-          // 是否启用 X.509 证书绑定的 Access Token
-          .x509CertificateBoundAccessTokens(false)
-          // ID Token 签名算法
-          .idTokenSignatureAlgorithm(SignatureAlgorithm.PS256)
-          // Access Token 有效期 (300 秒 = 5 分钟)
-          .accessTokenTimeToLive(Duration.ofSeconds(300))
-          // Access Token 格式 (self-contained = JWT)
-          .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
-          // Refresh Token 有效期 (3600 秒 = 1 小时)
-          .refreshTokenTimeToLive(Duration.ofSeconds(3600))
-          // Authorization Code 有效期 (300 秒 = 5 分钟)
-          .authorizationCodeTimeToLive(Duration.ofSeconds(300))
-          // Device Code 有效期 (300 秒 = 5 分钟)
-          .deviceCodeTimeToLive(Duration.ofSeconds(300))
-          .build());
+    ClientSettings.Builder clientSettingsBuilder = ClientSettings.builder()
+        .requireProofKey(resolveBoolean(
+            registration.getRequireProofKey(),
+            clientProperties.getDefaults().getRequireProofKey()
+        ))
+        .tokenEndpointAuthenticationSigningAlgorithm(SignatureAlgorithm.PS256)
+        .requireAuthorizationConsent(resolveBoolean(
+            registration.getRequireAuthorizationConsent(),
+            clientProperties.getDefaults().getRequireAuthorizationConsent()
+        ));
+    if (provider != null && provider.getJwkSetUri() != null) {
+      clientSettingsBuilder.jwkSetUrl(provider.getJwkSetUri());
     }
+    builder.clientSettings(clientSettingsBuilder.build());
+    builder.tokenSettings(TokenSettings.builder()
+        .reuseRefreshTokens(resolveBoolean(
+            registration.getReuseRefreshTokens(),
+            clientProperties.getDefaults().getReuseRefreshTokens()
+        ))
+        .x509CertificateBoundAccessTokens(false)
+        .idTokenSignatureAlgorithm(SignatureAlgorithm.PS256)
+        .accessTokenTimeToLive(resolveDuration(
+            registration.getAccessTokenTimeToLive(),
+            clientProperties.getDefaults().getAccessTokenTimeToLive()
+        ))
+        .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
+        .refreshTokenTimeToLive(resolveDuration(
+            registration.getRefreshTokenTimeToLive(),
+            clientProperties.getDefaults().getRefreshTokenTimeToLive()
+        ))
+        .authorizationCodeTimeToLive(resolveDuration(
+            registration.getAuthorizationCodeTimeToLive(),
+            clientProperties.getDefaults().getAuthorizationCodeTimeToLive()
+        ))
+        .deviceCodeTimeToLive(resolveDuration(
+            registration.getDeviceCodeTimeToLive(),
+            clientProperties.getDefaults().getDeviceCodeTimeToLive()
+        ))
+        .build());
     return builder.build();
+  }
+
+  private boolean resolveBoolean(Boolean configured, Boolean fallback) {
+    return configured != null ? configured : Boolean.TRUE.equals(fallback);
+  }
+
+  private Duration resolveDuration(Duration configured, Duration fallback) {
+    return configured != null ? configured : fallback;
   }
 }

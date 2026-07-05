@@ -1,205 +1,279 @@
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>App Permissions</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Authorize Application</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #667085;
+      --border: #d9e0ec;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --danger: #b42318;
+      --warning-bg: #fff7e6;
+      --warning-border: #ffd591;
+    }
 
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
-            background: #f8f9fb;
-            overflow: hidden;
-        }
+    * {
+      box-sizing: border-box;
+    }
 
-        /* 蓝色系彩虹柔光光斑 */
-        .blob {
-            position: absolute;
-            width: 520px;
-            height: 520px;
-            filter: blur(120px);
-            opacity: 0.55;
-            animation: float 14s ease-in-out infinite;
-        }
-        .blob:nth-child(1) {
-            background: radial-gradient(circle, #8ec5ff 0%, rgba(255,255,255,0) 70%);
-            top: -120px; left: -80px;
-        }
-        .blob:nth-child(2) {
-            background: radial-gradient(circle, #b5e3ff 0%, rgba(255,255,255,0) 70%);
-            bottom: -140px; right: -60px;
-            animation-delay: -4s;
-        }
-        .blob:nth-child(3) {
-            background: radial-gradient(circle, #c7b8ff 0%, rgba(255,255,255,0) 70%);
-            top: 40%; left: 60%;
-            animation-delay: -8s;
-        }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 32px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
 
-        @keyframes float {
-            0% { transform: translate(0,0); }
-            50% { transform: translate(30px, 40px); }
-            100% { transform: translate(0,0); }
-        }
+    main {
+      width: min(720px, 100%);
+    }
 
-        /* 毛玻璃卡片 */
-        .card {
-            position: relative;
-            width: 480px;
-            padding: 40px 36px 50px;
-            border-radius: 36px;
-            background: rgba(255, 255, 255, 0.45);
-            backdrop-filter: blur(28px) saturate(180%);
-            -webkit-backdrop-filter: blur(28px) saturate(180%);
-            box-shadow:
-                    0 12px 28px rgba(0,0,0,0.08),
-                    inset 0 0 1px rgba(255,255,255,0.8);
-            text-align: center;
-        }
+    .panel {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 18px 40px rgba(31, 41, 55, 0.08);
+    }
 
-        h1 {
-            font-size: 26px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: #1f1f1f;
-        }
+    .header,
+    .footer {
+      padding: 24px 28px;
+    }
 
-        p {
-            font-size: 15px;
-            color: #444;
-            line-height: 1.6;
-        }
+    .header {
+      border-bottom: 1px solid var(--border);
+    }
 
-        /* 权限项 */
-        .scope-item {
-            padding: 14px 0;
-            border-radius: 18px;
-            background: rgba(255,255,255,0.6);
-            backdrop-filter: blur(12px);
-            margin-bottom: 12px;
-            box-shadow:
-                    inset 0 1px 2px rgba(255,255,255,0.9),
-                    0 2px 6px rgba(0,0,0,0.06);
-        }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
 
-        .scope-item label {
-            font-weight: 600;
-            color: #1f1f1f;
-        }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.25;
+      font-weight: 650;
+    }
 
-        .scope-item p {
-            margin: 4px 0 0 0;
-            color: #4f7cff;
-            font-size: 14px;
-        }
+    .summary {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
 
-        /* 主按钮（iOS 风格） */
-        .btn-primary-ios {
-            width: 100%;
-            padding: 14px 0;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #ffffff, #f3f3f3);
-            color: #1e1f26;
-            border: none;
-            font-size: 16px;
-            font-weight: 600;
-            box-shadow:
-                    0 4px 12px rgba(0,0,0,0.08),
-                    inset 0 1px 2px rgba(255,255,255,0.9);
-            transition: all 0.25s ease;
-        }
+    .summary strong {
+      color: var(--text);
+      font-weight: 650;
+    }
 
-        .btn-primary-ios:hover {
-            background: #ffffff;
-            transform: translateY(-2px);
-            box-shadow:
-                    0 6px 18px rgba(0,0,0,0.12),
-                    inset 0 1px 2px rgba(255,255,255,1);
-        }
+    .content {
+      padding: 24px 28px 8px;
+    }
 
-        /* Cancel 按钮 */
-        .btn-cancel {
-            margin-top: 16px;
-            background: none;
-            border: none;
-            color: #4f7cff;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-        }
+    .notice {
+      margin: 0 0 20px;
+      padding: 12px 14px;
+      border: 1px solid var(--warning-border);
+      border-radius: 8px;
+      background: var(--warning-bg);
+      color: #7a4b00;
+      font-size: 14px;
+      line-height: 1.5;
+    }
 
-        /* 用户代码提示 */
-        .alert-warning {
-            border-radius: 18px;
-            background: rgba(255, 243, 205, 0.7);
-            border: none;
-            padding: 12px;
-            font-size: 14px;
-            color: #8a6d3b;
-            backdrop-filter: blur(10px);
-        }
-    </style>
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 15px;
+      font-weight: 650;
+    }
 
-    <script>
-        function cancelConsent() {
-            document.consent_form.reset();
-            document.consent_form.submit();
-        }
-    </script>
+    .scope-list {
+      display: grid;
+      gap: 10px;
+      margin: 0 0 20px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .scope-item {
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .scope-item input {
+      width: 16px;
+      height: 16px;
+      margin: 2px 0 0;
+      accent-color: var(--primary);
+    }
+
+    .scope-name {
+      display: block;
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.35;
+    }
+
+    .scope-desc {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .approved {
+      background: #f8fafc;
+    }
+
+    .footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      border-top: 1px solid var(--border);
+      background: #fbfcfe;
+    }
+
+    button {
+      min-width: 112px;
+      height: 38px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-cancel {
+      border-color: var(--border);
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .btn-cancel:hover {
+      color: var(--danger);
+      border-color: #fda29b;
+    }
+
+    @media (max-width: 560px) {
+      body {
+        align-items: flex-start;
+        padding: 16px;
+      }
+
+      .header,
+      .content,
+      .footer {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .footer {
+        flex-direction: column-reverse;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+  <script>
+    function cancelConsent() {
+      document.consent_form.reset();
+      document.consent_form.submit();
+    }
+  </script>
 </head>
-
 <body>
-
-<div class="blob"></div>
-<div class="blob"></div>
-<div class="blob"></div>
-
-<div class="card">
-    <h1>App Permissions</h1>
-
-    <p>
-        The application <span class="fw-bold" th:text="${clientId}"></span>
-        wants to access your account
-        <span class="fw-bold" th:text="${principalName}"></span>
-    </p>
-
-    <div th:if="${userCode}">
-        <p class="alert-warning">
-            You have provided the code <span class="fw-bold" th:text="${userCode}"></span>.
-            Verify that this code matches what is shown on your device.
+<main>
+  <form name="consent_form" method="post" th:action="${requestURI}">
+    <section class="panel" aria-labelledby="consent-title">
+      <div class="header">
+        <p class="eyebrow">OAuth2 Authorization</p>
+        <h1 id="consent-title">Authorize application access</h1>
+        <p class="summary">
+          <strong th:text="${clientId}">client</strong>
+          wants to access the account
+          <strong th:text="${principalName}">user</strong>.
         </p>
-    </div>
+      </div>
 
-    <p>
-        The following permissions are requested by the above app.<br/>
-        Please review these and consent if you approve.
-    </p>
-
-    <form name="consent_form" method="post" th:action="${requestURI}">
+      <div class="content">
         <input type="hidden" name="client_id" th:value="${clientId}">
         <input type="hidden" name="state" th:value="${state}">
         <input th:if="${userCode}" type="hidden" name="user_code" th:value="${userCode}">
 
-        <div th:each="scope: ${scopes}" class="scope-item">
-            <input type="checkbox" name="scope" th:value="${scope.scope}" th:id="${scope.scope}">
-            <label th:for="${scope.scope}" th:text="${scope.scope}"></label>
-            <p th:text="${scope.description}"></p>
-        </div>
-
-        <p th:if="${not #lists.isEmpty(previouslyApprovedScopes)}">
-            You have already granted the following permissions:
+        <p class="notice" th:if="${userCode}">
+          You provided code <strong th:text="${userCode}">code</strong>.
+          Confirm that it matches the code displayed on your device.
         </p>
 
-        <div th:each="scope: ${previouslyApprovedScopes}" class="scope-item">
-            <input type="checkbox" disabled checked th:id="${scope.scope}">
-            <label th:for="${scope.scope}" th:text="${scope.scope}"></label>
-            <p th:text="${scope.description}"></p>
-        </div>
+        <p class="section-title" th:if="${not #lists.isEmpty(scopes)}">
+          Requested permissions
+        </p>
+        <ul class="scope-list" th:if="${not #lists.isEmpty(scopes)}">
+          <li th:each="scope: ${scopes}" class="scope-item">
+            <input type="checkbox" name="scope" th:value="${scope.scope}" th:id="${scope.scope}">
+            <label th:for="${scope.scope}">
+              <span class="scope-name" th:text="${scope.scope}">scope</span>
+              <span class="scope-desc" th:text="${scope.description}">description</span>
+            </label>
+          </li>
+        </ul>
 
-        <button class="btn-primary-ios" type="submit">
+        <p class="section-title" th:if="${not #lists.isEmpty(previouslyApprovedScopes)}">
+          Already approved
+        </p>
+        <ul class="scope-list" th:if="${not #lists.isEmpty(previouslyApprovedScopes)}">
+          <li th:each="scope: ${previouslyApprovedScopes}" class="scope-item approved">
+            <input type="checkbox" disabled checked th:id="${'approved-' + scope.scope}">
+            <input type="hidden" name="scope" th:value="${scope.scope}">
+            <label th:for="${'approved-' + scope.scope}">
+              <span class="scope-name" th:text="${scope.scope}">scope</span>
+              <span class="scope-desc" th:text="${scope.description}">description</span>
+            </label>
+          </li>
+        </ul>
+      </div>
+
+      <div class="footer">
+        <button class="btn-cancel" type="button" onclick="cancelConsent()">Cancel</button>
+        <button class="btn-primary" type="submit">Authorize</button>
+      </div>
+    </section>
+  </form>
+</main>
+</body>
+</html>

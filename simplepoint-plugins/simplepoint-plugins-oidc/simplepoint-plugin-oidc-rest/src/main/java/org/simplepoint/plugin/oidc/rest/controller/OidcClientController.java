@@ -7,11 +7,13 @@ import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.oidc.api.entity.Client;
+import org.simplepoint.plugin.oidc.api.pojo.dto.OidcClientConfigurationDto;
 import org.simplepoint.plugin.oidc.api.service.OidcClientService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -52,6 +54,46 @@ public class OidcClientController extends BaseController<OidcClientService, Clie
   @Operation(summary = "分页查询客户端", description = "根据提供的属性和分页参数，检索客户端的分页列表")
   public Response<Page<Client>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) throws Exception {
     return limit(service.limit(attributes, pageable), Client.class);
+  }
+
+  /**
+   * Loads a structured client configuration by ID.
+   *
+   * @param id client ID
+   * @return structured client configuration
+   */
+  @GetMapping("/{id}/configuration")
+  @Operation(summary = "查询客户端配置", description = "查询结构化OAuth2客户端配置")
+  public Response<OidcClientConfigurationDto> configuration(@PathVariable String id) {
+    return ok(service.configuration(id));
+  }
+
+  /**
+   * Creates a client from structured configuration.
+   *
+   * @param dto structured client configuration
+   * @return created client
+   */
+  @PostMapping("/configuration")
+  @Operation(summary = "创建客户端配置", description = "使用结构化配置创建OAuth2客户端")
+  public Response<Client> addConfiguration(@RequestBody OidcClientConfigurationDto dto) {
+    return ok(service.createConfiguration(dto));
+  }
+
+  /**
+   * Updates a client from structured configuration.
+   *
+   * @param id client ID
+   * @param dto structured client configuration
+   * @return updated client
+   */
+  @PutMapping("/{id}/configuration")
+  @Operation(summary = "更新客户端配置", description = "使用结构化配置更新OAuth2客户端")
+  public Response<Client> modifyConfiguration(
+      @PathVariable String id,
+      @RequestBody OidcClientConfigurationDto dto
+  ) {
+    return ok(service.updateConfiguration(id, dto));
   }
 
   /**

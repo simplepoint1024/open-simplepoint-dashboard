@@ -20,7 +20,7 @@ import org.springframework.session.data.redis.config.annotation.web.server.Enabl
  */
 @Boot
 @EnableCaching
-@EnableRedisWebSession(redisNamespace = "simplepoint:sessions")
+@EnableRedisWebSession(redisNamespace = "simplepoint:sessions", maxInactiveIntervalInSeconds = 28800)
 @EnableServiceRouter(basePackages = "org.simplepoint")
 public class Host {
 
