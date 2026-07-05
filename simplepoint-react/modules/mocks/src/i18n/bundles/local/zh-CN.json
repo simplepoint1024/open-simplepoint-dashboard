@@ -153,6 +153,7 @@
     "error.403": "抱歉，您没有访问该页面的权限",
     "error.404": "页面不存在",
     "error.aborted": "请求已取消",
+    "error.authorizationSync": "登录状态仍然有效，但服务授权状态暂未同步，请稍后重试",
     "error.backHome": "返回首页",
     "error.badRequest": "请求参数不正确",
     "error.componentCrashed": "组件渲染出错",

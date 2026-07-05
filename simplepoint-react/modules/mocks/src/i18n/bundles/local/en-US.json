@@ -153,6 +153,7 @@
     "error.403": "Sorry, you do not have permission to access this page",
     "error.404": "Page not found",
     "error.aborted": "Request canceled",
+    "error.authorizationSync": "Your session is still active, but service authorization has not synchronized yet. Please try again later.",
     "error.backHome": "Back Home",
     "error.badRequest": "Invalid request parameters",
     "error.componentCrashed": "Component rendering error",

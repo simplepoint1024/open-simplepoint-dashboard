@@ -51,6 +51,7 @@
   "error.unauthorized.content": "检测到当前登录状态失效。你可以留在当前页面，或返回登录页面重新登录。",
   "error.unauthorized.goLogin": "返回登录页",
   "error.unauthorized.stay": "留在当前页",
+  "error.authorizationSync": "登录状态仍然有效，但服务授权状态暂未同步，请稍后重试",
   "error.forbidden": "无使用权限",
   "error.conflict": "数据已被修改，请刷新后重试",
   "error.validation": "提交的数据不合法",

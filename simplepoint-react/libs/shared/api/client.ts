@@ -21,6 +21,7 @@ export interface RequestOptions extends Omit<RequestInit, 'body'> {
   responseType?: ResponseType;
   notifyOnError?: boolean;
   handleUnauthorized?: boolean;
+  recoverUnauthorized?: boolean;
   skipTenantContext?: boolean;
 }
 
@@ -48,6 +49,8 @@ export class HttpError extends Error {
   userMessage?: string;
   /** 兼容旧逻辑：表示全局层已经提示过该错误 */
   __notified?: boolean;
+  /** 401 前置探测确认浏览器登录会话仍然有效时为 true */
+  sessionActive?: boolean;
 
   constructor(status: number, statusText: string, body?: string, meta?: Partial<HttpError> & {cause?: unknown}) {
     const label = status > 0 ? `HTTP ${status} ${statusText}` : statusText;
@@ -64,6 +67,7 @@ export class HttpError extends Error {
     this.requestId = meta?.requestId;
     this.userMessage = meta?.userMessage;
     this.__notified = meta?.__notified;
+    this.sessionActive = meta?.sessionActive;
     if (meta?.cause) {
       (this as any).cause = meta.cause;
     }
@@ -311,7 +315,15 @@ function logApiError(error: HttpError) {
 
 let unauthorizedModalOpen = false;
 
+const SESSION_PROBE_URL = '/userinfo';
+const SESSION_PROBE_DELAYS_MS = [0, 250, 750] as const;
+const UNAUTHORIZED_RECOVERY_RETRY_DELAY_MS = 250;
+let sessionProbeInflight: Promise<boolean> | undefined;
+
 async function handleUnauthorized(error: HttpError) {
+  if (error.sessionActive) {
+    return;
+  }
   if (unauthorizedModalOpen) {
     error.__notified = true;
     return;
@@ -363,6 +375,75 @@ async function handleError(error: HttpError, options: RequestOptions) {
     await notifyError(error);
   }
   logApiError(error);
+}
+
+function delay(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
+function isSessionProbeUrl(url: string) {
+  try {
+    return new URL(
+      url,
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
+    ).pathname === SESSION_PROBE_URL;
+  } catch {
+    return url === SESSION_PROBE_URL || url.includes(SESSION_PROBE_URL);
+  }
+}
+
+function isRedirectStatus(status: number) {
+  return status >= 300 && status < 400;
+}
+
+async function fetchSessionProbeOnce() {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
+  try {
+    const response = await fetch(SESSION_PROBE_URL, {
+      method: 'GET',
+      credentials: 'include',
+      redirect: 'manual',
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json, text/plain, */*',
+        'Cache-Control': 'no-cache',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      signal: controller.signal,
+    });
+    if (isRedirectStatus(response.status) || response.status === 401 || response.status === 403) {
+      return false;
+    }
+    if (!response.ok) {
+      return false;
+    }
+    const contentType = response.headers.get('content-type') || '';
+    return !contentType.toLowerCase().includes('text/html');
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function verifySessionStillActive() {
+  if (!sessionProbeInflight) {
+    sessionProbeInflight = (async () => {
+      for (const waitMs of SESSION_PROBE_DELAYS_MS) {
+        if (waitMs > 0) {
+          await delay(waitMs);
+        }
+        if (await fetchSessionProbeOnce()) {
+          return true;
+        }
+      }
+      return false;
+    })().finally(() => {
+      sessionProbeInflight = undefined;
+    });
+  }
+  return sessionProbeInflight;
 }
 
 function createHttpError(method: string, url: string, response: Response, parsed: ParsedBody) {
@@ -438,6 +519,42 @@ function createRequestSignal(externalSignal: AbortSignal | undefined, timeoutMs:
   return {signal: controller.signal, cleanup, isTimeout: () => timedOut};
 }
 
+async function sendRequest(
+  finalUrl: string,
+  method: string,
+  requestOptions: RequestOptions,
+  fetchOptions: Omit<RequestInit, 'body'>,
+  headers: Headers,
+  body: BodyInit | null | undefined,
+  externalSignal: AbortSignal | undefined,
+  timeoutMs: number | undefined
+) {
+  const {signal, cleanup, isTimeout} = createRequestSignal(externalSignal, timeoutMs);
+  try {
+    return await fetch(finalUrl, {
+      ...fetchOptions,
+      method,
+      credentials: fetchOptions.credentials ?? 'include',
+      headers,
+      body,
+      signal,
+    });
+  } catch (error: any) {
+    const aborted = signal?.aborted || error?.name === 'AbortError';
+    const kind: ApiErrorKind = isTimeout() ? 'timeout' : aborted ? 'abort' : 'network';
+    const message = kind === 'timeout'
+      ? t('error.timeout', '请求超时，请稍后再试')
+      : kind === 'abort'
+        ? t('error.aborted', '请求已取消')
+        : t('error.networkError', '网络错误');
+    const clientError = createClientError(kind, method, finalUrl, message, error);
+    await handleError(clientError, requestOptions);
+    throw clientError;
+  } finally {
+    cleanup();
+  }
+}
+
 function isFormData(value: unknown): value is FormData {
   return typeof FormData !== 'undefined' && value instanceof FormData;
 }
@@ -486,6 +603,98 @@ function buildBodyAndHeaders(options: RequestOptions, headers: Headers) {
   return body;
 }
 
+function shouldRecoverUnauthorized(method: string, url: string, options: RequestOptions) {
+  if (options.recoverUnauthorized === false || options.handleUnauthorized === false) {
+    return false;
+  }
+  if (isSessionProbeUrl(url)) {
+    return false;
+  }
+  return method === 'GET' || method === 'HEAD';
+}
+
+function markSessionActiveUnauthorized(error: HttpError) {
+  error.sessionActive = true;
+  error.userMessage = t(
+    'error.authorizationSync',
+    '登录状态仍然有效，但服务授权状态暂未同步，请稍后重试'
+  );
+  return error;
+}
+
+async function parseSuccessfulResponse(
+  response: Response,
+  responseType: ResponseType,
+  method: string,
+  finalUrl: string,
+  requestOptions: RequestOptions
+) {
+  const parsed = await parseBody(response, responseType);
+
+  if (parsed.parseError) {
+    const error = new HttpError(response.status, response.statusText || 'Invalid JSON response', parsed.text, {
+      kind: 'parse',
+      method,
+      url: finalUrl,
+      cause: parsed.parseError,
+      requestId: extractRequestId(response, undefined),
+      userMessage: t('error.invalidResponse', '服务返回数据格式不正确'),
+    });
+    await handleError(error, requestOptions);
+    throw error;
+  }
+
+  return parsed.data;
+}
+
+async function recoverUnauthorizedRequest(
+  error: HttpError,
+  finalUrl: string,
+  method: string,
+  responseType: ResponseType,
+  requestOptions: RequestOptions,
+  fetchOptions: Omit<RequestInit, 'body'>,
+  headers: Headers,
+  body: BodyInit | null | undefined,
+  externalSignal: AbortSignal | undefined,
+  timeoutMs: number | undefined
+): Promise<{ recovered: true; data: unknown } | { recovered: false; error: HttpError }> {
+  if (error.status !== 401 || !shouldRecoverUnauthorized(method, finalUrl, requestOptions)) {
+    return {recovered: false, error};
+  }
+
+  const sessionActive = await verifySessionStillActive();
+  if (!sessionActive) {
+    return {recovered: false, error};
+  }
+
+  await delay(UNAUTHORIZED_RECOVERY_RETRY_DELAY_MS);
+  const retryResponse = await sendRequest(
+    finalUrl,
+    method,
+    {...requestOptions, recoverUnauthorized: false},
+    fetchOptions,
+    headers,
+    body,
+    externalSignal,
+    timeoutMs
+  );
+
+  if (!retryResponse.ok) {
+    const parsed = await parseBody(retryResponse.clone(), 'auto');
+    const retryError = createHttpError(method, finalUrl, retryResponse, parsed);
+    return {
+      recovered: false,
+      error: retryError.status === 401 ? markSessionActiveUnauthorized(retryError) : retryError,
+    };
+  }
+
+  return {
+    recovered: true,
+    data: await parseSuccessfulResponse(retryResponse, responseType, method, finalUrl, requestOptions),
+  };
+}
+
 // 通用请求方法
 export async function request<T>(url: string, options?: RequestOptions): Promise<T> {
   const requestOptions = options ?? {};
@@ -501,6 +710,7 @@ export async function request<T>(url: string, options?: RequestOptions): Promise
     responseType: _responseType,
     notifyOnError: _notifyOnError,
     handleUnauthorized: _handleUnauthorized,
+    recoverUnauthorized: _recoverUnauthorized,
     skipTenantContext: _skipTenantContext,
     headers: optionHeaders,
     signal: rawExternalSignal,
@@ -546,55 +756,40 @@ export async function request<T>(url: string, options?: RequestOptions): Promise
     headers.set('X-Context-Id', contextId);
   }
 
-  const {signal, cleanup, isTimeout} = createRequestSignal(externalSignal, timeoutMs);
-  let response: Response;
-  try {
-    response = await fetch(finalUrl, {
-      ...fetchOptions,
-      method,
-      credentials: fetchOptions.credentials ?? 'include',
-      headers,
-      body,
-      signal,
-    });
-  } catch (error: any) {
-    const aborted = signal?.aborted || error?.name === 'AbortError';
-    const kind: ApiErrorKind = isTimeout() ? 'timeout' : aborted ? 'abort' : 'network';
-    const message = kind === 'timeout'
-      ? t('error.timeout', '请求超时，请稍后再试')
-      : kind === 'abort'
-        ? t('error.aborted', '请求已取消')
-        : t('error.networkError', '网络错误');
-    const clientError = createClientError(kind, method, finalUrl, message, error);
-    await handleError(clientError, requestOptions);
-    throw clientError;
-  } finally {
-    cleanup();
-  }
+  const response = await sendRequest(
+    finalUrl,
+    method,
+    requestOptions,
+    fetchOptions,
+    headers,
+    body,
+    externalSignal,
+    timeoutMs
+  );
 
   if (!response.ok) {
     const parsed = await parseBody(response.clone(), 'auto');
     const error = createHttpError(method, finalUrl, response, parsed);
-    await handleError(error, requestOptions);
-    throw error;
-  }
-
-  const parsed = await parseBody(response, responseType);
-
-  if (parsed.parseError) {
-    const error = new HttpError(response.status, response.statusText || 'Invalid JSON response', parsed.text, {
-      kind: 'parse',
+    const recovered = await recoverUnauthorizedRequest(
+      error,
+      finalUrl,
       method,
-      url: finalUrl,
-      cause: parsed.parseError,
-      requestId: extractRequestId(response, undefined),
-      userMessage: t('error.invalidResponse', '服务返回数据格式不正确'),
-    });
-    await handleError(error, requestOptions);
-    throw error;
+      responseType,
+      requestOptions,
+      fetchOptions,
+      headers,
+      body,
+      externalSignal,
+      timeoutMs
+    );
+    if (recovered.recovered) {
+      return recovered.data as T;
+    }
+    await handleError(recovered.error, requestOptions);
+    throw recovered.error;
   }
 
-  return parsed.data as T;
+  return await parseSuccessfulResponse(response, responseType, method, finalUrl, requestOptions) as T;
 }
 
 export function resolveApiErrorMessage(error: unknown, fallback?: string) {

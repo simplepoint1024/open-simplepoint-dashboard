@@ -51,6 +51,7 @@
   "error.unauthorized.content": "Your session is no longer valid. You can stay on this page or return to the login page.",
   "error.unauthorized.goLogin": "Go to Login",
   "error.unauthorized.stay": "Stay Here",
+  "error.authorizationSync": "Your session is still active, but service authorization has not synchronized yet. Please try again later.",
   "error.forbidden": "Permission denied",
   "error.conflict": "Data has changed. Refresh and try again.",
   "error.validation": "Submitted data is invalid",
