@@ -48,6 +48,8 @@
   "ai.providers.page.warning.select": "请选择一个模型供应商",
   "ai.providers.title.apiKey": "API Key",
   "ai.providers.title.apiVersion": "API 版本",
+  "ai.providers.title.allowPrivateNetwork": "允许访问内网",
+  "ai.providers.description.allowPrivateNetwork": "仅系统级供应商可开启。开启后允许连接本机、内网或集群内部的模型服务。",
   "ai.providers.title.autoSyncEnabled": "自动同步模型",
   "ai.providers.title.baseUrl": "Base URL",
   "ai.providers.title.code": "供应商编码",

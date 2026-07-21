@@ -172,8 +172,11 @@ export const ModelProviderView = ({configKey = 'platform.ai-providers'}: ModelPr
     delete properties.lastSyncedAt;
     delete properties.scopeType;
     delete properties.tenantId;
+    if (configKey === 'tenant.ai-providers') {
+      delete properties.allowPrivateNetwork;
+    }
     return nextSchema;
-  }, [t]);
+  }, [configKey, t]);
 
   const columnOverrides = useMemo(() => ({
     scopeType: {

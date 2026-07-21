@@ -48,6 +48,8 @@
   "ai.providers.page.warning.select": "Select a model provider",
   "ai.providers.title.apiKey": "API Key",
   "ai.providers.title.apiVersion": "API version",
+  "ai.providers.title.allowPrivateNetwork": "Allow private network access",
+  "ai.providers.description.allowPrivateNetwork": "Only system providers may enable access to local, private, or cluster-internal model services.",
   "ai.providers.title.autoSyncEnabled": "Automatic model sync",
   "ai.providers.title.baseUrl": "Base URL",
   "ai.providers.title.code": "Provider code",

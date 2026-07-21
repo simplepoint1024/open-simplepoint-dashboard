@@ -9,8 +9,10 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import org.simplepoint.plugin.ai.core.api.entity.AiModelDefinition;
 import org.simplepoint.plugin.ai.core.api.entity.AiProviderDefinition;
+import org.simplepoint.plugin.ai.core.api.model.AiInvocationOperation;
 import org.simplepoint.plugin.ai.core.api.model.AiModelType;
 import org.simplepoint.plugin.ai.core.api.model.AiProviderType;
 import org.simplepoint.plugin.ai.core.api.properties.AiProperties;
@@ -18,6 +20,7 @@ import org.simplepoint.plugin.ai.core.api.repository.AiModelDefinitionRepository
 import org.simplepoint.plugin.ai.core.api.repository.AiProviderDefinitionRepository;
 import org.simplepoint.plugin.ai.core.api.service.AiEmbeddingService;
 import org.simplepoint.plugin.ai.core.api.vo.AiEmbeddingResult;
+import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.TokenUsage;
 import org.simplepoint.plugin.ai.core.service.security.AiCredentialCipher;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
 import org.springframework.stereotype.Service;
@@ -44,6 +47,8 @@ public class OpenAiEmbeddingService implements AiEmbeddingService {
 
   private final ProviderHttpSupport http;
 
+  private final AiInvocationLedger invocationLedger;
+
   /**
    * Creates the embedding service.
    */
@@ -53,7 +58,8 @@ public class OpenAiEmbeddingService implements AiEmbeddingService {
       final AiProviderDefinitionRepository providerRepository,
       final AiCredentialCipher credentialCipher,
       final AiScopeAccessPolicy scopeAccessPolicy,
-      final AiProperties properties
+      final AiProperties properties,
+      final AiInvocationLedger invocationLedger
   ) {
     this.objectMapper = objectMapper;
     this.modelRepository = modelRepository;
@@ -62,6 +68,7 @@ public class OpenAiEmbeddingService implements AiEmbeddingService {
     this.scopeAccessPolicy = scopeAccessPolicy;
     this.properties = properties;
     this.http = new ProviderHttpSupport(properties);
+    this.invocationLedger = invocationLedger;
   }
 
   /** {@inheritDoc} */
@@ -102,17 +109,32 @@ public class OpenAiEmbeddingService implements AiEmbeddingService {
     if (dimensions != null && dimensions <= 0) {
       throw new IllegalArgumentException("Embedding 维度必须大于 0");
     }
-    return invoke(provider, model, normalizedInputs, dimensions);
+    String invocationId = UUID.randomUUID().toString();
+    var record = invocationLedger.start(
+        invocationId, provider, model, AiInvocationOperation.EMBEDDING, false
+    );
+    long started = System.nanoTime();
+    try {
+      EmbeddingInvocationResult invoked = invoke(provider, model, normalizedInputs, dimensions);
+      invocationLedger.success(
+          record, invoked.usage(), elapsedMillis(started), invoked.providerRequestId()
+      );
+      return invoked.result();
+    } catch (RuntimeException ex) {
+      invocationLedger.failure(record, ex);
+      throw ex;
+    }
   }
 
-  private AiEmbeddingResult invoke(
+  private EmbeddingInvocationResult invoke(
       final AiProviderDefinition provider,
       final AiModelDefinition model,
       final List<String> inputs,
       final Integer dimensions
   ) {
     String apiKey = credentialCipher.decrypt(provider.getCredentialCiphertext());
-    if (apiKey == null || apiKey.isBlank()) {
+    if ((apiKey == null || apiKey.isBlank())
+        && provider.getProviderType() != AiProviderType.OPENAI_COMPATIBLE) {
       throw new IllegalStateException("供应商未配置 API Key");
     }
     ObjectNode body = objectMapper.createObjectNode();
@@ -127,23 +149,29 @@ public class OpenAiEmbeddingService implements AiEmbeddingService {
         .timeout(ProviderHttpSupport.timeout(
             ProviderHttpSupport.positive(properties.getRequestTimeoutSeconds(), 30)
         ))
-        .header("Authorization", "Bearer " + apiKey)
         .header("Accept", "application/json")
         .header("Content-Type", "application/json")
         .POST(HttpRequest.BodyPublishers.ofString(body.toString()));
+    if (apiKey != null && !apiKey.isBlank()) {
+      request.header("Authorization", "Bearer " + apiKey);
+    }
     addHeader(request, "OpenAI-Organization", provider.getOrganizationId());
     addHeader(request, "OpenAI-Project", provider.getProjectId());
-    HttpResponse<String> response = http.send(request.build());
+    HttpResponse<String> response = http.send(
+        request.build(),
+        Boolean.TRUE.equals(provider.getAllowPrivateNetwork())
+    );
     return parseResponse(model.getModelId(), inputs.size(), response.body());
   }
 
-  private AiEmbeddingResult parseResponse(
+  private EmbeddingInvocationResult parseResponse(
       final String modelId,
       final int inputSize,
       final String responseBody
   ) {
     try {
-      JsonNode data = objectMapper.readTree(responseBody).path("data");
+      JsonNode root = objectMapper.readTree(responseBody);
+      JsonNode data = root.path("data");
       if (!data.isArray() || data.size() != inputSize) {
         throw new IllegalStateException("供应商 Embedding 响应数量与输入不一致");
       }
@@ -164,7 +192,14 @@ public class OpenAiEmbeddingService implements AiEmbeddingService {
       if (vectors.stream().anyMatch(vector -> vector.size() != actualDimensions)) {
         throw new IllegalStateException("供应商返回的 Embedding 向量维度不一致");
       }
-      return new AiEmbeddingResult(modelId, actualDimensions, vectors);
+      JsonNode usage = root.path("usage");
+      Integer inputTokens = integer(usage, "prompt_tokens");
+      Integer totalTokens = integer(usage, "total_tokens");
+      return new EmbeddingInvocationResult(
+          new AiEmbeddingResult(modelId, actualDimensions, vectors),
+          new TokenUsage(inputTokens, null, totalTokens, null),
+          root.path("id").asText(null)
+      );
     } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
       throw new IllegalStateException("无法解析供应商 Embedding 响应", ex);
     }
@@ -188,5 +223,20 @@ public class OpenAiEmbeddingService implements AiEmbeddingService {
   }
 
   private record IndexedVector(int index, List<Double> vector) {
+  }
+
+  private record EmbeddingInvocationResult(
+      AiEmbeddingResult result,
+      TokenUsage usage,
+      String providerRequestId
+  ) {
+  }
+
+  private static Integer integer(final JsonNode node, final String field) {
+    return node.has(field) && node.path(field).isNumber() ? node.path(field).asInt() : null;
+  }
+
+  private static long elapsedMillis(final long started) {
+    return (System.nanoTime() - started) / 1_000_000L;
   }
 }

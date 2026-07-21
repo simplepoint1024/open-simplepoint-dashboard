@@ -24,6 +24,7 @@ public final class AiProviderModels {
       String organizationId,
       String projectId,
       String apiVersion,
+      boolean allowPrivateNetwork,
       int requestTimeoutSeconds
   ) {
   }

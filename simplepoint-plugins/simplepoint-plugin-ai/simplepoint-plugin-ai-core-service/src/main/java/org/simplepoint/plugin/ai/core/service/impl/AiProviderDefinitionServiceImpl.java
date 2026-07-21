@@ -131,6 +131,7 @@ public class AiProviderDefinitionServiceImpl
       entity.setCredentialCiphertext(desiredCiphertext);
     }
     entity.setApiKey(null);
+    normalizePrivateNetworkAccess(entity, scope.scopeType(), null);
     entity.setEnabled(entity.getEnabled() == null ? Boolean.TRUE : entity.getEnabled());
     entity.setAutoSyncEnabled(
         entity.getAutoSyncEnabled() == null ? Boolean.TRUE : entity.getAutoSyncEnabled()
@@ -159,6 +160,7 @@ public class AiProviderDefinitionServiceImpl
     entity.setScopeType(AiScopeAccessPolicy.effectiveScope(current.getScopeType()));
     entity.setTenantId(current.getTenantId());
     normalizeAndValidate(entity, current.getId());
+    normalizePrivateNetworkAccess(entity, entity.getScopeType(), current);
     String desiredCiphertext = current.getCredentialCiphertext();
     if (entity.getApiKey() != null && !entity.getApiKey().isBlank()) {
       desiredCiphertext = credentialCipher.encrypt(entity.getApiKey().trim());
@@ -280,11 +282,31 @@ public class AiProviderDefinitionServiceImpl
     };
   }
 
+  private static void normalizePrivateNetworkAccess(
+      final AiProviderDefinition entity,
+      final AiResourceScope scopeType,
+      final AiProviderDefinition current
+  ) {
+    Boolean requested = entity.getAllowPrivateNetwork();
+    if (scopeType != AiResourceScope.SYSTEM && Boolean.TRUE.equals(requested)) {
+      throw new IllegalArgumentException("租户供应商不允许访问内网地址");
+    }
+    if (scopeType != AiResourceScope.SYSTEM) {
+      entity.setAllowPrivateNetwork(Boolean.FALSE);
+      return;
+    }
+    if (requested == null && current != null) {
+      requested = current.getAllowPrivateNetwork();
+    }
+    entity.setAllowPrivateNetwork(Boolean.TRUE.equals(requested));
+  }
+
   private static String validateBaseUrl(final String value) {
     try {
       URI uri = URI.create(value.trim());
       String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
-      if ((!"http".equals(scheme) && !"https".equals(scheme)) || uri.getHost() == null) {
+      if ((!"http".equals(scheme) && !"https".equals(scheme)) || uri.getHost() == null
+          || uri.getUserInfo() != null || uri.getQuery() != null || uri.getFragment() != null) {
         throw new IllegalArgumentException("Base URL 必须是有效的 http 或 https 地址");
       }
       return uri.toString().replaceAll("/+$", "");

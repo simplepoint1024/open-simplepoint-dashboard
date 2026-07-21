@@ -21,4 +21,13 @@ public class AiKnowledgeProperties {
   private Integer embeddingBatchSize = 64;
 
   private Integer storedVectorDimensions = 2000;
+
+  /** Number of candidates retrieved per final result for hybrid fusion. */
+  private Integer hybridCandidateMultiplier = 5;
+
+  /** Reciprocal-rank-fusion constant used to smooth differences between rankings. */
+  private Integer hybridRrfK = 60;
+
+  /** Hard limit protecting the database from oversized candidate sets. */
+  private Integer maxRetrievalCandidates = 1000;
 }

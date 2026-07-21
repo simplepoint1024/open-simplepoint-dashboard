@@ -38,6 +38,41 @@
           ]
         },
         {
+          "code": "ai.system.playground.view",
+          "name": "系统模型调试",
+          "label": "系统模型调试",
+          "title": "menu.ai.systemPlayground",
+          "type": "PAGE",
+          "path": "/ai/system/playground",
+          "component": "ai/platform/Playground",
+          "icon": "ExperimentOutlined",
+          "routeKind": "item",
+          "description": "menu.ai.systemPlayground",
+          "sort": 5,
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "grantable": false,
+          "disabled": false,
+          "children": [
+            {
+              "code": "ai.system.inference.invoke",
+              "name": "System AI Model Invoke",
+              "label": "System AI Model Invoke",
+              "alias": "i18n:ai.inference.action.invoke",
+              "type": "ACTION",
+              "description": "允许调用系统作用域内可用的 AI 生成模型",
+              "sort": 101,
+              "grantable": false,
+              "publicAccess": false,
+              "requireOrgTenant": false,
+              "disabled": false
+            }
+          ],
+          "scopeTypes": [
+            "SYSTEM"
+          ]
+        },
+        {
           "code": "ai.system.providers.view",
           "name": "系统模型供应商",
           "label": "系统模型供应商",
@@ -199,6 +234,26 @@
           ]
         },
         {
+          "code": "ai.system.invocations.view",
+          "name": "系统 AI 调用台账",
+          "label": "系统 AI 调用台账",
+          "title": "menu.ai.systemInvocations",
+          "type": "PAGE",
+          "path": "/ai/system/invocations",
+          "component": "ai/platform/Invocation",
+          "icon": "FundViewOutlined",
+          "routeKind": "item",
+          "description": "menu.ai.systemInvocations",
+          "sort": 30,
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "grantable": false,
+          "disabled": false,
+          "scopeTypes": [
+            "SYSTEM"
+          ]
+        },
+        {
           "code": "ai.system.knowledge-bases.view",
           "name": "系统知识库",
           "label": "系统知识库",
@@ -306,6 +361,41 @@
       "grantable": false,
       "disabled": false,
       "children": [
+        {
+          "code": "ai.playground.view",
+          "name": "租户模型调试",
+          "label": "租户模型调试",
+          "title": "menu.ai.playground",
+          "type": "PAGE",
+          "path": "/ai/playground",
+          "component": "ai/tenant/Playground",
+          "icon": "ExperimentOutlined",
+          "routeKind": "item",
+          "description": "menu.ai.playground",
+          "sort": 20,
+          "publicAccess": false,
+          "requireOrgTenant": true,
+          "grantable": true,
+          "disabled": false,
+          "children": [
+            {
+              "code": "ai.inference.invoke",
+              "name": "AI Model Invoke",
+              "label": "AI Model Invoke",
+              "alias": "i18n:ai.inference.action.invoke",
+              "type": "ACTION",
+              "description": "允许调用当前租户可用的 AI 生成模型",
+              "sort": 101,
+              "grantable": true,
+              "publicAccess": false,
+              "requireOrgTenant": true,
+              "disabled": false
+            }
+          ],
+          "scopeTypes": [
+            "TENANT"
+          ]
+        },
         {
           "code": "ai.providers.view",
           "name": "租户模型供应商",
@@ -463,6 +553,26 @@
               "disabled": false
             }
           ],
+          "scopeTypes": [
+            "TENANT"
+          ]
+        },
+        {
+          "code": "ai.invocations.view",
+          "name": "租户 AI 调用台账",
+          "label": "租户 AI 调用台账",
+          "title": "menu.ai.invocations",
+          "type": "PAGE",
+          "path": "/ai/invocations",
+          "component": "ai/tenant/Invocation",
+          "icon": "FundViewOutlined",
+          "routeKind": "item",
+          "description": "menu.ai.invocations",
+          "sort": 45,
+          "publicAccess": false,
+          "requireOrgTenant": true,
+          "grantable": true,
+          "disabled": false,
           "scopeTypes": [
             "TENANT"
           ]

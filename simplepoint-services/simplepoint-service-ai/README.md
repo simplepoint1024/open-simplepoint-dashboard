@@ -6,9 +6,12 @@
 - Anthropic Claude API；
 - 采用 OpenAI `/models` 协议的兼容服务；
 - LLM、Embedding、Rerank、图像、音频、审核和多模态模型分类；
-- 连接测试、在线模型预览、手动同步，以及默认每 6 小时执行一次的自动同步。
+- 连接测试、在线模型预览、手动同步，以及默认每 6 小时执行一次的自动同步；
+- 统一生成协议：OpenAI Responses、Anthropic Messages 与 OpenAI Compatible Chat Completions；
+- 同步生成与 SSE 流式生成、工具调用、严格 JSON Schema 输出和统一 Token 用量；
+- 按系统/租户/用户隔离的元数据调用台账，默认不保存提示词与模型输出；
 - 独立知识库模块，支持常见办公文档、PDF、OpenDocument、文本和网页文档解析；
-- PostgreSQL pgvector 向量索引、全文检索与 pg_trgm 相似度融合的混合检索。
+- PostgreSQL pgvector 向量索引、全文检索、pg_trgm 与归一化 RRF 混合检索。
 
 模型基础能力由 `simplepoint-plugin-ai-core-{api,repository,service,rest}` 提供，知识库由独立的 `simplepoint-plugin-ai-knowledge-{api,repository,service,rest}` 提供。AI 服务只负责组合这些插件族，后续可继续装配工具和技能模块。
 
@@ -37,7 +40,7 @@ export SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED=false
 
 - `VECTOR`：pgvector 余弦相似度；
 - `KEYWORD`：PostgreSQL 全文排名与 pg_trgm 字符相似度；
-- `HYBRID`：按知识库配置对向量分和关键词分加权融合。
+- `HYBRID`：向量与关键词分别召回候选，再按知识库权重执行归一化 RRF 融合。
 
 PostgreSQL 必须包含 `vector` 和 `pg_trgm` 扩展。Docker Compose 会基于 `postgres:16-alpine` 构建轻量的 `simplepoint/postgres-pgvector:16`，Swarm 使用 `pgvector/pgvector:0.8.1-pg16`。AI 服务启动时会幂等创建扩展、分块表、GIN 索引和 HNSW 索引。向量索引存储上限为 2000 维；对于原生输出超过 2000 维的模型，应在知识库中设置不超过 2000 的输出维度。
 
@@ -51,20 +54,39 @@ export SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY='replace-with-a-long-random-secr
 
 服务在没有主密钥时仍可启动和查看不含凭证的配置，但不能新增凭证、测试连接或同步远端模型。生产环境应从密钥管理系统注入该值；更换主密钥前需要迁移已有密文。
 
+## 推理接口与出站安全
+
+统一同步接口为 `POST /platform/ai/inference/generate` 和
+`POST /tenant/ai/inference/generate`；SSE 接口将路径末尾替换为 `/stream`。
+本地模型 ID 使用模型目录记录的 `id`，而不是厂商侧的 `modelId`。
+
+供应商请求默认禁止访问回环、链路本地、私网、组播和其他受限地址，并且不会自动跟随 HTTP 重定向。仅系统级供应商可显式开启“允许访问内网”，用于连接集群内部网关或自托管模型；租户供应商始终不能开启。OpenAI Compatible 供应商允许不设置 API Key，方便接入不鉴权的本地服务。
+
 ## 可调参数
 
 | Spring 配置 | 默认值 | 说明 |
 | --- | ---: | --- |
 | `simplepoint.ai.connect-timeout-seconds` | `10` | 供应商 HTTP 连接超时 |
-| `simplepoint.ai.request-timeout-seconds` | `30` | 供应商模型列表请求超时 |
+| `simplepoint.ai.request-timeout-seconds` | `30` | 供应商模型列表与推理请求超时 |
 | `simplepoint.ai.model-sync-page-limit` | `1000` | Anthropic 单页模型数量 |
 | `simplepoint.ai.model-sync-fixed-delay-ms` | `21600000` | 自动同步间隔（6 小时） |
 | `simplepoint.ai.model-sync-initial-delay-ms` | `60000` | 首次自动同步延迟 |
 | `simplepoint.ai.tenant-provider-management-enabled` | `true` | 是否允许组织租户维护私有供应商和模型 |
+| `simplepoint.ai.generation-max-input-characters` | `1000000` | 单次统一生成请求最大输入字符数 |
+| `simplepoint.ai.generation-max-messages` | `200` | 单次统一生成请求最大消息数 |
+| `simplepoint.ai.generation-max-tools` | `64` | 单次统一生成请求最大工具数 |
+| `simplepoint.ai.generation-max-output-tokens` | `32768` | 统一生成接口允许的最大输出 Token |
+| `simplepoint.ai.inference-core-pool-size` | `4` | SSE 推理执行器核心线程数 |
+| `simplepoint.ai.inference-max-pool-size` | `32` | SSE 推理执行器最大线程数 |
+| `simplepoint.ai.inference-queue-capacity` | `200` | SSE 推理等待队列大小 |
+| `simplepoint.ai.streaming-timeout-ms` | `300000` | SSE 连接超时 |
 | `simplepoint.ai.knowledge.max-upload-bytes` | `20971520` | 单文档上传大小上限 |
 | `simplepoint.ai.knowledge.max-extracted-characters` | `5000000` | 单文档最大提取字符数 |
 | `simplepoint.ai.knowledge.embedding-batch-size` | `64` | 文档向量化批大小 |
 | `simplepoint.ai.knowledge.stored-vector-dimensions` | `2000` | pgvector 索引存储维度 |
+| `simplepoint.ai.knowledge.hybrid-candidate-multiplier` | `5` | 混合检索每个结果的候选召回倍数 |
+| `simplepoint.ai.knowledge.hybrid-rrf-k` | `60` | RRF 排名平滑常数 |
+| `simplepoint.ai.knowledge.max-retrieval-candidates` | `1000` | 单次检索候选硬上限 |
 
 ## 开发启动
 
