@@ -54,16 +54,20 @@ public class OpenAiProviderAdapter implements AiProviderAdapter {
   /** {@inheritDoc} */
   @Override
   public List<DiscoveredModel> discoverModels(final ProviderConnection connection) {
-    requireApiKey(connection.apiKey());
+    if (connection.providerType() == AiProviderType.OPENAI) {
+      requireApiKey(connection.apiKey());
+    }
     HttpRequest.Builder request = HttpRequest.newBuilder()
         .uri(ProviderHttpSupport.endpoint(connection.baseUrl(), "/models"))
         .timeout(ProviderHttpSupport.timeout(connection.requestTimeoutSeconds()))
-        .header("Authorization", "Bearer " + connection.apiKey())
         .header("Accept", "application/json")
         .GET();
+    if (connection.apiKey() != null && !connection.apiKey().isBlank()) {
+      request.header("Authorization", "Bearer " + connection.apiKey());
+    }
     addHeader(request, "OpenAI-Organization", connection.organizationId());
     addHeader(request, "OpenAI-Project", connection.projectId());
-    HttpResponse<String> response = http.send(request.build());
+    HttpResponse<String> response = http.send(request.build(), connection.allowPrivateNetwork());
     try {
       JsonNode root = objectMapper.readTree(response.body());
       JsonNode data = root.path("data");

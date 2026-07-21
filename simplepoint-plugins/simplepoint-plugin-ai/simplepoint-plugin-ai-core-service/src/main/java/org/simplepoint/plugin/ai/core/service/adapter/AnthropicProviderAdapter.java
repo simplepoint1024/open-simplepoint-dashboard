@@ -78,7 +78,7 @@ public class AnthropicProviderAdapter implements AiProviderAdapter {
           .header("Accept", "application/json")
           .GET()
           .build();
-      HttpResponse<String> response = http.send(request);
+      HttpResponse<String> response = http.send(request, connection.allowPrivateNetwork());
       try {
         JsonNode root = objectMapper.readTree(response.body());
         JsonNode data = root.path("data");

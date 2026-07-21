@@ -244,18 +244,24 @@ public class AiProviderDefinition extends BaseEntityImpl<String> {
   private String apiVersion;
 
   @Order(10)
+  @Schema(title = "i18n:ai.providers.title.allowPrivateNetwork",
+      description = "i18n:ai.providers.description.allowPrivateNetwork")
+  @Column(name = "allow_private_network")
+  private Boolean allowPrivateNetwork;
+
+  @Order(11)
   @Schema(title = "i18n:ai.providers.title.enabled",
       extensions = @Extension(name = "x-ui", properties =
           @ExtensionProperty(name = "x-list-visible", value = "true")))
   private Boolean enabled;
 
-  @Order(11)
+  @Order(12)
   @Schema(title = "i18n:ai.providers.title.autoSyncEnabled",
       extensions = @Extension(name = "x-ui", properties =
           @ExtensionProperty(name = "x-list-visible", value = "true")))
   private Boolean autoSyncEnabled;
 
-  @Order(12)
+  @Order(13)
   @Schema(title = "i18n:ai.providers.title.description", maxLength = 512)
   @Column(length = 512)
   private String description;

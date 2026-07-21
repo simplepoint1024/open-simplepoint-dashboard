@@ -26,6 +26,22 @@ public class AiProperties {
 
   private Long modelSyncInitialDelayMs = 60_000L;
 
+  private Integer generationMaxInputCharacters = 1_000_000;
+
+  private Integer generationMaxMessages = 200;
+
+  private Integer generationMaxTools = 64;
+
+  private Integer generationMaxOutputTokens = 32_768;
+
+  private Integer inferenceCorePoolSize = 4;
+
+  private Integer inferenceMaxPoolSize = 32;
+
+  private Integer inferenceQueueCapacity = 200;
+
+  private Long streamingTimeoutMs = 300_000L;
+
   /**
    * Whether organization tenants may maintain their own provider credentials.
    */

@@ -204,6 +204,7 @@ public class AiModelCatalogServiceImpl implements AiModelCatalogService {
         provider.getOrganizationId(),
         provider.getProjectId(),
         provider.getApiVersion(),
+        Boolean.TRUE.equals(provider.getAllowPrivateNetwork()),
         timeout
     );
   }
