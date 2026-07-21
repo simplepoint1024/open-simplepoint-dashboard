@@ -91,7 +91,7 @@ const MenuSearchModal: React.FC<MenuSearchModalProps> = ({open, onClose, menus, 
       width={520}
       styles={{
         body: { padding: 0 },
-        content: { padding: 0, borderRadius: 8, overflow: 'hidden' },
+        container: { padding: 0, borderRadius: 8, overflow: 'hidden' },
       }}
     >
       {/* 搜索输入 */}

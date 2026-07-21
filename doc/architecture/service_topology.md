@@ -16,12 +16,13 @@
 | `simplepoint-service-authorization` | `org.simplepoint.authorization.server.Authorization` | Servlet MVC + Spring Authorization Server + Thymeleaf | OAuth2/OIDC 授权服务器、登录与 Token/OIDC 端点 | `simplepoint-security-oauth2-server`、Redis、Thymeleaf |
 | `simplepoint-service-auditing` | `org.simplepoint.auditing.server.Auditing` | Servlet MVC + JPA + Resource Server | 审计日志、限流规则、Redis 监控等运维/审计能力 | auditing logging/rate-limit/redis 插件模块 |
 | `simplepoint-service-dna` | `org.simplepoint.dna.server.DnaApplication` | Servlet MVC + JPA + Resource Server | JDBC 驱动、方言、数据源等 DNA 能力 | `simplepoint-plugin-dna` 系列模块 |
+| `simplepoint-service-ai` | `org.simplepoint.ai.server.AiApplication` | Servlet MVC + JPA + Resource Server | 模型接入、独立知识库、pgvector 混合检索与 AI 工作台 remote | `simplepoint-plugin-ai-core-*`、`simplepoint-plugin-ai-knowledge-*`、service-router、RBAC resource API、i18n API |
 
 ### 共同点
 
-- 五个服务入口都使用 `@Boot`，而不是原生 `@SpringBootApplication`。
-- 五个服务都开启了 `@EnableRemoteContracts(basePackages = "org.simplepoint")`，说明跨服务协作不只依赖 HTTP，也依赖 AMQP RPC。
-- `common`、`auditing`、`dna` 都是 Servlet 资源服务；`host` 是 WebFlux 边缘服务；`authorization` 是 OAuth2/OIDC 授权服务器。
+- 六个服务入口都使用 `@Boot`，而不是原生 `@SpringBootApplication`。
+- 业务服务通过 `@EnableServiceRouter(basePackages = "org.simplepoint")` 接入服务路由。
+- `common`、`auditing`、`dna`、`ai` 都是 Servlet 资源服务；`host` 是 WebFlux 边缘服务；`authorization` 是 OAuth2/OIDC 授权服务器。
 
 ## 3. 前端应用与后端映射
 
@@ -29,10 +30,11 @@
 
 | 前端应用 | 构建名 | 开发基路径 | 发布位置 | 角色 |
 | --- | --- | --- | --- | --- |
-| `apps/simplepoint-host` | host shell | 由 host 服务静态资源承载 | `simplepoint-service-host/src/main/resources/static/` | 主壳应用，负责菜单、路由、租户切换和远程模块注册 |
-| `apps/simplepoint-common` | `common` | `/common/mf` | `simplepoint-service-common/src/main/resources/static/{mf,esm,cjs}` | 平台主业务 remote |
-| `apps/simplepoint-audit` | `auditing` | `/auditing/mf` | `simplepoint-service-auditing/src/main/resources/static/{mf,esm,cjs}` | 审计与监控 remote |
-| `apps/simplepoint-dna` | `dna` | `/dna/mf` | `simplepoint-service-dna/src/main/resources/static/{mf,esm,cjs}` | DNA remote |
+| `modules/simplepoint-host` | host shell | 由 host 服务静态资源承载 | `simplepoint-service-host/src/main/resources/static/` | 主壳应用，负责菜单、路由、租户切换和远程模块注册 |
+| `modules/simplepoint-common` | `common` | `/common/mf` | `simplepoint-service-common/src/main/resources/static/{mf,esm,cjs}` | 平台主业务 remote |
+| `modules/simplepoint-audit` | `auditing` | `/auditing/mf` | `simplepoint-service-auditing/src/main/resources/static/{mf,esm,cjs}` | 审计与监控 remote |
+| `modules/simplepoint-dna` | `dna` | `/dna/mf` | `simplepoint-service-dna/src/main/resources/static/{mf,esm,cjs}` | DNA remote |
+| `modules/simplepoint-ai` | `ai` | `/ai/mf` | `simplepoint-service-ai/src/main/resources/static/{mf,esm,cjs}` | AI 工作台、模型供应商、模型目录和知识库 remote |
 
 当前仓库里已经能看到这些静态资源目录：`common`、`auditing`、`dna` 服务下存在 `mf/`、`esm/`、`cjs/`，而 `host` 服务下存在 `index.html` 和壳应用静态资源。
 
@@ -47,7 +49,7 @@ sequenceDiagram
   participant HostSvc as service-host
   participant Common as service-common
   participant Auth as service-authorization
-  participant Remote as common/auditing/dna remote
+  participant Remote as common/auditing/dna/ai remote
 
   Browser->>HostSvc: 访问 host
   HostSvc->>Auth: OAuth2/OIDC 登录跳转
@@ -99,6 +101,12 @@ sequenceDiagram
 
 - 聚合 JDBC 驱动、方言、数据源等数据接入能力。
 - 有独立后端服务和独立 remote 页面。
+
+### `ai`
+
+- 提供 AI 业务能力的独立扩展边界。
+- `simplepoint-plugin-ai` 是 AI 领域聚合层；模型供应商、凭证、系统/租户混合作用域、模型目录和厂商适配器位于 `simplepoint-plugin-ai-core-*`，知识库、文档解析、分块和 pgvector 混合检索位于独立的 `simplepoint-plugin-ai-knowledge-*`。
+- 后续知识库、工具、技能能力分别以 `simplepoint-plugin-ai-knowledge-*`、`simplepoint-plugin-ai-tool-*`、`simplepoint-plugin-ai-skill-*` 同级扩展，按需依赖 `ai-core-api`。
 
 ## 6. 当前实现里的两个重要事实
 

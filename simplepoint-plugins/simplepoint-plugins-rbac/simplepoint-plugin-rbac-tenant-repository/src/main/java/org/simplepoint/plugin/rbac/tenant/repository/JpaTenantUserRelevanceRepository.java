@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -55,11 +56,55 @@ public interface JpaTenantUserRelevanceRepository
           u.phoneNumber
       )
       from User u
+      where lower(u.id) like concat('%', lower(:keyword), '%')
+         or lower(coalesce(u.nickname, '')) like concat('%', lower(:keyword), '%')
+         or lower(coalesce(u.name, '')) like concat('%', lower(:keyword), '%')
+         or lower(coalesce(u.email, '')) like concat('%', lower(:keyword), '%')
+         or lower(coalesce(u.phoneNumber, '')) like concat('%', lower(:keyword), '%')
+      order by coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id), u.id
+      """)
+  Page<UserRelevanceVo> searchItems(@Param("keyword") String keyword, Pageable pageable);
+
+  @Override
+  @Query("""
+      select new org.simplepoint.plugin.rbac.tenant.api.vo.UserRelevanceVo(
+          u.id,
+          coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id),
+          u.email,
+          u.phoneNumber
+      )
+      from User u
       join TenantUserRelevance tur on tur.userId = u.id
       where tur.tenantId = ?1
       order by coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id), u.id
       """)
   Page<UserRelevanceVo> items(String tenantId, Pageable pageable);
+
+  @Override
+  @Query("""
+      select new org.simplepoint.plugin.rbac.tenant.api.vo.UserRelevanceVo(
+          u.id,
+          coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id),
+          u.email,
+          u.phoneNumber
+      )
+      from User u
+      join TenantUserRelevance tur on tur.userId = u.id
+      where tur.tenantId = :tenantId
+        and (
+          lower(u.id) like concat('%', lower(:keyword), '%')
+          or lower(coalesce(u.nickname, '')) like concat('%', lower(:keyword), '%')
+          or lower(coalesce(u.name, '')) like concat('%', lower(:keyword), '%')
+          or lower(coalesce(u.email, '')) like concat('%', lower(:keyword), '%')
+          or lower(coalesce(u.phoneNumber, '')) like concat('%', lower(:keyword), '%')
+        )
+      order by coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id), u.id
+      """)
+  Page<UserRelevanceVo> searchItems(
+      @Param("tenantId") String tenantId,
+      @Param("keyword") String keyword,
+      Pageable pageable
+  );
 
   @Override
   @Query("select u.id from User u where u.id in ?1")

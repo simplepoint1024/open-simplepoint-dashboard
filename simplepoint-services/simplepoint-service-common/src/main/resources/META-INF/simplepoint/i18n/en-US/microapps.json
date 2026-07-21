@@ -1,5 +1,6 @@
 {
   "micro.domain.description.description": "Remote module description",
+  "micro.domain.description.displayName": "Display name used to identify the remote module",
   "micro.domain.description.entry": "Remote module entry URL",
   "micro.domain.description.serviceName": "Service name for the remote module",
   "micro.module.title.description": "Description",

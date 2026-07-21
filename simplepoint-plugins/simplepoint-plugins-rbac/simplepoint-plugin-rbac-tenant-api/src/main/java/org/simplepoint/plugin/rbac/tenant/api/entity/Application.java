@@ -59,7 +59,7 @@ import org.springframework.core.annotation.Order;
         authority = "applications.delete"
     ),
     @ButtonDeclaration(
-        title = "配置资源",
+        title = "i18n:applications.button.config.resource",
         key = "config.resource",
         color = "orange",
         icon = Icons.SAFETY_OUTLINED,
@@ -116,7 +116,7 @@ public class Application extends BaseEntityImpl<String> {
   /**
    * The description of the application.
    */
-  @Order(2)
+  @Order(5)
   @Schema(
       title = "i18n:applications.title.description",
       description = "i18n:applications.description.description",
@@ -134,7 +134,7 @@ public class Application extends BaseEntityImpl<String> {
   /**
    * Application home page or entry URL.
    */
-  @Order(3)
+  @Order(2)
   @Schema(
       title = "i18n:applications.title.homepage",
       description = "i18n:applications.description.homepage",
@@ -152,7 +152,7 @@ public class Application extends BaseEntityImpl<String> {
   /**
    * Sort order.
    */
-  @Order(4)
+  @Order(3)
   @Schema(
       title = "i18n:applications.title.sort",
       description = "i18n:applications.description.sort",
@@ -168,7 +168,7 @@ public class Application extends BaseEntityImpl<String> {
   /**
    * Whether the application is enabled.
    */
-  @Order(5)
+  @Order(4)
   @Schema(
       title = "i18n:applications.title.enabled",
       description = "i18n:applications.description.enabled",

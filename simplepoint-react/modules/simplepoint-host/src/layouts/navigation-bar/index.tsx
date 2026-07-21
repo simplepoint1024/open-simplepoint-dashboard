@@ -16,7 +16,7 @@ import {SortableContext, horizontalListSortingStrategy, useSortable, arrayMove} 
 import {CSS} from '@dnd-kit/utilities';
 import {createIcon} from '@simplepoint/shared/types/icon.ts';
 import {useSideNavigation} from "@/hooks/routes";
-import {useLocation, useNavigate} from "react-router-dom";
+import {useLocation, useNavigate} from "react-router";
 import {findRouteChainByPath, flattenRoutes, getRouteKey, RouteInfo} from "@/store/routes";
 import {aboutMeItem, HeaderLogo, HeaderSearchBar, RoleSwitcherTop, TenantSwitcherTop, toolsSwitcherGroupItem} from "@/layouts/navigation-bar/top-bar.tsx";
 import {useI18n} from "@/layouts/i18n/useI18n.ts";

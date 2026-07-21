@@ -28,12 +28,38 @@ public interface ObjectStorageObjectRepository extends BaseRepository<ObjectStor
   Optional<ObjectStorageObject> findActiveById(String id);
 
   /**
+   * Finds an active object by id within a tenant.
+   *
+   * @param id object id
+   * @param tenantId owning tenant id
+   * @return object metadata
+   */
+  Optional<ObjectStorageObject> findActiveByIdAndTenantId(String id, String tenantId);
+
+  /**
    * Finds active objects by ids.
    *
    * @param ids ids
    * @return active objects
    */
   List<ObjectStorageObject> findAllActiveByIds(Collection<String> ids);
+
+  /**
+   * Finds active objects by ids within a tenant.
+   *
+   * @param ids ids
+   * @param tenantId owning tenant id
+   * @return active objects
+   */
+  List<ObjectStorageObject> findAllActiveByIdsAndTenantId(Collection<String> ids, String tenantId);
+
+  /**
+   * Whether a provider is referenced by active object metadata.
+   *
+   * @param providerCode provider code
+   * @return true when referenced
+   */
+  boolean existsActiveByProviderCode(String providerCode);
 
   /**
    * Finds an active object by provider+bucket+key.

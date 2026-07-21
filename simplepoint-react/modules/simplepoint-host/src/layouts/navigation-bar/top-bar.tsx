@@ -34,6 +34,7 @@ const LogoTitle: React.FC = () => {
 };
 
 function normalizedTenantType(tenant?: Pick<CurrentTenant, 'tenantType'>): CurrentTenant['tenantType'] {
+  if (tenant?.tenantType === 'PLATFORM') return 'PLATFORM';
   return tenant?.tenantType === 'PERSONAL' ? 'PERSONAL' : 'ORGANIZATION';
 }
 
@@ -41,9 +42,11 @@ function tenantTypeLabel(
   t: (key: string, fallback?: string) => string,
   tenant?: Pick<CurrentTenant, 'tenantType'>,
 ): string {
-  return normalizedTenantType(tenant) === 'PERSONAL'
-    ? t('tenant.type.personal', '个人')
-    : t('tenant.type.organization', '组织');
+  const type = normalizedTenantType(tenant);
+  if (type === 'PLATFORM') return t('tenant.type.platform', '平台');
+  return type === 'PERSONAL'
+      ? t('tenant.type.personal', '个人')
+      : t('tenant.type.organization', '组织');
 }
 
 function tenantDisplayName(
@@ -51,6 +54,9 @@ function tenantDisplayName(
   tenant?: Pick<CurrentTenant, 'tenantName' | 'tenantType'>,
 ): string {
   if (!tenant) return t('tenant.unknown', '未选择');
+  if (normalizedTenantType(tenant) === 'PLATFORM') {
+    return tenant.tenantName || t('tenant.platformSpace', '平台工作台');
+  }
   if (normalizedTenantType(tenant) === 'PERSONAL') {
     return t('tenant.personalSpace', '个人空间');
   }
@@ -67,7 +73,7 @@ function TenantTypeTag({
   const type = normalizedTenantType(tenant);
   return (
     <Tag
-      color={type === 'PERSONAL' ? 'blue' : 'green'}
+      color={type === 'PLATFORM' ? 'purple' : type === 'PERSONAL' ? 'blue' : 'green'}
       className="nb-tenant-type-tag"
     >
       {tenantTypeLabel(t, tenant)}

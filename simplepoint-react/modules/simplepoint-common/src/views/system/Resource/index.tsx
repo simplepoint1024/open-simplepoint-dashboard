@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import type {SimpleTableColumnOverride} from '@simplepoint/components/SimpleTable/types';
 import api from '@/api';
@@ -89,6 +89,36 @@ const App = () => {
     },
   }), [t]);
 
+  const formSchemaTransform = useCallback((schema: any) => {
+    const next = structuredClone(schema);
+    const properties = next?.properties ?? {};
+    const setChoices = (
+      field: Record<string, any> | undefined,
+      choices: Array<{value: string; label: string}>
+    ) => {
+      if (!field) return;
+      const target = field.items && typeof field.items === 'object' ? field.items : field;
+      target.oneOf = choices.map(({value, label}) => ({const: value, title: label}));
+      delete target.enum;
+    };
+
+    setChoices(
+      properties.type,
+      Object.entries(RESOURCE_TYPE_CONFIG).map(([value, config]) => ({
+        value,
+        label: t(config.labelKey, config.fallback),
+      }))
+    );
+    setChoices(
+      properties.routeKind,
+      Object.entries(ROUTE_KIND_CONFIG).map(([value, config]) => ({
+        value,
+        label: t(config.labelKey, config.fallback),
+      }))
+    );
+    return next;
+  }, [t]);
+
   const customButtonEvents = {
     add: (_keys: React.Key[], rows: any[]) => {
       const parentId = rows?.[0]?.id;
@@ -96,7 +126,7 @@ const App = () => {
       setEditingRecord(null);
       setInitialValues({
         parentId,
-        type: parentId ? 'PAGE' : 'GROUP',
+        type: parentId ? 'PAGE' : 'MODULE',
         routeKind: parentId ? 'item' : 'submenu',
         path: parentPath,
         grantable: true,
@@ -117,6 +147,7 @@ const App = () => {
       initialValues={initialValues}
       customButtonEvents={customButtonEvents}
       columnOverrides={columnOverrides}
+      formSchemaTransform={formSchemaTransform}
       submitRefreshTargets={{page: true, schema: false}}
       deleteRefreshTargets={{page: true, schema: false}}
     />

@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationScopeGuards;
+import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Application;
 import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationResourceRelevance;
@@ -23,6 +24,7 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceR
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ApplicationService;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.security.service.ResourceService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -41,6 +43,7 @@ public class ApplicationServiceImpl
   private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
   private final TenantRepository tenantRepository;
   private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
+  private final ResourceService resourceService;
 
   /**
    * Application Service Impl.
@@ -52,7 +55,8 @@ public class ApplicationServiceImpl
       PackageApplicationRelevanceRepository packageApplicationRelevanceRepository,
       TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
       TenantRepository tenantRepository,
-      ResourceAuthorizationVersionService resourceAuthorizationVersionService
+      ResourceAuthorizationVersionService resourceAuthorizationVersionService,
+      ResourceService resourceService
   ) {
     super(repository, detailsProviderService);
     this.applicationResourceRelevanceRepository = applicationResourceRelevanceRepository;
@@ -60,6 +64,7 @@ public class ApplicationServiceImpl
     this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
     this.tenantRepository = tenantRepository;
     this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
+    this.resourceService = resourceService;
   }
 
   @Override
@@ -99,10 +104,26 @@ public class ApplicationServiceImpl
   @Transactional(rollbackFor = Exception.class)
   public Collection<ApplicationResourceRelevance> authorizeResources(ApplicationResourcesRelevanceDto dto) {
     requirePlatformAdministrator();
-    String applicationCode = requireCode(dto.getApplicationCode(), "应用编码不能为空");
+    if (dto == null) {
+      throw new IllegalArgumentException("应用资源授权参数不能为空");
+    }
+    final String applicationCode = requireCode(dto.getApplicationCode(), "应用编码不能为空");
     Set<String> resourceCodes = normalizeCodes(dto.getResourceCodes());
     if (resourceCodes.isEmpty()) {
       return List.of();
+    }
+    Set<String> deliverableCodes = new LinkedHashSet<>(resourceService.filterGrantableAccessibleCodes(
+        resourceCodes,
+        AuthorizationScopeType.TENANT
+    ));
+    deliverableCodes.addAll(resourceService.filterGrantableAccessibleCodes(
+        resourceCodes,
+        AuthorizationScopeType.PERSONAL
+    ));
+    if (!deliverableCodes.containsAll(resourceCodes)) {
+      Set<String> rejected = new LinkedHashSet<>(resourceCodes);
+      rejected.removeAll(deliverableCodes);
+      throw new IllegalArgumentException("应用只能关联租户级或用户级资源: " + String.join(",", rejected));
     }
 
     Set<ApplicationResourceRelevance> relations = new LinkedHashSet<>(resourceCodes.size());

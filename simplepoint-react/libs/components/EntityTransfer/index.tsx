@@ -29,6 +29,7 @@ export interface EntityTransferProps<T extends object>
   extends Omit<
     STableTransferProps<T>,
     | 'dataSource'
+    | 'defaultValue'
     | 'targetKeys'
     | 'onChange'
     | 'leftColumns'

@@ -17,6 +17,7 @@ import org.simplepoint.plugin.rbac.resource.api.repository.ResourceRepository;
 import org.simplepoint.security.ResourceDeclaration;
 import org.simplepoint.security.entity.MicroModule;
 import org.simplepoint.security.entity.Resource;
+import org.simplepoint.security.entity.ResourceScopeType;
 import org.simplepoint.security.entity.ResourceType;
 import org.simplepoint.security.service.ResourceService;
 import org.springframework.stereotype.Service;
@@ -235,6 +236,11 @@ public class PluginResourceContributionHandler
     declaration.setSort(contribution.getSort());
     declaration.setPublicAccess(contribution.getPublicAccess());
     declaration.setRequireOrgTenant(contribution.getRequireOrgTenant());
+    if (contribution.getScopeTypes() != null && !contribution.getScopeTypes().isEmpty()) {
+      declaration.setScopeTypes(contribution.getScopeTypes().stream()
+          .map(scope -> ResourceScopeType.valueOf(scope.trim().toUpperCase()))
+          .collect(Collectors.toCollection(LinkedHashSet::new)));
+    }
     declaration.setGrantable(contribution.getGrantable());
     declaration.setDisabled(contribution.getDisabled());
     declaration.setDanger(contribution.getDanger());

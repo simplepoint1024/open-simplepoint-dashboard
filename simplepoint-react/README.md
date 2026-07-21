@@ -4,20 +4,23 @@ This repository contains the React frontend workspace for the SimplePoint dashbo
 
 ## Workspace layout
 
-- `apps/simplepoint-host`: the shell application that loads remote modules and renders the dashboard routes.
-- `apps/simplepoint-common`: the shared/remote frontend module exposed through module federation.
+- `modules/simplepoint-host`: the shell application that loads remote modules and renders the dashboard routes.
+- `modules/simplepoint-common`: the shared platform remote.
+- `modules/simplepoint-audit`: the auditing and monitoring remote.
+- `modules/simplepoint-dna`: the DNA remote.
+- `modules/simplepoint-ai`: the AI workspace with separate platform-managed and tenant-owned provider/model views.
 - `libs/`: shared UI and data-access utilities consumed by the apps.
 
 ## Prerequisites
 
-- Node.js 20 or later
-- Corepack-enabled `pnpm` 9
+- Node.js 22.22 or later
+- Corepack-enabled `pnpm` 11.15.1
 
 ## Install dependencies
 
 ```bash
 corepack enable
-corepack prepare pnpm@9 --activate
+corepack prepare pnpm@11.15.1 --activate
 pnpm install --frozen-lockfile
 ```
 
@@ -27,6 +30,9 @@ pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm build
 pnpm dev:common
+pnpm dev:audit
+pnpm dev:dna
+pnpm dev:ai
 pnpm dev:host
 ```
 

@@ -15,6 +15,7 @@ import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.springframework.core.annotation.Order;
 
 /**
  * Represents a remote module entity in the RBAC (Role-Based Access Control) system.
@@ -65,9 +66,10 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 @Schema(title = "微模块对象", description = "用于加载微前端远程模块")
 public class MicroModule extends BaseEntityImpl<String> {
 
+  @Order(0)
   @Column(nullable = false)
   @Schema(title = "i18n:micro.module.title.displayName",
-      description = "i18n:route.domain.description.displayName",
+      description = "i18n:micro.domain.description.displayName",
       maxLength = 255,
       extensions = {
           @Extension(name = "x-ui", properties = {
@@ -76,6 +78,7 @@ public class MicroModule extends BaseEntityImpl<String> {
       })
   private String displayName;
 
+  @Order(1)
   @Schema(title = "i18n:micro.module.title.serviceName",
       description = "i18n:micro.domain.description.serviceName",
       maxLength = 255,
@@ -90,26 +93,31 @@ public class MicroModule extends BaseEntityImpl<String> {
    * Plugin id that owns this remote module. Null means the row is managed by the platform itself.
    */
   @Column(length = 128)
+  @Schema(hidden = true)
   private String pluginId;
 
   /**
    * Version of the owning plugin manifest.
    */
   @Column(length = 64)
+  @Schema(hidden = true)
   private String pluginVersion;
 
   /**
    * Version of the frontend remote declared by the plugin manifest.
    */
   @Column(length = 64)
+  @Schema(hidden = true)
   private String remoteVersion;
 
   /**
    * SHA-256 digest of the owning plugin artifact.
    */
   @Column(length = 64)
+  @Schema(hidden = true)
   private String pluginArtifactSha256;
 
+  @Order(2)
   @Column(nullable = false, unique = true)
   @Schema(title = "i18n:micro.module.title.entry",
       description = "i18n:micro.domain.description.entry",
@@ -121,6 +129,7 @@ public class MicroModule extends BaseEntityImpl<String> {
       })
   private String entry;
 
+  @Order(3)
   @Lob
   @Schema(title = "i18n:micro.module.title.description",
       description = "i18n:micro.domain.description.description",

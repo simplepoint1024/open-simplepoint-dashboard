@@ -147,7 +147,7 @@ docker compose -f docker/docker-compose.yaml up -d
 ```bash
 cd simplepoint-react
 corepack enable
-corepack prepare pnpm@9 --activate
+corepack prepare pnpm@11.15.1 --activate
 pnpm install --frozen-lockfile
 pnpm dev:host
 pnpm dev:common
@@ -172,14 +172,15 @@ pnpm dev:common
 
 ## 7. 平台启动贡献与默认账号
 
-`simplepoint-service-common` 的 `application-dev.properties` 会打开开发态平台启动贡献，并内置一个超级管理员账号：
+`simplepoint-service-common` 的开发配置会打开平台启动贡献，并初始化一组可验证作用域和角色差异的账号：
 
-| 项目 | 默认值 |
-| --- | --- |
-| 邮箱 | `simplepoint@mail.com` |
-| 密码 | `123456` |
-| 账号状态 | 已验证邮箱 |
-| 权限 | `super-admin=true` |
+| 身份 | 邮箱 | 默认密码 |
+| --- | --- | --- |
+| 系统管理员 / 默认组织所有者 | `simplepoint@mail.com` | `123456` |
+| 默认组织租户管理员 | `manager@simplepoint.local` | `123456` |
+| 默认组织普通成员 | `member@simplepoint.local` | `123456` |
+
+初始化还会创建默认组织、组织与个人套餐、核心/对象存储/AI 应用以及对应资源授权。生产部署必须通过环境变量修改默认密码，或关闭该启动贡献。
 
 首次验证时，建议按下面顺序做：
 

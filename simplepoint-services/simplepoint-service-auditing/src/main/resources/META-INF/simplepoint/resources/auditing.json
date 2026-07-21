@@ -9,12 +9,12 @@
       "type": "MODULE",
       "path": "/monitoring",
       "icon": "EyeOutlined",
-      "routeKind": "item",
+      "routeKind": "submenu",
       "description": "menu.monitoring",
-      "sort": 4,
+      "sort": 50,
       "publicAccess": false,
       "requireOrgTenant": false,
-      "grantable": true,
+      "grantable": false,
       "disabled": false,
       "children": [
         {
@@ -31,7 +31,7 @@
           "sort": 0,
           "publicAccess": false,
           "requireOrgTenant": false,
-          "grantable": true,
+          "grantable": false,
           "disabled": false
         },
         {
@@ -45,10 +45,10 @@
           "icon": "SafetyCertificateOutlined",
           "routeKind": "item",
           "description": "menu.monitoring.resourceGrantLog",
-          "sort": 1,
+          "sort": 10,
           "publicAccess": false,
           "requireOrgTenant": false,
-          "grantable": true,
+          "grantable": false,
           "disabled": false
         },
         {
@@ -62,10 +62,10 @@
           "icon": "WarningOutlined",
           "routeKind": "item",
           "description": "menu.monitoring.errorLog",
-          "sort": 2,
+          "sort": 20,
           "publicAccess": false,
           "requireOrgTenant": false,
-          "grantable": true,
+          "grantable": false,
           "disabled": false
         },
         {
@@ -79,20 +79,21 @@
           "icon": "CloudServerOutlined",
           "routeKind": "item",
           "description": "menu.monitoring.serviceRateLimit",
-          "sort": 3,
+          "sort": 30,
           "publicAccess": false,
           "requireOrgTenant": false,
-          "grantable": true,
+          "grantable": false,
           "disabled": false,
           "children": [
             {
               "code": "service.rate.limit.rules.create",
               "name": "Service Rate Limit Create",
               "label": "Service Rate Limit Create",
+              "alias": "i18n:table.button.create",
               "type": "ACTION",
               "description": "允许创建服务限流规则",
               "sort": 101,
-              "grantable": true,
+              "grantable": false,
               "publicAccess": false,
               "requireOrgTenant": false,
               "disabled": false
@@ -101,10 +102,11 @@
               "code": "service.rate.limit.rules.edit",
               "name": "Service Rate Limit Edit",
               "label": "Service Rate Limit Edit",
+              "alias": "i18n:table.button.edit",
               "type": "ACTION",
               "description": "允许编辑服务限流规则",
               "sort": 102,
-              "grantable": true,
+              "grantable": false,
               "publicAccess": false,
               "requireOrgTenant": false,
               "disabled": false
@@ -113,10 +115,11 @@
               "code": "service.rate.limit.rules.delete",
               "name": "Service Rate Limit Delete",
               "label": "Service Rate Limit Delete",
+              "alias": "i18n:table.button.delete",
               "type": "ACTION",
               "description": "允许删除服务限流规则",
               "sort": 103,
-              "grantable": true,
+              "grantable": false,
               "publicAccess": false,
               "requireOrgTenant": false,
               "disabled": false
@@ -134,20 +137,21 @@
           "icon": "ApiOutlined",
           "routeKind": "item",
           "description": "menu.monitoring.endpointRateLimit",
-          "sort": 4,
+          "sort": 40,
           "publicAccess": false,
           "requireOrgTenant": false,
-          "grantable": true,
+          "grantable": false,
           "disabled": false,
           "children": [
             {
               "code": "endpoint.rate.limit.rules.create",
               "name": "Endpoint Rate Limit Create",
               "label": "Endpoint Rate Limit Create",
+              "alias": "i18n:table.button.create",
               "type": "ACTION",
               "description": "允许创建接口限流规则",
               "sort": 101,
-              "grantable": true,
+              "grantable": false,
               "publicAccess": false,
               "requireOrgTenant": false,
               "disabled": false
@@ -156,10 +160,11 @@
               "code": "endpoint.rate.limit.rules.edit",
               "name": "Endpoint Rate Limit Edit",
               "label": "Endpoint Rate Limit Edit",
+              "alias": "i18n:table.button.edit",
               "type": "ACTION",
               "description": "允许编辑接口限流规则",
               "sort": 102,
-              "grantable": true,
+              "grantable": false,
               "publicAccess": false,
               "requireOrgTenant": false,
               "disabled": false
@@ -168,10 +173,11 @@
               "code": "endpoint.rate.limit.rules.delete",
               "name": "Endpoint Rate Limit Delete",
               "label": "Endpoint Rate Limit Delete",
+              "alias": "i18n:table.button.delete",
               "type": "ACTION",
               "description": "允许删除接口限流规则",
               "sort": 103,
-              "grantable": true,
+              "grantable": false,
               "publicAccess": false,
               "requireOrgTenant": false,
               "disabled": false
@@ -189,20 +195,21 @@
           "icon": "DatabaseOutlined",
           "routeKind": "item",
           "description": "menu.monitoring.redis",
-          "sort": 5,
+          "sort": 50,
           "publicAccess": false,
           "requireOrgTenant": false,
-          "grantable": true,
+          "grantable": false,
           "disabled": false,
           "children": [
             {
               "code": "redis.entries.create",
               "name": "Redis Entry Create",
               "label": "Redis Entry Create",
+              "alias": "i18n:table.button.create",
               "type": "ACTION",
               "description": "允许新增 Redis 字符串键值对",
               "sort": 101,
-              "grantable": true,
+              "grantable": false,
               "publicAccess": false,
               "requireOrgTenant": false,
               "disabled": false
@@ -211,10 +218,11 @@
               "code": "redis.entries.edit",
               "name": "Redis Entry Edit",
               "label": "Redis Entry Edit",
+              "alias": "i18n:table.button.edit",
               "type": "ACTION",
               "description": "允许编辑 Redis 字符串键值对",
               "sort": 102,
-              "grantable": true,
+              "grantable": false,
               "publicAccess": false,
               "requireOrgTenant": false,
               "disabled": false
@@ -223,16 +231,20 @@
               "code": "redis.entries.delete",
               "name": "Redis Entry Delete",
               "label": "Redis Entry Delete",
+              "alias": "i18n:table.button.delete",
               "type": "ACTION",
               "description": "允许删除 Redis 键",
               "sort": 103,
-              "grantable": true,
+              "grantable": false,
               "publicAccess": false,
               "requireOrgTenant": false,
               "disabled": false
             }
           ]
         }
+      ],
+      "scopeTypes": [
+        "SYSTEM"
       ]
     }
   ]

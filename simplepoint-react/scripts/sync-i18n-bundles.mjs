@@ -20,6 +20,7 @@ const frontendNamespaceSources = [
   'modules/simplepoint-common/src/api/index.ts',
   'modules/simplepoint-audit/src/api/index.ts',
   'modules/simplepoint-dna/src/api/index.ts',
+  'modules/simplepoint-ai/src/api/index.ts',
 ];
 
 const readJson = file => JSON.parse(fs.readFileSync(file, 'utf8'));

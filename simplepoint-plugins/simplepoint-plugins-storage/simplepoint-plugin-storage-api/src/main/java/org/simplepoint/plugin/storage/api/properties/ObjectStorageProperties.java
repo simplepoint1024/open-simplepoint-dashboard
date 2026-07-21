@@ -25,9 +25,51 @@ public class ObjectStorageProperties {
 
   public static final String PREFIX = "simplepoint.storage";
 
+  private String credentialEncryptionKey;
+
   private String defaultProvider;
 
   private Map<String, ProviderProperties> providers = new LinkedHashMap<>();
+
+  private BootstrapProperties bootstrap = new BootstrapProperties();
+
+  /**
+   * Bootstrap settings for object-storage providers.
+   */
+  @Data
+  public static class BootstrapProperties {
+
+    private MinioBootstrapProperties minio = new MinioBootstrapProperties();
+  }
+
+  /**
+   * Docker/local MinIO provider initialized during platform bootstrap.
+   */
+  @Data
+  public static class MinioBootstrapProperties {
+
+    private boolean enabled;
+
+    private String code = "minio";
+
+    private String name = "Local MinIO";
+
+    private String endpoint = "http://minio:9000";
+
+    private String region = "us-east-1";
+
+    private String accessKey;
+
+    private String secretKey;
+
+    private String bucket = "simplepoint";
+
+    private String basePath;
+
+    private boolean defaultProvider = true;
+
+    private String description = "Docker Compose local MinIO initialized by the platform";
+  }
 
   /**
    * Provider-specific properties.

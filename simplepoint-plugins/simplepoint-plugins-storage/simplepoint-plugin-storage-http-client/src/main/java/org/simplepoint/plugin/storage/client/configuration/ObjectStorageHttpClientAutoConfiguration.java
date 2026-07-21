@@ -11,6 +11,7 @@ package org.simplepoint.plugin.storage.client.configuration;
 import org.simplepoint.plugin.storage.client.properties.ObjectStorageRemoteProperties;
 import org.simplepoint.plugin.storage.client.service.ObjectStorageRemoteService;
 import org.simplepoint.plugin.storage.client.service.RestClientObjectStorageRemoteService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -45,6 +46,7 @@ public class ObjectStorageHttpClientAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public ObjectStorageRemoteService objectStorageRemoteService(
+      @Qualifier("objectStorageRestClientBuilder")
       final RestClient.Builder objectStorageRestClientBuilder,
       final ObjectStorageRemoteProperties properties
   ) {

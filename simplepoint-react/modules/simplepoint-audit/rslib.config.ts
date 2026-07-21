@@ -1,7 +1,6 @@
 import {pluginModuleFederation} from '@module-federation/rsbuild-plugin';
 import {pluginReact} from '@rsbuild/plugin-react';
 import {defineConfig} from '@rslib/core';
-import '@ant-design/v5-patch-for-react-19';
 
 export default defineConfig({
   server: {

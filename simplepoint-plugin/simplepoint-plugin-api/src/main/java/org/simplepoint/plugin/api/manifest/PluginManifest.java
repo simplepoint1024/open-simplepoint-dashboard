@@ -120,6 +120,7 @@ public class PluginManifest implements Serializable {
     private Integer sort;
     private Boolean publicAccess;
     private Boolean requireOrgTenant;
+    private Set<String> scopeTypes;
     private Boolean grantable;
     private Boolean disabled;
     private Boolean danger;

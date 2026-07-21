@@ -64,7 +64,7 @@ public class TimeZone extends BaseEntityImpl<String> {
   /**
    * The English name of the time zone.
    */
-  @Order(0)
+  @Order(1)
   @Schema(
       title = "i18n:timezones.title.nameEnglish",
       description = "i18n:timezones.description.nameEnglish",
@@ -79,7 +79,7 @@ public class TimeZone extends BaseEntityImpl<String> {
   /**
    * The native name of the time zone.
    */
-  @Order(1)
+  @Order(0)
   @Schema(
       title = "i18n:timezones.title.nameNative",
       description = "i18n:timezones.description.nameNative",
@@ -109,7 +109,7 @@ public class TimeZone extends BaseEntityImpl<String> {
   /**
    * The UTC offset of the time zone (e.g., "+08:00", "-05:00").
    */
-  @Order(3)
+  @Order(4)
   @Schema(
       title = "i18n:timezones.title.utcOffset",
       description = "i18n:timezones.description.utcOffset",
@@ -124,7 +124,7 @@ public class TimeZone extends BaseEntityImpl<String> {
   /**
    * The country code associated with the time zone.
    */
-  @Order(4)
+  @Order(3)
   @Schema(
       title = "i18n:timezones.title.countryCode",
       description = "i18n:timezones.description.countryCode",

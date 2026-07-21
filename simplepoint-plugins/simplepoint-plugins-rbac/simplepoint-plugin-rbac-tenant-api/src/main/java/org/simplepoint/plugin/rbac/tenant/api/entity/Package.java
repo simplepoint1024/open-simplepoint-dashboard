@@ -117,7 +117,7 @@ public class Package extends BaseEntityImpl<String> {
   /**
    * The description of the package.
    */
-  @Order(2)
+  @Order(6)
   @Schema(
       title = "i18n:packages.title.description",
       description = "i18n:packages.description.description",
@@ -135,7 +135,7 @@ public class Package extends BaseEntityImpl<String> {
   /**
    * Price of the package.
    */
-  @Order(3)
+  @Order(2)
   @Schema(
       title = "i18n:packages.title.price",
       description = "i18n:packages.description.price",
@@ -152,7 +152,7 @@ public class Package extends BaseEntityImpl<String> {
   /**
    * Validity duration in days (null means unlimited).
    */
-  @Order(4)
+  @Order(3)
   @Schema(
       title = "i18n:packages.title.durationDays",
       description = "i18n:packages.description.durationDays",
@@ -168,7 +168,7 @@ public class Package extends BaseEntityImpl<String> {
   /**
    * Sort order.
    */
-  @Order(5)
+  @Order(4)
   @Schema(
       title = "i18n:packages.title.sort",
       description = "i18n:packages.description.sort",
@@ -184,7 +184,7 @@ public class Package extends BaseEntityImpl<String> {
   /**
    * Whether the package is enabled.
    */
-  @Order(6)
+  @Order(5)
   @Schema(
       title = "i18n:packages.title.enabled",
       description = "i18n:packages.description.enabled",

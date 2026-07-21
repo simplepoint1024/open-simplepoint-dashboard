@@ -22,6 +22,7 @@ export interface RouteInfo {
   uuid?: string;
   /** When true, accessing this route under a personal tenant shows an error page. */
   requireOrgTenant?: boolean;
+  scopeTypes?: Array<'SYSTEM' | 'PLATFORM' | 'TENANT' | 'PERSONAL'>;
 }
 
 // 判断是否存在子节点

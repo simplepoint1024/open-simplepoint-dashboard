@@ -248,6 +248,7 @@ class AuthorizationContextTest {
   @Test
   void asAuthorities_administrator_includesAdminRole() {
     ctx.setIsAdministrator(true);
+    ctx.setScopeType(AuthorizationScopeType.PLATFORM);
     var authorities = ctx.asAuthorities().stream()
         .map(GrantedAuthority::getAuthority)
         .toList();
@@ -289,11 +290,24 @@ class AuthorizationContextTest {
   @Test
   void asAuthorities_combined_returnsAllAuthorities() {
     ctx.setIsAdministrator(true);
+    ctx.setScopeType(AuthorizationScopeType.PLATFORM);
     ctx.setRoles(Arrays.asList("EDITOR"));
     ctx.setResources(Arrays.asList("posts.create"));
     var authorities = ctx.asAuthorities().stream()
         .map(GrantedAuthority::getAuthority)
         .toList();
     assertThat(authorities).contains("ROLE_Administrator", "ROLE_EDITOR", "posts.create");
+  }
+
+  @Test
+  void asAuthorities_administratorInTenantContext_doesNotIncludeSystemAdminRole() {
+    ctx.setIsAdministrator(true);
+    ctx.setScopeType(AuthorizationScopeType.TENANT);
+
+    var authorities = ctx.asAuthorities().stream()
+        .map(GrantedAuthority::getAuthority)
+        .toList();
+
+    assertThat(authorities).doesNotContain("ROLE_Administrator");
   }
 }

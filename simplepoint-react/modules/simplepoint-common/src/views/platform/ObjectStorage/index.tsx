@@ -29,15 +29,37 @@ import api from '@/api';
 
 const { Paragraph, Text } = Typography;
 const baseConfig = api['platform.object-storage'];
+const uploadConfig = api['object-storage'];
 const tenantsConfig = api['platform.tenants'];
+
+type StoragePlatformType = 'MINIO' | 'S3' | 'ALIYUN_OSS' | 'TENCENT_COS' | 'QINIU_KODO' | 'CEPH';
+type StorageSection = 'providers' | 'objects' | 'quotas';
 
 type ProviderDefinition = {
   code: string;
   name: string;
-  type: 'MINIO' | 'S3' | 'ALIYUN_OSS' | 'TENCENT_COS' | 'CEPH';
+  type: StoragePlatformType;
   endpoint?: string | null;
   bucket?: string | null;
   defaultProvider?: boolean | null;
+};
+
+type ProviderConfig = {
+  id: string;
+  code: string;
+  name: string;
+  type: StoragePlatformType;
+  endpoint?: string | null;
+  region?: string | null;
+  accessKey: string;
+  bucket: string;
+  basePath?: string | null;
+  pathStyleAccess?: boolean | null;
+  publicBaseUrl?: string | null;
+  enabled: boolean;
+  defaultProvider: boolean;
+  description?: string | null;
+  secretConfigured?: boolean | null;
 };
 
 type StorageObject = {
@@ -77,9 +99,13 @@ type ObjectFilterState = {
 };
 
 type UploadFormValues = {
-  providerCode?: string;
   directory?: string;
   file: UploadFile[];
+};
+
+type ProviderFormValues = Omit<ProviderConfig, 'id' | 'secretConfigured'> & {
+  id?: string;
+  secretKey?: string;
 };
 
 type QuotaFormValues = {
@@ -136,10 +162,18 @@ const formatDateTime = (value?: string | null) => {
 
 const App = () => {
   const { ensure, locale, t } = useI18n();
+  const storageSection = useMemo<StorageSection>(() => {
+    const path = typeof window === 'undefined' ? '' : window.location.hash;
+    if (path.includes('/system/object-storage')) return 'providers';
+    if (path.includes('/platform/storage-quotas')) return 'quotas';
+    return 'objects';
+  }, []);
   const [uploadForm] = Form.useForm<UploadFormValues>();
   const [quotaForm] = Form.useForm<QuotaFormValues>();
+  const [providerForm] = Form.useForm<ProviderFormValues>();
 
   const [providers, setProviders] = useState<ProviderDefinition[]>([]);
+  const [providerConfigsPage, setProviderConfigsPage] = useState<Page<ProviderConfig>>(emptyPage());
   const [tenantOptions, setTenantOptions] = useState<TenantSummary[]>([]);
   const [objectFilters, setObjectFilters] = useState<ObjectFilterState>({ originalFileName: '' });
   const [quotaTenantFilter, setQuotaTenantFilter] = useState('');
@@ -147,11 +181,16 @@ const App = () => {
   const [quotasPage, setQuotasPage] = useState<Page<StorageQuota>>(emptyPage());
   const [objectsLoading, setObjectsLoading] = useState(false);
   const [quotasLoading, setQuotasLoading] = useState(false);
+  const [providerConfigsLoading, setProviderConfigsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [quotaSaving, setQuotaSaving] = useState(false);
+  const [providerSaving, setProviderSaving] = useState(false);
+  const [providerTestingId, setProviderTestingId] = useState<string | null>(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [quotaModalOpen, setQuotaModalOpen] = useState(false);
+  const [providerModalOpen, setProviderModalOpen] = useState(false);
   const [quotaMode, setQuotaMode] = useState<'create' | 'edit'>('create');
+  const [providerMode, setProviderMode] = useState<'create' | 'edit'>('create');
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [selectedObject, setSelectedObject] = useState<StorageObject | null>(null);
@@ -163,10 +202,20 @@ const App = () => {
   const loadProviders = useCallback(async () => {
     const data = await get<ProviderDefinition[]>(`${baseConfig.baseUrl}/providers`);
     setProviders(data);
-    if (data.length > 0) {
-      uploadForm.setFieldValue('providerCode', data.find((item) => item.defaultProvider)?.code ?? data[0].code);
+  }, []);
+
+  const loadProviderConfigs = useCallback(async (pageNumber: number, pageSize: number) => {
+    setProviderConfigsLoading(true);
+    try {
+      const data = await get<Page<ProviderConfig>>(`${baseConfig.baseUrl}/provider-configs`, {
+        page: Math.max(pageNumber - 1, 0),
+        size: pageSize,
+      });
+      setProviderConfigsPage(data);
+    } finally {
+      setProviderConfigsLoading(false);
     }
-  }, [uploadForm]);
+  }, []);
 
   const loadTenants = useCallback(async () => {
     const data = await get<Page<TenantSummary>>(tenantsConfig.baseUrl, { page: 0, size: 200 });
@@ -222,8 +271,16 @@ const App = () => {
   }, [buildQuotaParams]);
 
   useEffect(() => {
-    void Promise.all([loadProviders(), loadTenants(), loadObjects(1, 10), loadQuotas(1, 10)]);
-  }, [loadObjects, loadProviders, loadQuotas, loadTenants]);
+    if (storageSection === 'providers') {
+      void Promise.all([loadProviders(), loadProviderConfigs(1, 10)]);
+      return;
+    }
+    if (storageSection === 'quotas') {
+      void Promise.all([loadTenants(), loadQuotas(1, 10)]);
+      return;
+    }
+    void Promise.all([loadProviders(), loadObjects(1, 10)]);
+  }, [loadObjects, loadProviderConfigs, loadProviders, loadQuotas, loadTenants, storageSection]);
 
   const refreshObjects = useCallback(async () => {
     await loadObjects(objectsPage.page.number + 1, objectsPage.page.size || 10);
@@ -235,12 +292,46 @@ const App = () => {
 
   const openUploadModal = useCallback(() => {
     uploadForm.setFieldsValue({
-      providerCode: providers.find((item) => item.defaultProvider)?.code ?? providers[0]?.code,
       directory: '',
       file: [],
     });
     setUploadModalOpen(true);
-  }, [providers, uploadForm]);
+  }, [uploadForm]);
+
+  const openProviderCreateModal = useCallback(() => {
+    setProviderMode('create');
+    providerForm.setFieldsValue({
+      code: '',
+      name: '',
+      type: 'MINIO',
+      endpoint: '',
+      region: 'us-east-1',
+      accessKey: '',
+      secretKey: '',
+      bucket: '',
+      basePath: '',
+      pathStyleAccess: true,
+      publicBaseUrl: '',
+      enabled: true,
+      defaultProvider: providerConfigsPage.page.totalElements === 0,
+      description: '',
+    });
+    setProviderModalOpen(true);
+  }, [providerConfigsPage.page.totalElements, providerForm]);
+
+  const openProviderEditModal = useCallback((record: ProviderConfig) => {
+    setProviderMode('edit');
+    providerForm.setFieldsValue({
+      ...record,
+      secretKey: '',
+      endpoint: record.endpoint ?? '',
+      region: record.region ?? 'us-east-1',
+      basePath: record.basePath ?? '',
+      publicBaseUrl: record.publicBaseUrl ?? '',
+      description: record.description ?? '',
+    });
+    setProviderModalOpen(true);
+  }, [providerForm]);
 
   const openQuotaCreateModal = useCallback(() => {
     setQuotaMode('create');
@@ -286,15 +377,12 @@ const App = () => {
     }
     const formData = new FormData();
     formData.append('file', targetFile);
-    if (values.providerCode) {
-      formData.append('providerCode', values.providerCode);
-    }
     if (values.directory?.trim()) {
       formData.append('directory', values.directory.trim());
     }
     setUploading(true);
     try {
-      await request<StorageObject>(`${baseConfig.baseUrl}/objects/upload`, {
+      await request<StorageObject>(`${uploadConfig.baseUrl}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -306,7 +394,64 @@ const App = () => {
     } finally {
       setUploading(false);
     }
-  }, [baseConfig.baseUrl, refreshObjects, refreshQuotas, t, uploadForm]);
+  }, [refreshObjects, refreshQuotas, t, uploadForm]);
+
+  const handleSaveProvider = useCallback(async () => {
+    const values = await providerForm.validateFields();
+    const payload = {
+      ...values,
+      endpoint: values.endpoint?.trim() || null,
+      region: values.region?.trim() || 'us-east-1',
+      accessKey: values.accessKey.trim(),
+      secretKey: values.secretKey?.trim() || null,
+      bucket: values.bucket.trim(),
+      basePath: values.basePath?.trim() || null,
+      publicBaseUrl: values.publicBaseUrl?.trim() || null,
+      description: values.description?.trim() || null,
+    };
+    setProviderSaving(true);
+    try {
+      if (providerMode === 'create') {
+        await post<ProviderConfig>(`${baseConfig.baseUrl}/provider-configs`, payload);
+        message.success(t('table.addSuccess', '新增成功'));
+      } else {
+        await put<ProviderConfig>(`${baseConfig.baseUrl}/provider-configs`, payload);
+        message.success(t('table.editSuccess', '修改成功'));
+      }
+      setProviderModalOpen(false);
+      providerForm.resetFields();
+      await Promise.all([
+        loadProviderConfigs(1, providerConfigsPage.page.size || 10),
+        loadProviders(),
+      ]);
+    } finally {
+      setProviderSaving(false);
+    }
+  }, [baseConfig.baseUrl, loadProviderConfigs, loadProviders, providerConfigsPage.page.size, providerForm, providerMode, t]);
+
+  const handleDeleteProvider = useCallback(async (record: ProviderConfig) => {
+    await request<string[]>(`${baseConfig.baseUrl}/provider-configs?ids=${encodeURIComponent(record.id)}`, {
+      method: 'DELETE',
+    });
+    message.success(t('table.deleteSuccess', '删除成功'));
+    await Promise.all([
+      loadProviderConfigs(1, providerConfigsPage.page.size || 10),
+      loadProviders(),
+    ]);
+  }, [baseConfig.baseUrl, loadProviderConfigs, loadProviders, providerConfigsPage.page.size, t]);
+
+  const handleTestProvider = useCallback(async (record: ProviderConfig) => {
+    setProviderTestingId(record.id);
+    try {
+      await post<{ success: boolean; message: string }>(
+        `${baseConfig.baseUrl}/provider-configs/${record.id}/test`,
+        {}
+      );
+      message.success(t('storage.provider.testSuccess', '连接成功，Bucket 可访问'));
+    } finally {
+      setProviderTestingId(null);
+    }
+  }, [baseConfig.baseUrl, t]);
 
   const handleDeleteObject = useCallback(async (record: StorageObject) => {
     await request<string[]>(`${baseConfig.baseUrl}/objects?ids=${encodeURIComponent(record.id)}`, {
@@ -478,7 +623,9 @@ const App = () => {
       dataIndex: 'enabled',
       key: 'enabled',
       width: 100,
-      render: (value?: boolean | null) => value === false ? <Tag color="default">OFF</Tag> : <Tag color="success">ON</Tag>,
+      render: (value?: boolean | null) => value === false
+        ? <Tag color="default">{t('storage.disabled', '停用')}</Tag>
+        : <Tag color="success">{t('storage.enabled', '启用')}</Tag>,
     },
     {
       title: t('storage.description', '说明'),
@@ -509,10 +656,145 @@ const App = () => {
     },
   ], [handleDeleteQuota, openQuotaEditModal, t]);
 
+  const providerColumns = useMemo<ColumnsType<ProviderConfig>>(() => [
+    {
+      title: t('storage.provider.name', '配置名称'),
+      dataIndex: 'name',
+      key: 'name',
+      width: 190,
+      render: (value: string, record) => (
+        <Space direction="vertical" size={0}>
+          <Space>
+            <Text strong>{value}</Text>
+            {record.defaultProvider ? <Tag color="blue">{t('storage.provider.default', '系统默认')}</Tag> : null}
+          </Space>
+          <Text type="secondary">{record.code}</Text>
+        </Space>
+      ),
+    },
+    {
+      title: t('storage.provider.type', '存储平台'),
+      dataIndex: 'type',
+      key: 'type',
+      width: 150,
+      render: (value: StoragePlatformType) => <Tag>{t(`storage.provider.type.${value}`, value)}</Tag>,
+    },
+    {
+      title: t('storage.provider.endpoint', '服务端点'),
+      dataIndex: 'endpoint',
+      key: 'endpoint',
+      render: (value?: string | null) => value || t('storage.provider.awsDefaultEndpoint', 'AWS 默认端点'),
+    },
+    {
+      title: t('storage.bucket', 'Bucket'),
+      dataIndex: 'bucket',
+      key: 'bucket',
+      width: 160,
+    },
+    {
+      title: t('storage.provider.region', '区域'),
+      dataIndex: 'region',
+      key: 'region',
+      width: 130,
+      render: (value?: string | null) => value || '--',
+    },
+    {
+      title: t('storage.provider.credential', '凭证'),
+      dataIndex: 'secretConfigured',
+      key: 'secretConfigured',
+      width: 100,
+      render: (value?: boolean | null) => value
+        ? <Tag color="success">{t('storage.provider.configured', '已配置')}</Tag>
+        : <Tag color="error">{t('storage.provider.notConfigured', '未配置')}</Tag>,
+    },
+    {
+      title: t('storage.enabled', '启用'),
+      dataIndex: 'enabled',
+      key: 'enabled',
+      width: 90,
+      render: (value: boolean) => value
+        ? <Tag color="success">{t('storage.enabled', '启用')}</Tag>
+        : <Tag>{t('storage.disabled', '停用')}</Tag>,
+    },
+    {
+      title: t('table.action', '操作'),
+      key: 'action',
+      width: 220,
+      render: (_value, record) => (
+        <Space>
+          <Button
+            type="link"
+            loading={providerTestingId === record.id}
+            onClick={() => void handleTestProvider(record)}
+          >
+            {t('storage.provider.test', '测试连接')}
+          </Button>
+          <Button type="link" onClick={() => openProviderEditModal(record)}>
+            {t('table.button.edit', '编辑')}
+          </Button>
+          <Popconfirm
+            title={t('table.confirmDeleteTitle', '确认删除')}
+            description={t('storage.provider.deleteConfirm', '已被文件引用的配置不能删除，确认继续吗？')}
+            onConfirm={() => void handleDeleteProvider(record)}
+          >
+            <Button danger type="link">{t('table.button.delete', '删除')}</Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ], [handleDeleteProvider, handleTestProvider, openProviderEditModal, providerTestingId, t]);
+
   return (
     <div>
       <Tabs
+        activeKey={storageSection}
         items={[
+          {
+            key: 'providers',
+            label: t('storage.page.providers', 'OSS 配置'),
+            children: (
+              <Space direction="vertical" style={{ width: '100%' }} size={16}>
+                <Alert
+                  type="info"
+                  showIcon
+                  message={t(
+                    'storage.provider.tip',
+                    '配置由系统管理员统一维护。系统默认配置会用于统一文件上传入口，Secret Key 将加密保存。'
+                  )}
+                />
+                <Space wrap>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={openProviderCreateModal}
+                  >
+                    {t('storage.provider.add', '新增 OSS 配置')}
+                  </Button>
+                  <Button onClick={() => void loadProviderConfigs(
+                    providerConfigsPage.page.number + 1,
+                    providerConfigsPage.page.size || 10
+                  )}>
+                    {t('action.refresh', '刷新')}
+                  </Button>
+                </Space>
+                <Table<ProviderConfig>
+                  rowKey="id"
+                  loading={providerConfigsLoading}
+                  columns={providerColumns}
+                  dataSource={providerConfigsPage.content}
+                  pagination={{
+                    current: providerConfigsPage.page.number + 1,
+                    pageSize: providerConfigsPage.page.size || 10,
+                    total: providerConfigsPage.page.totalElements || 0,
+                    showSizeChanger: true,
+                  }}
+                  onChange={(pagination: TablePaginationConfig) => {
+                    void loadProviderConfigs(pagination.current || 1, pagination.pageSize || 10);
+                  }}
+                />
+              </Space>
+            ),
+          },
           {
             key: 'objects',
             label: t('storage.page.objects', '对象列表'),
@@ -522,7 +804,7 @@ const App = () => {
                   <Alert
                     type="warning"
                     showIcon
-                    message={t('storage.page.noProviders', '当前未配置可用的对象存储提供方，请先在配置文件中启用至少一个提供方。')}
+                    message={t('storage.page.noProviders', '当前没有可用的 OSS 配置，请先在“OSS 配置”页签新增并启用连接。')}
                   />
                 ) : null}
                 <Space wrap>
@@ -616,8 +898,133 @@ const App = () => {
               </Space>
             ),
           },
-        ]}
+        ].filter((item) => item.key === storageSection)}
       />
+
+      <Modal
+        title={providerMode === 'create'
+          ? t('storage.provider.add', '新增 OSS 配置')
+          : t('storage.provider.edit', '编辑 OSS 配置')}
+        open={providerModalOpen}
+        width={760}
+        onCancel={() => {
+          setProviderModalOpen(false);
+          providerForm.resetFields();
+        }}
+        onOk={() => void handleSaveProvider()}
+        confirmLoading={providerSaving}
+        destroyOnHidden
+      >
+        <Form form={providerForm} layout="vertical">
+          <Form.Item name="id" hidden><Input /></Form.Item>
+          <Space align="start" style={{ width: '100%' }} size={16}>
+            <Form.Item
+              name="name"
+              label={t('storage.provider.name', '配置名称')}
+              rules={[{ required: true, message: t('form.required', '这是必填项') }]}
+              style={{ width: 230 }}
+            >
+              <Input placeholder={t('storage.provider.namePlaceholder', '生产环境对象存储')} />
+            </Form.Item>
+            <Form.Item
+              name="code"
+              label={t('storage.provider.code', '配置编码')}
+              rules={[
+                { required: true, message: t('form.required', '这是必填项') },
+                { pattern: /^[a-z0-9][a-z0-9._-]{1,63}$/, message: t('storage.provider.codeRule', '请输入小写字母、数字、点、下划线或短横线') },
+              ]}
+              style={{ width: 230 }}
+            >
+              <Input disabled={providerMode === 'edit'} placeholder="minio-prod" />
+            </Form.Item>
+            <Form.Item
+              name="type"
+              label={t('storage.provider.type', '存储平台')}
+              rules={[{ required: true }]}
+              style={{ width: 230 }}
+            >
+              <Select
+                options={(['MINIO', 'S3', 'ALIYUN_OSS', 'TENCENT_COS', 'QINIU_KODO', 'CEPH'] as StoragePlatformType[])
+                  .map((value) => ({ label: t(`storage.provider.type.${value}`, value), value }))}
+                onChange={(value: StoragePlatformType) => {
+                  if (value === 'MINIO' || value === 'CEPH') {
+                    providerForm.setFieldValue('pathStyleAccess', true);
+                  }
+                }}
+              />
+            </Form.Item>
+          </Space>
+          <Form.Item
+            name="endpoint"
+            label={t('storage.provider.endpoint', '服务端点')}
+            tooltip={t('storage.provider.endpointTip', 'AWS S3 可留空使用默认端点，其他平台请填写完整 HTTP(S) 地址')}
+          >
+            <Input placeholder="https://s3.example.com" />
+          </Form.Item>
+          <Space align="start" style={{ width: '100%' }} size={16}>
+            <Form.Item
+              name="region"
+              label={t('storage.provider.region', '区域')}
+              rules={[{ required: true }]}
+              style={{ width: 230 }}
+            >
+              <Input placeholder="us-east-1" />
+            </Form.Item>
+            <Form.Item
+              name="bucket"
+              label={t('storage.bucket', 'Bucket')}
+              rules={[{ required: true, message: t('form.required', '这是必填项') }]}
+              style={{ width: 230 }}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item name="pathStyleAccess" label={t('storage.provider.pathStyle', 'Path Style')} valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          </Space>
+          <Space align="start" style={{ width: '100%' }} size={16}>
+            <Form.Item
+              name="accessKey"
+              label={t('storage.provider.accessKey', 'Access Key')}
+              rules={[{ required: true, message: t('form.required', '这是必填项') }]}
+              style={{ width: 350 }}
+            >
+              <Input autoComplete="off" />
+            </Form.Item>
+            <Form.Item
+              name="secretKey"
+              label={t('storage.provider.secretKey', 'Secret Key')}
+              tooltip={providerMode === 'edit' ? t('storage.provider.secretKeep', '留空表示保持现有凭证不变') : undefined}
+              rules={providerMode === 'create' ? [{ required: true, message: t('form.required', '这是必填项') }] : []}
+              style={{ width: 350 }}
+            >
+              <Input.Password autoComplete="new-password" />
+            </Form.Item>
+          </Space>
+          <Form.Item name="basePath" label={t('storage.provider.basePath', '存储根目录')}>
+            <Input placeholder="simplepoint" />
+          </Form.Item>
+          <Form.Item name="publicBaseUrl" label={t('storage.provider.publicBaseUrl', '公开访问地址')}>
+            <Input placeholder="https://cdn.example.com" />
+          </Form.Item>
+          <Space size={32}>
+            <Form.Item name="enabled" label={t('storage.enabled', '启用')} valuePropName="checked">
+              <Switch />
+            </Form.Item>
+            <Form.Item
+              name="defaultProvider"
+              label={t('storage.provider.default', '系统默认')}
+              valuePropName="checked"
+              tooltip={t('storage.provider.defaultTip', '统一上传入口未指定连接时使用该配置')}
+            >
+              <Switch />
+            </Form.Item>
+          </Space>
+          <Form.Item name="description" label={t('storage.description', '说明')}>
+            <Input.TextArea rows={3} />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <Modal
         title={t('storage.upload', '上传对象')}
@@ -631,18 +1038,12 @@ const App = () => {
         destroyOnHidden
       >
         <Form form={uploadForm} layout="vertical" initialValues={{ file: [] }}>
-          <Form.Item
-            name="providerCode"
-            label={t('storage.providers', '提供方')}
-            rules={[{ required: true, message: t('form.required', '这是必填项') }]}
-          >
-            <Select
-              options={providers.map((provider) => ({
-                label: `${provider.name} / ${provider.bucket}`,
-                value: provider.code,
-              }))}
-            />
-          </Form.Item>
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message={t('storage.upload.defaultProvider', '文件将通过统一上传入口写入系统默认 OSS，并自动加入当前租户目录。')}
+          />
           <Form.Item name="directory" label={t('storage.directory', '目录前缀')}>
             <Input placeholder={t('storage.directory.placeholder', '例如：avatars/user')} />
           </Form.Item>
@@ -736,7 +1137,7 @@ const App = () => {
             <Descriptions.Item label={t('storage.contentType', '内容类型')}>
               {selectedObject.contentType || '--'}
             </Descriptions.Item>
-            <Descriptions.Item label="ETag">{selectedObject.eTag || '--'}</Descriptions.Item>
+            <Descriptions.Item label={t('storage.eTag', 'ETag')}>{selectedObject.eTag || '--'}</Descriptions.Item>
             <Descriptions.Item label={t('storage.sourceService', '来源服务')}>
               {selectedObject.sourceServiceName || '--'}
             </Descriptions.Item>

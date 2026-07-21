@@ -17,6 +17,7 @@ import org.simplepoint.core.AuthorizationScopeGuards;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.tenant.api.constants.TenantContextIds;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
@@ -26,12 +27,15 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceR
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.plugin.rbac.tenant.api.service.BuiltInTenantProvisioner;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
+import org.simplepoint.plugin.rbac.tenant.api.vo.TenantContextType;
 import org.simplepoint.plugin.rbac.tenant.api.vo.UserRelevanceVo;
 import org.simplepoint.remoting.RemoteProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -50,6 +54,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   private final TenantUserRelevanceRepository tenantUserRelevanceRepository;
   private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
   private final UsersService usersService;
+  private final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider;
 
   /**
    * Tenant Service Impl.
@@ -60,13 +65,15 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
       TenantUserRelevanceRepository tenantUserRelevanceRepository,
       ResourceAuthorizationVersionService resourceAuthorizationVersionService,
-      UsersService usersService
+      UsersService usersService,
+      ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider
   ) {
     super(repository, detailsProviderService);
     this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
     this.tenantUserRelevanceRepository = tenantUserRelevanceRepository;
     this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.usersService = usersService;
+    this.builtInTenantProvisionerProvider = builtInTenantProvisionerProvider;
   }
 
   @Override
@@ -105,7 +112,15 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   public Set<NamedTenantVo> getCurrentUserTenants() {
     Authentication authentication = getRequiredAuthentication();
     Tenant personalTenant = ensurePersonalTenantExists(authentication.getName());
-    Set<NamedTenantVo> tenants = new LinkedHashSet<>(this.getTenantsByUserId(authentication.getName()));
+    Set<NamedTenantVo> tenants = new LinkedHashSet<>();
+    if (isAdministrator(authentication)) {
+      tenants.add(new NamedTenantVo(
+          TenantContextIds.PLATFORM,
+          "平台工作台",
+          TenantContextType.PLATFORM
+      ));
+    }
+    tenants.addAll(this.getTenantsByUserId(authentication.getName()));
     if (personalTenant != null) {
       tenants.add(new NamedTenantVo(personalTenant.getId(), personalTenant.getName(), personalTenant.getTenantType()));
     }
@@ -145,6 +160,12 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   }
 
   private String resolveRequestedTenantId(String tenantId, Authentication authentication) {
+    if (TenantContextIds.PLATFORM.equals(trimToNull(tenantId))) {
+      if (!isAdministrator(authentication)) {
+        throw new AccessDeniedException("仅系统管理员可以进入平台工作台");
+      }
+      return null;
+    }
     String normalizedTenantId = normalizeTenantId(tenantId);
     if (normalizedTenantId != null && !getRepository().hasUser(normalizedTenantId, authentication.getName())) {
       throw new AccessDeniedException("当前用户未加入指定租户");
@@ -175,14 +196,28 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   }
 
   @Override
-  public Page<UserRelevanceVo> ownerItems(Pageable pageable) {
-    return tenantUserRelevanceRepository.items(pageable);
+  public Page<UserRelevanceVo> ownerItems(String keyword, Pageable pageable) {
+    String normalizedKeyword = normalizeKeyword(keyword);
+    return normalizedKeyword == null
+        ? tenantUserRelevanceRepository.items(pageable)
+        : tenantUserRelevanceRepository.searchItems(normalizedKeyword, pageable);
   }
 
   @Override
-  public Page<UserRelevanceVo> userItems(String tenantId, Pageable pageable) {
+  public Page<UserRelevanceVo> userItems(String tenantId, String keyword, Pageable pageable) {
     requireTenantMemberManager(tenantId);
-    return tenantUserRelevanceRepository.items(pageable);
+    String normalizedKeyword = normalizeKeyword(keyword);
+    return normalizedKeyword == null
+        ? tenantUserRelevanceRepository.items(pageable)
+        : tenantUserRelevanceRepository.searchItems(normalizedKeyword, pageable);
+  }
+
+  private String normalizeKeyword(String keyword) {
+    if (keyword == null) {
+      return null;
+    }
+    String normalized = keyword.trim();
+    return normalized.isEmpty() ? null : normalized;
   }
 
   @Override
@@ -426,6 +461,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     if (existing.isPresent()) {
       Tenant tenant = existing.get();
       ensureOwnerMembership(tenant.getId(), userId);
+      provisionPersonalTenant(tenant.getId());
       return tenant;
     }
     Tenant tenant = new Tenant();
@@ -436,7 +472,18 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     tenant.setAuthorizationVersion(0L);
     Tenant saved = getRepository().save(tenant);
     ensureOwnerMembership(saved.getId(), userId);
+    provisionPersonalTenant(saved.getId());
     return saved;
+  }
+
+  private void provisionPersonalTenant(String tenantId) {
+    if (builtInTenantProvisionerProvider == null) {
+      return;
+    }
+    BuiltInTenantProvisioner provisioner = builtInTenantProvisionerProvider.getIfAvailable();
+    if (provisioner != null) {
+      provisioner.provisionPersonalTenant(tenantId);
+    }
   }
 
   private void validateUsersExist(Set<String> userIds) {

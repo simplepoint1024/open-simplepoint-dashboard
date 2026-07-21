@@ -5,8 +5,6 @@ import {Drawer, message} from 'antd';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import PackageConfig from './config/package';
 import UserConfig from './config/user';
-import {usePage} from '@simplepoint/shared/api/methods';
-import {fetchOwnerItems, UserRelevanceVo} from '@/api/platform/tenant';
 import type {TableButtonProps} from '@simplepoint/components/Table';
 
 const baseConfig = api['platform.tenants'];
@@ -31,47 +29,22 @@ const App = () => {
     }
   }, [openPackageConfig, openUserConfig]);
 
-  const {data: ownerItemsPage} = usePage<UserRelevanceVo>(
-    ['tenant-owner-items'],
-    () => fetchOwnerItems({page: '0', size: '10000000'}),
-    {enabled: formDrawerOpen}
-  );
-
-  const ownerOptions = useMemo(() => {
-    const pageContent = ownerItemsPage?.content ?? [];
-    return pageContent.map((item) => ({
-      const: item.id,
-      title: formatUserLabel(item),
-    }));
-  }, [ownerItemsPage?.content]);
-
-  const ownerSelectUiSchema = useMemo(
-    () => ({
-      ownerId: {
-        'ui:widget': 'select',
-      },
-    }),
-    []
-  );
-
-  const formSchemaTransform = useCallback((schema: any, editingRecord: any | null) => {
+  const formSchemaTransform = useCallback((schema: any) => {
     const next = structuredClone(schema);
     const properties = next?.properties ?? {};
-    const ownerField = properties.ownerId;
-    if (!ownerField) {
-      return next;
+    const tenantTypeField = properties.tenantType;
+    if (tenantTypeField) {
+      tenantTypeField.oneOf = [
+        {const: 'ORGANIZATION', title: t('tenants.type.ORGANIZATION', '组织租户')},
+        {const: 'PERSONAL', title: t('tenants.type.PERSONAL', '个人租户')},
+      ];
+      delete tenantTypeField.enum;
     }
-
-    const options = [...ownerOptions];
-    const currentOwnerId = editingRecord?.ownerId;
-    if (currentOwnerId && !options.some((option) => option.const === currentOwnerId)) {
-      options.push({const: currentOwnerId, title: currentOwnerId});
+    if (properties.ownerId) {
+      delete properties.ownerId.readOnly;
     }
-
-    ownerField.oneOf = options;
-    delete ownerField.readOnly;
     return next;
-  }, [ownerOptions]);
+  }, [t]);
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -143,7 +116,6 @@ const App = () => {
         editingRecord={editingRecord}
         onEditingRecordChange={setEditingRecord}
         formSchemaTransform={formSchemaTransform}
-        formUiSchema={ownerSelectUiSchema}
         i18nNamespaces={[...baseConfig.i18nNamespaces, 'packages', 'users', 'table', 'common']}
       />
       <Drawer
@@ -191,10 +163,5 @@ const App = () => {
     </div>
   );
 };
-
-function formatUserLabel(item: UserRelevanceVo) {
-  const secondary = item.email || item.phoneNumber;
-  return secondary ? `${item.name} (${secondary})` : item.name;
-}
 
 export default App;

@@ -132,7 +132,10 @@ public interface JpaResourceRepository extends BaseRepository<Resource, String>,
   @Query("""
       select r
       from Resource r
-      where r.code in :codes and r.path is not null and r.disabled = false
+      where r.code in :codes
+        and (r.path is not null or r.type in (org.simplepoint.security.entity.ResourceType.GROUP,
+          org.simplepoint.security.entity.ResourceType.MODULE))
+        and r.disabled = false
       order by r.sort asc, r.name asc
       """)
   Collection<Resource> findRouteResourcesByCodes(@Param("codes") Collection<String> codes);
@@ -141,7 +144,9 @@ public interface JpaResourceRepository extends BaseRepository<Resource, String>,
   @Query("""
       select r
       from Resource r
-      where r.path is not null and r.disabled = false
+      where (r.path is not null or r.type in (org.simplepoint.security.entity.ResourceType.GROUP,
+        org.simplepoint.security.entity.ResourceType.MODULE))
+        and r.disabled = false
       order by r.sort asc, r.name asc
       """)
   Collection<Resource> findRouteResourcesAll();

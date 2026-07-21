@@ -220,21 +220,21 @@ const App = () => {
       title: t('clients.title.requireAuthorizationConsent', '需要授权确认'),
       description: t('clients.description.requireAuthorizationConsent', '启用后用户首次授权时需要确认权限范围'),
       default: true,
-      'x-order': 20,
+      'x-order': 10,
     });
     addTypedField(properties, 'requireProofKey', {
       type: 'boolean',
       title: t('clients.title.requireProofKey', '要求 PKCE'),
       description: t('clients.description.requireProofKey', 'authorization_code 客户端是否必须携带 code_challenge'),
       default: true,
-      'x-order': 21,
+      'x-order': 11,
     });
     addTypedField(properties, 'reuseRefreshTokens', {
       type: 'boolean',
       title: t('clients.title.reuseRefreshTokens', '复用刷新令牌'),
       description: t('clients.description.reuseRefreshTokens', '关闭后每次刷新都会轮换新的 refresh token'),
       default: true,
-      'x-order': 22,
+      'x-order': 17,
     });
     addTypedField(properties, 'accessTokenTtlMinutes', {
       type: 'integer',
@@ -242,7 +242,7 @@ const App = () => {
       title: t('clients.title.accessTokenTtlMinutes', '访问令牌有效期(分钟)'),
       description: t('clients.description.accessTokenTtlMinutes', 'access token 的有效时间'),
       default: 30,
-      'x-order': 23,
+      'x-order': 13,
     });
     addTypedField(properties, 'refreshTokenTtlHours', {
       type: 'integer',
@@ -250,7 +250,7 @@ const App = () => {
       title: t('clients.title.refreshTokenTtlHours', '刷新令牌有效期(小时)'),
       description: t('clients.description.refreshTokenTtlHours', 'refresh token 的有效时间'),
       default: 8,
-      'x-order': 24,
+      'x-order': 14,
     });
     addTypedField(properties, 'authorizationCodeTtlMinutes', {
       type: 'integer',
@@ -258,7 +258,7 @@ const App = () => {
       title: t('clients.title.authorizationCodeTtlMinutes', '授权码有效期(分钟)'),
       description: t('clients.description.authorizationCodeTtlMinutes', 'authorization code 的有效时间'),
       default: 5,
-      'x-order': 25,
+      'x-order': 15,
     });
     addTypedField(properties, 'deviceCodeTtlMinutes', {
       type: 'integer',
@@ -266,7 +266,7 @@ const App = () => {
       title: t('clients.title.deviceCodeTtlMinutes', '设备码有效期(分钟)'),
       description: t('clients.description.deviceCodeTtlMinutes', 'device code 的有效时间'),
       default: 5,
-      'x-order': 26,
+      'x-order': 16,
     });
     addTypedField(properties, 'accessTokenFormat', {
       type: 'string',
@@ -277,34 +277,36 @@ const App = () => {
         {const: 'reference', title: 'reference'},
       ],
       default: 'self-contained',
-      'x-order': 27,
+      'x-order': 12,
     });
     addTypedField(properties, 'idTokenSignatureAlgorithm', {
       type: 'string',
       title: t('clients.title.idTokenSignatureAlgorithm', 'ID Token 签名算法'),
+      description: t('clients.description.idTokenSignatureAlgorithm', '用于签发 ID Token 的签名算法'),
       oneOf: ['PS256', 'RS256', 'ES256'].map((value) => ({const: value, title: value})),
       default: 'PS256',
-      'x-order': 28,
+      'x-order': 18,
     });
     addTypedField(properties, 'tokenEndpointAuthenticationSigningAlgorithm', {
       type: 'string',
       title: t('clients.title.tokenEndpointAuthenticationSigningAlgorithm', 'Token Endpoint 签名算法'),
+      description: t('clients.description.tokenEndpointAuthenticationSigningAlgorithm', '客户端 JWT 认证使用的签名算法'),
       oneOf: ['PS256', 'RS256', 'ES256'].map((value) => ({const: value, title: value})),
       default: 'PS256',
-      'x-order': 29,
+      'x-order': 19,
     });
     addTypedField(properties, 'jwkSetUrl', {
       type: 'string',
       title: t('clients.title.jwkSetUrl', 'JWK Set URL'),
       description: t('clients.description.jwkSetUrl', '客户端 JWT 认证使用的 JWK Set 地址，可选'),
-      'x-order': 30,
+      'x-order': 20,
     });
     addTypedField(properties, 'x509CertificateBoundAccessTokens', {
       type: 'boolean',
       title: t('clients.title.x509CertificateBoundAccessTokens', '绑定 X.509 证书'),
       description: t('clients.description.x509CertificateBoundAccessTokens', '访问令牌是否绑定客户端证书'),
       default: false,
-      'x-order': 31,
+      'x-order': 21,
     });
 
     return next;

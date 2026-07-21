@@ -16,12 +16,17 @@ const toMenuItem = (
   const component = route.component;
   const isExternal = typeof component === 'string' && component.startsWith('external:');
   const externalUrl = isExternal ? component!.slice('external:'.length) : undefined;
+  const menuType = route.routeKind === 'group' || route.routeKind === 'divider'
+    ? route.routeKind
+    : undefined;
 
   return {
     key: route.uuid || route.path || (route.id != null ? String(route.id) : '') || keyText,
     label: <I18nText k={route.title || ''} fallback={route.label || ''} />,
     icon: route.icon ? createIcon(route.icon) : undefined,
-    type: route.routeKind ?? undefined,
+    // Ant Design infers a collapsible SubMenu from children. Only visual groups
+    // and dividers are represented through its `type` field.
+    type: menuType,
     danger: route.danger ?? undefined,
     disabled: route.disabled ?? undefined,
     component,

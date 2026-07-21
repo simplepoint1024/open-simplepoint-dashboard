@@ -31,6 +31,7 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
+import org.simplepoint.plugin.rbac.tenant.api.vo.TenantContextType;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -71,7 +72,7 @@ class TenantServiceImplTest {
 
   @Test
   void getTenantsByUserId_delegatesToRepository() {
-    NamedTenantVo vo = new NamedTenantVo("t1", "Tenant One", null);
+    NamedTenantVo vo = new NamedTenantVo("t1", "Tenant One", (TenantContextType) null);
     when(repository.getTenantsByUserId("user1")).thenReturn(Set.of(vo));
 
     Set<NamedTenantVo> result = service.getTenantsByUserId("user1");
@@ -124,6 +125,25 @@ class TenantServiceImplTest {
     assertThat(result).containsExactly(new NamedTenantVo("t-personal", "user1 的个人空间", TenantType.PERSONAL));
     verify(repository).save(any(Tenant.class));
     verify(tenantUserRelevanceRepository).saveAll(any(Collection.class));
+  }
+
+  @Test
+  void getCurrentUserTenants_addsSyntheticPlatformContextForAdministrator() {
+    setAdminRole();
+    Tenant personalTenant = new Tenant();
+    personalTenant.setId("personal-admin");
+    personalTenant.setName("admin 的个人空间");
+    personalTenant.setTenantType(TenantType.PERSONAL);
+    when(repository.findPersonalTenantByOwnerId("admin")).thenReturn(Optional.of(personalTenant));
+    when(tenantUserRelevanceRepository.authorized("personal-admin")).thenReturn(List.of("admin"));
+    when(repository.getTenantsByUserId("admin")).thenReturn(Set.of());
+
+    Set<NamedTenantVo> result = service.getCurrentUserTenants();
+
+    assertThat(result).containsExactly(
+        new NamedTenantVo("__platform__", "平台工作台", TenantContextType.PLATFORM),
+        new NamedTenantVo("personal-admin", "admin 的个人空间", TenantType.PERSONAL)
+    );
   }
 
   // ── calculateAuthorizationContextId ──────────────────────────────────────────
@@ -303,6 +323,19 @@ class TenantServiceImplTest {
   }
 
   @Test
+  void ownerItems_withKeywordUsesPagedRepositorySearch() {
+    Pageable pageable = Pageable.ofSize(20);
+    when(tenantUserRelevanceRepository.searchItems("alice", pageable))
+        .thenReturn(new PageImpl<>(List.of()));
+
+    var result = service.ownerItems("  alice  ", pageable);
+
+    assertThat(result).isNotNull();
+    verify(tenantUserRelevanceRepository).searchItems("alice", pageable);
+    verify(tenantUserRelevanceRepository, never()).items(pageable);
+  }
+
+  @Test
   void userItems_validatesTenantButReturnsGlobalUserCandidates() {
     setAdminRole();
     Tenant tenant = new Tenant();
@@ -318,6 +351,25 @@ class TenantServiceImplTest {
     verify(repository).findById("tenant1");
     verify(tenantUserRelevanceRepository).items(pageable);
     verify(tenantUserRelevanceRepository, never()).items("tenant1", pageable);
+  }
+
+  @Test
+  void userItems_withKeywordSearchesGlobalCandidatesAfterTenantValidation() {
+    setAdminRole();
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    tenant.setOwnerId("owner1");
+    Pageable pageable = Pageable.ofSize(20);
+    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
+    when(tenantUserRelevanceRepository.searchItems("alice", pageable))
+        .thenReturn(new PageImpl<>(List.of()));
+
+    var result = service.userItems("tenant1", "alice", pageable);
+
+    assertThat(result).isNotNull();
+    verify(repository).findById("tenant1");
+    verify(tenantUserRelevanceRepository).searchItems("alice", pageable);
+    verify(tenantUserRelevanceRepository, never()).items(pageable);
   }
 
   // ── authorizedUsers ───────────────────────────────────────────────────────

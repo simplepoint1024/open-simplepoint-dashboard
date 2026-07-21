@@ -12,6 +12,10 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import org.simplepoint.plugin.storage.api.model.ObjectStoragePlatformType;
 import org.simplepoint.plugin.storage.api.properties.ObjectStorageProperties;
@@ -30,13 +34,15 @@ import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /**
- * S3-compatible driver covering MinIO, AWS S3, Aliyun OSS, Tencent COS, and Ceph RGW.
+ * S3-compatible driver covering MinIO, AWS S3, Aliyun OSS, Tencent COS, Qiniu Kodo,
+ * and Ceph RGW.
  */
 public class S3CompatibleObjectStorageDriver implements ObjectStorageDriver {
 
@@ -46,7 +52,22 @@ public class S3CompatibleObjectStorageDriver implements ObjectStorageDriver {
         || type == ObjectStoragePlatformType.S3
         || type == ObjectStoragePlatformType.ALIYUN_OSS
         || type == ObjectStoragePlatformType.TENCENT_COS
+        || type == ObjectStoragePlatformType.QINIU_KODO
         || type == ObjectStoragePlatformType.CEPH;
+  }
+
+  @Override
+  public void testConnection(final ObjectStorageProperties.ProviderProperties properties) {
+    try (S3Client client = buildClient(properties)) {
+      client.headBucket(HeadBucketRequest.builder()
+          .bucket(require(properties.getBucket(), "对象存储 bucket 未配置"))
+          .build());
+    } catch (S3Exception ex) {
+      String message = ex.awsErrorDetails() == null
+          ? ex.getMessage()
+          : ex.awsErrorDetails().errorMessage();
+      throw new IllegalStateException("对象存储连接失败: " + message, ex);
+    }
   }
 
   @Override
@@ -59,7 +80,7 @@ public class S3CompatibleObjectStorageDriver implements ObjectStorageDriver {
           .bucket(request.getBucket())
           .key(request.getObjectKey())
           .contentType(request.getContentType())
-          .metadata(request.getMetadata())
+          .metadata(normalizeMetadata(request.getMetadata()))
           .build();
       PutObjectResponse response = client.putObject(
           putObjectRequest,
@@ -175,6 +196,28 @@ public class S3CompatibleObjectStorageDriver implements ObjectStorageDriver {
     String normalizedLeft = left.replaceAll("/+$", "");
     String normalizedRight = right.replaceAll("^/+", "");
     return normalizedLeft + '/' + normalizedRight;
+  }
+
+  private static Map<String, String> normalizeMetadata(final Map<String, String> metadata) {
+    if (metadata == null || metadata.isEmpty()) {
+      return Map.of();
+    }
+    Map<String, String> normalized = new LinkedHashMap<>();
+    metadata.forEach((key, value) -> {
+      String normalizedKey = trimToNull(key);
+      if (normalizedKey != null && value != null) {
+        normalized.put(normalizedKey, normalizeMetadataValue(value));
+      }
+    });
+    return normalized;
+  }
+
+  private static String normalizeMetadataValue(final String value) {
+    if (value.chars().allMatch(character -> character >= ' ' && character <= '~')) {
+      return value;
+    }
+    return "utf8-base64:" + Base64.getUrlEncoder().withoutPadding()
+        .encodeToString(value.getBytes(StandardCharsets.UTF_8));
   }
 
   private static String require(final String value, final String message) {

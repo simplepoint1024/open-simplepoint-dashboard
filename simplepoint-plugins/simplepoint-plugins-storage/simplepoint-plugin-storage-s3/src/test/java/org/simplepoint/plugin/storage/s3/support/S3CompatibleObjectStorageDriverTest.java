@@ -11,9 +11,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.simplepoint.plugin.storage.api.model.ObjectStoragePlatformType;
 import org.simplepoint.plugin.storage.api.properties.ObjectStorageProperties;
@@ -63,8 +66,29 @@ class S3CompatibleObjectStorageDriverTest {
   }
 
   @Test
+  void supports_qiniuKodo_returnsTrue() {
+    assertThat(driver.supports(ObjectStoragePlatformType.QINIU_KODO)).isTrue();
+  }
+
+  @Test
   void supports_ceph_returnsTrue() {
     assertThat(driver.supports(ObjectStoragePlatformType.CEPH)).isTrue();
+  }
+
+  @Test
+  void testConnection_checksConfiguredBucket() {
+    ObjectStorageProperties.ProviderProperties props = minioProps();
+
+    try (MockedStatic<S3Client> s3Static = mockStatic(S3Client.class);
+         MockedStatic<S3Configuration> s3CfgStatic = mockStatic(S3Configuration.class)) {
+      S3Client clientMock = mock(S3Client.class);
+      S3ClientBuilder builder = mockS3Builder(s3Static, s3CfgStatic);
+      when(builder.build()).thenReturn(clientMock);
+
+      driver.testConnection(props);
+
+      verify(clientMock).headBucket(any(software.amazon.awssdk.services.s3.model.HeadBucketRequest.class));
+    }
   }
 
   // ── missing required fields ─────────────────────────────────────────────────
@@ -146,6 +170,41 @@ class S3CompatibleObjectStorageDriverTest {
 
       assertThat(result.getObjectKey()).isEqualTo("path/to/object.txt");
       assertThat(result.getETag()).isEqualTo("etag123");
+    }
+  }
+
+  @Test
+  void write_unicodeMetadata_encodesHeaderValueAsAscii() {
+    ObjectStorageProperties.ProviderProperties props = minioProps();
+
+    try (MockedStatic<S3Client> s3Static = mockStatic(S3Client.class);
+         MockedStatic<S3Configuration> s3CfgStatic = mockStatic(S3Configuration.class)) {
+
+      S3Client clientMock = mock(S3Client.class);
+      S3ClientBuilder builder = mockS3Builder(s3Static, s3CfgStatic);
+      when(builder.build()).thenReturn(clientMock);
+      when(clientMock.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+          .thenReturn(PutObjectResponse.builder().eTag("etag123").build());
+
+      ObjectStorageWriteRequest request = new ObjectStorageWriteRequest(
+          "bucket", "path/to/测试文档.md", "测试文档.md", "text/markdown",
+          4L,
+          Map.of("tenantId", "tenant-1", "originalFileName", "测试文档.md"),
+          new ByteArrayInputStream("test".getBytes(StandardCharsets.UTF_8))
+      );
+
+      driver.write(props, request);
+
+      ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+      verify(clientMock).putObject(requestCaptor.capture(), any(RequestBody.class));
+      Map<String, String> metadata = requestCaptor.getValue().metadata();
+      assertThat(metadata).containsEntry("tenantId", "tenant-1");
+      assertThat(metadata.get("originalFileName")).startsWith("utf8-base64:");
+      String encodedFileName = metadata.get("originalFileName").substring("utf8-base64:".length());
+      assertThat(new String(Base64.getUrlDecoder().decode(encodedFileName), StandardCharsets.UTF_8))
+          .isEqualTo("测试文档.md");
+      assertThat(metadata.values())
+          .allMatch(value -> value.chars().allMatch(character -> character >= ' ' && character <= '~'));
     }
   }
 

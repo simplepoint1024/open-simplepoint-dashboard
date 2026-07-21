@@ -1,5 +1,5 @@
 import {JSX} from 'react';
-import {Navigate, Route} from 'react-router-dom';
+import {Navigate, Route} from 'react-router';
 import {IframeView} from './IframeView';
 import {withBoundaryAndSuspense} from './withBoundaryAndSuspense';
 import {parseComponent} from '@/utils/parseComponent';
@@ -36,7 +36,7 @@ export function renderRoutes(
     leafRoutes: LeafRoute[],
     refreshKeyMap: Record<string, number>,
     t: TranslateFn,
-    tenantType?: 'PERSONAL' | 'ORGANIZATION',
+    tenantType?: 'PLATFORM' | 'PERSONAL' | 'ORGANIZATION',
     remoteRegistryKey?: string,
 ) {
     // 1. 静态路由（结构统一）

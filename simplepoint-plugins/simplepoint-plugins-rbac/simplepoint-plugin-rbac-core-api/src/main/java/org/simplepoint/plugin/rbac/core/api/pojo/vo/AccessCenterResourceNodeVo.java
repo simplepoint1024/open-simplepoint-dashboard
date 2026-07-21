@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Data;
+import org.simplepoint.security.entity.ResourceScopeType;
 
 /**
  * Resource tree node used by the access center.
@@ -28,6 +29,8 @@ public class AccessCenterResourceNodeVo implements Serializable {
   private String path;
 
   private String description;
+
+  private Set<ResourceScopeType> scopeTypes = new LinkedHashSet<>();
 
   private String resourceCode;
 

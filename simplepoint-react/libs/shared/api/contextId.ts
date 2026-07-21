@@ -29,6 +29,7 @@ const API_SCOPE_RULES: ReadonlyArray<{ scope: ApiScope; prefix: string }> = [
   { scope: 'global', prefix: '/common/platform/packages' },
   { scope: 'global', prefix: '/common/platform/dictionaries' },
   { scope: 'global', prefix: '/common/platform/dictionary-items' },
+  { scope: 'global', prefix: '/ai/platform/ai' },
   { scope: 'global', prefix: '/common/rate-limit' },
   { scope: 'global', prefix: '/common/redis/entries' },
 ];

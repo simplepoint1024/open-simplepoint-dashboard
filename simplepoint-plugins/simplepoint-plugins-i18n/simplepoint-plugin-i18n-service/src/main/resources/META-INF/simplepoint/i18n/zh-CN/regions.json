@@ -11,6 +11,8 @@
   "regions.description.nameNative": "区域的本地语言名称",
   "regions.title.parentCode": "上级编码",
   "regions.description.parentCode": "父级区域编码",
+  "regions.title.parentId": "上级区域 ID",
+  "regions.description.parentId": "父级区域的记录 ID，顶级区域可留空",
   "regions.title.postalCode": "邮政编码",
   "regions.description.postalCode": "区域的邮政编码"
 }

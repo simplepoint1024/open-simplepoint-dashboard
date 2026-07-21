@@ -31,8 +31,10 @@ import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantReposito
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RoleResourceGrant;
+import org.simplepoint.security.service.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -54,6 +56,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   private final TenantRepository tenantRepository;
   private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
   private final ResourceGrantLogRemoteService resourceGrantLogRemoteService;
+  private final ResourceService resourceService;
 
   /**
    * Constructs a new RolesServiceImpl with the specified repository, user context, and details provider service.
@@ -69,13 +72,15 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       @Autowired(required = false)
       TenantRepository tenantRepository,
       ResourceAuthorizationVersionService resourceAuthorizationVersionService,
-      ResourceGrantLogRemoteService resourceGrantLogRemoteService
+      ResourceGrantLogRemoteService resourceGrantLogRemoteService,
+      ResourceService resourceService
   ) {
     super(repository, detailsProviderService);
     this.roleResourceGrantRepository = roleResourceGrantRepository;
     this.tenantRepository = tenantRepository;
     this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.resourceGrantLogRemoteService = resourceGrantLogRemoteService;
+    this.resourceService = resourceService;
   }
 
   /**
@@ -188,8 +193,24 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   @Transactional(rollbackFor = Exception.class)
   public Collection<RoleResourceGrant> authorize(RoleResourceGrantDto dto) {
     requireTenantOwnerOrAdministratorIfTenantScoped();
+    if (dto == null) {
+      throw new IllegalArgumentException("角色资源授权参数不能为空");
+    }
     validateRoleBelongsToCurrentTenant(dto.getRoleId());
-    Set<String> resourceCodes = dto.getResourceCodes();
+    Set<String> resourceCodes = normalizeResourceCodes(dto == null ? null : dto.getResourceCodes());
+    if (resourceCodes.isEmpty()) {
+      return List.of();
+    }
+    Set<String> accessibleGrantableCodes = resourceService.findAllByCodes(resourceCodes).stream()
+        .filter(resource -> Boolean.TRUE.equals(resource.getGrantable()))
+        .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
+        .map(Resource::getCode)
+        .collect(Collectors.toSet());
+    if (!accessibleGrantableCodes.containsAll(resourceCodes)) {
+      Set<String> rejected = new LinkedHashSet<>(resourceCodes);
+      rejected.removeAll(accessibleGrantableCodes);
+      throw new AccessDeniedException("资源不属于当前工作空间、未开通或不可授权: " + String.join(",", rejected));
+    }
     Set<RoleResourceGrant> grants = new HashSet<>();
     String roleId = dto.getRoleId();
     for (String resourceCode : resourceCodes) {
@@ -337,6 +358,16 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       }
     }
     return null;
+  }
+
+  private Set<String> normalizeResourceCodes(Collection<String> resourceCodes) {
+    if (resourceCodes == null || resourceCodes.isEmpty()) {
+      return Set.of();
+    }
+    return resourceCodes.stream()
+        .filter(code -> code != null && !code.isBlank())
+        .map(String::trim)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   @Override

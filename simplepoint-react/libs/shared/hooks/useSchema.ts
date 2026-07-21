@@ -91,10 +91,20 @@ const applyDictionaryOptions = async (schema: any) => {
       }
       const options = await optionsPromise;
       if (Array.isArray(options) && options.length > 0) {
-        node.oneOf = options.map((option) => ({
-          const: castDictionaryOptionValue(option.value, node.type),
+        const isArrayDictionary = getSchemaScalarType(node.type) === 'array';
+        const optionTarget = isArrayDictionary
+          && node.items
+          && !Array.isArray(node.items)
+          ? node.items
+          : node;
+        optionTarget.oneOf = options.map((option) => ({
+          const: castDictionaryOptionValue(option.value, optionTarget.type),
           title: resolveI18nStr(option.label),
         }));
+        delete optionTarget.enum;
+        // RJSF only treats an array as a multi-select when uniqueItems is true.
+        // Without it, checkbox widgets receive no enumOptions and render blank.
+        if (isArrayDictionary) node.uniqueItems = true;
         node['x-ui'] = {
           ...(xui || {}),
           widget: xui?.widget ?? xui?.['ui:widget'] ?? 'select',
@@ -117,8 +127,8 @@ const applyDictionaryOptions = async (schema: any) => {
   return schema;
 };
 
-// Only sort by x-order; keep original relative order for ties or when x-order is undefined
-const sortByOrder = <T extends Record<string, any>>(items: T[], _keyFn: (item: T) => string = () => "") =>
+// Only sort by x-order; keep original relative order for ties or when x-order is undefined.
+const sortByOrder = <T extends Record<string, any>>(items: T[]) =>
   [...items].sort((a, b) => {
     const o1 = typeof a["x-order"] === "number" ? a["x-order"] : Infinity;
     const o2 = typeof b["x-order"] === "number" ? b["x-order"] : Infinity;
@@ -127,8 +137,38 @@ const sortByOrder = <T extends Record<string, any>>(items: T[], _keyFn: (item: T
     return 0; // stable sort preserves original order
   });
 
-const sortObjectProperties = (obj: Record<string, any>) =>
-  Object.fromEntries(sortByOrder(Object.entries(obj), ([k]) => k));
+/**
+ * Return a schema whose properties follow their x-order metadata.
+ *
+ * This is intentionally applied both after fetching a schema and after a page-level
+ * form transform. Page transforms can inject fields (for example OAuth token settings),
+ * and those fields must participate in the same ordering contract as backend fields.
+ */
+export const sortSchemaProperties = (schema: any): any => {
+  if (Array.isArray(schema)) {
+    return sortByOrder(schema).map(sortSchemaProperties);
+  }
+  if (!schema || typeof schema !== 'object') {
+    return schema;
+  }
+
+  const result = {...schema};
+  if (schema.properties && typeof schema.properties === 'object') {
+    const entries = Object.entries(schema.properties) as Array<[string, Record<string, any>]>;
+    entries.sort(([, left], [, right]) => {
+      const leftOrder = typeof left?.['x-order'] === 'number' ? left['x-order'] : Infinity;
+      const rightOrder = typeof right?.['x-order'] === 'number' ? right['x-order'] : Infinity;
+      return leftOrder - rightOrder;
+    });
+    result.properties = Object.fromEntries(
+      entries.map(([key, value]) => [key, sortSchemaProperties(value)])
+    );
+  }
+  if (schema.items) {
+    result.items = sortSchemaProperties(schema.items);
+  }
+  return result;
+};
 
 const normalizeButtonI18n = (btn: TableButtonProps): TableButtonProps => ({
   ...btn,
@@ -202,12 +242,7 @@ export function useSchema(
     const res = await get<TableSchemaProps>(`${baseUrl}/schema`);
     if (!res) return res;
 
-    const schema = Array.isArray(res.schema)
-      ? sortByOrder(res.schema, (item) => item.name ?? item.key ?? item.id ?? "")
-      : {
-        ...res.schema,
-        properties: sortObjectProperties(res.schema.properties ?? {}),
-      };
+    const schema = sortSchemaProperties(res.schema);
 
     const buttons = sortByOrder(res.buttons ?? []).map(normalizeButtonI18n);
     const normalizedSchema = normalizeSchemaI18n(schema);

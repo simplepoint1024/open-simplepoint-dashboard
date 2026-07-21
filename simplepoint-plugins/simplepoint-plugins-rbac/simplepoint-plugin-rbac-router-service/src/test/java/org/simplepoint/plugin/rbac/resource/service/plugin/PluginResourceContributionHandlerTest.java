@@ -46,7 +46,7 @@ class PluginResourceContributionHandlerTest {
 
   @Test
   void validate_acceptsResourceManifestWithoutWritingResources() {
-    Plugin plugin = plugin();
+    final Plugin plugin = plugin();
     when(remoteModuleRepository.findAll(Map.of("serviceName", "analytics"))).thenReturn(List.of());
     when(remoteModuleRepository.findAll(Map.of("entry", "http://cdn.example.com/analytics/mf-manifest.json")))
         .thenReturn(List.of());
@@ -157,9 +157,9 @@ class PluginResourceContributionHandlerTest {
   }
 
   private static Plugin plugin() {
-    PluginManifest manifest = baseManifest("plugin.analytics");
+    final PluginManifest manifest = baseManifest("plugin.analytics");
 
-    PluginManifest.Frontend frontend = new PluginManifest.Frontend();
+    final PluginManifest.Frontend frontend = new PluginManifest.Frontend();
     PluginManifest.RemoteContribution remote = new PluginManifest.RemoteContribution();
     remote.setName("analytics");
     remote.setEntry("http://cdn.example.com/analytics/mf-manifest.json");
@@ -186,8 +186,16 @@ class PluginResourceContributionHandlerTest {
     return new Plugin(artifact, manifest, Map.of());
   }
 
+  private static Plugin plugin(PluginManifest manifest) {
+    PluginArtifact artifact = new PluginArtifact(
+        URI.create("file:/plugins/" + manifest.getId() + ".jar"),
+        42,
+        "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
+    return new Plugin(artifact, manifest, Map.of());
+  }
+
   private static Plugin pluginWithRemote(String pluginId, String remoteName, String entry) {
-    PluginManifest manifest = baseManifest(pluginId);
+    final PluginManifest manifest = baseManifest(pluginId);
     PluginManifest.Frontend frontend = new PluginManifest.Frontend();
     PluginManifest.RemoteContribution remote = new PluginManifest.RemoteContribution();
     remote.setName(remoteName);
@@ -201,14 +209,6 @@ class PluginResourceContributionHandlerTest {
     PluginManifest manifest = baseManifest(pluginId);
     manifest.setResources(List.of(resource(code, code, "PAGE", path)));
     return plugin(manifest);
-  }
-
-  private static Plugin plugin(PluginManifest manifest) {
-    PluginArtifact artifact = new PluginArtifact(
-        URI.create("file:/plugins/" + manifest.getId() + ".jar"),
-        42,
-        "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
-    return new Plugin(artifact, manifest, Map.of());
   }
 
   private static PluginManifest baseManifest(String pluginId) {

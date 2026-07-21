@@ -7,6 +7,12 @@
   "tenants.description.authorizationVersion": "Authorization snapshot version used to keep resource grant changes consistent",
   "tenants.title.ownerId": "Tenant Owner",
   "tenants.description.ownerId": "User ID of the current tenant owner",
+  "tenants.title.tenantType": "Tenant Type",
+  "tenants.description.tenantType": "Tenant usage model: personal tenants belong to one user, while organization tenants support teams",
   "tenants.button.config.package": "Configure Packages",
-  "tenants.button.config.user": "Configure Members"
+  "tenants.button.config.user": "Configure Members",
+  "tenants.userConfig.authorizedUsers": "Tenant Members",
+  "tenants.userConfig.availableUsers": "Available Users",
+  "tenants.type.ORGANIZATION": "Organization Tenant",
+  "tenants.type.PERSONAL": "Personal Tenant"
 }

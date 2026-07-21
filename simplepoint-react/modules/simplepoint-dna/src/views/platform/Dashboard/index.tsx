@@ -18,7 +18,7 @@ import {
 } from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {formatDateTime, resolveErrorMessage} from '../shared';
 
 const dashboardConfig = api['platform.dna-dashboard'];

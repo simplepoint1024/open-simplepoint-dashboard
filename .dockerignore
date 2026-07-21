@@ -14,6 +14,9 @@ build
 !simplepoint-services/simplepoint-service-auditing/build/
 !simplepoint-services/simplepoint-service-auditing/build/install/
 !simplepoint-services/simplepoint-service-auditing/build/install/**
+!simplepoint-services/simplepoint-service-ai/build/
+!simplepoint-services/simplepoint-service-ai/build/install/
+!simplepoint-services/simplepoint-service-ai/build/install/**
 !simplepoint-services/simplepoint-service-dna/build/
 !simplepoint-services/simplepoint-service-dna/build/install/
 !simplepoint-services/simplepoint-service-dna/build/install/**
@@ -21,6 +24,7 @@ build
 !simplepoint-services/simplepoint-service-host/build/install/
 !simplepoint-services/simplepoint-service-host/build/install/**
 **/node_modules
+**/.pnpm-store
 data
 infrastructure/.terraform
 infrastructure/terraform.tfstate

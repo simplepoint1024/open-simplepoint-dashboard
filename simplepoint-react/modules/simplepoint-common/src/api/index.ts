@@ -86,6 +86,11 @@ export default {
     i18nNamespaces: ['storage'],
     name: 'object-storage'
   },
+  'object-storage': {
+    baseUrl: `${contextPath}/object-storage`,
+    i18nNamespaces: ['storage'],
+    name: 'global-object-storage'
+  },
   'platform.dictionary-items': {
     baseUrl: `${contextPath}/platform/dictionary-items`,
     i18nNamespaces: ['dictionaries'],

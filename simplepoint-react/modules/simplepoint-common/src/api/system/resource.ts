@@ -18,6 +18,7 @@ export interface ResourceRelevantVo {
   component?: string | null;
   icon?: string | null;
   description?: string | null;
+  scopeTypes?: Array<'SYSTEM' | 'PLATFORM' | 'TENANT' | 'PERSONAL'>;
   grantable?: boolean;
   publicAccess?: boolean;
   disabled?: boolean;

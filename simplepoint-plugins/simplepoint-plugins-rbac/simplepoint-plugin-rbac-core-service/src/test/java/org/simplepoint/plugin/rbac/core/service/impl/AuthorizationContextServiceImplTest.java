@@ -2,6 +2,8 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -131,6 +133,27 @@ class AuthorizationContextServiceImplTest {
   }
 
   @Test
+  void calculate_platformAdministrator_loadsEveryAccessibleControlPlaneResource() {
+    User user = new User();
+    user.setSuperAdmin(true);
+    ResourceService resourceService = mock(ResourceService.class);
+    when(usersService.findByIdForAuthorization("admin")).thenReturn(Optional.of(user));
+    when(usersService.loadRolesByUserId(null, "admin")).thenReturn(List.of());
+    when(resourceServiceProvider.getIfAvailable()).thenReturn(resourceService);
+    when(resourceService.findPublicAccessCodes()).thenReturn(Set.of());
+    when(resourceService.findAllAccessibleCodes(AuthorizationScopeType.PLATFORM, true))
+        .thenReturn(Set.of("system.settings", "platform.tenants"));
+    allowAllScopes(resourceService);
+
+    AuthorizationContext context = service.calculate(null, "admin", "ctx-admin", null);
+
+    assertThat(context.getResources()).containsExactlyInAnyOrder(
+        "system.settings",
+        "platform.tenants"
+    );
+  }
+
+  @Test
   void calculate_userWithoutTenant_usesPersonalTenantWhenAvailable() {
     User user = new User();
     user.setSuperAdmin(false);
@@ -192,6 +215,7 @@ class AuthorizationContextServiceImplTest {
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
     when(resourceServiceProvider.getIfAvailable()).thenReturn(resourceService);
     when(resourceService.findPublicAccessCodes()).thenReturn(Set.of("public.view"));
+    allowAllScopes(resourceService);
     when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(tenantPackageRepo);
     when(tenantPackageRepo.findResourceCodesByTenantId("tenant1")).thenReturn(Set.of("package.resource"));
 
@@ -315,10 +339,19 @@ class AuthorizationContextServiceImplTest {
     when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
     when(resourceServiceProvider.getIfAvailable()).thenReturn(resourceService);
     when(resourceService.findPublicAccessCodes()).thenReturn(Set.of("public.resource"));
+    allowAllScopes(resourceService);
 
     AuthorizationContext ctx = service.calculate(null, "u1", null, null);
 
     assertThat(ctx.getResources()).contains("public.resource");
+  }
+
+  private void allowAllScopes(ResourceService resourceService) {
+    when(resourceService.filterAccessibleCodes(
+        anyCollection(),
+        any(AuthorizationScopeType.class),
+        anyBoolean()
+    )).thenAnswer(invocation -> invocation.getArgument(0));
   }
 
   @Test

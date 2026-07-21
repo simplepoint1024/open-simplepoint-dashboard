@@ -308,7 +308,8 @@ public class AuthorizationContext implements Serializable {
    */
   public Collection<GrantedAuthority> asAuthorities() {
     var authorities = new java.util.HashSet<GrantedAuthority>();
-    if (this.isAdministrator != null && this.isAdministrator) {
+    if (Boolean.TRUE.equals(this.isAdministrator)
+        && this.scopeType == AuthorizationScopeType.PLATFORM) {
       authorities.add(new SimpleGrantedAuthority("ROLE_Administrator"));
     }
     if (this.resources != null) {

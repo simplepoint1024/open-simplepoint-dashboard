@@ -148,8 +148,11 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
   @GetMapping("/owners/items")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.create') or hasAuthority('tenants.edit')")
   @Operation(summary = "获取租户所有者候选项", description = "分页返回可用于选择租户所有者的用户列表")
-  public Response<Page<UserRelevanceVo>> ownerItems(Pageable pageable) {
-    return ok(service.ownerItems(pageable));
+  public Response<Page<UserRelevanceVo>> ownerItems(
+      @RequestParam(name = "keyword", required = false) String keyword,
+      Pageable pageable
+  ) {
+    return ok(service.ownerItems(keyword, pageable));
   }
 
   /**
@@ -158,8 +161,12 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
   @GetMapping("/users/items")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "获取租户成员候选项", description = "分页返回可配置到指定租户的全局用户候选列表")
-  public Response<Page<UserRelevanceVo>> userItems(@RequestParam("tenantId") String tenantId, Pageable pageable) {
-    return ok(service.userItems(tenantId, pageable));
+  public Response<Page<UserRelevanceVo>> userItems(
+      @RequestParam("tenantId") String tenantId,
+      @RequestParam(name = "keyword", required = false) String keyword,
+      Pageable pageable
+  ) {
+    return ok(service.userItems(tenantId, keyword, pageable));
   }
 
   /**

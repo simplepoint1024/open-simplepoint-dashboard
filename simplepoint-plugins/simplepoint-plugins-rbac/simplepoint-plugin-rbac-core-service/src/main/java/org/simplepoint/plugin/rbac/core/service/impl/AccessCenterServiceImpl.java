@@ -25,11 +25,11 @@ import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.service.AccessCenterService;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
-import org.simplepoint.plugin.rbac.resource.api.repository.ResourceRepository;
 import org.simplepoint.security.entity.DataScope;
 import org.simplepoint.security.entity.FieldScope;
 import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.Role;
+import org.simplepoint.security.service.ResourceService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -47,7 +47,7 @@ public class AccessCenterServiceImpl implements AccessCenterService {
   private final UserRoleRelevanceRepository userRoleRelevanceRepository;
   private final DataScopeRepository dataScopeRepository;
   private final FieldScopeRepository fieldScopeRepository;
-  private final ResourceRepository resourceRepository;
+  private final ResourceService resourceService;
 
   /**
    * Creates the access-center aggregation service.
@@ -58,14 +58,14 @@ public class AccessCenterServiceImpl implements AccessCenterService {
       UserRoleRelevanceRepository userRoleRelevanceRepository,
       DataScopeRepository dataScopeRepository,
       FieldScopeRepository fieldScopeRepository,
-      ResourceRepository resourceRepository
+      ResourceService resourceService
   ) {
     this.roleService = roleService;
     this.roleRepository = roleRepository;
     this.userRoleRelevanceRepository = userRoleRelevanceRepository;
     this.dataScopeRepository = dataScopeRepository;
     this.fieldScopeRepository = fieldScopeRepository;
-    this.resourceRepository = resourceRepository;
+    this.resourceService = resourceService;
   }
 
   @Override
@@ -122,7 +122,7 @@ public class AccessCenterServiceImpl implements AccessCenterService {
       throw new IllegalArgumentException("roleId is required");
     }
     Set<String> authorizedCodes = normalizeCodes(roleService.authorized(roleId));
-    Collection<Resource> resources = resourceRepository.loadAll();
+    Collection<Resource> resources = resourceService.findAllAccessible();
     Map<String, Resource> resourceMap = resources.stream()
         .filter(resource -> hasText(resource.getId()))
         .collect(Collectors.toMap(Resource::getId, Function.identity(), (left, right) -> left, HashMap::new));
@@ -208,6 +208,7 @@ public class AccessCenterServiceImpl implements AccessCenterService {
     node.setCode(resource.getCode());
     node.setPath(resource.getPath());
     node.setDescription(resource.getDescription());
+    node.setScopeTypes(resource.getScopeTypes());
     node.setGrantable(Boolean.TRUE.equals(resource.getGrantable()));
     if (Boolean.TRUE.equals(resource.getGrantable()) && hasText(resource.getCode())) {
       node.setResourceCode(resource.getCode());

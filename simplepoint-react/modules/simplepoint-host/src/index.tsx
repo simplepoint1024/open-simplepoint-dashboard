@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import '@simplepoint/components/Simplepoint.css';
-import '@ant-design/v5-patch-for-react-19';
 import App from '@/App';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {applyInitialHtmlAttributes} from "@/utils/initHtmlAttributes.ts";

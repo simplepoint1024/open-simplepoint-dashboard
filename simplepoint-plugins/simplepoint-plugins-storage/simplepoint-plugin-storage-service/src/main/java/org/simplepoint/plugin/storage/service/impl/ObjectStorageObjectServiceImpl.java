@@ -19,11 +19,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
+import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
+import org.simplepoint.plugin.rbac.tenant.api.vo.TenantContextType;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageObject;
 import org.simplepoint.plugin.storage.api.model.ObjectStoragePlatformType;
 import org.simplepoint.plugin.storage.api.model.ObjectStorageProviderDefinition;
@@ -32,10 +36,12 @@ import org.simplepoint.plugin.storage.api.properties.ObjectStorageProperties;
 import org.simplepoint.plugin.storage.api.repository.ObjectStorageObjectRepository;
 import org.simplepoint.plugin.storage.api.repository.ObjectStorageTenantQuotaRepository;
 import org.simplepoint.plugin.storage.api.service.ObjectStorageObjectService;
+import org.simplepoint.plugin.storage.api.service.ObjectStorageProviderConfigService;
 import org.simplepoint.plugin.storage.api.spi.ObjectStorageDriver;
 import org.simplepoint.plugin.storage.api.spi.ObjectStorageReadResult;
 import org.simplepoint.plugin.storage.api.spi.ObjectStorageWriteRequest;
 import org.simplepoint.plugin.storage.api.spi.ObjectStorageWriteResult;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -63,6 +69,10 @@ public class ObjectStorageObjectServiceImpl
 
   private final String applicationName;
 
+  private ObjectStorageProviderConfigService providerConfigService;
+
+  private TenantService tenantService;
+
   /**
    * Object Storage Object Service Impl.
    */
@@ -82,8 +92,33 @@ public class ObjectStorageObjectServiceImpl
     this.applicationName = applicationName;
   }
 
+  /**
+   * Uses database-backed system-global OSS configurations when the module is available.
+   *
+   * @param providerConfigService provider configuration service
+   */
+  @Autowired
+  public void setProviderConfigService(
+      final ObjectStorageProviderConfigService providerConfigService
+  ) {
+    this.providerConfigService = providerConfigService;
+  }
+
+  /**
+   * Uses the authenticated user's personal tenant when a caller omits the tenant header.
+   *
+   * @param tenantService tenant service
+   */
+  @Autowired(required = false)
+  public void setTenantService(final TenantService tenantService) {
+    this.tenantService = tenantService;
+  }
+
   @Override
   public Collection<ObjectStorageProviderDefinition> providers() {
+    if (providerConfigService != null) {
+      return providerConfigService.providers();
+    }
     List<ObjectStorageProviderDefinition> results = new ArrayList<>();
     Map<String, ObjectStorageProperties.ProviderProperties> providers = properties.getProviders();
     if (providers == null || providers.isEmpty()) {
@@ -109,12 +144,12 @@ public class ObjectStorageObjectServiceImpl
 
   @Override
   public Optional<ObjectStorageObject> findActiveById(final String id) {
-    return repository.findActiveById(id);
+    return repository.findActiveByIdAndTenantId(id, requireCurrentTenantId());
   }
 
   @Override
   public ObjectStorageReadResult download(final String id) {
-    ObjectStorageObject object = repository.findActiveById(id)
+    ObjectStorageObject object = repository.findActiveByIdAndTenantId(id, requireCurrentTenantId())
         .orElseThrow(() -> new NoSuchElementException("对象不存在: " + id));
     ResolvedProvider provider = resolveProvider(object.getProviderCode(), true);
     return resolveDriver(provider.getProperties().getType()).read(
@@ -187,7 +222,10 @@ public class ObjectStorageObjectServiceImpl
     if (ids == null || ids.isEmpty()) {
       return;
     }
-    List<ObjectStorageObject> objects = repository.findAllActiveByIds(ids);
+    List<ObjectStorageObject> objects = repository.findAllActiveByIdsAndTenantId(
+        ids,
+        requireCurrentTenantId()
+    );
     for (ObjectStorageObject object : objects) {
       ResolvedProvider provider = resolveProvider(object.getProviderCode(), true);
       resolveDriver(provider.getProperties().getType()).delete(
@@ -207,7 +245,7 @@ public class ObjectStorageObjectServiceImpl
     }
     normalized.put("deletedAt", "is:null");
     String tenantId = requireCurrentTenantId();
-    normalized.putIfAbsent("tenantId", tenantId);
+    normalized.put("tenantId", tenantId);
     String fileName = normalized.get("originalFileName");
     if (fileName != null && !fileName.isBlank() && !fileName.contains(":")) {
       normalized.put("originalFileName", "like:" + fileName.trim());
@@ -255,16 +293,16 @@ public class ObjectStorageObjectServiceImpl
       final String fileName,
       final ObjectStorageUploadRequest request
   ) {
+    String tenantRoot = "tenants/" + sanitizeTenantId(tenantId);
     String requestedKey = request == null ? null : trimToNull(request.getObjectKey());
     if (requestedKey != null) {
-      return applyProviderBasePath(provider, sanitizePath(requestedKey));
+      return applyProviderBasePath(provider, tenantRoot + '/' + sanitizePath(requestedKey));
     }
     String directory = request == null ? null : trimToNull(request.getDirectory());
-    StringBuilder path = new StringBuilder();
+    StringBuilder path = new StringBuilder(tenantRoot).append('/');
     if (directory != null) {
       path.append(sanitizePath(directory)).append('/');
     }
-    path.append(tenantId).append('/');
     path.append(LocalDate.now().format(DATE_PATH)).append('/');
     path.append(UUID.randomUUID()).append('-').append(sanitizeFileName(fileName));
     return applyProviderBasePath(provider, path.toString());
@@ -283,10 +321,37 @@ public class ObjectStorageObjectServiceImpl
 
   private String requireCurrentTenantId() {
     String tenantId = currentTenantId();
-    if (tenantId == null || tenantId.isBlank()) {
-      throw new IllegalArgumentException("租户ID不能为空");
+    if (tenantId != null && !tenantId.isBlank()) {
+      return tenantId;
     }
-    return tenantId;
+    String personalTenantId = resolvePersonalTenantId();
+    if (personalTenantId != null) {
+      return personalTenantId;
+    }
+    throw new IllegalArgumentException("租户ID不能为空，请选择租户或传递 X-Tenant-Id");
+  }
+
+  private String resolvePersonalTenantId() {
+    if (tenantService == null) {
+      return null;
+    }
+    Collection<NamedTenantVo> tenants = tenantService.getCurrentUserTenants();
+    if (tenants == null || tenants.isEmpty()) {
+      return null;
+    }
+    List<NamedTenantVo> validTenants = tenants.stream()
+        .filter(Objects::nonNull)
+        .filter(tenant -> trimToNull(tenant.tenantId()) != null)
+        .toList();
+    return validTenants.stream()
+        .filter(tenant -> tenant.tenantType() == TenantContextType.PERSONAL)
+        .map(NamedTenantVo::tenantId)
+        .map(ObjectStorageObjectServiceImpl::trimToNull)
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElseGet(() -> validTenants.size() == 1
+            ? trimToNull(validTenants.get(0).tenantId())
+            : null);
   }
 
   private String resolveSourceServiceName(final ObjectStorageUploadRequest request) {
@@ -295,6 +360,11 @@ public class ObjectStorageObjectServiceImpl
   }
 
   private ResolvedProvider resolveProvider(final String requestedCode, final boolean allowDisabled) {
+    if (providerConfigService != null) {
+      org.simplepoint.plugin.storage.api.model.ResolvedObjectStorageProvider resolved =
+          providerConfigService.resolve(requestedCode, allowDisabled);
+      return new ResolvedProvider(resolved.code(), resolved.properties());
+    }
     Map<String, ObjectStorageProperties.ProviderProperties> providers = properties.getProviders();
     if (providers == null || providers.isEmpty()) {
       throw new IllegalStateException("未配置对象存储提供方");
@@ -356,6 +426,14 @@ public class ObjectStorageObjectServiceImpl
     return value.replaceAll("[\\r\\n]", "")
         .replaceAll("[/\\\\]+", "-")
         .replaceAll("\\s+", "-");
+  }
+
+  private static String sanitizeTenantId(final String value) {
+    String normalized = value.replaceAll("[^A-Za-z0-9._-]", "-");
+    if (normalized.isBlank()) {
+      throw new IllegalArgumentException("租户ID格式不正确");
+    }
+    return normalized;
   }
 
   private static String trimToNull(final String value) {

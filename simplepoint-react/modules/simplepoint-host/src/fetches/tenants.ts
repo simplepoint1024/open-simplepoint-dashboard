@@ -6,7 +6,7 @@ import {getStoredTenantId} from '@simplepoint/shared/api/contextId';
 export type CurrentTenant = {
     tenantId: string;
     tenantName: string;
-    tenantType: 'PERSONAL' | 'ORGANIZATION';
+    tenantType: 'PLATFORM' | 'PERSONAL' | 'ORGANIZATION';
 };
 
 export type CurrentRole = {
@@ -16,6 +16,7 @@ export type CurrentRole = {
 };
 
 function normalizeTenantType(tenant?: Partial<CurrentTenant>): CurrentTenant['tenantType'] {
+    if (tenant?.tenantType === 'PLATFORM') return 'PLATFORM';
     return tenant?.tenantType === 'PERSONAL' ? 'PERSONAL' : 'ORGANIZATION';
 }
 
@@ -31,7 +32,8 @@ export async function fetchCurrentTenants(): Promise<CurrentTenant[]> {
         const typeA = normalizeTenantType(a);
         const typeB = normalizeTenantType(b);
         if (typeA !== typeB) {
-            return typeA === 'PERSONAL' ? 1 : -1;
+            const order = {PLATFORM: 0, ORGANIZATION: 1, PERSONAL: 2} as const;
+            return order[typeA] - order[typeB];
         }
         return (a.tenantName || '').localeCompare(b.tenantName || '');
     });

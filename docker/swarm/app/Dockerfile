@@ -1,5 +1,5 @@
 ARG GRADLE_IMAGE=gradle:8.12-jdk21
-ARG NODE_IMAGE=node:22-bookworm-slim
+ARG NODE_IMAGE=node:22.22-bookworm-slim
 ARG RUNTIME_IMAGE=eclipse-temurin:21-jre-jammy
 
 FROM ${NODE_IMAGE} AS node
@@ -7,7 +7,7 @@ FROM ${NODE_IMAGE} AS node
 FROM ${GRADLE_IMAGE} AS build
 USER root
 COPY --from=node /usr/local/ /usr/local/
-RUN npm install -g pnpm@9.0.0
+RUN npm install -g pnpm@11.15.1
 USER gradle
 
 WORKDIR /workspace

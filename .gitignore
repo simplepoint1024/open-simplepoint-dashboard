@@ -40,6 +40,10 @@ bin/
 
 ### Runtime data ###
 /data/
+.pnpm-store/
+.env
+.env.*
+!.env.example
 
 ### Terraform ###
 .terraform/

@@ -1,6 +1,6 @@
 import React from 'react';
 import {Button, Result} from 'antd';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {useI18n} from '@/layouts/i18n/useI18n';
 
 export const Forbidden: React.FC = () => {
