@@ -25,6 +25,13 @@ public interface ObjectStorageDriver {
   boolean supports(ObjectStoragePlatformType type);
 
   /**
+   * Verifies that the configured bucket can be reached with the configured credentials.
+   *
+   * @param properties provider properties
+   */
+  void testConnection(ObjectStorageProperties.ProviderProperties properties);
+
+  /**
    * Uploads an object.
    *
    * @param properties provider properties

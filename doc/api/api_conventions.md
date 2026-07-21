@@ -272,6 +272,18 @@ Content-Type: application/json
 像对象存储这类接口会使用 multipart/form-data。  
 前端请求层已经对 `FormData` 做了特殊处理，不会强行覆盖 content-type。
 
+系统文件上传统一使用：
+
+```http
+POST /common/object-storage/upload
+Content-Type: multipart/form-data
+```
+
+未指定提供方时使用系统全局默认 OSS 配置。服务端优先从认证上下文读取 `X-Tenant-Id`；
+登录用户未显式选择租户时，安全回退到该用户的个人租户，无法确认租户身份时拒绝请求。
+对象键强制写入 `tenants/{tenantId}/...` 命名空间；对象详情、下载、删除和列表查询同样按当前租户过滤，
+调用方不能通过表单字段覆盖租户归属。
+
 ## 10. OpenAPI 与文档入口
 
 当前资源服务的安全配置默认放行：

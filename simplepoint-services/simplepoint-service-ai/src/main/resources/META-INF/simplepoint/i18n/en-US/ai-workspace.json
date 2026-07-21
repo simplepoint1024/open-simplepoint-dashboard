@@ -1,0 +1,16 @@
+{
+  "ai.workspace.capability.assistant.description": "Add conversations, prompts, and session management here.",
+  "ai.workspace.capability.assistant.title": "AI Assistant",
+  "ai.workspace.capability.knowledge.description": "Manage documents, vector indexes, and retrieval settings.",
+  "ai.workspace.capability.knowledge.title": "Knowledge Base",
+  "ai.workspace.capability.model.description": "Manage model providers and invocation parameters in one place.",
+  "ai.workspace.capability.model.title": "Model Providers",
+  "ai.workspace.capability.settings.description": "Extend safety policies, quotas, and runtime settings.",
+  "ai.workspace.capability.settings.title": "AI Settings",
+  "ai.workspace.description": "A home for AI assistants, knowledge bases, and model services.",
+  "ai.workspace.ready.description": "Use the model catalog, common document parsing, pgvector indexes, and hybrid retrieval.",
+  "ai.workspace.ready.title": "Model integration and knowledge bases are ready",
+  "ai.workspace.status.planned": "Planned",
+  "ai.workspace.status.ready": "Ready",
+  "ai.workspace.title": "SimplePoint AI Workspace"
+}

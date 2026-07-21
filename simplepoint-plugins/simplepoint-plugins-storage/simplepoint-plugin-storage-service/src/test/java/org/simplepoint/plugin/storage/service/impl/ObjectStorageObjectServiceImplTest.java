@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
+import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageObject;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageTenantQuota;
 import org.simplepoint.plugin.storage.api.model.ObjectStoragePlatformType;
@@ -139,7 +143,8 @@ class ObjectStorageObjectServiceImplTest {
   void findActiveByIdShouldDelegateToRepository() {
     ObjectStorageObject obj = new ObjectStorageObject();
     obj.setId("obj-1");
-    when(repository.findActiveById("obj-1")).thenReturn(Optional.of(obj));
+    when(repository.findActiveByIdAndTenantId("obj-1", "tenant-demo"))
+        .thenReturn(Optional.of(obj));
     ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
 
     Optional<ObjectStorageObject> result = service.findActiveById("obj-1");
@@ -150,7 +155,8 @@ class ObjectStorageObjectServiceImplTest {
 
   @Test
   void findActiveByIdShouldReturnEmptyWhenNotFound() {
-    when(repository.findActiveById("missing")).thenReturn(Optional.empty());
+    when(repository.findActiveByIdAndTenantId("missing", "tenant-demo"))
+        .thenReturn(Optional.empty());
     ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
 
     assertTrue(service.findActiveById("missing").isEmpty());
@@ -160,7 +166,8 @@ class ObjectStorageObjectServiceImplTest {
 
   @Test
   void downloadShouldThrowWhenObjectNotFound() {
-    when(repository.findActiveById("absent")).thenReturn(Optional.empty());
+    when(repository.findActiveByIdAndTenantId("absent", "tenant-demo"))
+        .thenReturn(Optional.empty());
     ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
 
     assertThrows(NoSuchElementException.class, () -> service.download("absent"));
@@ -175,7 +182,8 @@ class ObjectStorageObjectServiceImplTest {
     obj.setObjectKey("tenant/demo.txt");
     obj.setOriginalFileName("demo.txt");
 
-    when(repository.findActiveById("obj-dl")).thenReturn(Optional.of(obj));
+    when(repository.findActiveByIdAndTenantId("obj-dl", "tenant-demo"))
+        .thenReturn(Optional.of(obj));
     when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
     InputStream stream = new ByteArrayInputStream("hello".getBytes());
     ObjectStorageReadResult readResult = new ObjectStorageReadResult(stream, "text/plain", 5L, "demo.txt");
@@ -214,7 +222,39 @@ class ObjectStorageObjectServiceImplTest {
 
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.upload(file, null));
 
-    assertEquals("租户ID不能为空", ex.getMessage());
+    assertEquals("租户ID不能为空，请选择租户或传递 X-Tenant-Id", ex.getMessage());
+  }
+
+  @Test
+  void uploadShouldUseAuthenticatedPersonalTenantWhenHeaderIsMissing() {
+    authorizationContext = new AuthorizationContext();
+    TenantService tenantService = org.mockito.Mockito.mock(TenantService.class);
+    when(tenantService.getCurrentUserTenants()).thenReturn(Set.of(
+        new NamedTenantVo("personal-tenant", "Personal", TenantType.PERSONAL)
+    ));
+    when(quotaRepository.findActiveByTenantId("personal-tenant")).thenReturn(Optional.empty());
+    when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
+    when(driver.write(any(), any())).thenReturn(new ObjectStorageWriteResult(
+        "demo-bucket",
+        "tenants/personal-tenant/file.txt",
+        "etag",
+        null
+    ));
+    when(repository.findActiveByProviderCodeAndBucketAndObjectKey(any(), any(), any()))
+        .thenReturn(Optional.empty());
+    when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
+    service.setTenantService(tenantService);
+    MockMultipartFile file = new MockMultipartFile(
+        "file",
+        "file.txt",
+        "text/plain",
+        "hello".getBytes()
+    );
+
+    ObjectStorageObject uploaded = service.upload(file, null);
+
+    assertEquals("personal-tenant", uploaded.getTenantId());
   }
 
   @Test
@@ -227,7 +267,7 @@ class ObjectStorageObjectServiceImplTest {
         () -> service.limit(Map.of(), Pageable.unpaged())
     );
 
-    assertEquals("租户ID不能为空", ex.getMessage());
+    assertEquals("租户ID不能为空，请选择租户或传递 X-Tenant-Id", ex.getMessage());
   }
 
   // ── upload – provider resolution ──────────────────────────────────────────
@@ -356,7 +396,11 @@ class ObjectStorageObjectServiceImplTest {
     ObjectStorageUploadRequest request = new ObjectStorageUploadRequest();
     request.setObjectKey("existing/key.txt");
 
-    when(repository.findActiveByProviderCodeAndBucketAndObjectKey(eq("minio"), eq("demo-bucket"), any()))
+    when(repository.findActiveByProviderCodeAndBucketAndObjectKey(
+        eq("minio"),
+        eq("demo-bucket"),
+        eq("tenants/tenant-demo/existing/key.txt")
+    ))
         .thenReturn(Optional.of(new ObjectStorageObject()));
 
     ObjectStorageObjectServiceImpl service = buildService(properties, "app");
@@ -496,6 +540,10 @@ class ObjectStorageObjectServiceImplTest {
 
     ObjectStorageObject result = service.upload(file, request);
     assertNotNull(result);
+    ArgumentCaptor<ObjectStorageWriteRequest> captor =
+        ArgumentCaptor.forClass(ObjectStorageWriteRequest.class);
+    verify(driver).write(any(), captor.capture());
+    assertTrue(captor.getValue().getObjectKey().startsWith("tenants/tenant-demo/uploads/"));
   }
 
   @Test

@@ -104,7 +104,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
   @Column(length = 128, nullable = false)
   private String name;
 
-  @Order(2)
+  @Order(3)
   @Schema(
       title = "i18n:dictionaries.title.i18nKey",
       description = "i18n:dictionaries.description.i18nKey",
@@ -119,7 +119,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
   @Column(name = "i18n_key", length = 255)
   private String i18nKey;
 
-  @Order(3)
+  @Order(2)
   @Schema(
       title = "i18n:dictionaries.title.value",
       description = "i18n:dictionaries.description.value",
@@ -135,7 +135,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
   @Column(name = "item_value", length = 128, nullable = false)
   private String value;
 
-  @Order(4)
+  @Order(6)
   @Schema(
       title = "i18n:dictionaries.title.description",
       description = "i18n:dictionaries.description.description",
@@ -150,7 +150,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
   @Column(length = 512)
   private String description;
 
-  @Order(5)
+  @Order(4)
   @Schema(
       title = "i18n:dictionaries.title.sort",
       description = "i18n:dictionaries.description.sort",
@@ -163,7 +163,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
   )
   private Integer sort;
 
-  @Order(6)
+  @Order(5)
   @Schema(
       title = "i18n:dictionaries.title.enabled",
       description = "i18n:dictionaries.description.enabled",

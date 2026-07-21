@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.rbac.core.api.repository;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
@@ -14,6 +15,18 @@ import org.springframework.data.domain.Pageable;
  * This interface is used to interact with the persistence layer for Role entities.
  */
 public interface RoleRepository extends BaseRepository<Role, String> {
+
+  /**
+   * Finds a role by its tenant scope and authority.
+   *
+   * <p>The tenant identifier is part of the query so background provisioning can safely
+   * resolve tenant roles without relying on an HTTP authorization context.</p>
+   *
+   * @param tenantId tenant scope
+   * @param authority role authority
+   * @return matching role, if present
+   */
+  Optional<Role> findFirstByTenantIdAndAuthority(String tenantId, String authority);
 
   /**
    * Retrieve a paginated list of RoleSelectDto for role selection purposes.

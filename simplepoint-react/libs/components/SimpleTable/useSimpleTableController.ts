@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { IChangeEvent } from '@rjsf/core';
 import { Modal, message } from 'antd';
-import { useSchema } from '@simplepoint/shared/hooks/useSchema';
+import { sortSchemaProperties, useSchema } from '@simplepoint/shared/hooks/useSchema';
 import { isHttpError, resolveApiErrorMessage } from '@simplepoint/shared/api/client';
 import { del, get, post, put, usePage } from '@simplepoint/shared/api/methods';
 import { useI18n } from '@simplepoint/shared/hooks/useI18n';
@@ -321,10 +321,10 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     if (!schemaData?.schema) {
       return undefined;
     }
-    if (!props.formSchemaTransform) {
-      return schemaData.schema;
-    }
-    return props.formSchemaTransform(schemaData.schema, editingRecord);
+    const transformed = props.formSchemaTransform
+      ? props.formSchemaTransform(schemaData.schema, editingRecord)
+      : schemaData.schema;
+    return sortSchemaProperties(transformed);
   }, [schemaData?.schema, props.formSchemaTransform, editingRecord]);
 
   return {

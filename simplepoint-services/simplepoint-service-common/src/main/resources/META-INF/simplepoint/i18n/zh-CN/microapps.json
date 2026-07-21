@@ -1,5 +1,6 @@
 {
   "micro.domain.description.description": "远程模块说明",
+  "micro.domain.description.displayName": "用于展示和识别远程模块的名称",
   "micro.domain.description.entry": "远程模块入口地址",
   "micro.domain.description.serviceName": "远程模块所属服务名称",
   "micro.module.title.description": "描述",

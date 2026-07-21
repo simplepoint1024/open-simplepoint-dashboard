@@ -10,14 +10,21 @@ package org.simplepoint.plugin.storage.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.storage.api.constants.ObjectStoragePaths;
 import org.simplepoint.plugin.storage.api.model.ObjectStorageUploadRequest;
 import org.simplepoint.plugin.storage.api.service.ObjectStorageObjectService;
+import org.simplepoint.plugin.storage.api.spi.ObjectStorageReadResult;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,9 +38,13 @@ import org.springframework.web.multipart.MultipartFile;
  * Service-facing HTTP API for object storage.
  */
 @RestController
-@RequestMapping(ObjectStoragePaths.REMOTE_BASE)
-@Tag(name = "对象存储服务接口", description = "提供给其他服务上传文件并获取元信息")
+@RequestMapping({ObjectStoragePaths.GLOBAL_BASE, ObjectStoragePaths.REMOTE_BASE})
+@Tag(name = "统一对象存储接口", description = "系统内统一上传文件并获取租户隔离的元信息")
 public class ObjectStorageServiceController {
+
+  private static final MediaType UTF8_TEXT_PLAIN = new MediaType(
+      "text", "plain", StandardCharsets.UTF_8
+  );
 
   private final ObjectStorageObjectService objectService;
 
@@ -49,7 +60,7 @@ public class ObjectStorageServiceController {
    */
   @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "服务上传对象", description = "供其他服务通过 HTTP 上传对象并获取元信息")
+  @Operation(summary = "统一上传对象", description = "使用系统默认 OSS 配置并按当前租户隔离存储")
   public Response<?> upload(
       @RequestParam("file") final MultipartFile file,
       @ModelAttribute final ObjectStorageUploadRequest request
@@ -57,9 +68,9 @@ public class ObjectStorageServiceController {
     try {
       return Response.okay(objectService.upload(file, request));
     } catch (IllegalArgumentException | IllegalStateException ex) {
-      return Response.of(ResponseEntity.badRequest().contentType(MediaType.TEXT_PLAIN).body(ex.getMessage()));
+      return Response.of(ResponseEntity.badRequest().contentType(UTF8_TEXT_PLAIN).body(ex.getMessage()));
     } catch (NoSuchElementException ex) {
-      return Response.of(ResponseEntity.status(404).contentType(MediaType.TEXT_PLAIN).body(ex.getMessage()));
+      return Response.of(ResponseEntity.status(404).contentType(UTF8_TEXT_PLAIN).body(ex.getMessage()));
     }
   }
 
@@ -68,12 +79,55 @@ public class ObjectStorageServiceController {
    */
   @GetMapping("/objects/{id}")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "服务查询对象元信息", description = "供其他服务根据对象 ID 查询元信息")
+  @Operation(summary = "查询对象元信息", description = "仅返回当前租户拥有的对象元信息")
   public Response<?> detail(@PathVariable("id") final String id) {
     return objectService.findActiveById(id)
         .<Response<?>>map(Response::okay)
         .orElseGet(() -> Response.of(ResponseEntity.status(404)
-            .contentType(MediaType.TEXT_PLAIN)
+            .contentType(UTF8_TEXT_PLAIN)
             .body("对象不存在: " + id)));
+  }
+
+  /**
+   * Downloads one tenant-owned object.
+   */
+  @GetMapping("/objects/{id}/content")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "下载对象内容", description = "下载当前租户拥有的对象")
+  public ResponseEntity<?> content(@PathVariable("id") final String id) {
+    try {
+      ObjectStorageReadResult result = objectService.download(id);
+      ResponseEntity.BodyBuilder builder = ResponseEntity.ok()
+          .header(
+              HttpHeaders.CONTENT_DISPOSITION,
+              ContentDisposition.attachment()
+                  .filename(result.getFileName(), StandardCharsets.UTF_8)
+                  .build()
+                  .toString()
+          )
+          .contentType(MediaType.parseMediaType(result.getContentType()));
+      if (result.getContentLength() != null && result.getContentLength() >= 0) {
+        builder.contentLength(result.getContentLength());
+      }
+      return builder.body(new InputStreamResource(result.getInputStream()));
+    } catch (NoSuchElementException ex) {
+      return ResponseEntity.status(404).contentType(UTF8_TEXT_PLAIN).body(ex.getMessage());
+    }
+  }
+
+  /**
+   * Deletes one tenant-owned object.
+   */
+  @DeleteMapping("/objects/{id}")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "删除对象", description = "删除当前租户拥有的对象及元信息")
+  public Response<?> delete(@PathVariable("id") final String id) {
+    if (objectService.findActiveById(id).isEmpty()) {
+      return Response.of(ResponseEntity.status(404)
+          .contentType(UTF8_TEXT_PLAIN)
+          .body("对象不存在: " + id));
+    }
+    objectService.removeByIds(Set.of(id));
+    return Response.okay(id);
   }
 }

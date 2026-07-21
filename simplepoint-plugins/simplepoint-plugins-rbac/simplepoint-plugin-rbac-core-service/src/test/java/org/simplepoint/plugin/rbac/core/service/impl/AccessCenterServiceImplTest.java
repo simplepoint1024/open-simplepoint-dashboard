@@ -23,10 +23,10 @@ import org.simplepoint.plugin.rbac.core.api.repository.FieldScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
-import org.simplepoint.plugin.rbac.resource.api.repository.ResourceRepository;
 import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.ResourceType;
 import org.simplepoint.security.entity.Role;
+import org.simplepoint.security.service.ResourceService;
 
 @ExtendWith(MockitoExtension.class)
 class AccessCenterServiceImplTest {
@@ -47,7 +47,7 @@ class AccessCenterServiceImplTest {
   FieldScopeRepository fieldScopeRepository;
 
   @Mock
-  ResourceRepository resourceRepository;
+  ResourceService resourceService;
 
   @InjectMocks
   AccessCenterServiceImpl service;
@@ -122,7 +122,7 @@ class AccessCenterServiceImplTest {
     usersView.setSort(10);
 
     when(roleService.authorized("role1")).thenReturn(List.of("roles.view"));
-    when(resourceRepository.loadAll()).thenReturn(List.of(root, rolePage, roleEdit, usersView));
+    when(resourceService.findAllAccessible()).thenReturn(List.of(root, rolePage, roleEdit, usersView));
 
     List<AccessCenterResourceNodeVo> tree = service.resourceTree("role1");
 

@@ -38,8 +38,10 @@ import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RoleResourceGrant;
+import org.simplepoint.security.service.ResourceService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -72,6 +74,9 @@ class RolesServiceImplTest {
   @Mock
   org.simplepoint.plugin.auditing.logging.api.service.ResourceGrantLogRemoteService resourceGrantLogRemoteService;
 
+  @Mock
+  ResourceService resourceService;
+
   @InjectMocks
   RolesServiceImpl service;
 
@@ -91,6 +96,16 @@ class RolesServiceImplTest {
         .thenReturn(jsonSchemaGenerator);
     lenient().when(jsonSchemaGenerator.generateSchema(Role.class)).thenReturn(schema);
     lenient().when(detailsProviderService.getDialects(ModifyDataAuditingService.class)).thenReturn(List.of());
+    lenient().when(resourceService.findAllByCodes(any())).thenAnswer(invocation -> {
+      Collection<String> codes = invocation.getArgument(0);
+      return codes.stream().map(code -> {
+        Resource resource = new Resource();
+        resource.setCode(code);
+        resource.setGrantable(true);
+        resource.setDisabled(false);
+        return resource;
+      }).toList();
+    });
     authorizationContextHolder = mockStatic(AuthorizationContextHolder.class);
     authorizationContextHolder.when(AuthorizationContextHolder::getContext).thenReturn(tenantAdminContext());
   }

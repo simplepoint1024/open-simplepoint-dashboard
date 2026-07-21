@@ -8,4 +8,5 @@ dependencies {
     implementation(project(":simplepoint-cache:simplepoint-cache-core"))
     implementation("org.apache.tomcat.embed:tomcat-embed-core")
     implementation("org.springframework:spring-webmvc")
+    implementation("com.fasterxml.jackson.core:jackson-databind")
 }

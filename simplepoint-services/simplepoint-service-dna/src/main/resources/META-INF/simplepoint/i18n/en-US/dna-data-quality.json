@@ -35,6 +35,7 @@
   "dna.dataQuality.state.enabled": "Enabled",
   "dna.dataQuality.state.disabled": "Disabled",
   "dna.dataQuality.alert.noDataSources": "No data sources are available. Add and enable a data source first.",
+  "dna.dataQuality.button.execute": "Execute",
   "dna.dataQuality.ruleType.NOT_NULL": "Not Null (NOT_NULL)",
   "dna.dataQuality.ruleType.UNIQUE": "Unique (UNIQUE)",
   "dna.dataQuality.ruleType.RANGE": "Range (RANGE)",

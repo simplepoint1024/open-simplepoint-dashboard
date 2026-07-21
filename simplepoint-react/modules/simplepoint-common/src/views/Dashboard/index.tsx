@@ -11,7 +11,7 @@ import {
   UserOutlined,
   AppstoreOutlined,
 } from '@ant-design/icons';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 
 const {Title, Text} = Typography;
 
@@ -43,10 +43,10 @@ const App = () => {
   ]), [t]);
 
   const quickActions = useMemo(() => ([
-    {key: 'users', text: t('dashboard.quick.users','用户管理'), icon: <UserOutlined/>, to: '/system/user'},
-    {key: 'clients', text: t('dashboard.quick.clients','应用管理'), icon: <SettingOutlined/>, to: '/system/client'},
-    {key: 'services', text: t('dashboard.quick.services','微服务'), icon: <ApiOutlined/>, to: '/ops/micro-service'},
-    {key: 'i18n', text: t('dashboard.quick.i18n','国际化'), icon: <GlobalOutlined/>, to: '/i18n/message'},
+    {key: 'users', text: t('dashboard.quick.users','用户管理'), icon: <UserOutlined/>, to: '/workspace/users'},
+    {key: 'clients', text: t('dashboard.quick.clients','应用管理'), icon: <SettingOutlined/>, to: '/platform/applications'},
+    {key: 'services', text: t('dashboard.quick.services','微应用'), icon: <ApiOutlined/>, to: '/system/microapps'},
+    {key: 'i18n', text: t('dashboard.quick.i18n','国际化'), icon: <GlobalOutlined/>, to: '/i18n/messages'},
   ]), [t]);
 
   return (

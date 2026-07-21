@@ -31,6 +31,7 @@ import org.simplepoint.plugin.dna.federation.service.support.FederationJdbcMetad
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
+import org.simplepoint.plugin.rbac.tenant.api.vo.TenantContextType;
 import org.simplepoint.security.context.AuthorizationContextService;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -515,7 +516,11 @@ class FederationJdbcDriverServiceImplTest {
     JdbcDataSourceDefinition dataSource = enabledDataSource("ds-1", "ds1");
     FederationJdbcConnectionUser grant = enabledGrant("grant-1", "ds-1");
     AuthorizationContext authorizationContext = authorizationContext("user-1");
-    NamedTenantVo tenantVo = new NamedTenantVo("tenant-resolved", "Resolved Tenant", null);
+    NamedTenantVo tenantVo = new NamedTenantVo(
+        "tenant-resolved",
+        "Resolved Tenant",
+        (TenantContextType) null
+    );
     when(usersService.loadUserByPhoneOrEmail("alice@example.com")).thenReturn(user);
     when(passwordEncoder.matches("secret", "encoded")).thenReturn(true);
     when(jdbcConnectionUserService.enabledGrants("user-1")).thenReturn(List.of(grant));

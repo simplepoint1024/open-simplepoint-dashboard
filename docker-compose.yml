@@ -1,6 +1,9 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: simplepoint/postgres-pgvector:16
+    build:
+      context: .
+      dockerfile: docker/postgres/Dockerfile
     environment:
       POSTGRES_DB: simplepoint
       POSTGRES_USER: postgres
@@ -27,6 +30,43 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${SIMPLEPOINT_MINIO_ROOT_USER:-simplepoint}
+      MINIO_ROOT_PASSWORD: ${SIMPLEPOINT_MINIO_ROOT_PASSWORD:-simplepoint123}
+    ports:
+      - "${SIMPLEPOINT_MINIO_API_PORT:-19000}:9000"
+      - "${SIMPLEPOINT_MINIO_CONSOLE_PORT:-19001}:9001"
+    volumes:
+      - simplepoint_minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${SIMPLEPOINT_MINIO_ROOT_USER:-simplepoint}
+      MINIO_ROOT_PASSWORD: ${SIMPLEPOINT_MINIO_ROOT_PASSWORD:-simplepoint123}
+      MINIO_BUCKET: ${SIMPLEPOINT_MINIO_BUCKET:-simplepoint}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        mc alias set local "$$MINIO_ENDPOINT" "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing "local/$$MINIO_BUCKET"
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: "no"
 
   consul:
     image: hashicorp/consul:1.20
@@ -64,13 +104,14 @@ services:
         APP_USE_PREBUILT: ${SIMPLEPOINT_USE_PREBUILT:-true}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
-      SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500
+      SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,minio:9000
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
       SIMPLEPOINT_AUTHORIZATION_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AUTHORIZATION_SERVICE_CLIENT_SECRET:-dev-authorization-service-secret}
       SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET:-dev-common-service-secret}
       SIMPLEPOINT_AUDITING_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AUDITING_SERVICE_CLIENT_SECRET:-dev-auditing-service-secret}
       SIMPLEPOINT_DNA_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_DNA_SERVICE_CLIENT_SECRET:-dev-dna-service-secret}
+      SIMPLEPOINT_AI_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AI_SERVICE_CLIENT_SECRET:-dev-ai-service-secret}
       SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET:-dev-host-service-secret}
     ports:
       - "9000:9000"
@@ -101,10 +142,20 @@ services:
       SPRING_PROFILES_ACTIVE: dev,swarm
       SIMPLEPOINT_ADMIN_EMAIL: ${SIMPLEPOINT_ADMIN_EMAIL:-simplepoint@mail.com}
       SIMPLEPOINT_ADMIN_PASSWORD: ${SIMPLEPOINT_ADMIN_PASSWORD:-123456}
+      SIMPLEPOINT_TENANT_MANAGER_EMAIL: ${SIMPLEPOINT_TENANT_MANAGER_EMAIL:-manager@simplepoint.local}
+      SIMPLEPOINT_TENANT_MANAGER_PASSWORD: ${SIMPLEPOINT_TENANT_MANAGER_PASSWORD:-123456}
+      SIMPLEPOINT_TENANT_MEMBER_EMAIL: ${SIMPLEPOINT_TENANT_MEMBER_EMAIL:-member@simplepoint.local}
+      SIMPLEPOINT_TENANT_MEMBER_PASSWORD: ${SIMPLEPOINT_TENANT_MEMBER_PASSWORD:-123456}
+      SIMPLEPOINT_DEFAULT_ORGANIZATION_NAME: ${SIMPLEPOINT_DEFAULT_ORGANIZATION_NAME:-SimplePoint 示例组织}
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
       SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET:-dev-common-service-secret}
+      SIMPLEPOINT_STORAGE_CREDENTIAL_ENCRYPTION_KEY: ${SIMPLEPOINT_STORAGE_CREDENTIAL_ENCRYPTION_KEY:-dev-storage-credential-encryption-key-change-me}
+      SIMPLEPOINT_STORAGE_BOOTSTRAP_MINIO_ENABLED: "true"
+      SIMPLEPOINT_MINIO_ROOT_USER: ${SIMPLEPOINT_MINIO_ROOT_USER:-simplepoint}
+      SIMPLEPOINT_MINIO_ROOT_PASSWORD: ${SIMPLEPOINT_MINIO_ROOT_PASSWORD:-simplepoint123}
+      SIMPLEPOINT_MINIO_BUCKET: ${SIMPLEPOINT_MINIO_BUCKET:-simplepoint}
     ports:
       - "7000:7000"
     depends_on:
@@ -112,6 +163,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
       authorization:
         condition: service_healthy
     healthcheck:
@@ -188,6 +241,41 @@ services:
       retries: 20
       start_period: 60s
 
+  ai:
+    build:
+      context: .
+      dockerfile: docker/swarm/app/Dockerfile
+      args:
+        APP_GRADLE_PATH: :simplepoint-services:simplepoint-service-ai
+        APP_INSTALL_DIR: simplepoint-services/simplepoint-service-ai/build/install/simplepoint-service-ai
+        APP_START_SCRIPT: /opt/simplepoint/bin/simplepoint-service-ai
+        APP_USE_PREBUILT: ${SIMPLEPOINT_USE_PREBUILT:-true}
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
+      SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
+      SIMPLEPOINT_WAIT_TIMEOUT: 240
+      SIMPLEPOINT_AI_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AI_SERVICE_CLIENT_SECRET:-dev-ai-service-secret}
+      SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY: ${SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY:-dev-ai-credential-encryption-key-change-me}
+      SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED: ${SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED:-true}
+    ports:
+      - "2888:2888"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      authorization:
+        condition: service_healthy
+      common:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:2888/actuator/health >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
   host:
     build:
       context: .
@@ -212,6 +300,8 @@ services:
         condition: service_healthy
       common:
         condition: service_healthy
+      ai:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/actuator/health >/dev/null"]
       interval: 15s
@@ -222,3 +312,4 @@ services:
 volumes:
   simplepoint_postgres_data:
   simplepoint_redis_data:
+  simplepoint_minio_data:

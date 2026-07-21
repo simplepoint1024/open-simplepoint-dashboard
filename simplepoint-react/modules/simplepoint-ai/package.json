@@ -1,0 +1,14 @@
+{
+  "name": "@simplepoint/ai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rslib build",
+    "dev": "rslib mf-dev"
+  },
+  "dependencies": {
+    "@simplepoint/shared": "workspace:*",
+    "@simplepoint/components": "workspace:*"
+  }
+}

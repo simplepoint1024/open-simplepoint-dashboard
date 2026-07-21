@@ -13,11 +13,14 @@ import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
+import java.util.EnumSet;
+import java.util.Set;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.annotation.ButtonDeclaration;
@@ -25,6 +28,7 @@ import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.simplepoint.security.SecurityDictionaryCodes;
 import org.springframework.core.annotation.Order;
 
 /**
@@ -76,7 +80,7 @@ public class Resource extends BaseEntityImpl<String> {
 
   public static final String CODE_FIELD = "code";
 
-  @Order(0)
+  @Order(1)
   @Schema(
       title = "i18n:resources.title.code",
       description = "i18n:resources.description.code",
@@ -90,7 +94,7 @@ public class Resource extends BaseEntityImpl<String> {
   @Column(length = 120, nullable = false, unique = true)
   private String code;
 
-  @Order(1)
+  @Order(0)
   @Schema(
       title = "i18n:resources.title.name",
       description = "i18n:resources.description.name",
@@ -116,15 +120,17 @@ public class Resource extends BaseEntityImpl<String> {
   @Column(name = "resource_alias", length = 120)
   private String alias;
 
+  @Order(3)
   @Schema(title = "i18n:resources.title.title", description = "i18n:resources.description.title")
   @Column(length = 120)
   private String title;
 
+  @Order(4)
   @Schema(title = "i18n:resources.title.label", description = "i18n:resources.description.label")
   @Column(length = 120)
   private String label;
 
-  @Order(3)
+  @Order(5)
   @Schema(
       title = "i18n:resources.title.type",
       description = "i18n:resources.description.type",
@@ -136,15 +142,35 @@ public class Resource extends BaseEntityImpl<String> {
   @Column(length = 32, nullable = false)
   private ResourceType type;
 
+  @Order(6)
+  @Schema(
+      title = "i18n:resources.title.scopeTypes",
+      description = "i18n:resources.description.scopeTypes",
+      extensions = @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "true"),
+          @ExtensionProperty(name = "widget", value = "checkboxes"),
+          @ExtensionProperty(name = "dictCode", value = SecurityDictionaryCodes.RESOURCE_SCOPE_TYPE)
+      })
+  )
+  @Convert(converter = ResourceScopeTypesConverter.class)
+  @Column(
+      name = "scope_types",
+      length = 64,
+      nullable = false,
+      columnDefinition = "varchar(64) default 'SYSTEM'"
+  )
+  private Set<ResourceScopeType> scopeTypes;
+
   @Schema(title = "i18n:resources.title.parentId", description = "i18n:resources.description.parentId", hidden = true)
   @Column(length = 36)
   private String parentId;
 
+  @Order(19)
   @Schema(title = "i18n:resources.title.pluginId", description = "i18n:resources.description.pluginId")
   @Column(length = 128)
   private String pluginId;
 
-  @Order(4)
+  @Order(7)
   @Schema(
       title = "i18n:resources.title.path",
       description = "i18n:resources.description.path",
@@ -156,7 +182,7 @@ public class Resource extends BaseEntityImpl<String> {
   @Column(length = 200, unique = true)
   private String path;
 
-  @Order(5)
+  @Order(9)
   @Schema(
       title = "i18n:resources.title.component",
       description = "i18n:resources.description.component",
@@ -168,7 +194,7 @@ public class Resource extends BaseEntityImpl<String> {
   @Column(length = 160)
   private String component;
 
-  @Order(6)
+  @Order(10)
   @Schema(
       title = "i18n:resources.title.icon",
       description = "i18n:resources.description.icon",
@@ -181,7 +207,7 @@ public class Resource extends BaseEntityImpl<String> {
   @Column(length = 100)
   private String icon;
 
-  @Order(7)
+  @Order(11)
   @Schema(
       title = "i18n:resources.title.sort",
       description = "i18n:resources.description.sort",
@@ -191,45 +217,56 @@ public class Resource extends BaseEntityImpl<String> {
   )
   private Integer sort;
 
+  @Order(8)
   @Schema(title = "i18n:resources.title.routeKind", description = "i18n:resources.description.routeKind")
   @Column(length = 32)
   private String routeKind;
 
+  @Order(12)
   @Schema(title = "i18n:resources.title.method", description = "i18n:resources.description.method")
   @Column(length = 16)
   private String method;
 
+  @Order(13)
   @Schema(title = "i18n:resources.title.pattern", description = "i18n:resources.description.pattern")
   @Column(length = 240)
   private String pattern;
 
+  @Order(20)
   @Schema(title = "i18n:resources.title.description", description = "i18n:resources.description.description")
   @Column(length = 255)
   private String description;
 
+  @Order(14)
   @Schema(title = "i18n:resources.title.publicAccess", description = "i18n:resources.description.publicAccess")
   @Column(nullable = false)
   private Boolean publicAccess;
 
+  @Order(15)
   @Schema(title = "i18n:resources.title.requireOrgTenant", description = "i18n:resources.description.requireOrgTenant")
   @Column(nullable = false)
   private Boolean requireOrgTenant;
 
+  @Order(16)
   @Schema(title = "i18n:resources.title.grantable", description = "i18n:resources.description.grantable")
   @Column(nullable = false)
   private Boolean grantable;
 
+  @Order(17)
   @Schema(title = "i18n:resources.title.disabled", description = "i18n:resources.description.disabled")
   @Column(nullable = false)
   private Boolean disabled;
 
+  @Order(18)
   @Schema(title = "i18n:resources.title.danger", description = "i18n:resources.description.danger")
   private Boolean danger;
 
   @Transient
+  @Schema(hidden = true)
   private Boolean checked;
 
   @Transient
+  @Schema(hidden = true)
   private Boolean partial;
 
   @Override
@@ -249,11 +286,17 @@ public class Resource extends BaseEntityImpl<String> {
     if (type == null) {
       type = ResourceType.ACTION;
     }
+    if (scopeTypes == null || scopeTypes.isEmpty()) {
+      scopeTypes = EnumSet.of(ResourceScopeType.SYSTEM);
+    } else {
+      scopeTypes = EnumSet.copyOf(scopeTypes);
+    }
     if (publicAccess == null) {
       publicAccess = false;
     }
     if (requireOrgTenant == null) {
-      requireOrgTenant = false;
+      requireOrgTenant = scopeTypes.contains(ResourceScopeType.TENANT)
+          && !scopeTypes.contains(ResourceScopeType.PERSONAL);
     }
     if (grantable == null) {
       grantable = type != ResourceType.GROUP && type != ResourceType.MODULE;

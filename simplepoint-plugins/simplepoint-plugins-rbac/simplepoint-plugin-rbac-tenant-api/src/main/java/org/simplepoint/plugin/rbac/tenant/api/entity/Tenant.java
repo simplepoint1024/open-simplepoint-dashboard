@@ -97,7 +97,7 @@ public class Tenant extends BaseEntityImpl<String> {
   /**
    * The description of the tenant.
    */
-  @Order(1)
+  @Order(3)
   @Schema(
       title = "i18n:tenants.title.description",
       description = "i18n:tenants.description.description",
@@ -120,6 +120,7 @@ public class Tenant extends BaseEntityImpl<String> {
       title = "i18n:tenants.title.authorizationVersion",
       description = "i18n:tenants.description.authorizationVersion",
       example = "0",
+      hidden = true,
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "false"),
@@ -140,6 +141,15 @@ public class Tenant extends BaseEntityImpl<String> {
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "false"),
+              @ExtensionProperty(name = "widget", value = "RemoteSelect"),
+              @ExtensionProperty(
+                  name = "options",
+                  value = "{\"endpoint\":\"/common/platform/tenants/owners/items\","
+                      + "\"pageSize\":20,\"debounceMs\":300,\"searchParam\":\"keyword\","
+                      + "\"valueField\":\"id\",\"labelField\":\"name\","
+                      + "\"secondaryFields\":[\"email\",\"phoneNumber\"]}",
+                  parseValue = true
+              ),
           })
       }
   )
@@ -149,6 +159,7 @@ public class Tenant extends BaseEntityImpl<String> {
   /**
    * The type of the tenant (PERSONAL or ORGANIZATION).
    */
+  @Order(1)
   @Schema(
       title = "i18n:tenants.title.tenantType",
       description = "i18n:tenants.description.tenantType",

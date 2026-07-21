@@ -16,6 +16,7 @@ export interface AccessCenterScope {
   name: string;
   type?: string | null;
   description?: string | null;
+  scopeTypes?: Array<'SYSTEM' | 'PLATFORM' | 'TENANT' | 'PERSONAL'>;
 }
 
 export interface AccessCenterUserImpact {

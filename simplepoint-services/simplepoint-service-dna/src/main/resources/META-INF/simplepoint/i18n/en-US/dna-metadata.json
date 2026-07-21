@@ -35,6 +35,7 @@
   "dna.metadata.page.button.addConstraint": "Add Constraint",
   "dna.metadata.page.button.dropObject": "Delete Object",
   "dna.metadata.page.button.dropColumn": "Delete Column",
+  "dna.metadata.page.button.dropConstraint": "Delete Constraint",
   "dna.metadata.page.button.refreshPreview": "Refresh Preview",
   "dna.metadata.page.card.tree": "Metadata Tree",
   "dna.metadata.page.card.details": "Object Details",

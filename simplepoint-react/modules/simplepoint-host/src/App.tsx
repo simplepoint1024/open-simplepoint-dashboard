@@ -3,7 +3,7 @@ import '@simplepoint/components/Simplepoint.css';
 import 'antd/dist/reset.css';
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {HashRouter, Routes} from 'react-router-dom';
+import {HashRouter, Routes} from 'react-router';
 import {App as AntApp, ConfigProvider, Modal, Table as AntTable, theme} from 'antd';
 import {QuestionCircleOutlined} from '@ant-design/icons';
 

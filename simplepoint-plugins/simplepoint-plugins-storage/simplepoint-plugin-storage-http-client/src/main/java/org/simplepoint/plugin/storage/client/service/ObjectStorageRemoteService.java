@@ -11,6 +11,7 @@ package org.simplepoint.plugin.storage.client.service;
 import java.util.Optional;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageObject;
 import org.simplepoint.plugin.storage.api.model.ObjectStorageUploadRequest;
+import org.simplepoint.plugin.storage.client.model.ObjectStorageRemoteContent;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -53,4 +54,19 @@ public interface ObjectStorageRemoteService {
    * @return metadata
    */
   Optional<ObjectStorageObject> metadata(String id);
+
+  /**
+   * Downloads object content with its response metadata.
+   *
+   * @param id object id
+   * @return downloaded content
+   */
+  ObjectStorageRemoteContent download(String id);
+
+  /**
+   * Deletes one tenant-owned object.
+   *
+   * @param id object id
+   */
+  void delete(String id);
 }

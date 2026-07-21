@@ -76,7 +76,7 @@ public class Client extends BaseEntityImpl<String> {
   /**
    * The client identifier used in OAuth2 authentication flows.
    */
-  @Order(0)
+  @Order(1)
   @Column(unique = true, nullable = false)
   @Schema(title = "i18n:clients.title.clientId", description = "i18n:clients.description.clientId", extensions = {
       @Extension(name = "x-ui", properties = {
@@ -88,7 +88,7 @@ public class Client extends BaseEntityImpl<String> {
   /**
    * Timestamp indicating when the client ID was issued.
    */
-  @Order(8)
+  @Order(89)
   @Column(unique = true)
   @Schema(
       title = "i18n:clients.title.clientIdIssuedAt",
@@ -113,7 +113,7 @@ public class Client extends BaseEntityImpl<String> {
   /**
    * Timestamp indicating when the client secret expires.
    */
-  @Order(9)
+  @Order(3)
   @Schema(
       title = "i18n:clients.title.clientSecretExpiresAt",
       description = "i18n:clients.description.clientSecretExpiresAt",
@@ -125,7 +125,7 @@ public class Client extends BaseEntityImpl<String> {
   /**
    * Human-readable name assigned to the client.
    */
-  @Order(1)
+  @Order(0)
   @Schema(title = "i18n:clients.title.clientName", description = "i18n:clients.description.clientName", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
@@ -136,7 +136,7 @@ public class Client extends BaseEntityImpl<String> {
   /**
    * Authentication methods supported by the client (e.g., client_secret_basic, client_secret_post).
    */
-  @Order(3)
+  @Order(4)
   @Column(length = 1000)
   @Schema(
       title = "i18n:clients.title.clientAuthenticationMethods",
@@ -151,7 +151,7 @@ public class Client extends BaseEntityImpl<String> {
   /**
    * Supported OAuth2 authorization grant types (e.g., authorization_code, client_credentials).
    */
-  @Order(4)
+  @Order(5)
   @Column(length = 1000)
   @Schema(title = "i18n:clients.title.authorizationGrantTypes", description = "i18n:clients.description.authorizationGrantTypes", extensions = {
       @Extension(name = "x-ui", properties = {
@@ -163,7 +163,7 @@ public class Client extends BaseEntityImpl<String> {
   /**
    * Allowed redirect URIs for authorization responses.
    */
-  @Order(5)
+  @Order(6)
   @Column(length = 1000)
   @Schema(title = "i18n:clients.title.redirectUris", description = "i18n:clients.description.redirectUris")
   private String redirectUris;
@@ -171,7 +171,7 @@ public class Client extends BaseEntityImpl<String> {
   /**
    * Allowed post-logout redirect URIs for OpenID Connect logout flows.
    */
-  @Order(6)
+  @Order(7)
   @Column(length = 1000)
   @Schema(title = "i18n:clients.title.postLogoutRedirectUris", description = "i18n:clients.description.postLogoutRedirectUris")
   private String postLogoutRedirectUris;
@@ -179,7 +179,7 @@ public class Client extends BaseEntityImpl<String> {
   /**
    * Scopes granted to the client (e.g., read, write, profile).
    */
-  @Order(7)
+  @Order(8)
   @Column(length = 1000)
   @Schema(title = "i18n:clients.title.scopes", description = "i18n:clients.description.scopes", extensions = {
       @Extension(name = "x-ui", properties = {
@@ -191,6 +191,7 @@ public class Client extends BaseEntityImpl<String> {
   /**
    * JSON-encoded client settings (e.g., requiring consent, token endpoint authentication).
    */
+  @Order(90)
   @Column(length = 2000)
   @Schema(title = "i18n:clients.title.clientSettings", description = "i18n:clients.description.clientSettings", extensions = {
       @Extension(name = "x-ui", properties = {
@@ -202,6 +203,7 @@ public class Client extends BaseEntityImpl<String> {
   /**
    * JSON-encoded token settings (e.g., access token lifetime, refresh token policies).
    */
+  @Order(91)
   @Column(length = 2000)
   @Schema(title = "i18n:clients.title.tokenSettings", description = "i18n:clients.description.tokenSettings", extensions = {
       @Extension(name = "x-ui", properties = {

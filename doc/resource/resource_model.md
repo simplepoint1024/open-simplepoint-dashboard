@@ -88,6 +88,17 @@ flowchart LR
 
 `BaseServiceImpl.schema()` 会根据当前 `AuthorizationContext.resources` 过滤按钮。
 
+导航渲染遵循以下约定，并支持任意深度递归：
+
+- `submenu`：有子节点的可折叠目录，通常对应 `MODULE`。
+- `group`：只用于同级菜单的静态视觉分组，通常对应 `GROUP`，不承担目录折叠。
+- `item`：可点击菜单项，通常对应有路由的 `PAGE`。
+- `divider`：纯视觉分隔符。
+
+`MODULE` 和 `GROUP` 可以不配置 `path`，仍会保留在菜单树中；只有带 `path` 的页面资源才会注册为前端页面路由。
+
+资源级别只控制资源是否可见和可授权，不改变资源树的父子层级或菜单渲染类型。
+
 ## 6. 初始化和插件注册
 
 内置模块通过 `src/main/resources/META-INF/simplepoint/resources/*.json` 声明资源。

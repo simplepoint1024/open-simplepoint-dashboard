@@ -11,6 +11,8 @@
   "regions.description.nameNative": "Name in the local language",
   "regions.title.parentCode": "Parent Code",
   "regions.description.parentCode": "Code of the parent region",
+  "regions.title.parentId": "Parent Region ID",
+  "regions.description.parentId": "Record ID of the parent region; leave empty for a top-level region",
   "regions.title.postalCode": "Postal Code",
   "regions.description.postalCode": "Postal code for the region"
 }

@@ -7,6 +7,7 @@ import {RJSFValidationError, SubmitButtonProps} from "@rjsf/utils";
 import {memo, useMemo} from "react";
 import IconPicker from "./widgets/IconPicker";
 import OrgTreeMultiSelect from "./widgets/OrgTreeMultiSelect";
+import RemoteSelect from "./widgets/RemoteSelect";
 import {useI18n} from "@simplepoint/shared/hooks/useI18n";
 
 type SFormProps = Omit<FormProps, "validator">& {
@@ -34,7 +35,7 @@ const formTemplates = {
   },
 };
 
-const defaultWidgets = {IconPicker, OrgTreeMultiSelect} as const;
+const defaultWidgets = {IconPicker, OrgTreeMultiSelect, RemoteSelect} as const;
 
 // 抽离 textarea 的 autosize 常量，避免重复创建对象
 const TEXTAREA_AUTOSIZE = { minRows: 4, maxRows: 16 } as const;

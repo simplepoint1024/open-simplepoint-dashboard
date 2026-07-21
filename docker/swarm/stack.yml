@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:0.8.1-pg16
     environment:
       POSTGRES_DB: simplepoint
       POSTGRES_USER: postgres
@@ -63,6 +63,7 @@ services:
       SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET:-dev-common-service-secret}
       SIMPLEPOINT_AUDITING_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AUDITING_SERVICE_CLIENT_SECRET:-dev-auditing-service-secret}
       SIMPLEPOINT_DNA_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_DNA_SERVICE_CLIENT_SECRET:-dev-dna-service-secret}
+      SIMPLEPOINT_AI_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AI_SERVICE_CLIENT_SECRET:-dev-ai-service-secret}
       SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET:-dev-host-service-secret}
     ports:
       - target: 9000
@@ -79,7 +80,15 @@ services:
     image: ${SIMPLEPOINT_COMMON_IMAGE:-simplepoint/common:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_ADMIN_EMAIL: ${SIMPLEPOINT_ADMIN_EMAIL:-simplepoint@mail.com}
+      SIMPLEPOINT_ADMIN_PASSWORD: ${SIMPLEPOINT_ADMIN_PASSWORD:-123456}
+      SIMPLEPOINT_TENANT_MANAGER_EMAIL: ${SIMPLEPOINT_TENANT_MANAGER_EMAIL:-manager@simplepoint.local}
+      SIMPLEPOINT_TENANT_MANAGER_PASSWORD: ${SIMPLEPOINT_TENANT_MANAGER_PASSWORD:-123456}
+      SIMPLEPOINT_TENANT_MEMBER_EMAIL: ${SIMPLEPOINT_TENANT_MEMBER_EMAIL:-member@simplepoint.local}
+      SIMPLEPOINT_TENANT_MEMBER_PASSWORD: ${SIMPLEPOINT_TENANT_MEMBER_PASSWORD:-123456}
+      SIMPLEPOINT_DEFAULT_ORGANIZATION_NAME: ${SIMPLEPOINT_DEFAULT_ORGANIZATION_NAME:-SimplePoint 示例组织}
       SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_COMMON_SERVICE_CLIENT_SECRET:-dev-common-service-secret}
+      SIMPLEPOINT_STORAGE_CREDENTIAL_ENCRYPTION_KEY: ${SIMPLEPOINT_STORAGE_CREDENTIAL_ENCRYPTION_KEY:-dev-storage-credential-encryption-key-change-me}
     networks:
       - simplepoint
     deploy:
@@ -113,6 +122,22 @@ services:
         published: 15432
         protocol: tcp
         mode: host
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: any
+
+  ai:
+    image: ${SIMPLEPOINT_AI_IMAGE:-simplepoint/ai:swarm}
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
+      SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
+      SIMPLEPOINT_WAIT_TIMEOUT: 240
+      SIMPLEPOINT_AI_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AI_SERVICE_CLIENT_SECRET:-dev-ai-service-secret}
+      SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY: ${SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY:-dev-ai-credential-encryption-key-change-me}
+      SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED: ${SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED:-true}
     networks:
       - simplepoint
     deploy:

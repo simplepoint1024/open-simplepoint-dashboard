@@ -1,13 +1,12 @@
 import React, {MouseEventHandler, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import type {TableRowSelection} from 'antd/es/table/interface';
-import {Button, Col, Row, Space, Table as AntTable, Tag, Tooltip} from 'antd';
+import {Button, Col, Row, Space, Table as AntTable, Tag, Tooltip, type ButtonProps} from 'antd';
 import {FilterFilled, FilterOutlined, InboxOutlined, ReloadOutlined, SettingOutlined} from '@ant-design/icons';
 import type {ColumnType, ColumnsType} from 'antd/es/table';
 import {Resizable} from 'react-resizable';
 import 'react-resizable/css/styles.css';
 import {RJSFSchema} from '@rjsf/utils';
 import {Page, toPagination} from '@simplepoint/shared/types/request';
-import {ButtonProps} from "antd/es/button/button";
 import {createIcon} from '@simplepoint/shared/types/icon';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {get, put} from '@simplepoint/shared/api/methods';

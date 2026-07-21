@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeGuards;
+import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.resource.api.repository.ResourceAncestorRepository;
@@ -25,12 +26,15 @@ import org.simplepoint.plugin.rbac.resource.api.vo.MicroModuleItemVo;
 import org.simplepoint.plugin.rbac.resource.service.support.ButtonResourceMetadataRegistry;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
+import org.simplepoint.plugin.rbac.tenant.api.service.BuiltInTenantProvisioner;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.remoting.RemoteProvider;
 import org.simplepoint.security.ResourceDeclaration;
+import org.simplepoint.security.ResourceScopePolicy;
 import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.ResourceAncestor;
 import org.simplepoint.security.entity.ResourceNode;
+import org.simplepoint.security.entity.ResourceScopeType;
 import org.simplepoint.security.entity.ResourceType;
 import org.simplepoint.security.pojo.dto.ServiceResourceRouteResult;
 import org.simplepoint.security.service.ResourceService;
@@ -60,6 +64,7 @@ public class ResourceServiceImpl
   private final ObjectProvider<RoleResourceGrantRepository> roleResourceGrantRepositoryProvider;
   private final ObjectProvider<ResourceAuthorizationVersionService> resourceAuthorizationVersionServiceProvider;
   private final ObjectProvider<ButtonResourceMetadataRegistry> buttonResourceMetadataRegistryProvider;
+  private final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider;
 
   private volatile ServiceResourceRouteResult adminRoutesCache;
   private volatile long adminRoutesCacheExpiry;
@@ -76,7 +81,8 @@ public class ResourceServiceImpl
       ObjectProvider<TenantRepository> tenantRepositoryProvider,
       ObjectProvider<RoleResourceGrantRepository> roleResourceGrantRepositoryProvider,
       ObjectProvider<ResourceAuthorizationVersionService> resourceAuthorizationVersionServiceProvider,
-      ObjectProvider<ButtonResourceMetadataRegistry> buttonResourceMetadataRegistryProvider
+      ObjectProvider<ButtonResourceMetadataRegistry> buttonResourceMetadataRegistryProvider,
+      ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider
   ) {
     super(repository, detailsProviderService);
     this.resourceAncestorRepository = resourceAncestorRepository;
@@ -86,12 +92,14 @@ public class ResourceServiceImpl
     this.roleResourceGrantRepositoryProvider = roleResourceGrantRepositoryProvider;
     this.resourceAuthorizationVersionServiceProvider = resourceAuthorizationVersionServiceProvider;
     this.buttonResourceMetadataRegistryProvider = buttonResourceMetadataRegistryProvider;
+    this.builtInTenantProvisionerProvider = builtInTenantProvisionerProvider;
   }
 
   @Override
   @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
   public <S extends Resource> S create(S entity) {
     normalize(entity);
+    validateScopeBoundary(entity);
     S saved = super.create(entity);
     adminRoutesCache = null;
     saveAncestors(saved, false);
@@ -102,21 +110,13 @@ public class ResourceServiceImpl
   @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
   public <S extends Resource> Resource modifyById(S entity) {
     normalize(entity);
+    validateScopeBoundary(entity);
     Resource current = findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("资源不存在"));
     String oldCode = current.getCode();
     Resource updated = (Resource) super.modifyById(entity);
     adminRoutesCache = null;
     saveAncestors(updated, true);
-    if (!Objects.equals(oldCode, updated.getCode())) {
-      var grantRepository = roleResourceGrantRepositoryProvider.getIfAvailable();
-      if (grantRepository != null) {
-        grantRepository.updateResourceCode(oldCode, updated.getCode());
-      }
-      var refreshService = resourceAuthorizationVersionServiceProvider.getIfAvailable();
-      if (refreshService != null) {
-        refreshService.refreshByResourceCodes(Set.of(oldCode, updated.getCode()));
-      }
-    }
+    migrateResourceCode(oldCode, updated.getCode());
     return updated;
   }
 
@@ -155,18 +155,44 @@ public class ResourceServiceImpl
     Map<String, Resource> resourcesByCode = new HashMap<>();
     Map<String, Resource> resourcesByPath = new HashMap<>();
     getRepository().loadAll().forEach(resource -> indexResource(resourcesByCode, resourcesByPath, resource));
+    Set<String> synchronizedCodes = new HashSet<>();
 
-    ArrayDeque<ResourceDeclaration> queue = new ArrayDeque<>(declarations);
+    ArrayDeque<DeclarationEntry> queue = new ArrayDeque<>();
+    declarations.forEach(declaration -> queue.add(new DeclarationEntry(declaration, Set.of())));
     while (!queue.isEmpty()) {
-      ResourceDeclaration declaration = queue.poll();
+      DeclarationEntry entry = queue.poll();
+      ResourceDeclaration declaration = entry.declaration();
       Resource resource = declaration.toResource();
+      Set<ResourceScopeType> declaredScopes = declaration.getScopeTypes();
+      Set<ResourceScopeType> effectiveScopes = declaredScopes == null || declaredScopes.isEmpty()
+          ? (entry.parentScopes().isEmpty()
+              ? ResourceScopePolicy.effectiveScopes(Set.of())
+              : entry.parentScopes())
+          : ResourceScopePolicy.effectiveScopes(declaredScopes);
+      if (!entry.parentScopes().isEmpty()
+          && !ResourceScopePolicy.isValidChild(entry.parentScopes(), effectiveScopes)) {
+        throw new IllegalArgumentException(
+            "Resource scope exceeds parent boundary: " + declaration.getCode()
+        );
+      }
+      resource.setScopeTypes(effectiveScopes);
       resource.setPluginId(firstNonBlank(resource.getPluginId(), owner));
       normalize(resource);
+      synchronizedCodes.add(resource.getCode());
       Resource existing = resolveExisting(resourcesByCode, resourcesByPath, resource);
       if (existing != null) {
+        final String oldCode = existing.getCode();
+        final String oldPath = existing.getPath();
         resource.setId(existing.getId());
         resource = getRepository().updateById(resource);
         saveAncestors(resource, true);
+        migrateResourceCode(oldCode, resource.getCode());
+        if (!Objects.equals(oldCode, resource.getCode())) {
+          resourcesByCode.remove(oldCode);
+        }
+        if (!Objects.equals(oldPath, resource.getPath())) {
+          resourcesByPath.remove(oldPath);
+        }
       } else {
         resource = create(resource);
       }
@@ -175,11 +201,41 @@ public class ResourceServiceImpl
       if (declaration.getChildren() != null && !declaration.getChildren().isEmpty()) {
         for (ResourceDeclaration child : declaration.getChildren()) {
           child.setParentId(resource.getId());
-          queue.offer(child);
+          queue.offer(new DeclarationEntry(child, effectiveScopes));
         }
       }
     }
+    retireUndeclaredResources(owner, synchronizedCodes, resourcesByCode.values());
+    provisionBuiltInTenantResources(owner, synchronizedCodes);
     log.info("Resource sync completed for owner: {}", owner);
+  }
+
+  private void provisionBuiltInTenantResources(String owner, Set<String> synchronizedCodes) {
+    if (builtInTenantProvisionerProvider == null || synchronizedCodes == null || synchronizedCodes.isEmpty()) {
+      return;
+    }
+    BuiltInTenantProvisioner provisioner = builtInTenantProvisionerProvider.getIfAvailable();
+    if (provisioner == null) {
+      return;
+    }
+    List<Resource> synchronizedResources = getRepository().findAllByCodes(synchronizedCodes).stream()
+        .filter(resource -> Boolean.TRUE.equals(resource.getGrantable()))
+        .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
+        .toList();
+    Set<String> tenantCodes = resourceCodesForScope(synchronizedResources, ResourceScopeType.TENANT);
+    Set<String> personalCodes = resourceCodesForScope(synchronizedResources, ResourceScopeType.PERSONAL);
+    provisioner.provisionApplicationResources(owner, tenantCodes, personalCodes);
+  }
+
+  private Set<String> resourceCodesForScope(
+      Collection<Resource> resources,
+      ResourceScopeType scopeType
+  ) {
+    return resources.stream()
+        .filter(resource -> ResourceScopePolicy.effectiveScopes(resource.getScopeTypes()).contains(scopeType))
+        .map(Resource::getCode)
+        .filter(this::hasText)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   @Override
@@ -188,7 +244,7 @@ public class ResourceServiceImpl
     if (context == null) {
       throw new IllegalArgumentException("User context is null or not logged in");
     }
-    if (Boolean.TRUE.equals(context.getIsAdministrator())) {
+    if (AuthorizationScopeGuards.isPlatformAdministrator(context)) {
       ServiceResourceRouteResult cached = adminRoutesCache;
       if (cached != null && System.currentTimeMillis() < adminRoutesCacheExpiry) {
         return withScopeContext(cached, context);
@@ -196,7 +252,14 @@ public class ResourceServiceImpl
       Set<ServiceResourceRouteResult.ServiceEntry> services = new HashSet<>();
       ServiceResourceRouteResult result = ServiceResourceRouteResult.of(
           services,
-          buildResourceTree(getRepository().findRouteResourcesAll(), services, true, loadRemoteEntriesByServiceName())
+          buildResourceTree(
+              getRepository().findRouteResourcesAll().stream()
+                  .filter(resource -> isAccessible(resource, context))
+                  .toList(),
+              services,
+              true,
+              loadRemoteEntriesByServiceName()
+          )
       );
       adminRoutesCache = result;
       adminRoutesCacheExpiry = System.currentTimeMillis() + 30_000;
@@ -205,7 +268,11 @@ public class ResourceServiceImpl
 
     Set<String> resourceCodes = new LinkedHashSet<>(context.getResources());
     resourceCodes.addAll(findPublicAccessCodes());
-    addTenantPackageResources(resourceCodes);
+    resourceCodes.retainAll(filterAccessibleCodes(
+        resourceCodes,
+        context.getScopeType(),
+        Boolean.TRUE.equals(context.getIsAdministrator())
+    ));
     if (resourceCodes.isEmpty()) {
       return withScopeContext(ServiceResourceRouteResult.EMPTY, context);
     }
@@ -308,14 +375,96 @@ public class ResourceServiceImpl
     if (normalizedCodes.isEmpty()) {
       return List.of();
     }
-    if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
+    AuthorizationContext context = getAuthorizationContext();
+    if (!AuthorizationScopeGuards.isPlatformAdministrator(context)) {
       Set<String> visibleCodes = visibleTenantResourceCodes();
       normalizedCodes.retainAll(visibleCodes);
       if (normalizedCodes.isEmpty()) {
         return List.of();
       }
     }
-    return getRepository().findAllByCodes(normalizedCodes);
+    return getRepository().findAllByCodes(normalizedCodes).stream()
+        .filter(resource -> isAccessible(resource, context))
+        .toList();
+  }
+
+  @Override
+  public Collection<Resource> findAllAccessible() {
+    AuthorizationContext context = getAuthorizationContext();
+    if (context == null) {
+      return List.of();
+    }
+    if (AuthorizationScopeGuards.isPlatformAdministrator(context)) {
+      return getRepository().loadAll().stream()
+          .filter(resource -> isAccessible(resource, context))
+          .toList();
+    }
+    Set<String> visibleCodes = visibleTenantResourceCodes();
+    if (visibleCodes.isEmpty()) {
+      return List.of();
+    }
+    Set<String> visibleIds = new LinkedHashSet<>(getRepository().findIdsByCodes(visibleCodes));
+    visibleIds.addAll(resourceAncestorRepository.findAncestorIdsByChildIdIn(visibleIds));
+    return getRepository().loadByIds(visibleIds).stream()
+        .filter(resource -> isAccessible(resource, context))
+        .toList();
+  }
+
+  @Override
+  public Collection<String> filterAccessibleCodes(
+      Collection<String> codes,
+      AuthorizationScopeType scopeType,
+      boolean systemAdministrator
+  ) {
+    Set<String> normalizedCodes = normalizeCodes(codes);
+    if (normalizedCodes.isEmpty() || scopeType == null) {
+      return List.of();
+    }
+    AuthorizationContext context = new AuthorizationContext();
+    context.setScopeType(scopeType);
+    context.setIsAdministrator(systemAdministrator);
+    return getRepository().findAllByCodes(normalizedCodes).stream()
+        .filter(resource -> isAccessible(resource, context))
+        .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
+        .map(Resource::getCode)
+        .filter(this::hasText)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  @Override
+  public Collection<String> filterGrantableAccessibleCodes(
+      Collection<String> codes,
+      AuthorizationScopeType scopeType
+  ) {
+    Set<String> accessibleCodes = new LinkedHashSet<>(filterAccessibleCodes(codes, scopeType, false));
+    if (accessibleCodes.isEmpty()) {
+      return List.of();
+    }
+    return getRepository().findAllByCodes(accessibleCodes).stream()
+        .filter(resource -> Boolean.TRUE.equals(resource.getGrantable()))
+        .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
+        .map(Resource::getCode)
+        .filter(this::hasText)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  @Override
+  public Collection<String> findAllAccessibleCodes(
+      AuthorizationScopeType scopeType,
+      boolean systemAdministrator
+  ) {
+    if (scopeType == null) {
+      return List.of();
+    }
+    AuthorizationContext context = new AuthorizationContext();
+    context.setScopeType(scopeType);
+    context.setIsAdministrator(systemAdministrator);
+    return getRepository().loadAll().stream()
+        .filter(resource -> isAccessible(resource, context))
+        .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
+        .map(Resource::getCode)
+        .filter(this::hasText)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   @Override
@@ -334,6 +483,7 @@ public class ResourceServiceImpl
         ? null
         : visibleTenantResourceCodes();
     return getRepository().loadByIds(ids).stream()
+        .filter(resource -> isAccessible(resource, getAuthorizationContext()))
         .filter(resource -> Boolean.TRUE.equals(resource.getGrantable()))
         .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
         .map(Resource::getCode)
@@ -375,6 +525,55 @@ public class ResourceServiceImpl
     direct.setAncestorId(saved.getParentId());
     relations.add(direct);
     resourceAncestorRepository.saveAll(relations);
+  }
+
+  private void migrateResourceCode(String oldCode, String newCode) {
+    if (!hasText(oldCode) || !hasText(newCode) || Objects.equals(oldCode, newCode)) {
+      return;
+    }
+    var grantRepository = roleResourceGrantRepositoryProvider.getIfAvailable();
+    if (grantRepository != null) {
+      grantRepository.updateResourceCode(oldCode, newCode);
+    }
+    var refreshService = resourceAuthorizationVersionServiceProvider.getIfAvailable();
+    if (refreshService != null) {
+      refreshService.refreshByResourceCodes(Set.of(oldCode, newCode));
+    }
+  }
+
+  private void retireUndeclaredResources(
+      String owner,
+      Set<String> synchronizedCodes,
+      Collection<Resource> indexedResources
+  ) {
+    if (!hasText(owner)) {
+      return;
+    }
+    Set<String> retiredIds = indexedResources.stream()
+        .filter(resource -> owner.equals(resource.getPluginId()))
+        .filter(resource -> hasText(resource.getId()))
+        .filter(resource -> !synchronizedCodes.contains(resource.getCode()))
+        .map(Resource::getId)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+    if (retiredIds.isEmpty()) {
+      return;
+    }
+    removeByIds(retiredIds);
+    log.info("Retired {} undeclared resources for owner: {}", retiredIds.size(), owner);
+  }
+
+  private void validateScopeBoundary(Resource resource) {
+    if (resource == null || !hasText(resource.getParentId())) {
+      return;
+    }
+    if (Objects.equals(resource.getId(), resource.getParentId())) {
+      throw new IllegalArgumentException("资源不能将自身设置为父资源");
+    }
+    Resource parent = findById(resource.getParentId())
+        .orElseThrow(() -> new IllegalArgumentException("父资源不存在"));
+    if (!ResourceScopePolicy.isValidChild(parent.getScopeTypes(), resource.getScopeTypes())) {
+      throw new IllegalArgumentException("子资源的资源级别不能超出父资源边界");
+    }
   }
 
   private List<ResourceNode> buildResourceTree(
@@ -439,21 +638,13 @@ public class ResourceServiceImpl
     ));
   }
 
-  private void addTenantPackageResources(Set<String> resourceCodes) {
-    String tenantId = currentTenantId();
-    if (!hasText(tenantId)) {
-      return;
-    }
-    TenantPackageRelevanceRepository repository = tenantPackageRelevanceRepositoryProvider.getIfAvailable();
-    if (repository != null) {
-      resourceCodes.addAll(repository.findResourceCodesByTenantId(tenantId));
-    }
-  }
-
   private Set<String> visibleTenantResourceCodes() {
     if (AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
-      return new LinkedHashSet<>(getRepository().findCodesByTypes(List.of(ResourceType.GROUP, ResourceType.MODULE,
-          ResourceType.PAGE, ResourceType.FEATURE, ResourceType.ACTION, ResourceType.API)));
+      return getRepository().loadAll().stream()
+          .filter(resource -> isAccessible(resource, getAuthorizationContext()))
+          .map(Resource::getCode)
+          .filter(this::hasText)
+          .collect(Collectors.toCollection(LinkedHashSet::new));
     }
     String tenantId = currentTenantId();
     if (!hasText(tenantId)) {
@@ -471,6 +662,11 @@ public class ResourceServiceImpl
     }
     Set<String> codes = new LinkedHashSet<>(repository.findResourceCodesByTenantId(tenantId));
     codes.addAll(findPublicAccessCodes());
+    codes.retainAll(filterAccessibleCodes(
+        codes,
+        getAuthorizationContext().getScopeType(),
+        Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())
+    ));
     return codes;
   }
 
@@ -555,17 +751,27 @@ public class ResourceServiceImpl
     if (resource.getType() == null) {
       resource.setType(hasText(resource.getPath()) ? ResourceType.PAGE : ResourceType.ACTION);
     }
+    Set<ResourceScopeType> effectiveScopes = ResourceScopePolicy.effectiveScopes(resource.getScopeTypes());
+    resource.setScopeTypes(effectiveScopes);
     if (!hasText(resource.getRouteKind()) && isRouteType(resource.getType())) {
-      resource.setRouteKind(resource.getType() == ResourceType.GROUP || resource.getType() == ResourceType.MODULE ? "group" : "item");
+      if (resource.getType() == ResourceType.GROUP) {
+        resource.setRouteKind("group");
+      } else if (resource.getType() == ResourceType.MODULE) {
+        resource.setRouteKind("submenu");
+      } else {
+        resource.setRouteKind("item");
+      }
     }
     if (resource.getPublicAccess() == null) {
       resource.setPublicAccess(Boolean.FALSE);
     }
-    if (resource.getRequireOrgTenant() == null) {
-      resource.setRequireOrgTenant(Boolean.FALSE);
-    }
+    resource.setRequireOrgTenant(effectiveScopes.contains(ResourceScopeType.TENANT)
+        && !effectiveScopes.contains(ResourceScopeType.PERSONAL));
     if (resource.getGrantable() == null) {
       resource.setGrantable(resource.getType() != ResourceType.GROUP && resource.getType() != ResourceType.MODULE);
+    }
+    if (effectiveScopes.size() == 1 && effectiveScopes.contains(ResourceScopeType.SYSTEM)) {
+      resource.setGrantable(Boolean.FALSE);
     }
     if (resource.getDisabled() == null) {
       resource.setDisabled(Boolean.FALSE);
@@ -602,6 +808,16 @@ public class ResourceServiceImpl
     }
   }
 
+  private boolean isAccessible(Resource resource, AuthorizationContext context) {
+    return resource != null && ResourceScopePolicy.isAccessible(resource.getScopeTypes(), context);
+  }
+
+  private record DeclarationEntry(
+      ResourceDeclaration declaration,
+      Set<ResourceScopeType> parentScopes
+  ) {
+  }
+
   private String attribute(Map<String, String> attributes, String key) {
     if (attributes == null || key == null) {
       return null;
@@ -610,7 +826,11 @@ public class ResourceServiceImpl
   }
 
   private boolean isRouteResource(Resource resource) {
-    return resource != null && hasText(resource.getPath()) && Boolean.FALSE.equals(resource.getDisabled());
+    return resource != null
+        && Boolean.FALSE.equals(resource.getDisabled())
+        && (hasText(resource.getPath())
+            || resource.getType() == ResourceType.GROUP
+            || resource.getType() == ResourceType.MODULE);
   }
 
   private boolean isRouteType(ResourceType type) {

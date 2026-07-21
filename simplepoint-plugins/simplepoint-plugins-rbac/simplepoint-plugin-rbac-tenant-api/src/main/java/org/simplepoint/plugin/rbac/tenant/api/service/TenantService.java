@@ -96,7 +96,14 @@ public interface TenantService extends BaseService<Tenant, String> {
    * @param pageable pageable
    * @return owner candidates
    */
-  Page<UserRelevanceVo> ownerItems(Pageable pageable);
+  default Page<UserRelevanceVo> ownerItems(Pageable pageable) {
+    return ownerItems(null, pageable);
+  }
+
+  /**
+   * Loads a page of tenant owner candidates matching the optional keyword.
+   */
+  Page<UserRelevanceVo> ownerItems(String keyword, Pageable pageable);
 
   /**
    * Loads global user candidates for the specified tenant member configuration.
@@ -105,7 +112,14 @@ public interface TenantService extends BaseService<Tenant, String> {
    * @param pageable pageable
    * @return user candidates
    */
-  Page<UserRelevanceVo> userItems(String tenantId, Pageable pageable);
+  default Page<UserRelevanceVo> userItems(String tenantId, Pageable pageable) {
+    return userItems(tenantId, null, pageable);
+  }
+
+  /**
+   * Loads a page of tenant members matching the optional keyword.
+   */
+  Page<UserRelevanceVo> userItems(String tenantId, String keyword, Pageable pageable);
 
   /**
    * Loads tenant members for the specified tenant.

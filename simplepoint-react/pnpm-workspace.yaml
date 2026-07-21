@@ -1,3 +1,11 @@
 packages:
   - libs/*
   - modules/*
+
+overrides:
+  adm-zip: ^0.6.0
+
+allowBuilds:
+  core-js: false
+  esbuild: true
+  msw: true

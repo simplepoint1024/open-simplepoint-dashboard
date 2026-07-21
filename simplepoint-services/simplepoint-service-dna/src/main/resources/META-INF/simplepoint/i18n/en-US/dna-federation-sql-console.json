@@ -83,6 +83,7 @@
   "dna.federation.sqlConsole.page.button.refreshTree": "Refresh Tree",
   "dna.federation.sqlConsole.page.button.explain": "Explain Plan",
   "dna.federation.sqlConsole.page.button.query": "Execute SQL",
+  "dna.federation.sqlConsole.page.button.flushCache": "Flush Cache",
   "dna.federation.sqlConsole.page.button.exportCsv": "Export CSV",
   "dna.federation.sqlConsole.page.button.exportJson": "Export JSON",
   "dna.federation.sqlConsole.page.placeholder.selectCatalog": "Select a federation catalog",

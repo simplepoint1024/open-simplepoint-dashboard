@@ -3,5 +3,8 @@ dependencies {
     implementation("org.springframework:spring-web")
     implementation("org.springframework.cloud:spring-cloud-starter-loadbalancer")
     compileOnly("jakarta.servlet:jakarta.servlet-api")
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-api"))
+    api(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-api"))
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("jakarta.servlet:jakarta.servlet-api")
 }

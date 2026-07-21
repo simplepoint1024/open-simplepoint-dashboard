@@ -16,5 +16,6 @@ public enum ObjectStoragePlatformType {
   S3,
   ALIYUN_OSS,
   TENCENT_COS,
+  QINIU_KODO,
   CEPH
 }

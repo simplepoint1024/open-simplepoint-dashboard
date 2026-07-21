@@ -18,8 +18,14 @@ class ObjectStoragePathsTest {
   }
 
   @Test
+  void globalBasePath() {
+    assertEquals("/object-storage", ObjectStoragePaths.GLOBAL_BASE);
+  }
+
+  @Test
   void pathsAreNotNull() {
     assertNotNull(ObjectStoragePaths.ADMIN_BASE);
+    assertNotNull(ObjectStoragePaths.GLOBAL_BASE);
     assertNotNull(ObjectStoragePaths.REMOTE_BASE);
   }
 }

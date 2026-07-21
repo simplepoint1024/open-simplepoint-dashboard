@@ -7,6 +7,12 @@
   "tenants.description.authorizationVersion": "租户授权快照版本，用于资源授权变更一致性控制",
   "tenants.title.ownerId": "租户所有者",
   "tenants.description.ownerId": "当前租户的所有者用户 ID",
+  "tenants.title.tenantType": "租户类型",
+  "tenants.description.tenantType": "租户的使用形态，个人租户归属于单个用户，组织租户用于团队协作",
   "tenants.button.config.package": "配置套餐",
-  "tenants.button.config.user": "配置成员"
+  "tenants.button.config.user": "配置成员",
+  "tenants.userConfig.authorizedUsers": "租户成员",
+  "tenants.userConfig.availableUsers": "可选用户",
+  "tenants.type.ORGANIZATION": "组织租户",
+  "tenants.type.PERSONAL": "个人租户"
 }

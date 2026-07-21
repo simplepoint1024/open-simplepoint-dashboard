@@ -20,6 +20,7 @@ import org.simplepoint.plugin.rbac.core.api.repository.DataScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.FieldScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.tenant.api.constants.TenantContextIds;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
 import org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository;
@@ -128,6 +129,7 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     if (selectedRoleId != null) {
       effectiveAttributes.put("X-Role-Id", selectedRoleId);
     }
+    final AuthorizationScopeType scopeType = resolveScopeType(administrator, resolvedTenantId, resolvedTenant);
     var resources = new LinkedHashSet<String>();
     var roleIds = roleAuthorityVos.stream().map(RoleGrantedAuthority::getId).toList();
     if (!roleIds.isEmpty()) {
@@ -144,10 +146,15 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     if (tenantPackageRelevanceRepository != null
         && resolvedTenantId != null
         && !resolvedTenantId.isBlank()
-        && tenantOwner) {
+        && (tenantOwner || administrator)) {
       resources.addAll(tenantPackageRelevanceRepository.findResourceCodesByTenantId(resolvedTenantId));
     }
-    AuthorizationScopeType scopeType = resolveScopeType(administrator, resolvedTenantId, resolvedTenant);
+    if (resourceService != null) {
+      if (administrator && scopeType == AuthorizationScopeType.PLATFORM) {
+        resources.addAll(resourceService.findAllAccessibleCodes(scopeType, true));
+      }
+      resources.retainAll(resourceService.filterAccessibleCodes(resources, scopeType, administrator));
+    }
     boolean tenantAdmin = hasTenantAdminAuthority(roleAuthorityVos, resources);
     AuthorizationActorRole actorRole = resolveActorRole(administrator, resolvedTenantId, resolvedTenant, tenantOwner, tenantAdmin);
     effectiveAttributes.put("X-Scope-Type", scopeType.name());
@@ -176,7 +183,7 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
       return null;
     }
     String trimmed = tenantId.trim();
-    if (trimmed.isEmpty() || "default".equals(trimmed)) {
+    if (trimmed.isEmpty() || "default".equals(trimmed) || TenantContextIds.PLATFORM.equals(trimmed)) {
       return null;
     }
     return trimmed;

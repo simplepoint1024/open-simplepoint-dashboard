@@ -66,7 +66,7 @@ public class Countries extends BaseEntityImpl<String> {
   /**
    * The English name of the country.
    */
-  @Order(0)
+  @Order(1)
   @Schema(
       title = "i18n:countries.title.nameEnglish",
       description = "i18n:countries.description.nameEnglish",
@@ -82,7 +82,7 @@ public class Countries extends BaseEntityImpl<String> {
   /**
    * The native name of the country.
    */
-  @Order(1)
+  @Order(0)
   @Schema(
       title = "i18n:countries.title.nameNative",
       description = "i18n:countries.description.nameNative",
@@ -132,7 +132,7 @@ public class Countries extends BaseEntityImpl<String> {
   /**
    * The default timezone of the country.
    */
-  @Order(4)
+  @Order(5)
   @Schema(
       title = "i18n:countries.title.timezone",
       description = "i18n:countries.description.timezone",
@@ -147,7 +147,7 @@ public class Countries extends BaseEntityImpl<String> {
   /**
    * The numeric code of the country.
    */
-  @Order(5)
+  @Order(4)
   @Schema(
       title = "i18n:countries.title.numericCode",
       description = "i18n:countries.description.numericCode",
@@ -164,22 +164,40 @@ public class Countries extends BaseEntityImpl<String> {
   /**
    * The currency code of the country.
    */
+  @Order(9)
+  @Schema(
+      title = "i18n:countries.title.currencyCode",
+      description = "i18n:countries.description.currencyCode",
+      example = "CNY"
+  )
   private String currencyCode;
 
   /**
    * The continent where the country is located.
    */
+  @Order(7)
+  @Schema(
+      title = "i18n:countries.title.continent",
+      description = "i18n:countries.description.continent",
+      example = "Asia"
+  )
   private String continent;
 
   /**
    * The region where the country is located.
    */
+  @Order(8)
+  @Schema(
+      title = "i18n:countries.title.subRegion",
+      description = "i18n:countries.description.subRegion",
+      example = "Eastern Asia"
+  )
   private String subRegion;
 
   /**
    * The currency name of the country.
    */
-  @Order(6)
+  @Order(10)
   @Schema(
       title = "i18n:countries.title.currencyName",
       description = "i18n:countries.description.currencyName",
@@ -194,17 +212,29 @@ public class Countries extends BaseEntityImpl<String> {
   /**
    * The currency symbol of the country.
    */
+  @Order(11)
+  @Schema(
+      title = "i18n:countries.title.currencySymbol",
+      description = "i18n:countries.description.currencySymbol",
+      example = "¥"
+  )
   private String currencySymbol;
 
   /**
    * The numeric code of the currency.
    */
+  @Order(12)
+  @Schema(
+      title = "i18n:countries.title.currencyNumeric",
+      description = "i18n:countries.description.currencyNumeric",
+      example = "156"
+  )
   private String currencyNumeric;
 
   /**
    * The phone code of the country.
    */
-  @Order(7)
+  @Order(6)
   @Schema(
       title = "i18n:countries.title.phoneCode",
       description = "i18n:countries.description.phoneCode",
@@ -220,12 +250,18 @@ public class Countries extends BaseEntityImpl<String> {
   /**
    * The flag icon URL of the country.
    */
+  @Order(13)
+  @Schema(
+      title = "i18n:countries.title.flagIcon",
+      description = "i18n:countries.description.flagIcon",
+      example = "cn"
+  )
   private String flagIcon;
 
   /**
    * Indicates whether the country is enabled.
    */
-  @Order(8)
+  @Order(14)
   @Schema(
       title = "i18n:countries.title.enabled",
       description = "i18n:countries.description.enabled",

@@ -1,5 +1,6 @@
 package org.simplepoint.security.oauth2.resourceserver.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.GeneralException;
 import com.nimbusds.oauth2.sdk.id.Issuer;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
@@ -17,6 +18,8 @@ import org.simplepoint.security.context.AuthorizationContextResolver;
 import org.simplepoint.security.context.AuthorizationContextService;
 import org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilter;
 import org.simplepoint.security.oauth2.resourceserver.delegate.JwtAuthenticationConverterDelegate;
+import org.simplepoint.security.oauth2.resourceserver.scope.ClasspathResourceScopeRegistry;
+import org.simplepoint.security.oauth2.resourceserver.scope.ResourceScopeHandlerInterceptor;
 import org.simplepoint.security.token.TokenRevocationService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -30,6 +33,8 @@ import org.springframework.security.oauth2.server.resource.web.authentication.Be
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Auto-configuration for the resource server.
@@ -37,6 +42,28 @@ import org.springframework.util.StringUtils;
  */
 @AutoConfiguration
 public class ResourceServerAutoConfiguration {
+
+  /** Loads the local service's resource-scope declarations for request interception. */
+  @Bean
+  @ConditionalOnMissingBean
+  public ClasspathResourceScopeRegistry classpathResourceScopeRegistry(
+      final ObjectMapper objectMapper
+  ) throws IOException {
+    return new ClasspathResourceScopeRegistry(objectMapper);
+  }
+
+  /** Registers scope enforcement after handler mapping and before controller invocation. */
+  @Bean
+  public WebMvcConfigurer resourceScopeWebMvcConfigurer(
+      final ClasspathResourceScopeRegistry scopeRegistry
+  ) {
+    return new WebMvcConfigurer() {
+      @Override
+      public void addInterceptors(final InterceptorRegistry registry) {
+        registry.addInterceptor(new ResourceScopeHandlerInterceptor(scopeRegistry));
+      }
+    };
+  }
 
   /**
    * Configures the security filter chain for the application, enforcing authentication

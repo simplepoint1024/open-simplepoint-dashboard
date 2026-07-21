@@ -39,12 +39,14 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
+import org.simplepoint.plugin.rbac.tenant.api.service.BuiltInTenantProvisioner;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.remoting.RemoteProvider;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -73,6 +75,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   private final RoleRepository roleRepository;
   private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
   private final ResourceGrantLogRemoteService resourceGrantLogRemoteService;
+  private final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider;
 
   /**
      * Optional password encoder for encrypting user passwords.
@@ -97,7 +100,8 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
       @Autowired(required = false) final TenantUserRelevanceRepository tenantUserRelevanceRepository,
       final RoleRepository roleRepository,
       final ResourceAuthorizationVersionService resourceAuthorizationVersionService,
-      final ResourceGrantLogRemoteService resourceGrantLogRemoteService
+      final ResourceGrantLogRemoteService resourceGrantLogRemoteService,
+      final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider
   ) {
     super(usersRepository, detailsProviderService);
     this.passwordEncoder = passwordEncoder;
@@ -107,6 +111,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     this.roleRepository = roleRepository;
     this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.resourceGrantLogRemoteService = resourceGrantLogRemoteService;
+    this.builtInTenantProvisionerProvider = builtInTenantProvisionerProvider;
   }
 
   @Override
@@ -217,6 +222,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
         .orElse(Optional.empty());
     if (existing.isPresent()) {
       ensureTenantMembership(existing.get().getId(), user.getId());
+      provisionPersonalTenant(existing.get().getId());
       return;
     }
     String displayName = (user.getName() != null && !user.getName().isBlank())
@@ -230,6 +236,17 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     tenant.setAuthorizationVersion(0L);
     Tenant saved = tenantRepository.save(tenant);
     ensureTenantMembership(saved.getId(), user.getId());
+    provisionPersonalTenant(saved.getId());
+  }
+
+  private void provisionPersonalTenant(String tenantId) {
+    if (builtInTenantProvisionerProvider == null) {
+      return;
+    }
+    BuiltInTenantProvisioner provisioner = builtInTenantProvisionerProvider.getIfAvailable();
+    if (provisioner != null) {
+      provisioner.provisionPersonalTenant(tenantId);
+    }
   }
 
   private void ensureTenantMembership(String tenantId, String userId) {

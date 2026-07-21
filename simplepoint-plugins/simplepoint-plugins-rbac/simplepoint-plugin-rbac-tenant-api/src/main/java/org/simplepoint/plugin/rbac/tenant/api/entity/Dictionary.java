@@ -105,7 +105,7 @@ public class Dictionary extends BaseEntityImpl<String> {
   @Column(length = 128, nullable = false, unique = true)
   private String code;
 
-  @Order(2)
+  @Order(4)
   @Schema(
       title = "i18n:dictionaries.title.description",
       description = "i18n:dictionaries.description.description",
@@ -120,7 +120,7 @@ public class Dictionary extends BaseEntityImpl<String> {
   @Column(length = 512)
   private String description;
 
-  @Order(3)
+  @Order(2)
   @Schema(
       title = "i18n:dictionaries.title.sort",
       description = "i18n:dictionaries.description.sort",
@@ -133,7 +133,7 @@ public class Dictionary extends BaseEntityImpl<String> {
   )
   private Integer sort;
 
-  @Order(4)
+  @Order(3)
   @Schema(
       title = "i18n:dictionaries.title.enabled",
       description = "i18n:dictionaries.description.enabled",

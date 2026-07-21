@@ -16,17 +16,19 @@ import java.util.Optional;
 import org.simplepoint.plugin.storage.api.constants.ObjectStoragePaths;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageObject;
 import org.simplepoint.plugin.storage.api.model.ObjectStorageUploadRequest;
+import org.simplepoint.plugin.storage.client.model.ObjectStorageRemoteContent;
 import org.simplepoint.plugin.storage.client.properties.ObjectStorageRemoteProperties;
 import org.simplepoint.plugin.storage.client.support.NamedInputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.MultipartBodyBuilder;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,9 +38,7 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public class RestClientObjectStorageRemoteService implements ObjectStorageRemoteService {
 
-  private final RestClient.Builder restClientBuilder;
-
-  private final ObjectStorageRemoteProperties properties;
+  private final RestClient restClient;
 
   /**
    * Rest Client Object Storage Remote Service.
@@ -47,8 +47,7 @@ public class RestClientObjectStorageRemoteService implements ObjectStorageRemote
       final RestClient.Builder restClientBuilder,
       final ObjectStorageRemoteProperties properties
   ) {
-    this.restClientBuilder = restClientBuilder;
-    this.properties = properties;
+    this.restClient = restClientBuilder.baseUrl(properties.baseUrl()).build();
   }
 
   @Override
@@ -77,42 +76,85 @@ public class RestClientObjectStorageRemoteService implements ObjectStorageRemote
     MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
     HttpHeaders fileHeaders = new HttpHeaders();
     fileHeaders.setContentType(MediaType.parseMediaType(contentType == null ? "application/octet-stream" : contentType));
+    if (contentLength >= 0) {
+      fileHeaders.setContentLength(contentLength);
+    }
     form.add("file", new HttpEntity<>(resource, fileHeaders));
     addIfPresent(form, "providerCode", request == null ? null : request.getProviderCode());
     addIfPresent(form, "directory", request == null ? null : request.getDirectory());
     addIfPresent(form, "objectKey", request == null ? null : request.getObjectKey());
     addIfPresent(form, "fileName", fileName);
     addIfPresent(form, "sourceServiceName", request == null ? null : request.getSourceServiceName());
-    return restClient().post()
-        .uri(ObjectStoragePaths.REMOTE_BASE + "/upload")
-        .headers(this::copyContextHeaders)
-        .contentType(MediaType.MULTIPART_FORM_DATA)
-        .body(form)
-        .retrieve()
-        .body(ObjectStorageObject.class);
+    try {
+      return restClient.post()
+          .uri(ObjectStoragePaths.GLOBAL_BASE + "/upload")
+          .headers(this::copyContextHeaders)
+          .contentType(MediaType.MULTIPART_FORM_DATA)
+          .body(form)
+          .retrieve()
+          .body(ObjectStorageObject.class);
+    } catch (RestClientResponseException ex) {
+      throw remoteFailure("上传", ex);
+    }
   }
 
   @Override
   public Optional<ObjectStorageObject> metadata(final String id) {
     try {
-      ObjectStorageObject body = restClient().get()
-          .uri(ObjectStoragePaths.REMOTE_BASE + "/objects/{id}", id)
+      ObjectStorageObject body = restClient.get()
+          .uri(ObjectStoragePaths.GLOBAL_BASE + "/objects/{id}", id)
           .headers(this::copyContextHeaders)
           .retrieve()
           .body(ObjectStorageObject.class);
       return Optional.ofNullable(body);
     } catch (HttpClientErrorException.NotFound ex) {
       return Optional.empty();
+    } catch (RestClientResponseException ex) {
+      throw remoteFailure("查询", ex);
     }
   }
 
-  private RestClient restClient() {
-    return restClientBuilder.baseUrl(properties.baseUrl()).build();
+  @Override
+  public ObjectStorageRemoteContent download(final String id) {
+    ResponseEntity<byte[]> response;
+    try {
+      response = restClient.get()
+          .uri(ObjectStoragePaths.GLOBAL_BASE + "/objects/{id}/content", id)
+          .headers(this::copyContextHeaders)
+          .retrieve()
+          .toEntity(byte[].class);
+    } catch (RestClientResponseException ex) {
+      throw remoteFailure("下载", ex);
+    }
+    byte[] content = response.getBody() == null ? new byte[0] : response.getBody();
+    MediaType contentType = response.getHeaders().getContentType();
+    return new ObjectStorageRemoteContent(
+        content,
+        response.getHeaders().getContentDisposition().getFilename(),
+        contentType == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : contentType.toString(),
+        response.getHeaders().getContentLength() < 0
+            ? content.length : response.getHeaders().getContentLength()
+    );
+  }
+
+  @Override
+  public void delete(final String id) {
+    try {
+      restClient.delete()
+          .uri(ObjectStoragePaths.GLOBAL_BASE + "/objects/{id}", id)
+          .headers(this::copyContextHeaders)
+          .retrieve()
+          .toBodilessEntity();
+    } catch (HttpClientErrorException.NotFound ex) {
+      // Deletion is intentionally idempotent for cross-service cleanup and retries.
+    } catch (RestClientResponseException ex) {
+      throw remoteFailure("删除", ex);
+    }
   }
 
   private void copyContextHeaders(final HttpHeaders headers) {
-    ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-    if (requestAttributes == null) {
+    if (!(RequestContextHolder.getRequestAttributes()
+        instanceof ServletRequestAttributes requestAttributes)) {
       return;
     }
     HttpServletRequest request = requestAttributes.getRequest();
@@ -134,6 +176,20 @@ public class RestClientObjectStorageRemoteService implements ObjectStorageRemote
     if (value != null && !value.isBlank()) {
       form.add(key, value);
     }
+  }
+
+  private static IllegalStateException remoteFailure(
+      final String operation,
+      final RestClientResponseException exception
+  ) {
+    String detail = exception.getResponseBodyAsString();
+    if (detail == null || detail.isBlank()) {
+      detail = exception.getStatusText();
+    }
+    return new IllegalStateException(
+        "统一对象存储" + operation + "失败: " + detail.trim(),
+        exception
+    );
   }
 
   private static String resolveFileName(final MultipartFile file, final ObjectStorageUploadRequest request) {

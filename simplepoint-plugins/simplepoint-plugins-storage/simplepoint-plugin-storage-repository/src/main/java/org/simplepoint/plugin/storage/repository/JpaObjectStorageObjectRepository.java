@@ -38,10 +38,45 @@ public interface JpaObjectStorageObjectRepository
   @Query("""
       select o
       from ObjectStorageObject o
+      where o.id = :id
+        and o.tenantId = :tenantId
+        and o.deletedAt is null
+      """)
+  Optional<ObjectStorageObject> findActiveByIdAndTenantId(
+      @Param("id") String id,
+      @Param("tenantId") String tenantId
+  );
+
+  @Override
+  @Query("""
+      select o
+      from ObjectStorageObject o
       where o.id in :ids
         and o.deletedAt is null
       """)
   List<ObjectStorageObject> findAllActiveByIds(@Param("ids") Collection<String> ids);
+
+  @Override
+  @Query("""
+      select o
+      from ObjectStorageObject o
+      where o.id in :ids
+        and o.tenantId = :tenantId
+        and o.deletedAt is null
+      """)
+  List<ObjectStorageObject> findAllActiveByIdsAndTenantId(
+      @Param("ids") Collection<String> ids,
+      @Param("tenantId") String tenantId
+  );
+
+  @Override
+  @Query("""
+      select (count(o) > 0)
+      from ObjectStorageObject o
+      where lower(o.providerCode) = lower(:providerCode)
+        and o.deletedAt is null
+      """)
+  boolean existsActiveByProviderCode(@Param("providerCode") String providerCode);
 
   @Override
   @Query("""

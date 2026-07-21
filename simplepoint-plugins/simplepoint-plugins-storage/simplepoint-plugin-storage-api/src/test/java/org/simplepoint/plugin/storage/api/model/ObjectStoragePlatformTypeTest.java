@@ -8,7 +8,7 @@ class ObjectStoragePlatformTypeTest {
 
   @Test
   void enumValueCount() {
-    assertEquals(5, ObjectStoragePlatformType.values().length);
+    assertEquals(6, ObjectStoragePlatformType.values().length);
   }
 
   @Test
@@ -17,6 +17,7 @@ class ObjectStoragePlatformTypeTest {
     assertEquals(ObjectStoragePlatformType.S3, ObjectStoragePlatformType.valueOf("S3"));
     assertEquals(ObjectStoragePlatformType.ALIYUN_OSS, ObjectStoragePlatformType.valueOf("ALIYUN_OSS"));
     assertEquals(ObjectStoragePlatformType.TENCENT_COS, ObjectStoragePlatformType.valueOf("TENCENT_COS"));
+    assertEquals(ObjectStoragePlatformType.QINIU_KODO, ObjectStoragePlatformType.valueOf("QINIU_KODO"));
     assertEquals(ObjectStoragePlatformType.CEPH, ObjectStoragePlatformType.valueOf("CEPH"));
   }
 
@@ -26,6 +27,7 @@ class ObjectStoragePlatformTypeTest {
     assertEquals(1, ObjectStoragePlatformType.S3.ordinal());
     assertEquals(2, ObjectStoragePlatformType.ALIYUN_OSS.ordinal());
     assertEquals(3, ObjectStoragePlatformType.TENCENT_COS.ordinal());
-    assertEquals(4, ObjectStoragePlatformType.CEPH.ordinal());
+    assertEquals(4, ObjectStoragePlatformType.QINIU_KODO.ordinal());
+    assertEquals(5, ObjectStoragePlatformType.CEPH.ordinal());
   }
 }

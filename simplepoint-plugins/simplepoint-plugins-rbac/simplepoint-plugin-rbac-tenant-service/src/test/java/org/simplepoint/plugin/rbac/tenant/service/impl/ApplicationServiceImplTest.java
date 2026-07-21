@@ -3,6 +3,7 @@ package org.simplepoint.plugin.rbac.tenant.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -33,6 +34,7 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.PackageApplicationRelev
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.security.service.ResourceService;
 
 @ExtendWith(MockitoExtension.class)
 class ApplicationServiceImplTest {
@@ -57,6 +59,9 @@ class ApplicationServiceImplTest {
 
   @Mock
   ResourceAuthorizationVersionService resourceAuthorizationVersionService;
+
+  @Mock
+  ResourceService resourceService;
 
   @InjectMocks
   ApplicationServiceImpl service;
@@ -146,6 +151,10 @@ class ApplicationServiceImplTest {
 
     ApplicationResourceRelevance saved = new ApplicationResourceRelevance();
     when(applicationResourceRelevanceRepository.saveAll(any())).thenReturn(List.of(saved));
+    when(resourceService.filterGrantableAccessibleCodes(
+        anyCollection(),
+        any(AuthorizationScopeType.class)
+    )).thenAnswer(invocation -> invocation.getArgument(0));
 
     Collection<ApplicationResourceRelevance> result = service.authorizeResources(dto);
 

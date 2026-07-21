@@ -25,10 +25,6 @@ export default {
     strictVersion: false,
     eager: true,
   },
-  'react-router-dom': {
-    singleton: true,
-    eager: true,
-  },
   'react-router': {
     singleton: true,
     eager: true,

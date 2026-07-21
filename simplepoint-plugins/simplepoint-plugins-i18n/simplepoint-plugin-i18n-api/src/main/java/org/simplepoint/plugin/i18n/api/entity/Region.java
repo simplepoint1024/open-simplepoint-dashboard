@@ -65,7 +65,7 @@ public class Region extends BaseEntityImpl<String> {
   /**
    * The English name of the region.
    */
-  @Order(0)
+  @Order(1)
   @Schema(
       title = "i18n:regions.title.nameEnglish",
       description = "i18n:regions.description.nameEnglish",
@@ -81,7 +81,7 @@ public class Region extends BaseEntityImpl<String> {
   /**
    * The native name of the region.
    */
-  @Order(1)
+  @Order(0)
   @Schema(
       title = "i18n:regions.title.nameNative",
       description = "i18n:regions.description.nameNative",
@@ -128,7 +128,7 @@ public class Region extends BaseEntityImpl<String> {
   /**
    * The level of the region (e.g., province, city).
    */
-  @Order(4)
+  @Order(5)
   @Schema(
       title = "i18n:regions.title.level",
       description = "i18n:regions.description.level",
@@ -144,7 +144,7 @@ public class Region extends BaseEntityImpl<String> {
   /**
    * The postal code of the region.
    */
-  @Order(5)
+  @Order(6)
   @Schema(
       title = "i18n:regions.title.postalCode",
       description = "i18n:regions.description.postalCode",
@@ -160,5 +160,11 @@ public class Region extends BaseEntityImpl<String> {
   /**
    * The parent region identifier.
    */
+  @Order(4)
+  @Schema(
+      title = "i18n:regions.title.parentId",
+      description = "i18n:regions.description.parentId",
+      example = "parent-region-id"
+  )
   private String parentId;
 }

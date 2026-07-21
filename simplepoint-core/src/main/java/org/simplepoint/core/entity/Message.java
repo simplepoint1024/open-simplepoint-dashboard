@@ -65,7 +65,7 @@ import org.springframework.core.annotation.Order;
 @Schema(name = "I18n键值对象", description = "用于表示系统中的国际化键值项")
 public class Message extends BaseEntityImpl<String> {
 
-  @Order(0)
+  @Order(2)
   @Column(nullable = false, length = 128)
   @Schema(title = "i18n:messages.title.locale", description = "i18n:messages.description.locale", maxLength = 128, minLength = 1, extensions = {
       @Extension(name = "x-ui", properties = {
@@ -74,7 +74,7 @@ public class Message extends BaseEntityImpl<String> {
   })
   private String locale;
 
-  @Order(1)
+  @Order(0)
   @Column(nullable = false, length = 128)
   @Schema(title = "i18n:messages.title.namespace", description = "i18n:messages.description.namespace", maxLength = 128, minLength = 1, extensions = {
       @Extension(name = "x-ui", properties = {
@@ -83,7 +83,7 @@ public class Message extends BaseEntityImpl<String> {
   })
   private String namespace;
 
-  @Order(2)
+  @Order(1)
   @Column(nullable = false, length = 256)
   @Schema(title = "i18n:messages.title.code", description = "i18n:messages.description.code", maxLength = 256, minLength = 1, extensions = {
       @Extension(name = "x-ui", properties = {
@@ -101,12 +101,12 @@ public class Message extends BaseEntityImpl<String> {
   })
   private String message;
 
-  @Order(4)
+  @Order(5)
   @Column(length = 2048)
   @Schema(title = "i18n:messages.title.description", description = "i18n:messages.description.description", maxLength = 2048, minLength = 1)
   private String description;
 
-  @Order(5)
+  @Order(4)
   @Column(nullable = false)
   @Schema(title = "i18n:messages.title.global", description = "i18n:messages.description.global", extensions = {
       @Extension(name = "x-ui", properties = {

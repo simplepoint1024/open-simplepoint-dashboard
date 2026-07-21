@@ -5,6 +5,7 @@ import org.simplepoint.platform.bootstrap.BootstrapContribution;
 import org.simplepoint.platform.bootstrap.PlatformBootstrapContribution;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.core.service.properties.UserRegistrationProperties;
+import org.simplepoint.security.entity.User;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -35,7 +36,7 @@ public class UserAutoRegistrationInitializer {
         "rbac-core",
         "system",
         "system-user",
-        "1",
+        "2",
         100,
         () -> userRegistrationProperties.getUsers().forEach(user -> {
           boolean exists = false;
@@ -43,7 +44,7 @@ public class UserAutoRegistrationInitializer {
             log.info("Initialize system user {}", user.getUsername());
 
             // Check if the user already exists
-            UserDetails existUser = usersService.loadUserByUsername(user.getUsername());
+            UserDetails existUser = usersService.loadUserByUsername(resolveSubject(user));
             if (existUser != null) {
               exists = true;
             }
@@ -55,5 +56,18 @@ public class UserAutoRegistrationInitializer {
           }
         })
     );
+  }
+
+  private String resolveSubject(User user) {
+    if (user.getEmail() != null && !user.getEmail().isBlank()) {
+      return user.getEmail();
+    }
+    if (user.getPhoneNumber() != null && !user.getPhoneNumber().isBlank()) {
+      return user.getPhoneNumber();
+    }
+    if (user.getUsername() != null && !user.getUsername().isBlank()) {
+      return user.getUsername();
+    }
+    throw new IllegalArgumentException("Bootstrap user requires an email, phone number or username");
   }
 }

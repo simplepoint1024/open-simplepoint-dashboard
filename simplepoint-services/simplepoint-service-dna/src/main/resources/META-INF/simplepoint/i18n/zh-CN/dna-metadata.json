@@ -35,6 +35,7 @@
   "dna.metadata.page.button.addConstraint": "新增约束",
   "dna.metadata.page.button.dropObject": "删除对象",
   "dna.metadata.page.button.dropColumn": "删除字段",
+  "dna.metadata.page.button.dropConstraint": "删除约束",
   "dna.metadata.page.button.refreshPreview": "刷新预览",
   "dna.metadata.page.card.tree": "元数据树",
   "dna.metadata.page.card.details": "对象详情",

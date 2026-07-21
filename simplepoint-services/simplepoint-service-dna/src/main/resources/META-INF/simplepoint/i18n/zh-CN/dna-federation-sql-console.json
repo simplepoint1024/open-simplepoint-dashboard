@@ -83,6 +83,7 @@
   "dna.federation.sqlConsole.page.button.refreshTree": "刷新树",
   "dna.federation.sqlConsole.page.button.explain": "查看执行计划",
   "dna.federation.sqlConsole.page.button.query": "执行 SQL",
+  "dna.federation.sqlConsole.page.button.flushCache": "刷新缓存",
   "dna.federation.sqlConsole.page.button.exportCsv": "导出 CSV",
   "dna.federation.sqlConsole.page.button.exportJson": "导出 JSON",
   "dna.federation.sqlConsole.page.placeholder.selectCatalog": "请选择联邦目录",

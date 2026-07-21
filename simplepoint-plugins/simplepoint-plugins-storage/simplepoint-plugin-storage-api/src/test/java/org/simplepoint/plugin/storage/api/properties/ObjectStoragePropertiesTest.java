@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.storage.api.properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,6 +20,17 @@ class ObjectStoragePropertiesTest {
     ObjectStorageProperties props = new ObjectStorageProperties();
     assertNotNull(props.getProviders());
     assertTrue(props.getProviders().isEmpty());
+  }
+
+  @Test
+  void minioBootstrapDefaultsAreSafeForNonComposeRuntime() {
+    ObjectStorageProperties props = new ObjectStorageProperties();
+
+    assertFalse(props.getBootstrap().getMinio().isEnabled());
+    assertEquals("minio", props.getBootstrap().getMinio().getCode());
+    assertEquals("http://minio:9000", props.getBootstrap().getMinio().getEndpoint());
+    assertEquals("simplepoint", props.getBootstrap().getMinio().getBucket());
+    assertTrue(props.getBootstrap().getMinio().isDefaultProvider());
   }
 
   @Test

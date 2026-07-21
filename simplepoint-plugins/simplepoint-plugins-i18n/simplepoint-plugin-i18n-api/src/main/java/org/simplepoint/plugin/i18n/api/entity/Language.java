@@ -66,7 +66,7 @@ public class Language extends BaseEntityImpl<String> {
   /**
    * The English name of the language (e.g., "Chinese", "French").
    */
-  @Order(0)
+  @Order(1)
   @Schema(
       title = "i18n:languages.title.nameEnglish",
       description = "i18n:languages.description.nameEnglish",
@@ -82,7 +82,7 @@ public class Language extends BaseEntityImpl<String> {
   /**
    * The native name of the language (e.g., "中文" for Chinese, "Français" for French).
    */
-  @Order(1)
+  @Order(0)
   @Schema(
       title = "i18n:languages.title.nameNative",
       description = "i18n:languages.description.nameNative",
@@ -140,7 +140,7 @@ public class Language extends BaseEntityImpl<String> {
           })
       }
   )
-  @Order(5)
+  @Order(4)
   private String textDirection;
 
   @Schema(
@@ -153,7 +153,7 @@ public class Language extends BaseEntityImpl<String> {
           })
       }
   )
-  @Order(4)
+  @Order(5)
   private String dateFormat;
 
   /**
@@ -169,7 +169,7 @@ public class Language extends BaseEntityImpl<String> {
           })
       }
   )
-  @Order(7)
+  @Order(6)
   @Column
   private Boolean enabled;
 
@@ -186,7 +186,7 @@ public class Language extends BaseEntityImpl<String> {
           })
       }
   )
-  @Order(6)
+  @Order(7)
   @Column
   private String description;
 
