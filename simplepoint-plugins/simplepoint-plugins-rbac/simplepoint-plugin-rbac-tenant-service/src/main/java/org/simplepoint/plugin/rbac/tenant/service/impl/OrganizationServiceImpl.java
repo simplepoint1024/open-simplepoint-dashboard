@@ -48,6 +48,11 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public Map<String, Object> schema() {
     Map<String, Object> schema = super.schema();
     String tenantId = currentTenantId(false);

@@ -126,6 +126,19 @@ final class AiInvocationLedger {
     save(record);
   }
 
+  void cancelled(final AiInvocationRecord record) {
+    if (record == null) {
+      return;
+    }
+    record.setStatus(AiInvocationStatus.CANCELLED);
+    record.setCompletedAt(Instant.now());
+    record.setDurationMillis(Math.max(0L,
+        record.getCompletedAt().toEpochMilli() - record.getStartedAt().toEpochMilli()));
+    record.setErrorCode("CANCELLED");
+    record.setErrorMessage("AI invocation was cancelled; request and response content were not retained");
+    save(record);
+  }
+
   private void save(final AiInvocationRecord record) {
     try {
       repository.save(record);

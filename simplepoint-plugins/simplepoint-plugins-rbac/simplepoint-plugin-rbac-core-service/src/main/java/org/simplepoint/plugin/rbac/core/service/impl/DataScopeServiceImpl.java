@@ -45,6 +45,7 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends DataScope> S create(S entity) {
+    entity.setTenantId(requireCurrentTenantId());
     S result = super.create(entity);
     refreshCurrentTenantAuthorizationVersion();
     return result;
@@ -53,6 +54,8 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   @Override
   @Transactional(rollbackFor = Exception.class)
   public List<DataScope> create(Collection<DataScope> entities) {
+    String tenantId = requireCurrentTenantId();
+    entities.forEach(entity -> entity.setTenantId(tenantId));
     List<DataScope> result = super.create(entities);
     refreshCurrentTenantAuthorizationVersion();
     return result;
@@ -61,6 +64,7 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends DataScope> DataScope modifyById(S entity) {
+    entity.setTenantId(requireCurrentTenantId());
     DataScope result = super.modifyById(entity);
     refreshCurrentTenantAuthorizationVersion();
     return result;
@@ -76,5 +80,18 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   private void refreshCurrentTenantAuthorizationVersion() {
     String tenantId = currentTenantId();
     resourceAuthorizationVersionService.refreshTenant(tenantId);
+  }
+
+  private String requireCurrentTenantId() {
+    String tenantId = currentTenantId();
+    if (tenantId == null || tenantId.isBlank()) {
+      throw new IllegalStateException("Tenant context is required");
+    }
+    return tenantId;
+  }
+
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
   }
 }

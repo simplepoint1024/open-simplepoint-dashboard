@@ -68,6 +68,11 @@ public class AiProviderDefinitionServiceImpl
     this.scopeAccessPolicy = scopeAccessPolicy;
   }
 
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
   /** {@inheritDoc} */
   @Override
   public Optional<AiProviderDefinition> findActiveById(final String id) {

@@ -118,9 +118,9 @@ public class BuiltInTenantWorkspaceInitializer {
   }
 
   private void initializeWorkspace() {
-    User owner = requireUser(properties.getOwnerSubject(), "组织所有者");
-    User manager = requireUser(properties.getManagerSubject(), "租户管理员");
-    User member = requireUser(properties.getMemberSubject(), "普通成员");
+    final User owner = requireUser(properties.getOwnerSubject(), "组织所有者");
+    final User manager = requireUser(properties.getManagerSubject(), "租户管理员");
+    final User member = requireUser(properties.getMemberSubject(), "普通成员");
 
     ensureApplication(CORE_APPLICATION, "SimplePoint 核心工作台", "账户、角色和通用工作台功能", "/dashboard", 10);
     ensureApplication(

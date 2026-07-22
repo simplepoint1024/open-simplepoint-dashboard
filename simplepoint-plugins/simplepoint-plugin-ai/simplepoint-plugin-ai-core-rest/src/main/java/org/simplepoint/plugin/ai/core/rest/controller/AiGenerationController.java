@@ -4,8 +4,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.util.Locale;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.ai.core.api.constants.AiPaths;
 import org.simplepoint.plugin.ai.core.api.exception.AiProviderRequestException;
@@ -80,7 +82,16 @@ public class AiGenerationController {
     try {
       GenerationStream stream = generationService.prepareStream(request);
       SseEmitter emitter = new SseEmitter(timeout());
-      inferenceExecutor.execute(() -> consume(stream, emitter));
+      AtomicBoolean terminal = new AtomicBoolean();
+      emitter.onTimeout(() -> cancel(stream, terminal));
+      emitter.onError(error -> cancel(stream, terminal));
+      emitter.onCompletion(() -> cancel(stream, terminal));
+      try {
+        inferenceExecutor.execute(() -> consume(stream, emitter, terminal));
+      } catch (RejectedExecutionException ex) {
+        stream.cancel();
+        throw ex;
+      }
       return ResponseEntity.ok()
           .contentType(MediaType.TEXT_EVENT_STREAM)
           .body(emitter);
@@ -99,12 +110,27 @@ public class AiGenerationController {
     }
   }
 
-  private static void consume(final GenerationStream stream, final SseEmitter emitter) {
+  private static void consume(
+      final GenerationStream stream,
+      final SseEmitter emitter,
+      final AtomicBoolean terminal
+  ) {
     try {
       stream.consume(event -> send(emitter, event));
+      terminal.set(true);
+      emitter.complete();
+    } catch (CancellationException ex) {
+      terminal.set(true);
       emitter.complete();
     } catch (RuntimeException ex) {
+      terminal.set(true);
       emitter.completeWithError(ex);
+    }
+  }
+
+  private static void cancel(final GenerationStream stream, final AtomicBoolean terminal) {
+    if (terminal.compareAndSet(false, true)) {
+      stream.cancel();
     }
   }
 
@@ -115,7 +141,9 @@ public class AiGenerationController {
           .name(event.type().name().toLowerCase(Locale.ROOT))
           .data(event));
     } catch (IOException ex) {
-      throw new IllegalStateException("AI 流式连接已断开", ex);
+      CancellationException cancellation = new CancellationException("AI 流式连接已断开");
+      cancellation.initCause(ex);
+      throw cancellation;
     }
   }
 

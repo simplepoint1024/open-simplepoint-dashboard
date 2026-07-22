@@ -1,11 +1,13 @@
 package org.simplepoint.plugin.rbac.resource.service.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,9 +22,13 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.ResourceDeclaration;
 import org.simplepoint.security.entity.Resource;
+import org.simplepoint.security.entity.ResourceNode;
 import org.simplepoint.security.entity.ResourceScopeType;
 import org.simplepoint.security.entity.ResourceType;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 class ResourceServiceImplTest {
 
@@ -69,9 +75,30 @@ class ResourceServiceImplTest {
 
     service.sync("dna", Set.of(declaration));
 
-    verify(repository).deleteByIds(Set.of("stale-id"));
+    verify(repository).deleteByIds(List.of("stale-id"));
     verify(grantRepository).deleteAllByResourceCodes(Set.of(stale.getCode()));
     verify(authorizationVersionService).refreshByResourceCodes(Set.of(stale.getCode()));
+  }
+
+  @Test
+  void limitTreeExposesTheDirectParentScopeBoundaryForEditing() {
+    Resource parent = resource("parent-id", "resources.root");
+    parent.setType(ResourceType.MODULE);
+    parent.setScopeTypes(Set.of(ResourceScopeType.TENANT, ResourceScopeType.PERSONAL));
+    Resource child = resource("child-id", "resources.child");
+    child.setParentId(parent.getId());
+    child.setScopeTypes(Set.of(ResourceScopeType.TENANT));
+    PageRequest pageable = PageRequest.of(0, 20);
+    when(repository.limit(any(), any())).thenReturn(new PageImpl<>(List.of(parent), pageable, 1));
+    when(ancestorRepository.findChildIdsByAncestorIds(List.of(parent.getId())))
+        .thenReturn(List.of(child.getId()));
+    when(repository.findAllByIds(List.of(child.getId()))).thenReturn(List.of(child));
+
+    Page<ResourceNode> result = service.limitTree(Map.of(), pageable);
+
+    ResourceNode childNode = result.getContent().getFirst().getChildren().getFirst();
+    assertThat(childNode.getParentScopeTypes())
+        .containsExactlyInAnyOrder(ResourceScopeType.TENANT, ResourceScopeType.PERSONAL);
   }
 
   private Resource resource(String id, String code) {

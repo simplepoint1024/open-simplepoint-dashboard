@@ -34,6 +34,11 @@ public class DictionaryItemServiceImpl extends BaseServiceImpl<DictionaryItemRep
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public <S extends DictionaryItem> S create(S entity) {
     normalizeEntity(entity, null);
     return super.create(entity);

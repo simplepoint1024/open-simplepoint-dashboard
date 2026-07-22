@@ -44,6 +44,11 @@ public class EndpointRateLimitRuleServiceImpl
     this.rateLimitRuleRedisPublisher = rateLimitRuleRedisPublisher;
   }
 
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
   /**
    * Creates an endpoint-level rule and republishes the active Redis snapshot.
    *

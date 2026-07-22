@@ -16,6 +16,12 @@ public class AiProperties {
 
   private String credentialEncryptionKey;
 
+  /** Server-side pepper used to authenticate platform-issued model API keys. */
+  private String apiKeyHashPepper;
+
+  /** Default per-key request limit for the local compatibility gateway. */
+  private Integer apiKeyDefaultRateLimitPerMinute = 60;
+
   private Integer connectTimeoutSeconds = 10;
 
   private Integer requestTimeoutSeconds = 30;
@@ -33,6 +39,12 @@ public class AiProperties {
   private Integer generationMaxTools = 64;
 
   private Integer generationMaxOutputTokens = 32_768;
+
+  private Long providerMaxResponseBytes = 10L * 1024L * 1024L;
+
+  private Long providerMaxStreamBytes = 20L * 1024L * 1024L;
+
+  private Integer providerMaxStreamLineCharacters = 1_048_576;
 
   private Integer inferenceCorePoolSize = 4;
 

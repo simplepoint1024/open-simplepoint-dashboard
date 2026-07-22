@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URLEncoder;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -78,9 +77,9 @@ public class AnthropicProviderAdapter implements AiProviderAdapter {
           .header("Accept", "application/json")
           .GET()
           .build();
-      HttpResponse<String> response = http.send(request, connection.allowPrivateNetwork());
+      String responseBody = http.send(request, connection.allowPrivateNetwork());
       try {
-        JsonNode root = objectMapper.readTree(response.body());
+        JsonNode root = objectMapper.readTree(responseBody);
         JsonNode data = root.path("data");
         if (!data.isArray()) {
           throw new IllegalStateException("Anthropic 模型列表响应缺少 data 数组");

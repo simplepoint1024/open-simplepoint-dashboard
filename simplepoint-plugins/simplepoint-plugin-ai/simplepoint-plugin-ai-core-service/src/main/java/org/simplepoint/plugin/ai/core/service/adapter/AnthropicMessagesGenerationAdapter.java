@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -57,12 +56,12 @@ final class AnthropicMessagesGenerationAdapter implements AiGenerationAdapter {
   @Override
   public GenerationResult generate(final AiRuntimeInvocation invocation) {
     long started = System.nanoTime();
-    HttpResponse<String> response = http.send(
+    String responseBody = http.send(
         request(invocation, false),
         Boolean.TRUE.equals(invocation.provider().getAllowPrivateNetwork())
     );
     try {
-      return parseResult(invocation, objectMapper.readTree(response.body()), elapsedMillis(started));
+      return parseResult(invocation, objectMapper.readTree(responseBody), elapsedMillis(started));
     } catch (JsonProcessingException ex) {
       throw new IllegalStateException("无法解析 Anthropic Messages 响应", ex);
     }
@@ -71,14 +70,16 @@ final class AnthropicMessagesGenerationAdapter implements AiGenerationAdapter {
   @Override
   public void stream(
       final AiRuntimeInvocation invocation,
-      final Consumer<GenerationEvent> consumer
+      final Consumer<GenerationEvent> consumer,
+      final AiStreamCancellation cancellation
   ) {
     StreamState state = new StreamState(invocation, consumer);
     state.emit(EventType.STARTED, null, null, null, null, null);
     http.stream(
         request(invocation, true),
         Boolean.TRUE.equals(invocation.provider().getAllowPrivateNetwork()),
-        state::accept
+        state::accept,
+        cancellation
     );
     state.complete();
   }

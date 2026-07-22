@@ -35,6 +35,11 @@ public class AiInvocationQueryServiceImpl
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public <S extends AiInvocationRecord> Page<S> limit(
       final Map<String, String> attributes,
       final Pageable pageable

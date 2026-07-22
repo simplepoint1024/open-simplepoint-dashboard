@@ -11,6 +11,7 @@
 - 同步生成与 SSE 流式生成、工具调用、严格 JSON Schema 输出和统一 Token 用量；
 - 按系统/租户/用户隔离的元数据调用台账，默认不保存提示词与模型输出；
 - 独立知识库模块，支持常见办公文档、PDF、OpenDocument、文本和网页文档解析；
+- 基于 PostgreSQL 租约队列的持久化异步索引，支持多实例领取、失败重试与重启恢复；
 - PostgreSQL pgvector 向量索引、全文检索、pg_trgm 与归一化 RRF 混合检索。
 
 模型基础能力由 `simplepoint-plugin-ai-core-{api,repository,service,rest}` 提供，知识库由独立的 `simplepoint-plugin-ai-knowledge-{api,repository,service,rest}` 提供。AI 服务只负责组合这些插件族，后续可继续装配工具和技能模块。
@@ -36,6 +37,10 @@ export SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED=false
 
 支持上传 `PDF / DOC(X) / XLS(X) / PPT(X) / ODT / ODS / ODP / RTF / EPUB / TXT / Markdown / CSV / JSON / XML / HTML`，也支持直接录入纯文本。每个知识库可以配置分块大小、重叠字符数、Embedding 模型与输出维度、默认 Top K、最低相关度、向量权重和关键词权重。
 
+上传文件时，接口只校验文件名、类型和大小，将原文件保存到统一对象存储并返回 `PENDING` 文档；下载原文件、Tika 文本解析、分块、Embedding 和索引替换全部由后台 Worker 完成。直接录入的文本会随文档记录持久化后进入同一任务链路。后台通过 OAuth2 服务凭证和 Service Router 下载原文件，并同时校验对象 ID、实际存储租户、来源服务和大小上限，不复用已经结束的用户请求上下文。
+
+任务保存在 PostgreSQL 中，通过租约和 `SKIP LOCKED` 支持多个 AI 服务实例并行处理；失败任务按指数退避重试，服务重启后会继续领取。重新索引期间旧索引仍可检索，只有新一代索引完整生成后才会原子替换。
+
 检索模式包括：
 
 - `VECTOR`：pgvector 余弦相似度；
@@ -60,6 +65,10 @@ export SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY='replace-with-a-long-random-secr
 `POST /tenant/ai/inference/generate`；SSE 接口将路径末尾替换为 `/stream`。
 本地模型 ID 使用模型目录记录的 `id`，而不是厂商侧的 `modelId`。
 
+使用平台签发的模型 API Key 还可以通过 `/v1/chat/completions`、`/v1/responses`
+和 `/v1/messages` 调用 OpenAI Chat Completions、OpenAI Responses 与 Anthropic
+Messages 兼容接口；详细请求格式和无状态能力边界参见 `doc/ai/model_api.md`。
+
 供应商请求默认禁止访问回环、链路本地、私网、组播和其他受限地址，并且不会自动跟随 HTTP 重定向。仅系统级供应商可显式开启“允许访问内网”，用于连接集群内部网关或自托管模型；租户供应商始终不能开启。OpenAI Compatible 供应商允许不设置 API Key，方便接入不鉴权的本地服务。
 
 ## 可调参数
@@ -76,6 +85,9 @@ export SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY='replace-with-a-long-random-secr
 | `simplepoint.ai.generation-max-messages` | `200` | 单次统一生成请求最大消息数 |
 | `simplepoint.ai.generation-max-tools` | `64` | 单次统一生成请求最大工具数 |
 | `simplepoint.ai.generation-max-output-tokens` | `32768` | 统一生成接口允许的最大输出 Token |
+| `simplepoint.ai.provider-max-response-bytes` | `10485760` | 供应商同步响应最大字节数 |
+| `simplepoint.ai.provider-max-stream-bytes` | `20971520` | 供应商单次流式响应累计最大字节数 |
+| `simplepoint.ai.provider-max-stream-line-characters` | `1048576` | 供应商流式响应单行最大字符数 |
 | `simplepoint.ai.inference-core-pool-size` | `4` | SSE 推理执行器核心线程数 |
 | `simplepoint.ai.inference-max-pool-size` | `32` | SSE 推理执行器最大线程数 |
 | `simplepoint.ai.inference-queue-capacity` | `200` | SSE 推理等待队列大小 |
@@ -83,7 +95,14 @@ export SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY='replace-with-a-long-random-secr
 | `simplepoint.ai.knowledge.max-upload-bytes` | `20971520` | 单文档上传大小上限 |
 | `simplepoint.ai.knowledge.max-extracted-characters` | `5000000` | 单文档最大提取字符数 |
 | `simplepoint.ai.knowledge.embedding-batch-size` | `64` | 文档向量化批大小 |
+| `simplepoint.ai.knowledge.max-chunks-per-document` | `5000` | 单文档允许生成的最大分块数 |
 | `simplepoint.ai.knowledge.stored-vector-dimensions` | `2000` | pgvector 索引存储维度 |
+| `simplepoint.ai.knowledge.index-worker-concurrency` | `2` | 单实例异步索引并发数 |
+| `simplepoint.ai.knowledge.index-claim-batch-size` | `2` | 每次轮询领取的任务数 |
+| `simplepoint.ai.knowledge.index-poll-delay-ms` | `1000` | 索引任务轮询间隔 |
+| `simplepoint.ai.knowledge.index-lease-seconds` | `300` | Worker 任务租约时长，Embedding 批次间会续租 |
+| `simplepoint.ai.knowledge.index-max-attempts` | `3` | 索引任务最大执行次数 |
+| `simplepoint.ai.knowledge.index-retry-initial-delay-seconds` | `10` | 首次失败重试延迟，后续指数退避 |
 | `simplepoint.ai.knowledge.hybrid-candidate-multiplier` | `5` | 混合检索每个结果的候选召回倍数 |
 | `simplepoint.ai.knowledge.hybrid-rrf-k` | `60` | RRF 排名平滑常数 |
 | `simplepoint.ai.knowledge.max-retrieval-candidates` | `1000` | 单次检索候选硬上限 |

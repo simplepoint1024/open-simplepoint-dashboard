@@ -39,14 +39,14 @@ public interface TenantUserRelevanceRepository {
   Page<UserRelevanceVo> items(Pageable pageable);
 
   /**
-   * Searches global user candidates by identity or contact information.
-   */
-  Page<UserRelevanceVo> searchItems(String keyword, Pageable pageable);
-
-  /**
    * Items by tenant.
    */
   Page<UserRelevanceVo> items(String tenantId, Pageable pageable);
+
+  /**
+   * Searches global user candidates by identity or contact information.
+   */
+  Page<UserRelevanceVo> searchItems(String keyword, Pageable pageable);
 
   /**
    * Searches tenant user candidates by identity or contact information.

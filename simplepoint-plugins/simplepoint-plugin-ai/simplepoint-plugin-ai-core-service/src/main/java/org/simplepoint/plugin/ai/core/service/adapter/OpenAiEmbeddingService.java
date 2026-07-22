@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -15,6 +14,7 @@ import org.simplepoint.plugin.ai.core.api.entity.AiProviderDefinition;
 import org.simplepoint.plugin.ai.core.api.model.AiInvocationOperation;
 import org.simplepoint.plugin.ai.core.api.model.AiModelType;
 import org.simplepoint.plugin.ai.core.api.model.AiProviderType;
+import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.core.api.properties.AiProperties;
 import org.simplepoint.plugin.ai.core.api.repository.AiModelDefinitionRepository;
 import org.simplepoint.plugin.ai.core.api.repository.AiProviderDefinitionRepository;
@@ -78,6 +78,44 @@ public class OpenAiEmbeddingService implements AiEmbeddingService {
       final List<String> inputs,
       final Integer dimensions
   ) {
+    return embedInternal(modelDefinitionId, inputs, dimensions, null, null);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public AiEmbeddingResult embedForScope(
+      final AiResourceScope invocationScope,
+      final String tenantId,
+      final String modelDefinitionId,
+      final List<String> inputs,
+      final Integer dimensions
+  ) {
+    if (invocationScope == null) {
+      throw new IllegalArgumentException("后台 Embedding 调用作用域不能为空");
+    }
+    String normalizedTenantId = tenantId == null || tenantId.isBlank() ? null : tenantId.trim();
+    if (invocationScope == AiResourceScope.TENANT && normalizedTenantId == null) {
+      throw new IllegalArgumentException("租户后台 Embedding 调用缺少租户 ID");
+    }
+    if (invocationScope == AiResourceScope.SYSTEM && normalizedTenantId != null) {
+      throw new IllegalArgumentException("系统后台 Embedding 调用不能指定租户 ID");
+    }
+    return embedInternal(
+        modelDefinitionId,
+        inputs,
+        dimensions,
+        invocationScope,
+        normalizedTenantId
+    );
+  }
+
+  private AiEmbeddingResult embedInternal(
+      final String modelDefinitionId,
+      final List<String> inputs,
+      final Integer dimensions,
+      final AiResourceScope invocationScope,
+      final String tenantId
+  ) {
     String localModelId = requireValue(modelDefinitionId, "Embedding 模型不能为空");
     if (inputs == null || inputs.isEmpty()) {
       throw new IllegalArgumentException("Embedding 输入不能为空");
@@ -90,7 +128,12 @@ public class OpenAiEmbeddingService implements AiEmbeddingService {
         .toList();
     AiModelDefinition model = modelRepository.findActiveById(localModelId)
         .orElseThrow(() -> new IllegalArgumentException("Embedding 模型不存在: " + localModelId));
-    if (!scopeAccessPolicy.canUseResource(model.getScopeType(), model.getTenantId())) {
+    boolean modelVisible = invocationScope == null
+        ? scopeAccessPolicy.canUseResource(model.getScopeType(), model.getTenantId())
+        : scopeAccessPolicy.canUseResourceFromScope(
+            model.getScopeType(), model.getTenantId(), invocationScope, tenantId
+        );
+    if (!modelVisible) {
       throw new IllegalArgumentException("Embedding 模型不存在或当前作用域不可用");
     }
     if (model.getModelType() != AiModelType.EMBEDDING
@@ -100,7 +143,12 @@ public class OpenAiEmbeddingService implements AiEmbeddingService {
     }
     AiProviderDefinition provider = providerRepository.findActiveById(model.getProviderId())
         .orElseThrow(() -> new IllegalArgumentException("Embedding 模型供应商不存在"));
-    if (!Boolean.TRUE.equals(provider.getEnabled())) {
+    boolean providerVisible = invocationScope == null
+        ? scopeAccessPolicy.canUseResource(provider.getScopeType(), provider.getTenantId())
+        : scopeAccessPolicy.canUseResourceFromScope(
+            provider.getScopeType(), provider.getTenantId(), invocationScope, tenantId
+        );
+    if (!providerVisible || !Boolean.TRUE.equals(provider.getEnabled())) {
       throw new IllegalArgumentException("Embedding 模型供应商未启用");
     }
     if (provider.getProviderType() == AiProviderType.ANTHROPIC) {
@@ -110,9 +158,18 @@ public class OpenAiEmbeddingService implements AiEmbeddingService {
       throw new IllegalArgumentException("Embedding 维度必须大于 0");
     }
     String invocationId = UUID.randomUUID().toString();
-    var record = invocationLedger.start(
-        invocationId, provider, model, AiInvocationOperation.EMBEDDING, false
-    );
+    var record = invocationScope == null
+        ? invocationLedger.start(
+            invocationId, provider, model, AiInvocationOperation.EMBEDDING, false
+        )
+        : invocationLedger.start(
+            new AiInvocationLedger.InvocationActor(invocationScope, tenantId, null, null),
+            invocationId,
+            provider,
+            model,
+            AiInvocationOperation.EMBEDDING,
+            false
+        );
     long started = System.nanoTime();
     try {
       EmbeddingInvocationResult invoked = invoke(provider, model, normalizedInputs, dimensions);
@@ -157,11 +214,11 @@ public class OpenAiEmbeddingService implements AiEmbeddingService {
     }
     addHeader(request, "OpenAI-Organization", provider.getOrganizationId());
     addHeader(request, "OpenAI-Project", provider.getProjectId());
-    HttpResponse<String> response = http.send(
+    String responseBody = http.send(
         request.build(),
         Boolean.TRUE.equals(provider.getAllowPrivateNetwork())
     );
-    return parseResponse(model.getModelId(), inputs.size(), response.body());
+    return parseResponse(model.getModelId(), inputs.size(), responseBody);
   }
 
   private EmbeddingInvocationResult parseResponse(

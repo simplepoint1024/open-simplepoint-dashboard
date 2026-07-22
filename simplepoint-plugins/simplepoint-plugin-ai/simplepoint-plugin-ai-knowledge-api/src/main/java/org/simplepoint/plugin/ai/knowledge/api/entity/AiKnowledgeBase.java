@@ -10,7 +10,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
-import jakarta.persistence.UniqueConstraint;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -33,10 +32,6 @@ import org.springframework.core.annotation.Order;
     indexes = @Index(
         name = "idx_simpoint_ai_kb_scope",
         columnList = "scope_type, tenant_id"
-    ),
-    uniqueConstraints = @UniqueConstraint(
-        name = "uk_simpoint_ai_kb_scope_code",
-        columnNames = {"scope_type", "tenant_id", "code"}
     )
 )
 @EqualsAndHashCode(callSuper = true)

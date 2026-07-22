@@ -5,10 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.simplepoint.plugin.dna.federation.service.support.BaseServiceSchemaTestSupport.stubBaseServiceSchema;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -38,6 +40,11 @@ class DataQualityRuleServiceImplTest {
 
   @Mock
   private FederationSqlConsoleService sqlConsoleService;
+
+  @BeforeEach
+  void setUp() {
+    stubBaseServiceSchema(detailsProviderService);
+  }
 
   private DataQualityRuleServiceImpl service() {
     return new DataQualityRuleServiceImpl(repository, detailsProviderService, dataSourceService, sqlConsoleService);
@@ -269,7 +276,7 @@ class DataQualityRuleServiceImplTest {
     when(repository.findActiveById("r1")).thenReturn(Optional.of(current));
     when(repository.findActiveByCode("RULE_001")).thenReturn(Optional.of(current));
     when(dataSourceService.findActiveById("catalog-1")).thenReturn(Optional.of(enabledDs("catalog-1", "MySQL")));
-    when(repository.findById("r1")).thenReturn(Optional.empty());
+    when(repository.findById("r1")).thenReturn(Optional.of(current));
     when(repository.updateById(entity)).thenReturn(entity);
 
     DataQualityRule result = service().modifyById(entity);
@@ -289,7 +296,7 @@ class DataQualityRuleServiceImplTest {
     when(repository.findActiveById("r1")).thenReturn(Optional.of(current));
     when(repository.findActiveByCode("RULE_001")).thenReturn(Optional.of(current));
     when(dataSourceService.findActiveById("catalog-1")).thenReturn(Optional.of(enabledDs("catalog-1", "MySQL")));
-    when(repository.findById("r1")).thenReturn(Optional.empty());
+    when(repository.findById("r1")).thenReturn(Optional.of(current));
     when(repository.updateById(entity)).thenReturn(entity);
 
     service().modifyById(entity);
@@ -315,7 +322,7 @@ class DataQualityRuleServiceImplTest {
     when(dataSourceService.findActiveById("catalog-1")).thenReturn(Optional.of(enabledDs("catalog-1", "MySQL")));
     FederationQueryModels.SqlQueryResult queryResult = queryResult("0");
     when(sqlConsoleService.execute(any())).thenReturn(queryResult);
-    when(repository.findById("r1")).thenReturn(Optional.empty());
+    when(repository.findById("r1")).thenReturn(Optional.of(rule));
     when(repository.updateById(rule)).thenReturn(rule);
 
     DataQualityRule result = service().executeCheck("r1");
@@ -331,7 +338,7 @@ class DataQualityRuleServiceImplTest {
     when(dataSourceService.findActiveById("catalog-1")).thenReturn(Optional.of(enabledDs("catalog-1", "MySQL")));
     FederationQueryModels.SqlQueryResult queryResult = queryResult("5");
     when(sqlConsoleService.execute(any())).thenReturn(queryResult);
-    when(repository.findById("r1")).thenReturn(Optional.empty());
+    when(repository.findById("r1")).thenReturn(Optional.of(rule));
     when(repository.updateById(rule)).thenReturn(rule);
 
     DataQualityRule result = service().executeCheck("r1");
@@ -347,7 +354,7 @@ class DataQualityRuleServiceImplTest {
     when(repository.findActiveById("r1")).thenReturn(Optional.of(rule));
     when(dataSourceService.findActiveById("catalog-1")).thenReturn(Optional.of(enabledDs("catalog-1", "MySQL")));
     when(sqlConsoleService.execute(any())).thenReturn(queryResult("42"));
-    when(repository.findById("r1")).thenReturn(Optional.empty());
+    when(repository.findById("r1")).thenReturn(Optional.of(rule));
     when(repository.updateById(rule)).thenReturn(rule);
 
     DataQualityRule result = service().executeCheck("r1");
@@ -361,7 +368,7 @@ class DataQualityRuleServiceImplTest {
     rule.setId("r1");
     when(repository.findActiveById("r1")).thenReturn(Optional.of(rule));
     when(dataSourceService.findActiveById("catalog-1")).thenReturn(Optional.empty());
-    when(repository.findById("r1")).thenReturn(Optional.empty());
+    when(repository.findById("r1")).thenReturn(Optional.of(rule));
     when(repository.updateById(rule)).thenReturn(rule);
 
     DataQualityRule result = service().executeCheck("r1");
@@ -376,7 +383,7 @@ class DataQualityRuleServiceImplTest {
     when(repository.findActiveById("r1")).thenReturn(Optional.of(rule));
     when(dataSourceService.findActiveById("catalog-1")).thenReturn(Optional.of(enabledDs("catalog-1", "MySQL")));
     when(sqlConsoleService.execute(any())).thenThrow(new RuntimeException("connection refused"));
-    when(repository.findById("r1")).thenReturn(Optional.empty());
+    when(repository.findById("r1")).thenReturn(Optional.of(rule));
     when(repository.updateById(rule)).thenReturn(rule);
 
     DataQualityRule result = service().executeCheck("r1");
@@ -392,7 +399,7 @@ class DataQualityRuleServiceImplTest {
     when(repository.findActiveById("r1")).thenReturn(Optional.of(rule));
     when(dataSourceService.findActiveById("catalog-1")).thenReturn(Optional.of(enabledDs("catalog-1", "MySQL")));
     when(sqlConsoleService.execute(any())).thenReturn(queryResult("50"));
-    when(repository.findById("r1")).thenReturn(Optional.empty());
+    when(repository.findById("r1")).thenReturn(Optional.of(rule));
     when(repository.updateById(rule)).thenReturn(rule);
 
     DataQualityRule result = service().executeCheck("r1");
@@ -407,7 +414,7 @@ class DataQualityRuleServiceImplTest {
     when(repository.findActiveById("r1")).thenReturn(Optional.of(rule));
     when(dataSourceService.findActiveById("catalog-1")).thenReturn(Optional.of(enabledDs("catalog-1", "MySQL")));
     when(sqlConsoleService.execute(any())).thenReturn(queryResult("5"));
-    when(repository.findById("r1")).thenReturn(Optional.empty());
+    when(repository.findById("r1")).thenReturn(Optional.of(rule));
     when(repository.updateById(rule)).thenReturn(rule);
 
     DataQualityRule result = service().executeCheck("r1");
@@ -422,7 +429,7 @@ class DataQualityRuleServiceImplTest {
     when(repository.findActiveById("r1")).thenReturn(Optional.of(rule));
     when(dataSourceService.findActiveById("catalog-1")).thenReturn(Optional.of(enabledDs("catalog-1", "MySQL")));
     when(sqlConsoleService.execute(any())).thenReturn(emptyQueryResult());
-    when(repository.findById("r1")).thenReturn(Optional.empty());
+    when(repository.findById("r1")).thenReturn(Optional.of(rule));
     when(repository.updateById(rule)).thenReturn(rule);
 
     DataQualityRule result = service().executeCheck("r1");

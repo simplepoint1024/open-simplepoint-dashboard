@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.datascopeannotation.DataScopeCondition;
+import org.simplepoint.core.datascopeannotation.DataScopeContext;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
@@ -35,6 +38,7 @@ import org.simplepoint.plugin.storage.api.entity.ObjectStorageObject;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageTenantQuota;
 import org.simplepoint.plugin.storage.api.model.ObjectStoragePlatformType;
 import org.simplepoint.plugin.storage.api.model.ObjectStorageProviderDefinition;
+import org.simplepoint.plugin.storage.api.model.ObjectStorageSourceContent;
 import org.simplepoint.plugin.storage.api.model.ObjectStorageUploadRequest;
 import org.simplepoint.plugin.storage.api.properties.ObjectStorageProperties;
 import org.simplepoint.plugin.storage.api.repository.ObjectStorageObjectRepository;
@@ -197,6 +201,104 @@ class ObjectStorageObjectServiceImplTest {
     assertEquals("text/plain", result.getContentType());
   }
 
+  @Test
+  void downloadImageShouldAllowImageAcrossWorkspaceContext() {
+    ObjectStorageObject obj = new ObjectStorageObject();
+    obj.setId("avatar-1");
+    obj.setTenantId("original-tenant");
+    obj.setProviderCode("minio");
+    obj.setBucket("demo-bucket");
+    obj.setObjectKey("avatars/user.png");
+    obj.setOriginalFileName("avatar.png");
+    obj.setContentType("image/png");
+    obj.setSourceServiceName("rbac-avatar");
+    when(repository.findActiveById("avatar-1")).thenReturn(Optional.of(obj));
+    when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
+    when(driver.read(any(), eq("demo-bucket"), eq("avatars/user.png"), eq("avatar.png")))
+        .thenReturn(new ObjectStorageReadResult(
+            new ByteArrayInputStream(new byte[]{1, 2, 3}), "image/png", 3L, "avatar.png"
+        ));
+    ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
+
+    ObjectStorageReadResult result = service.downloadImage("avatar-1");
+
+    assertEquals("image/png", result.getContentType());
+  }
+
+  @Test
+  void downloadImageShouldRejectNonAvatarFromAnotherWorkspace() {
+    ObjectStorageObject obj = new ObjectStorageObject();
+    obj.setId("form-image-1");
+    obj.setTenantId("another-tenant");
+    obj.setContentType("image/png");
+    obj.setSourceServiceName("json-schema-form");
+    when(repository.findActiveById("form-image-1")).thenReturn(Optional.of(obj));
+    ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
+
+    assertThrows(NoSuchElementException.class, () -> service.downloadImage("form-image-1"));
+    verify(driver, never()).read(any(), any(), any(), any());
+  }
+
+  @Test
+  void downloadImageShouldRejectNonImageObject() {
+    ObjectStorageObject obj = new ObjectStorageObject();
+    obj.setId("document-1");
+    obj.setContentType("text/plain");
+    when(repository.findActiveById("document-1")).thenReturn(Optional.of(obj));
+    ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
+
+    assertThrows(NoSuchElementException.class, () -> service.downloadImage("document-1"));
+    verify(driver, never()).read(any(), any(), any(), any());
+  }
+
+  @Test
+  void downloadSourceShouldVerifyTenantAndSourceAndBoundContent() {
+    ObjectStorageObject obj = new ObjectStorageObject();
+    obj.setId("obj-source");
+    obj.setTenantId("storage-tenant");
+    obj.setSourceServiceName("ai");
+    obj.setProviderCode("minio");
+    obj.setBucket("demo-bucket");
+    obj.setObjectKey("tenant/source.md");
+    obj.setOriginalFileName("source.md");
+    obj.setContentLength(5L);
+    when(repository.findActiveByIdAndTenantId("obj-source", "storage-tenant"))
+        .thenReturn(Optional.of(obj));
+    when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
+    when(driver.read(any(), eq("demo-bucket"), eq("tenant/source.md"), eq("source.md")))
+        .thenReturn(new ObjectStorageReadResult(
+            new ByteArrayInputStream("hello".getBytes(StandardCharsets.UTF_8)),
+            "text/markdown",
+            5L,
+            "source.md"
+        ));
+    ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
+
+    ObjectStorageSourceContent result = service.downloadSource(
+        "obj-source", "storage-tenant", "ai", 1024L
+    );
+
+    assertEquals("hello", new String(result.content(), StandardCharsets.UTF_8));
+    assertEquals("source.md", result.fileName());
+    assertEquals(5L, result.contentLength());
+  }
+
+  @Test
+  void downloadSourceShouldHideObjectOwnedByAnotherSourceService() {
+    ObjectStorageObject obj = new ObjectStorageObject();
+    obj.setId("obj-source");
+    obj.setSourceServiceName("dna");
+    when(repository.findActiveByIdAndTenantId("obj-source", "storage-tenant"))
+        .thenReturn(Optional.of(obj));
+    ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> service.downloadSource("obj-source", "storage-tenant", "ai", 1024L)
+    );
+    verify(driver, never()).read(any(), any(), any(), any());
+  }
+
   // ── upload – null / empty file ────────────────────────────────────────────
 
   @Test
@@ -268,6 +370,29 @@ class ObjectStorageObjectServiceImplTest {
     );
 
     assertEquals("租户ID不能为空，请选择租户或传递 X-Tenant-Id", ex.getMessage());
+  }
+
+  @Test
+  void limitShouldUseExplicitTenantIsolationInsteadOfSelfDataScope() {
+    Pageable pageable = Pageable.unpaged();
+    DataScopeCondition previous = new DataScopeCondition(
+        "SELF", "createOrgDeptId", "createdBy", "user-1", Set.of()
+    );
+    DataScopeContext.set(previous);
+    when(repository.limit(any(), eq(pageable))).thenAnswer(invocation -> {
+      assertTrue(DataScopeContext.get().isAllData());
+      Map<String, String> attributes = invocation.getArgument(0);
+      assertEquals("tenant-demo", attributes.get("tenantId"));
+      return org.springframework.data.domain.Page.empty(pageable);
+    });
+    ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
+
+    try {
+      service.limit(Map.of(), pageable);
+      assertEquals(previous, DataScopeContext.get());
+    } finally {
+      DataScopeContext.clear();
+    }
   }
 
   // ── upload – provider resolution ──────────────────────────────────────────

@@ -52,6 +52,11 @@ public class JdbcDriverDefinitionServiceImpl
     this.dataSourceService = dataSourceService;
   }
 
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
   /** {@inheritDoc} */
   @Override
   public Optional<JdbcDriverDefinition> findActiveById(final String id) {

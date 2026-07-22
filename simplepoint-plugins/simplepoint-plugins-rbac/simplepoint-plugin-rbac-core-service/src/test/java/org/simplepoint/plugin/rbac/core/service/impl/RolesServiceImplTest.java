@@ -32,6 +32,7 @@ import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.api.security.service.JsonSchemaDetailsService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
+import org.simplepoint.core.datascopeannotation.DataScopeContext;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.RoleResourceGrantDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
@@ -222,6 +223,37 @@ class RolesServiceImplTest {
   }
 
   @Test
+  void create_tenantManager_overridesForgedTenantId() {
+    AuthorizationContext context = tenantUserContext("SELF");
+    authorizationContextHolder.when(AuthorizationContextHolder::getContext).thenReturn(context);
+    Role role = new Role();
+    role.setTenantId("another-tenant");
+    when(roleRepository.save(role)).thenReturn(role);
+
+    service.create(role);
+
+    assertThat(role.getTenantId()).isEqualTo("tenant1");
+  }
+
+  @Test
+  void limit_securityMetadata_doesNotApplyBusinessRowScope() {
+    AuthorizationContext context = tenantUserContext("SELF");
+    authorizationContextHolder.when(AuthorizationContextHolder::getContext).thenReturn(context);
+    Role role = roleWithTenant("new-role");
+    Pageable pageable = PageRequest.of(0, 20);
+    when(roleRepository.limit(Map.of("deletedAt", "is:null"), pageable)).thenAnswer(invocation -> {
+      assertThat(DataScopeContext.get()).isNotNull();
+      assertThat(DataScopeContext.get().isAllData()).isTrue();
+      return new PageImpl<>(List.of(role), pageable, 1);
+    });
+
+    Page<Role> result = service.limit(Map.of(), pageable);
+
+    assertThat(result.getContent()).containsExactly(role);
+    assertThat(DataScopeContext.get()).isNull();
+  }
+
+  @Test
   void modifyById_tenantRole_refreshesAuthorizationVersion() {
     Role current = new Role();
     current.setId("r1");
@@ -247,7 +279,18 @@ class RolesServiceImplTest {
 
     service.removeByIds(Set.of("r1"));
 
-    verify(roleRepository).deleteByIds(Set.of("r1"));
+    verify(roleRepository).deleteByIds(List.of("r1"));
     verify(resourceAuthorizationVersionService).refreshTenants(Set.of("tenant1"));
+  }
+
+  private static AuthorizationContext tenantUserContext(String dataScopeType) {
+    AuthorizationContext context = new AuthorizationContext();
+    context.setIsAdministrator(false);
+    context.setUserId("user1");
+    context.setContextId("context1");
+    context.setResources(Set.of());
+    context.setAttributes(Map.of("X-Tenant-Id", "tenant1"));
+    context.setDataScopeType(dataScopeType);
+    return context;
   }
 }

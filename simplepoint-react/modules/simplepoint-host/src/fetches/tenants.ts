@@ -7,6 +7,23 @@ export type CurrentTenant = {
     tenantId: string;
     tenantName: string;
     tenantType: 'PLATFORM' | 'PERSONAL' | 'ORGANIZATION';
+    tenantLogo?: string;
+};
+
+export type CurrentTenantProfile = {
+    id: string;
+    name: string;
+    description?: string;
+    logo?: string;
+    backgroundImage?: string;
+    tenantType: 'PERSONAL' | 'ORGANIZATION';
+    ownerId: string;
+    ownerName?: string;
+    ownerGender?: string;
+    ownerPhoneNumber?: string;
+    ownerEmail?: string;
+    ownerPicture?: string;
+    profileEditable?: boolean;
 };
 
 export type CurrentRole = {
@@ -53,6 +70,20 @@ export async function fetchCurrentRoles(tenantId?: string): Promise<CurrentRole[
             };
         })
         .filter((role) => role.roleId);
+}
+
+export async function fetchCurrentTenantProfile(): Promise<CurrentTenantProfile> {
+    return get<CurrentTenantProfile>('/common/tenants/current-profile');
+}
+
+export function useCurrentTenantProfile(tenantId?: string, enabled = true) {
+    return useQuery({
+        queryKey: ['common', 'tenants', 'current-profile', tenantId],
+        queryFn: fetchCurrentTenantProfile,
+        enabled: enabled && !!tenantId,
+        staleTime: 2 * 60 * 1000,
+        refetchOnWindowFocus: false,
+    });
 }
 
 /**
@@ -108,7 +139,7 @@ export function useCurrentTenants() {
 }
 
 export function useCurrentRoles(tenantId?: string) {
-    const cacheKey = tenantId ? `sp.currentRoles:${tenantId}` : 'sp.currentRoles';
+    const cacheKey = tenantId ? `sp.currentRoles.v2:${tenantId}` : 'sp.currentRoles.v2';
 
     let cached: CurrentRole[] | undefined;
     try {

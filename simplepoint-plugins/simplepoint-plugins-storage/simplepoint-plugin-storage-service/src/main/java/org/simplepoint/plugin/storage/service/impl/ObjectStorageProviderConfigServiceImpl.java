@@ -73,6 +73,11 @@ public class ObjectStorageProviderConfigServiceImpl
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public <S extends ObjectStorageProviderConfig> Page<S> limit(
       final Map<String, String> attributes,
       final Pageable pageable

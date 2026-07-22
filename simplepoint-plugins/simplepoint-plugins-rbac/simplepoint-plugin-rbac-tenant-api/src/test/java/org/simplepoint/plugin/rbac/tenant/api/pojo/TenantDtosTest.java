@@ -2,7 +2,10 @@ package org.simplepoint.plugin.rbac.tenant.api.pojo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationResourcesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.PackageApplicationsRelevanceDto;
@@ -45,5 +48,16 @@ class TenantDtosTest {
     dto.setUserIds(Set.of("user1", "user2"));
     assertThat(dto.getTenantId()).isEqualTo("t1");
     assertThat(dto.getUserIds()).containsExactlyInAnyOrder("user1", "user2");
+  }
+
+  @Test
+  void tenantUsersRelevanceDto_usesMultipleUserPickerSchemaAnnotation() throws NoSuchFieldException {
+    Schema schema = TenantUsersRelevanceDto.class.getDeclaredField("userIds").getAnnotation(Schema.class);
+    var properties = Arrays.stream(schema.extensions())
+        .flatMap(extension -> Arrays.stream(extension.properties()))
+        .collect(Collectors.toMap(property -> property.name(), property -> property.value()));
+
+    assertThat(properties).containsEntry("widget", "UserPicker");
+    assertThat(properties.get("options")).contains("\"selectionMode\":\"multiple\"");
   }
 }

@@ -41,6 +41,11 @@ public class I18nLanguageServiceImpl extends BaseServiceImpl<I18nLanguageReposit
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public Map<String, String> mapping() {
     Set<String> availableLocales = messageRepository.findAvailableLocales().stream()
         .map(I18nLanguageServiceImpl::normalizeLocale)

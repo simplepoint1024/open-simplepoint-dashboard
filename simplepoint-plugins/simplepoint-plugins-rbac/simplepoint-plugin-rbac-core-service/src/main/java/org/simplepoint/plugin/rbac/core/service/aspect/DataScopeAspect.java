@@ -46,6 +46,9 @@ public class DataScopeAspect {
     }
 
     String scopeType = ctx.getDataScopeType();
+    if (Boolean.TRUE.equals(ctx.getIsAdministrator()) || scopeType == null || scopeType.isBlank()) {
+      scopeType = "ALL";
+    }
     String userId = ctx.getUserId();
     Set<String> deptIds = ctx.getDeptIds();
     boolean includeSelf = Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf());
@@ -58,11 +61,16 @@ public class DataScopeAspect {
         deptIds,
         includeSelf
     );
+    DataScopeCondition previous = DataScopeContext.get();
     DataScopeContext.set(condition);
     try {
       return pjp.proceed();
     } finally {
-      DataScopeContext.clear();
+      if (previous == null) {
+        DataScopeContext.clear();
+      } else {
+        DataScopeContext.set(previous);
+      }
     }
   }
 }

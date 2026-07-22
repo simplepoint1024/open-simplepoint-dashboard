@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.simplepoint.plugin.dna.federation.service.support.BaseServiceSchemaTestSupport.stubBaseServiceSchema;
 
 import java.util.Collection;
 import java.util.List;
@@ -48,7 +48,7 @@ class FederationJdbcConnectionUserServiceImplTest {
 
   @BeforeEach
   void setUp() {
-    lenient().when(detailsProviderService.getDialects(any())).thenReturn(List.of());
+    stubBaseServiceSchema(detailsProviderService);
   }
 
   @Test
@@ -182,7 +182,7 @@ class FederationJdbcConnectionUserServiceImplTest {
     when(dataSourceService.findActiveById("ds-1")).thenReturn(Optional.of(dataSource));
     // For modifyById: repository.findByIdAndDeletedAtIsNull returns existing
     when(repository.findByIdAndDeletedAtIsNull("g1")).thenReturn(Optional.of(existing));
-    when(repository.findById("g1")).thenReturn(Optional.empty());
+    when(repository.findById("g1")).thenReturn(Optional.of(existing));
     when(repository.updateById(any(FederationJdbcConnectionUser.class))).thenReturn(activated);
 
     FederationJdbcUserDataSourceAssignDto dto = new FederationJdbcUserDataSourceAssignDto();
@@ -233,6 +233,7 @@ class FederationJdbcConnectionUserServiceImplTest {
     when(usersService.findById("user-1")).thenReturn(Optional.of(user));
     when(repository.findAllByUserIdAndCatalogIdInAndDeletedAtIsNull("user-1", Set.of("ds-1")))
         .thenReturn(List.of(grant));
+    when(repository.findAllByIds(List.of("g1"))).thenReturn(List.of(grant));
 
     FederationJdbcUserDataSourceAssignDto dto = new FederationJdbcUserDataSourceAssignDto();
     dto.setUserId("user-1");
@@ -334,7 +335,7 @@ class FederationJdbcConnectionUserServiceImplTest {
     when(usersService.findById("user-1")).thenReturn(Optional.of(user));
     when(repository.findByCatalogIdAndUserIdAndDeletedAtIsNull("ds-1", "user-1"))
         .thenReturn(Optional.of(current));
-    when(repository.findById("g1")).thenReturn(Optional.empty());
+    when(repository.findById("g1")).thenReturn(Optional.of(current));
     when(repository.updateById(any(FederationJdbcConnectionUser.class))).thenReturn(updated);
 
     FederationJdbcConnectionUser result = service().modifyById(patch);

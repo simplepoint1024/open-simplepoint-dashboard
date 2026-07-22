@@ -2,6 +2,9 @@ package org.simplepoint.plugin.rbac.tenant.api.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 class TenantEntityFieldsTest {
@@ -11,6 +14,17 @@ class TenantEntityFieldsTest {
     Tenant tenant = new Tenant();
     tenant.setName("My Tenant");
     assertThat(tenant.getName()).isEqualTo("My Tenant");
+  }
+
+  @Test
+  void tenantOwner_usesSingleUserPickerSchemaAnnotation() throws NoSuchFieldException {
+    Schema schema = Tenant.class.getDeclaredField("ownerId").getAnnotation(Schema.class);
+    var properties = Arrays.stream(schema.extensions())
+        .flatMap(extension -> Arrays.stream(extension.properties()))
+        .collect(Collectors.toMap(property -> property.name(), property -> property.value()));
+
+    assertThat(properties).containsEntry("widget", "UserPicker");
+    assertThat(properties.get("options")).contains("\"selectionMode\":\"single\"");
   }
 
   @Test

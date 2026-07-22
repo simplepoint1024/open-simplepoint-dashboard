@@ -1,5 +1,11 @@
 import api from '@/api';
-import {ClearOutlined, RobotOutlined, SendOutlined, UserOutlined} from '@ant-design/icons';
+import {
+  ClearOutlined,
+  RobotOutlined,
+  SendOutlined,
+  StopOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import {get, post} from '@simplepoint/shared/api/methods';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
@@ -61,7 +67,7 @@ type ChatMessage = {
   id: string;
   role: 'USER' | 'ASSISTANT';
   content: string;
-  status: 'completed' | 'streaming' | 'failed';
+  status: 'completed' | 'streaming' | 'failed' | 'cancelled';
   result?: GenerationResult;
 };
 
@@ -136,6 +142,7 @@ export const PlaygroundView = ({configKey = 'platform.ai-inference'}: Playground
   const [input, setInput] = useState('');
   const [conversation, setConversation] = useState<ChatMessage[]>([]);
   const conversationRef = useRef<HTMLDivElement>(null);
+  const requestControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     void ensure(config.i18nNamespaces);
@@ -158,6 +165,8 @@ export const PlaygroundView = ({configKey = 'platform.ai-inference'}: Playground
     const target = conversationRef.current;
     if (target) target.scrollTop = target.scrollHeight;
   }, [conversation]);
+
+  useEffect(() => () => requestControllerRef.current?.abort(), []);
 
   const options = useMemo(() => models.map((model) => ({
     value: model.id,
@@ -209,6 +218,8 @@ export const PlaygroundView = ({configKey = 'platform.ai-inference'}: Playground
       : undefined;
     let assistantText = '';
     let completed = false;
+    const requestController = new AbortController();
+    requestControllerRef.current = requestController;
 
     try {
       const response = await post<Response>(`${config.baseUrl}/stream`, {
@@ -224,6 +235,7 @@ export const PlaygroundView = ({configKey = 'platform.ai-inference'}: Playground
       }, {
         responseType: 'response',
         timeoutMs: 310_000,
+        signal: requestController.signal,
       });
 
       await readSse(response, (event) => {
@@ -249,6 +261,13 @@ export const PlaygroundView = ({configKey = 'platform.ai-inference'}: Playground
         throw new Error(t('ai.inference.error.incomplete', '模型流式响应未正常完成'));
       }
     } catch (error) {
+      if (requestController.signal.aborted) {
+        updateAssistant(assistantId, {
+          content: assistantText || t('ai.inference.chat.cancelled', '生成已停止'),
+          status: 'cancelled',
+        });
+        return;
+      }
       const text = resolveApiErrorMessage(
         error,
         t('ai.inference.error.generate', '模型调用失败'),
@@ -259,8 +278,15 @@ export const PlaygroundView = ({configKey = 'platform.ai-inference'}: Playground
       });
       message.error(text);
     } finally {
+      if (requestControllerRef.current === requestController) {
+        requestControllerRef.current = null;
+      }
       setSubmitting(false);
     }
+  };
+
+  const stop = () => {
+    requestControllerRef.current?.abort();
   };
 
   return (
@@ -378,6 +404,11 @@ export const PlaygroundView = ({configKey = 'platform.ai-inference'}: Playground
                         {item.status === 'failed' && (
                           <Text type="danger">{t('ai.inference.chat.failed', '本轮调用失败')}</Text>
                         )}
+                        {item.status === 'cancelled' && (
+                          <Text type="secondary">
+                            {t('ai.inference.chat.cancelled', '生成已停止')}
+                          </Text>
+                        )}
                         {item.result && (
                           <Text type="secondary" style={{fontSize: 12}}>
                             {t('ai.inference.result.metadata', '耗时 {duration} ms，Token {tokens}', {
@@ -411,15 +442,20 @@ export const PlaygroundView = ({configKey = 'platform.ai-inference'}: Playground
                 <Text type="secondary">
                   {t('ai.inference.chat.contextHint', '后续消息会自动携带本页对话上下文')}
                 </Text>
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
-                  loading={submitting}
-                  disabled={!input.trim()}
-                  onClick={() => void send()}
-                >
-                  {t('ai.inference.action.send', '发送')}
-                </Button>
+                {submitting ? (
+                  <Button danger icon={<StopOutlined />} onClick={stop}>
+                    {t('ai.inference.action.stop', '停止生成')}
+                  </Button>
+                ) : (
+                  <Button
+                    type="primary"
+                    icon={<SendOutlined />}
+                    disabled={!input.trim()}
+                    onClick={() => void send()}
+                  >
+                    {t('ai.inference.action.send', '发送')}
+                  </Button>
+                )}
               </div>
             </div>
           </Card>

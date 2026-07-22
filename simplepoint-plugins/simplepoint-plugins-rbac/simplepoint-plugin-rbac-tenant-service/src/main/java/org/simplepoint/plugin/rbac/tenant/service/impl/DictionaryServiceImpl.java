@@ -35,6 +35,11 @@ public class DictionaryServiceImpl extends BaseServiceImpl<DictionaryRepository,
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public Collection<DictionaryOptionVo> options(String dictionaryCode) {
     return dictionaryItemRepository.options(requireCode(dictionaryCode, "字典编码不能为空"));
   }

@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -86,17 +87,28 @@ public class ProviderNeutralGenerationService implements AiGenerationService {
   public GenerationStream prepareStream(final GenerationRequest request) {
     PreparedInvocation prepared = prepare(request);
     AtomicBoolean consumed = new AtomicBoolean();
-    return consumer -> {
-      if (!consumed.compareAndSet(false, true)) {
-        throw new IllegalStateException("同一个 AI 流式调用只能消费一次");
+    AiStreamCancellation cancellation = new AiStreamCancellation();
+    return new GenerationStream() {
+      @Override
+      public void consume(final Consumer<GenerationEvent> consumer) {
+        if (!consumed.compareAndSet(false, true)) {
+          throw new IllegalStateException("同一个 AI 流式调用只能消费一次");
+        }
+        cancellation.throwIfCancelled();
+        consumeStream(prepared, consumer, cancellation);
       }
-      consumeStream(prepared, consumer);
+
+      @Override
+      public void cancel() {
+        cancellation.cancel();
+      }
     };
   }
 
   private void consumeStream(
       final PreparedInvocation prepared,
-      final Consumer<GenerationEvent> consumer
+      final Consumer<GenerationEvent> consumer,
+      final AiStreamCancellation cancellation
   ) {
     if (consumer == null) {
       throw new IllegalArgumentException("流式事件消费者不能为空");
@@ -116,10 +128,13 @@ public class ProviderNeutralGenerationService implements AiGenerationService {
           completed.set(true);
           invocationLedger.success(record, event.result());
         }
-      });
+      }, cancellation);
       if (!completed.get()) {
         throw new IllegalStateException("供应商流式响应未正常完成");
       }
+    } catch (CancellationException ex) {
+      invocationLedger.cancelled(record);
+      throw ex;
     } catch (RuntimeException ex) {
       invocationLedger.failure(record, ex);
       consumer.accept(new GenerationEvent(

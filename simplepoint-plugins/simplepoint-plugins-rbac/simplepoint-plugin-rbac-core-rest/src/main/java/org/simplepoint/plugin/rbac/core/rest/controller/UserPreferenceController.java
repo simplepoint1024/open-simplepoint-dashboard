@@ -54,6 +54,12 @@ public class UserPreferenceController {
     return getPreference(key);
   }
 
+  /**
+   * Retrieves a preference through a query parameter so keys may contain slashes.
+   *
+   * @param key preference key
+   * @return preference value, or {@code null} when it is not set
+   */
   @GetMapping
   @Operation(summary = "获取用户偏好", description = "通过查询参数获取当前用户指定 key 的偏好值，支持包含路径分隔符的 key")
   public Response<String> getByQuery(@RequestParam("key") String key) {
@@ -76,6 +82,13 @@ public class UserPreferenceController {
     return setPreference(key, dto);
   }
 
+  /**
+   * Saves a preference through a query parameter so keys may contain slashes.
+   *
+   * @param key preference key
+   * @param dto preference value
+   * @return success response
+   */
   @PutMapping
   @Operation(summary = "保存用户偏好", description = "通过查询参数保存当前用户指定 key 的偏好值，支持包含路径分隔符的 key")
   public Response<Void> setByQuery(@RequestParam("key") String key, @RequestBody UserPreferenceDto dto) {
@@ -99,6 +112,12 @@ public class UserPreferenceController {
     return deletePreference(key);
   }
 
+  /**
+   * Deletes a preference through a query parameter so keys may contain slashes.
+   *
+   * @param key preference key
+   * @return success response
+   */
   @DeleteMapping
   @Operation(summary = "删除用户偏好", description = "通过查询参数删除当前用户指定 key 的偏好值，支持包含路径分隔符的 key")
   public Response<Void> deleteByQuery(@RequestParam("key") String key) {

@@ -1,8 +1,9 @@
 import SimpleTable from "@simplepoint/components/SimpleTable";
 import api from '@/api/index';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import React, {useCallback, useEffect, useState} from "react";
-import {Drawer} from "antd";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
+import {Avatar, Drawer} from "antd";
+import {UserOutlined} from '@ant-design/icons';
 import RoleConfig from "./config/role";
 
 const baseConfig = api['rbac-users'];
@@ -65,9 +66,43 @@ const App = () => {
         },
     } as const;
 
+    const columnOverrides = useMemo(() => ({
+        picture: {
+            order: -100,
+            width: 72,
+            align: 'center' as const,
+            sorter: false,
+            render: (value: unknown, record: any) => (
+                <Avatar
+                    size={34}
+                    src={typeof value === 'string' && value ? value : undefined}
+                    icon={!value ? <UserOutlined/> : undefined}
+                    alt={record?.nickname || record?.name || t('user.defaultName', '用户')}
+                />
+            ),
+        },
+    }), [t]);
+
+    const formUiSchema = useMemo(() => ({
+        picture: {
+            'ui:widget': 'OssImage',
+            'ui:options': {
+                directory: 'avatars/users',
+                sourceServiceName: 'rbac-avatar',
+                shape: 'circle',
+                maxSizeMb: 5,
+            },
+        },
+    }), []);
+
     return (
         <div>
-            <SimpleTable {...baseConfig} customButtonEvents={customButtonEvents}/>
+            <SimpleTable
+                {...baseConfig}
+                customButtonEvents={customButtonEvents}
+                columnOverrides={columnOverrides}
+                formUiSchema={formUiSchema}
+            />
 
             <Drawer
                 title={t("users.button.config.role")}

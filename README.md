@@ -236,6 +236,7 @@ pnpm dev:ai
 | `doc/architecture/multi_tenant_model.md` | 多租户约定与上下文传递 |
 | `doc/architecture/schema_driven_ui.md` | Schema 驱动 UI 的后端与前端约定 |
 | `doc/architecture/frontend_microfrontend.md` | 微前端与模块联邦约定 |
+| `doc/ai/model_api.md` | OpenAI Chat/Responses、Anthropic 兼容模型 API 与 API Key 管理 |
 | `doc/resource/` | 资源授权模型、授权上下文等说明 |
 | `doc/troubleshooting/` | 常见问题与排障路径 |
 

@@ -23,10 +23,27 @@ const ROUTE_KIND_CONFIG: Record<string, { color: string; labelKey: string; fallb
   divider: {color: 'default', labelKey: 'resources.routeKind.divider', fallback: '分隔符'},
 };
 
+const RESOURCE_SCOPE_CONFIG = {
+  SYSTEM: {color: 'red', labelKey: 'resources.scope.SYSTEM', fallback: '系统级'},
+  PLATFORM: {color: 'purple', labelKey: 'resources.scope.PLATFORM', fallback: '平台级'},
+  TENANT: {color: 'blue', labelKey: 'resources.scope.TENANT', fallback: '租户级'},
+  PERSONAL: {color: 'green', labelKey: 'resources.scope.PERSONAL', fallback: '用户级'},
+} as const;
+
+type ResourceScopeType = keyof typeof RESOURCE_SCOPE_CONFIG;
+
+const normalizeScopeTypes = (value: unknown): ResourceScopeType[] => {
+  if (!Array.isArray(value)) return [];
+  return value.filter((scope): scope is ResourceScopeType => (
+    typeof scope === 'string' && scope in RESOURCE_SCOPE_CONFIG
+  ));
+};
+
 const App = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any | null>(null);
   const [initialValues, setInitialValues] = useState<any>({});
+  const [scopeBoundary, setScopeBoundary] = useState<ResourceScopeType[] | null>(null);
   const {t, ensure, locale} = useI18n();
 
   useEffect(() => {
@@ -58,6 +75,17 @@ const App = () => {
         const cfg = value ? ROUTE_KIND_CONFIG[value] : undefined;
         if (!cfg) return <Tag color="default">{value || '-'}</Tag>;
         return <Tag color={cfg.color}>{t(cfg.labelKey, cfg.fallback)}</Tag>;
+      },
+    },
+    scopeTypes: {
+      width: 240,
+      render: (value: ResourceScopeType[]) => {
+        const scopes = normalizeScopeTypes(value);
+        if (!scopes.length) return '-';
+        return scopes.map((scope) => {
+          const config = RESOURCE_SCOPE_CONFIG[scope];
+          return <Tag key={scope} color={config.color}>{t(config.labelKey, config.fallback)}</Tag>;
+        });
       },
     },
     path: {width: 240, ellipsis: true},
@@ -116,23 +144,59 @@ const App = () => {
         label: t(config.labelKey, config.fallback),
       }))
     );
+    const allowedScopes = scopeBoundary ?? Object.keys(RESOURCE_SCOPE_CONFIG) as ResourceScopeType[];
+    setChoices(
+      properties.scopeTypes,
+      allowedScopes.map((value) => {
+        const config = RESOURCE_SCOPE_CONFIG[value];
+        return {value, label: t(config.labelKey, config.fallback)};
+      })
+    );
+    if (properties.scopeTypes) {
+      properties.scopeTypes.minItems = 1;
+      if (scopeBoundary) {
+        const scopeLabels = allowedScopes
+          .map((value) => {
+            const config = RESOURCE_SCOPE_CONFIG[value];
+            return t(config.labelKey, config.fallback);
+          })
+          .join('、');
+        properties.scopeTypes.description = t(
+          'resources.description.scopeTypesWithParent',
+          '子资源只能使用父资源允许的作用域：{scopes}',
+          {scopes: scopeLabels}
+        );
+      }
+    }
     return next;
-  }, [t]);
+  }, [scopeBoundary, t]);
 
   const customButtonEvents = {
     add: (_keys: React.Key[], rows: any[]) => {
-      const parentId = rows?.[0]?.id;
-      const parentPath = rows?.[0]?.path;
+      const parent = rows?.[0];
+      const parentId = parent?.id;
+      const parentPath = parent?.path;
+      const parentScopes = normalizeScopeTypes(parent?.scopeTypes);
       setEditingRecord(null);
+      setScopeBoundary(parentId ? parentScopes : null);
       setInitialValues({
         parentId,
         type: parentId ? 'PAGE' : 'MODULE',
         routeKind: parentId ? 'item' : 'submenu',
         path: parentPath,
+        scopeTypes: parentId && parentScopes.length ? parentScopes : ['SYSTEM'],
         grantable: true,
         publicAccess: false,
         disabled: false,
       });
+      setDrawerOpen(true);
+    },
+    edit: (_keys: React.Key[], rows: any[]) => {
+      const record = rows?.[0] ?? null;
+      const inheritedScopes = normalizeScopeTypes(record?.parentScopeTypes);
+      const currentScopes = normalizeScopeTypes(record?.scopeTypes);
+      setScopeBoundary(record?.parentId ? (inheritedScopes.length ? inheritedScopes : currentScopes) : null);
+      setEditingRecord(record);
       setDrawerOpen(true);
     },
   } as const;

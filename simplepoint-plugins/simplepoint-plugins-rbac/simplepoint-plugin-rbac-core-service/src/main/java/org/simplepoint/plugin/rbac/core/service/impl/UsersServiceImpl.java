@@ -28,8 +28,10 @@ import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.ResourceGrantLogRecordCommand;
 import org.simplepoint.plugin.auditing.logging.api.service.ResourceGrantLogRemoteService;
 import org.simplepoint.plugin.rbac.core.api.pojo.command.ChangePasswordCommand;
+import org.simplepoint.plugin.rbac.core.api.pojo.command.UserProfileUpdateCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserPickerItem;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
@@ -45,8 +47,8 @@ import org.simplepoint.remoting.RemoteProvider;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -68,6 +70,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RemoteProvider
 public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, String>
     implements UsersService {
+
+  private static final int USER_PICKER_MIN_SEARCH_LENGTH = 3;
+  private static final int USER_PICKER_MAX_SELECTED_IDS = 100;
 
   private final UserRoleRelevanceRepository userRoleRelevanceRepository;
   private final TenantRepository tenantRepository;
@@ -115,6 +120,11 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public <S extends User> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
     if (AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
       return super.limit(attributes, pageable);
@@ -142,6 +152,54 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   @Override
   public Optional<User> findByIdForAuthorization(String userId) {
     return getRepository().findByIdForAuthorization(userId);
+  }
+
+  @Override
+  public Collection<User> findAllByIdsForAuthorization(Collection<String> userIds) {
+    if (userIds == null || userIds.isEmpty()) {
+      return List.of();
+    }
+    LinkedHashSet<String> normalizedIds = userIds.stream()
+        .map(this::trimToNull)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+    if (normalizedIds.isEmpty()) {
+      return List.of();
+    }
+    return getRepository().findAllByIdsForAuthorization(normalizedIds);
+  }
+
+  @Override
+  public Page<UserPickerItem> searchPickerItems(String keyword, Pageable pageable) {
+    String normalizedKeyword = trimToNull(keyword);
+    if (normalizedKeyword == null || normalizedKeyword.length() < USER_PICKER_MIN_SEARCH_LENGTH) {
+      return Page.empty(pageable);
+    }
+    return getRepository().searchPickerItems(normalizedKeyword, pageable);
+  }
+
+  @Override
+  public Collection<UserPickerItem> resolvePickerItems(Collection<String> userIds) {
+    if (userIds == null || userIds.isEmpty()) {
+      return List.of();
+    }
+    LinkedHashSet<String> normalizedIds = userIds.stream()
+        .map(this::trimToNull)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+    if (normalizedIds.size() > USER_PICKER_MAX_SELECTED_IDS) {
+      throw new IllegalArgumentException("单次最多回显 100 个用户");
+    }
+    if (normalizedIds.isEmpty()) {
+      return List.of();
+    }
+    Map<String, UserPickerItem> itemsById = getRepository().findPickerItemsByIds(normalizedIds)
+        .stream()
+        .collect(Collectors.toMap(UserPickerItem::id, item -> item));
+    return normalizedIds.stream()
+        .map(itemsById::get)
+        .filter(Objects::nonNull)
+        .toList();
   }
 
 
@@ -201,6 +259,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends User> S create(S entity) {
+    entity.setPicture(normalizePicture(entity.getPicture()));
     entity.setPassword(passwordEncoder.encode(entity.getPassword()));
     S created = super.create(entity);
     ensurePersonalTenantExists(created);
@@ -269,6 +328,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
       validateUserBelongsToCurrentTenant(entity.getId());
     }
     var password = entity.getPassword();
+    entity.setPicture(normalizePicture(entity.getPicture()));
     if (password != null && !password.isEmpty()) {
       entity.setPassword(password.matches("\\A\\$2([ayb])?\\$(\\d\\d)\\$[./0-9A-Za-z]{53}")
           ? password
@@ -277,6 +337,55 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
 
     }
     return super.modifyById(entity);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public User updateCurrentProfile(String userId, UserProfileUpdateCommand command) {
+    if (userId == null || userId.isBlank()) {
+      throw new IllegalArgumentException("当前用户不能为空");
+    }
+    if (command == null) {
+      throw new IllegalArgumentException("个人资料不能为空");
+    }
+    User user = getRepository().findByIdForAuthorization(userId)
+        .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+    user.setNickname(trimToNull(command.getNickname()));
+    user.setEmail(trimToNull(command.getEmail()));
+    user.setPhoneNumber(trimToNull(command.getPhoneNumber()));
+    user.setPicture(normalizePicture(command.getPicture()));
+    user.setAddress(trimToNull(command.getAddress()));
+    user.setBirthdate(command.getBirthdate());
+    user.setFamilyName(trimToNull(command.getFamilyName()));
+    user.setGivenName(trimToNull(command.getGivenName()));
+    user.setMiddleName(trimToNull(command.getMiddleName()));
+    user.setGender(trimToNull(command.getGender()));
+    user.setProfile(trimToNull(command.getProfile()));
+    user.setWebsite(trimToNull(command.getWebsite()));
+    user.setLocale(trimToNull(command.getLocale()));
+    user.setZoneinfo(trimToNull(command.getZoneinfo()));
+    return getRepository().updateById(user);
+  }
+
+  private String normalizePicture(String picture) {
+    String normalized = trimToNull(picture);
+    if (normalized == null) {
+      return null;
+    }
+    if (normalized.startsWith("/common/object-storage/images/")
+        || normalized.startsWith("https://")
+        || normalized.startsWith("http://")) {
+      return normalized;
+    }
+    throw new IllegalArgumentException("头像必须使用 OSS 图片地址");
+  }
+
+  private String trimToNull(String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
   }
 
   @Override

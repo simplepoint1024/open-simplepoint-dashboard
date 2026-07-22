@@ -5,7 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserPickerItem;
 import org.simplepoint.security.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * UsersRepository provides an interface for managing User entities.
@@ -21,6 +24,14 @@ public interface UserRepository extends BaseRepository<User, String> {
    * @return the user when present
    */
   Optional<User> findByIdForAuthorization(String userId);
+
+  /**
+   * Loads users for trusted internal profile decoration without applying the active tenant view.
+   *
+   * @param userIds user IDs to load
+   * @return active users matching the IDs
+   */
+  Collection<User> findAllByIdsForAuthorization(Collection<String> userIds);
 
   /**
    * Loads the roles associated with a given userId.
@@ -47,4 +58,21 @@ public interface UserRepository extends BaseRepository<User, String> {
    * @return A collection of role authorities for the given userId.
    */
   Collection<String> authorized(String tenantId, String userId);
+
+  /**
+   * Searches enabled users by an email or phone-number prefix for remote picker fields.
+   *
+   * @param keyword normalized email or phone-number prefix
+   * @param pageable bounded page request
+   * @return matching lightweight users
+   */
+  Page<UserPickerItem> searchPickerItems(String keyword, Pageable pageable);
+
+  /**
+   * Resolves already selected user IDs without running a directory search.
+   *
+   * @param userIds selected user IDs
+   * @return lightweight users matching the IDs
+   */
+  Collection<UserPickerItem> findPickerItemsByIds(Collection<String> userIds);
 }

@@ -57,6 +57,11 @@ public class ObjectStorageTenantQuotaServiceImpl
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public Optional<ObjectStorageTenantQuota> findActiveByTenantId(final String tenantId) {
     return repository.findActiveByTenantId(tenantId)
         .map(this::decorateQuota);

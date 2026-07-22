@@ -234,6 +234,80 @@
           ]
         },
         {
+          "code": "ai.system.api-keys.view",
+          "name": "系统模型 API Key",
+          "label": "系统模型 API Key",
+          "title": "menu.ai.systemApiKeys",
+          "type": "PAGE",
+          "path": "/ai/system/api-keys",
+          "component": "ai/platform/ApiKey",
+          "icon": "KeyOutlined",
+          "routeKind": "item",
+          "description": "管理系统作用域对外模型服务凭据",
+          "sort": 24,
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "grantable": false,
+          "disabled": false,
+          "children": [
+            {
+              "code": "ai.system.api-keys.create",
+              "name": "System AI API Key Create",
+              "label": "System AI API Key Create",
+              "alias": "i18n:table.button.create",
+              "type": "ACTION",
+              "description": "允许签发系统模型 API Key",
+              "sort": 101,
+              "grantable": false,
+              "publicAccess": false,
+              "requireOrgTenant": false,
+              "disabled": false
+            },
+            {
+              "code": "ai.system.api-keys.edit",
+              "name": "System AI API Key Edit",
+              "label": "System AI API Key Edit",
+              "alias": "i18n:table.button.edit",
+              "type": "ACTION",
+              "description": "允许修改系统模型 API Key 策略",
+              "sort": 102,
+              "grantable": false,
+              "publicAccess": false,
+              "requireOrgTenant": false,
+              "disabled": false
+            },
+            {
+              "code": "ai.system.api-keys.rotate",
+              "name": "System AI API Key Rotate",
+              "label": "System AI API Key Rotate",
+              "alias": "i18n:ai.api-keys.button.rotate",
+              "type": "ACTION",
+              "description": "允许轮换系统模型 API Key",
+              "sort": 103,
+              "grantable": false,
+              "publicAccess": false,
+              "requireOrgTenant": false,
+              "disabled": false
+            },
+            {
+              "code": "ai.system.api-keys.delete",
+              "name": "System AI API Key Revoke",
+              "label": "System AI API Key Revoke",
+              "alias": "i18n:table.button.delete",
+              "type": "ACTION",
+              "description": "允许吊销系统模型 API Key",
+              "sort": 104,
+              "grantable": false,
+              "publicAccess": false,
+              "requireOrgTenant": false,
+              "disabled": false
+            }
+          ],
+          "scopeTypes": [
+            "SYSTEM"
+          ]
+        },
+        {
           "code": "ai.system.invocations.view",
           "name": "系统 AI 调用台账",
           "label": "系统 AI 调用台账",
@@ -547,6 +621,80 @@
               "type": "ACTION",
               "description": "允许删除租户 AI 模型配置",
               "sort": 103,
+              "grantable": true,
+              "publicAccess": false,
+              "requireOrgTenant": true,
+              "disabled": false
+            }
+          ],
+          "scopeTypes": [
+            "TENANT"
+          ]
+        },
+        {
+          "code": "ai.api-keys.view",
+          "name": "租户模型 API Key",
+          "label": "租户模型 API Key",
+          "title": "menu.ai.apiKeys",
+          "type": "PAGE",
+          "path": "/ai/api-keys",
+          "component": "ai/tenant/ApiKey",
+          "icon": "KeyOutlined",
+          "routeKind": "item",
+          "description": "管理当前租户对外模型服务凭据",
+          "sort": 42,
+          "publicAccess": false,
+          "requireOrgTenant": true,
+          "grantable": true,
+          "disabled": false,
+          "children": [
+            {
+              "code": "ai.api-keys.create",
+              "name": "AI API Key Create",
+              "label": "AI API Key Create",
+              "alias": "i18n:table.button.create",
+              "type": "ACTION",
+              "description": "允许签发租户模型 API Key",
+              "sort": 101,
+              "grantable": true,
+              "publicAccess": false,
+              "requireOrgTenant": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.api-keys.edit",
+              "name": "AI API Key Edit",
+              "label": "AI API Key Edit",
+              "alias": "i18n:table.button.edit",
+              "type": "ACTION",
+              "description": "允许修改租户模型 API Key 策略",
+              "sort": 102,
+              "grantable": true,
+              "publicAccess": false,
+              "requireOrgTenant": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.api-keys.rotate",
+              "name": "AI API Key Rotate",
+              "label": "AI API Key Rotate",
+              "alias": "i18n:ai.api-keys.button.rotate",
+              "type": "ACTION",
+              "description": "允许轮换租户模型 API Key",
+              "sort": 103,
+              "grantable": true,
+              "publicAccess": false,
+              "requireOrgTenant": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.api-keys.delete",
+              "name": "AI API Key Revoke",
+              "label": "AI API Key Revoke",
+              "alias": "i18n:table.button.delete",
+              "type": "ACTION",
+              "description": "允许吊销租户模型 API Key",
+              "sort": 104,
               "grantable": true,
               "publicAccess": false,
               "requireOrgTenant": true,

@@ -230,20 +230,19 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
   public <S extends T> long count(S example) {
     enableTenantFilter();
     DataScopeCondition scope = DataScopeContext.get();
-    if (scope == null || scope.isAllData()) {
-      return super.count(Example.of(example));
-    }
     Example<T> typedExample = Example.of((T) example);
     Specification<T> specification = (root, query, cb) -> {
       Predicate examplePredicate = QueryByExamplePredicateBuilder.getPredicate(root, cb, typedExample);
-      Predicate dataScopePredicate = buildDataScopePredicate(scope, root, cb);
-      if (examplePredicate == null) {
-        return dataScopePredicate;
+      Predicate dataScopePredicate = scope == null ? null : buildDataScopePredicate(scope, root, cb);
+      List<Predicate> predicates = new ArrayList<>();
+      predicates.add(cb.isNull(root.get("deletedAt")));
+      if (examplePredicate != null) {
+        predicates.add(examplePredicate);
       }
-      if (dataScopePredicate == null) {
-        return examplePredicate;
+      if (dataScopePredicate != null) {
+        predicates.add(dataScopePredicate);
       }
-      return cb.and(examplePredicate, dataScopePredicate);
+      return cb.and(predicates.toArray(new Predicate[0]));
     };
     return super.count(specification);
   }

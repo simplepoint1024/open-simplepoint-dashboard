@@ -48,7 +48,21 @@ const schema = {
     properties: {
       name: {type: 'string', title: '租户名称'},
       description: {type: 'string', title: '租户描述'},
-      ownerId: {type: 'string', title: '负责人', 'x-list-visible': false},
+      ownerId: {
+        type: 'string',
+        title: '负责人',
+        'x-list-visible': false,
+        'x-ui': {
+          widget: 'UserPicker',
+          options: {
+            selectionMode: 'single',
+            endpoint: '/common/users/picker/items',
+            resolveEndpoint: '/common/users/picker/selected',
+            pageSize: 20,
+            minSearchLength: 3,
+          },
+        },
+      },
       authorizationVersion: {type: 'integer', title: '授权版本', readOnly: true, 'x-list-visible': false},
     },
   },

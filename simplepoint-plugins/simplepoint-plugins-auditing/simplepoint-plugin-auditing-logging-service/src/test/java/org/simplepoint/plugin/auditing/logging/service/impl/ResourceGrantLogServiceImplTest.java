@@ -55,18 +55,18 @@ class ResourceGrantLogServiceImplTest {
   }
 
   @Test
-  void limitShouldNotInjectImplicitTenantIdWhenContextHasTenant() {
+  void limitShouldEnforceCurrentTenantWhenContextHasTenant() {
     Pageable pageable = PageRequest.of(0, 10);
     Page<ResourceGrantLog> emptyPage = new PageImpl<>(java.util.List.of());
     ResourceGrantLogServiceImpl tenantAwareService = serviceWithCurrentTenant("tenant-1");
 
-    when(repository.limit(argThat(attrs -> !attrs.containsKey("tenantId")), eq(pageable)))
+    when(repository.limit(argThat(attrs -> "tenant-1".equals(attrs.get("tenantId"))), eq(pageable)))
         .thenReturn(emptyPage);
 
     Page<ResourceGrantLog> result = tenantAwareService.limit(null, pageable);
 
     assertNotNull(result);
-    verify(repository).limit(argThat(attrs -> !attrs.containsKey("tenantId")), eq(pageable));
+    verify(repository).limit(argThat(attrs -> "tenant-1".equals(attrs.get("tenantId"))), eq(pageable));
   }
 
   @Test

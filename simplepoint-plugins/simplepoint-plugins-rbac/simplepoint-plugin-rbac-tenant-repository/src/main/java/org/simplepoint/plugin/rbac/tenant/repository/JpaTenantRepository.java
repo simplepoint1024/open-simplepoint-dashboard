@@ -24,7 +24,7 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
   @Override
   @Query("""
       select
-          new org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo(t.id, t.name, t.tenantType)
+          new org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo(t.id, t.name, t.tenantType, t.logo)
       from Tenant t
       where t.ownerId = :userId
          or exists (
@@ -78,4 +78,14 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
         )
       """)
   boolean hasUser(@Param("tenantId") String tenantId, @Param("userId") String userId);
+
+  @Override
+  @Query("""
+      select case when count(t) > 0 then true else false end
+      from Tenant t
+      where lower(t.name) = lower(:name)
+        and t.id <> :tenantId
+        and t.deletedAt is null
+      """)
+  boolean existsByNameAndIdNot(@Param("name") String name, @Param("tenantId") String tenantId);
 }

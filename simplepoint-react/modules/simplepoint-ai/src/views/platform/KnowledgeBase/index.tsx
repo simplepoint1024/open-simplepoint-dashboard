@@ -140,8 +140,11 @@ export const KnowledgeBaseView = ({
     setTableKey((value) => value + 1);
   }, []);
 
-  const loadDocuments = useCallback(async (knowledgeBase: KnowledgeBaseRow) => {
-    setDocumentsLoading(true);
+  const loadDocuments = useCallback(async (
+    knowledgeBase: KnowledgeBaseRow,
+    silent = false,
+  ) => {
+    if (!silent) setDocumentsLoading(true);
     try {
       const result = await get<Page<KnowledgeDocument>>(
         `${baseConfig.baseUrl}/${knowledgeBase.id}/documents`,
@@ -149,9 +152,34 @@ export const KnowledgeBaseView = ({
       );
       setDocuments(result);
     } finally {
-      setDocumentsLoading(false);
+      if (!silent) setDocumentsLoading(false);
     }
   }, [baseConfig.baseUrl]);
+
+  const hasActiveIndexJobs = useMemo(
+    () => documents.content.some((document) => (
+      document.status === 'PENDING'
+      || document.status === 'PROCESSING'
+      || document.status === 'REINDEXING'
+    )),
+    [documents.content],
+  );
+
+  useEffect(() => {
+    if (!documentsOpen || !selectedKnowledgeBase || !hasActiveIndexJobs) return undefined;
+    const timer = window.setInterval(() => {
+      void loadDocuments(selectedKnowledgeBase, true)
+        .then(refreshKnowledgeBases)
+        .catch(() => undefined);
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [
+    documentsOpen,
+    hasActiveIndexJobs,
+    loadDocuments,
+    refreshKnowledgeBases,
+    selectedKnowledgeBase,
+  ]);
 
   const openDocuments = useCallback((rows: KnowledgeBaseRow[]) => {
     const knowledgeBase = rows?.[0];
@@ -185,15 +213,11 @@ export const KnowledgeBaseView = ({
     formData.append('file', target);
     setUploading(true);
     try {
-      const result = await request<KnowledgeDocument>(
+      await request<KnowledgeDocument>(
         `${baseConfig.baseUrl}/${selectedKnowledgeBase.id}/documents/upload`,
         {method: 'POST', body: formData},
       );
-      if (result.status === 'FAILED') {
-        message.error(result.errorMessage || t('ai.knowledge-bases.error.index', '文档索引失败'));
-      } else {
-        message.success(t('ai.knowledge-bases.success.upload', '文档上传并索引成功'));
-      }
+      message.success(t('ai.knowledge-bases.success.upload', '文档已进入索引队列'));
       setUploadOpen(false);
       setUploadFiles([]);
       await loadDocuments(selectedKnowledgeBase);
@@ -208,15 +232,11 @@ export const KnowledgeBaseView = ({
     const values = await textForm.validateFields();
     setTextSaving(true);
     try {
-      const result = await post<KnowledgeDocument>(
+      await post<KnowledgeDocument>(
         `${baseConfig.baseUrl}/${selectedKnowledgeBase.id}/documents/text`,
         values,
       );
-      if (result.status === 'FAILED') {
-        message.error(result.errorMessage || t('ai.knowledge-bases.error.index', '文档索引失败'));
-      } else {
-        message.success(t('ai.knowledge-bases.success.text', '文本文档索引成功'));
-      }
+      message.success(t('ai.knowledge-bases.success.text', '文本文档已进入索引队列'));
       setTextOpen(false);
       textForm.resetFields();
       await loadDocuments(selectedKnowledgeBase);
@@ -230,16 +250,12 @@ export const KnowledgeBaseView = ({
     if (!selectedKnowledgeBase) return;
     const hide = message.loading(t('ai.knowledge-bases.progress.reindex', '正在重新索引...'), 0);
     try {
-      const result = await post<KnowledgeDocument>(
+      await post<KnowledgeDocument>(
         `${baseConfig.baseUrl}/${selectedKnowledgeBase.id}/documents/${document.id}/reindex`,
         {},
       );
       hide();
-      if (result.status === 'FAILED') {
-        message.error(result.errorMessage || t('ai.knowledge-bases.error.index', '文档索引失败'));
-      } else {
-        message.success(t('ai.knowledge-bases.success.reindex', '重新索引完成'));
-      }
+      message.success(t('ai.knowledge-bases.success.reindex', '重新索引任务已提交'));
       await loadDocuments(selectedKnowledgeBase);
       refreshKnowledgeBases();
     } catch (error) {
@@ -323,7 +339,16 @@ export const KnowledgeBaseView = ({
       dataIndex: 'status',
       width: 100,
       render: (value, record) => (
-        <Tag color={value === 'READY' ? 'green' : value === 'FAILED' ? 'red' : 'blue'} title={record.errorMessage}>
+        <Tag
+          color={value === 'READY'
+            ? 'green'
+            : value === 'FAILED'
+              ? 'red'
+              : value === 'REINDEX_FAILED'
+                ? 'orange'
+                : 'blue'}
+          title={record.errorMessage}
+        >
           {t(`ai.knowledge-documents.status.${value}`, value || '-')}
         </Tag>
       ),
@@ -335,7 +360,15 @@ export const KnowledgeBaseView = ({
       width: 130,
       render: (_, record) => (
         <Space>
-          <Button type="link" size="small" icon={<ReloadOutlined/>} onClick={() => void handleReindex(record)}>
+          <Button
+            type="link"
+            size="small"
+            icon={<ReloadOutlined/>}
+            disabled={record.status === 'PENDING'
+              || record.status === 'PROCESSING'
+              || record.status === 'REINDEXING'}
+            onClick={() => void handleReindex(record)}
+          >
             {t('ai.knowledge-bases.button.reindex', '重建')}
           </Button>
           <Popconfirm title={t('table.deleteConfirm', '确定删除吗？')} onConfirm={() => void handleDeleteDocument(record)}>

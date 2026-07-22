@@ -21,21 +21,23 @@ import org.simplepoint.plugin.rbac.tenant.api.constants.TenantContextIds;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.command.TenantProfileUpdateCommand;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantPackagesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.plugin.rbac.tenant.api.service.BuiltInTenantProvisioner;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.simplepoint.plugin.rbac.tenant.api.vo.TenantContextType;
 import org.simplepoint.plugin.rbac.tenant.api.vo.UserRelevanceVo;
 import org.simplepoint.remoting.RemoteProvider;
+import org.simplepoint.security.entity.User;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -77,9 +79,14 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public <S extends Tenant> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
     if (isSuperAdministrator()) {
-      return super.limit(attributes, pageable);
+      return decorateTenantOwners(super.limit(attributes, pageable));
     }
     Set<String> tenantIds = getCurrentUserTenants().stream()
         .map(NamedTenantVo::tenantId)
@@ -90,17 +97,25 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     }
     Map<String, String> scopedAttributes = new HashMap<>(attributes == null ? Map.of() : attributes);
     scopedAttributes.put("id", "in:" + String.join(",", tenantIds));
-    return super.limit(scopedAttributes, pageable);
+    return decorateTenantOwners(super.limit(scopedAttributes, pageable));
   }
 
   @Override
   public Optional<Tenant> findById(String id) {
     Optional<Tenant> tenant = super.findById(id);
-    if (tenant.isEmpty() || isSuperAdministrator()) {
+    if (tenant.isEmpty()) {
+      return Optional.empty();
+    }
+    if (isSuperAdministrator()) {
+      decorateTenantOwners(List.of(tenant.get()));
       return tenant;
     }
-    Authentication authentication = getRequiredAuthentication();
-    return getRepository().hasUser(id, authentication.getName()) ? tenant : Optional.empty();
+    final Authentication authentication = getRequiredAuthentication();
+    if (!getRepository().hasUser(id, authentication.getName())) {
+      return Optional.empty();
+    }
+    decorateTenantOwners(List.of(tenant.get()));
+    return tenant;
   }
 
   @Override
@@ -122,9 +137,59 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     }
     tenants.addAll(this.getTenantsByUserId(authentication.getName()));
     if (personalTenant != null) {
-      tenants.add(new NamedTenantVo(personalTenant.getId(), personalTenant.getName(), personalTenant.getTenantType()));
+      tenants.add(new NamedTenantVo(
+          personalTenant.getId(),
+          personalTenant.getName(),
+          personalTenant.getTenantType(),
+          personalTenant.getLogo()
+      ));
     }
     return tenants;
+  }
+
+  @Override
+  public Tenant getCurrentTenantProfile() {
+    String tenantId = requireActiveTenantId();
+    Tenant tenant = findById(tenantId)
+        .orElseThrow(() -> new AccessDeniedException("无权访问当前租户资料"));
+    tenant.setProfileEditable(canManageTenantProfile(tenant));
+    return tenant;
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Tenant updateCurrentTenantProfile(TenantProfileUpdateCommand command) {
+    if (command == null) {
+      throw new IllegalArgumentException("租户资料不能为空");
+    }
+    String tenantId = requireActiveTenantId();
+    Tenant tenant = findById(tenantId)
+        .orElseThrow(() -> new AccessDeniedException("无权访问当前租户资料"));
+    if (!canManageTenantProfile(tenant)) {
+      throw new AccessDeniedException("仅租户所有者或租户管理员可以修改租户资料");
+    }
+    String name = trimToNull(command.getName());
+    if (name == null) {
+      throw new IllegalArgumentException("租户名称不能为空");
+    }
+    if (name.length() > 128) {
+      throw new IllegalArgumentException("租户名称不能超过 128 个字符");
+    }
+    if (getRepository().existsByNameAndIdNot(name, tenantId)) {
+      throw new IllegalArgumentException("租户名称已存在");
+    }
+    String description = trimToNull(command.getDescription());
+    if (description != null && description.length() > 512) {
+      throw new IllegalArgumentException("租户描述不能超过 512 个字符");
+    }
+    tenant.setName(name);
+    tenant.setDescription(description);
+    tenant.setLogo(normalizeOssImage(command.getLogo(), "租户 Logo"));
+    tenant.setBackgroundImage(normalizeOssImage(command.getBackgroundImage(), "租户背景图片"));
+    Tenant updated = getRepository().updateById(tenant);
+    decorateTenantOwners(List.of(updated));
+    updated.setProfileEditable(true);
+    return updated;
   }
 
   @Override
@@ -316,12 +381,13 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   @Transactional(rollbackFor = Exception.class)
   public <S extends Tenant> S create(S entity) {
     requirePlatformAdministrator();
-    Authentication authentication = getRequiredAuthentication();
+    entity.setLogo(normalizeOssImage(entity.getLogo(), "租户 Logo"));
+    entity.setBackgroundImage(normalizeOssImage(entity.getBackgroundImage(), "租户背景图片"));
     if (entity.getAuthorizationVersion() == null) {
       entity.setAuthorizationVersion(0L);
     }
     if (entity.getOwnerId() == null || entity.getOwnerId().isBlank()) {
-      entity.setOwnerId(authentication.getName());
+      entity.setOwnerId(getRequiredAuthentication().getName());
     }
     validateUsersExist(Set.of(entity.getOwnerId()));
     S created = super.create(entity);
@@ -334,6 +400,8 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   public <S extends Tenant> Tenant modifyById(S entity) {
     requirePlatformAdministrator();
     Tenant current = super.findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("租户不存在"));
+    entity.setLogo(normalizeOssImage(entity.getLogo(), "租户 Logo"));
+    entity.setBackgroundImage(normalizeOssImage(entity.getBackgroundImage(), "租户背景图片"));
     if (entity.getAuthorizationVersion() == null) {
       entity.setAuthorizationVersion(current.getAuthorizationVersion());
     }
@@ -520,6 +588,96 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
           .forEach(role -> rolesById.putIfAbsent(role.getId(), role));
     }
     return List.copyOf(rolesById.values());
+  }
+
+  private <S extends Tenant> Page<S> decorateTenantOwners(Page<S> page) {
+    decorateTenantOwners(page.getContent());
+    return page;
+  }
+
+  private void decorateTenantOwners(Collection<? extends Tenant> tenants) {
+    if (tenants == null || tenants.isEmpty()) {
+      return;
+    }
+    Set<String> ownerIds = tenants.stream()
+        .map(Tenant::getOwnerId)
+        .map(TenantServiceImpl::trimToNull)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+    if (ownerIds.isEmpty()) {
+      return;
+    }
+    Collection<User> loadedOwners = usersService.findAllByIdsForAuthorization(ownerIds);
+    Map<String, User> owners = Optional.ofNullable(loadedOwners).orElse(List.of()).stream()
+        .filter(user -> user.getId() != null)
+        .collect(Collectors.toMap(User::getId, user -> user, (left, right) -> left));
+    tenants.forEach(tenant -> {
+      User owner = owners.get(tenant.getOwnerId());
+      if (owner == null) {
+        return;
+      }
+      tenant.setOwnerName(resolveOwnerName(owner));
+      tenant.setOwnerGender(owner.getGender());
+      tenant.setOwnerPhoneNumber(owner.getPhoneNumber());
+      tenant.setOwnerEmail(owner.getEmail());
+      tenant.setOwnerPicture(owner.getPicture());
+    });
+  }
+
+  private static String resolveOwnerName(User owner) {
+    String explicitName = trimToNull(owner.getName());
+    if (explicitName != null) {
+      return explicitName;
+    }
+    String structuredName = java.util.stream.Stream.of(
+            owner.getFamilyName(), owner.getMiddleName(), owner.getGivenName())
+        .map(TenantServiceImpl::trimToNull)
+        .filter(Objects::nonNull)
+        .collect(Collectors.joining(" "));
+    if (!structuredName.isBlank()) {
+      return structuredName;
+    }
+    return java.util.stream.Stream.of(
+            owner.getNickname(), owner.getEmail(), owner.getPhoneNumber(), owner.getId())
+        .map(TenantServiceImpl::trimToNull)
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(owner.getId());
+  }
+
+  private String requireActiveTenantId() {
+    String tenantId = trimToNull(currentTenantId());
+    if (tenantId == null || TenantContextIds.PLATFORM.equals(tenantId)) {
+      throw new AccessDeniedException("请先切换到具体租户后再访问租户资料");
+    }
+    return tenantId;
+  }
+
+  private boolean canManageTenantProfile(Tenant tenant) {
+    Authentication authentication = getRequiredAuthentication();
+    if (isSuperAdministrator() || Objects.equals(authentication.getName(), tenant.getOwnerId())) {
+      return true;
+    }
+    AuthorizationContext context = getAuthorizationContext();
+    return tenant.getTenantType() != org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL
+        && (AuthorizationScopeGuards.isTenantManager(context, tenant.getOwnerId())
+        || isTenantAdmin(authentication));
+  }
+
+  private static String normalizeOssImage(String value, String label) {
+    String normalized = trimToNull(value);
+    if (normalized == null) {
+      return null;
+    }
+    if (normalized.length() > 1024) {
+      throw new IllegalArgumentException(label + " 地址不能超过 1024 个字符");
+    }
+    if (normalized.startsWith("/common/object-storage/images/")
+        || normalized.startsWith("https://")
+        || normalized.startsWith("http://")) {
+      return normalized;
+    }
+    throw new IllegalArgumentException(label + " 必须使用 OSS 图片地址");
   }
 
   private static String trimToNull(String value) {

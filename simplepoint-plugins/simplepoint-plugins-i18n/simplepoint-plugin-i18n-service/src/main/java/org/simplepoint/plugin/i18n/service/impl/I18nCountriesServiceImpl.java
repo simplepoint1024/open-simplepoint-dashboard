@@ -30,4 +30,9 @@ public class I18nCountriesServiceImpl extends BaseServiceImpl<I18nCountriesRepos
   ) {
     super(repository, detailsProviderService);
   }
+
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
 }

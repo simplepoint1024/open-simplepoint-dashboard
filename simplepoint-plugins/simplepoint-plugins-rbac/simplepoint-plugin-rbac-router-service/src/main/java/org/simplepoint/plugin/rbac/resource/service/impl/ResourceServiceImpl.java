@@ -96,6 +96,11 @@ public class ResourceServiceImpl
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
   public <S extends Resource> S create(S entity) {
     normalize(entity);
@@ -598,6 +603,7 @@ public class ResourceServiceImpl
       if (parent == null) {
         roots.add(current);
       } else {
+        current.setParentScopeTypes(ResourceScopePolicy.effectiveScopes(parent.getScopeTypes()));
         parent.getChildren().add(current);
       }
     }

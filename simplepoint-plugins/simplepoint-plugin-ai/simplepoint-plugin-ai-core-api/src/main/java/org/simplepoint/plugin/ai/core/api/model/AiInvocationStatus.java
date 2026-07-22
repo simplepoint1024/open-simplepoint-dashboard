@@ -4,5 +4,6 @@ package org.simplepoint.plugin.ai.core.api.model;
 public enum AiInvocationStatus {
   RUNNING,
   SUCCEEDED,
-  FAILED
+  FAILED,
+  CANCELLED
 }

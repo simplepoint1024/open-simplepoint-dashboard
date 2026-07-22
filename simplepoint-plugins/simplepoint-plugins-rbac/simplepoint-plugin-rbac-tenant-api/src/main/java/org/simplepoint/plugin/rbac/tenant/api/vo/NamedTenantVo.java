@@ -6,10 +6,25 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
  * NamedTenantVo is a value object that represents a tenant with its ID, name, and type.
  * It is used to transfer tenant information in a simplified form, typically for display purposes.
  */
-public record NamedTenantVo(String tenantId, String tenantName, TenantContextType tenantType) {
+public record NamedTenantVo(
+    String tenantId,
+    String tenantName,
+    TenantContextType tenantType,
+    String tenantLogo
+) {
+
+  /** Backward-compatible constructor for contexts without a persisted tenant logo. */
+  public NamedTenantVo(String tenantId, String tenantName, TenantContextType tenantType) {
+    this(tenantId, tenantName, tenantType, null);
+  }
 
   /** Creates a context entry from a persisted tenant. */
   public NamedTenantVo(String tenantId, String tenantName, TenantType tenantType) {
-    this(tenantId, tenantName, TenantContextType.from(tenantType));
+    this(tenantId, tenantName, TenantContextType.from(tenantType), null);
+  }
+
+  /** Creates a named tenant with its persisted logo. */
+  public NamedTenantVo(String tenantId, String tenantName, TenantType tenantType, String tenantLogo) {
+    this(tenantId, tenantName, TenantContextType.from(tenantType), tenantLogo);
   }
 }

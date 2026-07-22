@@ -28,4 +28,9 @@ public class I18nRegionServiceImpl extends BaseServiceImpl<I18nRegionRepository,
   ) {
     super(repository, detailsProviderService);
   }
+
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
 }

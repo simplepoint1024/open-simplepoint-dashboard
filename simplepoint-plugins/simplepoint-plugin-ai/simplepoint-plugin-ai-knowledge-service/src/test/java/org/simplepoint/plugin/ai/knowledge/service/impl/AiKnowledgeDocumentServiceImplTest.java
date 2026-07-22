@@ -15,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
-import org.simplepoint.plugin.ai.core.api.service.AiEmbeddingService;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
 import org.simplepoint.plugin.ai.knowledge.api.entity.AiKnowledgeBase;
 import org.simplepoint.plugin.ai.knowledge.api.entity.AiKnowledgeDocument;
@@ -24,9 +23,10 @@ import org.simplepoint.plugin.ai.knowledge.api.properties.AiKnowledgeProperties;
 import org.simplepoint.plugin.ai.knowledge.api.repository.AiKnowledgeBaseRepository;
 import org.simplepoint.plugin.ai.knowledge.api.repository.AiKnowledgeChunkRepository;
 import org.simplepoint.plugin.ai.knowledge.api.repository.AiKnowledgeDocumentRepository;
+import org.simplepoint.plugin.ai.knowledge.api.repository.AiKnowledgeIndexJobRepository;
+import org.simplepoint.plugin.ai.knowledge.service.index.KnowledgeIndexCoordinator;
 import org.simplepoint.plugin.ai.knowledge.service.support.KnowledgeDocumentExtractor;
-import org.simplepoint.plugin.ai.knowledge.service.support.KnowledgeDocumentExtractor.ExtractedDocument;
-import org.simplepoint.plugin.ai.knowledge.service.support.KnowledgeTextChunker;
+import org.simplepoint.plugin.ai.knowledge.service.support.KnowledgeDocumentExtractor.UploadDescriptor;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageObject;
 import org.simplepoint.plugin.storage.api.model.ObjectStorageUploadRequest;
 import org.simplepoint.plugin.storage.client.service.ObjectStorageRemoteService;
@@ -42,7 +42,7 @@ class AiKnowledgeDocumentServiceImplTest {
 
   private KnowledgeDocumentExtractor extractor;
 
-  private KnowledgeTextChunker chunker;
+  private KnowledgeIndexCoordinator indexCoordinator;
 
   private ObjectStorageRemoteService objectStorageRemoteService;
 
@@ -54,16 +54,16 @@ class AiKnowledgeDocumentServiceImplTest {
     documentRepository = mock(AiKnowledgeDocumentRepository.class);
     chunkRepository = mock(AiKnowledgeChunkRepository.class);
     extractor = mock(KnowledgeDocumentExtractor.class);
-    chunker = mock(KnowledgeTextChunker.class);
+    indexCoordinator = mock(KnowledgeIndexCoordinator.class);
     objectStorageRemoteService = mock(ObjectStorageRemoteService.class);
     service = new AiKnowledgeDocumentServiceImpl(
         knowledgeBaseRepository,
         documentRepository,
         chunkRepository,
-        mock(AiEmbeddingService.class),
+        mock(AiKnowledgeIndexJobRepository.class),
         mock(AiScopeAccessPolicy.class),
         extractor,
-        chunker,
+        indexCoordinator,
         new AiKnowledgeProperties(),
         new ObjectMapper(),
         objectStorageRemoteService
@@ -81,13 +81,13 @@ class AiKnowledgeDocumentServiceImplTest {
     );
     final ObjectStorageObject storageObject = new ObjectStorageObject();
     storageObject.setId("storage-1");
+    storageObject.setTenantId("storage-tenant-1");
     when(knowledgeBaseRepository.findActiveById("kb-1")).thenReturn(Optional.of(knowledgeBase));
-    when(extractor.extract(file)).thenReturn(new ExtractedDocument(
-        "测试文档.md", "text/markdown", file.getSize(), "knowledge content"
+    when(extractor.validate(file)).thenReturn(new UploadDescriptor(
+        "测试文档.md", "text/markdown", file.getSize()
     ));
     when(objectStorageRemoteService.upload(any(), any())).thenReturn(storageObject);
-    when(chunker.split("knowledge content", 1000, 150)).thenReturn(List.of("knowledge content"));
-    when(documentRepository.save(any())).thenAnswer(invocation -> {
+    when(indexCoordinator.saveAndEnqueue(any())).thenAnswer(invocation -> {
       final AiKnowledgeDocument document = invocation.getArgument(0);
       if (document.getId() == null) {
         document.setId("document-1");
@@ -105,7 +105,10 @@ class AiKnowledgeDocumentServiceImplTest {
     assertThat(requestCaptor.getValue().getFileName()).isEqualTo("测试文档.md");
     assertThat(requestCaptor.getValue().getSourceServiceName()).isEqualTo("ai");
     assertThat(result.getStorageObjectId()).isEqualTo("storage-1");
-    assertThat(result.getExtractedText()).isEqualTo("knowledge content");
+    assertThat(result.getStorageTenantId()).isEqualTo("storage-tenant-1");
+    assertThat(result.getExtractedText()).isNull();
+    verify(indexCoordinator).saveAndEnqueue(any());
+    verify(extractor, never()).extract(file);
     verify(objectStorageRemoteService, never()).delete("storage-1");
   }
 

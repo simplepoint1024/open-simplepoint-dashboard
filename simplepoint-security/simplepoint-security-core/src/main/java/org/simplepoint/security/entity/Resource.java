@@ -23,6 +23,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.simplepoint.api.schema.DictionaryField;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
@@ -143,13 +144,13 @@ public class Resource extends BaseEntityImpl<String> {
   private ResourceType type;
 
   @Order(6)
+  @DictionaryField(SecurityDictionaryCodes.RESOURCE_SCOPE_TYPE)
   @Schema(
       title = "i18n:resources.title.scopeTypes",
       description = "i18n:resources.description.scopeTypes",
       extensions = @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "x-list-visible", value = "true"),
-          @ExtensionProperty(name = "widget", value = "checkboxes"),
-          @ExtensionProperty(name = "dictCode", value = SecurityDictionaryCodes.RESOURCE_SCOPE_TYPE)
+          @ExtensionProperty(name = "widget", value = "checkboxes")
       })
   )
   @Convert(converter = ResourceScopeTypesConverter.class)

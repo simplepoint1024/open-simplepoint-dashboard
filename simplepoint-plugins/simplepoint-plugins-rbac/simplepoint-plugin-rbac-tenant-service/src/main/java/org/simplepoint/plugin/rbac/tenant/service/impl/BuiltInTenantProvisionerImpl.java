@@ -107,22 +107,6 @@ public class BuiltInTenantProvisionerImpl implements BuiltInTenantProvisioner {
     }
   }
 
-  @Override
-  @Transactional(rollbackFor = Exception.class)
-  public void provisionPersonalTenant(String tenantId) {
-    if (!hasText(tenantId) || !existsPackage(PERSONAL_PACKAGE)) {
-      return;
-    }
-    Set<String> current = normalizeCodes(tenantPackageRelevanceRepository.authorized(tenantId));
-    if (current.contains(PERSONAL_PACKAGE)) {
-      return;
-    }
-    TenantPackageRelevance relevance = new TenantPackageRelevance();
-    relevance.setTenantId(tenantId);
-    relevance.setPackageCode(PERSONAL_PACKAGE);
-    tenantPackageRelevanceRepository.saveAll(List.of(relevance));
-  }
-
   private void provisionApplicationResources(
       String applicationCode,
       Set<String> tenantCodes,
@@ -145,6 +129,22 @@ public class BuiltInTenantProvisionerImpl implements BuiltInTenantProvisioner {
       applicationResourceRelevanceRepository.saveAll(relations);
     }
     provisionBuiltInRoleResources(tenantCodes);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void provisionPersonalTenant(String tenantId) {
+    if (!hasText(tenantId) || !existsPackage(PERSONAL_PACKAGE)) {
+      return;
+    }
+    Set<String> current = normalizeCodes(tenantPackageRelevanceRepository.authorized(tenantId));
+    if (current.contains(PERSONAL_PACKAGE)) {
+      return;
+    }
+    TenantPackageRelevance relevance = new TenantPackageRelevance();
+    relevance.setTenantId(tenantId);
+    relevance.setPackageCode(PERSONAL_PACKAGE);
+    tenantPackageRelevanceRepository.saveAll(List.of(relevance));
   }
 
   private void provisionBuiltInRoleResources(Set<String> tenantCodes) {

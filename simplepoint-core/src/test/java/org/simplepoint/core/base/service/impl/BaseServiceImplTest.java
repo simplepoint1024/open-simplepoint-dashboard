@@ -250,21 +250,21 @@ class BaseServiceImplTest {
   }
 
   @Test
-  void removeById_delegatesToRepository() {
+  void removeById_doesNotDeleteUnverifiedId() {
     when(repository.findById("id-1")).thenReturn(Optional.empty());
 
     service.removeById("id-1");
 
-    verify(repository).deleteById("id-1");
+    verify(repository, never()).deleteById("id-1");
   }
 
   @Test
-  void removeByIds_whenNoMatchingEntities_callsDeleteByIds() {
+  void removeByIds_whenNoMatchingEntities_doesNotDeleteUnverifiedIds() {
     when(repository.findAllByIds(any())).thenReturn(List.of());
 
     service.removeByIds(List.of("a", "b"));
 
-    verify(repository).deleteByIds(any());
+    verify(repository, never()).deleteByIds(any());
   }
 
   // ---- Tests: create -----------------------------------------------------
@@ -293,6 +293,40 @@ class BaseServiceImplTest {
     assertThat(result).containsExactly(e1);
   }
 
+  @Test
+  void create_stampsTrustedOwnerAndDepartmentForDataScope() {
+    AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setUserId("user-1");
+    ctx.setDataScopeType("SELF");
+    ctx.setAttributes(Map.of("X-Org-Dept-Id", "dept-1"));
+    service.injectedContext = ctx;
+    StubEntity entity = new StubEntity();
+    entity.setCreatedBy("forged-user");
+    entity.setCreateOrgDeptId("forged-dept");
+    when(repository.save(entity)).thenReturn(entity);
+    when(detailsProviderService.getDialects(ModifyDataAuditingService.class)).thenReturn(Set.of());
+
+    service.create(entity);
+
+    assertThat(entity.getCreatedBy()).isEqualTo("user-1");
+    assertThat(entity.getUpdatedBy()).isEqualTo("user-1");
+    assertThat(entity.getCreateOrgDeptId()).isEqualTo("dept-1");
+  }
+
+  @Test
+  void create_rejectsRowOutsideActiveDepartmentScopeBeforeSaving() {
+    AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setUserId("user-1");
+    ctx.setDataScopeType("CUSTOM");
+    ctx.setDeptIds(Set.of("dept-allowed"));
+    ctx.setAttributes(Map.of("X-Org-Dept-Id", "dept-other"));
+    service.injectedContext = ctx;
+
+    assertThatThrownBy(() -> service.create(new StubEntity()))
+        .isInstanceOf(AccessDeniedException.class);
+    verify(repository, never()).save(any());
+  }
+
   // ---- Tests: tenant ID injection ----------------------------------------
 
   @Test
@@ -311,7 +345,7 @@ class BaseServiceImplTest {
   }
 
   @Test
-  void applyCurrentTenantId_doesNotOverwrite_whenTenantIdAlreadySet() {
+  void applyCurrentTenantId_overwritesClientTenantWithCurrentTenant() {
     AuthorizationContext ctx = new AuthorizationContext();
     ctx.setAttributes(Map.of("X-Tenant-Id", "tenant-abc"));
     service.injectedContext = ctx;
@@ -323,7 +357,7 @@ class BaseServiceImplTest {
 
     service.create(entity);
 
-    assertThat(entity.getTenantId()).isEqualTo("existing-tenant");
+    assertThat(entity.getTenantId()).isEqualTo("tenant-abc");
   }
 
   @Test
@@ -411,6 +445,10 @@ class BaseServiceImplTest {
     Page<StubEntity> result = service.limit(Map.of(), PageRequest.of(0, 10));
 
     assertThat(result).isSameAs(page);
+    verify(repository).limit(
+        org.mockito.ArgumentMatchers.argThat(attributes -> "is:null".equals(attributes.get("deletedAt"))),
+        any()
+    );
   }
 
   // ---- Tests: getCopyOptions ---------------------------------------------
@@ -438,16 +476,14 @@ class BaseServiceImplTest {
   }
 
   @Test
-  void modifyById_whenEntityNotFound_delegatesToUpdateById() {
+  void modifyById_whenEntityNotFound_rejectsUpsert() {
     StubEntity entity = new StubEntity();
     entity.setId("id-99");
     when(repository.findById("id-99")).thenReturn(Optional.empty());
-    when(repository.updateById(entity)).thenReturn(entity);
-
-    StubEntity result = service.modifyById(entity);
-
-    assertThat(result).isSameAs(entity);
-    verify(repository).updateById(entity);
+    assertThatThrownBy(() -> service.modifyById(entity))
+        .isInstanceOf(java.util.NoSuchElementException.class)
+        .hasMessageContaining("id-99");
+    verify(repository, never()).updateById(entity);
   }
 
   // ---- Tests: schema + getJsonSchema + getButtonDeclarationsSchema --------
@@ -627,6 +663,16 @@ class BaseServiceImplTest {
   }
 
   @Test
+  void findById_filtersSoftDeletedRows() {
+    StubEntity entity = new StubEntity();
+    entity.setId("deleted-1");
+    entity.setDeletedAt(Instant.now());
+    when(repository.findById("deleted-1")).thenReturn(Optional.of(entity));
+
+    assertThat(service.findById("deleted-1")).isEmpty();
+  }
+
+  @Test
   void findById_deptScope_allowsConfiguredDept() {
     AuthorizationContext ctx = new AuthorizationContext();
     ctx.setDataScopeType("DEPT");
@@ -635,7 +681,7 @@ class BaseServiceImplTest {
 
     StubEntity entity = new StubEntity();
     entity.setId("id-1");
-    entity.setOrgId("dept-1");
+    entity.setCreateOrgDeptId("dept-1");
     when(repository.findById("id-1")).thenReturn(Optional.of(entity));
 
     assertThat(service.findById("id-1")).contains(entity);

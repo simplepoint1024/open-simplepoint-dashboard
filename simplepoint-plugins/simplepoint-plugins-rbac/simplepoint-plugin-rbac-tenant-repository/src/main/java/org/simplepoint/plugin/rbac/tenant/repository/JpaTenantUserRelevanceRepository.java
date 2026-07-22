@@ -56,14 +56,11 @@ public interface JpaTenantUserRelevanceRepository
           u.phoneNumber
       )
       from User u
-      where lower(u.id) like concat('%', lower(:keyword), '%')
-         or lower(coalesce(u.nickname, '')) like concat('%', lower(:keyword), '%')
-         or lower(coalesce(u.name, '')) like concat('%', lower(:keyword), '%')
-         or lower(coalesce(u.email, '')) like concat('%', lower(:keyword), '%')
-         or lower(coalesce(u.phoneNumber, '')) like concat('%', lower(:keyword), '%')
+      join TenantUserRelevance tur on tur.userId = u.id
+      where tur.tenantId = ?1
       order by coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id), u.id
       """)
-  Page<UserRelevanceVo> searchItems(@Param("keyword") String keyword, Pageable pageable);
+  Page<UserRelevanceVo> items(String tenantId, Pageable pageable);
 
   @Override
   @Query("""
@@ -74,11 +71,14 @@ public interface JpaTenantUserRelevanceRepository
           u.phoneNumber
       )
       from User u
-      join TenantUserRelevance tur on tur.userId = u.id
-      where tur.tenantId = ?1
+      where lower(u.id) like concat('%', lower(:keyword), '%')
+         or lower(coalesce(u.nickname, '')) like concat('%', lower(:keyword), '%')
+         or lower(coalesce(u.name, '')) like concat('%', lower(:keyword), '%')
+         or lower(coalesce(u.email, '')) like concat('%', lower(:keyword), '%')
+         or lower(coalesce(u.phoneNumber, '')) like concat('%', lower(:keyword), '%')
       order by coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id), u.id
       """)
-  Page<UserRelevanceVo> items(String tenantId, Pageable pageable);
+  Page<UserRelevanceVo> searchItems(@Param("keyword") String keyword, Pageable pageable);
 
   @Override
   @Query("""

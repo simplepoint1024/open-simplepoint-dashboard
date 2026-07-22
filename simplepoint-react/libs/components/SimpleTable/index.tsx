@@ -14,6 +14,13 @@ const App = (props: SimpleTableProps<any>) => {
   const { data: pageData, filters, buttons } = controller.table;
   const { open: drawerOpen, editingRecord, setOpen: setDrawerOpen } = controller.drawer;
   const { defaultEvents, handleFormSubmit, retryPage } = controller.actions;
+  const buttonEvents = {
+    ...defaultEvents,
+    ...(props.customButtonEvents ?? {}),
+  };
+  // The server schema already filters buttons by the current authorization context.
+  // Do not infer edit permission from page-local custom buttons.
+  const editButton = schemaData?.buttons?.find((button: {key?: string}) => button.key === 'edit');
 
   const renderPageError = () => (
     <Alert
@@ -78,10 +85,10 @@ const App = (props: SimpleTableProps<any>) => {
             onChange={controller.table.onChange}
             onFilterChange={controller.table.onFilterChange}
             storageKey={`${props.baseUrl}:${props.name}`}
-            onButtonEvents={{
-              ...defaultEvents,
-              ...(props.customButtonEvents ?? {}),
-            }}
+            onButtonEvents={buttonEvents}
+            onRowDoubleClick={editButton && buttonEvents[editButton.key]
+              ? (record, key) => buttonEvents[editButton.key]([key], [record], editButton)
+              : undefined}
             buttons={buttons}
             loading={tableLoading || submitLoading}
             refreshDisabled={controller.table.refreshDisabled}

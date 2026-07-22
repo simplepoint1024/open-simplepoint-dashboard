@@ -23,6 +23,7 @@ import org.simplepoint.plugin.ai.knowledge.api.properties.AiKnowledgeProperties;
 import org.simplepoint.plugin.ai.knowledge.api.repository.AiKnowledgeBaseRepository;
 import org.simplepoint.plugin.ai.knowledge.api.repository.AiKnowledgeChunkRepository;
 import org.simplepoint.plugin.ai.knowledge.api.repository.AiKnowledgeDocumentRepository;
+import org.simplepoint.plugin.ai.knowledge.api.repository.AiKnowledgeIndexJobRepository;
 import org.simplepoint.plugin.ai.knowledge.api.service.AiKnowledgeBaseService;
 import org.simplepoint.plugin.ai.knowledge.api.vo.AiKnowledgeRetrievalRequest;
 import org.simplepoint.plugin.ai.knowledge.api.vo.AiKnowledgeRetrievalResult;
@@ -47,6 +48,8 @@ public class AiKnowledgeBaseServiceImpl
 
   private final AiKnowledgeChunkRepository chunkRepository;
 
+  private final AiKnowledgeIndexJobRepository indexJobRepository;
+
   private final AiModelDefinitionRepository modelRepository;
 
   private final AiEmbeddingService embeddingService;
@@ -65,6 +68,7 @@ public class AiKnowledgeBaseServiceImpl
       final DetailsProviderService detailsProviderService,
       final AiKnowledgeDocumentRepository documentRepository,
       final AiKnowledgeChunkRepository chunkRepository,
+      final AiKnowledgeIndexJobRepository indexJobRepository,
       final AiModelDefinitionRepository modelRepository,
       final AiEmbeddingService embeddingService,
       final AiScopeAccessPolicy scopeAccessPolicy,
@@ -75,11 +79,17 @@ public class AiKnowledgeBaseServiceImpl
     this.repository = repository;
     this.documentRepository = documentRepository;
     this.chunkRepository = chunkRepository;
+    this.indexJobRepository = indexJobRepository;
     this.modelRepository = modelRepository;
     this.embeddingService = embeddingService;
     this.scopeAccessPolicy = scopeAccessPolicy;
     this.properties = properties;
     this.objectStorageRemoteService = objectStorageRemoteService;
+  }
+
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
   }
 
   /** {@inheritDoc} */
@@ -154,6 +164,7 @@ public class AiKnowledgeBaseServiceImpl
     }
     List<AiKnowledgeBase> knowledgeBases = ids.stream().map(this::findOwned).toList();
     for (AiKnowledgeBase knowledgeBase : knowledgeBases) {
+      indexJobRepository.deleteByKnowledgeBaseId(knowledgeBase.getId());
       chunkRepository.deleteByKnowledgeBaseId(knowledgeBase.getId());
       List<AiKnowledgeDocument> documents = documentRepository
           .findAllActiveByKnowledgeBaseId(knowledgeBase.getId());

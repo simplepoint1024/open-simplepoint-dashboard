@@ -77,7 +77,9 @@ const applyDictionaryOptions = async (schema: any) => {
     if (!node || typeof node !== 'object') return;
 
     const xui = node['x-ui'];
-    const dictCode = typeof xui?.dictCode === 'string'
+    const dictCode = typeof node['x-dictionary-code'] === 'string'
+      ? node['x-dictionary-code']
+      : typeof xui?.dictCode === 'string'
       ? xui.dictCode
       : typeof xui?.['dict-code'] === 'string'
         ? xui['dict-code']

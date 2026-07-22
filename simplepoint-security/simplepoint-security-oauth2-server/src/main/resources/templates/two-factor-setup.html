@@ -1,134 +1,70 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title>Two-factor Authentication Setup</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>配置两步验证 · Simple·Point</title>
+    <link rel="stylesheet" th:href="${twoFactorCssUrl}" href="/two-factor.css"/>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <style>
-        body {
-            font-family: "Segoe UI", Arial, sans-serif;
-            background-color: #eef2f7;
-            margin: 0;
-            padding: 40px;
-            color: #333;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background: #fff;
-            border-radius: 10px;
-            padding: 35px;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-        }
-        h2 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 25px;
-            font-size: 1.6em;
-        }
-        .qr-section {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-        #qrcode {
-            margin: 0 auto 15px auto;
-            width: 200px;
-            height: 200px;
-        }
-        .secret {
-            text-align: center;
-            font-size: 0.95em;
-            color: #555;
-            margin-bottom: 20px;
-        }
-        .secret code {
-            font-family: monospace;
-            background: #f4f6f8;
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-        form.verify {
-            text-align: center;
-            margin-top: 10px;
-        }
-        input[name="code"] {
-            padding: 8px 10px;
-            font-size: 1em;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            width: 160px;
-            text-align: center;
-            letter-spacing: 3px;
-        }
-        button {
-            background-color: #3498db;
-            border: none;
-            color: #fff;
-            padding: 10px 24px;
-            font-size: 1em;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-left: 10px;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
-        button:hover {
-            background-color: #2980b9;
-            transform: translateY(-1px);
-        }
-        .error {
-            color: #c0392b;
-            text-align: center;
-            margin-top: 15px;
-            font-size: 0.95em;
-        }
-        .help {
-            margin-top: 25px;
-            font-size: 0.9em;
-            color: #777;
-            line-height: 1.5;
-            text-align: center;
-        }
-    </style>
 </head>
 <body>
-<div class="container">
-    <h2>Two-factor Authentication Setup</h2>
+<main class="security-shell">
+    <div class="brand"><span class="brand-mark">S</span><span>Simple·Point</span></div>
+    <section class="security-card">
+        <header class="card-head">
+            <div class="security-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h8"/></svg>
+            </div>
+            <h1>配置身份验证器</h1>
+            <p class="subtitle">扫码绑定后，输入一次动态验证码完成确认。</p>
+        </header>
+        <div class="card-body">
+            <div class="steps">
+                <div class="step active"><span class="step-number">1</span>扫码绑定</div>
+                <div class="step active"><span class="step-number">2</span>输入验证码</div>
+                <div class="step"><span class="step-number">3</span>完成保护</div>
+            </div>
 
-    <div class="qr-section">
-        <div id="qrcode"></div>
-        <p>Scan this QR code with Google Authenticator, Authy, or another TOTP app.</p>
-    </div>
+            <div class="qr-section">
+                <div class="qr-frame"><div id="qrcode" aria-label="身份验证器二维码"></div></div>
+                <div class="setup-copy">
+                    <h2>使用身份验证器扫码</h2>
+                    <p>打开身份验证器应用，选择添加账号并扫描左侧二维码。</p>
+                    <div class="secret-box">
+                        <small>无法扫码？手动输入此密钥</small>
+                        <div class="secret-value">
+                            <code id="secret" th:text="${secret}">SECRET</code>
+                            <button type="button" class="copy-button" onclick="copySecret(this)">复制</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <p class="secret">
-        If you can't scan the QR code, enter this key manually in your app:<br/>
-        <code th:text="${secret}">SECRET</code>
-    </p>
-
-    <form class="verify" method="post" th:action="@{/account/2fa/confirm}">
-        <label for="code">Enter the 6-digit code from your app:</label><br/>
-        <input id="code" name="code" type="text" maxlength="6" autocomplete="one-time-code" required/>
-        <button type="submit">Confirm</button>
-    </form>
-
-    <p th:if="${error}" class="error" th:text="${error}"></p>
-
-    <p class="help">
-        After successful confirmation, two-factor authentication will be enabled for your account.
-    </p>
-</div>
-
+            <form class="verify-form" method="post" th:action="${twoFactorConfirmUrl}">
+                <p th:if="${error}" class="error" th:text="${error}"></p>
+                <label class="field-label" for="code">输入身份验证器生成的 6 位验证码</label>
+                <div class="code-row">
+                    <input class="code-input" id="code" name="code" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" pattern="[0-9]{6}" autofocus required/>
+                    <button type="submit">确认并开启</button>
+                </div>
+            </form>
+        </div>
+    </section>
+</main>
 <script th:inline="javascript">
     /*<![CDATA[*/
     var otpauthUrl = /*[[${otpauthUrl}]]*/ '';
-    if (otpauthUrl) {
-        new QRCode(document.getElementById("qrcode"), {
-            text: otpauthUrl,
-            width: 200,
-            height: 200
+    if (otpauthUrl && window.QRCode) {
+        new QRCode(document.getElementById('qrcode'), {text: otpauthUrl, width: 200, height: 200});
+    }
+    function copySecret(button) {
+        var text = document.getElementById('secret').textContent || '';
+        navigator.clipboard.writeText(text).then(function () {
+            button.textContent = '已复制';
+            window.setTimeout(function () { button.textContent = '复制'; }, 1500);
         });
     }
     /*]]>*/
 </script>
 </body>
 </html>
-

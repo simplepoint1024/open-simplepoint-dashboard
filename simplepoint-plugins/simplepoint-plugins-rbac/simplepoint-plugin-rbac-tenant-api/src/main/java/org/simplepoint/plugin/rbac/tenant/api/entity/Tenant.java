@@ -9,6 +9,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -74,6 +75,36 @@ import org.springframework.core.annotation.Order;
 @Tag(name = "租户对象", description = "用于管理系统中的租户")
 @Schema(title = "租户对象", description = "用于管理系统中的租户")
 public class Tenant extends BaseEntityImpl<String> {
+
+  /** Tenant logo stored in OSS. */
+  @Order(-2)
+  @Schema(
+      title = "i18n:tenants.title.logo",
+      description = "i18n:tenants.description.logo",
+      format = "data-url",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  @Column(length = 1024)
+  private String logo;
+
+  /** Tenant home-page background stored in OSS. */
+  @Order(-1)
+  @Schema(
+      title = "i18n:tenants.title.backgroundImage",
+      description = "i18n:tenants.description.backgroundImage",
+      format = "data-url",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "false"),
+          })
+      }
+  )
+  @Column(length = 1024)
+  private String backgroundImage;
 
   /**
    * The name of the tenant.
@@ -141,13 +172,13 @@ public class Tenant extends BaseEntityImpl<String> {
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "false"),
-              @ExtensionProperty(name = "widget", value = "RemoteSelect"),
+              @ExtensionProperty(name = "widget", value = "UserPicker"),
               @ExtensionProperty(
                   name = "options",
-                  value = "{\"endpoint\":\"/common/platform/tenants/owners/items\","
-                      + "\"pageSize\":20,\"debounceMs\":300,\"searchParam\":\"keyword\","
-                      + "\"valueField\":\"id\",\"labelField\":\"name\","
-                      + "\"secondaryFields\":[\"email\",\"phoneNumber\"]}",
+                  value = "{\"selectionMode\":\"single\","
+                      + "\"endpoint\":\"/common/users/picker/items\","
+                      + "\"resolveEndpoint\":\"/common/users/picker/selected\","
+                      + "\"pageSize\":20,\"debounceMs\":350,\"minSearchLength\":3}",
                   parseValue = true
               ),
           })
@@ -155,6 +186,72 @@ public class Tenant extends BaseEntityImpl<String> {
   )
   @Column(nullable = false)
   private String ownerId;
+
+  /** Decorated real name of the tenant administrator. */
+  @Order(10)
+  @Transient
+  @Schema(
+      title = "i18n:tenants.title.ownerName",
+      accessMode = Schema.AccessMode.READ_ONLY,
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  private String ownerName;
+
+  /** Decorated gender of the tenant administrator. */
+  @Order(11)
+  @Transient
+  @Schema(
+      title = "i18n:tenants.title.ownerGender",
+      accessMode = Schema.AccessMode.READ_ONLY,
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  private String ownerGender;
+
+  /** Decorated phone number of the tenant administrator. */
+  @Order(12)
+  @Transient
+  @Schema(
+      title = "i18n:tenants.title.ownerPhoneNumber",
+      accessMode = Schema.AccessMode.READ_ONLY,
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  private String ownerPhoneNumber;
+
+  /** Decorated email address of the tenant administrator. */
+  @Order(13)
+  @Transient
+  @Schema(
+      title = "i18n:tenants.title.ownerEmail",
+      accessMode = Schema.AccessMode.READ_ONLY,
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
+  private String ownerEmail;
+
+  /** Decorated avatar of the tenant administrator. */
+  @Transient
+  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
+  private String ownerPicture;
+
+  /** Whether the current actor may edit the current tenant profile. */
+  @Transient
+  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
+  private Boolean profileEditable;
 
   /**
    * The type of the tenant (PERSONAL or ORGANIZATION).

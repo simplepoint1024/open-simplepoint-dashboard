@@ -50,8 +50,10 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
         .orElseThrow(() -> new IllegalArgumentException("FieldScope not found: " + fieldScopeId));
     fieldScope.getEntries().clear();
     if (entries != null) {
+      String tenantId = requireCurrentTenantId();
       entries.forEach(entry -> {
         entry.setFieldScopeId(fieldScopeId);
+        entry.setTenantId(tenantId);
         fieldScope.getEntries().add(entry);
       });
     }
@@ -63,6 +65,7 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends FieldScope> S create(S entity) {
+    entity.setTenantId(requireCurrentTenantId());
     S result = super.create(entity);
     refreshCurrentTenantAuthorizationVersion();
     return result;
@@ -71,6 +74,8 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   @Override
   @Transactional(rollbackFor = Exception.class)
   public List<FieldScope> create(Collection<FieldScope> entities) {
+    String tenantId = requireCurrentTenantId();
+    entities.forEach(entity -> entity.setTenantId(tenantId));
     List<FieldScope> result = super.create(entities);
     refreshCurrentTenantAuthorizationVersion();
     return result;
@@ -79,6 +84,7 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends FieldScope> FieldScope modifyById(S entity) {
+    entity.setTenantId(requireCurrentTenantId());
     FieldScope result = super.modifyById(entity);
     refreshCurrentTenantAuthorizationVersion();
     return result;
@@ -94,5 +100,18 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   private void refreshCurrentTenantAuthorizationVersion() {
     String tenantId = currentTenantId();
     resourceAuthorizationVersionService.refreshTenant(tenantId);
+  }
+
+  private String requireCurrentTenantId() {
+    String tenantId = currentTenantId();
+    if (tenantId == null || tenantId.isBlank()) {
+      throw new IllegalStateException("Tenant context is required");
+    }
+    return tenantId;
+  }
+
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
   }
 }

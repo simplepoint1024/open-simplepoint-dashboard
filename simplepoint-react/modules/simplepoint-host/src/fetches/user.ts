@@ -4,6 +4,29 @@ import {get} from '@simplepoint/shared/api/methods';
 
 export type UserInfo = any;
 
+export type CurrentProfile = {
+    id: string;
+    nickname?: string | null;
+    name?: string | null;
+    email?: string | null;
+    phoneNumber?: string | null;
+    picture?: string | null;
+    address?: string | null;
+    birthdate?: string | null;
+    familyName?: string | null;
+    givenName?: string | null;
+    middleName?: string | null;
+    gender?: string | null;
+    profile?: string | null;
+    website?: string | null;
+    locale?: string | null;
+    zoneinfo?: string | null;
+    twoFactorEnabled?: boolean | null;
+    enabled?: boolean | null;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+};
+
 function normalizeUserInfo(data: UserInfo): UserInfo {
     if (!data || typeof data !== 'object') {
         return data;
@@ -17,6 +40,10 @@ function normalizeUserInfo(data: UserInfo): UserInfo {
 
     if (normalized.phone == null && typeof normalized.phone_number === 'string') {
         normalized.phone = normalized.phone_number;
+    }
+
+    if (normalized.phone == null && typeof normalized.phoneNumber === 'string') {
+        normalized.phone = normalized.phoneNumber;
     }
 
     return normalized;
@@ -60,4 +87,17 @@ export function useUserInfo() {
     }, [result.data]);
 
     return result;
+}
+
+export async function fetchCurrentProfile(): Promise<CurrentProfile> {
+    return get<CurrentProfile>('/common/users/me');
+}
+
+export function useCurrentProfile() {
+    return useQuery({
+        queryKey: ['current-profile'],
+        queryFn: fetchCurrentProfile,
+        staleTime: 60 * 1000,
+        refetchOnWindowFocus: false,
+    });
 }

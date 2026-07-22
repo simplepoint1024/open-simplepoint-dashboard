@@ -177,7 +177,7 @@ public class PgVectorKnowledgeChunkRepository implements AiKnowledgeChunkReposit
           where c.knowledge_base_id = :knowledgeBaseId
             and c.embedding is not null
             and d.deleted_at is null
-            and d.status = 'READY'
+            and d.status in ('READY', 'REINDEXING', 'REINDEX_FAILED')
             %s
           order by c.embedding <=> cast(:embedding as vector)
           limit :candidateLimit
@@ -204,7 +204,7 @@ public class PgVectorKnowledgeChunkRepository implements AiKnowledgeChunkReposit
           join simpoint_ai_knowledge_documents d on d.id = c.document_id
           where c.knowledge_base_id = :knowledgeBaseId
             and d.deleted_at is null
-            and d.status = 'READY'
+            and d.status in ('READY', 'REINDEXING', 'REINDEX_FAILED')
             %s
           order by keyword_score desc
           limit :candidateLimit
@@ -229,7 +229,7 @@ public class PgVectorKnowledgeChunkRepository implements AiKnowledgeChunkReposit
           where c.knowledge_base_id = :knowledgeBaseId
             and c.embedding is not null
             and d.deleted_at is null
-            and d.status = 'READY'
+            and d.status in ('READY', 'REINDEXING', 'REINDEX_FAILED')
             %s
           order by c.embedding <=> cast(:embedding as vector)
           limit :candidateLimit
@@ -247,7 +247,7 @@ public class PgVectorKnowledgeChunkRepository implements AiKnowledgeChunkReposit
           join simpoint_ai_knowledge_documents d on d.id = c.document_id
           where c.knowledge_base_id = :knowledgeBaseId
             and d.deleted_at is null
-            and d.status = 'READY'
+            and d.status in ('READY', 'REINDEXING', 'REINDEX_FAILED')
             %s
           order by keyword_score desc, c.id
           limit :candidateLimit

@@ -26,10 +26,15 @@ public class TwoFactorSetupController {
    * Show simple 2FA settings page (enabled/disabled + actions).
    */
   @GetMapping
-  public String settings(Model model, Authentication authentication) {
+  public String settings(
+      Model model,
+      Authentication authentication,
+      @RequestParam(name = "gateway", defaultValue = "false") boolean gateway
+  ) {
     if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
-      return "redirect:/login";
+      return redirectTo(gateway, "/login");
     }
+    addNavigationUrls(model, gateway);
     model.addAttribute("twoFactorEnabled", Boolean.TRUE.equals(user.getTwoFactorEnabled()));
     return "two-factor-settings";
   }
@@ -39,12 +44,17 @@ public class TwoFactorSetupController {
    * The user must scan the QR code and confirm with a valid code to finish enabling 2FA.
    */
   @PostMapping("/enable")
-  public String enable(Model model, Authentication authentication) {
+  public String enable(
+      Model model,
+      Authentication authentication,
+      @RequestParam(name = "gateway", defaultValue = "false") boolean gateway
+  ) {
     if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
-      return "redirect:/login";
+      return redirectTo(gateway, "/login");
     }
     var result = twoFactorSetupService.enable(user);
 
+    addNavigationUrls(model, gateway);
     model.addAttribute("secret", result.secret());
     model.addAttribute("otpauthUrl", result.otpauthUrl());
     return "two-factor-setup";
@@ -54,11 +64,16 @@ public class TwoFactorSetupController {
    * Confirm enabling 2FA by verifying the first TOTP code from the authenticator app.
    */
   @PostMapping("/confirm")
-  public String confirm(@RequestParam("code") String code, Model model,
-                        Authentication authentication) {
+  public String confirm(
+      @RequestParam("code") String code,
+      Model model,
+      Authentication authentication,
+      @RequestParam(name = "gateway", defaultValue = "false") boolean gateway
+  ) {
     if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
-      return "redirect:/login";
+      return redirectTo(gateway, "/login");
     }
+    addNavigationUrls(model, gateway);
     if (code == null || code.trim().isEmpty()) {
       model.addAttribute("error", "验证码不能为空");
       // re-render setup info
@@ -82,18 +97,36 @@ public class TwoFactorSetupController {
       return "two-factor-setup";
     }
 
-    return "redirect:/account/2fa";
+    return redirectTo(gateway, "/account/2fa");
   }
 
   /**
    * Disable 2FA for the current user.
    */
   @PostMapping("/disable")
-  public String disable(Authentication authentication) {
+  public String disable(
+      Authentication authentication,
+      @RequestParam(name = "gateway", defaultValue = "false") boolean gateway
+  ) {
     if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
-      return "redirect:/login";
+      return redirectTo(gateway, "/login");
     }
     twoFactorSetupService.disable(user);
-    return "redirect:/account/2fa";
+    return redirectTo(gateway, "/account/2fa");
+  }
+
+  private void addNavigationUrls(Model model, boolean gateway) {
+    String prefix = gateway ? "/authorization" : "";
+    String query = gateway ? "?gateway=true" : "";
+    model.addAttribute("twoFactorCssUrl", prefix + "/two-factor.css");
+    model.addAttribute("twoFactorEnableUrl", prefix + "/account/2fa/enable" + query);
+    model.addAttribute("twoFactorConfirmUrl", prefix + "/account/2fa/confirm" + query);
+    model.addAttribute("twoFactorDisableUrl", prefix + "/account/2fa/disable" + query);
+  }
+
+  private String redirectTo(boolean gateway, String path) {
+    String prefix = gateway ? "/authorization" : "";
+    String query = gateway && "/account/2fa".equals(path) ? "?gateway=true" : "";
+    return "redirect:" + prefix + path + query;
   }
 }

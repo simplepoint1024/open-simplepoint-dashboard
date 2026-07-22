@@ -83,6 +83,24 @@ class AiScopeAccessPolicyTest {
     assertFalse(policy.canUseResource(AiResourceScope.TENANT, "tenant-b"));
   }
 
+  @Test
+  void durableTenantWorkCanUseSharedAndOwnModelsOnly() {
+    AiScopeAccessPolicy policy = policy(null, false);
+
+    assertTrue(policy.canUseResourceFromScope(
+        AiResourceScope.SYSTEM, null, AiResourceScope.TENANT, "tenant-a"
+    ));
+    assertTrue(policy.canUseResourceFromScope(
+        AiResourceScope.TENANT, "tenant-a", AiResourceScope.TENANT, "tenant-a"
+    ));
+    assertFalse(policy.canUseResourceFromScope(
+        AiResourceScope.TENANT, "tenant-b", AiResourceScope.TENANT, "tenant-a"
+    ));
+    assertFalse(policy.canUseResourceFromScope(
+        AiResourceScope.SYSTEM, null, AiResourceScope.TENANT, null
+    ));
+  }
+
   private static AiScopeAccessPolicy policy(
       final AuthorizationContext context,
       final boolean tenantManagementEnabled

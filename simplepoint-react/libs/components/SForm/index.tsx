@@ -8,6 +8,8 @@ import {memo, useMemo} from "react";
 import IconPicker from "./widgets/IconPicker";
 import OrgTreeMultiSelect from "./widgets/OrgTreeMultiSelect";
 import RemoteSelect from "./widgets/RemoteSelect";
+import OssImageWidget from "./widgets/OssImageWidget";
+import UserPicker from "./widgets/UserPicker";
 import {useI18n} from "@simplepoint/shared/hooks/useI18n";
 
 type SFormProps = Omit<FormProps, "validator">& {
@@ -35,7 +37,7 @@ const formTemplates = {
   },
 };
 
-const defaultWidgets = {IconPicker, OrgTreeMultiSelect, RemoteSelect} as const;
+const defaultWidgets = {IconPicker, OrgTreeMultiSelect, RemoteSelect, UserPicker, OssImage: OssImageWidget} as const;
 
 // 抽离 textarea 的 autosize 常量，避免重复创建对象
 const TEXTAREA_AUTOSIZE = { minRows: 4, maxRows: 16 } as const;
@@ -50,10 +52,13 @@ const SForm = (props: SFormProps) => {
     if (!schema || typeof schema !== 'object') return result;
     const propsDef = (schema as any).properties || {};
     for (const k of Object.keys(propsDef)) {
-      const xui = propsDef[k]?.['x-ui'];
-      if (!xui || typeof xui !== 'object') continue;
-      const widget = xui['ui:widget'] ?? xui.widget;
-      const uiOptions = xui['ui:options'] ?? xui.options;
+      const fieldSchema = propsDef[k];
+      const xui = fieldSchema?.['x-ui'];
+      const normalizedXui = xui && typeof xui === 'object' ? xui : {};
+      const widget = normalizedXui['ui:widget']
+        ?? normalizedXui.widget
+        ?? (fieldSchema?.format === 'data-url' ? 'OssImage' : undefined);
+      const uiOptions = normalizedXui['ui:options'] ?? normalizedXui.options;
       if (!widget || typeof widget !== 'string') continue;
       if (widget === 'textarea') {
         result[k] = {

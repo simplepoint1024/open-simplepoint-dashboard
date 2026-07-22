@@ -55,6 +55,15 @@ body {
     outline: none;
 }
 
+.nb-header-logo-image {
+    width: 32px;
+    height: 32px;
+    display: block;
+    flex-shrink: 0;
+    border-radius: 7px;
+    object-fit: contain;
+}
+
 /* 中间搜索区域：flex: 1，居中限宽 */
 .nb-header-search {
     flex: 1;
@@ -287,26 +296,72 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
     overflow: hidden;
 }
 
-/* 顶部左侧租户与角色选择器 */
-.nb-header-tenant {
+/* 顶部全局上下文：工作空间与角色是两个独立控件，紧邻品牌区 */
+.nb-header-context {
     display: flex;
     align-items: center;
+    gap: 8px;
     flex-shrink: 0;
     min-width: 0;
-    height: 28px;
-    padding: 0 8px;
+    height: 100%;
+    padding: 0 12px;
     border-left: 1px solid var(--nb-border);
     margin-left: 2px;
-    border-radius: 4px;
-    line-height: 28px;
 }
 
-.nb-header-tenant:hover,
-.nb-role-switcher:hover {
+.nb-context-switcher {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    height: 32px;
+    padding: 0 9px;
+    border: 1px solid var(--nb-border);
+    border-radius: 7px;
+    background: var(--nb-bg);
+    color: var(--nb-text, rgba(0,0,0,0.88));
+    box-shadow: var(--nb-shadow-tertiary);
+    cursor: pointer;
+    user-select: none;
+    line-height: 30px;
+    font: inherit;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+}
+
+.nb-context-switcher:hover:not(:disabled) {
     background: var(--nb-hover, rgba(0,0,0,0.04));
+    border-color: color-mix(in srgb, var(--ant-color-primary, #1677ff) 45%, transparent);
 }
 
-.nb-header-tenant .nb-tenant-type-tag,
+.nb-context-switcher:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--ant-color-primary, #1677ff) 28%, transparent);
+    outline-offset: 1px;
+}
+
+.nb-context-icon,
+.nb-context-arrow {
+    flex-shrink: 0;
+    font-size: 12px;
+    opacity: 0.62;
+}
+
+.nb-context-arrow {
+    margin-left: 2px;
+    font-size: 9px;
+    opacity: 0.42;
+}
+
+.nb-context-label {
+    flex-shrink: 0;
+    padding-right: 7px;
+    margin-right: 1px;
+    border-right: 1px solid var(--nb-border);
+    color: var(--nb-text-secondary, rgba(0,0,0,0.45));
+    font-size: 11px;
+    line-height: 16px;
+}
+
 .nb-tenant-menu-item .nb-tenant-type-tag {
     margin-inline-end: 0;
     border-radius: 4px;
@@ -319,7 +374,7 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 
 .nb-tenant-current-name {
     min-width: 0;
-    max-width: 120px;
+    max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -338,6 +393,20 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
     gap: 12px;
 }
 
+.nb-tenant-menu-identity {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    gap: 8px;
+}
+
+.nb-tenant-current-logo,
+.nb-tenant-menu-identity .ant-avatar {
+    flex-shrink: 0;
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--ant-color-primary, #1677ff) 10%, var(--nb-bg));
+}
+
 .nb-tenant-menu-name {
     min-width: 0;
     overflow: hidden;
@@ -346,22 +415,12 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 }
 
 .nb-role-switcher {
-    display: flex;
-    align-items: center;
     flex-shrink: 0;
-    min-width: 0;
-    height: 28px;
-    padding: 0 8px;
-    border-left: 1px solid var(--nb-border);
-    border-radius: 4px;
-    line-height: 28px;
-    cursor: pointer;
-    user-select: none;
 }
 
 .nb-role-switcher-disabled {
     cursor: default;
-    opacity: 0.72;
+    opacity: 0.78;
 }
 
 .nb-role-current-name {
@@ -387,13 +446,6 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.nb-role-menu-code {
-    flex-shrink: 0;
-    font-size: 11px;
-    opacity: 0.5;
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
 .nb-tabs-bar {
@@ -505,6 +557,16 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 .nb-header-breadcrumb .ant-breadcrumb ol li:last-child .ant-breadcrumb-link {
     color: var(--nb-text, rgba(0,0,0,0.88));
     font-weight: 500;
+}
+
+@media (max-width: 1180px) {
+    .nb-context-label { display: none; }
+    .nb-header-breadcrumb { max-width: 220px; }
+}
+
+@media (max-width: 980px) {
+    .nb-header-breadcrumb { display: none; }
+    .nb-header-search { padding-inline: 10px; }
 }
 
 /* 让内部 MF 页面能占满可用高度而非撑开滚动条 */
@@ -647,8 +709,11 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 @media (max-width: 768px) {
   .nb-header-search { display: none; }
   .nb-header-breadcrumb { display: none; }
-  .nb-header-tenant .nb-tenant-current-name,
-  .nb-header-tenant .nb-tenant-type-tag,
+  .nb-header-context { gap: 4px; padding: 0 6px; }
+  .nb-context-label,
+  .nb-tenant-current-name,
   .nb-role-current-name { display: none; }
+  .nb-context-switcher { width: 32px; padding: 0; justify-content: center; }
+  .nb-context-arrow { display: none; }
   .nb-root .ant-layout-sider { width: 0 !important; min-width: 0 !important; }
 }
