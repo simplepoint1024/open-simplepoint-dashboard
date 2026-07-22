@@ -3,7 +3,6 @@ package org.simplepoint.plugin.ai.core.service.adapter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,9 +66,9 @@ public class OpenAiProviderAdapter implements AiProviderAdapter {
     }
     addHeader(request, "OpenAI-Organization", connection.organizationId());
     addHeader(request, "OpenAI-Project", connection.projectId());
-    HttpResponse<String> response = http.send(request.build(), connection.allowPrivateNetwork());
+    String responseBody = http.send(request.build(), connection.allowPrivateNetwork());
     try {
-      JsonNode root = objectMapper.readTree(response.body());
+      JsonNode root = objectMapper.readTree(responseBody);
       JsonNode data = root.path("data");
       if (!data.isArray()) {
         throw new IllegalStateException("供应商模型列表响应缺少 data 数组");

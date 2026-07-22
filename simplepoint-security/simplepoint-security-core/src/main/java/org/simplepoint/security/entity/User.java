@@ -30,7 +30,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.validator.constraints.URL;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
@@ -109,6 +108,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * This is securely stored and used for authentication purposes.
    */
   @Order(2)
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   @Schema(title = "i18n:users.title.password", description = "i18n:users.description.username", extensions = {
       @Extension(name = "x-ui", properties = {
           @ExtensionProperty(name = "widget", value = "password"),
@@ -267,7 +267,17 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   /**
    * The URL or path to the user's profile picture.
    */
-  @Schema(title = "i18n:users.title.picture", description = "i18n:users.description.picture", format = "data-url")
+  @Order(0)
+  @Schema(
+      title = "i18n:users.title.picture",
+      description = "i18n:users.description.picture",
+      format = "data-url",
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+          })
+      }
+  )
   private String picture;
 
   /**
@@ -308,8 +318,16 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   /**
    * The URL or path to the user's profile.
    */
-  @URL
-  @Schema(title = "i18n:users.title.profile", description = "i18n:users.description.profile")
+  @Schema(
+      title = "i18n:users.title.profile",
+      description = "i18n:users.description.profile",
+      maxLength = 500,
+      extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "widget", value = "textarea"),
+          })
+      }
+  )
   private String profile;
 
   /**
@@ -401,6 +419,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * Stored as a Base32-encoded string. Only used on the server side for TOTP verification.
    */
   @Schema(hidden = true)
+  @JsonIgnore
   @Column(length = 128)
   private String twoFactorSecret;
 
@@ -507,4 +526,3 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
     return this.superAdmin;
   }
 }
-

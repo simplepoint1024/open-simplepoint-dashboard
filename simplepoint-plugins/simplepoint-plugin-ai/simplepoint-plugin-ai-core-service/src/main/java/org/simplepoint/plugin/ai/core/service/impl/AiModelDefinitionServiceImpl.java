@@ -57,6 +57,11 @@ public class AiModelDefinitionServiceImpl
     this.scopeAccessPolicy = scopeAccessPolicy;
   }
 
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
   /** {@inheritDoc} */
   @Override
   public <S extends AiModelDefinition> Page<S> limit(

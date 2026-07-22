@@ -1,6 +1,6 @@
 import type {ItemType} from "antd/es/menu/interface";
 import {Avatar, Badge, Button, Drawer, Dropdown, List, MenuProps, Tooltip, Popconfirm, Tag, message} from "antd";
-import {BellOutlined, CreditCardOutlined, FontSizeOutlined, GithubOutlined, GlobalOutlined, LogoutOutlined, QuestionCircleOutlined, SearchOutlined, SettingOutlined, UserOutlined, MoonOutlined, SunOutlined, DesktopOutlined, DeleteOutlined, FullscreenOutlined, FullscreenExitOutlined, SwapOutlined, SafetyCertificateOutlined} from "@ant-design/icons";
+import {ApartmentOutlined, BellOutlined, CreditCardOutlined, DeleteOutlined, DesktopOutlined, DownOutlined, EditOutlined, FontSizeOutlined, FullscreenExitOutlined, FullscreenOutlined, GithubOutlined, GlobalOutlined, HomeOutlined, LogoutOutlined, MoonOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SearchOutlined, SettingOutlined, SunOutlined, UserOutlined} from "@ant-design/icons";
 import React, {useEffect, useRef, useState} from 'react';
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import { useUserInfo } from '@/fetches/user';
@@ -63,6 +63,24 @@ function tenantDisplayName(
   return tenant.tenantName || t('tenant.unknown', '未选择');
 }
 
+const TenantMark: React.FC<{
+  tenant?: Pick<CurrentTenant, 'tenantLogo' | 'tenantName' | 'tenantType'>;
+  size?: number;
+  className?: string;
+}> = ({tenant, size = 20, className}) => {
+  const fallbackLogo = normalizedTenantType(tenant) === 'PLATFORM' ? '/svg.svg' : undefined;
+  return (
+    <Avatar
+      className={className}
+      shape="square"
+      size={size}
+      src={tenant?.tenantLogo || fallbackLogo}
+      icon={!tenant?.tenantLogo && !fallbackLogo ? <ApartmentOutlined/> : undefined}
+      alt={tenant?.tenantName || 'Tenant'}
+    />
+  );
+};
+
 function TenantTypeTag({
   tenant,
   t,
@@ -83,14 +101,14 @@ function TenantTypeTag({
 
 function roleDisplayName(
   t: (key: string, fallback?: string) => string,
-  role?: Pick<CurrentRole, 'roleId' | 'roleName' | 'authority'>,
+  role?: Pick<CurrentRole, 'roleName'>,
 ): string {
   if (!role) return t('role.allRoles', '全部角色');
-  return role.roleName || role.authority || role.roleId || t('role.unknown', '未知角色');
+  return role.roleName?.trim() || t('role.unnamed', '未命名角色');
 }
 
 /**
- * 顶部栏左侧：租户切换（显示在“平台”旁边）
+ * 顶部栏上下文区：工作空间切换。
  */
 export const TenantSwitcherTop: React.FC = () => {
   const { t } = useI18n();
@@ -130,7 +148,10 @@ export const TenantSwitcherTop: React.FC = () => {
           label: (
             <div className="nb-tenant-menu-item">
               <div className="nb-tenant-menu-main">
-                <span className="nb-tenant-menu-name">{tenantDisplayName(t, it)}</span>
+                <span className="nb-tenant-menu-identity">
+                  <TenantMark tenant={it} />
+                  <span className="nb-tenant-menu-name">{tenantDisplayName(t, it)}</span>
+                </span>
                 <TenantTypeTag tenant={it} t={t} />
               </div>
             </div>
@@ -159,7 +180,7 @@ export const TenantSwitcherTop: React.FC = () => {
     <Dropdown
       menu={menu}
       trigger={['click']}
-      placement="bottomRight"
+      placement="bottomLeft"
       destroyOnHidden
       onOpenChange={(open) => {
         if (open) {
@@ -168,29 +189,26 @@ export const TenantSwitcherTop: React.FC = () => {
         }
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          cursor: 'pointer',
-          userSelect: 'none',
-        }}
+      <button
+        type="button"
+        className="nb-context-switcher nb-tenant-switcher"
         onClick={(e) => { try { e.stopPropagation(); } catch {} }}
         onMouseDown={(e) => { try { e.stopPropagation(); } catch {} }}
         title={`${t('label.tenant', '租户')} · ${currentType}: ${currentName}`}
       >
-        <SwapOutlined style={{ marginRight: 6, opacity: 0.75 }} />
-        {currentTenant && <TenantTypeTag tenant={currentTenant} t={t} />}
+        <TenantMark tenant={currentTenant} size={19} className="nb-tenant-current-logo" />
+        <span className="nb-context-label">{t('label.workspace', '工作空间')}</span>
         <span className="nb-tenant-current-name">
           {currentName}
         </span>
-      </div>
+        <DownOutlined className="nb-context-arrow" />
+      </button>
     </Dropdown>
   );
 };
 
 /**
- * 顶部栏左侧：角色切换（跟随当前租户）
+ * 顶部栏上下文区：跟随当前工作空间的角色切换。
  */
 export const RoleSwitcherTop: React.FC = () => {
   const { t } = useI18n();
@@ -265,7 +283,6 @@ export const RoleSwitcherTop: React.FC = () => {
             label: (
               <div className="nb-role-menu-item">
                 <span className="nb-role-menu-name">{roleDisplayName(t, role)}</span>
-                {role.authority && <span className="nb-role-menu-code">{role.authority}</span>}
               </div>
             ),
           })),
@@ -295,7 +312,7 @@ export const RoleSwitcherTop: React.FC = () => {
     <Dropdown
       menu={menu}
       trigger={['click']}
-      placement="bottomRight"
+      placement="bottomLeft"
       destroyOnHidden
       disabled={!switchable}
       onOpenChange={(open) => {
@@ -304,15 +321,19 @@ export const RoleSwitcherTop: React.FC = () => {
         }
       }}
     >
-      <div
-        className={`nb-role-switcher${switchable ? '' : ' nb-role-switcher-disabled'}`}
+      <button
+        type="button"
+        className={`nb-context-switcher nb-role-switcher${switchable ? '' : ' nb-role-switcher-disabled'}`}
+        disabled={!switchable}
         onClick={(e) => { try { e.stopPropagation(); } catch {} }}
         onMouseDown={(e) => { try { e.stopPropagation(); } catch {} }}
         title={`${t('label.role', '角色')} · ${currentName}`}
       >
-        <SafetyCertificateOutlined style={{ marginRight: 6, opacity: 0.75 }} />
+        <SafetyCertificateOutlined className="nb-context-icon" />
+        <span className="nb-context-label">{t('label.role', '角色')}</span>
         <span className="nb-role-current-name">{currentName}</span>
-      </div>
+        {switchable && <DownOutlined className="nb-context-arrow" />}
+      </button>
     </Dropdown>
   );
 };
@@ -347,20 +368,36 @@ export const logoItem = (navigate: (path: string) => void): ItemType => {
 /**
  * Header Logo 独立组件（不依赖 AntD Menu，避免溢出检测折叠）
  */
-export const HeaderLogo: React.FC<{ navigate: (path: string) => void }> = ({ navigate }) => (
-  <div className="nb-header-brand">
-    <div
-      className="nb-header-logo"
-      onClick={() => navigate('/')}
-      role="button"
-      tabIndex={0}
-      onKeyDown={e => e.key === 'Enter' && navigate('/')}
-    >
-      <img src="/svg.svg" alt="Logo" style={{ height: '32px', display: 'block', flexShrink: 0 }} />
-      <LogoTitle />
+export const HeaderLogo: React.FC<{ navigate: (path: string) => void }> = ({ navigate }) => {
+  const {data} = useCurrentTenants();
+  const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      setTenantIdState((event as CustomEvent<string | undefined>).detail ?? getTenantId());
+    };
+    window.addEventListener('sp-set-tenant', handler as EventListener);
+    return () => window.removeEventListener('sp-set-tenant', handler as EventListener);
+  }, []);
+
+  const currentTenant = data?.find(tenant => tenant.tenantId === tenantId);
+  const logo = currentTenant?.tenantLogo || '/svg.svg';
+
+  return (
+    <div className="nb-header-brand">
+      <div
+        className="nb-header-logo"
+        onClick={() => navigate('/')}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => e.key === 'Enter' && navigate('/')}
+      >
+        <img src={logo} alt={currentTenant?.tenantName || 'Logo'} className="nb-header-logo-image" />
+        <LogoTitle />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 function getGreetingKeyByTime() {
   const hour = new Date().getHours();
@@ -736,8 +773,11 @@ export const toolsSwitcherGroupItem = (): ItemType => {
  * 关于我配置
  * @param navigate 路由跳转配置项
  */
- export const aboutMeItem = (navigate: (path: string) => void): ItemType => {
-  const menu = avatarConfig(navigate);
+ export const aboutMeItem = (
+   navigate: (path: string) => void,
+   tenant?: {enabled: boolean; editable: boolean},
+ ): ItemType => {
+  const menu = avatarConfig(navigate, tenant);
   return {
     key: 'me',
     label: <HeaderUser/>,
@@ -750,7 +790,10 @@ export const toolsSwitcherGroupItem = (): ItemType => {
  * 头像配置项
  * @param navigate 路由跳转回调函数
  */
-export const avatarConfig = (navigate: (path: string) => void): MenuProps => {
+export const avatarConfig = (
+  navigate: (path: string) => void,
+  tenant?: {enabled: boolean; editable: boolean},
+): MenuProps => {
   return {
     items: [
       {
@@ -761,6 +804,14 @@ export const avatarConfig = (navigate: (path: string) => void): MenuProps => {
           { key: 'billing', label: <I18nText k='menu.billing' fallback='账单信息'/>, icon: <CreditCardOutlined/>, onClick: () => navigate('/billing'), disabled: true },
         ]
       },
+      ...(tenant?.enabled ? [{
+        type: 'group' as const,
+        label: <I18nText k='group.tenant' fallback='租户'/> as any,
+        children: [
+          {key: 'tenant-home', label: <I18nText k='menu.tenantHome' fallback='租户主页'/>, icon: <HomeOutlined/>, onClick: () => navigate('/tenant')},
+          ...(tenant.editable ? [{key: 'tenant-profile', label: <I18nText k='menu.tenantProfile' fallback='租户资料'/>, icon: <EditOutlined/>, onClick: () => navigate('/tenant?edit=1')}] : []),
+        ],
+      }] : []),
       {
         type: 'group',
         label: <I18nText k='group.app' fallback='应用'/> as any,

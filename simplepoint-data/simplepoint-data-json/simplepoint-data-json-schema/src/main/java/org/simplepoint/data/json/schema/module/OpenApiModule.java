@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
+import org.simplepoint.api.schema.DictionaryField;
 import org.springframework.core.annotation.Order;
 
 /**
@@ -34,6 +35,11 @@ public class OpenApiModule implements Module {
           Schema schema = field.getAnnotation(Schema.class);
           if (schema != null) {
             applyExtensions(attributes, schema);
+          }
+
+          DictionaryField dictionaryField = field.getAnnotation(DictionaryField.class);
+          if (dictionaryField != null && !dictionaryField.value().isBlank()) {
+            applyDictionaryField(attributes, dictionaryField.value());
           }
         })
         .withTitleResolver(field -> {
@@ -103,6 +109,19 @@ public class OpenApiModule implements Module {
 
       // No group name: flatten properties, only those starting with "x-"
       putProperties(attributes, props);
+    }
+  }
+
+  private static void applyDictionaryField(ObjectNode attributes, String dictionaryCode) {
+    String normalizedCode = dictionaryCode.trim();
+    attributes.put("x-dictionary-code", normalizedCode);
+    JsonNode currentUi = attributes.get("x-ui");
+    ObjectNode ui = currentUi instanceof ObjectNode objectNode
+        ? objectNode
+        : attributes.putObject("x-ui");
+    ui.put("dictCode", normalizedCode);
+    if (!ui.hasNonNull("widget")) {
+      ui.put("widget", "select");
     }
   }
 

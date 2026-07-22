@@ -13,6 +13,7 @@
   "resources.description.type": "资源类型：分组、模块、页面、功能、操作或接口",
   "resources.title.scopeTypes": "资源作用域",
   "resources.description.scopeTypes": "声明资源可见、可授权和可执行的工作空间边界",
+  "resources.description.scopeTypesWithParent": "子资源只能使用父资源允许的作用域：{scopes}",
   "resources.title.parentId": "上级资源",
   "resources.description.parentId": "当前资源所属的上级资源",
   "resources.title.pluginId": "插件标识",

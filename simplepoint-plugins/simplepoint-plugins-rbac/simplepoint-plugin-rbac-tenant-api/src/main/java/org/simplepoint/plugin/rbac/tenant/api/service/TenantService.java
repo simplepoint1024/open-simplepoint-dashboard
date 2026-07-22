@@ -7,6 +7,7 @@ import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.command.TenantProfileUpdateCommand;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantPackagesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
@@ -38,6 +39,21 @@ public interface TenantService extends BaseService<Tenant, String> {
    * @return a set of NamedTenantVo objects representing the tenants associated with the current user
    */
   Set<NamedTenantVo> getCurrentUserTenants();
+
+  /**
+   * Loads the active tenant profile with its administrator details.
+   *
+   * @return current tenant profile
+   */
+  Tenant getCurrentTenantProfile();
+
+  /**
+   * Updates branding and descriptive fields of the active tenant.
+   *
+   * @param command editable tenant profile fields
+   * @return updated tenant profile
+   */
+  Tenant updateCurrentTenantProfile(TenantProfileUpdateCommand command);
 
   /**
    * Retrieves the roles available to the currently authenticated user within a tenant.

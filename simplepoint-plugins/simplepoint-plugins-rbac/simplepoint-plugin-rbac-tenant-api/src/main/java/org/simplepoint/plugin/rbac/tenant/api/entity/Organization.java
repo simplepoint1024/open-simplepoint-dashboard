@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.simplepoint.api.schema.DictionaryField;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
@@ -118,6 +119,7 @@ public class Organization extends TenantBaseEntityImpl<String> {
   private String parentId;
 
   @Order(3)
+  @DictionaryField(TenantDictionaryCodes.ORGANIZATION_TYPE)
   @Schema(
       title = "i18n:organizations.title.type",
       description = "i18n:organizations.description.type",
@@ -128,7 +130,6 @@ public class Organization extends TenantBaseEntityImpl<String> {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
               @ExtensionProperty(name = "widget", value = "select"),
-              @ExtensionProperty(name = "dictCode", value = TenantDictionaryCodes.ORGANIZATION_TYPE),
           })
       }
   )

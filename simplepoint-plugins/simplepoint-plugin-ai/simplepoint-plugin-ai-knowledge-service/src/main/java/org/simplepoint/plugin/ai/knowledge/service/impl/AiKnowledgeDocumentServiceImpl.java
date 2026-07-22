@@ -5,32 +5,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import org.simplepoint.plugin.ai.core.api.service.AiEmbeddingService;
-import org.simplepoint.plugin.ai.core.api.vo.AiEmbeddingResult;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
 import org.simplepoint.plugin.ai.knowledge.api.entity.AiKnowledgeBase;
 import org.simplepoint.plugin.ai.knowledge.api.entity.AiKnowledgeDocument;
 import org.simplepoint.plugin.ai.knowledge.api.model.AiKnowledgeDocumentSourceType;
 import org.simplepoint.plugin.ai.knowledge.api.model.AiKnowledgeDocumentStatus;
-import org.simplepoint.plugin.ai.knowledge.api.model.AiKnowledgeRetrievalMode;
 import org.simplepoint.plugin.ai.knowledge.api.properties.AiKnowledgeProperties;
 import org.simplepoint.plugin.ai.knowledge.api.repository.AiKnowledgeBaseRepository;
 import org.simplepoint.plugin.ai.knowledge.api.repository.AiKnowledgeChunkRepository;
 import org.simplepoint.plugin.ai.knowledge.api.repository.AiKnowledgeDocumentRepository;
+import org.simplepoint.plugin.ai.knowledge.api.repository.AiKnowledgeIndexJobRepository;
 import org.simplepoint.plugin.ai.knowledge.api.service.AiKnowledgeDocumentService;
-import org.simplepoint.plugin.ai.knowledge.api.vo.AiKnowledgeChunkRecord;
 import org.simplepoint.plugin.ai.knowledge.api.vo.AiKnowledgeTextDocumentRequest;
+import org.simplepoint.plugin.ai.knowledge.service.index.KnowledgeIndexCoordinator;
 import org.simplepoint.plugin.ai.knowledge.service.support.KnowledgeDocumentExtractor;
-import org.simplepoint.plugin.ai.knowledge.service.support.KnowledgeDocumentExtractor.ExtractedDocument;
-import org.simplepoint.plugin.ai.knowledge.service.support.KnowledgeTextChunker;
+import org.simplepoint.plugin.ai.knowledge.service.support.KnowledgeDocumentExtractor.UploadDescriptor;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageObject;
 import org.simplepoint.plugin.storage.api.model.ObjectStorageUploadRequest;
 import org.simplepoint.plugin.storage.client.service.ObjectStorageRemoteService;
@@ -41,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Synchronous document extraction, chunking and indexing service.
+ * Persists document sources before enqueueing durable background extraction and indexing.
  */
 @Service
 public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentService {
@@ -52,13 +46,13 @@ public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentServic
 
   private final AiKnowledgeChunkRepository chunkRepository;
 
-  private final AiEmbeddingService embeddingService;
+  private final AiKnowledgeIndexJobRepository indexJobRepository;
 
   private final AiScopeAccessPolicy scopeAccessPolicy;
 
   private final KnowledgeDocumentExtractor extractor;
 
-  private final KnowledgeTextChunker chunker;
+  private final KnowledgeIndexCoordinator indexCoordinator;
 
   private final AiKnowledgeProperties properties;
 
@@ -73,10 +67,10 @@ public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentServic
       final AiKnowledgeBaseRepository knowledgeBaseRepository,
       final AiKnowledgeDocumentRepository documentRepository,
       final AiKnowledgeChunkRepository chunkRepository,
-      final AiEmbeddingService embeddingService,
+      final AiKnowledgeIndexJobRepository indexJobRepository,
       final AiScopeAccessPolicy scopeAccessPolicy,
       final KnowledgeDocumentExtractor extractor,
-      final KnowledgeTextChunker chunker,
+      final KnowledgeIndexCoordinator indexCoordinator,
       final AiKnowledgeProperties properties,
       final ObjectMapper objectMapper,
       final ObjectStorageRemoteService objectStorageRemoteService
@@ -84,10 +78,10 @@ public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentServic
     this.knowledgeBaseRepository = knowledgeBaseRepository;
     this.documentRepository = documentRepository;
     this.chunkRepository = chunkRepository;
-    this.embeddingService = embeddingService;
+    this.indexJobRepository = indexJobRepository;
     this.scopeAccessPolicy = scopeAccessPolicy;
     this.extractor = extractor;
-    this.chunker = chunker;
+    this.indexCoordinator = indexCoordinator;
     this.properties = properties;
     this.objectMapper = objectMapper;
     this.objectStorageRemoteService = objectStorageRemoteService;
@@ -121,26 +115,35 @@ public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentServic
   ) {
     AiKnowledgeBase knowledgeBase = findEnabledKnowledgeBase(knowledgeBaseId);
     String metadata = validateMetadataJson(metadataJson);
-    ExtractedDocument extracted = extractor.extract(file);
+    UploadDescriptor upload = extractor.validate(file);
     ObjectStorageObject storageObject = objectStorageRemoteService.upload(
         file,
-        knowledgeUploadRequest(knowledgeBase, extracted.fileName())
+        knowledgeUploadRequest(knowledgeBase, upload.fileName())
     );
+    if (storageObject == null) {
+      throw new IllegalStateException("统一对象存储上传未返回对象元信息");
+    }
+    String storageObjectId = requireValue(storageObject.getId(), "统一对象存储上传未返回对象 ID");
     try {
+      String storageTenantId = requireValue(
+          storageObject.getTenantId(),
+          "统一对象存储上传未返回对象租户"
+      );
       AiKnowledgeDocument document = newDocument(
           knowledgeBase,
-          extracted.fileName(),
-          extracted.fileName(),
-          extracted.mimeType(),
-          extracted.fileSize(),
-          storageObject.getId(),
+          upload.fileName(),
+          upload.fileName(),
+          upload.mimeType(),
+          upload.fileSize(),
+          storageObjectId,
+          storageTenantId,
           AiKnowledgeDocumentSourceType.UPLOAD,
-          extracted.content(),
+          null,
           metadata
       );
-      return persistAndProcess(knowledgeBase, document);
+      return indexCoordinator.saveAndEnqueue(document);
     } catch (RuntimeException ex) {
-      cleanupStorageObject(storageObject.getId(), ex);
+      cleanupStorageObject(storageObjectId, ex);
       throw ex;
     }
   }
@@ -167,11 +170,12 @@ public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentServic
         "text/plain; charset=UTF-8",
         (long) content.getBytes(StandardCharsets.UTF_8).length,
         null,
+        null,
         AiKnowledgeDocumentSourceType.TEXT,
         content,
         validateMetadataJson(request.getMetadataJson())
     );
-    return persistAndProcess(knowledgeBase, document);
+    return indexCoordinator.saveAndEnqueue(document);
   }
 
   /** {@inheritDoc} */
@@ -182,11 +186,7 @@ public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentServic
   ) {
     AiKnowledgeBase knowledgeBase = findEnabledKnowledgeBase(knowledgeBaseId);
     AiKnowledgeDocument document = findOwnedDocument(knowledgeBase, documentId);
-    document.setStatus(AiKnowledgeDocumentStatus.PROCESSING);
-    document.setErrorMessage(null);
-    document.setProcessedAt(null);
-    documentRepository.save(document);
-    return process(knowledgeBase, document);
+    return indexCoordinator.reindex(document);
   }
 
   /** {@inheritDoc} */
@@ -203,6 +203,9 @@ public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentServic
     List<AiKnowledgeDocument> documents = documentIds.stream()
         .map(id -> findOwnedDocument(knowledgeBase, id))
         .toList();
+    indexJobRepository.deleteByDocumentIds(
+        documents.stream().map(AiKnowledgeDocument::getId).toList()
+    );
     documents.forEach(document -> chunkRepository.deleteByDocumentId(document.getId()));
     documentRepository.deleteByIds(documents.stream().map(AiKnowledgeDocument::getId).toList());
     documents.stream()
@@ -212,101 +215,6 @@ public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentServic
         .forEach(objectStorageRemoteService::delete);
   }
 
-  private AiKnowledgeDocument persistAndProcess(
-      final AiKnowledgeBase knowledgeBase,
-      final AiKnowledgeDocument document
-  ) {
-    AiKnowledgeDocument saved = documentRepository.save(document);
-    return process(knowledgeBase, saved);
-  }
-
-  private AiKnowledgeDocument process(
-      final AiKnowledgeBase knowledgeBase,
-      final AiKnowledgeDocument document
-  ) {
-    try {
-      List<String> texts = chunker.split(
-          document.getExtractedText(),
-          knowledgeBase.getChunkSize(),
-          knowledgeBase.getChunkOverlap()
-      );
-      if (texts.isEmpty()) {
-        throw new IllegalArgumentException("文档中没有可建立索引的文本");
-      }
-      List<List<Double>> embeddings = createEmbeddings(knowledgeBase, texts);
-      List<AiKnowledgeChunkRecord> chunks = new ArrayList<>(texts.size());
-      for (int index = 0; index < texts.size(); index++) {
-        List<Double> embedding = embeddings == null ? null : embeddings.get(index);
-        chunks.add(new AiKnowledgeChunkRecord(
-            UUID.randomUUID().toString(),
-            knowledgeBase.getId(),
-            document.getId(),
-            knowledgeBase.getScopeType(),
-            knowledgeBase.getTenantId(),
-            index,
-            texts.get(index),
-            document.getMetadataJson(),
-            texts.get(index).length(),
-            embedding,
-            embedding == null ? null : embedding.size()
-        ));
-      }
-      chunkRepository.replaceDocumentChunks(document.getId(), chunks);
-      document.setStatus(AiKnowledgeDocumentStatus.READY);
-      document.setChunkCount(chunks.size());
-      document.setProcessedAt(Instant.now());
-      document.setErrorMessage(null);
-      return documentRepository.save(document);
-    } catch (RuntimeException ex) {
-      chunkRepository.deleteByDocumentId(document.getId());
-      document.setStatus(AiKnowledgeDocumentStatus.FAILED);
-      document.setChunkCount(0);
-      document.setProcessedAt(Instant.now());
-      document.setErrorMessage(truncate(ex.getMessage(), 2000));
-      return documentRepository.save(document);
-    }
-  }
-
-  private List<List<Double>> createEmbeddings(
-      final AiKnowledgeBase knowledgeBase,
-      final List<String> texts
-  ) {
-    if (knowledgeBase.getRetrievalMode() == AiKnowledgeRetrievalMode.KEYWORD) {
-      return null;
-    }
-    List<List<Double>> embeddings = new ArrayList<>(texts.size());
-    Integer actualDimensions = null;
-    int batchSize = Math.max(1, Math.min(128, properties.getEmbeddingBatchSize()));
-    for (int start = 0; start < texts.size(); start += batchSize) {
-      int end = Math.min(start + batchSize, texts.size());
-      AiEmbeddingResult result = embeddingService.embed(
-          knowledgeBase.getEmbeddingModelId(),
-          texts.subList(start, end),
-          knowledgeBase.getEmbeddingDimensions()
-      );
-      if (result.dimensions() > properties.getStoredVectorDimensions()) {
-        throw new IllegalArgumentException(
-            "模型返回 " + result.dimensions() + " 维向量，超过 pgvector 索引上限 "
-                + properties.getStoredVectorDimensions()
-        );
-      }
-      if (knowledgeBase.getEmbeddingDimensions() != null
-          && knowledgeBase.getEmbeddingDimensions() != result.dimensions()) {
-        throw new IllegalStateException("模型实际返回维度与知识库配置不一致");
-      }
-      if (actualDimensions != null && actualDimensions != result.dimensions()) {
-        throw new IllegalStateException("同一文档的 Embedding 向量维度不一致");
-      }
-      actualDimensions = result.dimensions();
-      embeddings.addAll(result.vectors());
-    }
-    if (knowledgeBase.getEmbeddingDimensions() == null && actualDimensions != null) {
-      knowledgeBase.setEmbeddingDimensions(actualDimensions);
-      knowledgeBaseRepository.save(knowledgeBase);
-    }
-    return embeddings;
-  }
-
   private AiKnowledgeDocument newDocument(
       final AiKnowledgeBase knowledgeBase,
       final String name,
@@ -314,6 +222,7 @@ public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentServic
       final String mimeType,
       final Long fileSize,
       final String storageObjectId,
+      final String storageTenantId,
       final AiKnowledgeDocumentSourceType sourceType,
       final String content,
       final String metadataJson
@@ -327,9 +236,10 @@ public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentServic
     document.setMimeType(truncate(mimeType, 256));
     document.setFileSize(fileSize);
     document.setStorageObjectId(storageObjectId);
-    document.setContentHash(sha256(content));
+    document.setStorageTenantId(storageTenantId);
+    document.setContentHash(content == null ? null : sha256(content));
     document.setSourceType(sourceType);
-    document.setStatus(AiKnowledgeDocumentStatus.PROCESSING);
+    document.setStatus(AiKnowledgeDocumentStatus.PENDING);
     document.setChunkCount(0);
     document.setMetadataJson(metadataJson);
     document.setExtractedText(content);

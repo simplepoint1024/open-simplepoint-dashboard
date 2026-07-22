@@ -24,6 +24,7 @@ const API_SCOPE_RULES: ReadonlyArray<{ scope: ApiScope; prefix: string }> = [
   { scope: 'global', prefix: '/common/tenants/current-roles' },
   { scope: 'global', prefix: '/common/tenants/current' },
   { scope: 'global', prefix: '/common/tenants/page' },
+  { scope: 'global', prefix: '/common/users/picker' },
   { scope: 'global', prefix: '/common/platform/dna' },
   { scope: 'global', prefix: '/common/platform/applications' },
   { scope: 'global', prefix: '/common/platform/packages' },

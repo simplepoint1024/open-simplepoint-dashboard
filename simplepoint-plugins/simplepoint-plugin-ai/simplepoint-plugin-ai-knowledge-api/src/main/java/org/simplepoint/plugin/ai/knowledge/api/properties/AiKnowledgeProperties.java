@@ -20,7 +20,21 @@ public class AiKnowledgeProperties {
 
   private Integer embeddingBatchSize = 64;
 
+  private Integer maxChunksPerDocument = 5000;
+
   private Integer storedVectorDimensions = 2000;
+
+  private Integer indexWorkerConcurrency = 2;
+
+  private Integer indexClaimBatchSize = 2;
+
+  private Long indexPollDelayMs = 1000L;
+
+  private Integer indexLeaseSeconds = 300;
+
+  private Integer indexMaxAttempts = 3;
+
+  private Integer indexRetryInitialDelaySeconds = 10;
 
   /** Number of candidates retrieved per final result for hybrid fusion. */
   private Integer hybridCandidateMultiplier = 5;

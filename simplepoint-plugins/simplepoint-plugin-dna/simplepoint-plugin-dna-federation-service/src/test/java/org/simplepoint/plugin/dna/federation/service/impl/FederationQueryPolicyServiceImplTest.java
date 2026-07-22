@@ -5,10 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.simplepoint.plugin.dna.federation.service.support.BaseServiceSchemaTestSupport.stubBaseServiceSchema;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -33,6 +35,11 @@ class FederationQueryPolicyServiceImplTest {
 
   @Mock
   private JdbcDataSourceDefinitionService dataSourceService;
+
+  @BeforeEach
+  void setUp() {
+    stubBaseServiceSchema(detailsProviderService);
+  }
 
   private FederationQueryPolicyServiceImpl service() {
     return new FederationQueryPolicyServiceImpl(repository, detailsProviderService, dataSourceService);
@@ -238,7 +245,7 @@ class FederationQueryPolicyServiceImplTest {
     when(repository.findActiveById("p1")).thenReturn(Optional.of(current));
     when(repository.findActiveByCode("POLICY_A")).thenReturn(Optional.of(current));
     when(dataSourceService.findActiveById("catalog-1")).thenReturn(Optional.of(enabledDs("catalog-1", "MySQL", "mysql")));
-    when(repository.findById("p1")).thenReturn(Optional.empty());
+    when(repository.findById("p1")).thenReturn(Optional.of(current));
     when(repository.updateById(entity)).thenReturn(entity);
 
     FederationQueryPolicy result = service().modifyById(entity);
@@ -265,7 +272,7 @@ class FederationQueryPolicyServiceImplTest {
     when(repository.findActiveById("p1")).thenReturn(Optional.of(current));
     when(repository.findActiveByCode("POLICY_A")).thenReturn(Optional.of(current));
     when(dataSourceService.findActiveById("catalog-1")).thenReturn(Optional.of(enabledDs("catalog-1", "MySQL", "mysql")));
-    when(repository.findById("p1")).thenReturn(Optional.empty());
+    when(repository.findById("p1")).thenReturn(Optional.of(current));
     when(repository.updateById(entity)).thenReturn(entity);
 
     service().modifyById(entity);

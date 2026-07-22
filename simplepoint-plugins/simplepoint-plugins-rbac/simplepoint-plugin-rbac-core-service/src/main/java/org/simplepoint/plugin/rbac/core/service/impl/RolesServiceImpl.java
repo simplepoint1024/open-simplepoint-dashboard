@@ -107,7 +107,9 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   @Transactional(rollbackFor = Exception.class)
   public <S extends Role> S create(S entity) {
     if (!Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())) {
-      ensureTenantContextAttribute(resolveCurrentTenantScope());
+      String tenantId = resolveCurrentTenantScope();
+      ensureTenantContextAttribute(tenantId);
+      entity.setTenantId(tenantId);
     }
     S saved = super.create(entity);
     refreshAuthorizationVersionByRoleTenantIds(List.of(saved));
@@ -118,7 +120,9 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   @Transactional(rollbackFor = Exception.class)
   public List<Role> create(Collection<Role> entities) {
     if (!Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())) {
-      ensureTenantContextAttribute(resolveCurrentTenantScope());
+      String tenantId = resolveCurrentTenantScope();
+      ensureTenantContextAttribute(tenantId);
+      entities.forEach(entity -> entity.setTenantId(tenantId));
     }
     List<Role> saved = super.create(entities);
     refreshAuthorizationVersionByRoleTenantIds(saved);
@@ -129,8 +133,10 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   @Transactional(rollbackFor = Exception.class)
   public <S extends Role> Role modifyById(S entity) {
     if (!Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())) {
-      ensureTenantContextAttribute(resolveCurrentTenantScope());
+      String tenantId = resolveCurrentTenantScope();
+      ensureTenantContextAttribute(tenantId);
       validateRoleBelongsToCurrentTenant(entity.getId());
+      entity.setTenantId(tenantId);
     }
     Role updated = (Role) super.modifyById(entity);
     refreshAuthorizationVersionByRoleTenantIds(List.of(updated));
@@ -266,6 +272,11 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     if (context != null && (context.getAttribute("X-Tenant-Id") == null || context.getAttribute("X-Tenant-Id").isBlank())) {
       context.mergeAttributes(Map.of("X-Tenant-Id", tenantId));
     }
+  }
+
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
   }
 
   private void validateRoleBelongsToCurrentTenant(String roleId) {

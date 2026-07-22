@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +81,9 @@ public class BaseServiceImpl
 
   private static final String DEFAULT_DATA_SCOPE_OWNER_FIELD = "createdBy";
 
-  private static final String DEFAULT_DATA_SCOPE_DEPT_FIELD = "orgId";
+  private static final String DEFAULT_DATA_SCOPE_DEPT_FIELD = "createOrgDeptId";
+
+  private static final String ORG_DEPT_ID_ATTRIBUTE = "X-Org-Dept-Id";
 
   private final R repository;
 
@@ -257,6 +260,8 @@ public class BaseServiceImpl
   public <S extends T> S create(S entity) {
     clearNonEditableFieldsForCreate(entity);
     applyCurrentTenantIdIfNecessary(entity);
+    applyCreationAuditContext(entity);
+    assertCreateAccessible(entity);
     S save = repository.save(entity);
     getModifyDataAuditingServices().forEach(service -> service.save(Set.of(save), repository.getDomainClass()));
     return save;
@@ -274,6 +279,8 @@ public class BaseServiceImpl
       entities.forEach(e -> {
         clearNonEditableFieldsForCreate(e);
         applyCurrentTenantIdIfNecessary(e);
+        applyCreationAuditContext(e);
+        assertCreateAccessible(e);
       });
     }
     List<T> save = repository.saveAll(entities);
@@ -296,7 +303,7 @@ public class BaseServiceImpl
       return;
     }
     String currentTenantId = currentTenantId();
-    if (currentTenantId != null && (tenantEntity.getTenantId() == null || tenantEntity.getTenantId().isBlank())) {
+    if (currentTenantId != null) {
       tenantEntity.setTenantId(currentTenantId);
       return;
     }
@@ -324,6 +331,53 @@ public class BaseServiceImpl
   }
 
   /**
+   * Replaces client-supplied audit ownership with the authenticated actor before insert.
+   * This makes newly-created business rows immediately compatible with SELF and department
+   * data scopes and prevents callers from forging row ownership.
+   *
+   * @param entity entity being created
+   */
+  protected void applyCreationAuditContext(BaseEntity<?> entity) {
+    AuthorizationContext context = getAuthorizationContext();
+    if (entity == null || context == null) {
+      return;
+    }
+    String userId = trimToNull(context.getUserId());
+    entity.setCreatedBy(userId);
+    entity.setUpdatedBy(userId);
+    String orgDeptId = trimToNull(context.getAttribute(ORG_DEPT_ID_ATTRIBUTE));
+    entity.setCreateOrgDeptId(orgDeptId);
+  }
+
+  /**
+   * Records the authenticated actor as the updater while retaining the original ownership.
+   *
+   * @param entity entity being modified
+   */
+  protected void applyModificationAuditContext(BaseEntity<?> entity) {
+    AuthorizationContext context = getAuthorizationContext();
+    if (entity == null || context == null) {
+      return;
+    }
+    String userId = trimToNull(context.getUserId());
+    entity.setUpdatedBy(userId);
+  }
+
+  private void assertCreateAccessible(T entity) {
+    if (isDataScopeRestricted()) {
+      assertAccessible(entity);
+    }
+  }
+
+  private String trimToNull(String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
+  }
+
+  /**
    * Modifies an entity by its ID.
    *
    * @param entity the entity to modify
@@ -338,12 +392,10 @@ public class BaseServiceImpl
     if (entity.getId() == null) {
       throw new NullPointerException("entity id is null");
     }
-    Optional<T> existing = repository.findById(entity.getId());
+    repository.enableTenantFilter();
+    Optional<T> existing = repository.findById(entity.getId()).filter(this::isActive);
     if (existing.isEmpty()) {
-      if (isDataScopeRestricted()) {
-        throw new NoSuchElementException("entity not found: " + entity.getId());
-      }
-      return repository.updateById(entity);
+      throw new NoSuchElementException("entity not found: " + entity.getId());
     }
     T db = existing.get();
     assertAccessible(db);
@@ -360,6 +412,7 @@ public class BaseServiceImpl
           .setFieldNameEditor(name -> scopeFields.contains(name) ? null : name); // null => skip copy for allowed fields
 
       BeanUtil.copyProperties(db, entity, options);
+      applyModificationAuditContext(entity);
 
       // Audit diff between db (before) and entity (after merge)
       getModifyDataAuditingServices().forEach(svc -> svc.modify(db, entity, repository.getDomainClass()));
@@ -384,6 +437,7 @@ public class BaseServiceImpl
    */
   @Override
   public void removeAll() {
+    repository.enableTenantFilter();
     repository.deleteAll();
   }
 
@@ -394,11 +448,9 @@ public class BaseServiceImpl
    */
   @Override
   public void removeById(I id) {
-    Optional<T> entity = repository.findById(id);
+    repository.enableTenantFilter();
+    Optional<T> entity = repository.findById(id).filter(this::isActive);
     if (entity.isEmpty()) {
-      if (!isDataScopeRestricted()) {
-        repository.deleteById(id);
-      }
       return;
     }
     T data = entity.get();
@@ -414,7 +466,8 @@ public class BaseServiceImpl
    */
   @Override
   public void removeByIds(Collection<I> ids) {
-    List<T> deleteData = repository.findAllByIds(ids);
+    repository.enableTenantFilter();
+    List<T> deleteData = repository.findAllByIds(ids).stream().filter(this::isActive).toList();
     boolean restricted = isDataScopeRestricted();
     if (restricted) {
       deleteData.forEach(this::assertAccessible);
@@ -422,7 +475,9 @@ public class BaseServiceImpl
     if (!deleteData.isEmpty()) {
       getModifyDataAuditingServices().forEach(service -> service.delete(deleteData, repository.getDomainClass()));
     }
-    repository.deleteByIds(restricted ? deleteData.stream().map(BaseEntity::getId).toList() : ids);
+    if (!deleteData.isEmpty()) {
+      repository.deleteByIds(deleteData.stream().map(BaseEntity::getId).toList());
+    }
   }
 
   /**
@@ -433,7 +488,8 @@ public class BaseServiceImpl
    */
   @Override
   public Optional<T> findById(I id) {
-    return repository.findById(id).filter(this::isAccessible);
+    repository.enableTenantFilter();
+    return repository.findById(id).filter(this::isActive).filter(this::isAccessible);
   }
 
   /**
@@ -444,7 +500,11 @@ public class BaseServiceImpl
    */
   @Override
   public List<T> findAllByIds(Iterable<I> ids) {
-    return repository.findAllByIds(ids).stream().filter(this::isAccessible).toList();
+    repository.enableTenantFilter();
+    return repository.findAllByIds(ids).stream()
+        .filter(this::isActive)
+        .filter(this::isAccessible)
+        .toList();
   }
 
   /**
@@ -469,7 +529,12 @@ public class BaseServiceImpl
   @Override
   @DataScopeFilter(ownerField = DEFAULT_DATA_SCOPE_OWNER_FIELD, deptField = DEFAULT_DATA_SCOPE_DEPT_FIELD)
   public <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
-    Page<S> limit = runWithDefaultDataScope(() -> repository.limit(attributes, pageable));
+    Map<String, String> safeAttributes = new LinkedHashMap<>();
+    if (attributes != null) {
+      safeAttributes.putAll(attributes);
+    }
+    safeAttributes.put("deletedAt", "is:null");
+    Page<S> limit = runWithDefaultDataScope(() -> repository.limit(safeAttributes, pageable));
     this.validate(limit.getContent());
     return limit;
   }
@@ -601,6 +666,21 @@ public class BaseServiceImpl
   }
 
   private <V> V runWithDefaultDataScope(Supplier<V> supplier) {
+    if (!isDataScopeApplicable()) {
+      DataScopeCondition previous = DataScopeContext.get();
+      DataScopeContext.set(new DataScopeCondition(
+          DATA_SCOPE_ALL, dataScopeDeptField(), dataScopeOwnerField(), null, Set.of()
+      ));
+      try {
+        return supplier.get();
+      } finally {
+        if (previous == null) {
+          DataScopeContext.clear();
+        } else {
+          DataScopeContext.set(previous);
+        }
+      }
+    }
     if (DataScopeContext.get() != null) {
       return supplier.get();
     }
@@ -636,6 +716,9 @@ public class BaseServiceImpl
   }
 
   private boolean isDataScopeRestricted() {
+    if (!isDataScopeApplicable()) {
+      return false;
+    }
     DataScopeCondition condition = DataScopeContext.get();
     if (condition != null) {
       return !condition.isAllData();
@@ -654,7 +737,7 @@ public class BaseServiceImpl
       return false;
     }
     AuthorizationContext ctx = getAuthorizationContext();
-    if (ctx == null || Boolean.TRUE.equals(ctx.getIsAdministrator())) {
+    if (!isDataScopeApplicable() || ctx == null || Boolean.TRUE.equals(ctx.getIsAdministrator())) {
       return true;
     }
     String scopeType = ctx.getDataScopeType();
@@ -683,6 +766,10 @@ public class BaseServiceImpl
     return owner != null && owner.toString().equals(ctx.getUserId());
   }
 
+  private boolean isActive(T entity) {
+    return entity != null && entity.getDeletedAt() == null;
+  }
+
   /**
    * Returns the owner field used by base data-scope checks.
    * Override together with {@link #dataScopeDeptField()} when an entity does not use the standard names.
@@ -697,6 +784,18 @@ public class BaseServiceImpl
    */
   protected String dataScopeDeptField() {
     return DEFAULT_DATA_SCOPE_DEPT_FIELD;
+  }
+
+  /**
+   * Whether generic row-level data scope should apply to this service.
+   * Security metadata and tenant configuration services should return {@code false};
+   * those services enforce their own tenant or package boundaries instead of filtering
+   * configuration rows by the operator's department or creator.
+   *
+   * @return true when the default row-level data scope is applicable
+   */
+  protected boolean isDataScopeApplicable() {
+    return true;
   }
 
   private Object readFieldValue(Object target, String fieldName) {

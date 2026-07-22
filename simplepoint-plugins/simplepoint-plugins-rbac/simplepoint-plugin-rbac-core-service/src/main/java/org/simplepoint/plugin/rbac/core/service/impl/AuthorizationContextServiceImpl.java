@@ -49,6 +49,8 @@ import org.springframework.stereotype.Service;
 @RemoteProvider
 public class AuthorizationContextServiceImpl implements AuthorizationContextService {
 
+  private static final String ORG_DEPT_ID_ATTRIBUTE = "X-Org-Dept-Id";
+
   private final UsersService usersService;
   private final ObjectProvider<ResourceService> resourceServiceProvider;
   private final ObjectProvider<TenantPackageRelevanceRepository> tenantPackageRelevanceRepositoryProvider;
@@ -104,6 +106,12 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     }
     Map<String, String> effectiveAttributes = new HashMap<>(attributes == null ? Map.of() : attributes);
     effectiveAttributes.put("X-User-Id", userId);
+    String userOrgId = trimToNull(user.getOrgId());
+    if (userOrgId != null) {
+      effectiveAttributes.put(ORG_DEPT_ID_ATTRIBUTE, userOrgId);
+    } else {
+      effectiveAttributes.remove(ORG_DEPT_ID_ATTRIBUTE);
+    }
     if (resolvedTenantId != null) {
       effectiveAttributes.put("X-Tenant-Id", resolvedTenantId);
     }

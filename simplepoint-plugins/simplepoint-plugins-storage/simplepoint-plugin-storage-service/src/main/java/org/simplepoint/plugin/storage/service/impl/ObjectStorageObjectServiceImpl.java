@@ -8,6 +8,7 @@
 
 package org.simplepoint.plugin.storage.service.impl;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -24,6 +25,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.AuthorizationScopeGuards;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
@@ -31,12 +33,14 @@ import org.simplepoint.plugin.rbac.tenant.api.vo.TenantContextType;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageObject;
 import org.simplepoint.plugin.storage.api.model.ObjectStoragePlatformType;
 import org.simplepoint.plugin.storage.api.model.ObjectStorageProviderDefinition;
+import org.simplepoint.plugin.storage.api.model.ObjectStorageSourceContent;
 import org.simplepoint.plugin.storage.api.model.ObjectStorageUploadRequest;
 import org.simplepoint.plugin.storage.api.properties.ObjectStorageProperties;
 import org.simplepoint.plugin.storage.api.repository.ObjectStorageObjectRepository;
 import org.simplepoint.plugin.storage.api.repository.ObjectStorageTenantQuotaRepository;
 import org.simplepoint.plugin.storage.api.service.ObjectStorageObjectService;
 import org.simplepoint.plugin.storage.api.service.ObjectStorageProviderConfigService;
+import org.simplepoint.plugin.storage.api.service.ObjectStorageSourceService;
 import org.simplepoint.plugin.storage.api.spi.ObjectStorageDriver;
 import org.simplepoint.plugin.storage.api.spi.ObjectStorageReadResult;
 import org.simplepoint.plugin.storage.api.spi.ObjectStorageWriteRequest;
@@ -55,9 +59,11 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class ObjectStorageObjectServiceImpl
     extends BaseServiceImpl<ObjectStorageObjectRepository, ObjectStorageObject, String>
-    implements ObjectStorageObjectService {
+    implements ObjectStorageObjectService, ObjectStorageSourceService {
 
   private static final DateTimeFormatter DATE_PATH = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+
+  private static final long MAX_ROUTED_DOWNLOAD_BYTES = 64L * 1024L * 1024L;
 
   private final ObjectStorageObjectRepository repository;
 
@@ -114,6 +120,16 @@ public class ObjectStorageObjectServiceImpl
     this.tenantService = tenantService;
   }
 
+  /**
+   * Object metadata is isolated explicitly by tenantId in every user-facing
+   * query. Applying the generic SELF/ORG business-row filter on top would hide
+   * freshly uploaded objects because storage records are not department-owned.
+   */
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
   @Override
   public Collection<ObjectStorageProviderDefinition> providers() {
     if (providerConfigService != null) {
@@ -151,6 +167,79 @@ public class ObjectStorageObjectServiceImpl
   public ObjectStorageReadResult download(final String id) {
     ObjectStorageObject object = repository.findActiveByIdAndTenantId(id, requireCurrentTenantId())
         .orElseThrow(() -> new NoSuchElementException("对象不存在: " + id));
+    return read(object);
+  }
+
+  @Override
+  public ObjectStorageReadResult downloadImage(final String id) {
+    ObjectStorageObject object = repository.findActiveById(id)
+        .filter(candidate -> {
+          String contentType = trimToNull(candidate.getContentType());
+          return contentType != null && contentType.toLowerCase(java.util.Locale.ROOT).startsWith("image/");
+        })
+        .filter(this::canRenderImage)
+        .orElseThrow(() -> new NoSuchElementException("图片不存在: " + id));
+    return read(object);
+  }
+
+  private boolean canRenderImage(final ObjectStorageObject object) {
+    if ("rbac-avatar".equals(trimToNull(object.getSourceServiceName()))) {
+      return true;
+    }
+    if (AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
+      return true;
+    }
+    String tenantId = currentTenantId();
+    if (tenantId == null || tenantId.isBlank()) {
+      tenantId = resolvePersonalTenantId();
+    }
+    return Objects.equals(trimToNull(object.getTenantId()), trimToNull(tenantId));
+  }
+
+  @Override
+  public ObjectStorageSourceContent downloadSource(
+      final String id,
+      final String tenantId,
+      final String sourceServiceName,
+      final long maxBytes
+  ) {
+    String normalizedId = requireValue(id, "对象 ID 不能为空");
+    String normalizedTenantId = requireValue(tenantId, "对象存储租户 ID 不能为空");
+    String normalizedSourceService = requireValue(sourceServiceName, "对象来源服务不能为空");
+    if (maxBytes <= 0 || maxBytes > MAX_ROUTED_DOWNLOAD_BYTES) {
+      throw new IllegalArgumentException(
+          "服务间对象下载上限必须在 1 到 " + MAX_ROUTED_DOWNLOAD_BYTES + " 字节之间"
+      );
+    }
+    ObjectStorageObject object = repository
+        .findActiveByIdAndTenantId(normalizedId, normalizedTenantId)
+        .orElseThrow(() -> new NoSuchElementException("对象不存在或不属于指定租户: " + normalizedId));
+    if (!normalizedSourceService.equals(trimToNull(object.getSourceServiceName()))) {
+      throw new NoSuchElementException("对象不存在或不属于指定来源服务: " + normalizedId);
+    }
+    if (object.getContentLength() != null && object.getContentLength() > maxBytes) {
+      throw new IllegalArgumentException("对象大小超过服务间下载上限");
+    }
+    ObjectStorageReadResult result = read(object);
+    try (InputStream input = result.getInputStream()) {
+      byte[] content = input.readNBytes(Math.toIntExact(maxBytes + 1));
+      if (content.length > maxBytes) {
+        throw new IllegalArgumentException("对象大小超过服务间下载上限");
+      }
+      return new ObjectStorageSourceContent(
+          content,
+          trimToNull(result.getFileName()) == null
+              ? object.getOriginalFileName() : result.getFileName(),
+          trimToNull(result.getContentType()) == null
+              ? normalizeContentType(object.getContentType()) : result.getContentType(),
+          content.length
+      );
+    } catch (IOException ex) {
+      throw new IllegalStateException("读取对象内容失败: " + ex.getMessage(), ex);
+    }
+  }
+
+  private ObjectStorageReadResult read(final ObjectStorageObject object) {
     ResolvedProvider provider = resolveProvider(object.getProviderCode(), true);
     return resolveDriver(provider.getProperties().getType()).read(
         provider.getProperties(),
@@ -442,6 +531,14 @@ public class ObjectStorageObjectServiceImpl
     }
     String trimmed = value.trim();
     return trimmed.isEmpty() ? null : trimmed;
+  }
+
+  private static String requireValue(final String value, final String message) {
+    String normalized = trimToNull(value);
+    if (normalized == null) {
+      throw new IllegalArgumentException(message);
+    }
+    return normalized;
   }
 
   @Getter

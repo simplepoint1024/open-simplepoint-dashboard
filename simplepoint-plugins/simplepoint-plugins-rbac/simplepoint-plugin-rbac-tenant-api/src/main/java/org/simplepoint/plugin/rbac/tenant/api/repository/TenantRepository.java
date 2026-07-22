@@ -60,4 +60,13 @@ public interface TenantRepository extends BaseRepository<Tenant, String> {
    * @return true when the user is the owner or a tenant member
    */
   boolean hasUser(String tenantId, String userId);
+
+  /**
+   * Checks whether another active tenant already uses the supplied name.
+   *
+   * @param name tenant name
+   * @param tenantId current tenant ID to exclude
+   * @return true when another tenant uses the name
+   */
+  boolean existsByNameAndIdNot(String name, String tenantId);
 }

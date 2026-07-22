@@ -27,7 +27,6 @@ public interface AiGenerationService {
   GenerationStream prepareStream(GenerationRequest request);
 
   /** A prepared one-shot stream that no longer reads the request authorization context. */
-  @FunctionalInterface
   interface GenerationStream {
 
     /**
@@ -36,5 +35,8 @@ public interface AiGenerationService {
      * @param consumer event consumer
      */
     void consume(Consumer<GenerationEvent> consumer);
+
+    /** Cancels the provider request and closes any active response body. */
+    void cancel();
   }
 }

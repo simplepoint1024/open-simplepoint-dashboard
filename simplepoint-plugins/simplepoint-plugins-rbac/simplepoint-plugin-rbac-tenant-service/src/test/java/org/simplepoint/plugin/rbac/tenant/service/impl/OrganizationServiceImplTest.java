@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.simplepoint.plugin.rbac.tenant.service.support.BaseServiceSchemaTestSupport.stubBaseServiceSchema;
 
 import java.util.Collections;
 import java.util.List;
@@ -283,8 +284,8 @@ class OrganizationServiceImplTest {
       when(dictionaryItemRepository.options(TenantDictionaryCodes.ORGANIZATION_TYPE))
           .thenReturn(List.of(new DictionaryOptionVo("group", "集团")));
       when(repository.existsByTenantIdAndCodeAndIdNot("t1", "HQ", "org1")).thenReturn(false);
-      // findById called by super.modifyById (returns empty → skips audit block)
-      when(repository.findById("org1")).thenReturn(Optional.empty());
+      when(repository.findById("org1")).thenReturn(Optional.of(current));
+      stubBaseServiceSchema(detailsProviderService);
       Organization updated = org("org1", "New Name", "HQ", "group");
       when(repository.updateById(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -353,8 +354,7 @@ class OrganizationServiceImplTest {
       Organization existing = org("org1", "HQ", "HQ", "group");
       when(repository.findAllByIdsAndTenantId(Set.of("org1"), "t1")).thenReturn(List.of(existing));
       when(repository.findIdsByParentIds(Set.of("org1"), "t1")).thenReturn(Collections.emptyList());
-      // super.removeByIds calls findAllByIds; return empty so audit is skipped
-      when(repository.findAllByIds(any())).thenReturn(Collections.emptyList());
+      when(repository.findAllByIds(any())).thenReturn(List.of(existing));
 
       service.removeByIds(List.of("org1"));
 

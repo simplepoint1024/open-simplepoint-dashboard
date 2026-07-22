@@ -39,11 +39,21 @@ public class ErrorLogServiceImpl extends BaseServiceImpl<ErrorLogRepository, Err
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public <S extends ErrorLog> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
     Map<String, String> normalizedAttributes = new LinkedHashMap<>();
     if (attributes != null) {
       normalizedAttributes.putAll(attributes);
     }
+    String tenantId = currentTenantId();
+    if (tenantId != null) {
+      normalizedAttributes.put("tenantId", tenantId);
+    }
+    normalizedAttributes.put("deletedAt", "is:null");
     return super.limit(normalizedAttributes, pageable);
   }
 }

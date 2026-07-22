@@ -68,6 +68,11 @@ public class ApplicationServiceImpl
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public <S extends Application> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
     if (AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
       return super.limit(attributes, pageable);

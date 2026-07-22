@@ -44,6 +44,7 @@ export interface TableProps<T> {
   onChange?: (pagination: any, filters?: any, sorter?: any, extra?: any) => void;
   rowSelection?: { selectedKeys?: React.Key[] };
   onSelectionChange?: (selectedRowKeys: React.Key[], selectedRows: T[]) => void;
+  onRowDoubleClick?: (record: T, key: React.Key) => void;
   onButtonEvents?: Record<string, (selectedRowKeys: React.Key[], selectedRows: T[], props: TableButtonProps) => void>;
   buttons?: TableButtonProps[]
   storageKey?: string;
@@ -97,11 +98,21 @@ const resolveI18nLabel = (value: unknown): string => {
 
 const normalizeOptionValue = (value: any) => value == null ? '' : String(value);
 
+const schemaScalarType = (schemaDef: any): string | undefined => {
+  const type = schemaDef?.type;
+  if (Array.isArray(type)) {
+    return type.find((item: unknown): item is string => typeof item === 'string' && item !== 'null');
+  }
+  return typeof type === 'string' ? type : undefined;
+};
+
 const resolveOptionLabel = (schemaDef: any, value: any): string | undefined => {
-  const options = Array.isArray(schemaDef?.oneOf)
-    ? schemaDef.oneOf
-    : Array.isArray(schemaDef?.anyOf)
-      ? schemaDef.anyOf
+  const optionSchema = Array.isArray(schemaDef?.items) ? undefined : schemaDef?.items;
+  const source = schemaScalarType(schemaDef) === 'array' && optionSchema ? optionSchema : schemaDef;
+  const options = Array.isArray(source?.oneOf)
+    ? source.oneOf
+    : Array.isArray(source?.anyOf)
+      ? source.anyOf
       : [];
 
   if (!options.length) {
@@ -118,6 +129,30 @@ const resolveOptionLabel = (schemaDef: any, value: any): string | undefined => {
   }
 
   return resolveI18nLabel(matched.title ?? matched.label ?? matched.const ?? value);
+};
+
+const resolveDictionaryCode = (schemaDef: any): string | undefined => {
+  const code = schemaDef?.['x-dictionary-code']
+    ?? schemaDef?.['x-ui']?.dictCode
+    ?? schemaDef?.['x-ui']?.['dict-code'];
+  return typeof code === 'string' && code.trim() ? code.trim() : undefined;
+};
+
+const resolveDictionaryOptions = (schemaDef: any): Array<{value: string; label: string}> => {
+  const source = schemaScalarType(schemaDef) === 'array' && schemaDef?.items && !Array.isArray(schemaDef.items)
+    ? schemaDef.items
+    : schemaDef;
+  const options = Array.isArray(source?.oneOf)
+    ? source.oneOf
+    : Array.isArray(source?.anyOf)
+      ? source.anyOf
+      : [];
+  return options
+    .filter((option: any) => option?.const != null || option?.value != null)
+    .map((option: any) => ({
+      value: normalizeOptionValue(option?.const ?? option?.value),
+      label: resolveI18nLabel(option?.title ?? option?.label ?? option?.const ?? option?.value),
+    }));
 };
 
 /** Read a stable user identifier from the session cache written by useUserInfo(). */
@@ -444,10 +479,13 @@ const App = <T extends object = any>(props: TableProps<T>) => {
       })
       .map(([key, schemaDef]) => {
         const baseTitle = (schemaDef as any)?.title ?? key;
-        const isBoolean = (schemaDef as any)?.type === 'boolean';
-        const isNumber = (schemaDef as any)?.type === 'number' || (schemaDef as any)?.type === 'integer';
+        const scalarType = schemaScalarType(schemaDef);
+        const isBoolean = scalarType === 'boolean';
+        const isNumber = scalarType === 'number' || scalarType === 'integer';
         const align = key === 'icon' ? 'center' : (isNumber ? 'right' : undefined);
-        const hasOptions = Array.isArray((schemaDef as any)?.oneOf) || Array.isArray((schemaDef as any)?.anyOf);
+        const dictionaryCode = resolveDictionaryCode(schemaDef);
+        const dictionaryOptions = dictionaryCode ? resolveDictionaryOptions(schemaDef) : undefined;
+        const hasOptions = resolveDictionaryOptions(schemaDef).length > 0;
 
         const renderCell = isBoolean
           ? (val: any) => {
@@ -468,7 +506,13 @@ const App = <T extends object = any>(props: TableProps<T>) => {
               </span>
              )
             : hasOptions
-              ? (val: any) => resolveOptionLabel(schemaDef, val) ?? val
+              ? (val: any) => Array.isArray(val)
+                ? val.map(item => (
+                  <Tag key={normalizeOptionValue(item)} style={{marginInlineEnd: 4}}>
+                    {resolveOptionLabel(schemaDef, item) ?? String(item)}
+                  </Tag>
+                ))
+                : resolveOptionLabel(schemaDef, val) ?? val
              : undefined;
 
         const textEllipsisRender = (!isBoolean && key !== 'icon' && !hasOptions)
@@ -530,6 +574,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
               initialText={parseText(filters[key])}
               columnType={columnFilterType}
               columnLabel={typeof baseTitle === 'string' ? baseTitle : key}
+              options={dictionaryOptions}
               onChange={(op: string, text: string) => {
                 // is:null / is:not:null 不需要 text
                 const isNullOp = op === 'is:null' || op === 'is:not:null';
@@ -773,6 +818,17 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           pagination={pagination}
           rowKey={keyOfRecord}
           onChange={props.onChange}
+          onRow={props.onRowDoubleClick ? record => ({
+            onDoubleClick: event => {
+              const target = event.target as HTMLElement | null;
+              if (target?.closest('button, a, input, textarea, select, [role="button"], .ant-checkbox-wrapper')) {
+                return;
+              }
+              const key = keyOfRecord(record);
+              onSelectChange([key], [record]);
+              props.onRowDoubleClick?.(record, key);
+            },
+          }) : undefined}
           rowSelection={rowSelection}
           scroll={{y: scrollY, x: 'max-content'}}
           locale={{emptyText}}

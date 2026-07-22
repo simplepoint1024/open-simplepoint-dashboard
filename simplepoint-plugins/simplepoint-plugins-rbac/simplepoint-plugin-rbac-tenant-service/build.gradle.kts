@@ -9,4 +9,5 @@ dependencies{
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-api"))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("jakarta.servlet:jakarta.servlet-api")
 }

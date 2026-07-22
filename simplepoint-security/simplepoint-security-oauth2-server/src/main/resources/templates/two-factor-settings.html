@@ -1,108 +1,46 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title>Two-factor Authentication Settings</title>
-    <style>
-        body {
-            font-family: "Segoe UI", Arial, sans-serif;
-            background-color: #eef2f7;
-            margin: 0;
-            padding: 40px;
-            color: #333;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background: #fff;
-            border-radius: 10px;
-            padding: 35px;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-        }
-        h2 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 25px;
-            font-size: 1.6em;
-        }
-        p.status {
-            text-align: center;
-            font-size: 1.15em;
-            margin-bottom: 25px;
-        }
-        p.status strong {
-            font-weight: 600;
-        }
-        p.status.enabled strong {
-            color: #27ae60; /* green for enabled */
-        }
-        p.status.disabled strong {
-            color: #c0392b; /* red for disabled */
-        }
-        .actions {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin: 20px 0;
-        }
-        button {
-            background-color: #3498db;
-            border: none;
-            color: #fff;
-            padding: 12px 28px;
-            font-size: 1em;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
-        button:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-        }
-        .info {
-            margin-top: 30px;
-            font-size: 0.95em;
-            color: #555;
-            text-align: center;
-            line-height: 1.5;
-        }
-        .note {
-            margin-top: 15px;
-            font-size: 0.9em;
-            color: #888;
-            text-align: center;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>两步验证 · Simple·Point</title>
+    <link rel="stylesheet" th:href="${twoFactorCssUrl}" href="/two-factor.css"/>
 </head>
 <body>
-<div class="container">
-    <h2>Two-factor Authentication</h2>
+<main class="security-shell compact">
+    <div class="brand"><span class="brand-mark">S</span><span>Simple·Point</span></div>
+    <section class="security-card">
+        <header class="card-head">
+            <div class="security-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 4.8 6v5.3c0 4.4 3 8.4 7.2 9.7 4.2-1.3 7.2-5.3 7.2-9.7V6L12 3Z"/><path d="m9.3 12 1.8 1.8 3.8-4"/></svg>
+            </div>
+            <h1>两步验证</h1>
+            <p class="subtitle">除了密码，再使用身份验证器中的动态验证码保护你的账号。</p>
+        </header>
+        <div class="card-body">
+            <div th:if="${twoFactorEnabled}" class="status-panel enabled">
+                <span class="status-dot"></span>
+                <div class="status-copy"><strong>保护已开启</strong><span>登录时需要输入 6 位动态验证码</span></div>
+            </div>
+            <div th:unless="${twoFactorEnabled}" class="status-panel">
+                <span class="status-dot"></span>
+                <div class="status-copy"><strong>尚未开启</strong><span>建议立即配置，降低密码泄露风险</span></div>
+            </div>
 
-    <p th:if="${twoFactorEnabled}" class="status enabled">
-        2FA is currently <strong>enabled</strong> for your account.
-    </p>
-    <p th:unless="${twoFactorEnabled}" class="status disabled">
-        2FA is currently <strong>disabled</strong> for your account.
-    </p>
+            <div class="actions">
+                <form th:if="${!twoFactorEnabled}" th:action="${twoFactorEnableUrl}" method="post">
+                    <button type="submit">开始配置</button>
+                </form>
+                <form th:if="${twoFactorEnabled}" th:action="${twoFactorDisableUrl}" method="post">
+                    <button class="danger" type="submit">关闭两步验证</button>
+                </form>
+                <button type="button" class="secondary" onclick="window.close()">关闭页面</button>
+            </div>
 
-    <div class="actions">
-        <form th:if="${!twoFactorEnabled}" th:action="@{/account/2fa/enable}" method="post">
-            <button type="submit">Enable 2FA</button>
-        </form>
-
-        <form th:if="${twoFactorEnabled}" th:action="@{/account/2fa/disable}" method="post">
-            <button type="submit">Disable 2FA</button>
-        </form>
-    </div>
-
-    <p class="info">
-        After enabling 2FA, you will see setup instructions with a secret key and otpauth URL.<br/>
-        You can use them to add an account in Authy or Google Authenticator.
-    </p>
-
-    <p class="note">
-        For better security, keep your secret key private and never share it.
-    </p>
-</div>
+            <div class="info-box"><strong>支持的应用</strong><br/>Google Authenticator、Microsoft Authenticator、Authy 以及其他兼容 TOTP 的身份验证器。</div>
+            <p class="privacy-note">请勿向任何人透露密钥或动态验证码。</p>
+        </div>
+    </section>
+</main>
 </body>
 </html>

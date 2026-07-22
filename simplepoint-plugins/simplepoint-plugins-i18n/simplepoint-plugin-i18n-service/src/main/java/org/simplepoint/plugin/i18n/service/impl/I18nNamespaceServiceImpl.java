@@ -28,4 +28,9 @@ public class I18nNamespaceServiceImpl extends BaseServiceImpl<I18nNamespaceRepos
       DetailsProviderService detailsProviderService) {
     super(repository, detailsProviderService);
   }
+
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
 }

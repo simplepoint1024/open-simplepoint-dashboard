@@ -21,6 +21,8 @@ import {findRouteChainByPath, flattenRoutes, getRouteKey, RouteInfo} from "@/sto
 import {aboutMeItem, HeaderLogo, HeaderSearchBar, RoleSwitcherTop, TenantSwitcherTop, toolsSwitcherGroupItem} from "@/layouts/navigation-bar/top-bar.tsx";
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import MenuSearchModal from "@/layouts/navigation-bar/menu-search-modal.tsx";
+import {useCurrentTenantProfile, useCurrentTenants} from '@/fetches/tenants.ts';
+import {getTenantId} from '@/store/tenant.ts';
 
 const {Header, Content, Footer, Sider} = Layout;
 
@@ -47,6 +49,19 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
   const navigate = useNavigate();
   const location = useLocation();
   const {t} = useI18n();
+  const [activeTenantId, setActiveTenantId] = useState<string | undefined>(() => getTenantId());
+  const {data: currentTenants} = useCurrentTenants();
+  const activeTenant = currentTenants?.find(tenant => tenant.tenantId === activeTenantId);
+  const tenantMenuEnabled = !!activeTenant && activeTenant.tenantType !== 'PLATFORM';
+  const {data: currentTenantProfile} = useCurrentTenantProfile(activeTenantId, tenantMenuEnabled);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      setActiveTenantId((event as CustomEvent<string | undefined>).detail ?? getTenantId());
+    };
+    window.addEventListener('sp-set-tenant', handler as EventListener);
+    return () => window.removeEventListener('sp-set-tenant', handler as EventListener);
+  }, []);
 
   // 侧边栏宽度拖动调整，按用户隔离持久化
   const SIDER_MIN = 140;
@@ -137,6 +152,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
   const extraTabs = useMemo(() => ([
     { path: '/profile', label: t('menu.profile', '个人资料'), icon: 'UserOutlined' },
     { path: '/settings', label: t('menu.settings', '系统设置'), icon: 'SettingOutlined' },
+    { path: '/tenant', label: t('menu.tenantHome', '租户主页'), icon: 'HomeOutlined' },
   ]), [t]);
 
   // 根据菜单构建 path -> label 映射（复用 leafNodes + extras）
@@ -491,13 +507,24 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
   }), [onContextMenuClick, t]);
 
   // 顶部菜单 items 缓存（右：工具+头像）
-  const topRightItems = useMemo(() => [toolsSwitcherGroupItem(), aboutMeItem(navigate)], [navigate]);
+  const topRightItems = useMemo(() => [
+    toolsSwitcherGroupItem(),
+    aboutMeItem(navigate, {
+      enabled: tenantMenuEnabled,
+      editable: currentTenantProfile?.profileEditable === true,
+    }),
+  ], [currentTenantProfile?.profileEditable, navigate, tenantMenuEnabled]);
 
   return (
     <Layout className={`nb-root ${themeMode === 'dark' ? 'theme-dark' : 'theme-light'}`} style={{ minHeight: '100vh' }}>
       <Header className="nb-header">
         {/* 左：Logo（独立组件，不受 AntD Menu overflow 检测影响）*/}
         <HeaderLogo navigate={navigate} />
+        {/* 全局工作空间上下文紧邻品牌区，与搜索和个人工具保持分离 */}
+        <div className="nb-header-context">
+          <TenantSwitcherTop />
+          <RoleSwitcherTop />
+        </div>
         {/* Logo 后面的面包屑，显示当前菜单路径 */}
         {breadcrumbItems.length > 0 && (
           <div className="nb-header-breadcrumb">
@@ -507,11 +534,6 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
         {/* 中：搜索条，flex: 1 自动撑开 */}
         <div className="nb-header-search">
           <HeaderSearchBar onOpen={() => setSearchOpen(true)} />
-        </div>
-        {/* 租户选择器，搜索栏与工具按钮之间 */}
-        <div className="nb-header-tenant">
-          <TenantSwitcherTop />
-          <RoleSwitcherTop />
         </div>
         {/* 右：工具组 + 头像 */}
         <Menu

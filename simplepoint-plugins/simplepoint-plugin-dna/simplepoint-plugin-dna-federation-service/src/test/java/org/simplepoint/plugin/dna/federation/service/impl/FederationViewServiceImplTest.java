@@ -3,9 +3,9 @@ package org.simplepoint.plugin.dna.federation.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.simplepoint.plugin.dna.federation.service.support.BaseServiceSchemaTestSupport.stubBaseServiceSchema;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,7 +43,7 @@ class FederationViewServiceImplTest {
 
   @BeforeEach
   void setUp() {
-    lenient().when(detailsProviderService.getDialects(any())).thenReturn(List.of());
+    stubBaseServiceSchema(detailsProviderService);
   }
 
   @Test
@@ -198,7 +198,7 @@ class FederationViewServiceImplTest {
     when(repository.findActiveByCode("summary_view")).thenReturn(Optional.of(current));
     when(schemaRepository.findActiveById("schema-1")).thenReturn(Optional.of(schema));
     when(catalogService.findActiveById("cat-1")).thenReturn(Optional.of(catalog));
-    when(repository.findById("v1")).thenReturn(Optional.empty());
+    when(repository.findById("v1")).thenReturn(Optional.of(current));
     when(repository.updateById(any(FederationView.class))).thenReturn(updated);
 
     FederationView result = service().modifyById(patch);

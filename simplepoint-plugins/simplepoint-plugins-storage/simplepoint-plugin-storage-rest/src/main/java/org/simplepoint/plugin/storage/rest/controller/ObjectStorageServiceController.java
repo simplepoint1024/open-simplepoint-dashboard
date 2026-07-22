@@ -116,6 +116,36 @@ public class ObjectStorageServiceController {
   }
 
   /**
+   * Renders an authenticated OSS image inline. This endpoint intentionally does
+   * not depend on the active tenant so user avatars remain visible after a
+   * workspace switch.
+   */
+  @GetMapping("/images/{id}")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "显示 OSS 图片", description = "以内联方式显示头像和 JSON Schema 图片")
+  public ResponseEntity<?> image(@PathVariable("id") final String id) {
+    try {
+      ObjectStorageReadResult result = objectService.downloadImage(id);
+      ResponseEntity.BodyBuilder builder = ResponseEntity.ok()
+          .header(
+              HttpHeaders.CONTENT_DISPOSITION,
+              ContentDisposition.inline()
+                  .filename(result.getFileName(), StandardCharsets.UTF_8)
+                  .build()
+                  .toString()
+          )
+          .contentType(MediaType.parseMediaType(result.getContentType()))
+          .header(HttpHeaders.CACHE_CONTROL, "private, max-age=300");
+      if (result.getContentLength() != null && result.getContentLength() >= 0) {
+        builder.contentLength(result.getContentLength());
+      }
+      return builder.body(new InputStreamResource(result.getInputStream()));
+    } catch (NoSuchElementException ex) {
+      return ResponseEntity.status(404).contentType(UTF8_TEXT_PLAIN).body(ex.getMessage());
+    }
+  }
+
+  /**
    * Deletes one tenant-owned object.
    */
   @DeleteMapping("/objects/{id}")

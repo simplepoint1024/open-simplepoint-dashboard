@@ -16,6 +16,11 @@ export default {
     i18nNamespaces: ['ai-model-providers'],
     name: 'ai-models',
   },
+  'platform.ai-api-keys': {
+    baseUrl: `${contextPath}/platform/ai/api-keys`,
+    i18nNamespaces: ['ai-api-keys'],
+    name: 'ai-api-keys',
+  },
   'platform.ai-inference': {
     baseUrl: `${contextPath}/platform/ai/inference`,
     modelsUrl: `${contextPath}/platform/ai/models/available`,
@@ -41,6 +46,11 @@ export default {
     baseUrl: `${contextPath}/tenant/ai/models`,
     i18nNamespaces: ['ai-model-providers'],
     name: 'tenant-ai-models',
+  },
+  'tenant.ai-api-keys': {
+    baseUrl: `${contextPath}/tenant/ai/api-keys`,
+    i18nNamespaces: ['ai-api-keys'],
+    name: 'tenant-ai-api-keys',
   },
   'tenant.ai-inference': {
     baseUrl: `${contextPath}/tenant/ai/inference`,

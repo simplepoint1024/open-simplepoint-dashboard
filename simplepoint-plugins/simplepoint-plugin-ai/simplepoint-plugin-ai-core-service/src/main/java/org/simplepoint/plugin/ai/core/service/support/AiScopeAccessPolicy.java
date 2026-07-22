@@ -162,6 +162,35 @@ public class AiScopeAccessPolicy {
   }
 
   /**
+   * Checks resource visibility for durable background work that has no request context.
+   *
+   * @param resourceScope stored resource scope
+   * @param resourceTenantId stored resource tenant id
+   * @param invocationScope scope that owns the background work
+   * @param invocationTenantId tenant id that owns the background work
+   * @return true when the background scope may use the resource
+   */
+  public boolean canUseResourceFromScope(
+      final AiResourceScope resourceScope,
+      final String resourceTenantId,
+      final AiResourceScope invocationScope,
+      final String invocationTenantId
+  ) {
+    String normalizedInvocationTenantId = normalize(invocationTenantId);
+    if (invocationScope == null
+        || (invocationScope == AiResourceScope.SYSTEM && normalizedInvocationTenantId != null)
+        || (invocationScope == AiResourceScope.TENANT && normalizedInvocationTenantId == null)) {
+      return false;
+    }
+    AiResourceScope effectiveResourceScope = effectiveScope(resourceScope);
+    if (effectiveResourceScope == AiResourceScope.SYSTEM) {
+      return true;
+    }
+    return invocationScope == AiResourceScope.TENANT
+        && Objects.equals(normalize(resourceTenantId), normalizedInvocationTenantId);
+  }
+
+  /**
    * Treats legacy records without a scope as system-owned records.
    *
    * @param scopeType stored scope

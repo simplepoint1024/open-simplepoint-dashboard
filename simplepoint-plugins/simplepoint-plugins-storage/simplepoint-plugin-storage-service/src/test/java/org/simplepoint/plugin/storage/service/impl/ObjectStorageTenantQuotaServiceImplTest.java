@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,6 +25,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.api.security.service.JsonSchemaDetailsService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.storage.api.entity.ObjectStorageTenantQuota;
@@ -148,9 +150,22 @@ class ObjectStorageTenantQuotaServiceImplTest {
     update.setEnabled(false);   // explicitly set to false
 
     when(repository.findActiveById("q1")).thenReturn(Optional.of(current));
+    when(repository.findById("q1")).thenReturn(Optional.of(current));
     when(tenantRepository.findById("t1")).thenReturn(Optional.of(fakeTenant("t1")));
     when(repository.findActiveByTenantId("t1")).thenReturn(Optional.of(current));
     when(repository.updateById(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(repository.getDomainClass()).thenReturn(ObjectStorageTenantQuota.class);
+    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    var schema = mapper.createObjectNode();
+    var properties = mapper.createObjectNode();
+    properties.set("enabled", mapper.createObjectNode());
+    schema.set("properties", properties);
+    var schemaDetails = mock(JsonSchemaDetailsService.class);
+    var schemaGenerator = mock(org.simplepoint.api.security.generator.JsonSchemaGenerator.class);
+    when(detailsProviderService.getDialect(JsonSchemaDetailsService.class)).thenReturn(schemaDetails);
+    when(detailsProviderService.getDialect(org.simplepoint.api.security.generator.JsonSchemaGenerator.class))
+        .thenReturn(schemaGenerator);
+    when(schemaGenerator.generateSchema(ObjectStorageTenantQuota.class)).thenReturn(schema);
     when(objectRepository.sumActiveContentLengthByTenantIds(any())).thenReturn(Collections.emptyList());
     when(tenantRepository.findAllByIds(any())).thenReturn(Collections.emptyList());
 

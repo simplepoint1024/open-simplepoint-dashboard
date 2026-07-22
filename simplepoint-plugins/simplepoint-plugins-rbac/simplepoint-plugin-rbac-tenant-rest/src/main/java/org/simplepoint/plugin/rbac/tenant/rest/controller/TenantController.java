@@ -12,6 +12,7 @@ import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.command.TenantProfileUpdateCommand;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantPackagesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
@@ -111,6 +112,22 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
   @Operation(summary = "获取当前用户的租户", description = "获取当前认证用户所属的租户列表")
   public Response<Set<NamedTenantVo>> getCurrentUserTenants() {
     return ok(service.getCurrentUserTenants());
+  }
+
+  /** Returns the active tenant's branding and administrator profile. */
+  @GetMapping("/current-profile")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "获取当前租户资料", description = "返回当前租户品牌资料及租户管理员信息")
+  public Response<Tenant> getCurrentTenantProfile() {
+    return ok(service.getCurrentTenantProfile());
+  }
+
+  /** Updates the active tenant's branding and descriptive profile fields. */
+  @PutMapping("/current-profile")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "修改当前租户资料", description = "租户所有者或租户管理员修改租户资料和 OSS 品牌图片")
+  public Response<Tenant> updateCurrentTenantProfile(@RequestBody TenantProfileUpdateCommand command) {
+    return ok(service.updateCurrentTenantProfile(command));
   }
 
   /**

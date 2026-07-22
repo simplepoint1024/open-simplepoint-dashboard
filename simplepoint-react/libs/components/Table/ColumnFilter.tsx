@@ -9,6 +9,7 @@ export interface ColumnFilterProps {
   initialOp?: string;
   initialText?: string;
   onChange?: (op: string, text: string) => void;
+  /** Dictionary options. When present, filtering is fixed to a searchable multi-select. */
   options?: Array<{ value: string; label: string }>;
   columnType?: ColumnFilterType;
   columnLabel?: string;
@@ -29,6 +30,7 @@ const ColumnFilter: React.FC<ColumnFilterProps> = ({
 }) => {
   const {t, locale} = useI18n();
   const inputRef = useRef<any>(null);
+  const isDictionary = Array.isArray(options);
 
   // ── 操作符分组 ────────────────────────────────────────────────────────────
   const opGroups = useMemo(() => {
@@ -77,19 +79,20 @@ const ColumnFilter: React.FC<ColumnFilterProps> = ({
     return [matchGroup, setGroup, compareGroup, nullGroup];
   }, [columnType, t, locale]);
 
-  // 如果外部显式传入 options，直接使用（flat list）；否则使用分组结构
-  const selectOptions: any = options
-    ? options
-    : opGroups.map(g => ({label: g.label, options: g.options}));
+  const selectOptions = opGroups.map(g => ({label: g.label, options: g.options}));
 
   const [inputValue, setInputValue] = useState(initialText);
   const [selectValue, setSelectValue] = useState(initialOp);
+  const [dictionaryValues, setDictionaryValues] = useState<string[]>(() =>
+    initialText.split(',').map(value => value.trim()).filter(Boolean)
+  );
   const noInput = NO_INPUT_OPS.has(selectValue);
   const isMulti  = MULTI_VALUE_OPS.has(selectValue);
 
   useEffect(() => {
     setSelectValue(initialOp);
     setInputValue(initialText);
+    setDictionaryValues(initialText.split(',').map(value => value.trim()).filter(Boolean));
   }, [initialOp, initialText]);
 
   // 选了不需要输入的操作符时清空
@@ -99,17 +102,20 @@ const ColumnFilter: React.FC<ColumnFilterProps> = ({
 
   // Dropdown 出现时自动聚焦输入框
   useEffect(() => {
-    if (!noInput) {
+    if (!noInput && !isDictionary) {
       const timer = setTimeout(() => inputRef.current?.focus(), 60);
       return () => clearTimeout(timer);
     }
-  }, [noInput]);
+  }, [isDictionary, noInput]);
 
-  const apply = () => onChange?.(selectValue, noInput ? '' : inputValue);
+  const apply = () => isDictionary
+    ? onChange?.('in', dictionaryValues.join(','))
+    : onChange?.(selectValue, noInput ? '' : inputValue);
   const reset = () => {
-    setSelectValue('like');
+    setSelectValue(isDictionary ? 'in' : 'like');
     setInputValue('');
-    onChange?.('like', '');
+    setDictionaryValues([]);
+    onChange?.(isDictionary ? 'in' : 'like', '');
   };
 
   const placeholder = isMulti
@@ -126,7 +132,7 @@ const ColumnFilter: React.FC<ColumnFilterProps> = ({
             ? t('table.filter.title.named', '筛选：{col}', {col: columnLabel})
             : t('table.filter.title', '列筛选')}
         </span>
-        {(inputValue || NO_INPUT_OPS.has(selectValue)) && (
+        {(isDictionary ? dictionaryValues.length > 0 : inputValue || NO_INPUT_OPS.has(selectValue)) && (
           <Tag color="blue" style={{marginLeft: 'auto', fontSize: 11, padding: '0 6px'}}>
             {t('table.filter.active', '已激活')}
           </Tag>
@@ -135,23 +141,48 @@ const ColumnFilter: React.FC<ColumnFilterProps> = ({
 
       <Divider style={{margin: 0}}/>
 
-      {/* 操作符选择 */}
-      <div>
-        <div style={{fontSize: 11, opacity: 0.5, marginBottom: 5, fontWeight: 500, letterSpacing: '0.03em'}}>
-          {t('table.filter.operator', '操作符')}
+      {isDictionary ? (
+        <div>
+          <div style={{fontSize: 11, opacity: 0.5, marginBottom: 5, fontWeight: 500, letterSpacing: '0.03em'}}>
+            {t('table.filter.value', '筛选值')}
+          </div>
+          <Select
+            mode="multiple"
+            allowClear
+            showSearch
+            autoFocus
+            optionFilterProp="label"
+            filterOption={(input, option) =>
+              String(option?.label ?? '').toLocaleLowerCase().includes(input.toLocaleLowerCase())
+              || String(option?.value ?? '').toLocaleLowerCase().includes(input.toLocaleLowerCase())
+            }
+            maxTagCount="responsive"
+            style={{width: '100%'}}
+            value={dictionaryValues}
+            options={options}
+            onChange={values => setDictionaryValues(values)}
+            placeholder={t('table.filter.dictionary.placeholder', '搜索并选择一个或多个选项')}
+            size="small"
+          />
         </div>
-        <Select
-          style={{width: '100%'}}
-          value={selectValue}
-          options={selectOptions}
-          onChange={v => setSelectValue(v)}
-          size="small"
-          popupMatchSelectWidth={false}
-        />
-      </div>
+      ) : (
+        <div>
+          <div style={{fontSize: 11, opacity: 0.5, marginBottom: 5, fontWeight: 500, letterSpacing: '0.03em'}}>
+            {t('table.filter.operator', '操作符')}
+          </div>
+          <Select
+            style={{width: '100%'}}
+            value={selectValue}
+            options={selectOptions}
+            onChange={v => setSelectValue(v)}
+            size="small"
+            popupMatchSelectWidth={false}
+          />
+        </div>
+      )}
 
       {/* 输入框 */}
-      {noInput ? (
+      {isDictionary ? null : noInput ? (
         <div style={{
           padding: '6px 10px',
           borderRadius: 4,

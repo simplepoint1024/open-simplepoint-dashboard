@@ -9,6 +9,7 @@ import {Settings} from '@/layouts/settings';
 import {NotFound} from '@/views/errors/NotFound';
 import {OrgTenantRequired} from '@/views/errors/OrgTenantRequired';
 import {Dashboard} from '@/views/dashboard';
+import {TenantHome} from '@/layouts/tenant';
 
 export interface RouteItem {
     key: string;
@@ -44,6 +45,7 @@ export function renderRoutes(
         {key: 'root', path: '/', element: <Navigate to="/dashboard" replace/>},
         {key: 'dashboard', path: '/dashboard', element: <Dashboard/>},
         {key: 'profile', path: '/profile', element: <Profile/>},
+        {key: 'tenant', path: '/tenant', element: <TenantHome/>},
         {key: 'settings', path: '/settings', element: <Settings/>},
         {key: '404', path: '*', element: <NotFound/>}
     ];

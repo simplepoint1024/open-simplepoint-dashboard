@@ -133,6 +133,24 @@ class AuthorizationContextServiceImplTest {
   }
 
   @Test
+  void calculate_usesTrustedUserOrganizationForAuditContext() {
+    User user = new User();
+    user.setSuperAdmin(true);
+    user.setOrgId("org-from-user");
+    when(usersService.findByIdForAuthorization("admin")).thenReturn(Optional.of(user));
+    when(usersService.loadRolesByUserId(null, "admin")).thenReturn(List.of());
+
+    AuthorizationContext ctx = service.calculate(
+        null,
+        "admin",
+        "ctx-admin",
+        Map.of("X-Org-Dept-Id", "forged-org")
+    );
+
+    assertThat(ctx.getAttribute("X-Org-Dept-Id")).isEqualTo("org-from-user");
+  }
+
+  @Test
   void calculate_platformAdministrator_loadsEveryAccessibleControlPlaneResource() {
     User user = new User();
     user.setSuperAdmin(true);

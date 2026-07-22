@@ -99,6 +99,18 @@ const ROLE_CANDIDATES = [
     {id: '2', name: '用户', description: '普通用户'},
 ];
 
+const USER_PICKER_ITEMS = [
+    {id: 'admin', name: '平台管理员', email: 'admin@example.com', phoneNumber: '13800000001', picture: null},
+    {id: 'operator', name: '渠道运营', email: 'operator@example.com', phoneNumber: '13800000002', picture: null},
+    ...ALL_USERS.map(user => ({
+        id: user.id,
+        name: user.nickname || user.name || user.email || user.phoneNumber || user.id,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        picture: user.picture,
+    })),
+];
+
 function buildPage<T>(request: Request, records: T[], matcher: (item: T, keyword: string) => boolean) {
     const url = new URL(request.url);
     const page = Math.max(0, parseInt(url.searchParams.get('page') ?? '0', 10));
@@ -305,6 +317,26 @@ export default [
                 "jti": "17d8b4f6-898d-4045-a9c4-adc44c93074a"
             }
         )
+    }),
+    http.get('/common/users/picker/items', ({request}) => {
+        const url = new URL(request.url);
+        const keyword = (url.searchParams.get('keyword') ?? '').trim().toLowerCase();
+        if (keyword.length < 3) {
+            return HttpResponse.json({
+                content: [],
+                page: {size: 20, number: 0, totalElements: 0, totalPages: 0},
+            });
+        }
+        return HttpResponse.json(buildPage(request, USER_PICKER_ITEMS, (user, search) =>
+            (user.email ?? '').toLowerCase().startsWith(search) ||
+            (user.phoneNumber ?? '').startsWith(search)
+        ));
+    }),
+    http.get('/common/users/picker/selected', ({request}) => {
+        const selectedIds = new Set(
+            (new URL(request.url).searchParams.get('ids') ?? '').split(',').filter(Boolean)
+        );
+        return HttpResponse.json(USER_PICKER_ITEMS.filter(user => selectedIds.has(user.id)));
     }),
     http.get('/common/users', ({request}) => {
         const url = new URL(request.url);

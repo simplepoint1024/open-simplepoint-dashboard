@@ -20,16 +20,16 @@ public interface AiKnowledgeDocumentService {
       Pageable pageable
   );
 
-  /** Uploads, parses and indexes a document. */
+  /** Uploads and parses a document before enqueueing durable indexing. */
   AiKnowledgeDocument upload(String knowledgeBaseId, MultipartFile file, String metadataJson);
 
-  /** Adds and indexes a plain-text document. */
+  /** Adds a plain-text document and enqueues durable indexing. */
   AiKnowledgeDocument addText(
       String knowledgeBaseId,
       AiKnowledgeTextDocumentRequest request
   );
 
-  /** Rebuilds chunks and vectors for a document. */
+  /** Enqueues a new index generation for a document. */
   AiKnowledgeDocument reindex(String knowledgeBaseId, String documentId);
 
   /** Deletes documents and their chunks. */

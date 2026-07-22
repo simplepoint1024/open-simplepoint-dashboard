@@ -16,14 +16,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -34,10 +37,12 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "资源管理", description = "统一管理页面、功能、操作和接口资源")
 public class ResourcesController extends BaseController<ResourceService, Resource, String> {
 
+  /** Creates a resource controller backed by the supplied service. */
   public ResourcesController(ResourceService service) {
     super(service);
   }
 
+  /** Returns a paginated resource tree matching the supplied filters. */
   @GetMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.view')")
   @Operation(summary = "分页查询资源", description = "根据筛选条件分页查询资源树")
@@ -48,6 +53,7 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
     return Response.limit(service.limitTree(attributes, pageable), ResourceNode.class);
   }
 
+  /** Returns one paginated level of child resources for lazy loading. */
   @GetMapping("/children")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.view')")
   @Operation(summary = "分页查询资源子节点", description = "按父资源分页查询一层资源节点，用于懒加载分配界面")
@@ -58,6 +64,7 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
     return Response.limit(service.children(attributes, pageable), ResourceNode.class);
   }
 
+  /** Returns assigned resources together with the ancestors needed to form a tree. */
   @PostMapping("/assigned-tree")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.view')")
   @Operation(summary = "分页查询已分配资源树", description = "按已分配资源编码查询资源及必要父级结构，用于懒加载分配界面")
@@ -72,6 +79,7 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
     return Response.limit(service.assignedTree(codes, attributes, pageable), ResourceNode.class);
   }
 
+  /** Returns resource details for the supplied resource codes. */
   @PostMapping("/by-codes")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.view')")
   @Operation(summary = "按编码查询资源", description = "根据资源编码批量查询资源明细")
@@ -79,6 +87,7 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
     return ok(service.findAllByCodes(codes));
   }
 
+  /** Returns grantable resource codes in the requested subtree. */
   @GetMapping("/subtree-codes")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.view')")
   @Operation(summary = "查询资源子树编码", description = "查询指定资源及其子资源下可授权的资源编码")
@@ -86,12 +95,14 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
     return ok(service.findSubtreeGrantableCodes(rootId));
   }
 
+  /** Returns the resource route tree available to the current user. */
   @GetMapping("/service-routes")
   @Operation(summary = "获取用户资源路由", description = "获取当前登录用户可访问的资源路由树")
   public Response<ServiceResourceRouteResult> routes() {
     return Response.okay(service.routes());
   }
 
+  /** Creates a resource. */
   @PostMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.create')")
   @Operation(summary = "添加资源", description = "添加一个新的资源")
@@ -99,6 +110,7 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
     return ok(service.create(data));
   }
 
+  /** Updates a resource. */
   @PutMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.edit')")
   @Operation(summary = "更新资源", description = "更新资源信息")
@@ -106,6 +118,7 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
     return ok(service.modifyById(data));
   }
 
+  /** Deletes the requested resources and their descendants. */
   @DeleteMapping
   @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.delete')")
   @Operation(summary = "删除资源", description = "删除资源及其子资源")
@@ -113,5 +126,13 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
     Set<String> idSet = StringUtil.stringToSet(ids);
     service.removeByIds(idSet);
     return ok(idSet);
+  }
+
+  /** Returns resource input validation failures as actionable client errors. */
+  @ExceptionHandler(IllegalArgumentException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public Map<String, String> handleIllegalArgument(IllegalArgumentException exception) {
+    String message = exception.getMessage();
+    return Map.of("message", message == null || message.isBlank() ? "资源请求参数不合法" : message);
   }
 }

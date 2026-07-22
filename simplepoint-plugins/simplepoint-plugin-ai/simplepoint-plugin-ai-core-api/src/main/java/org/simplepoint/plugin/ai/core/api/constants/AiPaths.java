@@ -25,6 +25,12 @@ public final class AiPaths {
 
   public static final String TENANT_INVOCATIONS = TENANT_BASE + "/invocations";
 
+  public static final String PLATFORM_API_KEYS = PLATFORM_BASE + "/api-keys";
+
+  public static final String TENANT_API_KEYS = TENANT_BASE + "/api-keys";
+
+  public static final String COMPATIBLE_API = "/v1";
+
   public static final String PROVIDERS = PLATFORM_PROVIDERS;
 
   public static final String MODELS = PLATFORM_MODELS;

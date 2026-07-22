@@ -15,7 +15,6 @@ class UserAutoRegistrationInitializerTest {
 
   @Test
   void existingBootstrapUserIsResolvedByEmailAndNotCreatedAgain() throws Exception {
-    UsersService usersService = mock(UsersService.class);
     UserRegistrationProperties properties = new UserRegistrationProperties();
     User configured = new User();
     configured.setEmail("admin@example.com");
@@ -24,6 +23,7 @@ class UserAutoRegistrationInitializerTest {
     User existing = new User();
     existing.setId("user-1");
     existing.setEmail(configured.getEmail());
+    UsersService usersService = mock(UsersService.class);
     when(usersService.loadUserByUsername(configured.getEmail())).thenReturn(existing);
 
     var contribution = new UserAutoRegistrationInitializer()
@@ -37,12 +37,12 @@ class UserAutoRegistrationInitializerTest {
 
   @Test
   void missingBootstrapUserIsCreated() throws Exception {
-    UsersService usersService = mock(UsersService.class);
     UserRegistrationProperties properties = new UserRegistrationProperties();
     User configured = new User();
     configured.setEmail("member@example.com");
     configured.setPassword("secret");
     properties.setUsers(Set.of(configured));
+    UsersService usersService = mock(UsersService.class);
     when(usersService.loadUserByUsername(configured.getEmail())).thenThrow(new IllegalStateException("missing"));
 
     var contribution = new UserAutoRegistrationInitializer()

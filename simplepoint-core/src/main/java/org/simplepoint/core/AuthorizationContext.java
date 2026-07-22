@@ -282,6 +282,11 @@ public class AuthorizationContext implements Serializable {
     }
   }
 
+  /**
+   * Sets field-level permissions if they have not already been resolved.
+   *
+   * @param fieldPermissions field name to permission mapping
+   */
   public void setFieldPermissions(Map<String, String> fieldPermissions) {
     if (this.fieldPermissions == null) {
       this.fieldPermissions = fieldPermissions == null ? Collections.emptyMap() : fieldPermissions;

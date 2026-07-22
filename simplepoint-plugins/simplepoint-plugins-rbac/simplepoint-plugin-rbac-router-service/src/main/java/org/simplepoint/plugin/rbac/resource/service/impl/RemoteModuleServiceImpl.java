@@ -43,6 +43,11 @@ public class RemoteModuleServiceImpl
     super(repository, detailsProviderService);
   }
 
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
   /**
    * Loads all registered remote modules.
    *

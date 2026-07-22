@@ -1,68 +1,37 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title>Two-factor authentication</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #f2f2f2;
-            font-family: 'Roboto', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .card {
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
-            box-sizing: border-box;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-        }
-        .btn {
-            padding: 12px;
-            margin-top: 12px;
-            font-size: 16px;
-            border: none;
-            border-radius: 6px;
-            width: 100%;
-            background-color: #1a73e8;
-            color: white;
-            cursor: pointer;
-        }
-        .error {
-            color: #d93025;
-            font-size: 14px;
-            margin-bottom: 16px;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>验证登录 · Simple·Point</title>
+    <link rel="stylesheet" href="/two-factor.css"/>
 </head>
 <body>
-<div class="card">
-    <h2 style="margin-top: 0;">Two-factor authentication</h2>
-    <p>Please enter the 6-digit code from your authenticator app.</p>
-    <div th:if="${error}" class="error" th:text="${error}"></div>
-    <form th:action="@{/two-factor/verify}" method="post">
-        <div class="form-group">
-            <input type="text" name="code" placeholder="6-digit code" required autofocus maxlength="6" pattern="[0-9]{6}">
+<main class="security-shell compact">
+    <div class="brand"><span class="brand-mark">S</span><span>Simple·Point</span></div>
+    <section class="security-card verify-card">
+        <header class="card-head">
+            <div class="security-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            </div>
+            <h1>确认是你本人</h1>
+            <p class="subtitle">请输入身份验证器中当前显示的 6 位动态验证码。</p>
+        </header>
+        <div class="card-body">
+            <p th:if="${error}" class="error" th:text="${error}"></p>
+            <form class="verify-form" style="margin-top:0;padding-top:0;border-top:0" th:action="@{/two-factor/verify}" method="post">
+                <label class="field-label" for="code">动态验证码</label>
+                <div class="code-row">
+                    <input class="code-input" id="code" type="text" name="code" inputmode="numeric" placeholder="000000" autocomplete="one-time-code" required autofocus maxlength="6" pattern="[0-9]{6}"/>
+                    <button type="submit">验证并继续</button>
+                </div>
+            </form>
+            <div class="secure-hint">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6"/></svg>
+                <span>验证码只在短时间内有效。Simple·Point 不会要求你通过聊天或邮件提供验证码。</span>
+            </div>
         </div>
-        <button type="submit" class="btn">Verify</button>
-    </form>
-</div>
+    </section>
+</main>
 </body>
 </html>

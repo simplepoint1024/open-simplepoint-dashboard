@@ -12,5 +12,16 @@ interface AiGenerationAdapter {
 
   GenerationResult generate(AiRuntimeInvocation invocation);
 
-  void stream(AiRuntimeInvocation invocation, Consumer<GenerationEvent> consumer);
+  default void stream(
+      final AiRuntimeInvocation invocation,
+      final Consumer<GenerationEvent> consumer
+  ) {
+    stream(invocation, consumer, new AiStreamCancellation());
+  }
+
+  void stream(
+      AiRuntimeInvocation invocation,
+      Consumer<GenerationEvent> consumer,
+      AiStreamCancellation cancellation
+  );
 }

@@ -19,6 +19,7 @@ public class ResourceAuthorizationVersionService {
   private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
   private final RoleResourceGrantRepository roleResourceGrantRepository;
 
+  /** Creates an authorization-version refresh service with optional repositories. */
   public ResourceAuthorizationVersionService(
       @Autowired(required = false) TenantRepository tenantRepository,
       @Autowired(required = false) TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
@@ -94,6 +95,7 @@ public class ResourceAuthorizationVersionService {
     return affectedTenantIds;
   }
 
+  /** Refreshes every tenant affected by one of the supplied resource codes. */
   public void refreshByResourceCodes(Collection<String> resourceCodes) {
     refreshTenants(findAffectedTenantIdsByResourceCodes(resourceCodes));
   }

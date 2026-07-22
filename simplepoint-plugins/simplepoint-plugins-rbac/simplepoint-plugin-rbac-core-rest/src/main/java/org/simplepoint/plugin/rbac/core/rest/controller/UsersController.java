@@ -17,12 +17,15 @@ import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.core.api.pojo.command.ChangePasswordCommand;
+import org.simplepoint.plugin.rbac.core.api.pojo.command.UserProfileUpdateCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserPickerItem;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -45,6 +48,11 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "用户管理", description = "用于管理系统中的用户")
 public class UsersController extends BaseController<UsersService, User, String> {
 
+  private static final int USER_PICKER_MAX_PAGE_SIZE = 50;
+
+  private static final String USER_PICKER_ACCESS = "hasRole('Administrator')"
+      + " or hasAnyAuthority('tenants.create', 'tenants.edit', 'users.view', 'users.create', 'users.edit')";
+
   /**
    * Constructs a UsersController with the specified service.
    *
@@ -66,6 +74,29 @@ public class UsersController extends BaseController<UsersService, User, String> 
   @PreAuthorize("hasRole('Administrator') or hasAuthority('users.view')")
   public Response<Page<User>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), User.class);
+  }
+
+  /**
+   * Searches enabled users for JSON-Schema user-picker fields. The service
+   * requires a meaningful email or phone prefix, so this endpoint never serves
+   * as an unbounded user-directory listing.
+   */
+  @GetMapping("/picker/items")
+  @Operation(summary = "搜索选人候选项", description = "按邮箱或手机号前缀分页搜索可选用户")
+  @PreAuthorize(USER_PICKER_ACCESS)
+  public Response<Page<UserPickerItem>> pickerItems(
+      @RequestParam(name = "keyword", required = false) String keyword,
+      Pageable pageable
+  ) {
+    return ok(service.searchPickerItems(keyword, boundedPickerPageable(pageable)));
+  }
+
+  /** Resolves persisted picker IDs without exposing a broad directory query. */
+  @GetMapping("/picker/selected")
+  @Operation(summary = "回显已选用户", description = "批量解析选人字段中已经保存的用户ID")
+  @PreAuthorize(USER_PICKER_ACCESS)
+  public Response<Collection<UserPickerItem>> selectedPickerItems(@RequestParam("ids") String ids) {
+    return ok(service.resolvePickerItems(StringUtil.stringToSet(ids)));
   }
 
   /**
@@ -170,9 +201,45 @@ public class UsersController extends BaseController<UsersService, User, String> 
   @Operation(summary = "修改当前用户密码", description = "验证旧密码后，将当前用户密码修改为新密码")
   @PreAuthorize("isAuthenticated()")
   public Response<Void> changePassword(@RequestBody ChangePasswordCommand command) {
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    User principal = (User) auth.getPrincipal();
-    service.changePassword(principal.getId(), command);
+    service.changePassword(currentUserId(), command);
     return Response.okay();
+  }
+
+  /**
+   * Returns the persisted profile of the currently authenticated user.
+   */
+  @GetMapping("/me")
+  @Operation(summary = "查询当前用户资料", description = "返回当前登录用户可编辑的完整个人资料")
+  @PreAuthorize("isAuthenticated()")
+  public Response<User> currentProfile() {
+    return ok(service.findByIdForAuthorization(currentUserId())
+        .orElseThrow(() -> new IllegalArgumentException("用户不存在")));
+  }
+
+  /**
+   * Updates only the current user's personal profile fields.
+   */
+  @PutMapping("/me")
+  @Operation(summary = "修改当前用户资料", description = "修改当前登录用户的个人资料和 OSS 头像")
+  @PreAuthorize("isAuthenticated()")
+  public Response<User> updateCurrentProfile(@RequestBody UserProfileUpdateCommand command) {
+    return ok(service.updateCurrentProfile(currentUserId(), command));
+  }
+
+  private String currentUserId() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !auth.isAuthenticated()) {
+      throw new IllegalStateException("当前未认证用户");
+    }
+    if (auth.getPrincipal() instanceof User user && user.getId() != null) {
+      return user.getId();
+    }
+    return auth.getName();
+  }
+
+  private Pageable boundedPickerPageable(Pageable pageable) {
+    int page = Math.max(0, pageable.getPageNumber());
+    int size = Math.min(Math.max(1, pageable.getPageSize()), USER_PICKER_MAX_PAGE_SIZE);
+    return PageRequest.of(page, size);
   }
 }

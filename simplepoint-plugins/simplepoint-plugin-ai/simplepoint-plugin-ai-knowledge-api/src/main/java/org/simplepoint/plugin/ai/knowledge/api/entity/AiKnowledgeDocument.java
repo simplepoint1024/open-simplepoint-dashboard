@@ -84,6 +84,10 @@ public class AiKnowledgeDocument extends BaseEntityImpl<String> {
       accessMode = Schema.AccessMode.READ_ONLY)
   private String storageObjectId;
 
+  @Column(name = "storage_tenant_id", length = 64)
+  @Schema(hidden = true)
+  private String storageTenantId;
+
   @Column(name = "content_hash", length = 64)
   @Schema(hidden = true)
   private String contentHash;

@@ -14,8 +14,10 @@ import java.util.Optional;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.plugin.rbac.core.api.pojo.command.ChangePasswordCommand;
+import org.simplepoint.plugin.rbac.core.api.pojo.command.UserProfileUpdateCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserPickerItem;
 import org.simplepoint.remoting.RemoteContract;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
@@ -38,6 +40,14 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
      * @return the user when present
      */
   Optional<User> findByIdForAuthorization(String userId);
+
+  /**
+   * Loads active users in one query for trusted internal profile decoration.
+   *
+   * @param userIds user IDs to load
+   * @return active users matching the IDs
+   */
+  Collection<User> findAllByIdsForAuthorization(Collection<String> userIds);
 
   /**
      * Loads the roles associated with the given username.
@@ -91,6 +101,16 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
   void changePassword(String userId, ChangePasswordCommand command);
 
   /**
+   * Updates the editable profile fields of the current user without exposing
+   * account permissions, credentials, or verification flags to mass assignment.
+   *
+   * @param userId authenticated user ID
+   * @param command editable profile fields
+   * @return updated user
+   */
+  User updateCurrentProfile(String userId, UserProfileUpdateCommand command);
+
+  /**
      * Loads a user by their phone number or email address.
      *
      * @param phoneOrEmail the phone number or email address of the user to load
@@ -106,4 +126,23 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
      * @return a page of roles in the current tenant scope
      */
   Page<RoleRelevanceVo> roleCandidates(Pageable pageable);
+
+  /**
+   * Searches the global user directory for a remote picker. Empty and overly
+   * short keywords intentionally return no rows so a form never loads the full
+   * directory on open.
+   *
+   * @param keyword email or phone-number prefix
+   * @param pageable bounded page request
+   * @return matching enabled users
+   */
+  Page<UserPickerItem> searchPickerItems(String keyword, Pageable pageable);
+
+  /**
+   * Resolves selected IDs for single- and multi-select form value hydration.
+   *
+   * @param userIds selected user IDs
+   * @return selected users in the requested order where possible
+   */
+  Collection<UserPickerItem> resolvePickerItems(Collection<String> userIds);
 }

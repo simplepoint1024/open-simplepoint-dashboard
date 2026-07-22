@@ -45,6 +45,11 @@ public class I18nMessageServiceImpl extends BaseServiceImpl<I18nMessageRepositor
     return getRepository().getMessage(code, locale);
   }
 
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
   /**
    * Retrieves global messages based on the provided locale and namespace.
    *

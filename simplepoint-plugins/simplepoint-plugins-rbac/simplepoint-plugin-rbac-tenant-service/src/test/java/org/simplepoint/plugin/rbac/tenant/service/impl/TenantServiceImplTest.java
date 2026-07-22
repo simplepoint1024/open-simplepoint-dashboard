@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.simplepoint.plugin.rbac.tenant.service.support.BaseServiceSchemaTestSupport.stubBaseServiceSchema;
 
 import java.util.Collection;
 import java.util.List;
@@ -18,12 +19,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.RequestContextHolder;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.pojo.command.TenantProfileUpdateCommand;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantPackagesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
@@ -34,10 +38,12 @@ import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.simplepoint.plugin.rbac.tenant.api.vo.TenantContextType;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @ExtendWith(MockitoExtension.class)
 class TenantServiceImplTest {
@@ -66,6 +72,7 @@ class TenantServiceImplTest {
   @AfterEach
   void clearSecurityContext() {
     SecurityContextHolder.clearContext();
+    org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
   }
 
   // ── getTenantsByUserId ────────────────────────────────────────────────────
@@ -151,8 +158,12 @@ class TenantServiceImplTest {
   @Test
   void getCurrentUserRoles_returnsTenantAndGlobalRoles() {
     setAuthentication("user1");
-    RoleGrantedAuthority tenantRole = new RoleGrantedAuthority("role-tenant", "ROLE_TENANT");
-    RoleGrantedAuthority globalRole = new RoleGrantedAuthority("role-global", "ROLE_GLOBAL");
+    RoleGrantedAuthority tenantRole = new RoleGrantedAuthority(
+        "role-tenant", "租户角色", "ROLE_TENANT"
+    );
+    RoleGrantedAuthority globalRole = new RoleGrantedAuthority(
+        "role-global", "全局角色", "ROLE_GLOBAL"
+    );
     when(repository.hasUser("tenant1", "user1")).thenReturn(true);
     when(usersService.loadRolesByUserId("tenant1", "user1")).thenReturn(List.of(tenantRole));
     when(usersService.loadRolesByUserId(null, "user1")).thenReturn(List.of(globalRole));
@@ -160,6 +171,7 @@ class TenantServiceImplTest {
     Collection<RoleGrantedAuthority> result = service.getCurrentUserRoles("tenant1");
 
     assertThat(result).extracting(RoleGrantedAuthority::getId).containsExactly("role-tenant", "role-global");
+    assertThat(result).extracting(RoleGrantedAuthority::getName).containsExactly("租户角色", "全局角色");
   }
 
   @Test
@@ -707,8 +719,8 @@ class TenantServiceImplTest {
     current.setId("t1");
     current.setOwnerId("owner1");
     current.setAuthorizationVersion(3L);
-    // First call: TenantServiceImpl reads current version; second call: BaseServiceImpl skips field-merge (avoids FormSchemaGenerator init)
-    when(repository.findById("t1")).thenReturn(Optional.of(current), Optional.empty());
+    when(repository.findById("t1")).thenReturn(Optional.of(current));
+    stubBaseServiceSchema(detailsProviderService);
 
     Tenant entity = new Tenant();
     entity.setId("t1");
@@ -722,6 +734,60 @@ class TenantServiceImplTest {
     Tenant result = service.modifyById(entity);
 
     assertThat(result.getAuthorizationVersion()).isEqualTo(3L);
+  }
+
+  @Test
+  void updateCurrentTenantProfile_updatesOssBrandingAndDecoratesOwner() {
+    setAuthentication("owner1");
+    setTenantContext("t1", "owner1");
+    Tenant current = new Tenant();
+    current.setId("t1");
+    current.setName("Old name");
+    current.setOwnerId("owner1");
+    current.setTenantType(TenantType.ORGANIZATION);
+    when(repository.findById("t1")).thenReturn(Optional.of(current));
+    when(repository.hasUser("t1", "owner1")).thenReturn(true);
+    when(repository.updateById(any(Tenant.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    org.simplepoint.security.entity.User owner = new org.simplepoint.security.entity.User();
+    owner.setId("owner1");
+    owner.setName("张三");
+    owner.setEmail("owner@example.com");
+    when(usersService.findAllByIdsForAuthorization(Set.of("owner1"))).thenReturn(List.of(owner));
+    TenantProfileUpdateCommand command = new TenantProfileUpdateCommand();
+    command.setName("New name");
+    command.setDescription("New description");
+    command.setLogo("/common/object-storage/images/logo-id");
+    command.setBackgroundImage("https://oss.example.com/background.webp");
+
+    Tenant result = service.updateCurrentTenantProfile(command);
+
+    assertThat(result.getName()).isEqualTo("New name");
+    assertThat(result.getLogo()).isEqualTo("/common/object-storage/images/logo-id");
+    assertThat(result.getBackgroundImage()).isEqualTo("https://oss.example.com/background.webp");
+    assertThat(result.getOwnerName()).isEqualTo("张三");
+    assertThat(result.getOwnerEmail()).isEqualTo("owner@example.com");
+    assertThat(result.getProfileEditable()).isTrue();
+  }
+
+  @Test
+  void updateCurrentTenantProfile_rejectsInlineImageData() {
+    setAuthentication("owner1");
+    setTenantContext("t1", "owner1");
+    Tenant current = new Tenant();
+    current.setId("t1");
+    current.setName("Old name");
+    current.setOwnerId("owner1");
+    current.setTenantType(TenantType.ORGANIZATION);
+    when(repository.findById("t1")).thenReturn(Optional.of(current));
+    when(repository.hasUser("t1", "owner1")).thenReturn(true);
+    when(usersService.findAllByIdsForAuthorization(Set.of("owner1"))).thenReturn(List.of());
+    TenantProfileUpdateCommand command = new TenantProfileUpdateCommand();
+    command.setName("New name");
+    command.setLogo("data:image/png;base64,AAAA");
+
+    assertThatThrownBy(() -> service.updateCurrentTenantProfile(command))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("租户 Logo 必须使用 OSS 图片地址");
   }
 
   // ── removeByIds ───────────────────────────────────────────────────────────
@@ -743,6 +809,11 @@ class TenantServiceImplTest {
   @Test
   void removeByIds_cleansPackagesAndUsersBeforeDelete() {
     setAdminRole();
+    Tenant tenant1 = new Tenant();
+    tenant1.setId("t1");
+    Tenant tenant2 = new Tenant();
+    tenant2.setId("t2");
+    when(repository.findAllByIds(List.of("t1", "t2"))).thenReturn(List.of(tenant1, tenant2));
     service.removeByIds(List.of("t1", "t2"));
 
     verify(tenantPackageRelevanceRepository).deleteAllByTenantIds(List.of("t1", "t2"));
@@ -764,5 +835,16 @@ class TenantServiceImplTest {
     UsernamePasswordAuthenticationToken auth =
         new UsernamePasswordAuthenticationToken("admin", null, List.of(adminAuthority));
     SecurityContextHolder.getContext().setAuthentication(auth);
+  }
+
+  private void setTenantContext(String tenantId, String userId) {
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(request)
+    );
+    AuthorizationContext context = new AuthorizationContext();
+    context.setUserId(userId);
+    context.setAttributes(java.util.Map.of("X-Tenant-Id", tenantId));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
   }
 }

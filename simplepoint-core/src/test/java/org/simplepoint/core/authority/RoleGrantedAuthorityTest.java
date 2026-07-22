@@ -8,8 +8,9 @@ class RoleGrantedAuthorityTest {
 
   @Test
   void constructor_setsAllFields() {
-    RoleGrantedAuthority authority = new RoleGrantedAuthority("role-id-1", "ROLE_ADMIN");
+    RoleGrantedAuthority authority = new RoleGrantedAuthority("role-id-1", "管理员", "ROLE_ADMIN");
     assertThat(authority.getId()).isEqualTo("role-id-1");
+    assertThat(authority.getName()).isEqualTo("管理员");
     assertThat(authority.getAuthority()).isEqualTo("ROLE_ADMIN");
   }
 
@@ -23,6 +24,7 @@ class RoleGrantedAuthorityTest {
   void constructor_withNullValues_acceptsNulls() {
     RoleGrantedAuthority authority = new RoleGrantedAuthority(null, null);
     assertThat(authority.getId()).isNull();
+    assertThat(authority.getName()).isNull();
     assertThat(authority.getAuthority()).isNull();
   }
 }

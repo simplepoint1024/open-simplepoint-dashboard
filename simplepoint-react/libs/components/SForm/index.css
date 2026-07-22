@@ -44,3 +44,42 @@
 .rjsf .fieldset > .form-group {
     margin-bottom: 12px;
 }
+
+.oss-image-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.oss-image-preview {
+    min-width: 120px;
+    min-height: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.oss-image-upload-circle .oss-image-preview {
+    min-width: 88px;
+    min-height: 88px;
+}
+
+.oss-image-empty {
+    width: 120px;
+    height: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--ant-color-border, #d9d9d9);
+    border-radius: 8px;
+    background: var(--ant-color-fill-quaternary, rgba(0,0,0,0.02));
+    color: var(--ant-color-text-quaternary, rgba(0,0,0,0.25));
+    font-size: 22px;
+}
+
+.oss-image-hint {
+    color: var(--ant-color-text-tertiary, rgba(0,0,0,0.45));
+    font-size: 12px;
+    line-height: 1.5;
+}

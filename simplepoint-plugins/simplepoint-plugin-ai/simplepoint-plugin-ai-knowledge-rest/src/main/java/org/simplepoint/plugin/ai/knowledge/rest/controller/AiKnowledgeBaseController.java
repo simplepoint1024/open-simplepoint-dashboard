@@ -143,46 +143,46 @@ public class AiKnowledgeBaseController
   }
 
   /**
-   * Uploads and indexes a common document format.
+   * Uploads a common document format and enqueues indexing.
    */
   @PostMapping(
       value = "/{knowledgeBaseId}/documents/upload",
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE
   )
   @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.documents', 'ai.knowledge-bases.documents')")
-  @Operation(summary = "上传并索引知识库文档")
+  @Operation(summary = "上传知识库文档并提交索引任务")
   public Response<?> upload(
       @PathVariable("knowledgeBaseId") final String knowledgeBaseId,
       @RequestParam("file") final MultipartFile file,
       @RequestParam(value = "metadataJson", required = false) final String metadataJson
   ) {
-    return invoke(() -> documentService.upload(knowledgeBaseId, file, metadataJson));
+    return accepted(() -> documentService.upload(knowledgeBaseId, file, metadataJson));
   }
 
   /**
-   * Adds and indexes plain text.
+   * Adds plain text and enqueues indexing.
    */
   @PostMapping("/{knowledgeBaseId}/documents/text")
   @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.documents', 'ai.knowledge-bases.documents')")
-  @Operation(summary = "新增并索引文本文档")
+  @Operation(summary = "新增文本文档并提交索引任务")
   public Response<?> addText(
       @PathVariable("knowledgeBaseId") final String knowledgeBaseId,
       @RequestBody final AiKnowledgeTextDocumentRequest request
   ) {
-    return invoke(() -> documentService.addText(knowledgeBaseId, request));
+    return accepted(() -> documentService.addText(knowledgeBaseId, request));
   }
 
   /**
-   * Rebuilds all chunks for one document.
+   * Enqueues a new index generation for one document.
    */
   @PostMapping("/{knowledgeBaseId}/documents/{documentId}/reindex")
   @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.documents', 'ai.knowledge-bases.documents')")
-  @Operation(summary = "重新索引知识库文档")
+  @Operation(summary = "提交知识库文档重新索引任务")
   public Response<?> reindex(
       @PathVariable("knowledgeBaseId") final String knowledgeBaseId,
       @PathVariable("documentId") final String documentId
   ) {
-    return invoke(() -> documentService.reindex(knowledgeBaseId, documentId));
+    return accepted(() -> documentService.reindex(knowledgeBaseId, documentId));
   }
 
   /**
@@ -218,6 +218,18 @@ public class AiKnowledgeBaseController
   private Response<?> invoke(final java.util.function.Supplier<?> operation) {
     try {
       return ok(operation.get());
+    } catch (IllegalArgumentException | IllegalStateException ex) {
+      return Response.of(
+          ResponseEntity.badRequest()
+              .contentType(UTF8_TEXT_PLAIN)
+              .body(ex.getMessage())
+      );
+    }
+  }
+
+  private Response<?> accepted(final java.util.function.Supplier<?> operation) {
+    try {
+      return Response.of(ResponseEntity.accepted().body(operation.get()));
     } catch (IllegalArgumentException | IllegalStateException ex) {
       return Response.of(
           ResponseEntity.badRequest()

@@ -13,6 +13,7 @@
   "resources.description.type": "Resource type: group, module, page, feature, operation, or API",
   "resources.title.scopeTypes": "Resource Scopes",
   "resources.description.scopeTypes": "Declares the workspace boundaries where the resource is visible, grantable, and executable",
+  "resources.description.scopeTypesWithParent": "Child resources may only use scopes allowed by the parent: {scopes}",
   "resources.title.parentId": "Parent Resource",
   "resources.description.parentId": "Parent resource of the current resource",
   "resources.title.pluginId": "Plugin ID",

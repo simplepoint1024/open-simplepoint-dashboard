@@ -68,6 +68,11 @@ public class OidcClientServiceImpl extends BaseServiceImpl<OidcClientRepository,
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public OidcClientConfigurationDto configuration(String id) {
     Client client = getRepository().findById(id)
         .orElseThrow(() -> new NoSuchElementException("OAuth2 client not found: " + id));

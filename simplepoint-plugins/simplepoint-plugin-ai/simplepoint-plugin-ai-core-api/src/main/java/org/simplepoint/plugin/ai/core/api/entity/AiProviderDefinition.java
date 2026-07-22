@@ -12,7 +12,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
-import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -36,10 +35,6 @@ import org.springframework.core.annotation.Order;
     indexes = @Index(
         name = "idx_simpoint_ai_provider_scope",
         columnList = "scope_type, tenant_id"
-    ),
-    uniqueConstraints = @UniqueConstraint(
-        name = "uk_simpoint_ai_provider_scope_code",
-        columnNames = {"scope_type", "tenant_id", "code"}
     )
 )
 @EqualsAndHashCode(callSuper = true)
@@ -174,7 +169,7 @@ public class AiProviderDefinition extends BaseEntityImpl<String> {
       extensions = @Extension(name = "x-ui", properties =
           @ExtensionProperty(name = "x-list-visible", value = "true")))
   @Enumerated(EnumType.STRING)
-  @Column(name = "scope_type", length = 16)
+  @Column(name = "scope_type", length = 16, nullable = false)
   private AiResourceScope scopeType;
 
   @Order(1)

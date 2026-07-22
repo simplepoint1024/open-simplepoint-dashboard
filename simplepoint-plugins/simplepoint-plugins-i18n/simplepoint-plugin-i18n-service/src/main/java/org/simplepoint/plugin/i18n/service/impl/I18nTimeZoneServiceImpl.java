@@ -29,4 +29,9 @@ public class I18nTimeZoneServiceImpl extends BaseServiceImpl<I18nTimeZoneReposit
   ) {
     super(repository, detailsProviderService);
   }
+
+  @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
 }

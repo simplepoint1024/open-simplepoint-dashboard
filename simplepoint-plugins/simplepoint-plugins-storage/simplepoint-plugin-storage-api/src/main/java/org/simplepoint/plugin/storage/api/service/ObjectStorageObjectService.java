@@ -55,6 +55,16 @@ public interface ObjectStorageObjectService extends BaseService<ObjectStorageObj
   ObjectStorageReadResult download(String id);
 
   /**
+   * Downloads an active image by ID for authenticated image rendering.
+   * Tenant-owned form images stay tenant-isolated, while identity avatars can
+   * be rendered across the user's workspace switches.
+   *
+   * @param id object ID
+   * @return image content descriptor
+   */
+  ObjectStorageReadResult downloadImage(String id);
+
+  /**
    * Removes objects from remote storage and metadata tables.
    *
    * @param ids object ids

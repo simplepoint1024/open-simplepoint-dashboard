@@ -59,6 +59,11 @@ public class PackageServiceImpl
   }
 
   @Override
+  protected boolean isDataScopeApplicable() {
+    return false;
+  }
+
+  @Override
   public <S extends Package> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
     if (AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
       return super.limit(attributes, pageable);

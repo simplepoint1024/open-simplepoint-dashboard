@@ -1,7 +1,8 @@
 import api from '@/api/index';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Drawer, message} from 'antd';
+import {Avatar, Drawer, Space, message} from 'antd';
+import {ApartmentOutlined, UserOutlined} from '@ant-design/icons';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import PackageConfig from './config/package';
 import UserConfig from './config/user';
@@ -105,6 +106,55 @@ const App = () => {
     []
   );
 
+  const formUiSchema = useMemo(() => ({
+    logo: {
+      'ui:widget': 'OssImage',
+      'ui:options': {
+        directory: 'tenants/logos',
+        sourceServiceName: 'tenant-branding',
+        shape: 'square',
+        maxSizeMb: 5,
+      },
+    },
+    backgroundImage: {
+      'ui:widget': 'OssImage',
+      'ui:options': {
+        directory: 'tenants/backgrounds',
+        sourceServiceName: 'tenant-branding',
+        shape: 'square',
+        maxSizeMb: 10,
+      },
+    },
+    ownerName: {'ui:widget': 'hidden'},
+    ownerGender: {'ui:widget': 'hidden'},
+    ownerPhoneNumber: {'ui:widget': 'hidden'},
+    ownerEmail: {'ui:widget': 'hidden'},
+  }), []);
+
+  const columnOverrides = useMemo(() => ({
+    logo: {
+      order: -100,
+      width: 76,
+      align: 'center' as const,
+      sorter: false,
+      render: (value: string | undefined) => (
+        <Avatar shape="square" size={34} src={value} icon={!value ? <ApartmentOutlined/> : undefined}/>
+      ),
+    },
+    ownerName: {
+      width: 180,
+      render: (value: string | undefined, record: any) => (
+        <Space size={8}>
+          <Avatar size={28} src={record?.ownerPicture} icon={!record?.ownerPicture ? <UserOutlined/> : undefined}/>
+          <span>{value || record?.ownerId || '-'}</span>
+        </Space>
+      ),
+    },
+    ownerGender: {width: 100, sorter: false},
+    ownerPhoneNumber: {width: 150, sorter: false},
+    ownerEmail: {width: 210, sorter: false},
+  }), []);
+
   return (
     <div>
       <SimpleTable
@@ -116,6 +166,8 @@ const App = () => {
         editingRecord={editingRecord}
         onEditingRecordChange={setEditingRecord}
         formSchemaTransform={formSchemaTransform}
+        formUiSchema={formUiSchema}
+        columnOverrides={columnOverrides}
         i18nNamespaces={[...baseConfig.i18nNamespaces, 'packages', 'users', 'table', 'common']}
       />
       <Drawer
