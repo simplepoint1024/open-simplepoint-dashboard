@@ -37,9 +37,9 @@ public class AiBillingController {
   )
   @Operation(summary = "查询模型计费汇总")
   public Response<?> summary(
-      @RequestParam(required = false)
+      @RequestParam(name = "from", required = false)
       @DateTimeFormat(iso = ISO.DATE_TIME) final Instant from,
-      @RequestParam(required = false)
+      @RequestParam(name = "to", required = false)
       @DateTimeFormat(iso = ISO.DATE_TIME) final Instant to
   ) {
     try {
