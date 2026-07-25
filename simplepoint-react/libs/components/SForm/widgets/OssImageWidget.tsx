@@ -10,6 +10,7 @@ const OssImageWidget = ({value, onChange, disabled, readonly, options}: WidgetPr
     directory={typeof options?.directory === 'string' ? options.directory : undefined}
     sourceServiceName={typeof options?.sourceServiceName === 'string' ? options.sourceServiceName : undefined}
     maxSizeMb={typeof options?.maxSizeMb === 'number' ? options.maxSizeMb : undefined}
+    accept={typeof options?.accept === 'string' ? options.accept : undefined}
     shape={options?.shape === 'circle' ? 'circle' : 'square'}
   />
 );

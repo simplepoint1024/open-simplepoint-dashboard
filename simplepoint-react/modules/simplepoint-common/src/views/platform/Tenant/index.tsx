@@ -33,19 +33,11 @@ const App = () => {
   const formSchemaTransform = useCallback((schema: any) => {
     const next = structuredClone(schema);
     const properties = next?.properties ?? {};
-    const tenantTypeField = properties.tenantType;
-    if (tenantTypeField) {
-      tenantTypeField.oneOf = [
-        {const: 'ORGANIZATION', title: t('tenants.type.ORGANIZATION', '组织租户')},
-        {const: 'PERSONAL', title: t('tenants.type.PERSONAL', '个人租户')},
-      ];
-      delete tenantTypeField.enum;
-    }
     if (properties.ownerId) {
       delete properties.ownerId.readOnly;
     }
     return next;
-  }, [t]);
+  }, []);
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -107,24 +99,6 @@ const App = () => {
   );
 
   const formUiSchema = useMemo(() => ({
-    logo: {
-      'ui:widget': 'OssImage',
-      'ui:options': {
-        directory: 'tenants/logos',
-        sourceServiceName: 'tenant-branding',
-        shape: 'square',
-        maxSizeMb: 5,
-      },
-    },
-    backgroundImage: {
-      'ui:widget': 'OssImage',
-      'ui:options': {
-        directory: 'tenants/backgrounds',
-        sourceServiceName: 'tenant-branding',
-        shape: 'square',
-        maxSizeMb: 10,
-      },
-    },
     ownerName: {'ui:widget': 'hidden'},
     ownerGender: {'ui:widget': 'hidden'},
     ownerPhoneNumber: {'ui:widget': 'hidden'},

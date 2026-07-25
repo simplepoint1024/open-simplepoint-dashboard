@@ -247,6 +247,8 @@ public class AiModelCatalogServiceImpl implements AiModelCatalogService {
     model.setAvailable(Boolean.TRUE);
     model.setDiscovered(Boolean.TRUE);
     model.setTypeAutoDetected(Boolean.TRUE);
+    model.setBillingEnabled(Boolean.FALSE);
+    model.setBillingCurrency("USD");
     model.setOwnedBy(remote.ownedBy());
     model.setReleasedAt(remote.releasedAt());
     model.setMetadataJson(remote.metadataJson());

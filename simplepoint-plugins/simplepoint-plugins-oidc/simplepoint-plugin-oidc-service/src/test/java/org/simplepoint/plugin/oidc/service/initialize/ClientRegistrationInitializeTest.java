@@ -46,6 +46,24 @@ class ClientRegistrationInitializeTest {
     assertThat(client.getTokenSettings().getRefreshTokenTimeToLive()).isEqualTo(Duration.ofHours(12));
   }
 
+  @Test
+  void buildRegisteredClientAddsRefreshGrantForDeviceClients() {
+    Oauth2ClientInitializeProperties properties = new Oauth2ClientInitializeProperties();
+    ClientRegistrationInitialize initializer = new ClientRegistrationInitialize(properties, null);
+    Oauth2ClientInitializeProperties.Registration registration = registration();
+    registration.setAuthorizationGrantType(AuthorizationGrantType.DEVICE_CODE.getValue());
+    registration.setClientAuthenticationMethod(ClientAuthenticationMethod.NONE.getValue());
+    registration.setRedirectUri(null);
+
+    RegisteredClient client = initializer.buildRegisteredClient(registration, null);
+
+    assertThat(client.getAuthorizationGrantTypes())
+        .containsExactlyInAnyOrder(
+            AuthorizationGrantType.DEVICE_CODE,
+            AuthorizationGrantType.REFRESH_TOKEN
+        );
+  }
+
   private Oauth2ClientInitializeProperties.Registration registration() {
     Oauth2ClientInitializeProperties.Registration registration =
         new Oauth2ClientInitializeProperties.Registration();

@@ -99,6 +99,8 @@ GET /schema
 | `@Schema(nullable = true)` | 允许空值 |
 | `@Schema(extensions = @Extension(name = "x-ui", ...))` | 前端专用扩展字段 |
 | `@Order(n)` | 输出 `x-order` |
+| `@DictionaryField(code)` | 输出字典编码并选择字典控件 |
+| `@UploadField(type, ...)` | 输出 OSS 上传类型、目录、大小等元数据及上传控件 |
 
 另外，当前实现还会把：
 
@@ -125,6 +127,10 @@ GET /schema
 | `dictCode` / `dict-code` | 字典编码，前端会据此补查选项 |
 | `ui:options` | 传给前端控件的额外选项 |
 | `format` | 某些字段的前端渲染提示 |
+
+文件和图片上传使用 `@UploadField` 声明，并输出独立的 `x-upload` 元数据。
+上传后字段保存的是 `/common/object-storage/...` 路径，因此不使用会校验内联 Base64
+内容的 `format: data-url`。
 
 ## 6. `buttons` 是怎么来的
 

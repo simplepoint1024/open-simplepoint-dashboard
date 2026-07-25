@@ -1,7 +1,7 @@
 import type {ItemType} from "antd/es/menu/interface";
 import {Avatar, Badge, Button, Drawer, Dropdown, List, MenuProps, Tooltip, Popconfirm, Tag, message} from "antd";
 import {ApartmentOutlined, BellOutlined, CreditCardOutlined, DeleteOutlined, DesktopOutlined, DownOutlined, EditOutlined, FontSizeOutlined, FullscreenExitOutlined, FullscreenOutlined, GithubOutlined, GlobalOutlined, HomeOutlined, LogoutOutlined, MoonOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SearchOutlined, SettingOutlined, SunOutlined, UserOutlined} from "@ant-design/icons";
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import { useUserInfo } from '@/fetches/user';
 import { useCurrentRoles, useCurrentTenants, type CurrentRole, type CurrentTenant } from '@/fetches/tenants';
@@ -9,6 +9,9 @@ import { getTenantId, setTenantId } from '@/store/tenant';
 import { getRoleId, setRoleId } from '@/store/role';
 import { ensureContextId } from '@simplepoint/shared/api/contextId';
 import { clearClientCaches, redirectToLogout } from '@simplepoint/shared/api/session';
+import {get, put} from '@simplepoint/shared/api/methods';
+import type {Page} from '@simplepoint/shared/types/request';
+import {useNavigate} from 'react-router';
 
 // 为主题切换提供短暂的全局颜色过渡动画
 function startThemeTransition(duration = 240) {
@@ -639,52 +642,245 @@ export const HeaderSearchBar: React.FC<{ onOpen: () => void }> = ({ onOpen }) =>
   );
 };
 
-const mockNotifications = [
-  {
-    id: 1,
-    titleKey: 'nav.notification.systemUpdate.title',
-    titleFallback: '系统更新',
-    descKey: 'nav.notification.systemUpdate.desc',
-    descFallback: 'SimplePoint v2.1.0 已发布',
-    timeKey: 'nav.notification.systemUpdate.time',
-    timeFallback: '5分钟前',
-    read: false,
-  },
-  {
-    id: 2,
-    titleKey: 'nav.notification.newUsers.title',
-    titleFallback: '新用户注册',
-    descKey: 'nav.notification.newUsers.desc',
-    descFallback: '有3位新用户待审批',
-    timeKey: 'nav.notification.newUsers.time',
-    timeFallback: '1小时前',
-    read: false,
-  },
-  {
-    id: 3,
-    titleKey: 'nav.notification.taskDone.title',
-    titleFallback: '任务完成',
-    descKey: 'nav.notification.taskDone.desc',
-    descFallback: '数据同步任务已完成',
-    timeKey: 'nav.notification.taskDone.time',
-    timeFallback: '2小时前',
-    read: true,
-  },
-];
+type InboxNotification = {
+  id: string;
+  title: string;
+  content: string;
+  category: 'ANNOUNCEMENT' | 'SYSTEM' | 'MAINTENANCE' | 'SECURITY';
+  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  linkUrl?: string;
+  publishAt: string;
+  expireAt?: string;
+  read: boolean;
+  readAt?: string;
+};
+
+type NotificationPushEvent = {
+  type?: 'PUBLISHED' | 'REVOKED' | 'USER_STATE_CHANGED';
+  notificationId?: string;
+  occurredAt?: string;
+};
+
+const NOTIFICATION_BASE_URL = '/common/notifications';
+
+const waitForReconnect = (delay: number, signal: AbortSignal) => new Promise<void>((resolve) => {
+  if (signal.aborted) {
+    resolve();
+    return;
+  }
+  const onAbort = () => {
+    window.clearTimeout(timeoutId);
+    resolve();
+  };
+  const timeoutId = window.setTimeout(() => {
+    signal.removeEventListener('abort', onAbort);
+    resolve();
+  }, delay);
+  signal.addEventListener('abort', onAbort, {once: true});
+});
+
+const consumeNotificationStream = async (
+  signal: AbortSignal,
+  onNotification: (event: NotificationPushEvent) => void,
+) => {
+  let reconnectDelay = 1_000;
+  while (!signal.aborted) {
+    try {
+      const tenantId = getTenantId()?.trim();
+      const roleId = getRoleId(tenantId)?.trim();
+      const contextId = await ensureContextId(tenantId, {roleId, signal});
+      const headers = new Headers({Accept: 'text/event-stream'});
+      if (tenantId) headers.set('X-Tenant-Id', tenantId);
+      if (roleId) headers.set('X-Role-Id', roleId);
+      if (contextId) headers.set('X-Context-Id', contextId);
+      const response = await fetch(`${NOTIFICATION_BASE_URL}/stream`, {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store',
+        headers,
+        signal,
+      });
+      if (!response.ok || !response.body) {
+        throw new Error(`Notification stream failed: ${response.status}`);
+      }
+      reconnectDelay = 1_000;
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (!signal.aborted) {
+        const result = await reader.read();
+        if (result.done) break;
+        buffer = (buffer + decoder.decode(result.value, {stream: true}))
+          .replace(/\r\n/g, '\n');
+        let boundary = buffer.indexOf('\n\n');
+        while (boundary >= 0) {
+          const frame = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+          let eventName = 'message';
+          const dataLines: string[] = [];
+          frame.split('\n').forEach((line) => {
+            if (line.startsWith('event:')) eventName = line.slice(6).trim();
+            if (line.startsWith('data:')) dataLines.push(line.slice(5).trim());
+          });
+          if (eventName === 'notification') {
+            try {
+              onNotification(JSON.parse(dataLines.join('\n')) as NotificationPushEvent);
+            } catch {
+              onNotification({});
+            }
+          }
+          boundary = buffer.indexOf('\n\n');
+        }
+      }
+    } catch {
+      if (signal.aborted) return;
+    }
+    await waitForReconnect(reconnectDelay, signal);
+    reconnectDelay = Math.min(30_000, reconnectDelay * 2);
+  }
+};
+
+const notificationTagColor = (category: InboxNotification['category']) => {
+  if (category === 'SECURITY') return 'red';
+  if (category === 'MAINTENANCE') return 'orange';
+  if (category === 'ANNOUNCEMENT') return 'blue';
+  return 'default';
+};
 
 const NotificationButton: React.FC = () => {
-  const {t} = useI18n();
+  const {t, ensure, locale} = useI18n();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState(mockNotifications);
-  const unread = notifications.filter(n => !n.read).length;
+  const openRef = useRef(false);
+  const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState<InboxNotification[]>([]);
+  const [unread, setUnread] = useState(0);
+  const [contextRevision, setContextRevision] = useState(0);
 
-  const markAllRead = () => setNotifications(prev => prev.map(n => ({...n, read: true})));
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+
+  useEffect(() => {
+    void ensure(['common', 'notifications']);
+  }, [ensure, locale]);
+
+  const loadUnread = useCallback(async () => {
+    try {
+      const result = await get<{count?: number}>(`${NOTIFICATION_BASE_URL}/unread-count`);
+      setUnread(Math.max(0, Number(result?.count ?? 0)));
+    } catch {
+      // The stream and the periodic reconciliation will retry without noisy global prompts.
+    }
+  }, []);
+
+  const loadInbox = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await get<Page<InboxNotification>>(
+        `${NOTIFICATION_BASE_URL}/inbox`,
+        {page: 0, size: 30},
+      );
+      setNotifications(result?.content ?? []);
+    } catch {
+      // Keep the last durable snapshot visible when a transient request fails.
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadUnread();
+    const timer = window.setInterval(() => {
+      void loadUnread();
+      if (openRef.current) void loadInbox();
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, [loadInbox, loadUnread, contextRevision]);
+
+  useEffect(() => {
+    const handleContextChange = () => {
+      setNotifications([]);
+      setUnread(0);
+      setContextRevision((current) => current + 1);
+    };
+    window.addEventListener('sp-set-tenant', handleContextChange);
+    window.addEventListener('sp-set-role', handleContextChange);
+    window.addEventListener('sp-set-context-id', handleContextChange);
+    return () => {
+      window.removeEventListener('sp-set-tenant', handleContextChange);
+      window.removeEventListener('sp-set-role', handleContextChange);
+      window.removeEventListener('sp-set-context-id', handleContextChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void consumeNotificationStream(controller.signal, (event) => {
+      void loadUnread();
+      if (openRef.current) void loadInbox();
+      if (event.type === 'PUBLISHED' && document.visibilityState === 'visible') {
+        message.info(t('nav.notification.received', '收到一条新通知'));
+      }
+    });
+    return () => controller.abort();
+  }, [contextRevision, loadInbox, loadUnread, t]);
+
+  const openNotificationCenter = () => {
+    setOpen(true);
+    void loadInbox();
+    void loadUnread();
+  };
+
+  const markAllRead = async () => {
+    setNotifications((items) => items.map((item) => ({...item, read: true})));
+    setUnread(0);
+    try {
+      await put(`${NOTIFICATION_BASE_URL}/read-all`, {});
+    } catch {
+      void loadInbox();
+      void loadUnread();
+    }
+  };
+
+  const selectNotification = async (item: InboxNotification) => {
+    if (!item.read) {
+      setNotifications((items) => items.map((current) =>
+        current.id === item.id ? {...current, read: true} : current
+      ));
+      setUnread((count) => Math.max(0, count - 1));
+      try {
+        await put(`${NOTIFICATION_BASE_URL}/${encodeURIComponent(item.id)}/read`, {});
+      } catch {
+        void loadInbox();
+        void loadUnread();
+        return;
+      }
+    }
+    if (item.linkUrl) {
+      setOpen(false);
+      if (/^https:\/\//i.test(item.linkUrl)) {
+        window.open(item.linkUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        navigate(item.linkUrl);
+      }
+    }
+  };
+
+  const displayTime = (value?: string) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '-' : new Intl.DateTimeFormat(locale, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  };
 
   return (
     <>
       <Tooltip title={t('nav.notifications', '通知')}>
-        <Badge count={unread} size="small" offset={[-2, 2]}>
-          <Button type="text" icon={<BellOutlined />} onClick={() => setOpen(true)} />
+        <Badge count={unread} overflowCount={99} size="small" offset={[-2, 2]}>
+          <Button type="text" icon={<BellOutlined />} onClick={openNotificationCenter} />
         </Badge>
       </Tooltip>
       <Drawer
@@ -692,7 +888,7 @@ const NotificationButton: React.FC = () => {
           <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
             <span>{t('nav.notifications','通知中心')}</span>
             {unread > 0 && (
-              <Button type="link" size="small" onClick={markAllRead}>
+              <Button type="link" size="small" onClick={() => void markAllRead()}>
                 {t('nav.markAllRead','全部已读')}
               </Button>
             )}
@@ -700,11 +896,14 @@ const NotificationButton: React.FC = () => {
         }
         open={open}
         onClose={() => setOpen(false)}
-        width={360}
+        width={400}
         styles={{body: {padding: 0}}}
       >
         <List
+          loading={loading}
           dataSource={notifications}
+          rowKey="id"
+          locale={{emptyText: t('nav.notification.empty', '暂无通知')}}
           renderItem={item => (
             <List.Item
               style={{
@@ -713,14 +912,41 @@ const NotificationButton: React.FC = () => {
                 borderLeft: item.read ? '3px solid transparent' : '3px solid #1677ff',
                 cursor: 'pointer',
               }}
-              onClick={() => setNotifications(prev => prev.map(n => n.id === item.id ? {...n, read: true} : n))}
+              onClick={() => void selectNotification(item)}
             >
               <List.Item.Meta
-                title={<span style={{fontSize:13, fontWeight: item.read ? 400 : 600}}>{t(item.titleKey, item.titleFallback)}</span>}
+                title={(
+                  <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+                    <Tag color={notificationTagColor(item.category)} style={{marginInlineEnd: 0}}>
+                      {t(`notifications.category.${item.category}`, item.category)}
+                    </Tag>
+                    <span style={{fontSize: 13, fontWeight: item.read ? 400 : 600}}>
+                      {item.title}
+                    </span>
+                    {(item.priority === 'HIGH' || item.priority === 'URGENT') && (
+                      <Tag color={item.priority === 'URGENT' ? 'red' : 'orange'} style={{marginInlineEnd: 0}}>
+                        {t(`notifications.priority.${item.priority}`, item.priority)}
+                      </Tag>
+                    )}
+                  </div>
+                )}
                 description={
                   <div>
-                    <div style={{fontSize:12, color:'rgba(0,0,0,0.65)'}}>{t(item.descKey, item.descFallback)}</div>
-                    <div style={{fontSize:11, color:'rgba(0,0,0,0.35)', marginTop:2}}>{t(item.timeKey, item.timeFallback)}</div>
+                    <div style={{
+                      fontSize: 12,
+                      color: 'rgba(0,0,0,0.65)',
+                      whiteSpace: 'pre-wrap',
+                      overflowWrap: 'anywhere',
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 3,
+                      overflow: 'hidden',
+                    }}>
+                      {item.content}
+                    </div>
+                    <div style={{fontSize: 11, color: 'rgba(0,0,0,0.35)', marginTop: 4}}>
+                      {displayTime(item.publishAt)}
+                    </div>
                   </div>
                 }
               />

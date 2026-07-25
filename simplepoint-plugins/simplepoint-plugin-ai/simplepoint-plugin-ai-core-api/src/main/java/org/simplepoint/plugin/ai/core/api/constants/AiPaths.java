@@ -25,6 +25,10 @@ public final class AiPaths {
 
   public static final String TENANT_INVOCATIONS = TENANT_BASE + "/invocations";
 
+  public static final String PLATFORM_BILLING = PLATFORM_BASE + "/billing";
+
+  public static final String TENANT_BILLING = TENANT_BASE + "/billing";
+
   public static final String PLATFORM_API_KEYS = PLATFORM_BASE + "/api-keys";
 
   public static final String TENANT_API_KEYS = TENANT_BASE + "/api-keys";

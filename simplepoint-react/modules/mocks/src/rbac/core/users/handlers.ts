@@ -259,7 +259,22 @@ export default [
                             "type": ["string", "null"],
                             "title": "i18n:users.title.picture",
                             "description": "i18n:users.description.picture",
-                            "format": "data-url"
+                            "x-upload": {
+                                "type": "image",
+                                "directory": "avatars/users",
+                                "sourceServiceName": "rbac-avatar",
+                                "maxSizeMb": 5,
+                                "shape": "circle"
+                            },
+                            "x-ui": {
+                                "widget": "OssImage",
+                                "options": {
+                                    "directory": "avatars/users",
+                                    "sourceServiceName": "rbac-avatar",
+                                    "maxSizeMb": 5,
+                                    "shape": "circle"
+                                }
+                            }
                         },
                         "profile": {
                             "type": ["string", "null"],

@@ -20,6 +20,7 @@ const API_SCOPE_RULES: ReadonlyArray<{ scope: ApiScope; prefix: string }> = [
   { scope: 'global', prefix: '/common/logging' },
   { scope: 'global', prefix: '/common/resources' },
   { scope: 'global', prefix: '/common/oidc/clients' },
+  { scope: 'global', prefix: '/common/oidc/external-providers' },
   { scope: 'global', prefix: '/common/ops/microapps' },
   { scope: 'global', prefix: '/common/tenants/current-roles' },
   { scope: 'global', prefix: '/common/tenants/current' },

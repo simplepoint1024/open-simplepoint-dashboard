@@ -144,6 +144,8 @@
   "nav.collapse": "收起",
   "nav.markAllRead": "全部已读",
   "nav.notifications": "通知中心",
+  "nav.notification.empty": "暂无通知",
+  "nav.notification.received": "收到一条新通知",
   "nav.shortcuts": "快捷键 (?)",
   "role.allRoles": "全部角色",
   "role.none": "无可用角色",
@@ -165,5 +167,11 @@
   "form.image.replace": "更换图片",
   "form.image.upload": "上传图片",
   "form.image.preview": "预览",
-  "form.image.hint": "支持 PNG、JPG、WebP、GIF，最大 {size} MB；文件将保存到 OSS。"
+  "form.image.hint": "支持 PNG、JPG、WebP、GIF，最大 {size} MB；文件将保存到 OSS。",
+  "form.file.sizeError": "文件大小不能超过 {size} MB",
+  "form.file.invalidResponse": "文件上传响应无效",
+  "form.file.uploaded": "文件上传成功",
+  "form.file.replace": "更换文件",
+  "form.file.upload": "上传文件",
+  "form.file.download": "下载文件"
 }

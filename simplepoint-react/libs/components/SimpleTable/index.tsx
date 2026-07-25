@@ -86,8 +86,14 @@ const App = (props: SimpleTableProps<any>) => {
             onFilterChange={controller.table.onFilterChange}
             storageKey={`${props.baseUrl}:${props.name}`}
             onButtonEvents={buttonEvents}
+            isButtonDisabled={props.isButtonDisabled}
             onRowDoubleClick={editButton && buttonEvents[editButton.key]
-              ? (record, key) => buttonEvents[editButton.key]([key], [record], editButton)
+              ? (record, key) => {
+                if (props.isButtonDisabled?.(editButton, [key], [record])) {
+                  return;
+                }
+                buttonEvents[editButton.key]([key], [record], editButton);
+              }
               : undefined}
             buttons={buttons}
             loading={tableLoading || submitLoading}

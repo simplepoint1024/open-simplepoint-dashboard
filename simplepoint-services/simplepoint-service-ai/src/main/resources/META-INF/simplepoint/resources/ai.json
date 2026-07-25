@@ -308,6 +308,26 @@
           ]
         },
         {
+          "code": "ai.system.billing.view",
+          "name": "系统模型计费",
+          "label": "系统模型计费",
+          "title": "menu.ai.systemBilling",
+          "type": "PAGE",
+          "path": "/ai/system/billing",
+          "component": "ai/platform/Billing",
+          "icon": "DollarOutlined",
+          "routeKind": "item",
+          "description": "按币种汇总系统作用域模型调用费用",
+          "sort": 28,
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "grantable": false,
+          "disabled": false,
+          "scopeTypes": [
+            "SYSTEM"
+          ]
+        },
+        {
           "code": "ai.system.invocations.view",
           "name": "系统 AI 调用台账",
           "label": "系统 AI 调用台账",
@@ -701,6 +721,26 @@
               "disabled": false
             }
           ],
+          "scopeTypes": [
+            "TENANT"
+          ]
+        },
+        {
+          "code": "ai.billing.view",
+          "name": "租户模型计费",
+          "label": "租户模型计费",
+          "title": "menu.ai.billing",
+          "type": "PAGE",
+          "path": "/ai/billing",
+          "component": "ai/tenant/Billing",
+          "icon": "DollarOutlined",
+          "routeKind": "item",
+          "description": "按币种汇总当前租户模型调用费用",
+          "sort": 44,
+          "publicAccess": false,
+          "requireOrgTenant": true,
+          "grantable": true,
+          "disabled": false,
           "scopeTypes": [
             "TENANT"
           ]

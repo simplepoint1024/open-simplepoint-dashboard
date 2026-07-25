@@ -31,6 +31,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.api.security.base.BaseUser;
+import org.simplepoint.api.schema.UploadField;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
@@ -268,10 +269,16 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
    * The URL or path to the user's profile picture.
    */
   @Order(0)
+  @UploadField(
+      type = UploadField.Type.IMAGE,
+      directory = "avatars/users",
+      sourceServiceName = "rbac-avatar",
+      maxSizeMb = 5,
+      shape = "circle"
+  )
   @Schema(
       title = "i18n:users.title.picture",
       description = "i18n:users.description.picture",
-      format = "data-url",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),

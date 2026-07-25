@@ -69,6 +69,12 @@ export const ModelView = ({
         title: t(`ai.models.type.${value}`, value),
       }));
     }
+    if (properties.billingEnabled) {
+      properties.billingEnabled.default = false;
+    }
+    if (properties.billingCurrency) {
+      properties.billingCurrency.default = 'USD';
+    }
     delete properties.providerName;
     delete properties.available;
     delete properties.discovered;
@@ -113,6 +119,17 @@ export const ModelView = ({
         </Tag>
       ),
     },
+    billingEnabled: {
+      width: 110,
+      render: (value: boolean) => (
+        <Tag color={value ? 'gold' : 'default'}>
+          {value ? t('ai.common.enabled', '已启用') : t('ai.common.disabled', '已禁用')}
+        </Tag>
+      ),
+    },
+    billingCurrency: {width: 100},
+    inputTokenPrice: {width: 170},
+    outputTokenPrice: {width: 170},
   }), [t]);
 
   return (

@@ -12,6 +12,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
+import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -186,6 +187,56 @@ public class AiModelDefinition extends BaseEntityImpl<String> {
   private String metadataJson;
 
   @Order(7)
+  @Schema(title = "i18n:ai.models.title.billingEnabled",
+      description = "i18n:ai.models.description.billingEnabled",
+      extensions = @Extension(name = "x-ui", properties =
+          @ExtensionProperty(name = "x-list-visible", value = "true")))
+  @Column(name = "billing_enabled", nullable = false,
+      columnDefinition = "boolean default false")
+  private Boolean billingEnabled;
+
+  @Order(8)
+  @Schema(title = "i18n:ai.models.title.billingCurrency",
+      description = "i18n:ai.models.description.billingCurrency",
+      minLength = 3, maxLength = 3,
+      extensions = @Extension(name = "x-ui", properties =
+          @ExtensionProperty(name = "x-list-visible", value = "true")))
+  @Column(name = "billing_currency", length = 3)
+  private String billingCurrency;
+
+  @Order(9)
+  @Schema(title = "i18n:ai.models.title.inputTokenPrice",
+      description = "i18n:ai.models.description.tokenPrice",
+      minimum = "0", example = "2.50000000",
+      extensions = @Extension(name = "x-ui", properties =
+          @ExtensionProperty(name = "x-list-visible", value = "true")))
+  @Column(name = "input_token_price", precision = 19, scale = 8)
+  private BigDecimal inputTokenPrice;
+
+  @Order(10)
+  @Schema(title = "i18n:ai.models.title.cachedInputTokenPrice",
+      description = "i18n:ai.models.description.cachedInputTokenPrice",
+      minimum = "0", example = "1.25000000")
+  @Column(name = "cached_input_token_price", precision = 19, scale = 8)
+  private BigDecimal cachedInputTokenPrice;
+
+  @Order(11)
+  @Schema(title = "i18n:ai.models.title.outputTokenPrice",
+      description = "i18n:ai.models.description.tokenPrice",
+      minimum = "0", example = "10.00000000",
+      extensions = @Extension(name = "x-ui", properties =
+          @ExtensionProperty(name = "x-list-visible", value = "true")))
+  @Column(name = "output_token_price", precision = 19, scale = 8)
+  private BigDecimal outputTokenPrice;
+
+  @Order(12)
+  @Schema(title = "i18n:ai.models.title.requestPrice",
+      description = "i18n:ai.models.description.requestPrice",
+      minimum = "0", example = "0.01000000")
+  @Column(name = "request_price", precision = 19, scale = 8)
+  private BigDecimal requestPrice;
+
+  @Order(13)
   @Schema(title = "i18n:ai.models.title.description", maxLength = 512)
   @Column(length = 512)
   private String description;

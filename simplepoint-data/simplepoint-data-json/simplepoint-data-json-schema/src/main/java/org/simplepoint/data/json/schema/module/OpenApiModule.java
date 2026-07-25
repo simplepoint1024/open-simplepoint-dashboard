@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import org.simplepoint.api.schema.DictionaryField;
+import org.simplepoint.api.schema.UploadField;
 import org.springframework.core.annotation.Order;
 
 /**
@@ -40,6 +41,11 @@ public class OpenApiModule implements Module {
           DictionaryField dictionaryField = field.getAnnotation(DictionaryField.class);
           if (dictionaryField != null && !dictionaryField.value().isBlank()) {
             applyDictionaryField(attributes, dictionaryField.value());
+          }
+
+          UploadField uploadField = field.getAnnotation(UploadField.class);
+          if (uploadField != null) {
+            applyUploadField(attributes, uploadField);
           }
         })
         .withTitleResolver(field -> {
@@ -85,6 +91,9 @@ public class OpenApiModule implements Module {
           return schema != null && schema.hidden();
         })
         .withStringFormatResolver(field -> {
+          if (field.getAnnotation(UploadField.class) != null) {
+            return null;
+          }
           Schema schema = field.getAnnotation(Schema.class);
           return schema != null && !schema.format().isEmpty() ? schema.format() : null;
         });
@@ -122,6 +131,42 @@ public class OpenApiModule implements Module {
     ui.put("dictCode", normalizedCode);
     if (!ui.hasNonNull("widget")) {
       ui.put("widget", "select");
+    }
+  }
+
+  private static void applyUploadField(ObjectNode attributes, UploadField uploadField) {
+    String uploadType = uploadField.type().name().toLowerCase(java.util.Locale.ROOT);
+    ObjectNode upload = attributes.putObject("x-upload");
+    upload.put("type", uploadType);
+
+    ObjectNode ui = attributes.get("x-ui") instanceof ObjectNode objectNode
+        ? objectNode
+        : attributes.putObject("x-ui");
+    ui.put("widget", uploadField.type() == UploadField.Type.IMAGE ? "OssImage" : "OssFile");
+    ObjectNode options = ui.get("options") instanceof ObjectNode objectNode
+        ? objectNode
+        : ui.putObject("options");
+
+    putUploadOption(upload, options, "directory", uploadField.directory());
+    putUploadOption(upload, options, "sourceServiceName", uploadField.sourceServiceName());
+    putUploadOption(upload, options, "accept", uploadField.accept());
+    putUploadOption(upload, options, "shape", uploadField.shape());
+    if (uploadField.maxSizeMb() > 0) {
+      upload.put("maxSizeMb", uploadField.maxSizeMb());
+      options.put("maxSizeMb", uploadField.maxSizeMb());
+    }
+  }
+
+  private static void putUploadOption(
+      ObjectNode upload,
+      ObjectNode options,
+      String name,
+      String value
+  ) {
+    if (value != null && !value.isBlank()) {
+      String normalized = value.trim();
+      upload.put(name, normalized);
+      options.put(name, normalized);
     }
   }
 

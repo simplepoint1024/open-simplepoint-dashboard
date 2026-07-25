@@ -1,0 +1,22 @@
+{
+  "ai.billing.title": "Model billing",
+  "ai.billing.notice.title": "Costs use the pricing snapshot captured at invocation time",
+  "ai.billing.notice.description": "Token usage comes from the provider. Pricing changes affect only future invocations, and currencies are always summarized separately.",
+  "ai.billing.action.refresh": "Refresh",
+  "ai.billing.action.invocations": "View invocation details",
+  "ai.billing.error.load": "Failed to load model billing data",
+  "ai.billing.stat.invocations": "Invocations",
+  "ai.billing.stat.priced": "Priced invocations",
+  "ai.billing.stat.unpriced": "Successful but unpriced",
+  "ai.billing.stat.cost": "{currency} total cost",
+  "ai.billing.table.title": "Model cost ranking",
+  "ai.billing.table.model": "Model",
+  "ai.billing.table.currency": "Currency",
+  "ai.billing.table.invocations": "Invocations",
+  "ai.billing.table.inputTokens": "Input tokens",
+  "ai.billing.table.outputTokens": "Output tokens",
+  "ai.billing.table.totalCost": "Total cost",
+  "ai.billing.empty": "No priced invocations in the selected period",
+  "menu.ai.billing": "Model billing",
+  "menu.ai.systemBilling": "System model billing"
+}

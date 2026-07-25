@@ -1,6 +1,8 @@
 package org.simplepoint.plugin.ai.core.service.impl;
 
+import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.Currency;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AiModelDefinitionServiceImpl
     extends BaseServiceImpl<AiModelDefinitionRepository, AiModelDefinition, String>
     implements AiModelDefinitionService {
+
+  private static final BigDecimal MAX_PRICE = new BigDecimal("99999999999.99999999");
 
   private final AiModelDefinitionRepository repository;
 
@@ -176,6 +180,7 @@ public class AiModelDefinitionServiceImpl
     entity.setModelId(requireValue(entity.getModelId(), "模型 ID 不能为空"));
     entity.setDisplayName(trimToNull(entity.getDisplayName()));
     entity.setDescription(trimToNull(entity.getDescription()));
+    normalizePricing(entity);
     if (entity.getModelType() == null) {
       entity.setModelType(AiModelType.LLM);
     }
@@ -190,6 +195,59 @@ public class AiModelDefinitionServiceImpl
             throw new IllegalArgumentException("该供应商下已存在此模型: " + entity.getModelId());
           }
         });
+  }
+
+  private static void normalizePricing(final AiModelDefinition entity) {
+    entity.setBillingEnabled(Boolean.TRUE.equals(entity.getBillingEnabled()));
+    String currency = trimToNull(entity.getBillingCurrency());
+    if (currency == null) {
+      currency = "USD";
+    }
+    currency = currency.toUpperCase(java.util.Locale.ROOT);
+    try {
+      Currency.getInstance(currency);
+    } catch (IllegalArgumentException ex) {
+      throw new IllegalArgumentException("计费币种必须是有效的 ISO 4217 三字母代码", ex);
+    }
+    entity.setBillingCurrency(currency);
+    entity.setInputTokenPrice(normalizePrice(
+        entity.getInputTokenPrice(), "输入 Token 单价"
+    ));
+    entity.setCachedInputTokenPrice(normalizePrice(
+        entity.getCachedInputTokenPrice(), "缓存输入 Token 单价"
+    ));
+    entity.setOutputTokenPrice(normalizePrice(
+        entity.getOutputTokenPrice(), "输出 Token 单价"
+    ));
+    entity.setRequestPrice(normalizePrice(
+        entity.getRequestPrice(), "单次请求价格"
+    ));
+    if (Boolean.TRUE.equals(entity.getBillingEnabled())
+        && entity.getInputTokenPrice() == null
+        && entity.getCachedInputTokenPrice() == null
+        && entity.getOutputTokenPrice() == null
+        && entity.getRequestPrice() == null) {
+      throw new IllegalArgumentException("启用计费时至少需要配置一项价格，免费模型请显式填写 0");
+    }
+  }
+
+  private static BigDecimal normalizePrice(
+      final BigDecimal value,
+      final String name
+  ) {
+    if (value == null) {
+      return null;
+    }
+    if (value.signum() < 0) {
+      throw new IllegalArgumentException(name + "不能小于 0");
+    }
+    if (value.scale() > 8) {
+      throw new IllegalArgumentException(name + "最多支持 8 位小数");
+    }
+    if (value.compareTo(MAX_PRICE) > 0) {
+      throw new IllegalArgumentException(name + "超出允许范围");
+    }
+    return value;
   }
 
   private void decorate(final Iterable<? extends AiModelDefinition> models) {

@@ -40,6 +40,8 @@ GET {baseUrl}/schema
 
 - `@Schema`
 - `@Order`
+- `@DictionaryField`
+- `@UploadField`
 
 `simplepoint-data-json-schema` 模块里的 `OpenApiModule` 会把这些注解转成 JSON Schema 扩展字段。
 
@@ -49,6 +51,8 @@ GET {baseUrl}/schema
 | `@Schema(maxLength, minLength, format, hidden, nullable, defaultValue)` | 常规表单约束 |
 | `@Schema(extensions = @Extension(name = "x-ui", ...))` | 前端专用扩展，如列表展示、控件类型、字典编码 |
 | `@Order(n)` | `x-order`，供前端排序字段 |
+| `@DictionaryField(code)` | `x-dictionary-code` 和字典下拉控件 |
+| `@UploadField(type, ...)` | `x-upload` 和 OSS 文件/图片上传控件 |
 
 ### 3.2 一个真实例子
 
@@ -138,6 +142,11 @@ GET /common/platform/dictionaries/options?dictionaryCode=...
 - `textarea` 会被自动补充自适应高度
 - `icon` 字段如果没有显式 widget，会自动接入 `IconPicker`
 - `x-ui.format === json` 的字段会启用 JSON 格式校验
+- `@UploadField(type = IMAGE)` 生成 `OssImage`，保存 OSS 图片路径
+- `@UploadField(type = FILE)` 生成 `OssFile`，保存 OSS 下载路径
+
+上传字段不会使用 JSON Schema 的 `format: data-url`。`data-url` 表示字段值本身必须是
+Base64 Data URL，而系统上传组件持久化的是 OSS 路径，两者不能混用。
 
 ## 8. 和租户 / 权限链路的关系
 

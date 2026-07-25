@@ -10,6 +10,10 @@ package org.simplepoint.cloud.oauth.server.configuration;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.simplepoint.cloud.oauth.server.client.DatabaseOauth2UserService;
+import org.simplepoint.cloud.oauth.server.client.DatabaseOidcUserService;
+import org.simplepoint.cloud.oauth.server.client.DevicePublicClientAuthenticationConverter;
+import org.simplepoint.cloud.oauth.server.client.DevicePublicClientAuthenticationProvider;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationFailureHandler;
 import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationSuccessHandler;
@@ -29,10 +33,11 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.savedrequest.NullRequestCache;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -89,6 +94,8 @@ public class AuthorizationServerConfiguration {
   @Order(1)
   public SecurityFilterChain authorizationServerSecurityFilterChain(
       final HttpSecurity http,
+      final AuthorizationServerSettings authorizationServerSettings,
+      final RegisteredClientRepository registeredClientRepository,
       @Autowired(required = false) final OidcConfigurerExpansion oidcConfigurerExpansion
   )
       throws Exception {
@@ -97,6 +104,33 @@ public class AuthorizationServerConfiguration {
     http
         .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
         .with(authorizationServerConfigurer, authorizationServer -> {
+          authorizationServer
+              .clientAuthentication(clientAuthentication ->
+                  clientAuthentication.authenticationConverter(
+                      new DevicePublicClientAuthenticationConverter(
+                          authorizationServerSettings
+                      )
+                  ).authenticationProvider(
+                      new DevicePublicClientAuthenticationProvider(
+                          registeredClientRepository
+                      )
+                  ))
+              .deviceAuthorizationEndpoint(endpoint ->
+                  endpoint.verificationUri("/activate"))
+              .deviceVerificationEndpoint(endpoint ->
+                  endpoint
+                      .deviceVerificationResponseHandler(
+                          (request, response, authentication) ->
+                              response.sendRedirect(
+                                  request.getContextPath() + "/device-activated"
+                              )
+                      )
+                      .errorResponseHandler(
+                          (request, response, exception) ->
+                              response.sendRedirect(
+                                  request.getContextPath() + "/activate?error=invalid_code"
+                              )
+                      ));
           if (oidcConfigurerExpansion != null) {
             authorizationServer.oidc(oidcConfigurerExpansion);
           }
@@ -129,7 +163,9 @@ public class AuthorizationServerConfiguration {
   public SecurityFilterChain defaultSecurityFilterChain(
       final HttpSecurity http,
       final LoginAuthenticationSuccessHandler loginAuthenticationSuccessHandler,
-      final LoginAuthenticationFailureHandler loginAuthenticationFailureHandler
+      final LoginAuthenticationFailureHandler loginAuthenticationFailureHandler,
+      final DatabaseOauth2UserService databaseOauth2UserService,
+      final DatabaseOidcUserService databaseOidcUserService
   )
       throws Exception {
     http
@@ -145,7 +181,16 @@ public class AuthorizationServerConfiguration {
           configurer.successHandler(loginAuthenticationSuccessHandler);
           configurer.failureHandler(loginAuthenticationFailureHandler);
         })
-        .requestCache(configurer -> configurer.requestCache(new NullRequestCache()));
+        .oauth2Login(configurer -> {
+          configurer.loginPage("/login");
+          configurer.userInfoEndpoint(userInfo -> userInfo
+              .userService(databaseOauth2UserService)
+              .oidcUserService(databaseOidcUserService));
+          configurer.successHandler(loginAuthenticationSuccessHandler);
+          configurer.failureHandler(loginAuthenticationFailureHandler);
+        })
+        .requestCache(configurer ->
+            configurer.requestCache(new HttpSessionRequestCache()));
 
     return http.build();
   }

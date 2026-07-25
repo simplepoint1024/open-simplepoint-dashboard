@@ -6,6 +6,11 @@ package org.simplepoint.plugin.rbac.tenant.api.constants;
 public final class TenantDictionaryCodes {
 
   /**
+   * Dictionary code for tenant workspace types.
+   */
+  public static final String TENANT_TYPE = "tenant.type";
+
+  /**
    * Dictionary code for organization types.
    */
   public static final String ORGANIZATION_TYPE = "organization.type";

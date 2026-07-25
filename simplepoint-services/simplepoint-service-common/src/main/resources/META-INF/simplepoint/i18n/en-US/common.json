@@ -144,6 +144,8 @@
   "nav.collapse": "Collapse",
   "nav.markAllRead": "Mark all as read",
   "nav.notifications": "Notifications",
+  "nav.notification.empty": "No notifications",
+  "nav.notification.received": "You received a new notification",
   "nav.shortcuts": "Shortcuts (?)",
   "role.allRoles": "All roles",
   "role.none": "No available roles",
@@ -165,5 +167,11 @@
   "form.image.replace": "Replace image",
   "form.image.upload": "Upload image",
   "form.image.preview": "Preview",
-  "form.image.hint": "PNG, JPG, WebP and GIF are supported, up to {size} MB. The file is stored in OSS."
+  "form.image.hint": "PNG, JPG, WebP and GIF are supported, up to {size} MB. The file is stored in OSS.",
+  "form.file.sizeError": "File size cannot exceed {size} MB",
+  "form.file.invalidResponse": "Invalid file upload response",
+  "form.file.uploaded": "File uploaded",
+  "form.file.replace": "Replace file",
+  "form.file.upload": "Upload file",
+  "form.file.download": "Download file"
 }

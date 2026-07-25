@@ -10,12 +10,22 @@ import org.simplepoint.plugin.rbac.tenant.api.service.DictionaryService;
 /**
  * Shared registration support for dictionaries shipped by platform modules.
  */
-final class BuiltInDictionaryRegistrar {
+public final class BuiltInDictionaryRegistrar {
 
   private BuiltInDictionaryRegistrar() {
   }
 
-  static Dictionary ensureDictionary(
+  /**
+   * Creates a built-in dictionary or refreshes its platform-owned metadata.
+   *
+   * @param dictionaryService dictionary management service
+   * @param code              stable dictionary code
+   * @param name              display name
+   * @param description       dictionary description
+   * @param sort              display order
+   * @return the persisted dictionary
+   */
+  public static Dictionary ensureDictionary(
       DictionaryService dictionaryService,
       String code,
       String name,
@@ -43,7 +53,18 @@ final class BuiltInDictionaryRegistrar {
         });
   }
 
-  static void ensureItem(
+  /**
+   * Creates a built-in dictionary item or refreshes its platform-owned metadata.
+   *
+   * @param dictionaryItemService dictionary item management service
+   * @param dictionaryCode        owning dictionary code
+   * @param value                 stable item value
+   * @param name                  fallback display name
+   * @param i18nKey               internationalization key
+   * @param description           item description
+   * @param sort                  display order
+   */
+  public static void ensureItem(
       DictionaryItemService dictionaryItemService,
       String dictionaryCode,
       String value,

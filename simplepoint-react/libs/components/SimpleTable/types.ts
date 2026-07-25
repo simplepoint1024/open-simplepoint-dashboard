@@ -30,6 +30,11 @@ export interface SimpleTableProps<T> {
   initialFilters?: Record<string, string>;
   customButtonEvents?: Record<string, (selectedRowKeys: React.Key[], selectedRows: T[], props: TableButtonProps) => void>;
   customButtons?: TableButtonProps[];
+  isButtonDisabled?: (
+    button: TableButtonProps,
+    selectedRowKeys: React.Key[],
+    selectedRows: T[],
+  ) => boolean;
   drawerOpen?: boolean;
   onDrawerOpenChange?: (open: boolean) => void;
   editingRecord?: any | null;
@@ -45,5 +50,4 @@ export interface SimpleTableProps<T> {
   submitRefreshTargets?: SimpleTableRefreshTargets;
   deleteRefreshTargets?: SimpleTableRefreshTargets;
 }
-
 

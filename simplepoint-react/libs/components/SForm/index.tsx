@@ -8,6 +8,7 @@ import {memo, useMemo} from "react";
 import IconPicker from "./widgets/IconPicker";
 import OrgTreeMultiSelect from "./widgets/OrgTreeMultiSelect";
 import RemoteSelect from "./widgets/RemoteSelect";
+import OssFileWidget from "./widgets/OssFileWidget";
 import OssImageWidget from "./widgets/OssImageWidget";
 import UserPicker from "./widgets/UserPicker";
 import {useI18n} from "@simplepoint/shared/hooks/useI18n";
@@ -37,7 +38,14 @@ const formTemplates = {
   },
 };
 
-const defaultWidgets = {IconPicker, OrgTreeMultiSelect, RemoteSelect, UserPicker, OssImage: OssImageWidget} as const;
+const defaultWidgets = {
+  IconPicker,
+  OrgTreeMultiSelect,
+  RemoteSelect,
+  UserPicker,
+  OssFile: OssFileWidget,
+  OssImage: OssImageWidget,
+} as const;
 
 // 抽离 textarea 的 autosize 常量，避免重复创建对象
 const TEXTAREA_AUTOSIZE = { minRows: 4, maxRows: 16 } as const;
@@ -56,8 +64,7 @@ const SForm = (props: SFormProps) => {
       const xui = fieldSchema?.['x-ui'];
       const normalizedXui = xui && typeof xui === 'object' ? xui : {};
       const widget = normalizedXui['ui:widget']
-        ?? normalizedXui.widget
-        ?? (fieldSchema?.format === 'data-url' ? 'OssImage' : undefined);
+        ?? normalizedXui.widget;
       const uiOptions = normalizedXui['ui:options'] ?? normalizedXui.options;
       if (!widget || typeof widget !== 'string') continue;
       if (widget === 'textarea') {

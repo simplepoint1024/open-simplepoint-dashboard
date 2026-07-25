@@ -6,8 +6,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.cloud.oauth.server.event.LoginAuditEventPublisher;
+import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.entity.User;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -21,29 +24,50 @@ import org.springframework.stereotype.Component;
 public final class LoginAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
   private final AuthenticationSuccessHandler delegate = new SavedRequestAwareAuthenticationSuccessHandler();
   private final LoginAuditEventPublisher loginAuditEventPublisher;
+  private final UsersService usersService;
 
   /**
    * Login Authentication Success Handler.
    */
-  public LoginAuthenticationSuccessHandler(final LoginAuditEventPublisher loginAuditEventPublisher) {
+  public LoginAuthenticationSuccessHandler(
+      final LoginAuditEventPublisher loginAuditEventPublisher,
+      final UsersService usersService
+  ) {
     this.loginAuditEventPublisher = loginAuditEventPublisher;
+    this.usersService = usersService;
   }
 
   @Override
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
       throws IOException, ServletException {
-    Object details = authentication.getPrincipal();
-    if (details != null) {
-      if (details instanceof User currentUser) {
-        // If user has two-factor enabled, redirect to 2FA verification page
-        if (Boolean.TRUE.equals(currentUser.getTwoFactorEnabled()) && currentUser.getTwoFactorSecret() != null) {
-          // keep authentication in context, but force user to complete 2FA before accessing protected resources
-          response.sendRedirect(request.getContextPath() + "/two-factor/verify");
-          return;
-        }
+    User currentUser = resolveLocalUser(authentication);
+    if (currentUser != null
+        && Boolean.TRUE.equals(currentUser.getTwoFactorEnabled())
+        && currentUser.getTwoFactorSecret() != null) {
+      if (!(authentication.getPrincipal() instanceof User)) {
+        UsernamePasswordAuthenticationToken localAuthentication =
+            new UsernamePasswordAuthenticationToken(
+                currentUser,
+                null,
+                authentication.getAuthorities()
+            );
+        localAuthentication.setDetails(authentication.getDetails());
+        SecurityContextHolder.getContext().setAuthentication(localAuthentication);
       }
+      response.sendRedirect(request.getContextPath() + "/two-factor/verify");
+      return;
     }
     this.onAuthenticationSuccessDelegate(request, response, authentication);
+  }
+
+  private User resolveLocalUser(final Authentication authentication) {
+    if (authentication == null) {
+      return null;
+    }
+    if (authentication.getPrincipal() instanceof User user) {
+      return user;
+    }
+    return usersService.findByIdForAuthorization(authentication.getName()).orElse(null);
   }
 
   /**

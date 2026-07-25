@@ -1,229 +1,328 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN" xmlns:th="https://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8" />
-    <title>Sign in</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>登录 · SimplePoint</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
-            background: radial-gradient(circle at 20% 20%, #eef4ff 0, #f8f9fb 45%, #e7f2ff 100%);
-            overflow: hidden;
+        :root {
+            color-scheme: light;
+            --surface: rgba(255, 255, 255, .88);
+            --surface-strong: #fff;
+            --text: #172033;
+            --muted: #667085;
+            --line: rgba(92, 112, 145, .18);
+            --primary: #3166f5;
+            --primary-hover: #2455d8;
+            --danger: #b42318;
+            --success: #067647;
         }
 
-        *, *::before, *::after {
+        * {
             box-sizing: border-box;
         }
 
-        /* 彩虹柔光光斑 */
-        .blob {
-            position: absolute;
-            width: 520px;
-            height: 520px;
-            filter: blur(120px);
-            opacity: 0.55;
-            animation: float 14s ease-in-out infinite;
-        }
-        .blob:nth-child(1) {
-            background: radial-gradient(circle, #8ec5ff 0%, rgba(255,255,255,0) 70%);
-            top: -120px; left: -80px;
-        }
-        .blob:nth-child(2) {
-            background: radial-gradient(circle, #b5e3ff 0%, rgba(255,255,255,0) 70%);
-            bottom: -140px; right: -60px;
-            animation-delay: -4s;
-        }
-        .blob:nth-child(3) {
-            background: radial-gradient(circle, #c7b8ff 0%, rgba(255,255,255,0) 70%);
-            top: 40%; left: 60%;
-            animation-delay: -8s;
+        body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 32px 18px;
+            display: grid;
+            place-items: center;
+            color: var(--text);
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at 12% 15%, rgba(94, 149, 255, .28), transparent 34%),
+                radial-gradient(circle at 88% 82%, rgba(142, 113, 255, .22), transparent 34%),
+                linear-gradient(145deg, #f4f7fc, #eef3fb);
         }
 
-        @keyframes float {
-            0% { transform: translate(0,0); }
-            50% { transform: translate(30px, 40px); }
-            100% { transform: translate(0,0); }
+        .shell {
+            width: min(460px, 100%);
+            max-height: calc(100vh - 48px);
+            overflow: auto;
+            padding: 34px;
+            border: 1px solid rgba(255, 255, 255, .82);
+            border-radius: 22px;
+            background: var(--surface);
+            box-shadow: 0 24px 70px rgba(37, 55, 92, .16);
+            backdrop-filter: blur(24px);
         }
 
-        /* 毛玻璃卡片 */
-        .card {
-            position: relative;
-            width: 400px;
-            padding: 42px 38px 54px;
-            border-radius: 36px;
-            background: rgba(255, 255, 255, 0.48);
-            backdrop-filter: blur(28px) saturate(180%);
-            -webkit-backdrop-filter: blur(28px) saturate(180%);
-            box-shadow:
-                    0 16px 36px rgba(0,0,0,0.10),
-                    inset 0 0 1px rgba(255,255,255,0.85);
-            border: 1px solid rgba(255,255,255,0.65);
-            text-align: center;
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 28px;
         }
 
-        h2 {
-            margin: 0 0 8px 0;
-            font-weight: 500;
-            font-size: 24px;
-            color: #1f1f1f;
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 13px;
+            color: #fff;
+            font-size: 19px;
+            font-weight: 750;
+            background: linear-gradient(145deg, #4778ff, #6f5ce7);
+            box-shadow: 0 10px 24px rgba(60, 98, 225, .28);
+        }
+
+        .brand strong {
+            display: block;
+            font-size: 17px;
+        }
+
+        .brand span {
+            display: block;
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 27px;
+            line-height: 1.25;
+            letter-spacing: -.02em;
         }
 
         .subtitle {
-            font-size: 15px;
-            color: #6d6d6d;
-            margin-bottom: 24px;
-        }
-
-        /* 输入框 */
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 14px 16px;
-            border-radius: 18px;
-            border: 1px solid rgba(255,255,255,0.6);
-            background: rgba(255,255,255,0.55);
-            backdrop-filter: blur(18px) saturate(180%);
-            -webkit-backdrop-filter: blur(18px) saturate(180%);
-            font-size: 15px;
-            color: #1f1f1f;
-            outline: none;
-            transition: all 0.25s ease;
-            box-shadow:
-                    inset 0 1px 2px rgba(255,255,255,0.9),
-                    0 2px 6px rgba(0,0,0,0.06);
-            margin: 0 0 16px 0;
-        }
-
-        input::placeholder {
-            color: rgba(0,0,0,0.35);
-        }
-
-        input:focus {
-            background: rgba(255,255,255,0.85);
-            border-color: rgba(79,124,255,0.45);
-            box-shadow:
-                    0 0 0 6px rgba(79,124,255,0.15),
-                    inset 0 1px 2px rgba(255,255,255,1),
-                    0 4px 12px rgba(0,0,0,0.08);
-            transform: translateY(-1px);
-        }
-
-        /* 主按钮 */
-        .sign-in-btn {
-            display: block;
-            width: 100%;
-            padding: 14px 0;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #ffffff, #f3f3f3);
-            color: #1e1f26;
-            text-decoration: none;
-            font-size: 16px;
-            font-weight: 600;
-            margin: 16px 0 0 0;
-            box-shadow:
-                    0 4px 12px rgba(0,0,0,0.08),
-                    inset 0 1px 2px rgba(255,255,255,0.9);
-            transition: all 0.25s ease;
-        }
-
-        .sign-in-btn:hover {
-            background: #ffffff;
-            transform: translateY(-2px);
-            box-shadow:
-                    0 6px 18px rgba(0,0,0,0.12),
-                    inset 0 1px 2px rgba(255,255,255,1);
-        }
-
-        /* OAuth 按钮 */
-        .oauth-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px;
-            margin: 12px 0 0 0;
-            border-radius: 16px;
-            background: rgba(255,255,255,0.7);
-            border: 1px solid rgba(0,0,0,0.1);
-            box-shadow:
-                    0 2px 8px rgba(0,0,0,0.06),
-                    inset 0 1px 2px rgba(255,255,255,0.8);
-            font-size: 15px;
-            color: #333;
-            text-decoration: none;
-            transition: 0.2s;
-        }
-
-        .oauth-btn:hover {
-            background: rgba(255,255,255,0.9);
-            transform: translateY(-2px);
-        }
-
-        .oauth-btn img {
-            height: 24px;
-            margin-right: 10px;
+            margin: 8px 0 24px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.55;
         }
 
         .alert {
             margin-bottom: 16px;
+            padding: 11px 12px;
+            border-radius: 9px;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .alert-error {
+            color: var(--danger);
+            background: #fff1f0;
+            border: 1px solid #ffccc7;
+        }
+
+        .alert-success {
+            color: var(--success);
+            background: #ecfdf3;
+            border: 1px solid #abefc6;
+        }
+
+        label {
+            display: block;
+            margin: 0 0 7px;
+            color: #344054;
+            font-size: 13px;
+            font-weight: 620;
+        }
+
+        input {
+            width: 100%;
+            height: 46px;
+            margin-bottom: 15px;
+            padding: 0 14px;
+            border: 1px solid #d7dfeb;
+            border-radius: 10px;
+            outline: none;
+            color: var(--text);
+            background: rgba(255, 255, 255, .92);
+            font: inherit;
+            transition: border-color .18s, box-shadow .18s;
+        }
+
+        input:focus {
+            border-color: #7598ff;
+            box-shadow: 0 0 0 4px rgba(49, 102, 245, .12);
+        }
+
+        button,
+        .provider {
+            width: 100%;
+            min-height: 44px;
+            border-radius: 10px;
             font-size: 14px;
+            font-weight: 650;
+            cursor: pointer;
+            transition: transform .16s, box-shadow .16s, border-color .16s;
+        }
+
+        button {
+            border: 0;
+            color: #fff;
+            background: var(--primary);
+            box-shadow: 0 8px 18px rgba(49, 102, 245, .24);
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 24px 0 16px;
+            color: #8a94a6;
+            font-size: 12px;
+        }
+
+        .divider::before,
+        .divider::after {
+            height: 1px;
+            flex: 1;
+            content: "";
+            background: var(--line);
+        }
+
+        .providers {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            max-height: 206px;
+            overflow-y: auto;
+            padding: 2px;
+        }
+
+        .provider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border: 1px solid #d9e1ed;
+            color: #25324a;
+            background: var(--surface-strong);
+            text-decoration: none;
+        }
+
+        .provider:hover {
+            border-color: #9db4f5;
+            box-shadow: 0 7px 18px rgba(35, 55, 95, .1);
+            transform: translateY(-1px);
+        }
+
+        .provider-mark {
+            width: 28px;
+            height: 28px;
+            flex: 0 0 28px;
+            display: grid;
+            place-items: center;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 760;
+            text-transform: uppercase;
+            background: #596780;
+        }
+
+        .provider.google .provider-mark { background: #4285f4; }
+        .provider.github .provider-mark { background: #24292f; }
+        .provider.apple .provider-mark { background: #111; }
+        .provider.microsoft .provider-mark { background: #1674d1; }
+
+        .provider-name {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .security-note {
+            margin: 22px 0 0;
+            color: #7b8495;
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .register {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .register a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 650;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                align-items: start;
+                padding: 14px;
+            }
+
+            .shell {
+                max-height: none;
+                padding: 26px 20px;
+                border-radius: 17px;
+            }
+
+            .providers {
+                grid-template-columns: 1fr;
+                max-height: 242px;
+            }
         }
     </style>
 </head>
-
 <body>
+<main class="shell">
+    <div class="brand">
+        <div class="brand-mark">S·P</div>
+        <div>
+            <strong>SimplePoint</strong>
+            <span>统一身份与访问管理</span>
+        </div>
+    </div>
 
-<div class="blob"></div>
-<div class="blob"></div>
-<div class="blob"></div>
+    <h1>欢迎回来</h1>
+    <p class="subtitle">使用平台账号或组织配置的身份提供商安全登录。</p>
 
-<div class="card">
+    <div th:if="${param.error}" class="alert alert-error" role="alert">
+        登录失败，请检查账号凭据或外部账号绑定状态。
+    </div>
+    <div th:if="${param.logout}" class="alert alert-success" role="status">
+        您已安全退出登录。
+    </div>
+    <div th:if="${param.registered}" class="alert alert-success" role="status">
+        注册成功，请使用新账号登录。
+    </div>
+
     <form method="post" th:action="@{/login}">
-        <h2>Sign in</h2>
-        <div class="subtitle">Sign in with your Simple·point account</div>
+        <label for="username">邮箱或手机号</label>
+        <input id="username" type="text" name="username"
+               autocomplete="username" required autofocus>
 
-        <label>
-            <input type="text" name="username" placeholder="Email or phone" required autofocus />
-        </label>
-        <label>
-            <input type="password" name="password" placeholder="Enter your password" required />
-        </label>
+        <label for="password">密码</label>
+        <input id="password" type="password" name="password"
+               autocomplete="current-password" required>
 
-        <div th:if="${param.error}" class="alert" style="color:#d93025;">
-            Invalid username or password.
-        </div>
-
-        <div th:if="${param.logout}" class="alert" style="color:#188038;">
-            You have been logged out.
-        </div>
-
-        <div th:if="${param.registered}" class="alert" style="color:#188038;">
-            Registration successful! Please sign in.
-        </div>
-
-        <a class="sign-in-btn" href="#" onclick="document.querySelector('form').submit()">
-            Sign in
-        </a>
-
-        <a class="oauth-btn" href="/oauth2/authorization/google-idp">
-            <img src="/assets/img/google.png" th:src="@{/assets/img/google.png}" alt="Google logo">
-            Sign in with Google
-        </a>
-
-        <a class="oauth-btn" href="/oauth2/authorization/github-idp">
-            <img src="/assets/img/github.png" th:src="@{/assets/img/github.png}" alt="Github logo">
-            Sign in with Github
-        </a>
-
-        <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(0,0,0,0.08);font-size:14px;color:#6d6d6d;">
-            还没有账号？
-            <a href="/register" style="color:#4f7cff;text-decoration:none;font-weight:600;">立即注册</a>
-        </div>
+        <button type="submit">使用平台账号登录</button>
     </form>
-</div>
 
+    <th:block th:if="${identityProviders != null and !identityProviders.isEmpty()}">
+        <div class="divider">其他登录方式</div>
+        <div class="providers" aria-label="外部身份提供商">
+            <a th:each="provider : ${identityProviders}"
+               class="provider"
+               th:classappend="${#strings.toLowerCase(provider.preset().name())}"
+               th:href="@{'/oauth2/authorization/' + ${provider.registrationId()}}">
+                <span class="provider-mark"
+                      th:text="${#strings.substring(provider.displayName(), 0, 1)}">ID</span>
+                <span class="provider-name" th:text="${provider.displayName()}">Provider</span>
+            </a>
+        </div>
+    </th:block>
+
+    <p class="security-note">外部身份登录采用 OAuth 2.0 / OpenID Connect 标准，平台不会获取您的外部密码。</p>
+    <div class="register">还没有平台账号？ <a th:href="@{/register}">立即注册</a></div>
+</main>
 </body>
 </html>

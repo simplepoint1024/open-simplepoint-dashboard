@@ -10,6 +10,10 @@ type InvocationProps = {
   configKey?: InvocationConfigKey;
 };
 
+type InvocationRow = {
+  billingCurrency?: string;
+};
+
 export const InvocationView = ({configKey = 'platform.ai-invocations'}: InvocationProps) => {
   const {t} = useI18n();
   const columnOverrides = useMemo(() => ({
@@ -30,6 +34,27 @@ export const InvocationView = ({configKey = 'platform.ai-invocations'}: Invocati
     inputTokens: {width: 120},
     outputTokens: {width: 120},
     totalTokens: {width: 120},
+    billingStatus: {
+      width: 130,
+      render: (value: string) => {
+        const color = value === 'CALCULATED' ? 'gold'
+          : value === 'UNPRICED' ? 'orange'
+            : value === 'NOT_CHARGED' ? 'default'
+              : 'blue';
+        return (
+          <Tag color={color}>
+            {t(`ai.invocations.billingStatus.${value}`, value || '-')}
+          </Tag>
+        );
+      },
+    },
+    billingCurrency: {width: 100},
+    totalCost: {
+      width: 150,
+      render: (value: number | string | undefined, record: InvocationRow) => (
+        value == null ? '-' : `${record.billingCurrency || ''} ${Number(value).toFixed(8)}`
+      ),
+    },
     startedAt: {width: 190},
   }), [t]);
 

@@ -10,6 +10,7 @@
 - 统一生成协议：OpenAI Responses、Anthropic Messages 与 OpenAI Compatible Chat Completions；
 - 同步生成与 SSE 流式生成、工具调用、严格 JSON Schema 输出和统一 Token 用量；
 - 按系统/租户/用户隔离的元数据调用台账，默认不保存提示词与模型输出；
+- 按模型配置输入、缓存输入、输出 Token 及单次请求价格，生成不可变费用快照与分币种计费汇总；
 - 独立知识库模块，支持常见办公文档、PDF、OpenDocument、文本和网页文档解析；
 - 基于 PostgreSQL 租约队列的持久化异步索引，支持多实例领取、失败重试与重启恢复；
 - PostgreSQL pgvector 向量索引、全文检索、pg_trgm 与归一化 RRF 混合检索。
@@ -70,6 +71,17 @@ export SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY='replace-with-a-long-random-secr
 Messages 兼容接口；详细请求格式和无状态能力边界参见 `doc/ai/model_api.md`。
 
 供应商请求默认禁止访问回环、链路本地、私网、组播和其他受限地址，并且不会自动跟随 HTTP 重定向。仅系统级供应商可显式开启“允许访问内网”，用于连接集群内部网关或自托管模型；租户供应商始终不能开启。OpenAI Compatible 供应商允许不设置 API Key，方便接入不鉴权的本地服务。
+
+## 模型计费
+
+模型目录可按 ISO 4217 币种配置每百万输入 Token、缓存输入 Token、输出 Token
+价格和单次成功请求固定价格。启用计费后，调用开始时会把当时价格复制到调用台账，
+调用成功后根据供应商返回的 Token 用量计算费用；后续修改模型价格不会改变历史费用。
+失败或取消的调用标记为不计费，成功但未配置价格的调用会在计费看板单独统计。
+
+平台与租户分别通过 `/platform/ai/billing/summary` 和
+`/tenant/ai/billing/summary` 查询最长 366 天的汇总。不同币种始终分别展示，不进行
+无汇率依据的跨币种相加。
 
 ## 可调参数
 

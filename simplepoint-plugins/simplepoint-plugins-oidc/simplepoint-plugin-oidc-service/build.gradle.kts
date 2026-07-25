@@ -6,5 +6,6 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-repository"))
     implementation(libs.spring.authorization.server)
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

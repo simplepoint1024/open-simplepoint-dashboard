@@ -31,6 +31,8 @@
   "menu.system": "System Configuration",
   "menu.system.accessCenter": "Resource Grant Center",
   "menu.system.resource": "Resource Management",
+  "menu.system.notifications": "System Notifications",
+  "menu.system.identityProvider": "External Login Providers",
   "menu.system.oauthClient": "OAuth Client Management",
   "menu.system.client": "Application Management",
   "menu.system.endpoints": "Endpoint Management",

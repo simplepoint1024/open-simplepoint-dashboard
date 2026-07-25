@@ -113,6 +113,10 @@ public class ClientRegistrationInitialize implements ApplicationRunner {
           builder.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN);
         }
         case "client_credentials" -> builder.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS);
+        case "urn:ietf:params:oauth:grant-type:device_code" -> {
+          builder.authorizationGrantType(AuthorizationGrantType.DEVICE_CODE);
+          builder.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN);
+        }
         default ->
             builder.authorizationGrantType(new AuthorizationGrantType(registration.getAuthorizationGrantType()));
       }

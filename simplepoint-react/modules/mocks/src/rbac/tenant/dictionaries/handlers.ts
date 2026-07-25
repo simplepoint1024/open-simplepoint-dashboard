@@ -40,6 +40,14 @@ let dictionaries: DictionaryRecord[] = [
     sort: 20,
     enabled: true,
   },
+  {
+    id: 'dict-tenant-type',
+    name: '租户类型',
+    code: 'tenant.type',
+    description: '用于定义租户工作空间的使用形态',
+    sort: 35,
+    enabled: true,
+  },
 ];
 
 let dictionaryItems: DictionaryItemRecord[] = [
@@ -141,6 +149,26 @@ let dictionaryItems: DictionaryItemRecord[] = [
     value: 'team',
     description: '用于表示小组级组织',
     sort: 40,
+    enabled: true,
+  },
+  {
+    id: 'dict-item-tenant-type-personal',
+    dictionaryCode: 'tenant.type',
+    name: 'PERSONAL',
+    i18nKey: 'tenants.type.PERSONAL',
+    value: 'PERSONAL',
+    description: '个人租户工作空间',
+    sort: 20,
+    enabled: true,
+  },
+  {
+    id: 'dict-item-tenant-type-organization',
+    dictionaryCode: 'tenant.type',
+    name: 'ORGANIZATION',
+    i18nKey: 'tenants.type.ORGANIZATION',
+    value: 'ORGANIZATION',
+    description: '组织租户工作空间',
+    sort: 10,
     enabled: true,
   },
 ];

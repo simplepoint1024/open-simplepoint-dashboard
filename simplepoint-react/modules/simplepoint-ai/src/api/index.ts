@@ -32,6 +32,12 @@ export default {
     i18nNamespaces: ['ai-runtime'],
     name: 'ai-invocations',
   },
+  'platform.ai-billing': {
+    baseUrl: `${contextPath}/platform/ai/billing`,
+    summaryUrl: `${contextPath}/platform/ai/billing/summary`,
+    i18nNamespaces: ['ai-billing'],
+    name: 'ai-billing',
+  },
   'platform.ai-knowledge-bases': {
     baseUrl: `${contextPath}/platform/ai/knowledge-bases`,
     i18nNamespaces: ['ai-knowledge-bases'],
@@ -62,6 +68,12 @@ export default {
     baseUrl: `${contextPath}/tenant/ai/invocations`,
     i18nNamespaces: ['ai-runtime'],
     name: 'tenant-ai-invocations',
+  },
+  'tenant.ai-billing': {
+    baseUrl: `${contextPath}/tenant/ai/billing`,
+    summaryUrl: `${contextPath}/tenant/ai/billing/summary`,
+    i18nNamespaces: ['ai-billing'],
+    name: 'tenant-ai-billing',
   },
   'tenant.ai-knowledge-bases': {
     baseUrl: `${contextPath}/tenant/ai/knowledge-bases`,

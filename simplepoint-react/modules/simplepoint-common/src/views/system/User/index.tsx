@@ -83,25 +83,12 @@ const App = () => {
         },
     }), [t]);
 
-    const formUiSchema = useMemo(() => ({
-        picture: {
-            'ui:widget': 'OssImage',
-            'ui:options': {
-                directory: 'avatars/users',
-                sourceServiceName: 'rbac-avatar',
-                shape: 'circle',
-                maxSizeMb: 5,
-            },
-        },
-    }), []);
-
     return (
         <div>
             <SimpleTable
                 {...baseConfig}
                 customButtonEvents={customButtonEvents}
                 columnOverrides={columnOverrides}
-                formUiSchema={formUiSchema}
             />
 
             <Drawer

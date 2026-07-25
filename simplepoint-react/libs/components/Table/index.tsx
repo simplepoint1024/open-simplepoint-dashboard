@@ -46,6 +46,11 @@ export interface TableProps<T> {
   onSelectionChange?: (selectedRowKeys: React.Key[], selectedRows: T[]) => void;
   onRowDoubleClick?: (record: T, key: React.Key) => void;
   onButtonEvents?: Record<string, (selectedRowKeys: React.Key[], selectedRows: T[], props: TableButtonProps) => void>;
+  isButtonDisabled?: (
+    button: TableButtonProps,
+    selectedRowKeys: React.Key[],
+    selectedRows: T[],
+  ) => boolean;
   buttons?: TableButtonProps[]
   storageKey?: string;
 }
@@ -704,11 +709,16 @@ const App = <T extends object = any>(props: TableProps<T>) => {
   };
 
   const onButtonDisabled = (button: TableButtonProps): boolean => {
+    if (button.disabled) return true;
     const {argumentMinSize, argumentMaxSize} = button;
-    if (argumentMinSize === undefined && argumentMaxSize === undefined) return false;
     const size = selectedRowKeys.length;
     if (typeof argumentMinSize === 'number' && argumentMinSize !== -1 && size < argumentMinSize) return true;
-    return typeof argumentMaxSize === 'number' && argumentMaxSize !== -1 && size > argumentMaxSize;
+    if (typeof argumentMaxSize === 'number' && argumentMaxSize !== -1 && size > argumentMaxSize) return true;
+    return props.isButtonDisabled?.(
+      button,
+      selectedRowKeys,
+      getSelectedRowsForEvent(),
+    ) ?? false;
   };
 
   const rowSelection: TableRowSelection<T> = {

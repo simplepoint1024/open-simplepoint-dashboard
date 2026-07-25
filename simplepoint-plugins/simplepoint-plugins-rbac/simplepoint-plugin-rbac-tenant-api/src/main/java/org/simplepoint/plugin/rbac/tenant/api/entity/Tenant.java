@@ -14,11 +14,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.simplepoint.api.schema.DictionaryField;
+import org.simplepoint.api.schema.UploadField;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.simplepoint.plugin.rbac.tenant.api.constants.TenantDictionaryCodes;
 import org.springframework.core.annotation.Order;
 
 /**
@@ -78,10 +81,16 @@ public class Tenant extends BaseEntityImpl<String> {
 
   /** Tenant logo stored in OSS. */
   @Order(-2)
+  @UploadField(
+      type = UploadField.Type.IMAGE,
+      directory = "tenants/logos",
+      sourceServiceName = "tenant-branding",
+      maxSizeMb = 5,
+      shape = "square"
+  )
   @Schema(
       title = "i18n:tenants.title.logo",
       description = "i18n:tenants.description.logo",
-      format = "data-url",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
@@ -93,10 +102,16 @@ public class Tenant extends BaseEntityImpl<String> {
 
   /** Tenant home-page background stored in OSS. */
   @Order(-1)
+  @UploadField(
+      type = UploadField.Type.IMAGE,
+      directory = "tenants/backgrounds",
+      sourceServiceName = "tenant-branding",
+      maxSizeMb = 10,
+      shape = "square"
+  )
   @Schema(
       title = "i18n:tenants.title.backgroundImage",
       description = "i18n:tenants.description.backgroundImage",
-      format = "data-url",
       extensions = {
           @Extension(name = "x-ui", properties = {
               @ExtensionProperty(name = "x-list-visible", value = "false"),
@@ -257,6 +272,7 @@ public class Tenant extends BaseEntityImpl<String> {
    * The type of the tenant (PERSONAL or ORGANIZATION).
    */
   @Order(1)
+  @DictionaryField(TenantDictionaryCodes.TENANT_TYPE)
   @Schema(
       title = "i18n:tenants.title.tenantType",
       description = "i18n:tenants.description.tenantType",

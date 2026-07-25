@@ -112,6 +112,12 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-rest"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-s3"))
 
+    // 系统通知、用户收件箱与主动推送
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-repository"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-service"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-rest"))
+
     // 引入平台启动编排
     implementation(project(":simplepoint-platform:simplepoint-platform-bootstrap"))
 
@@ -119,4 +125,6 @@ dependencies {
 
     // 引入API文档
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

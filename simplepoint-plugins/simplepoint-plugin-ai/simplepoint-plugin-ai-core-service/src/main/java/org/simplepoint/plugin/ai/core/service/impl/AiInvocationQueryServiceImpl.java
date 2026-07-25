@@ -50,6 +50,9 @@ public class AiInvocationQueryServiceImpl
     copyFilter(attributes, filters, "modelDefinitionId");
     copyFilter(attributes, filters, "modelId");
     copyFilter(attributes, filters, "userId");
+    copyFilter(attributes, filters, "billingStatus");
+    copyFilter(attributes, filters, "billingCurrency");
+    copyFilter(attributes, filters, "startedAt");
     ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
     filters.put("scopeType", scope.scopeType().name());
     filters.put("tenantId", scope.tenantId() == null ? "is:null" : scope.tenantId());

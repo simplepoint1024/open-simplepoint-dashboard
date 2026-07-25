@@ -6,6 +6,11 @@ export default {
     i18nNamespaces: ['clients'],
     name: 'oidc-clients',
   },
+  'external-identity-providers': {
+    baseUrl: `${contextPath}/oidc/external-providers`,
+    i18nNamespaces: ['external-identity-providers', 'table', 'common'],
+    name: 'external-identity-providers',
+  },
   'rbac-resources':{
     baseUrl: `${contextPath}/resources`,
     i18nNamespaces: ['resources'],
@@ -110,5 +115,10 @@ export default {
     baseUrl: `${contextPath}/field-scopes`,
     i18nNamespaces: ['field-scopes'],
     name: 'field-scopes',
+  },
+  'system.notifications': {
+    baseUrl: `${contextPath}/system/notifications`,
+    i18nNamespaces: ['notifications', 'table', 'common'],
+    name: 'notifications',
   },
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Device Activation</title>
+    <title>设备授权 · SimplePoint</title>
 
     <style>
         *, *::before, *::after { box-sizing: border-box; }
@@ -78,6 +78,18 @@
             color: #555;
             text-align: center;
             margin-bottom: 28px;
+        }
+
+        .alert {
+            margin: -12px 0 18px;
+            padding: 11px 13px;
+            border: 1px solid #ffccc7;
+            border-radius: 10px;
+            color: #b42318;
+            background: #fff1f0;
+            font-size: 13px;
+            line-height: 1.45;
+            text-align: left;
         }
 
         /* 输入框 */
@@ -168,18 +180,31 @@
 
 <div class="layout">
     <div class="card">
-        <h2>Device Activation</h2>
-        <p>Enter the activation code to authorize the device.</p>
+        <h2>授权新设备</h2>
+        <p>输入无头设备或命令行中显示的一次性用户码。授权前请核对设备上的代码。</p>
+
+        <div th:if="${deviceError}" class="alert" role="alert">
+            用户码无效或已过期，请在设备上重新发起登录。
+        </div>
 
         <form th:action="@{/oauth2/device_verification}" method="post">
-            <input type="text" id="user_code" name="user_code" class="input-box" placeholder="Activation Code" required autofocus>
+            <input type="text" id="user_code" name="user_code" class="input-box"
+                   th:value="${userCode}" placeholder="例如 WDJB-MJHT"
+                   autocomplete="one-time-code" autocapitalize="characters"
+                   spellcheck="false" maxlength="32" required autofocus>
 
-            <button type="submit" class="btn-primary-ios">Submit</button>
+            <button type="submit" class="btn-primary-ios">继续授权</button>
         </form>
     </div>
 
     <img src="/assets/img/devices.png" th:src="@{/assets/img/devices.png}" class="device-img" alt="Devices">
 </div>
 
+<script>
+    const codeInput = document.getElementById('user_code');
+    codeInput.addEventListener('input', () => {
+        codeInput.value = codeInput.value.toUpperCase().replace(/\s+/g, '');
+    });
+</script>
 </body>
 </html>

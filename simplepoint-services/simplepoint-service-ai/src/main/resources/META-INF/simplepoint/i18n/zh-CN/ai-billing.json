@@ -1,0 +1,22 @@
+{
+  "ai.billing.title": "模型计费",
+  "ai.billing.notice.title": "费用按调用时价格快照计算",
+  "ai.billing.notice.description": "Token 用量以供应商返回值为准；价格调整只影响后续调用，历史费用不会重算。不同币种始终分开汇总。",
+  "ai.billing.action.refresh": "刷新",
+  "ai.billing.action.invocations": "查看调用明细",
+  "ai.billing.error.load": "模型计费数据加载失败",
+  "ai.billing.stat.invocations": "调用总数",
+  "ai.billing.stat.priced": "已计费调用",
+  "ai.billing.stat.unpriced": "成功但未配置价格",
+  "ai.billing.stat.cost": "{currency} 总费用",
+  "ai.billing.table.title": "模型费用排行",
+  "ai.billing.table.model": "模型",
+  "ai.billing.table.currency": "币种",
+  "ai.billing.table.invocations": "调用数",
+  "ai.billing.table.inputTokens": "输入 Token",
+  "ai.billing.table.outputTokens": "输出 Token",
+  "ai.billing.table.totalCost": "总费用",
+  "ai.billing.empty": "所选时间范围暂无已计费调用",
+  "menu.ai.billing": "模型计费",
+  "menu.ai.systemBilling": "系统模型计费"
+}

@@ -43,8 +43,8 @@ type OidcClientFormData = {
   clientName?: string;
   clientSecret?: string;
   clientSecretExpiresAt?: string;
-  clientAuthenticationMethods?: string;
-  authorizationGrantTypes?: string;
+  clientAuthenticationMethods?: string[];
+  authorizationGrantTypes?: string[];
   redirectUris?: string;
   postLogoutRedirectUris?: string;
   scopes?: string;
@@ -63,8 +63,8 @@ type OidcClientFormData = {
 };
 
 const defaultFormData: OidcClientFormData = {
-  clientAuthenticationMethods: 'client_secret_basic',
-  authorizationGrantTypes: 'authorization_code,refresh_token',
+  clientAuthenticationMethods: ['client_secret_basic'],
+  authorizationGrantTypes: ['authorization_code', 'refresh_token'],
   scopes: 'openid,profile',
   requireProofKey: true,
   requireAuthorizationConsent: true,
@@ -125,8 +125,8 @@ const configurationToForm = (configuration: OidcClientConfiguration): OidcClient
   clientName: configuration.clientName,
   clientSecret: '',
   clientSecretExpiresAt: configuration.clientSecretExpiresAt,
-  clientAuthenticationMethods: formatCsv(configuration.clientAuthenticationMethods),
-  authorizationGrantTypes: formatCsv(configuration.authorizationGrantTypes),
+  clientAuthenticationMethods: configuration.clientAuthenticationMethods ?? [],
+  authorizationGrantTypes: configuration.authorizationGrantTypes ?? [],
   redirectUris: formatCsv(configuration.redirectUris),
   postLogoutRedirectUris: formatCsv(configuration.postLogoutRedirectUris),
   scopes: formatCsv(configuration.scopes),
@@ -214,6 +214,41 @@ const App = () => {
     if (properties.scopes) {
       properties.scopes['x-ui'] = {widget: 'textarea', options: {autoSize: {minRows: 2, maxRows: 6}}};
     }
+    addTypedField(properties, 'clientAuthenticationMethods', {
+      type: 'array',
+      uniqueItems: true,
+      title: t('clients.title.clientAuthenticationMethods', '客户端认证方式'),
+      description: t('clients.description.clientAuthenticationMethods', '可同时注册多个 Token Endpoint 认证方式'),
+      items: {
+        type: 'string',
+        oneOf: [
+          'client_secret_basic',
+          'client_secret_post',
+          'private_key_jwt',
+          'client_secret_jwt',
+          'none',
+        ].map((value) => ({const: value, title: value})),
+      },
+      default: ['client_secret_basic'],
+      'x-order': 4,
+    });
+    addTypedField(properties, 'authorizationGrantTypes', {
+      type: 'array',
+      uniqueItems: true,
+      title: t('clients.title.authorizationGrantTypes', '授权模式'),
+      description: t('clients.description.authorizationGrantTypes', '设备码模式适用于 CLI、终端和无 GUI 设备'),
+      items: {
+        type: 'string',
+        oneOf: [
+          'authorization_code',
+          'refresh_token',
+          'client_credentials',
+          'urn:ietf:params:oauth:grant-type:device_code',
+        ].map((value) => ({const: value, title: value})),
+      },
+      default: ['authorization_code', 'refresh_token'],
+      'x-order': 5,
+    });
 
     addTypedField(properties, 'requireAuthorizationConsent', {
       type: 'boolean',

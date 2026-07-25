@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Spring Authorization Server sample</title>
+    <title>设备授权完成 · SimplePoint</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; }
 
@@ -146,10 +146,10 @@
 
 <div class="layout">
     <div class="card">
-        <div class="status-pill"><span class="status-dot"></span>Success</div>
-        <h2>设备已激活</h2>
-        <p>设备激活成功，您可以返回设备继续后续操作。</p>
-        <button class="btn-primary-ios" onclick="window.close();">关闭</button>
+        <div class="status-pill"><span class="status-dot"></span>授权成功</div>
+        <h2>设备已获得授权</h2>
+        <p>请返回命令行或设备继续操作。本页面不会展示访问令牌，可以安全关闭。</p>
+        <button class="btn-primary-ios" onclick="window.close();">关闭页面</button>
     </div>
 
     <img src="/assets/img/devices.png" th:src="@{/assets/img/devices.png}" class="device-img" alt="Devices">

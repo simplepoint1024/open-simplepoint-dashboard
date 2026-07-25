@@ -8,6 +8,7 @@ const tenants = [
     name: '演示租户',
     description: '默认演示租户，用于平台租户能力联调。',
     ownerId: 'admin',
+    tenantType: 'ORGANIZATION',
     authorizationVersion: 0,
   },
   {
@@ -15,6 +16,7 @@ const tenants = [
     name: '渠道伙伴租户',
     description: '模拟企业外部合作伙伴租户。',
     ownerId: 'operator',
+    tenantType: 'ORGANIZATION',
     authorizationVersion: 3,
   },
 ];
@@ -46,8 +48,54 @@ const schema = {
   schema: {
     type: 'object',
     properties: {
+      logo: {
+        type: ['string', 'null'],
+        title: 'i18n:tenants.title.logo',
+        'x-upload': {
+          type: 'image',
+          directory: 'tenants/logos',
+          sourceServiceName: 'tenant-branding',
+          maxSizeMb: 5,
+          shape: 'square',
+        },
+        'x-ui': {
+          widget: 'OssImage',
+          options: {
+            directory: 'tenants/logos',
+            sourceServiceName: 'tenant-branding',
+            maxSizeMb: 5,
+            shape: 'square',
+          },
+        },
+      },
+      backgroundImage: {
+        type: ['string', 'null'],
+        title: 'i18n:tenants.title.backgroundImage',
+        'x-upload': {
+          type: 'image',
+          directory: 'tenants/backgrounds',
+          sourceServiceName: 'tenant-branding',
+          maxSizeMb: 10,
+          shape: 'square',
+        },
+        'x-ui': {
+          widget: 'OssImage',
+          options: {
+            directory: 'tenants/backgrounds',
+            sourceServiceName: 'tenant-branding',
+            maxSizeMb: 10,
+            shape: 'square',
+          },
+        },
+      },
       name: {type: 'string', title: '租户名称'},
       description: {type: 'string', title: '租户描述'},
+      tenantType: {
+        type: 'string',
+        title: 'i18n:tenants.title.tenantType',
+        'x-dictionary-code': 'tenant.type',
+        'x-ui': {widget: 'select', dictCode: 'tenant.type'},
+      },
       ownerId: {
         type: 'string',
         title: '负责人',

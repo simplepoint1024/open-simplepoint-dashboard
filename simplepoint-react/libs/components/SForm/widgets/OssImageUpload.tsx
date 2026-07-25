@@ -18,6 +18,7 @@ export type OssImageUploadProps = {
   directory?: string;
   sourceServiceName?: string;
   maxSizeMb?: number;
+  accept?: string;
   shape?: 'circle' | 'square';
 };
 
@@ -30,6 +31,7 @@ export const OssImageUpload = ({
   directory = 'images/forms',
   sourceServiceName = 'json-schema-form',
   maxSizeMb = 5,
+  accept = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml',
   shape = 'square',
 }: OssImageUploadProps) => {
   const {t} = useI18n();
@@ -92,7 +94,7 @@ export const OssImageUpload = ({
       </div>
       <Space size={8} wrap>
         <Upload
-          accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+          accept={accept}
           fileList={fileList}
           showUploadList={false}
           disabled={blocked}

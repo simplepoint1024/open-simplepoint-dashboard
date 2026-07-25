@@ -13,6 +13,7 @@ import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.core.api.repository.AiInvocationRecordRepository;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.GenerationResult;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.TokenUsage;
+import org.simplepoint.plugin.ai.core.service.support.AiModelBillingCalculator;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy.ScopeAssignment;
 import org.springframework.stereotype.Component;
@@ -26,12 +27,16 @@ final class AiInvocationLedger {
 
   private final AiScopeAccessPolicy scopeAccessPolicy;
 
+  private final AiModelBillingCalculator billingCalculator;
+
   AiInvocationLedger(
       final AiInvocationRecordRepository repository,
-      final AiScopeAccessPolicy scopeAccessPolicy
+      final AiScopeAccessPolicy scopeAccessPolicy,
+      final AiModelBillingCalculator billingCalculator
   ) {
     this.repository = repository;
     this.scopeAccessPolicy = scopeAccessPolicy;
+    this.billingCalculator = billingCalculator;
   }
 
   InvocationActor captureActor() {
@@ -77,6 +82,7 @@ final class AiInvocationLedger {
       record.setStream(stream);
       record.setStatus(AiInvocationStatus.RUNNING);
       record.setStartedAt(Instant.now());
+      billingCalculator.initialize(record, model);
       return repository.save(record);
     } catch (RuntimeException ex) {
       log.warn("Unable to start AI invocation ledger record {}: {}", invocationId, ex.getMessage());
@@ -93,6 +99,7 @@ final class AiInvocationLedger {
     record.setCompletedAt(result.completedAt());
     record.setDurationMillis(result.durationMillis());
     applyUsage(record, result.usage());
+    billingCalculator.calculate(record);
     save(record);
   }
 
@@ -110,6 +117,7 @@ final class AiInvocationLedger {
     record.setCompletedAt(Instant.now());
     record.setDurationMillis(durationMillis);
     applyUsage(record, usage);
+    billingCalculator.calculate(record);
     save(record);
   }
 
@@ -123,6 +131,7 @@ final class AiInvocationLedger {
         record.getCompletedAt().toEpochMilli() - record.getStartedAt().toEpochMilli()));
     record.setErrorCode(error.getClass().getSimpleName());
     record.setErrorMessage("AI invocation failed; request and response content were not retained");
+    billingCalculator.markNotCharged(record);
     save(record);
   }
 
@@ -136,6 +145,7 @@ final class AiInvocationLedger {
         record.getCompletedAt().toEpochMilli() - record.getStartedAt().toEpochMilli()));
     record.setErrorCode("CANCELLED");
     record.setErrorMessage("AI invocation was cancelled; request and response content were not retained");
+    billingCalculator.markNotCharged(record);
     save(record);
   }
 
