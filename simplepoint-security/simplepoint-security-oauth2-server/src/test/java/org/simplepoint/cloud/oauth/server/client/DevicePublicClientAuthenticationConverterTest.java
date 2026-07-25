@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -63,6 +64,45 @@ class DevicePublicClientAuthenticationConverterTest {
 
     assertThat(converter.convert(request))
         .isInstanceOf(OAuth2ClientAuthenticationToken.class);
+  }
+
+  @Test
+  void ignoresConfidentialRefreshGrantUsingBasicAuthentication() {
+    MockHttpServletRequest request =
+        new MockHttpServletRequest("POST", "/oauth2/token");
+    request.addHeader(HttpHeaders.AUTHORIZATION, "Basic encoded-credentials");
+    request.addParameter(
+        "grant_type",
+        AuthorizationGrantType.REFRESH_TOKEN.getValue()
+    );
+
+    assertThat(converter.convert(request)).isNull();
+  }
+
+  @Test
+  void ignoresConfidentialRefreshGrantUsingPostAuthentication() {
+    MockHttpServletRequest request =
+        new MockHttpServletRequest("POST", "/oauth2/token");
+    request.addParameter("client_id", "browser-client");
+    request.addParameter("client_secret", "secret");
+    request.addParameter(
+        "grant_type",
+        AuthorizationGrantType.REFRESH_TOKEN.getValue()
+    );
+
+    assertThat(converter.convert(request)).isNull();
+  }
+
+  @Test
+  void ignoresRefreshGrantWithoutPublicClientId() {
+    MockHttpServletRequest request =
+        new MockHttpServletRequest("POST", "/oauth2/token");
+    request.addParameter(
+        "grant_type",
+        AuthorizationGrantType.REFRESH_TOKEN.getValue()
+    );
+
+    assertThat(converter.convert(request)).isNull();
   }
 
   @Test

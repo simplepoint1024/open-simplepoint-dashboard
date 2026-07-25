@@ -2,6 +2,7 @@ package org.simplepoint.cloud.oauth.server.client;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -56,9 +57,21 @@ public final class DevicePublicClientAuthenticationConverter
     if (requestGrantType == null) {
       return null;
     }
+    if (AuthorizationGrantType.REFRESH_TOKEN.getValue().equals(requestGrantType)
+        && hasConfidentialClientCredentials(request)) {
+      // Let Spring's standard client_secret/client_assertion converters handle
+      // confidential clients. Their refresh requests do not require client_id
+      // in the form body (for example, client_secret_basic uses the header).
+      return null;
+    }
     String[] clientIds = request.getParameterValues(OAuth2ParameterNames.CLIENT_ID);
     if (clientIds == null || clientIds.length != 1
         || !StringUtils.hasText(clientIds[0])) {
+      if (AuthorizationGrantType.REFRESH_TOKEN.getValue().equals(requestGrantType)) {
+        // A refresh request without a public client_id may still be handled by
+        // another standard client authentication converter.
+        return null;
+      }
       throw new OAuth2AuthenticationException("invalid_request");
     }
     return new OAuth2ClientAuthenticationToken(
@@ -70,6 +83,13 @@ public final class DevicePublicClientAuthenticationConverter
             REQUEST_GRANT_TYPE, requestGrantType
         )
     );
+  }
+
+  private boolean hasConfidentialClientCredentials(final HttpServletRequest request) {
+    return StringUtils.hasText(request.getHeader(HttpHeaders.AUTHORIZATION))
+        || StringUtils.hasText(request.getParameter(OAuth2ParameterNames.CLIENT_SECRET))
+        || StringUtils.hasText(request.getParameter(OAuth2ParameterNames.CLIENT_ASSERTION_TYPE))
+        || StringUtils.hasText(request.getParameter(OAuth2ParameterNames.CLIENT_ASSERTION));
   }
 
   private String resolveRequestGrantType(final HttpServletRequest request) {
