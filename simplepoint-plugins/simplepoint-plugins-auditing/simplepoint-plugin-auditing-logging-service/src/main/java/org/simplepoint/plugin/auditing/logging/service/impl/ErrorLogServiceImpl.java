@@ -49,10 +49,9 @@ public class ErrorLogServiceImpl extends BaseServiceImpl<ErrorLogRepository, Err
     if (attributes != null) {
       normalizedAttributes.putAll(attributes);
     }
-    String tenantId = currentTenantId();
-    if (tenantId != null) {
-      normalizedAttributes.put("tenantId", tenantId);
-    }
+    // Background and startup errors do not run in a request/tenant context. Error logs are
+    // system audit data, therefore only an explicit tenantId query parameter should scope
+    // the result.
     normalizedAttributes.put("deletedAt", "is:null");
     return super.limit(normalizedAttributes, pageable);
   }

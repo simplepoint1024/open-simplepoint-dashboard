@@ -55,18 +55,36 @@ class ResourceGrantLogServiceImplTest {
   }
 
   @Test
-  void limitShouldEnforceCurrentTenantWhenContextHasTenant() {
+  void limitShouldNotInjectCurrentTenantForSystemAuditView() {
     Pageable pageable = PageRequest.of(0, 10);
     Page<ResourceGrantLog> emptyPage = new PageImpl<>(java.util.List.of());
     ResourceGrantLogServiceImpl tenantAwareService = serviceWithCurrentTenant("tenant-1");
 
-    when(repository.limit(argThat(attrs -> "tenant-1".equals(attrs.get("tenantId"))), eq(pageable)))
+    when(repository.limit(argThat(attrs -> !attrs.containsKey("tenantId")), eq(pageable)))
         .thenReturn(emptyPage);
 
     Page<ResourceGrantLog> result = tenantAwareService.limit(null, pageable);
 
     assertNotNull(result);
-    verify(repository).limit(argThat(attrs -> "tenant-1".equals(attrs.get("tenantId"))), eq(pageable));
+    verify(repository).limit(argThat(attrs -> !attrs.containsKey("tenantId")), eq(pageable));
+  }
+
+  @Test
+  void limitShouldPreserveExplicitTenantFilter() {
+    Pageable pageable = PageRequest.of(0, 10);
+    Page<ResourceGrantLog> emptyPage = new PageImpl<>(java.util.List.of());
+    ResourceGrantLogServiceImpl tenantAwareService = serviceWithCurrentTenant("active-tenant");
+
+    when(repository.limit(argThat(attrs -> "requested-tenant".equals(attrs.get("tenantId"))), eq(pageable)))
+        .thenReturn(emptyPage);
+
+    Page<ResourceGrantLog> result = tenantAwareService.limit(Map.of("tenantId", "requested-tenant"), pageable);
+
+    assertNotNull(result);
+    verify(repository).limit(
+        argThat(attrs -> "requested-tenant".equals(attrs.get("tenantId"))),
+        eq(pageable)
+    );
   }
 
   @Test

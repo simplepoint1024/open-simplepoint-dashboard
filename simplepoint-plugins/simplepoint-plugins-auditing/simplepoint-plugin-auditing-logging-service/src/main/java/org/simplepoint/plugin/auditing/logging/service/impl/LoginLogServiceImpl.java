@@ -49,10 +49,10 @@ public class LoginLogServiceImpl extends BaseServiceImpl<LoginLogRepository, Log
     if (attributes != null) {
       normalizedAttributes.putAll(attributes);
     }
-    String tenantId = currentTenantId();
-    if (tenantId != null) {
-      normalizedAttributes.put("tenantId", tenantId);
-    }
+    // Login happens before a tenant workspace is selected, so login events are commonly
+    // platform-scoped and have no tenant id. This is a system audit endpoint; callers may
+    // still provide an explicit tenantId filter, but the active UI context must not hide
+    // platform events.
     normalizedAttributes.put("deletedAt", "is:null");
     return super.limit(normalizedAttributes, pageable);
   }

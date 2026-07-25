@@ -50,10 +50,9 @@ public class ResourceGrantLogServiceImpl extends BaseServiceImpl<ResourceGrantLo
     if (attributes != null) {
       normalizedAttributes.putAll(attributes);
     }
-    String tenantId = currentTenantId();
-    if (tenantId != null) {
-      normalizedAttributes.put("tenantId", tenantId);
-    }
+    // Permission changes can be platform- or tenant-scoped. The monitoring page is a
+    // system audit view, so retain an explicit tenantId filter without deriving one from
+    // the currently selected workspace.
     normalizedAttributes.put("deletedAt", "is:null");
     return super.limit(normalizedAttributes, pageable);
   }

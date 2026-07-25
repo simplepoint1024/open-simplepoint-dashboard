@@ -89,5 +89,8 @@ dependencies {
     implementation(project(":simplepoint-service-router:simplepoint-service-router-consul"))
     implementation(project(":simplepoint-data:simplepoint-data-json:simplepoint-data-json-schema"))
 
+    // Forward WARN/ERROR events to the centralized auditing service.
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-monitor"))
+
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
 }
