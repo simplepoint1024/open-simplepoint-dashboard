@@ -1,4 +1,5 @@
 /**
- * AI service base path. This must match the backend service name.
+ * Unified AI workbench service path. The backend resolves ownership from the
+ * active platform or tenant authorization context.
  */
-export const contextPath = '/ai';
+export const contextPath = '/ai/workbench';

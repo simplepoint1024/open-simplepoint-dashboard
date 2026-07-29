@@ -47,6 +47,10 @@
 | `simplepoint-service-auditing` | 见服务配置 | 审计日志、限流规则、运维相关能力 |
 | `simplepoint-service-dna` | 见服务配置 | 数据接入、JDBC 驱动、方言与 DNA 相关能力 |
 | `simplepoint-service-ai` | `2888` | AI 模型接入、独立知识库、pgvector 混合检索与 AI 工作台 remote |
+| `simplepoint-service-mcp-gateway` | `2890`（内部） | 独立 MCP 协议终止、远程 Server 连接与工具调用 |
+| `simplepoint-service-tool-runtime-node` | `2891`（内部） | 独立 Go OCI MCP Server 节点运行时与容器沙箱 |
+| `simplepoint-service-tool-egress-proxy` | `2892`（内部） | 独立的工作负载出站域名策略代理 |
+| `simplepoint-service-tool-image-verifier` | `2893`（内部） | 独立的 Cosign、SBOM 与漏洞准入服务 |
 
 如果你只想跑通最小链路，优先启动：`authorization`、`common`、`host`。
 
@@ -75,11 +79,50 @@ cd open-simplepoint-dashboard
 docker compose up --build
 ```
 
-首次启动会在容器内构建各业务服务，并自动拉起 PostgreSQL、Redis、Consul、MinIO 与配置初始化容器。
+Compose 项目名固定为 `open-simplepoint`，容器名统一生成为
+`open-simplepoint-<service>-<replica>`；不使用固定 `container_name`，保留编排层的副本扩展能力。
+需要在 Compose 下扩展带宿主机固定端口的服务时，还需先改为反向代理入口或调整端口发布策略。
+每个 Java 服务都在自己的服务目录维护 `Dockerfile`，首次启动会构建各业务服务，并自动拉起
+PostgreSQL、Redis、Consul、MinIO 与配置初始化容器。
 PostgreSQL 与 Redis 默认只暴露在 compose 内部网络，不占用宿主机 `5432` / `6379` 端口；如果 Consul 的宿主机端口冲突，可通过 `SIMPLEPOINT_CONSUL_HTTP_PORT` 调整。
 MinIO API 默认映射到 `19000`，管理控制台默认映射到 `19001`；初始化容器会自动创建 `simplepoint` Bucket，
 平台首次启动时会把该连接写入“对象存储 → OSS 配置”，并在没有其他默认连接时设为系统默认 OSS。
-如果本机已执行过对应服务的 `installDist`，compose 镜像会优先复用这些构建产物以加快启动；如需强制在容器内重建，可设置 `SIMPLEPOINT_USE_PREBUILT=false`。
+7 个 Java 服务共享同一套多模块构建层：Gradle 一次解析完整任务图，BuildKit 复用
+Gradle/pnpm 缓存，各运行时镜像只复制自己服务的 `installDist` 产物。
+Tool Runtime 使用独立 Go 多阶段构建和 distroless nonroot 运行时。
+
+也可以通过 Buildx Bake 并行构建全部平台镜像：
+
+```bash
+./scripts/shell/build_images.sh --load
+```
+
+发布到镜像仓库时会使用 OCI media types，并附带 SLSA provenance 与 SPDX SBOM：
+
+```bash
+SIMPLEPOINT_IMAGE_TAG=1.0.0 \
+./scripts/shell/build_images.sh --push
+```
+
+需要让生产 Runtime 接受平台镜像时，应同时发布 Cosign 签名和签名后的 SPDX
+attestation。`COSIGN_KEY` 未设置时使用 CI 的 keyless OIDC 身份：
+
+```bash
+SIMPLEPOINT_IMAGE_TAG=1.0.0 \
+./scripts/shell/build_images.sh --push --sign
+```
+
+平台镜像默认发布到 `somesimpled/open-simplepoint-*`；私有仓库部署时可通过
+`SIMPLEPOINT_IMAGE_REGISTRY` 覆盖仓库或命名空间前缀。
+
+若需要离线 OCI image-layout 归档：
+
+```bash
+SIMPLEPOINT_IMAGE_TAG=1.0.0 \
+./scripts/shell/build_images.sh --oci build/oci
+```
+
+镜像构建约定和变量详见 [`doc/deployment/container_images.md`](doc/deployment/container_images.md)。
 
 启动完成后访问：
 
@@ -222,13 +265,16 @@ pnpm dev:ai
 ./scripts/shell/start_swarm.sh
 ```
 
-该脚本会在本地 / 单机 Swarm Manager 上编排 PostgreSQL、Redis、Consul、bootstrap、authorization、common、host。
+该脚本会在本地 / 单机 Swarm Manager 上并行构建并编排 PostgreSQL、Redis、Consul、
+bootstrap、authorization、common、auditing、dna、ai、host。
+Compose/Swarm 同时部署独立 `mcp-gateway` 和节点级 `tool-runtime`。
 
 ## 文档入口
 
 | 文档 | 说明 |
 | --- | --- |
 | `doc/deployment/local_development.md` | 当前最准确的本地开发启动路径 |
+| `doc/deployment/container_images.md` | 镜像命名、OCI 构建、SBOM 与发布约定 |
 | `doc/deployment/docker_swarm_deployment.md` | Docker Swarm 一键部署说明 |
 | `doc/architecture/service_topology.md` | 服务边界、职责与前后端映射 |
 | `doc/architecture/project_structure_diagram.md` | 当前仓库目录与模块分层 |

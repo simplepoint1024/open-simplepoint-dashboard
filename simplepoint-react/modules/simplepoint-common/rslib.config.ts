@@ -22,6 +22,9 @@ export default defineConfig({
       plugins: [
         pluginModuleFederation({
           name: 'common',
+          manifest: {
+            disableAssetsAnalyze: true,
+          },
           exposes: require('./module.exposes').default,
           shared: require('@simplepoint/shared/types/module.shared').default,
         }),

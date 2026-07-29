@@ -99,6 +99,29 @@ class RestClientObjectStorageRemoteServiceTest {
   }
 
   @Test
+  void downloadSource_forwardsBoundSourceAndServiceToken() {
+    final RestClient.Builder builder = RestClient.builder();
+    final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    final RestClientObjectStorageRemoteService service = service(builder);
+    final MockHttpServletRequest servletRequest = new MockHttpServletRequest();
+    servletRequest.addHeader(HttpHeaders.AUTHORIZATION, "Bearer service-token");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(servletRequest));
+    server.expect(requestTo(
+            "http://common/internal/object-storage/sources/object-1/content"
+                + "?tenantId=tenant-1&sourceServiceName=tools&maxBytes=1024"
+        ))
+        .andExpect(method(HttpMethod.GET))
+        .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer service-token"))
+        .andRespond(withSuccess("artifact", MediaType.APPLICATION_OCTET_STREAM));
+
+    final ObjectStorageRemoteContent result =
+        service.downloadSource("object-1", "tenant-1", "tools", 1024);
+
+    assertThat(result.content()).isEqualTo("artifact".getBytes(StandardCharsets.UTF_8));
+    server.verify();
+  }
+
+  @Test
   void delete_callsUnifiedObjectEndpoint() {
     final RestClient.Builder builder = RestClient.builder();
     final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();

@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Management endpoints for model gateway API keys. */
 @RestController
-@RequestMapping({AiPaths.PLATFORM_API_KEYS, AiPaths.TENANT_API_KEYS})
+@RequestMapping(AiPaths.API_KEYS)
 @Tag(name = "AI模型API Key", description = "签发、禁用、轮换和吊销对外模型服务凭据")
 public class AiApiKeyController extends BaseController<AiApiKeyService, AiApiKey, String> {
 
@@ -38,7 +38,7 @@ public class AiApiKeyController extends BaseController<AiApiKeyService, AiApiKey
 
   /** Lists keys within the active management scope. */
   @GetMapping
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.api-keys.view', 'ai.api-keys.view')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.api-keys.view')")
   @Operation(summary = "分页查询模型 API Key")
   public Response<Page<AiApiKey>> limit(
       @RequestParam final Map<String, String> attributes,
@@ -49,7 +49,7 @@ public class AiApiKeyController extends BaseController<AiApiKeyService, AiApiKey
 
   /** Issues a new key and returns its raw value exactly once. */
   @PostMapping
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.api-keys.create', 'ai.api-keys.create')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.api-keys.create')")
   @Operation(summary = "签发模型 API Key", description = "完整 Key 仅在本次响应中返回")
   public Response<?> add(@RequestBody final AiApiKey data) {
     return invoke(() -> service.create(data));
@@ -57,7 +57,7 @@ public class AiApiKeyController extends BaseController<AiApiKeyService, AiApiKey
 
   /** Updates editable policy fields without changing the secret. */
   @PutMapping
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.api-keys.edit', 'ai.api-keys.edit')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.api-keys.edit')")
   @Operation(summary = "修改模型 API Key 策略")
   public Response<?> modify(@RequestBody final AiApiKey data) {
     return invoke(() -> service.modifyById(data));
@@ -65,7 +65,7 @@ public class AiApiKeyController extends BaseController<AiApiKeyService, AiApiKey
 
   /** Rotates a key and returns its replacement raw value exactly once. */
   @PostMapping("/{id}/rotate")
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.api-keys.rotate', 'ai.api-keys.rotate')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.api-keys.rotate')")
   @Operation(summary = "轮换模型 API Key", description = "旧 Key 立即失效，新 Key 仅返回一次")
   public Response<?> rotate(@PathVariable final String id) {
     return invoke(() -> service.rotate(id));
@@ -73,7 +73,7 @@ public class AiApiKeyController extends BaseController<AiApiKeyService, AiApiKey
 
   /** Revokes and soft-deletes selected keys. */
   @DeleteMapping
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.api-keys.delete', 'ai.api-keys.delete')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.api-keys.delete')")
   @Operation(summary = "吊销模型 API Key")
   public Response<?> remove(@RequestParam("ids") final String ids) {
     try {

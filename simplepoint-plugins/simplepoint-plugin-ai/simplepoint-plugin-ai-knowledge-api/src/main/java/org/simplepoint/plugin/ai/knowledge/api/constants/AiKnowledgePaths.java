@@ -5,9 +5,7 @@ package org.simplepoint.plugin.ai.knowledge.api.constants;
  */
 public final class AiKnowledgePaths {
 
-  public static final String PLATFORM_KNOWLEDGE_BASES = "/platform/ai/knowledge-bases";
-
-  public static final String TENANT_KNOWLEDGE_BASES = "/tenant/ai/knowledge-bases";
+  public static final String KNOWLEDGE_BASES = "/workbench/knowledge-bases";
 
   private AiKnowledgePaths() {
   }

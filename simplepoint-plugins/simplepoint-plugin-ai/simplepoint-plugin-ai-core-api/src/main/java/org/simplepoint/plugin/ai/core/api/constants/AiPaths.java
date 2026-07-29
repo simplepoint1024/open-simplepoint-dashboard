@@ -5,39 +5,19 @@ package org.simplepoint.plugin.ai.core.api.constants;
  */
 public final class AiPaths {
 
-  public static final String PLATFORM_BASE = "/platform/ai";
+  public static final String WORKBENCH_BASE = "/workbench";
 
-  public static final String TENANT_BASE = "/tenant/ai";
+  public static final String PROVIDERS = WORKBENCH_BASE + "/providers";
 
-  public static final String PLATFORM_PROVIDERS = PLATFORM_BASE + "/providers";
+  public static final String MODELS = WORKBENCH_BASE + "/models";
 
-  public static final String TENANT_PROVIDERS = TENANT_BASE + "/providers";
+  public static final String BILLING = WORKBENCH_BASE + "/billing";
 
-  public static final String PLATFORM_MODELS = PLATFORM_BASE + "/models";
+  public static final String INVOCATIONS = BILLING + "/invocations";
 
-  public static final String TENANT_MODELS = TENANT_BASE + "/models";
-
-  public static final String PLATFORM_INFERENCE = PLATFORM_BASE + "/inference";
-
-  public static final String TENANT_INFERENCE = TENANT_BASE + "/inference";
-
-  public static final String PLATFORM_INVOCATIONS = PLATFORM_BASE + "/invocations";
-
-  public static final String TENANT_INVOCATIONS = TENANT_BASE + "/invocations";
-
-  public static final String PLATFORM_BILLING = PLATFORM_BASE + "/billing";
-
-  public static final String TENANT_BILLING = TENANT_BASE + "/billing";
-
-  public static final String PLATFORM_API_KEYS = PLATFORM_BASE + "/api-keys";
-
-  public static final String TENANT_API_KEYS = TENANT_BASE + "/api-keys";
+  public static final String API_KEYS = WORKBENCH_BASE + "/api-keys";
 
   public static final String COMPATIBLE_API = "/v1";
-
-  public static final String PROVIDERS = PLATFORM_PROVIDERS;
-
-  public static final String MODELS = PLATFORM_MODELS;
 
   private AiPaths() {
   }

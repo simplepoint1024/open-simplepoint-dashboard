@@ -3,7 +3,6 @@ package org.simplepoint.plugin.ai.core.service.support;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -15,30 +14,37 @@ import org.simplepoint.plugin.ai.core.api.entity.AiProviderDefinition;
 class AiButtonAuthorityTest {
 
   @Test
-  void providerActionsAreEquivalentAcrossSystemAndTenantScopes() {
-    Map<String, Set<String>> authorities = authoritiesByScope(AiProviderDefinition.class);
-
+  void providerActionsUseUnifiedWorkbenchAuthorities() {
     assertEquals(
         Set.of("create", "edit", "delete", "test", "discover", "sync"),
-        authorities.get("system")
+        operations(AiProviderDefinition.class)
     );
-    assertEquals(authorities.get("system"), authorities.get("tenant"));
+    assertUnifiedAuthorities(AiProviderDefinition.class);
   }
 
   @Test
-  void modelActionsAreEquivalentAcrossSystemAndTenantScopes() {
-    Map<String, Set<String>> authorities = authoritiesByScope(AiModelDefinition.class);
-
-    assertEquals(Set.of("create", "edit", "delete"), authorities.get("system"));
-    assertEquals(authorities.get("system"), authorities.get("tenant"));
+  void modelActionsUseUnifiedWorkbenchAuthorities() {
+    assertEquals(Set.of("create", "edit", "delete", "debug"), operations(AiModelDefinition.class));
+    assertUnifiedAuthorities(AiModelDefinition.class);
   }
 
-  private static Map<String, Set<String>> authoritiesByScope(final Class<?> entityType) {
+  private static Set<String> operations(final Class<?> entityType) {
     ButtonDeclarations declarations = entityType.getAnnotation(ButtonDeclarations.class);
-    return Arrays.stream(declarations.value()).collect(Collectors.groupingBy(
-        declaration -> declaration.authority().startsWith("ai.system.") ? "system" : "tenant",
-        Collectors.mapping(AiButtonAuthorityTest::operation, Collectors.toSet())
-    ));
+    return Arrays.stream(declarations.value())
+        .map(AiButtonAuthorityTest::operation)
+        .collect(Collectors.toSet());
+  }
+
+  private static void assertUnifiedAuthorities(final Class<?> entityType) {
+    ButtonDeclarations declarations = entityType.getAnnotation(ButtonDeclarations.class);
+    Set<String> prefixes = Arrays.stream(declarations.value())
+        .map(ButtonDeclaration::authority)
+        .map(authority -> authority.substring(0, authority.lastIndexOf('.')))
+        .collect(Collectors.toSet());
+    assertEquals(Set.of(
+        entityType == AiProviderDefinition.class
+            ? "ai.workbench.providers" : "ai.workbench.models"
+    ), prefixes);
   }
 
   private static String operation(final ButtonDeclaration declaration) {

@@ -1,0 +1,14 @@
+{
+  "ai.model-debug.button": "调试",
+  "ai.model-debug.title": "模型调试",
+  "ai.model-debug.empty": "发送一条消息开始对话",
+  "ai.model-debug.placeholder": "输入消息，Enter 发送，Shift + Enter 换行",
+  "ai.model-debug.send": "发送",
+  "ai.model-debug.stop": "停止",
+  "ai.model-debug.thinking": "正在生成…",
+  "ai.model-debug.cancelled": "生成已停止",
+  "ai.model-debug.failed": "本轮调用失败",
+  "ai.model-debug.unavailable": "仅可调试已启用且可用的语言或多模态模型",
+  "ai.model-debug.error.generate": "模型调用失败",
+  "ai.model-debug.error.incomplete": "模型响应未正常完成"
+}

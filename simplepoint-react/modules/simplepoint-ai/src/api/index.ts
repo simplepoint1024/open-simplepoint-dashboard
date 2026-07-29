@@ -1,83 +1,76 @@
 import {contextPath} from '@/services';
 
 export default {
-  'platform.ai-workspace': {
-    baseUrl: `${contextPath}/platform/ai`,
+  'ai-workbench.workspace': {
     i18nNamespaces: ['ai-workspace'],
-    name: 'ai-workspace',
+    name: 'ai-workbench-workspace',
   },
-  'platform.ai-providers': {
-    baseUrl: `${contextPath}/platform/ai/providers`,
-    i18nNamespaces: ['ai-model-providers'],
-    name: 'ai-providers',
+  'ai-workbench.providers': {
+    baseUrl: `${contextPath}/providers`,
+    i18nNamespaces: ['ai-providers'],
+    name: 'ai-workbench-providers',
   },
-  'platform.ai-models': {
-    baseUrl: `${contextPath}/platform/ai/models`,
-    i18nNamespaces: ['ai-model-providers'],
-    name: 'ai-models',
+  'ai-workbench.models': {
+    baseUrl: `${contextPath}/models`,
+    debugUrl: (modelDefinitionId: string) =>
+      `${contextPath}/models/${modelDefinitionId}/debug/stream`,
+    i18nNamespaces: ['ai-models', 'ai-model-debug'],
+    name: 'ai-workbench-models',
   },
-  'platform.ai-api-keys': {
-    baseUrl: `${contextPath}/platform/ai/api-keys`,
+  'ai-workbench.api-keys': {
+    baseUrl: `${contextPath}/api-keys`,
     i18nNamespaces: ['ai-api-keys'],
-    name: 'ai-api-keys',
+    name: 'ai-workbench-api-keys',
   },
-  'platform.ai-inference': {
-    baseUrl: `${contextPath}/platform/ai/inference`,
-    modelsUrl: `${contextPath}/platform/ai/models/available`,
-    i18nNamespaces: ['ai-runtime'],
-    name: 'ai-inference',
+  'ai-workbench.billing': {
+    baseUrl: `${contextPath}/billing`,
+    summaryUrl: `${contextPath}/billing/summary`,
+    invocationsUrl: `${contextPath}/billing/invocations`,
+    i18nNamespaces: ['ai-billing', 'ai-invocations'],
+    name: 'ai-workbench-billing',
   },
-  'platform.ai-invocations': {
-    baseUrl: `${contextPath}/platform/ai/invocations`,
-    i18nNamespaces: ['ai-runtime'],
-    name: 'ai-invocations',
-  },
-  'platform.ai-billing': {
-    baseUrl: `${contextPath}/platform/ai/billing`,
-    summaryUrl: `${contextPath}/platform/ai/billing/summary`,
-    i18nNamespaces: ['ai-billing'],
-    name: 'ai-billing',
-  },
-  'platform.ai-knowledge-bases': {
-    baseUrl: `${contextPath}/platform/ai/knowledge-bases`,
+  'ai-workbench.knowledge-bases': {
+    baseUrl: `${contextPath}/knowledge-bases`,
     i18nNamespaces: ['ai-knowledge-bases'],
-    name: 'ai-knowledge-bases',
+    name: 'ai-workbench-knowledge-bases',
   },
-  'tenant.ai-providers': {
-    baseUrl: `${contextPath}/tenant/ai/providers`,
-    i18nNamespaces: ['ai-model-providers'],
-    name: 'tenant-ai-providers',
+  'ai-workbench.mcp-gateway': {
+    baseUrl: `${contextPath}/mcp/gateway`,
+    statusUrl: `${contextPath}/mcp/gateway/status`,
+    i18nNamespaces: ['ai-mcp'],
+    name: 'ai-workbench-mcp-gateway',
   },
-  'tenant.ai-models': {
-    baseUrl: `${contextPath}/tenant/ai/models`,
-    i18nNamespaces: ['ai-model-providers'],
-    name: 'tenant-ai-models',
+  'ai-workbench.mcp-servers': {
+    baseUrl: `${contextPath}/mcp/servers`,
+    poolsUrl: `${contextPath}/runtime/pools`,
+    workloadsUrl: `${contextPath}/runtime/workloads`,
+    secretsUrl: `${contextPath}/runtime/secrets`,
+    i18nNamespaces: ['ai-mcp', 'ai-runtime'],
+    name: 'ai-workbench-mcp-servers',
   },
-  'tenant.ai-api-keys': {
-    baseUrl: `${contextPath}/tenant/ai/api-keys`,
-    i18nNamespaces: ['ai-api-keys'],
-    name: 'tenant-ai-api-keys',
+  'ai-workbench.mcp-publications': {
+    baseUrl: `${contextPath}/mcp/publications`,
+    serversUrl: `${contextPath}/mcp/servers`,
+    i18nNamespaces: ['ai-mcp'],
+    name: 'ai-workbench-mcp-publications',
   },
-  'tenant.ai-inference': {
-    baseUrl: `${contextPath}/tenant/ai/inference`,
-    modelsUrl: `${contextPath}/tenant/ai/models/available`,
+  'ai-workbench.tools': {
+    serversUrl: `${contextPath}/mcp/servers`,
+    i18nNamespaces: ['ai-mcp'],
+    name: 'ai-workbench-tools',
+  },
+  'ai-workbench.skills': {
+    baseUrl: `${contextPath}/skills`,
+    i18nNamespaces: ['ai-skills'],
+    name: 'ai-workbench-skills',
+  },
+  'ai-workbench.runtime': {
+    nodesUrl: `${contextPath}/runtime/nodes`,
+    poolsUrl: `${contextPath}/runtime/pools`,
+    workloadsUrl: `${contextPath}/runtime/workloads`,
+    secretsUrl: `${contextPath}/runtime/secrets`,
+    serversUrl: `${contextPath}/mcp/servers`,
     i18nNamespaces: ['ai-runtime'],
-    name: 'tenant-ai-inference',
-  },
-  'tenant.ai-invocations': {
-    baseUrl: `${contextPath}/tenant/ai/invocations`,
-    i18nNamespaces: ['ai-runtime'],
-    name: 'tenant-ai-invocations',
-  },
-  'tenant.ai-billing': {
-    baseUrl: `${contextPath}/tenant/ai/billing`,
-    summaryUrl: `${contextPath}/tenant/ai/billing/summary`,
-    i18nNamespaces: ['ai-billing'],
-    name: 'tenant-ai-billing',
-  },
-  'tenant.ai-knowledge-bases': {
-    baseUrl: `${contextPath}/tenant/ai/knowledge-bases`,
-    i18nNamespaces: ['ai-knowledge-bases'],
-    name: 'tenant-ai-knowledge-bases',
+    name: 'ai-workbench-runtime',
   },
 };

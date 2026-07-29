@@ -36,7 +36,7 @@ class AiBillingControllerTest {
     when(billingQueryService.summarize(from, to))
         .thenReturn(new BillingSummary(from, to, 0, 0, 0, List.of(), List.of()));
 
-    mockMvc.perform(get("/platform/ai/billing/summary")
+    mockMvc.perform(get("/workbench/billing/summary")
             .param("from", from.toString())
             .param("to", to.toString()))
         .andExpect(status().isOk());
@@ -49,7 +49,7 @@ class AiBillingControllerTest {
     when(billingQueryService.summarize(null, null))
         .thenReturn(new BillingSummary(null, null, 0, 0, 0, List.of(), List.of()));
 
-    mockMvc.perform(get("/tenant/ai/billing/summary"))
+    mockMvc.perform(get("/workbench/billing/summary"))
         .andExpect(status().isOk());
 
     verify(billingQueryService).summarize(null, null);

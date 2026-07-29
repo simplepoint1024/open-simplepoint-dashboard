@@ -24,7 +24,5 @@
   "ai.api-keys.guide.title": "OpenAI / Anthropic 兼容模型 API",
   "ai.api-keys.guide.openai": "OpenAI：POST /ai/v1/chat/completions，使用 Authorization: Bearer <API_KEY>",
   "ai.api-keys.guide.anthropic": "Anthropic：POST /ai/v1/messages，使用 x-api-key: <API_KEY>",
-  "ai.api-keys.guide.models": "可先调用 GET /ai/v1/models 获取当前 Key 可访问的模型 ID。",
-  "menu.ai.apiKeys": "模型 API Key",
-  "menu.ai.systemApiKeys": "系统 API Key"
+  "ai.api-keys.guide.models": "可先调用 GET /ai/v1/models 获取当前 Key 可访问的模型 ID。"
 }

@@ -10,6 +10,7 @@ package org.simplepoint.cloud.oauth.server.configuration;
 
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -38,11 +39,15 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationGrantAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
@@ -121,14 +126,20 @@ public class OidcConfiguration {
       final Set<TokenDecorator> tokenDecorator,
       final SessionRegistry sessionRegistry,
       @Value("${simplepoint.security.oauth2.token.audience:simplepoint-api}")
-      final String tokenAudience
+      final String tokenAudience,
+      @Value("${simplepoint.security.oauth2.resource-indicator.allowed-prefixes:}")
+      final String allowedResourcePrefixes
   ) {
 
     return context -> {
       context.getJwsHeader().algorithm(SignatureAlgorithm.PS256);
       if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())
           && StringUtils.hasText(tokenAudience)) {
-        List<String> audiences = resolveAccessTokenAudiences(context, tokenAudience);
+        List<String> audiences = resolveAccessTokenAudiences(
+            context,
+            tokenAudience,
+            allowedResourcePrefixes
+        );
         context.getClaims().audience(audiences);
         context.getClaims().claims(claims -> claims.put("aud", audiences));
       }
@@ -146,17 +157,121 @@ public class OidcConfiguration {
     };
   }
 
-  private static List<String> resolveAccessTokenAudiences(
-      final JwtEncodingContext context,
+  OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer(
+      final Set<TokenDecorator> tokenDecorator,
+      final SessionRegistry sessionRegistry,
       final String tokenAudience
   ) {
+    return jwtCustomizer(tokenDecorator, sessionRegistry, tokenAudience, "");
+  }
+
+  private static List<String> resolveAccessTokenAudiences(
+      final JwtEncodingContext context,
+      final String tokenAudience,
+      final String allowedResourcePrefixes
+  ) {
     LinkedHashSet<String> audiences = new LinkedHashSet<>();
-    audiences.add(tokenAudience);
+    String resource = resolveResourceIndicator(context);
+    if (StringUtils.hasText(resource)) {
+      validateResourceIndicator(resource, allowedResourcePrefixes);
+      audiences.add(resource);
+    } else {
+      audiences.add(tokenAudience);
+    }
     RegisteredClient registeredClient = context.getRegisteredClient();
     if (registeredClient != null && StringUtils.hasText(registeredClient.getClientId())) {
       audiences.add(registeredClient.getClientId());
     }
     return new ArrayList<>(audiences);
+  }
+
+  private static String resolveResourceIndicator(final JwtEncodingContext context) {
+    if (context.getAuthorization() == null) {
+      return null;
+    }
+    OAuth2AuthorizationRequest authorizationRequest = context.getAuthorization()
+        .getAttribute(OAuth2AuthorizationRequest.class.getName());
+    String authorizedResource = authorizationRequest == null
+        ? null : singleResource(
+            authorizationRequest.getAdditionalParameters().get("resource")
+        );
+    if (!StringUtils.hasText(authorizedResource)) {
+      return null;
+    }
+    Authentication grant = context.getAuthorizationGrant();
+    if (grant instanceof OAuth2AuthorizationGrantAuthenticationToken grantToken) {
+      String requestedResource = singleResource(
+          grantToken.getAdditionalParameters().get("resource")
+      );
+      if (!authorizedResource.equals(requestedResource)) {
+        throw oauthError(
+            "invalid_target",
+            "The token request resource must match the authorized resource"
+        );
+      }
+    }
+    return authorizedResource;
+  }
+
+  private static String singleResource(final Object value) {
+    if (value instanceof String text && StringUtils.hasText(text)) {
+      return text.trim();
+    }
+    if (value instanceof List<?> values && values.size() == 1
+        && values.getFirst() instanceof String text && StringUtils.hasText(text)) {
+      return text.trim();
+    }
+    if (value != null) {
+      throw oauthError("invalid_target", "Exactly one resource indicator is required");
+    }
+    return null;
+  }
+
+  private static void validateResourceIndicator(
+      final String resource,
+      final String configuredPrefixes
+  ) {
+    URI uri;
+    try {
+      uri = URI.create(resource);
+    } catch (IllegalArgumentException ex) {
+      throw oauthError("invalid_target", "The resource indicator is not a valid URI");
+    }
+    boolean localhost = uri.getHost() != null
+        && ("localhost".equalsIgnoreCase(uri.getHost())
+        || uri.getHost().toLowerCase(java.util.Locale.ROOT).endsWith(".localhost"));
+    List<String> prefixes = java.util.Arrays.stream(
+            configuredPrefixes == null ? new String[0] : configuredPrefixes.split("[,\\s]+")
+        )
+        .filter(StringUtils::hasText)
+        .map(String::trim)
+        .toList();
+    boolean explicitPrefix = prefixes.stream().anyMatch(resource::startsWith);
+    if (uri.getHost() == null
+        || uri.getUserInfo() != null
+        || uri.getQuery() != null
+        || uri.getFragment() != null
+        || (!"https".equalsIgnoreCase(uri.getScheme())
+        && !(httpResource(uri) && (localhost || explicitPrefix)))) {
+      throw oauthError(
+          "invalid_target",
+          "The resource indicator must be an HTTPS URI"
+      );
+    }
+    if (!prefixes.isEmpty() && !explicitPrefix) {
+      throw oauthError("invalid_target", "The resource indicator is not allowed");
+    }
+  }
+
+  private static boolean httpResource(final URI uri) {
+    return "http".equalsIgnoreCase(uri.getScheme());
+  }
+
+  private static OAuth2AuthenticationException oauthError(
+      final String code,
+      final String description
+  ) {
+    return new OAuth2AuthenticationException(new OAuth2Error(code, description, null));
   }
 
   private static void addSessionIdClaimIfAvailable(

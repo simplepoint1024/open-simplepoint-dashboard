@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Local AI model catalog endpoints.
  */
 @RestController
-@RequestMapping({AiPaths.PLATFORM_MODELS, AiPaths.TENANT_MODELS})
+@RequestMapping(AiPaths.MODELS)
 @Tag(name = "AI模型管理", description = "管理自动发现与手工维护的 AI 模型")
 public class AiModelDefinitionController
     extends BaseController<AiModelDefinitionService, AiModelDefinition, String> {
@@ -51,8 +51,7 @@ public class AiModelDefinitionController
   */
   @GetMapping
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.models.view', 'ai.models.view')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.models.view')"
   )
   @Operation(summary = "分页查询 AI 模型")
   public Response<Page<AiModelDefinition>> limit(
@@ -69,8 +68,7 @@ public class AiModelDefinitionController
   */
   @GetMapping("/available")
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.models.view', 'ai.models.view')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.models.view')"
   )
   @Operation(summary = "查询当前作用域可调用的 AI 模型")
   public Response<?> available() {
@@ -85,8 +83,7 @@ public class AiModelDefinitionController
   */
   @PostMapping
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.models.create', 'ai.models.create')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.models.create')"
   )
   @Operation(summary = "新增 AI 模型")
   public Response<?> add(@RequestBody final AiModelDefinition data) {
@@ -101,8 +98,7 @@ public class AiModelDefinitionController
   */
   @PutMapping
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.models.edit', 'ai.models.edit')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.models.edit')"
   )
   @Operation(summary = "修改 AI 模型")
   public Response<?> modify(@RequestBody final AiModelDefinition data) {
@@ -117,8 +113,7 @@ public class AiModelDefinitionController
   */
   @DeleteMapping
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.models.delete', 'ai.models.delete')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.models.delete')"
   )
   @Operation(summary = "删除 AI 模型")
   public Response<?> remove(@RequestParam("ids") final String ids) {

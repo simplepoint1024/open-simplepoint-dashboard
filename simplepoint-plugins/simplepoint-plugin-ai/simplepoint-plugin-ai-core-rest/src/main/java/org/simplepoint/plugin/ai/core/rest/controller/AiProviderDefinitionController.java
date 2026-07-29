@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
  * AI provider configuration and model discovery endpoints.
  */
 @RestController
-@RequestMapping({AiPaths.PLATFORM_PROVIDERS, AiPaths.TENANT_PROVIDERS})
+@RequestMapping(AiPaths.PROVIDERS)
 @Tag(name = "AI供应商管理", description = "管理 OpenAI、Anthropic 与 OpenAI 兼容模型供应商")
 public class AiProviderDefinitionController
     extends BaseController<AiProviderDefinitionService, AiProviderDefinition, String> {
@@ -60,8 +60,7 @@ public class AiProviderDefinitionController
   */
   @GetMapping
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.providers.view', 'ai.providers.view')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.providers.view')"
   )
   @Operation(summary = "分页查询 AI 供应商")
   public Response<Page<AiProviderDefinition>> limit(
@@ -79,8 +78,7 @@ public class AiProviderDefinitionController
   */
   @PostMapping
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.providers.create', 'ai.providers.create')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.providers.create')"
   )
   @Operation(summary = "新增 AI 供应商")
   public Response<?> add(@RequestBody final AiProviderDefinition data) {
@@ -95,8 +93,7 @@ public class AiProviderDefinitionController
   */
   @PutMapping
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.providers.edit', 'ai.providers.edit')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.providers.edit')"
   )
   @Operation(summary = "修改 AI 供应商")
   public Response<?> modify(@RequestBody final AiProviderDefinition data) {
@@ -111,8 +108,7 @@ public class AiProviderDefinitionController
   */
   @DeleteMapping
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.providers.delete', 'ai.providers.delete')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.providers.delete')"
   )
   @Operation(summary = "删除 AI 供应商")
   public Response<?> remove(@RequestParam("ids") final String ids) {
@@ -133,8 +129,7 @@ public class AiProviderDefinitionController
   */
   @PostMapping("/{id}/test")
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.providers.test', 'ai.providers.test')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.providers.test')"
   )
   @Operation(summary = "测试 AI 供应商连接")
   public Response<?> test(@PathVariable("id") final String id) {
@@ -149,8 +144,7 @@ public class AiProviderDefinitionController
   */
   @GetMapping("/{id}/models/discover")
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.providers.discover', 'ai.providers.discover')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.providers.discover')"
   )
   @Operation(summary = "获取供应商可用模型列表")
   public Response<?> discover(@PathVariable("id") final String id) {
@@ -165,8 +159,7 @@ public class AiProviderDefinitionController
   */
   @PostMapping("/{id}/models/sync")
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.providers.sync', 'ai.providers.sync')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.providers.sync')"
   )
   @Operation(summary = "同步供应商模型列表")
   public Response<?> sync(@PathVariable("id") final String id) {

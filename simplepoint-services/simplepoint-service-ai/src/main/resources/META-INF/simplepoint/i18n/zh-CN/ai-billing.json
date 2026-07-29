@@ -16,7 +16,5 @@
   "ai.billing.table.inputTokens": "输入 Token",
   "ai.billing.table.outputTokens": "输出 Token",
   "ai.billing.table.totalCost": "总费用",
-  "ai.billing.empty": "所选时间范围暂无已计费调用",
-  "menu.ai.billing": "模型计费",
-  "menu.ai.systemBilling": "系统模型计费"
+  "ai.billing.empty": "所选时间范围暂无已计费调用"
 }

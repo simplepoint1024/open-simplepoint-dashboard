@@ -1,6 +1,7 @@
+name: open-simplepoint-dependencies
+
 services:
-  simple_point_postgresql:
-    container_name: sp_postgresql
+  postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
@@ -17,8 +18,7 @@ services:
       timeout: 5s
       retries: 5
 
-  simple_point_mysql:
-    container_name: sp_mysql
+  mysql:
     image: mysql:8.0.41-debian
     restart: unless-stopped
     environment:
@@ -35,11 +35,8 @@ services:
       retries: 10
       start_period: 20s
 
-  simple_point_consul:
-    container_name: sp_consul
-    build:
-      context: .
-      dockerfile: ./consul/Dockerfile
+  consul:
+    image: hashicorp/consul:1.20
     restart: unless-stopped
     command: ["consul", "agent", "-dev", "-client=0.0.0.0", "-ui"]
     ports:
@@ -54,8 +51,7 @@ services:
       retries: 10
       start_period: 10s
 
-  simple_point_redis:
-    container_name: sp_redis
+  redis:
     image: redis:7-alpine
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
@@ -71,5 +67,8 @@ services:
 
 volumes:
   postgres_data:
+    name: ${SIMPLEPOINT_DEV_POSTGRES_VOLUME:-docker_postgres_data}
   mysql_data:
+    name: ${SIMPLEPOINT_DEV_MYSQL_VOLUME:-docker_mysql_data}
   redis_data:
+    name: ${SIMPLEPOINT_DEV_REDIS_VOLUME:-docker_redis_data}

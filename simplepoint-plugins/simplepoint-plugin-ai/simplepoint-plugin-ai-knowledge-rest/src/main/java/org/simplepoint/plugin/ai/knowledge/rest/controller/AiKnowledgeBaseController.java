@@ -37,10 +37,7 @@ import org.springframework.web.multipart.MultipartFile;
  * Knowledge base configuration, ingestion and retrieval endpoints.
  */
 @RestController
-@RequestMapping({
-    AiKnowledgePaths.PLATFORM_KNOWLEDGE_BASES,
-    AiKnowledgePaths.TENANT_KNOWLEDGE_BASES
-})
+@RequestMapping(AiKnowledgePaths.KNOWLEDGE_BASES)
 @Tag(name = "AI知识库", description = "管理知识库、文档索引和混合检索")
 public class AiKnowledgeBaseController
     extends BaseController<AiKnowledgeBaseService, AiKnowledgeBase, String> {
@@ -70,7 +67,7 @@ public class AiKnowledgeBaseController
    * Lists embedding models visible to the current knowledge-base scope.
    */
   @GetMapping("/embedding-models")
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.view', 'ai.knowledge-bases.view')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.view')")
   @Operation(summary = "查询知识库可用的 Embedding 模型")
   public Response<?> embeddingModels() {
     return ok(modelService.listAvailableModels().stream()
@@ -82,7 +79,7 @@ public class AiKnowledgeBaseController
    * Pages knowledge bases in the current ownership scope.
    */
   @GetMapping
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.view', 'ai.knowledge-bases.view')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.view')")
   @Operation(summary = "分页查询知识库")
   public Response<Page<AiKnowledgeBase>> limit(
       @RequestParam final Map<String, String> attributes,
@@ -95,7 +92,7 @@ public class AiKnowledgeBaseController
    * Creates a knowledge base.
    */
   @PostMapping
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.create', 'ai.knowledge-bases.create')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.create')")
   @Operation(summary = "新增知识库")
   public Response<?> add(@RequestBody final AiKnowledgeBase data) {
     return invoke(() -> service.create(data));
@@ -105,7 +102,7 @@ public class AiKnowledgeBaseController
    * Updates a knowledge base.
    */
   @PutMapping
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.edit', 'ai.knowledge-bases.edit')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.edit')")
   @Operation(summary = "修改知识库")
   public Response<?> modify(@RequestBody final AiKnowledgeBase data) {
     return invoke(() -> service.modifyById(data));
@@ -115,7 +112,7 @@ public class AiKnowledgeBaseController
    * Deletes knowledge bases and their document chunks.
    */
   @DeleteMapping
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.delete', 'ai.knowledge-bases.delete')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.delete')")
   @Operation(summary = "删除知识库")
   public Response<?> remove(@RequestParam("ids") final String ids) {
     return invoke(() -> {
@@ -129,7 +126,7 @@ public class AiKnowledgeBaseController
    * Pages source documents.
    */
   @GetMapping("/{knowledgeBaseId}/documents")
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.documents', 'ai.knowledge-bases.documents')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.documents')")
   @Operation(summary = "分页查询知识库文档")
   public Response<Page<AiKnowledgeDocument>> documents(
       @PathVariable("knowledgeBaseId") final String knowledgeBaseId,
@@ -149,7 +146,7 @@ public class AiKnowledgeBaseController
       value = "/{knowledgeBaseId}/documents/upload",
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE
   )
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.documents', 'ai.knowledge-bases.documents')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.documents')")
   @Operation(summary = "上传知识库文档并提交索引任务")
   public Response<?> upload(
       @PathVariable("knowledgeBaseId") final String knowledgeBaseId,
@@ -163,7 +160,7 @@ public class AiKnowledgeBaseController
    * Adds plain text and enqueues indexing.
    */
   @PostMapping("/{knowledgeBaseId}/documents/text")
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.documents', 'ai.knowledge-bases.documents')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.documents')")
   @Operation(summary = "新增文本文档并提交索引任务")
   public Response<?> addText(
       @PathVariable("knowledgeBaseId") final String knowledgeBaseId,
@@ -176,7 +173,7 @@ public class AiKnowledgeBaseController
    * Enqueues a new index generation for one document.
    */
   @PostMapping("/{knowledgeBaseId}/documents/{documentId}/reindex")
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.documents', 'ai.knowledge-bases.documents')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.documents')")
   @Operation(summary = "提交知识库文档重新索引任务")
   public Response<?> reindex(
       @PathVariable("knowledgeBaseId") final String knowledgeBaseId,
@@ -189,7 +186,7 @@ public class AiKnowledgeBaseController
    * Deletes source documents and their chunks.
    */
   @DeleteMapping("/{knowledgeBaseId}/documents")
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.documents', 'ai.knowledge-bases.documents')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.documents')")
   @Operation(summary = "删除知识库文档")
   public Response<?> removeDocuments(
       @PathVariable("knowledgeBaseId") final String knowledgeBaseId,
@@ -206,7 +203,7 @@ public class AiKnowledgeBaseController
    * Retrieves ranked chunks with vector, keyword or hybrid search.
    */
   @PostMapping("/{knowledgeBaseId}/retrieve")
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('ai.system.knowledge-bases.retrieve', 'ai.knowledge-bases.retrieve')")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.retrieve')")
   @Operation(summary = "检索知识库")
   public Response<?> retrieve(
       @PathVariable("knowledgeBaseId") final String knowledgeBaseId,

@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   postgres:
-    image: pgvector/pgvector:0.8.1-pg16
+    image: ${SIMPLEPOINT_POSTGRES_IMAGE:-somesimpled/open-simplepoint-postgres:swarm}
     environment:
       POSTGRES_DB: simplepoint
       POSTGRES_USER: postgres
@@ -45,7 +45,7 @@ services:
         condition: any
 
   bootstrap:
-    image: ${SIMPLEPOINT_BOOTSTRAP_IMAGE:-simplepoint/bootstrap:swarm}
+    image: ${SIMPLEPOINT_BOOTSTRAP_IMAGE:-somesimpled/open-simplepoint-bootstrap:swarm}
     environment:
       CONSUL_ADDR: http://consul:8500
       PUBLIC_HOST: ${SIMPLEPOINT_PUBLIC_HOST:?Set SIMPLEPOINT_PUBLIC_HOST before deploying the stack}
@@ -56,7 +56,7 @@ services:
         condition: none
 
   authorization:
-    image: ${SIMPLEPOINT_AUTH_IMAGE:-simplepoint/authorization:swarm}
+    image: ${SIMPLEPOINT_AUTH_IMAGE:-somesimpled/open-simplepoint-authorization:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
       SIMPLEPOINT_AUTHORIZATION_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AUTHORIZATION_SERVICE_CLIENT_SECRET:-dev-authorization-service-secret}
@@ -77,7 +77,7 @@ services:
         condition: any
 
   common:
-    image: ${SIMPLEPOINT_COMMON_IMAGE:-simplepoint/common:swarm}
+    image: ${SIMPLEPOINT_COMMON_IMAGE:-somesimpled/open-simplepoint-common:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
       SIMPLEPOINT_ADMIN_EMAIL: ${SIMPLEPOINT_ADMIN_EMAIL:-simplepoint@mail.com}
@@ -96,7 +96,7 @@ services:
         condition: any
 
   auditing:
-    image: ${SIMPLEPOINT_AUDITING_IMAGE:-simplepoint/auditing:swarm}
+    image: ${SIMPLEPOINT_AUDITING_IMAGE:-somesimpled/open-simplepoint-auditing:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
@@ -110,7 +110,7 @@ services:
         condition: any
 
   dna:
-    image: ${SIMPLEPOINT_DNA_IMAGE:-simplepoint/dna:swarm}
+    image: ${SIMPLEPOINT_DNA_IMAGE:-somesimpled/open-simplepoint-dna:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
@@ -128,11 +128,176 @@ services:
       restart_policy:
         condition: any
 
-  ai:
-    image: ${SIMPLEPOINT_AI_IMAGE:-simplepoint/ai:swarm}
+  mcp-gateway:
+    image: ${SIMPLEPOINT_MCP_GATEWAY_IMAGE:-somesimpled/open-simplepoint-mcp-gateway:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
-      SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
+      SIMPLEPOINT_WAIT_FOR: redis:6379,consul:8500,authorization:9000
+      SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
+      SIMPLEPOINT_WAIT_TIMEOUT: 240
+      SIMPLEPOINT_MCP_GATEWAY_INTERNAL_TOKEN: ${SIMPLEPOINT_MCP_GATEWAY_INTERNAL_TOKEN:-dev-mcp-gateway-internal-token-change-me}
+      SIMPLEPOINT_MCP_CONTROL_PLANE_BASE_URL: http://ai:2888
+      SIMPLEPOINT_MCP_PUBLICATION_ISSUER_URI: http://${SIMPLEPOINT_PUBLIC_HOST:?Set SIMPLEPOINT_PUBLIC_HOST before deploying the stack}:9000
+      SIMPLEPOINT_MCP_PUBLICATION_JWK_SET_URI: http://authorization:9000/oauth2/jwks
+      SIMPLEPOINT_MCP_RUNTIME_MTLS_ENABLED: "true"
+      SIMPLEPOINT_MCP_RUNTIME_MTLS_KEY_STORE: /run/simplepoint/runtime-pki/gateway/identity.p12
+      SIMPLEPOINT_MCP_RUNTIME_MTLS_KEY_STORE_PASSWORD: ${SIMPLEPOINT_RUNTIME_PKI_STORE_PASSWORD:?Set SIMPLEPOINT_RUNTIME_PKI_STORE_PASSWORD before deploying the stack}
+      SIMPLEPOINT_MCP_RUNTIME_MTLS_TRUST_STORE: /run/simplepoint/runtime-pki/gateway/trust.p12
+      SIMPLEPOINT_MCP_RUNTIME_MTLS_TRUST_STORE_PASSWORD: ${SIMPLEPOINT_RUNTIME_PKI_STORE_PASSWORD:?Set SIMPLEPOINT_RUNTIME_PKI_STORE_PASSWORD before deploying the stack}
+    volumes:
+      - type: bind
+        source: ${SIMPLEPOINT_RUNTIME_PKI_HOST_DIR:-/etc/simplepoint/runtime-pki}
+        target: /run/simplepoint/runtime-pki
+        read_only: true
+    networks:
+      - simplepoint
+    deploy:
+      restart_policy:
+        condition: any
+
+  tool-egress-proxy:
+    image: ${SIMPLEPOINT_TOOL_EGRESS_PROXY_IMAGE:-somesimpled/open-simplepoint-tool-egress-proxy:swarm}
+    environment:
+      SIMPLEPOINT_TOOL_EGRESS_SIGNING_KEY: ${SIMPLEPOINT_TOOL_EGRESS_SIGNING_KEY:?Set SIMPLEPOINT_TOOL_EGRESS_SIGNING_KEY before deploying the stack}
+    read_only: true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - simplepoint
+      - runtime-egress
+    healthcheck:
+      test: ["CMD", "/tool-egress-proxy", "healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    deploy:
+      mode: global
+      endpoint_mode: dnsrr
+      restart_policy:
+        condition: on-failure
+
+  tool-image-verifier:
+    image: ${SIMPLEPOINT_TOOL_IMAGE_VERIFIER_IMAGE:-somesimpled/open-simplepoint-tool-image-verifier:swarm}
+    user: "65532:65532"
+    environment:
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_MTLS_ENABLED: "true"
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_TLS_CERT_FILE: /run/simplepoint/runtime-pki/verifier/tls.crt
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_TLS_KEY_FILE: /run/simplepoint/runtime-pki/verifier/tls.key
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_TLS_CA_FILE: /run/simplepoint/runtime-pki/verifier/ca.crt
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_AI_IDENTITY: spiffe://open-simplepoint/ai-control-plane
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_SIGNATURE_MODE: ${SIMPLEPOINT_TOOL_IMAGE_VERIFIER_SIGNATURE_MODE:-keyless}
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_COSIGN_PUBLIC_KEY_FILE: ${SIMPLEPOINT_TOOL_IMAGE_VERIFIER_COSIGN_PUBLIC_KEY_FILE:-}
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_CERTIFICATE_IDENTITY_REGEXP: ${SIMPLEPOINT_TOOL_IMAGE_CERTIFICATE_IDENTITY_REGEXP:-^https://github.com/simplepoint1024/open-simplepoint-dashboard/.github/workflows/.+$}
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_CERTIFICATE_OIDC_ISSUER: ${SIMPLEPOINT_TOOL_IMAGE_CERTIFICATE_OIDC_ISSUER:-https://token.actions.githubusercontent.com}
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_ALLOW_HTTP_REGISTRY: "false"
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_IGNORE_TRANSPARENCY_LOG: "false"
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_REQUIRE_SBOM: "true"
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_BLOCKED_SEVERITIES: ${SIMPLEPOINT_TOOL_IMAGE_BLOCKED_SEVERITIES:-HIGH,CRITICAL}
+    read_only: true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - type: bind
+        source: ${SIMPLEPOINT_RUNTIME_PKI_HOST_DIR:-/etc/simplepoint/runtime-pki}
+        target: /run/simplepoint/runtime-pki
+        read_only: true
+      - type: volume
+        source: trivy_cache
+        target: /var/cache/trivy
+    networks:
+      - simplepoint
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/tool-image-verifier", "healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    deploy:
+      replicas: ${SIMPLEPOINT_TOOL_IMAGE_VERIFIER_REPLICAS:-2}
+      restart_policy:
+        condition: on-failure
+
+  tool-runtime:
+    image: ${SIMPLEPOINT_TOOL_RUNTIME_IMAGE:-somesimpled/open-simplepoint-tool-runtime:swarm}
+    user: "65532:65532"
+    environment:
+      DOCKER_HOST: ${SIMPLEPOINT_TOOL_RUNTIME_DOCKER_HOST:-tcp://{{.Node.Hostname}}:2375}
+      SIMPLEPOINT_TOOL_RUNTIME_NODE_ID: "{{.Node.ID}}"
+      SIMPLEPOINT_TOOL_RUNTIME_MTLS_ENABLED: "true"
+      SIMPLEPOINT_TOOL_RUNTIME_TLS_CERT_FILE: /run/simplepoint/runtime-pki/node/tls.crt
+      SIMPLEPOINT_TOOL_RUNTIME_TLS_KEY_FILE: /run/simplepoint/runtime-pki/node/tls.key
+      SIMPLEPOINT_TOOL_RUNTIME_TLS_CA_FILE: /run/simplepoint/runtime-pki/node/ca.crt
+      SIMPLEPOINT_TOOL_RUNTIME_TLS_SERVER_NAME: "{{.Node.Hostname}}"
+      SIMPLEPOINT_TOOL_RUNTIME_TLS_CONTROL_SERVER_NAME: ai
+      SIMPLEPOINT_TOOL_RUNTIME_CONTROL_PLANE_URL: https://ai:2889
+      SIMPLEPOINT_TOOL_RUNTIME_ADVERTISE_URL: "https://{{.Node.Hostname}}:2891"
+      SIMPLEPOINT_TOOL_RUNTIME_NODE_LABELS: "orchestrator=swarm"
+      SIMPLEPOINT_TOOL_RUNTIME_MAX_WORKLOADS: ${SIMPLEPOINT_TOOL_RUNTIME_MAX_WORKLOADS:-64}
+      SIMPLEPOINT_TOOL_RUNTIME_MAX_REPORTED_IMAGE_DIGESTS: ${SIMPLEPOINT_TOOL_RUNTIME_MAX_REPORTED_IMAGE_DIGESTS:-256}
+      SIMPLEPOINT_TOOL_RUNTIME_ALLOWED_REGISTRIES: ${SIMPLEPOINT_TOOL_RUNTIME_ALLOWED_REGISTRIES:-docker.io}
+      SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_DIGEST: ${SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_DIGEST:-true}
+      SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_MCP_LABELS: ${SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_MCP_LABELS:-true}
+      SIMPLEPOINT_TOOL_RUNTIME_ALLOW_BRIDGE_NETWORK: ${SIMPLEPOINT_TOOL_RUNTIME_ALLOW_BRIDGE_NETWORK:-false}
+      SIMPLEPOINT_TOOL_RUNTIME_EGRESS_ENABLED: "true"
+      SIMPLEPOINT_TOOL_RUNTIME_EGRESS_NETWORK: ${SIMPLEPOINT_RUNTIME_EGRESS_NETWORK:-open-simplepoint-runtime-egress}
+      SIMPLEPOINT_TOOL_RUNTIME_EGRESS_PROXY_URL: http://tool-egress-proxy:2892
+      SIMPLEPOINT_TOOL_RUNTIME_EGRESS_SIGNING_KEY: ${SIMPLEPOINT_TOOL_EGRESS_SIGNING_KEY:?Set SIMPLEPOINT_TOOL_EGRESS_SIGNING_KEY before deploying the stack}
+      SIMPLEPOINT_TOOL_RUNTIME_SECRET_ROOT: /run/simplepoint/runtime-secrets
+      SIMPLEPOINT_TOOL_RUNTIME_SECRET_VOLUME: ${SIMPLEPOINT_RUNTIME_SECRET_VOLUME:-open-simplepoint-runtime-secrets}
+      SIMPLEPOINT_TOOL_RUNTIME_SECRET_MOUNT_TARGET: /run/secrets/simplepoint
+      SIMPLEPOINT_TOOL_RUNTIME_SUPPLY_CHAIN_ENABLED: ${SIMPLEPOINT_TOOL_RUNTIME_SUPPLY_CHAIN_ENABLED:-true}
+      SIMPLEPOINT_TOOL_RUNTIME_IMAGE_VERIFIER_URL: https://tool-image-verifier:2893
+      SIMPLEPOINT_TOOL_RUNTIME_IMAGE_VERIFIER_SERVER_NAME: tool-image-verifier
+      SIMPLEPOINT_TOOL_RUNTIME_IMAGE_VERIFIER_IDENTITY: spiffe://open-simplepoint/tool-image-verifier
+      SIMPLEPOINT_TOOL_RUNTIME_SECCOMP_PROFILE: /etc/simplepoint/runtime-security/seccomp.json
+      SIMPLEPOINT_TOOL_RUNTIME_SECCOMP_REQUIRED: "true"
+      SIMPLEPOINT_TOOL_RUNTIME_APPARMOR_PROFILE: ${SIMPLEPOINT_TOOL_RUNTIME_APPARMOR_PROFILE:-open-simplepoint-mcp-workload}
+      SIMPLEPOINT_TOOL_RUNTIME_APPARMOR_ENABLED: "true"
+      SIMPLEPOINT_TOOL_RUNTIME_APPARMOR_REQUIRED: ${SIMPLEPOINT_TOOL_RUNTIME_APPARMOR_REQUIRED:-true}
+      SIMPLEPOINT_TOOL_RUNTIME_TLS_EXPECTED_GATEWAY_IDENTITY: spiffe://open-simplepoint/mcp-gateway
+    volumes:
+      - type: bind
+        source: ${SIMPLEPOINT_RUNTIME_PKI_HOST_DIR:-/etc/simplepoint/runtime-pki}
+        target: /run/simplepoint/runtime-pki
+        read_only: true
+      - type: volume
+        source: runtime_secrets
+        target: /run/simplepoint/runtime-secrets
+    ports:
+      - target: 2891
+        published: 2891
+        protocol: tcp
+        mode: host
+    networks:
+      - simplepoint
+    healthcheck:
+      test: ["CMD", "/tool-runtime-node", "healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.labels.simplepoint.runtime == true
+      restart_policy:
+        condition: on-failure
+
+  ai:
+    image: ${SIMPLEPOINT_AI_IMAGE:-somesimpled/open-simplepoint-ai:swarm}
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000,mcp-gateway:2890
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
       SIMPLEPOINT_AI_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_AI_SERVICE_CLIENT_SECRET:-dev-ai-service-secret}
@@ -140,14 +305,37 @@ services:
       SIMPLEPOINT_AI_API_KEY_HASH_PEPPER: ${SIMPLEPOINT_AI_API_KEY_HASH_PEPPER:-dev-ai-model-api-key-pepper-change-me}
       SIMPLEPOINT_AI_API_KEY_DEFAULT_RATE_LIMIT_PER_MINUTE: ${SIMPLEPOINT_AI_API_KEY_DEFAULT_RATE_LIMIT_PER_MINUTE:-60}
       SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED: ${SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED:-true}
+      SIMPLEPOINT_AI_RUNTIME_MCP_SESSION_DIRECTORY_TTL: ${SIMPLEPOINT_AI_RUNTIME_MCP_SESSION_DIRECTORY_TTL:-10m}
+      SIMPLEPOINT_AI_RUNTIME_MCP_FAILURE_QUARANTINE: ${SIMPLEPOINT_AI_RUNTIME_MCP_FAILURE_QUARANTINE:-10s}
+      SIMPLEPOINT_MCP_GATEWAY_BASE_URL: http://mcp-gateway:2890
+      SIMPLEPOINT_MCP_GATEWAY_INTERNAL_TOKEN: ${SIMPLEPOINT_MCP_GATEWAY_INTERNAL_TOKEN:-dev-mcp-gateway-internal-token-change-me}
+      SIMPLEPOINT_TOOL_RUNTIME_MTLS_ENABLED: "true"
+      SIMPLEPOINT_TOOL_RUNTIME_MTLS_KEY_STORE: /run/simplepoint/runtime-pki/ai/identity.p12
+      SIMPLEPOINT_TOOL_RUNTIME_MTLS_KEY_STORE_PASSWORD: ${SIMPLEPOINT_RUNTIME_PKI_STORE_PASSWORD:?Set SIMPLEPOINT_RUNTIME_PKI_STORE_PASSWORD before deploying the stack}
+      SIMPLEPOINT_TOOL_RUNTIME_MTLS_TRUST_STORE: /run/simplepoint/runtime-pki/ai/trust.p12
+      SIMPLEPOINT_TOOL_RUNTIME_MTLS_TRUST_STORE_PASSWORD: ${SIMPLEPOINT_RUNTIME_PKI_STORE_PASSWORD:?Set SIMPLEPOINT_RUNTIME_PKI_STORE_PASSWORD before deploying the stack}
+      SIMPLEPOINT_AI_SKILL_ARTIFACT_ALLOWED_REGISTRIES: ${SIMPLEPOINT_AI_SKILL_ARTIFACT_ALLOWED_REGISTRIES:-docker.io,ghcr.io}
+      SIMPLEPOINT_AI_SKILL_ARTIFACT_INSECURE_REGISTRIES: ${SIMPLEPOINT_AI_SKILL_ARTIFACT_INSECURE_REGISTRIES:-}
+      SIMPLEPOINT_AI_SKILL_ARTIFACT_ALLOWED_TOKEN_HOSTS: ${SIMPLEPOINT_AI_SKILL_ARTIFACT_ALLOWED_TOKEN_HOSTS:-auth.docker.io,ghcr.io}
+      SIMPLEPOINT_AI_SKILL_ARTIFACT_SIGNATURE_REQUIRED: ${SIMPLEPOINT_AI_SKILL_ARTIFACT_SIGNATURE_REQUIRED:-true}
+      SIMPLEPOINT_AI_SKILL_ARTIFACT_VERIFIER_URL: https://tool-image-verifier:2893
+      SIMPLEPOINT_AI_SKILL_ARTIFACT_VERIFIER_MTLS_ENABLED: "true"
+      SIMPLEPOINT_AI_MCP_PUBLICATION_BASE_URL: http://${SIMPLEPOINT_PUBLIC_HOST:?Set SIMPLEPOINT_PUBLIC_HOST before deploying the stack}:8080
+      SIMPLEPOINT_AI_MCP_PUBLICATION_AUTHORIZATION_SERVER_URL: http://${SIMPLEPOINT_PUBLIC_HOST:?Set SIMPLEPOINT_PUBLIC_HOST before deploying the stack}:9000
+      SIMPLEPOINT_AI_MCP_PUBLICATION_ALLOW_INSECURE_HTTP: "true"
     networks:
       - simplepoint
+    volumes:
+      - type: bind
+        source: ${SIMPLEPOINT_RUNTIME_PKI_HOST_DIR:-/etc/simplepoint/runtime-pki}
+        target: /run/simplepoint/runtime-pki
+        read_only: true
     deploy:
       restart_policy:
         condition: any
 
   host:
-    image: ${SIMPLEPOINT_HOST_IMAGE:-simplepoint/host:swarm}
+    image: ${SIMPLEPOINT_HOST_IMAGE:-somesimpled/open-simplepoint-host:swarm}
     environment:
       SPRING_PROFILES_ACTIVE: dev,swarm
       SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET: ${SIMPLEPOINT_HOST_SERVICE_CLIENT_SECRET:-dev-host-service-secret}
@@ -166,7 +354,20 @@ networks:
   simplepoint:
     driver: overlay
     attachable: true
+  runtime-egress:
+    name: ${SIMPLEPOINT_RUNTIME_EGRESS_NETWORK:-open-simplepoint-runtime-egress}
+    driver: overlay
+    attachable: true
+    internal: true
 
 volumes:
   postgres_data:
   redis_data:
+  runtime_secrets:
+    name: ${SIMPLEPOINT_RUNTIME_SECRET_VOLUME:-open-simplepoint-runtime-secrets}
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=16m,uid=65532,gid=65532,mode=0700
+  trivy_cache:

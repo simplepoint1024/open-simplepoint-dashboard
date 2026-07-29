@@ -8,11 +8,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.ai.core.api.entity.AiApiKey;
-import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.core.api.repository.AiApiKeyRepository;
 import org.simplepoint.plugin.ai.core.api.service.AiApiKeyService;
 import org.simplepoint.plugin.ai.core.service.security.AiApiKeyHasher;
@@ -159,11 +157,7 @@ public class AiApiKeyServiceImpl
 
   @Override
   protected Set<Map<String, Object>> getButtonDeclarationsSchema(final Class<AiApiKey> domainClass) {
-    String authorityPrefix = scopeAccessPolicy.currentManagementScope().scopeType() == AiResourceScope.SYSTEM
-        ? "ai.system.api-keys." : "ai.api-keys.";
-    return super.getButtonDeclarationsSchema(domainClass).stream()
-        .filter(button -> String.valueOf(button.get("authority")).startsWith(authorityPrefix))
-        .collect(Collectors.toSet());
+    return super.getButtonDeclarationsSchema(domainClass);
   }
 
   private void normalizeEditable(final AiApiKey entity, final AiApiKey current) {

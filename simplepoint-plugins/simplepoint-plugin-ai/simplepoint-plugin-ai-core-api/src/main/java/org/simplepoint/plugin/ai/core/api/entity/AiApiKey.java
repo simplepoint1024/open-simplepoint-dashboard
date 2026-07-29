@@ -36,28 +36,17 @@ import org.springframework.core.annotation.Order;
 @ButtonDeclarations({
     @ButtonDeclaration(title = PublicButtonKeys.ADD_TITLE, key = PublicButtonKeys.ADD_KEY,
         icon = Icons.PLUS_CIRCLE, sort = 0, argumentMinSize = 0, argumentMaxSize = 1,
-        authority = "ai.system.api-keys.create"),
-    @ButtonDeclaration(title = PublicButtonKeys.ADD_TITLE, key = PublicButtonKeys.ADD_KEY,
-        icon = Icons.PLUS_CIRCLE, sort = 0, argumentMinSize = 0, argumentMaxSize = 1,
-        authority = "ai.api-keys.create"),
+        authority = "ai.workbench.api-keys.create"),
     @ButtonDeclaration(title = PublicButtonKeys.EDIT_TITLE, key = PublicButtonKeys.EDIT_KEY,
         icon = Icons.EDIT, color = "orange", sort = 1, argumentMinSize = 1, argumentMaxSize = 1,
-        authority = "ai.system.api-keys.edit"),
-    @ButtonDeclaration(title = PublicButtonKeys.EDIT_TITLE, key = PublicButtonKeys.EDIT_KEY,
-        icon = Icons.EDIT, color = "orange", sort = 1, argumentMinSize = 1, argumentMaxSize = 1,
-        authority = "ai.api-keys.edit"),
+        authority = "ai.workbench.api-keys.edit"),
     @ButtonDeclaration(title = "i18n:ai.api-keys.button.rotate", key = "rotate",
         icon = "SyncOutlined", color = "orange", sort = 2, argumentMinSize = 1, argumentMaxSize = 1,
-        authority = "ai.system.api-keys.rotate"),
-    @ButtonDeclaration(title = "i18n:ai.api-keys.button.rotate", key = "rotate",
-        icon = "SyncOutlined", color = "orange", sort = 2, argumentMinSize = 1, argumentMaxSize = 1,
-        authority = "ai.api-keys.rotate"),
+        authority = "ai.workbench.api-keys.rotate"),
     @ButtonDeclaration(title = PublicButtonKeys.DELETE_TITLE, key = PublicButtonKeys.DELETE_KEY,
         icon = Icons.MINUS_CIRCLE, color = "danger", danger = true, sort = 3,
-        argumentMinSize = 1, argumentMaxSize = 10, authority = "ai.system.api-keys.delete"),
-    @ButtonDeclaration(title = PublicButtonKeys.DELETE_TITLE, key = PublicButtonKeys.DELETE_KEY,
-        icon = Icons.MINUS_CIRCLE, color = "danger", danger = true, sort = 3,
-        argumentMinSize = 1, argumentMaxSize = 10, authority = "ai.api-keys.delete")
+        argumentMinSize = 1, argumentMaxSize = 10,
+        authority = "ai.workbench.api-keys.delete")
 })
 @Schema(title = "i18n:ai.api-keys.entity.title")
 public class AiApiKey extends BaseEntityImpl<String> {

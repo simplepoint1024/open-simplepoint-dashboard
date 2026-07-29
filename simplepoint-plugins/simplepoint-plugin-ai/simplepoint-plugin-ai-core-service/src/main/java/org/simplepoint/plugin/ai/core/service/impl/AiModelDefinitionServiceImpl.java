@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.ai.core.api.entity.AiModelDefinition;
@@ -270,14 +269,13 @@ public class AiModelDefinitionServiceImpl
   protected Set<Map<String, Object>> getButtonDeclarationsSchema(
       final Class<AiModelDefinition> domainClass
   ) {
-    if (!scopeAccessPolicy.canConfigureCurrentScope()) {
-      return Set.of();
+    Set<Map<String, Object>> declarations = super.getButtonDeclarationsSchema(domainClass);
+    if (scopeAccessPolicy.canConfigureCurrentScope()) {
+      return declarations;
     }
-    String authorityPrefix = scopeAccessPolicy.currentManagementScope().scopeType()
-        == AiResourceScope.SYSTEM ? "ai.system.models." : "ai.models.";
-    return super.getButtonDeclarationsSchema(domainClass).stream()
-        .filter(button -> String.valueOf(button.get("authority")).startsWith(authorityPrefix))
-        .collect(Collectors.toSet());
+    return declarations.stream()
+        .filter(button -> "ai.workbench.models.debug".equals(button.get("authority")))
+        .collect(java.util.stream.Collectors.toUnmodifiableSet());
   }
 
   private static String requireEntityId(final AiModelDefinition entity) {

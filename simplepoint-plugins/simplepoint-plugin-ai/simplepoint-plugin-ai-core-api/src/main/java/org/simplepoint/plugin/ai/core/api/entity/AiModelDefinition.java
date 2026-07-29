@@ -52,16 +52,7 @@ import org.springframework.core.annotation.Order;
         sort = 0,
         argumentMinSize = 0,
         argumentMaxSize = 1,
-        authority = "ai.system.models.create"
-    ),
-    @ButtonDeclaration(
-        title = PublicButtonKeys.ADD_TITLE,
-        key = PublicButtonKeys.ADD_KEY,
-        icon = Icons.PLUS_CIRCLE,
-        sort = 0,
-        argumentMinSize = 0,
-        argumentMaxSize = 1,
-        authority = "ai.models.create"
+        authority = "ai.workbench.models.create"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -71,17 +62,7 @@ import org.springframework.core.annotation.Order;
         sort = 1,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "ai.system.models.edit"
-    ),
-    @ButtonDeclaration(
-        title = PublicButtonKeys.EDIT_TITLE,
-        key = PublicButtonKeys.EDIT_KEY,
-        color = "orange",
-        icon = Icons.EDIT,
-        sort = 1,
-        argumentMinSize = 1,
-        argumentMaxSize = 1,
-        authority = "ai.models.edit"
+        authority = "ai.workbench.models.edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -92,18 +73,17 @@ import org.springframework.core.annotation.Order;
         argumentMinSize = 1,
         argumentMaxSize = 10,
         danger = true,
-        authority = "ai.system.models.delete"
+        authority = "ai.workbench.models.delete"
     ),
     @ButtonDeclaration(
-        title = PublicButtonKeys.DELETE_TITLE,
-        key = PublicButtonKeys.DELETE_KEY,
-        color = "danger",
-        icon = Icons.MINUS_CIRCLE,
-        sort = 2,
+        title = "i18n:ai.model-debug.button",
+        key = "debug",
+        color = "blue",
+        icon = "MessageOutlined",
+        sort = 3,
         argumentMinSize = 1,
-        argumentMaxSize = 10,
-        danger = true,
-        authority = "ai.models.delete"
+        argumentMaxSize = 1,
+        authority = "ai.workbench.models.debug"
     )
 })
 @Schema(title = "i18n:ai.models.entity.title")

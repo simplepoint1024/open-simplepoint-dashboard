@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simplepoint.io/schemas/skill-manifest-v1.schema.json",
+  "title": "SimplePoint Skill Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {
+      "const": "simplepoint.io/v1alpha1"
+    },
+    "kind": {
+      "const": "Skill"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+        },
+        "version": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inputSchema", "outputSchema", "workflow", "tools"],
+      "properties": {
+        "inputSchema": {
+          "$ref": "#/$defs/objectSchema"
+        },
+        "outputSchema": {
+          "$ref": "#/$defs/objectSchema"
+        },
+        "workflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["steps"],
+          "properties": {
+            "steps": {
+              "type": "array",
+              "maxItems": 128,
+              "items": {
+                "$ref": "#/$defs/workflowStep"
+              }
+            },
+            "output": {
+              "description": "Declarative output template using $ref objects"
+            }
+          }
+        },
+        "tools": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/toolBinding"
+          }
+        },
+        "promptTemplates": {
+          "type": "array"
+        },
+        "resources": {
+          "type": "array"
+        },
+        "budgets": {
+          "type": "object"
+        },
+        "approvals": {
+          "type": "object"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "objectSchema": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "const": "object"
+        }
+      }
+    },
+    "toolBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alias", "serverId", "snapshotId", "name"],
+      "properties": {
+        "alias": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+        },
+        "serverId": {
+          "type": "string"
+        },
+        "snapshotId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "workflowStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "enum": ["tool"]
+        },
+        "tool": {
+          "type": "string"
+        },
+        "arguments": {
+          "type": "object",
+          "description": "Literal JSON and exact {$ref: input.*|steps.*} references"
+        }
+      }
+    }
+  }
+}

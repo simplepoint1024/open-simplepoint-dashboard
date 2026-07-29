@@ -64,6 +64,9 @@ public class SecurityConfig {
                 "/static/**",
                 "/{service}/mf/**",
                 "/ai/v1/**",
+                "/mcp/**",
+                "/.well-known/oauth-protected-resource/**",
+                "/.well-known/oauth-client/**",
                 "/svg.svg",
                 "/.well-known/appspecific/**"
             ).permitAll()

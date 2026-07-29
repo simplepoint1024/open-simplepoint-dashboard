@@ -16,7 +16,5 @@
   "ai.billing.table.inputTokens": "Input tokens",
   "ai.billing.table.outputTokens": "Output tokens",
   "ai.billing.table.totalCost": "Total cost",
-  "ai.billing.empty": "No priced invocations in the selected period",
-  "menu.ai.billing": "Model billing",
-  "menu.ai.systemBilling": "System model billing"
+  "ai.billing.empty": "No priced invocations in the selected period"
 }

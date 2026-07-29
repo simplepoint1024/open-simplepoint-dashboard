@@ -29,7 +29,7 @@ val installFrontendDependencies by tasks.registering(Exec::class) {
         frontendRootDir.resolve("pnpm-lock.yaml"),
         frontendRootDir.resolve("pnpm-workspace.yaml")
     )
-    outputs.dir(frontendRootDir.resolve("node_modules"))
+    outputs.file(frontendRootDir.resolve("node_modules/.modules.yaml"))
 }
 
 allprojects {

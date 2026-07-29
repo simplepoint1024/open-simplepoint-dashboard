@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.Collections;
 import org.simplepoint.cache.CacheService;
 import org.simplepoint.core.AuthorizationContext;
@@ -118,7 +119,8 @@ public class ResourceServerAutoConfiguration {
         .authorizeHttpRequests(request -> {
           request.requestMatchers(
                   "/actuator/**", "/static/**", "/mf/**", "/v3/api-docs/**", "/swagger-ui/**",
-                  "/error", "/css/**", "/js/**", "/images/**"
+                  "/error", "/css/**", "/js/**", "/images/**",
+                  "/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/**"
               )
               .permitAll();
           if ("oauth2".equalsIgnoreCase(serviceRouterMode)) {
@@ -134,17 +136,69 @@ public class ResourceServerAutoConfiguration {
           }
           request.anyRequest().authenticated();
         })
-        .oauth2ResourceServer(configurer ->
-            configurer.jwt(
-                jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(
-                    new JwtAuthenticationConverterDelegate(
-                        authorizationGrantedAuthorityLoader,
-                        tokenRevocationService,
-                        environment.getProperty("simplepoint.security.oauth2.token.audience", "simplepoint-api")
-                    )
-                )
-            )
-        )
+        .oauth2ResourceServer(configurer -> {
+          String metadataUri = environment.getProperty(
+              "simplepoint.security.oauth2.protected-resource-metadata-uri"
+          );
+          if (StringUtils.hasText(metadataUri)) {
+            configurer.authenticationEntryPoint((request, response, exception) -> {
+              response.setStatus(401);
+              response.setHeader(
+                  "WWW-Authenticate",
+                  "Bearer resource_metadata=\"" + metadataUri.replace("\"", "") + "\""
+              );
+            });
+          }
+          String protectedResourceUri = environment.getProperty(
+              "simplepoint.security.oauth2.protected-resource-uri"
+          );
+          if (StringUtils.hasText(protectedResourceUri)) {
+            configurer.protectedResourceMetadata(metadata ->
+                metadata.protectedResourceMetadataCustomizer(builder -> {
+                  builder.resource(protectedResourceUri.trim());
+                  String authorizationServer = environment.getProperty(
+                      "simplepoint.security.oauth2.authorization-server-uri"
+                  );
+                  if (StringUtils.hasText(authorizationServer)) {
+                    builder.authorizationServer(authorizationServer.trim());
+                  }
+                  String scopes = environment.getProperty(
+                      "simplepoint.security.oauth2.protected-resource-scopes"
+                  );
+                  if (StringUtils.hasText(scopes)) {
+                    Arrays.stream(scopes.split("[,\\s]+"))
+                        .filter(StringUtils::hasText)
+                        .forEach(builder::scope);
+                  }
+                  String resourceName = environment.getProperty(
+                      "simplepoint.security.oauth2.protected-resource-name"
+                  );
+                  if (StringUtils.hasText(resourceName)) {
+                    builder.resourceName(resourceName.trim());
+                  }
+                  String documentation = environment.getProperty(
+                      "simplepoint.security.oauth2.protected-resource-documentation"
+                  );
+                  if (StringUtils.hasText(documentation)) {
+                    builder.claim("resource_documentation", documentation.trim());
+                  }
+                  builder.tlsClientCertificateBoundAccessTokens(false);
+                })
+            );
+          }
+          configurer.jwt(
+              jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(
+                  new JwtAuthenticationConverterDelegate(
+                      authorizationGrantedAuthorityLoader,
+                      tokenRevocationService,
+                      environment.getProperty(
+                          "simplepoint.security.oauth2.token.audience",
+                          "simplepoint-api"
+                      )
+                  )
+              )
+          );
+        })
         .build();
   }
 

@@ -1,0 +1,132 @@
+package org.simplepoint.mcp.gateway.rest;
+
+import org.simplepoint.plugin.ai.mcp.api.constants.AiMcpPaths;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayConnection;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayDiscoveryResult;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayOauthDiscoveryRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayOauthDiscoveryResult;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayOauthRegistrationRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayOauthRegistrationResult;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayOauthTokenRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayOauthTokenResult;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayOperations;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayPromptGetRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayPromptGetResult;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayResourceReadRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayResourceReadResult;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayStatus;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayToolCallRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayToolCallResult;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * Private control-plane API for remote MCP operations.
+ */
+@RestController
+@PreAuthorize("hasRole('MCP_GATEWAY_SERVICE')")
+public class McpGatewayInternalController {
+
+  private final McpGatewayOperations operations;
+
+  /**
+   * Creates the internal controller.
+   *
+   * @param operations remote MCP operations
+   */
+  public McpGatewayInternalController(final McpGatewayOperations operations) {
+    this.operations = operations;
+  }
+
+  /**
+   * Returns this Gateway instance status.
+   *
+   * @return status and protocol baseline
+   */
+  @GetMapping(AiMcpPaths.INTERNAL_STATUS)
+  public McpGatewayStatus status() {
+    return operations.status();
+  }
+
+  /**
+   * Initializes and discovers an MCP server.
+   *
+   * @param connection connection material
+   * @return discovery result
+   */
+  @PostMapping(AiMcpPaths.INTERNAL_DISCOVER)
+  public McpGatewayDiscoveryResult discover(
+      @RequestBody final McpGatewayConnection connection
+  ) {
+    return operations.discover(connection);
+  }
+
+  /**
+   * Invokes one remote MCP tool.
+   *
+   * @param request tool call request
+   * @return MCP tool result
+   */
+  @PostMapping(AiMcpPaths.INTERNAL_CALL_TOOL)
+  @ResponseStatus(HttpStatus.OK)
+  public McpGatewayToolCallResult callTool(
+      @RequestBody final McpGatewayToolCallRequest request
+  ) {
+    return operations.callTool(request);
+  }
+
+  /**
+   * Reads one remote MCP resource.
+   */
+  @PostMapping(AiMcpPaths.INTERNAL_READ_RESOURCE)
+  public McpGatewayResourceReadResult readResource(
+      @RequestBody final McpGatewayResourceReadRequest request
+  ) {
+    return operations.readResource(request);
+  }
+
+  /**
+   * Renders one remote MCP prompt.
+   */
+  @PostMapping(AiMcpPaths.INTERNAL_GET_PROMPT)
+  public McpGatewayPromptGetResult getPrompt(
+      @RequestBody final McpGatewayPromptGetRequest request
+  ) {
+    return operations.getPrompt(request);
+  }
+
+  /**
+   * Discovers OAuth metadata for a protected remote MCP resource.
+   */
+  @PostMapping(AiMcpPaths.INTERNAL_OAUTH_DISCOVER)
+  public McpGatewayOauthDiscoveryResult discoverOauth(
+      @RequestBody final McpGatewayOauthDiscoveryRequest request
+  ) {
+    return operations.discoverOauth(request);
+  }
+
+  /**
+   * Dynamically registers an OAuth client.
+   */
+  @PostMapping(AiMcpPaths.INTERNAL_OAUTH_REGISTER)
+  public McpGatewayOauthRegistrationResult registerOauthClient(
+      @RequestBody final McpGatewayOauthRegistrationRequest request
+  ) {
+    return operations.registerOauthClient(request);
+  }
+
+  /**
+   * Exchanges an OAuth authorization code or refresh token.
+   */
+  @PostMapping(AiMcpPaths.INTERNAL_OAUTH_TOKEN)
+  public McpGatewayOauthTokenResult exchangeOauthToken(
+      @RequestBody final McpGatewayOauthTokenRequest request
+  ) {
+    return operations.exchangeOauthToken(request);
+  }
+}

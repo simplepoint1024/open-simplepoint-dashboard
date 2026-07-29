@@ -38,6 +38,7 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
   );
   private static final Set<String> CONTEXT_EXCLUDED_PATH_PREFIXES = Set.of(
       "/actuator/",
+      "/internal/",
       "/static/",
       "/mf/",
       "/v3/api-docs/",

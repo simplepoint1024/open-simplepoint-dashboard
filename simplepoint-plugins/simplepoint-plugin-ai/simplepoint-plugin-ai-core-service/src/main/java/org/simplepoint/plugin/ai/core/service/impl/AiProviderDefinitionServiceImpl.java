@@ -8,7 +8,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.ai.core.api.entity.AiProviderDefinition;
@@ -265,11 +264,7 @@ public class AiProviderDefinitionServiceImpl
     if (!scopeAccessPolicy.canConfigureCurrentScope()) {
       return Set.of();
     }
-    String authorityPrefix = scopeAccessPolicy.currentManagementScope().scopeType()
-        == AiResourceScope.SYSTEM ? "ai.system.providers." : "ai.providers.";
-    return super.getButtonDeclarationsSchema(domainClass).stream()
-        .filter(button -> String.valueOf(button.get("authority")).startsWith(authorityPrefix))
-        .collect(Collectors.toSet());
+    return super.getButtonDeclarationsSchema(domainClass);
   }
 
   private void assertCanRead(final AiProviderDefinition provider) {

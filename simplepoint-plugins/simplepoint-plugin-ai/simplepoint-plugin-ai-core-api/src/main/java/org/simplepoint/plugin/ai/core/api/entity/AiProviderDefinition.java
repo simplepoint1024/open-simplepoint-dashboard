@@ -47,16 +47,7 @@ import org.springframework.core.annotation.Order;
         sort = 0,
         argumentMinSize = 0,
         argumentMaxSize = 1,
-        authority = "ai.system.providers.create"
-    ),
-    @ButtonDeclaration(
-        title = PublicButtonKeys.ADD_TITLE,
-        key = PublicButtonKeys.ADD_KEY,
-        icon = Icons.PLUS_CIRCLE,
-        sort = 0,
-        argumentMinSize = 0,
-        argumentMaxSize = 1,
-        authority = "ai.providers.create"
+        authority = "ai.workbench.providers.create"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -66,17 +57,7 @@ import org.springframework.core.annotation.Order;
         sort = 1,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "ai.system.providers.edit"
-    ),
-    @ButtonDeclaration(
-        title = PublicButtonKeys.EDIT_TITLE,
-        key = PublicButtonKeys.EDIT_KEY,
-        color = "orange",
-        icon = Icons.EDIT,
-        sort = 1,
-        argumentMinSize = 1,
-        argumentMaxSize = 1,
-        authority = "ai.providers.edit"
+        authority = "ai.workbench.providers.edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -87,18 +68,7 @@ import org.springframework.core.annotation.Order;
         argumentMinSize = 1,
         argumentMaxSize = 10,
         danger = true,
-        authority = "ai.system.providers.delete"
-    ),
-    @ButtonDeclaration(
-        title = PublicButtonKeys.DELETE_TITLE,
-        key = PublicButtonKeys.DELETE_KEY,
-        color = "danger",
-        icon = Icons.MINUS_CIRCLE,
-        sort = 2,
-        argumentMinSize = 1,
-        argumentMaxSize = 10,
-        danger = true,
-        authority = "ai.providers.delete"
+        authority = "ai.workbench.providers.delete"
     ),
     @ButtonDeclaration(
         title = "i18n:ai.providers.button.test",
@@ -108,17 +78,7 @@ import org.springframework.core.annotation.Order;
         sort = 3,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "ai.system.providers.test"
-    ),
-    @ButtonDeclaration(
-        title = "i18n:ai.providers.button.test",
-        key = "test",
-        color = "blue",
-        icon = Icons.SAFETY_OUTLINED,
-        sort = 3,
-        argumentMinSize = 1,
-        argumentMaxSize = 1,
-        authority = "ai.providers.test"
+        authority = "ai.workbench.providers.test"
     ),
     @ButtonDeclaration(
         title = "i18n:ai.providers.button.discover",
@@ -128,17 +88,7 @@ import org.springframework.core.annotation.Order;
         sort = 4,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "ai.system.providers.discover"
-    ),
-    @ButtonDeclaration(
-        title = "i18n:ai.providers.button.discover",
-        key = "discover",
-        color = "blue",
-        icon = "CloudDownloadOutlined",
-        sort = 4,
-        argumentMinSize = 1,
-        argumentMaxSize = 1,
-        authority = "ai.providers.discover"
+        authority = "ai.workbench.providers.discover"
     ),
     @ButtonDeclaration(
         title = "i18n:ai.providers.button.sync",
@@ -148,17 +98,7 @@ import org.springframework.core.annotation.Order;
         sort = 5,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "ai.system.providers.sync"
-    ),
-    @ButtonDeclaration(
-        title = "i18n:ai.providers.button.sync",
-        key = "sync",
-        color = "blue",
-        icon = "CloudSyncOutlined",
-        sort = 5,
-        argumentMinSize = 1,
-        argumentMaxSize = 1,
-        authority = "ai.providers.sync"
+        authority = "ai.workbench.providers.sync"
     )
 })
 @Schema(title = "i18n:ai.providers.entity.title")

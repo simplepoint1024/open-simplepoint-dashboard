@@ -64,6 +64,22 @@ public interface ObjectStorageRemoteService {
   ObjectStorageRemoteContent download(String id);
 
   /**
+   * Downloads a source-bound object for an authenticated service-to-service workflow.
+   *
+   * @param id object id
+   * @param tenantId owning tenant id
+   * @param sourceServiceName expected source service
+   * @param maxBytes hard response size limit
+   * @return downloaded content
+   */
+  ObjectStorageRemoteContent downloadSource(
+      String id,
+      String tenantId,
+      String sourceServiceName,
+      long maxBytes
+  );
+
+  /**
    * Deletes one tenant-owned object.
    *
    * @param id object id

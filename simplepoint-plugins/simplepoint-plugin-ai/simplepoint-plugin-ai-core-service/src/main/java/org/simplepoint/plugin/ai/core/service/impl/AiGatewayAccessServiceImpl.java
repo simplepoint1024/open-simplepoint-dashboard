@@ -132,7 +132,7 @@ public class AiGatewayAccessServiceImpl implements AiGatewayAccessService {
     context.setUserId("api-key:" + session.apiKeyId());
     context.setIsAdministrator(Boolean.FALSE);
     context.setRoles(List.of());
-    context.setResources(List.of("ai.inference.invoke"));
+    context.setResources(List.of());
     context.setScopeType(session.scopeType() == AiResourceScope.SYSTEM
         ? AuthorizationScopeType.PLATFORM : AuthorizationScopeType.TENANT);
     context.setActorRole(session.scopeType() == AiResourceScope.SYSTEM

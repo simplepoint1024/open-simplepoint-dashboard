@@ -44,7 +44,7 @@ import org.springframework.core.annotation.Order;
         sort = 0,
         argumentMinSize = 0,
         argumentMaxSize = 1,
-        authority = "ai.knowledge-bases.create"
+        authority = "ai.workbench.knowledge-bases.create"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.EDIT_TITLE,
@@ -54,7 +54,7 @@ import org.springframework.core.annotation.Order;
         sort = 1,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "ai.knowledge-bases.edit"
+        authority = "ai.workbench.knowledge-bases.edit"
     ),
     @ButtonDeclaration(
         title = PublicButtonKeys.DELETE_TITLE,
@@ -65,7 +65,7 @@ import org.springframework.core.annotation.Order;
         argumentMinSize = 1,
         argumentMaxSize = 10,
         danger = true,
-        authority = "ai.knowledge-bases.delete"
+        authority = "ai.workbench.knowledge-bases.delete"
     ),
     @ButtonDeclaration(
         title = "i18n:ai.knowledge-bases.button.documents",
@@ -75,7 +75,7 @@ import org.springframework.core.annotation.Order;
         sort = 3,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "ai.knowledge-bases.documents"
+        authority = "ai.workbench.knowledge-bases.documents"
     ),
     @ButtonDeclaration(
         title = "i18n:ai.knowledge-bases.button.retrieve",
@@ -85,7 +85,7 @@ import org.springframework.core.annotation.Order;
         sort = 4,
         argumentMinSize = 1,
         argumentMaxSize = 1,
-        authority = "ai.knowledge-bases.retrieve"
+        authority = "ai.workbench.knowledge-bases.retrieve"
     )
 })
 @Schema(title = "i18n:ai.knowledge-bases.entity.title")

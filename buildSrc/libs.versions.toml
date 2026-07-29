@@ -15,12 +15,16 @@ jsonschema-generator="4.38.0"
 swagger="2.2.41"
 aws-sdk = "2.42.27"
 calcite = "1.40.0"
+mcp = "2.0.0"
 
 [libraries]
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations", version.ref = "swagger" }
 oauth2-oidc-sdk = { module = "com.nimbusds:oauth2-oidc-sdk", version.ref = "oauth2-oidc-sdk" }
 spring-authorization-server = { module = "org.springframework.security:spring-security-oauth2-authorization-server", version.ref = "spring-authorization-server" }
 aws-sdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "aws-sdk" }
+mcp-bom = { module = "io.modelcontextprotocol.sdk:mcp-bom", version.ref = "mcp" }
+mcp-core = { module = "io.modelcontextprotocol.sdk:mcp-core" }
+mcp-json-jackson2 = { module = "io.modelcontextprotocol.sdk:mcp-json-jackson2" }
 
 [bundles]
 

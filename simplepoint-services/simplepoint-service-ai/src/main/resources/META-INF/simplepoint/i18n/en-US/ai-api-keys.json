@@ -24,7 +24,5 @@
   "ai.api-keys.guide.title": "OpenAI / Anthropic compatible model API",
   "ai.api-keys.guide.openai": "OpenAI: POST /ai/v1/chat/completions with Authorization: Bearer <API_KEY>",
   "ai.api-keys.guide.anthropic": "Anthropic: POST /ai/v1/messages with x-api-key: <API_KEY>",
-  "ai.api-keys.guide.models": "Call GET /ai/v1/models first to list the model IDs available to the key.",
-  "menu.ai.apiKeys": "Model API keys",
-  "menu.ai.systemApiKeys": "System API keys"
+  "ai.api-keys.guide.models": "Call GET /ai/v1/models first to list the model IDs available to the key."
 }

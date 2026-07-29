@@ -138,6 +138,39 @@ public class RestClientObjectStorageRemoteService implements ObjectStorageRemote
   }
 
   @Override
+  public ObjectStorageRemoteContent downloadSource(
+      final String id,
+      final String tenantId,
+      final String sourceServiceName,
+      final long maxBytes
+  ) {
+    ResponseEntity<byte[]> response;
+    try {
+      response = restClient.get()
+          .uri(uriBuilder -> uriBuilder
+              .path("/internal/object-storage/sources/{id}/content")
+              .queryParam("tenantId", tenantId)
+              .queryParam("sourceServiceName", sourceServiceName)
+              .queryParam("maxBytes", maxBytes)
+              .build(id))
+          .headers(this::copyContextHeaders)
+          .retrieve()
+          .toEntity(byte[].class);
+    } catch (RestClientResponseException ex) {
+      throw remoteFailure("服务间下载", ex);
+    }
+    byte[] content = response.getBody() == null ? new byte[0] : response.getBody();
+    MediaType contentType = response.getHeaders().getContentType();
+    return new ObjectStorageRemoteContent(
+        content,
+        response.getHeaders().getContentDisposition().getFilename(),
+        contentType == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : contentType.toString(),
+        response.getHeaders().getContentLength() < 0
+            ? content.length : response.getHeaders().getContentLength()
+    );
+  }
+
+  @Override
   public void delete(final String id) {
     try {
       restClient.delete()

@@ -8,8 +8,11 @@
 
 package org.simplepoint.cloud.oauth.server.configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.simplepoint.cloud.oauth.server.client.ClientIdMetadataDocumentProperties;
+import org.simplepoint.cloud.oauth.server.client.ClientIdMetadataDocumentRegisteredClientRepository;
 import org.simplepoint.cloud.oauth.server.client.DatabaseOauth2UserService;
 import org.simplepoint.cloud.oauth.server.client.DatabaseOidcUserService;
 import org.simplepoint.cloud.oauth.server.client.DevicePublicClientAuthenticationConverter;
@@ -18,8 +21,10 @@ import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion
 import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationFailureHandler;
 import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationSuccessHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
@@ -51,6 +56,29 @@ import org.springframework.util.StringUtils;
 @Configuration
 @EnableWebSecurity
 public class AuthorizationServerConfiguration {
+
+  /**
+   * Adds standards-based Client ID Metadata Document lookup around persistent clients.
+   *
+   * @param delegate persistent client repository
+   * @param properties CIMD security properties
+   * @param objectMapper JSON mapper
+   * @return metadata-aware registered client repository
+   */
+  @Bean
+  @Primary
+  public RegisteredClientRepository clientIdMetadataRegisteredClientRepository(
+      @Qualifier("registeredClientRepositoryImpl")
+      final RegisteredClientRepository delegate,
+      final ClientIdMetadataDocumentProperties properties,
+      final ObjectMapper objectMapper
+  ) {
+    return new ClientIdMetadataDocumentRegisteredClientRepository(
+        delegate,
+        properties,
+        objectMapper
+    );
+  }
 
   /**
    * Protects the internal service-router endpoint with service JWTs.
@@ -96,6 +124,7 @@ public class AuthorizationServerConfiguration {
       final HttpSecurity http,
       final AuthorizationServerSettings authorizationServerSettings,
       final RegisteredClientRepository registeredClientRepository,
+      final ClientIdMetadataDocumentProperties clientMetadataProperties,
       @Autowired(required = false) final OidcConfigurerExpansion oidcConfigurerExpansion
   )
       throws Exception {
@@ -105,6 +134,11 @@ public class AuthorizationServerConfiguration {
         .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
         .with(authorizationServerConfigurer, authorizationServer -> {
           authorizationServer
+              .authorizationServerMetadataEndpoint(metadata -> metadata
+                  .authorizationServerMetadataCustomizer(builder -> builder.claim(
+                      "client_id_metadata_document_supported",
+                      clientMetadataProperties.isEnabled()
+                  )))
               .clientAuthentication(clientAuthentication ->
                   clientAuthentication.authenticationConverter(
                       new DevicePublicClientAuthenticationConverter(

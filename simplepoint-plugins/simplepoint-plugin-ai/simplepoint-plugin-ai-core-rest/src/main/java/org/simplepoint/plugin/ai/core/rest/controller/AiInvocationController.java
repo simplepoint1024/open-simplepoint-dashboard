@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Read-only, scope-isolated AI invocation usage ledger endpoint. */
 @RestController
-@RequestMapping({AiPaths.PLATFORM_INVOCATIONS, AiPaths.TENANT_INVOCATIONS})
+@RequestMapping(AiPaths.INVOCATIONS)
 @Tag(name = "AI调用台账", description = "查询不包含提示词与输出正文的 AI 调用元数据")
 public class AiInvocationController
     extends BaseController<AiInvocationQueryService, AiInvocationRecord, String> {
@@ -30,10 +30,7 @@ public class AiInvocationController
 
   /** Pages invocation records in the current scope. */
   @GetMapping
-  @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.invocations.view', 'ai.invocations.view')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.billing.view')")
   @Operation(summary = "分页查询 AI 调用台账")
   public Response<Page<AiInvocationRecord>> limit(
       @RequestParam final Map<String, String> attributes,

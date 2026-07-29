@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Scope-isolated model billing overview endpoints. */
 @RestController
-@RequestMapping({AiPaths.PLATFORM_BILLING, AiPaths.TENANT_BILLING})
+@RequestMapping(AiPaths.BILLING)
 @Tag(name = "AI模型计费", description = "按作用域和币种汇总模型调用费用")
 public class AiBillingController {
 
@@ -32,8 +32,7 @@ public class AiBillingController {
   /** Returns the current UTC month by default and accepts a maximum range of 366 days. */
   @GetMapping("/summary")
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAnyAuthority('ai.system.billing.view', 'ai.billing.view')"
+      "hasRole('Administrator') or hasAuthority('ai.workbench.billing.view')"
   )
   @Operation(summary = "查询模型计费汇总")
   public Response<?> summary(

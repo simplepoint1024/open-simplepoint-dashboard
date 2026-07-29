@@ -1,0 +1,14 @@
+{
+  "ai.model-debug.button": "Debug",
+  "ai.model-debug.title": "Model debug",
+  "ai.model-debug.empty": "Send a message to start the conversation",
+  "ai.model-debug.placeholder": "Type a message. Enter to send, Shift + Enter for a new line",
+  "ai.model-debug.send": "Send",
+  "ai.model-debug.stop": "Stop",
+  "ai.model-debug.thinking": "Generating…",
+  "ai.model-debug.cancelled": "Generation stopped",
+  "ai.model-debug.failed": "This invocation failed",
+  "ai.model-debug.unavailable": "Only enabled, available language or multimodal models can be debugged",
+  "ai.model-debug.error.generate": "Model invocation failed",
+  "ai.model-debug.error.incomplete": "The model response did not complete normally"
+}

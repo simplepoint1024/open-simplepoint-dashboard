@@ -1,6 +1,3 @@
-// 删除未使用的 HttpError import
-// (contextId 自动补全是 best-effort，不需要抛自定义错误)
-
 export type TenantId = string;
 export type RoleId = string;
 export type ContextId = string;
@@ -31,7 +28,6 @@ const API_SCOPE_RULES: ReadonlyArray<{ scope: ApiScope; prefix: string }> = [
   { scope: 'global', prefix: '/common/platform/packages' },
   { scope: 'global', prefix: '/common/platform/dictionaries' },
   { scope: 'global', prefix: '/common/platform/dictionary-items' },
-  { scope: 'global', prefix: '/ai/platform/ai' },
   { scope: 'global', prefix: '/common/rate-limit' },
   { scope: 'global', prefix: '/common/redis/entries' },
 ];

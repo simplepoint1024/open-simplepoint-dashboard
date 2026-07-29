@@ -3,13 +3,13 @@
 The AI frontend is a Module Federation remote served under `/ai/mf` by
 `simplepoint-service-ai`.
 
-The remote exposes an AI workspace, model provider management, and a synchronized
-model catalog. Provider actions can test credentials, preview remote models, and
-persist the currently available model list.
+The remote exposes one `workbench/*` resource tree: workspace, API keys, providers,
+models, knowledge bases, tools, and billing. The model table opens a minimal
+conversation-only debug dialog; there is no standalone playground route.
 
-Platform views use `/ai/platform/ai/**` without tenant headers and maintain shared
-`SYSTEM` resources. Tenant views use `/ai/tenant/ai/**`, carry the active tenant
-context, and maintain only that tenant's `TENANT` resources when BYOK is enabled.
+All pages use `/ai/workbench/**`. The backend derives `SYSTEM` or `TENANT` ownership
+from the current authorization context, so the frontend never selects a scope or
+sends an arbitrary tenant ID.
 
 From the `simplepoint-react` workspace, run:
 
