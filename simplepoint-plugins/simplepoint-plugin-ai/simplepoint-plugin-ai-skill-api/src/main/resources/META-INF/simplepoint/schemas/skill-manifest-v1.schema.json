@@ -75,17 +75,49 @@
             "$ref": "#/$defs/toolBinding"
           }
         },
-        "promptTemplates": {
-          "type": "array"
+        "prompts": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/promptBinding"
+          }
         },
         "resources": {
-          "type": "array"
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/resourceBinding"
+          }
         },
         "budgets": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maximumToolCalls": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 128
+            },
+            "maximumDurationSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3600
+            },
+            "maximumPayloadBytes": {
+              "type": "integer",
+              "minimum": 262144,
+              "maximum": 4194304
+            }
+          }
         },
         "approvals": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "execution": {
+              "$ref": "#/$defs/executionApproval"
+            }
+          }
         }
       }
     }
@@ -120,23 +152,339 @@
         }
       }
     },
-    "workflowStep": {
+    "promptBinding": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "type"],
+      "required": ["alias", "serverId", "snapshotId", "name"],
+      "properties": {
+        "alias": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+        },
+        "serverId": {
+          "type": "string"
+        },
+        "snapshotId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "resourceBinding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["alias", "serverId", "snapshotId", "uri"],
+          "properties": {
+            "alias": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+            },
+            "serverId": {
+              "type": "string"
+            },
+            "snapshotId": {
+              "type": "string"
+            },
+            "uri": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["alias", "serverId", "snapshotId", "uriTemplate"],
+          "properties": {
+            "alias": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+            },
+            "serverId": {
+              "type": "string"
+            },
+            "snapshotId": {
+              "type": "string"
+            },
+            "uriTemplate": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          }
+        }
+      ]
+    },
+    "workflowStep": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/executableStep"
+        },
+        {
+          "$ref": "#/$defs/conditionStep"
+        },
+        {
+          "$ref": "#/$defs/parallelStep"
+        }
+      ]
+    },
+    "executableStep": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/toolStep"
+        },
+        {
+          "$ref": "#/$defs/promptStep"
+        },
+        {
+          "$ref": "#/$defs/resourceStep"
+        }
+      ]
+    },
+    "toolStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "tool"],
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
         },
         "type": {
-          "enum": ["tool"]
+          "const": "tool"
         },
         "tool": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
         },
         "arguments": {
           "type": "object",
           "description": "Literal JSON and exact {$ref: input.*|steps.*} references"
+        }
+      }
+    },
+    "promptStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "prompt"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
+        },
+        "type": {
+          "const": "prompt"
+        },
+        "prompt": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+        },
+        "arguments": {
+          "type": "object",
+          "description": "Literal JSON and exact {$ref: input.*|steps.*} references"
+        }
+      }
+    },
+    "resourceStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "resource"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
+        },
+        "type": {
+          "const": "resource"
+        },
+        "resource": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+        },
+        "uri": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 1024
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["$ref"],
+              "properties": {
+                "$ref": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "conditionStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "condition"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
+        },
+        "type": {
+          "const": "condition"
+        },
+        "condition": {
+          "$ref": "#/$defs/condition"
+        },
+        "then": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/executableStep"
+          }
+        },
+        "else": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/executableStep"
+          }
+        }
+      }
+    },
+    "parallelStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "branches"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
+        },
+        "type": {
+          "const": "parallel"
+        },
+        "branches": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/parallelBranch"
+          }
+        }
+      }
+    },
+    "parallelBranch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "steps"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/executableStep"
+          }
+        }
+      }
+    },
+    "condition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["equals"],
+          "properties": {
+            "equals": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["notEquals"],
+          "properties": {
+            "notEquals": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["isTrue"],
+          "properties": {
+            "isTrue": {}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["all"],
+          "properties": {
+            "all": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 16,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["any"],
+          "properties": {
+            "any": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 16,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["not"],
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/condition"
+            }
+          }
+        }
+      ]
+    },
+    "executionApproval": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "allowSelfApproval": {
+          "type": "boolean"
+        },
+        "instructions": {
+          "type": "string",
+          "maxLength": 512
         }
       }
     }

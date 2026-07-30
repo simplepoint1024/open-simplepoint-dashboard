@@ -7,7 +7,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,10 +27,18 @@ import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
 import org.simplepoint.plugin.ai.mcp.api.entity.AiMcpCapabilitySnapshot;
 import org.simplepoint.plugin.ai.mcp.api.entity.AiMcpServerDefinition;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayOperations;
-import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayToolCallRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayPromptGetResult;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayResourceReadResult;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayToolCallResult;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayWorkflowPromptGetRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayWorkflowResourceReadRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayWorkflowToolCallRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpPromptDescriptor;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpResourceTemplateDescriptor;
 import org.simplepoint.plugin.ai.mcp.api.model.McpAuthenticationType;
 import org.simplepoint.plugin.ai.mcp.api.model.McpServerStatus;
+import org.simplepoint.plugin.ai.mcp.api.model.McpWorkflowPromptGetRequest;
+import org.simplepoint.plugin.ai.mcp.api.model.McpWorkflowResourceReadRequest;
 import org.simplepoint.plugin.ai.mcp.api.model.McpWorkflowToolCallRequest;
 import org.simplepoint.plugin.ai.mcp.api.repository.AiMcpCapabilitySnapshotRepository;
 import org.simplepoint.plugin.ai.mcp.api.repository.AiMcpOauthAuthorizationRepository;
@@ -85,8 +97,11 @@ class AiMcpServerDefinitionServiceImplTest {
 
   private AiMcpCapabilitySnapshot snapshot;
 
+  private ObjectMapper objectMapper;
+
   @BeforeEach
   void setUp() {
+    objectMapper = new ObjectMapper();
     service = new AiMcpServerDefinitionServiceImpl(
         repository,
         detailsProviderService,
@@ -98,7 +113,7 @@ class AiMcpServerDefinitionServiceImplTest {
         gatewayOperations,
         snapshotStore,
         invocationLedger,
-        new ObjectMapper(),
+        objectMapper,
         runtimeMcpEndpointService,
         runtimePoolService
     );
@@ -192,7 +207,7 @@ class AiMcpServerDefinitionServiceImplTest {
         any(),
         any()
     )).thenReturn("invocation-a");
-    when(gatewayOperations.callTool(any())).thenReturn(
+    when(gatewayOperations.callWorkflowTool(any())).thenReturn(
         new McpGatewayToolCallResult(
             List.of(Map.of("type", "text", "text", "ok")),
             false,
@@ -211,21 +226,204 @@ class AiMcpServerDefinitionServiceImplTest {
             "a2c799262a3ce3c19ef5cdd983bf3d12"
                 + "b43ab3c426227091b909dcb7054738c0",
             Map.of("message", "hello"),
+            "skill-a",
+            "version-a",
             "execution-a",
             "step-a",
-            "user-a"
+            "user-a",
+            "capability-a"
         )
     );
 
     assertThat(result.error()).isFalse();
-    org.mockito.ArgumentCaptor<McpGatewayToolCallRequest> request =
-        org.mockito.ArgumentCaptor.forClass(McpGatewayToolCallRequest.class);
-    verify(gatewayOperations).callTool(request.capture());
-    assertThat(request.getValue().connection().connectionId())
+    org.mockito.ArgumentCaptor<McpGatewayWorkflowToolCallRequest> request =
+        org.mockito.ArgumentCaptor.forClass(
+            McpGatewayWorkflowToolCallRequest.class
+        );
+    verify(gatewayOperations).callWorkflowTool(request.capture());
+    assertThat(request.getValue().capabilityToken())
+        .isEqualTo("capability-a");
+    assertThat(request.getValue().call().connection().connectionId())
         .isEqualTo("server-a");
-    assertThat(request.getValue().toolName()).isEqualTo("echo");
-    assertThat(request.getValue().operationId())
+    assertThat(request.getValue().call().toolName()).isEqualTo("echo");
+    assertThat(request.getValue().call().operationId())
         .isEqualTo("execution-a:step-a");
+    assertThat(request.getValue().call().meta())
+        .containsEntry("simplepoint/subjectId", "user-a");
     verify(invocationLedger).succeed("invocation-a", result);
+  }
+
+  @Test
+  void workflowPromptUsesPinnedDescriptorAndCapabilityRoute()
+      throws Exception {
+    prepareWorkflowServer();
+    McpPromptDescriptor prompt = new McpPromptDescriptor(
+        "welcome",
+        "Welcome",
+        "Creates a welcome prompt",
+        List.of(Map.of("name", "name", "required", false)),
+        Map.of(),
+        List.of()
+    );
+    snapshot.setPromptsJson(objectMapper.writeValueAsString(List.of(prompt)));
+    when(snapshotRepository.findActiveByIdAndServerId(
+        "snapshot-a",
+        "server-a"
+    )).thenReturn(Optional.of(snapshot));
+    when(invocationLedger.start(
+        any(), any(), any(), any(), any(), any(), any(), any()
+    )).thenReturn("invocation-prompt");
+    McpGatewayPromptGetResult gatewayResult = new McpGatewayPromptGetResult(
+        "Welcome",
+        List.of(Map.of(
+            "role", "user",
+            "content", Map.of("type", "text", "text", "Hello SimplePoint")
+        )),
+        Map.of()
+    );
+    when(gatewayOperations.getWorkflowPrompt(any()))
+        .thenReturn(gatewayResult);
+
+    McpGatewayPromptGetResult result = service.getWorkflowPrompt(
+        new McpWorkflowPromptGetRequest(
+            AiResourceScope.SYSTEM,
+            null,
+            "server-a",
+            "snapshot-a",
+            "welcome",
+            descriptorHash(prompt),
+            Map.of("name", "SimplePoint"),
+            "skill-a",
+            "version-a",
+            "execution-a",
+            "prompt-step",
+            "user-a",
+            "capability-prompt"
+        )
+    );
+
+    assertThat(result).isEqualTo(gatewayResult);
+    org.mockito.ArgumentCaptor<McpGatewayWorkflowPromptGetRequest> request =
+        org.mockito.ArgumentCaptor.forClass(
+            McpGatewayWorkflowPromptGetRequest.class
+        );
+    verify(gatewayOperations).getWorkflowPrompt(request.capture());
+    assertThat(request.getValue().capabilityToken())
+        .isEqualTo("capability-prompt");
+    assertThat(request.getValue().call().name()).isEqualTo("welcome");
+    assertThat(request.getValue().call().arguments())
+        .containsEntry("name", "SimplePoint");
+    verify(invocationLedger).succeed("invocation-prompt", result);
+  }
+
+  @Test
+  void workflowResourceResolvesOnlyInsidePinnedTemplate()
+      throws Exception {
+    prepareWorkflowServer();
+    McpResourceTemplateDescriptor template =
+        new McpResourceTemplateDescriptor(
+            "document://{documentId}",
+            "Document",
+            null,
+            "Reads a document",
+            "text/plain",
+            Map.of(),
+            Map.of(),
+            List.of()
+        );
+    snapshot.setResourceTemplatesJson(
+        objectMapper.writeValueAsString(List.of(template))
+    );
+    when(snapshotRepository.findActiveByIdAndServerId(
+        "snapshot-a",
+        "server-a"
+    )).thenReturn(Optional.of(snapshot));
+    when(invocationLedger.start(
+        any(), any(), any(), any(), any(), any(), any(), any()
+    )).thenReturn("invocation-resource");
+    McpGatewayResourceReadResult gatewayResult =
+        new McpGatewayResourceReadResult(
+            List.of(Map.of(
+                "uri", "document://42",
+                "mimeType", "text/plain",
+                "text", "Document 42"
+            )),
+            Map.of()
+        );
+    when(gatewayOperations.readWorkflowResource(any()))
+        .thenReturn(gatewayResult);
+
+    McpGatewayResourceReadResult result = service.readWorkflowResource(
+        new McpWorkflowResourceReadRequest(
+            AiResourceScope.SYSTEM,
+            null,
+            "server-a",
+            "snapshot-a",
+            "document://42",
+            "document://{documentId}",
+            true,
+            descriptorHash(template),
+            "skill-a",
+            "version-a",
+            "execution-a",
+            "resource-step",
+            "user-a",
+            "capability-resource"
+        )
+    );
+
+    assertThat(result).isEqualTo(gatewayResult);
+    org.mockito.ArgumentCaptor<McpGatewayWorkflowResourceReadRequest> request =
+        org.mockito.ArgumentCaptor.forClass(
+            McpGatewayWorkflowResourceReadRequest.class
+        );
+    verify(gatewayOperations).readWorkflowResource(request.capture());
+    assertThat(request.getValue().capabilityToken())
+        .isEqualTo("capability-resource");
+    assertThat(request.getValue().call().uri()).isEqualTo("document://42");
+    verify(invocationLedger).succeed("invocation-resource", result);
+
+    assertThatThrownBy(() -> service.readWorkflowResource(
+        new McpWorkflowResourceReadRequest(
+            AiResourceScope.SYSTEM,
+            null,
+            "server-a",
+            "snapshot-a",
+            "other://42",
+            "document://{documentId}",
+            true,
+            descriptorHash(template),
+            "skill-a",
+            "version-a",
+            "execution-b",
+            "resource-step",
+            "user-a",
+            "capability-resource"
+        )
+    )).isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("outside the pinned template");
+  }
+
+  private void prepareWorkflowServer() {
+    server.setEnabled(true);
+    server.setStatus(McpServerStatus.READY);
+    server.setEndpointUrl("https://mcp.example.com/mcp");
+    server.setAuthenticationType(McpAuthenticationType.NONE);
+    when(scopeAccessPolicy.canUseResourceFromScope(
+        AiResourceScope.SYSTEM,
+        null,
+        AiResourceScope.SYSTEM,
+        null
+    )).thenReturn(true);
+  }
+
+  private String descriptorHash(final Object value) throws Exception {
+    String canonical = objectMapper.copy()
+        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+        .writeValueAsString(value);
+    return HexFormat.of().formatHex(
+        MessageDigest.getInstance("SHA-256")
+            .digest(canonical.getBytes(StandardCharsets.UTF_8))
+    );
   }
 }

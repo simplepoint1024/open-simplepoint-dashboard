@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  CloseOutlined,
   CloseCircleOutlined,
   DeleteOutlined,
   MenuFoldOutlined,
@@ -29,6 +30,23 @@ const {Header, Content, Footer, Sider} = Layout;
 interface DraggableTabNodeProps extends React.HTMLAttributes<HTMLDivElement> {
   'data-node-key': string;
 }
+
+interface NavigationTab {
+  key: string;
+  location: string;
+  label: React.ReactNode;
+  closable?: boolean;
+}
+
+const normalizeRoutePath = (value?: string) => {
+  const normalized = (value || '').trim().replace(/^#/, '');
+  if (!normalized) return '/';
+  const queryIndex = normalized.indexOf('?');
+  const fragmentIndex = normalized.indexOf('#');
+  const indexes = [queryIndex, fragmentIndex].filter(index => index >= 0);
+  const end = indexes.length > 0 ? Math.min(...indexes) : normalized.length;
+  return normalized.slice(0, end) || '/';
+};
 
 const DraggableTabNode: React.FC<DraggableTabNodeProps> = ({className, ...props}) => {
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({
@@ -239,13 +257,14 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
 
   const getDashboardTab = useCallback(() => ({
     key: DASHBOARD_PATH,
+    location: DASHBOARD_PATH,
     label: getTabLabel(DASHBOARD_PATH),
     closable: false
   }), [getTabLabel]);
 
   // 统一持久化 tabs 到本地存储（debounced to reduce writes during rapid navigation）
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const persistTabs = useCallback((arr: Array<{ key: string; label: React.ReactNode; closable?: boolean }>) => {
+  const persistTabs = useCallback((arr: NavigationTab[]) => {
     clearTimeout(persistTimerRef.current);
     persistTimerRef.current = setTimeout(() => {
       try {
@@ -259,6 +278,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
           const iconName = pathIconNameMap.get(t.key) ?? storedIconMap.get(t.key);
           return {
             key: t.key,
+            location: t.location,
             label: labelText,
             icon: iconName,
             closable: t.closable !== false
@@ -271,13 +291,18 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
   useEffect(() => () => clearTimeout(persistTimerRef.current), []);
 
   // 规范化 tabs：去重、dashboard 固定在首位且不可关闭
-  const normalizeTabs = useCallback((input: Array<{ key: string; label: React.ReactNode; closable?: boolean }>) => {
+  const normalizeTabs = useCallback((input: NavigationTab[]) => {
     const seen = new Set<string>();
-    const out: Array<{ key: string; label: React.ReactNode; closable?: boolean }> = [];
+    const out: NavigationTab[] = [];
     input.forEach(t => {
-      if (!seen.has(t.key)) {
-        seen.add(t.key);
-        out.push(t);
+      const key = normalizeRoutePath(t.key || t.location);
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push({
+          ...t,
+          key,
+          location: normalizeRoutePath(t.location) === key ? t.location : key,
+        });
       }
     });
     const dashboardTab = getDashboardTab();
@@ -285,21 +310,30 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
     return [dashboardTab, ...filtered];
   }, [DASHBOARD_PATH, getDashboardTab]);
 
-  // 统一获取当前路由（HashRouter 优先 hash）
-  const getCurrentPath = useCallback(() => {
-    const rawHash = typeof window !== 'undefined' ? window.location.hash : '';
-    const fromHash = rawHash ? decodeURI(rawHash.replace(/^#/, '')) : undefined;
-    return fromHash || location.pathname || '/';
-  }, [location.pathname]);
+  // HashRouter 已将 hash 中的路径解析到 useLocation，Tab key 只使用 pathname，
+  // query/hash 记录在 location 中，避免 /tenant 与 /tenant?edit=1 被拆成两个 Tab。
+  const getCurrentPath = useCallback(
+    () => normalizeRoutePath(location.pathname || '/'),
+    [location.pathname],
+  );
+  const getCurrentLocation = useCallback(
+    () => `${getCurrentPath()}${location.search || ''}${location.hash || ''}`,
+    [getCurrentPath, location.hash, location.search],
+  );
 
   // 页签状态：key 使用路由 path
-  const [tabs, setTabs] = useState<Array<{ key: string; label: React.ReactNode; closable?: boolean }>>(() => {
+  const [tabs, setTabs] = useState<NavigationTab[]>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as Array<{ key: string; label: string; closable?: boolean }>;
+        const parsed = JSON.parse(raw) as Array<{ key: string; location?: string; label: string; closable?: boolean }>;
         if (Array.isArray(parsed)) {
-          const base = parsed.map(t => ({key: t.key, label: getTabLabel(t.key), closable: t.closable ?? true}));
+          const base = parsed.map(t => ({
+            key: normalizeRoutePath(t.key),
+            location: t.location || t.key,
+            label: getTabLabel(normalizeRoutePath(t.key)),
+            closable: t.closable ?? true,
+          }));
           return normalizeTabs(base);
         }
       }
@@ -307,6 +341,30 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
     }
     return normalizeTabs([getDashboardTab()]);
   });
+
+  // 工作空间拥有独立的菜单、权限和页面状态。切换工作空间时将现有 Tab
+  // 视为全部关闭，立即卸载缓存页面，避免旧租户状态泄漏到新上下文。
+  const tabWorkspaceRef = useRef<string | undefined>(activeTenantId);
+  useEffect(() => {
+    const handleWorkspaceChange = (event: Event) => {
+      const nextTenantId = (event as CustomEvent<string | undefined>).detail ?? getTenantId();
+      if ((tabWorkspaceRef.current ?? '') === (nextTenantId ?? '')) return;
+      tabWorkspaceRef.current = nextTenantId;
+      clearTimeout(persistTimerRef.current);
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        console.warn('[nav] Failed to clear tabs after workspace switch:', error);
+      }
+      const onlyDashboard = [getDashboardTab()];
+      setTabs(onlyDashboard);
+      persistTabs(onlyDashboard);
+      setSearchOpen(false);
+      window.setTimeout(() => navigate(DASHBOARD_PATH, {replace: true}), 0);
+    };
+    window.addEventListener('sp-set-tenant', handleWorkspaceChange as EventListener);
+    return () => window.removeEventListener('sp-set-tenant', handleWorkspaceChange as EventListener);
+  }, [getDashboardTab, navigate, persistTabs]);
 
   // 首次加载：如果当前 URL 不在持久化的 tabs 中，不再将其加入，而是跳到第一个（dashboard）
   const initialSynced = useRef(false);
@@ -334,6 +392,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
   useEffect(() => {
     const path = getCurrentPath();
     if (!path) return;
+    const currentLocation = getCurrentLocation();
 
     setTabs(prev => {
       // 首次加载且当前路径不在 tabs 中：不新增，等待上面的初始跳转
@@ -341,12 +400,19 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
         return prev;
       }
       const exists = prev.some(t => t.key === path);
-      const next = exists ? prev : [...prev, {key: path, label: getTabLabel(path), closable: path !== DASHBOARD_PATH}];
+      const next = exists
+        ? prev.map(tab => tab.key === path ? {...tab, location: currentLocation} : tab)
+        : [...prev, {
+            key: path,
+            location: currentLocation,
+            label: getTabLabel(path),
+            closable: path !== DASHBOARD_PATH,
+          }];
       const normalized = normalizeTabs(next);
       persistTabs(normalized);
       return normalized;
     });
-  }, [getCurrentPath, getTabLabel, normalizeTabs, persistTabs]);
+  }, [getCurrentLocation, getCurrentPath, getTabLabel, normalizeTabs, persistTabs]);
 
   const activeKey = getCurrentPath();
   const activeMenuChain = useMemo(() => findRouteChainByPath(data || [], activeKey), [data, activeKey]);
@@ -427,9 +493,10 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
 
   const onTabChange = useCallback((key: string) => {
     if (key) {
-      navigate(key);
+      const tab = tabs.find(item => item.key === key);
+      navigate(tab?.location || key);
     }
-  }, [navigate]);
+  }, [navigate, tabs]);
 
   const onTabEdit = useCallback((targetKey: React.MouseEvent | React.KeyboardEvent | string, action: 'add' | 'remove') => {
     if (action !== 'remove') return;
@@ -450,7 +517,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
     }
   }, [tabs, activeKey, navigate, normalizeTabs, persistTabs]);
 
-  // 右键菜单：清除缓存 / 关闭全部（保留 dashboard）
+  // 右键菜单：刷新、批量关闭和清除缓存
 
   const onContextMenuClick = useCallback(({key}: { key: string }) => {
     if (key === 'refresh') {
@@ -480,6 +547,16 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
       });
       return;
     }
+    if (key === 'closeOthers') {
+      setTabs(prev => {
+        const current = getCurrentPath();
+        const filtered = prev.filter(tab => tab.key === current || tab.closable === false);
+        const normalized = normalizeTabs(filtered);
+        persistTabs(normalized);
+        return normalized;
+      });
+      return;
+    }
     if (key === 'clear' || key === 'closeAll') {
       try {
         localStorage.removeItem(STORAGE_KEY);
@@ -499,12 +576,24 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
       {key: 'refresh', label: t('nav.refresh', '刷新当前页'), icon: <ReloadOutlined/>},
       {key: 'closeLeft', label: t('nav.closeLeft', '关闭左侧全部'), icon: <VerticalLeftOutlined/>},
       {key: 'closeRight', label: t('nav.closeRight', '关闭右侧全部'), icon: <VerticalRightOutlined/>},
+      {key: 'closeOthers', label: t('nav.closeOthers', '关闭其他'), icon: <CloseOutlined/>},
       {type: 'divider' as const},
       {key: 'clear', label: t('nav.clear', '清除缓存'), icon: <DeleteOutlined/>},
       {key: 'closeAll', label: t('nav.closeAll', '关闭全部'), icon: <CloseCircleOutlined/>},
     ],
     onClick: onContextMenuClick,
   }), [onContextMenuClick, t]);
+
+  const searchableTabs = useMemo(() => tabs.map(tab => ({
+    path: tab.key,
+    label: pathLabelMap.get(tab.key) ?? storedLabelMap.get(tab.key) ?? tab.key,
+    icon: pathIconNameMap.get(tab.key) ?? storedIconMap.get(tab.key),
+  })), [pathIconNameMap, pathLabelMap, storedIconMap, storedLabelMap, tabs]);
+
+  const onSearchNavigate = useCallback((path: string) => {
+    const openedTab = tabs.find(tab => tab.key === normalizeRoutePath(path));
+    navigate(openedTab?.location || path);
+  }, [navigate, tabs]);
 
   // 顶部菜单 items 缓存（右：工具+头像）
   const topRightItems = useMemo(() => [
@@ -590,7 +679,19 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
               </div>
             </Dropdown>
             <div className="nb-inner-content">
-              {children}
+              {children ? tabs.map(tab => (
+                <div
+                  key={tab.key}
+                  className={`nb-tab-panel${tab.key === activeKey ? ' nb-tab-panel-active' : ''}`}
+                  hidden={tab.key !== activeKey}
+                  aria-hidden={tab.key !== activeKey}
+                >
+                  {React.cloneElement(
+                    children as React.ReactElement<{location?: string}>,
+                    {location: tab.location || tab.key},
+                  )}
+                </div>
+              )) : null}
             </div>
           </Content>
           <Footer className="nb-footer">
@@ -602,7 +703,8 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         menus={data}
-        onNavigate={navigate}
+        openTabs={searchableTabs}
+        onNavigate={onSearchNavigate}
         t={t}
       />
     </Layout>

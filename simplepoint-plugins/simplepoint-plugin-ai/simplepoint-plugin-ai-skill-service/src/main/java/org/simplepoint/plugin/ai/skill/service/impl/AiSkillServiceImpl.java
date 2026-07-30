@@ -20,24 +20,36 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy.ScopeAssignment;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpPromptDescriptor;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpResourceDescriptor;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpResourceTemplateDescriptor;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpToolDescriptor;
 import org.simplepoint.plugin.ai.mcp.api.model.McpCapabilitySnapshotDetails;
 import org.simplepoint.plugin.ai.mcp.api.service.AiMcpServerDefinitionService;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillDefinition;
+import org.simplepoint.plugin.ai.skill.api.entity.AiSkillPromptBinding;
+import org.simplepoint.plugin.ai.skill.api.entity.AiSkillResourceBinding;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillToolBinding;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillVersion;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionBudget;
 import org.simplepoint.plugin.ai.skill.api.model.SkillStatus;
 import org.simplepoint.plugin.ai.skill.api.model.SkillUpsertRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillVersionCreateRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillVersionStatus;
 import org.simplepoint.plugin.ai.skill.api.model.VerifiedSkillArtifact;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillDefinitionRepository;
+import org.simplepoint.plugin.ai.skill.api.repository.AiSkillPromptBindingRepository;
+import org.simplepoint.plugin.ai.skill.api.repository.AiSkillResourceBindingRepository;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillToolBindingRepository;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillVersionRepository;
 import org.simplepoint.plugin.ai.skill.api.service.AiSkillService;
 import org.simplepoint.plugin.ai.skill.api.service.SkillArtifactVerifier;
+import org.simplepoint.plugin.ai.skill.service.support.SkillApprovalPolicy;
+import org.simplepoint.plugin.ai.skill.service.support.SkillBudgetPolicy;
 import org.simplepoint.plugin.ai.skill.service.support.SkillJsonSchemaValidator;
-import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowTemplateResolver;
+import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowPlanCompiler;
+import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowPlanCompiler.WorkflowBindings;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -47,6 +59,12 @@ import org.springframework.transaction.annotation.Transactional;
  * Current-scope registry for declarative, digest-pinned Skill versions.
  */
 @Service
+@ConditionalOnProperty(
+    prefix = "simplepoint.ai.skill.registry",
+    name = "enabled",
+    havingValue = "true",
+    matchIfMissing = true
+)
 public class AiSkillServiceImpl implements AiSkillService {
 
   private static final String API_VERSION = "simplepoint.io/v1alpha1";
@@ -57,7 +75,7 @@ public class AiSkillServiceImpl implements AiSkillService {
 
   private static final int MAXIMUM_MANIFEST_BYTES = 512 * 1024;
 
-  private static final int MAXIMUM_TOOL_BINDINGS = 64;
+  private static final int MAXIMUM_CAPABILITY_BINDINGS = 64;
 
   private static final int MAXIMUM_WORKFLOW_STEPS = 128;
 
@@ -78,8 +96,6 @@ public class AiSkillServiceImpl implements AiSkillService {
 
   private static final Pattern DIGEST =
       Pattern.compile("^sha256:[a-f0-9]{64}$");
-
-  private static final Set<String> ALLOWED_STEP_TYPES = Set.of("tool");
 
   private static final Set<String> FORBIDDEN_EXECUTION_KEYS = Set.of(
       "script",
@@ -102,6 +118,10 @@ public class AiSkillServiceImpl implements AiSkillService {
 
   private final AiSkillToolBindingRepository bindingRepository;
 
+  private final AiSkillPromptBindingRepository promptBindingRepository;
+
+  private final AiSkillResourceBindingRepository resourceBindingRepository;
+
   private final AiScopeAccessPolicy scopeAccessPolicy;
 
   private final AiMcpServerDefinitionService mcpServerService;
@@ -110,7 +130,11 @@ public class AiSkillServiceImpl implements AiSkillService {
 
   private final SkillJsonSchemaValidator schemaValidator;
 
-  private final SkillWorkflowTemplateResolver templateResolver;
+  private final SkillWorkflowPlanCompiler workflowPlanCompiler;
+
+  private final SkillBudgetPolicy budgetPolicy;
+
+  private final SkillApprovalPolicy approvalPolicy;
 
   private final ObjectMapper objectMapper;
 
@@ -123,21 +147,29 @@ public class AiSkillServiceImpl implements AiSkillService {
       final AiSkillDefinitionRepository skillRepository,
       final AiSkillVersionRepository versionRepository,
       final AiSkillToolBindingRepository bindingRepository,
+      final AiSkillPromptBindingRepository promptBindingRepository,
+      final AiSkillResourceBindingRepository resourceBindingRepository,
       final AiScopeAccessPolicy scopeAccessPolicy,
       final AiMcpServerDefinitionService mcpServerService,
       final SkillArtifactVerifier artifactVerifier,
       final SkillJsonSchemaValidator schemaValidator,
-      final SkillWorkflowTemplateResolver templateResolver,
+      final SkillWorkflowPlanCompiler workflowPlanCompiler,
+      final SkillBudgetPolicy budgetPolicy,
+      final SkillApprovalPolicy approvalPolicy,
       final ObjectMapper objectMapper
   ) {
     this.skillRepository = skillRepository;
     this.versionRepository = versionRepository;
     this.bindingRepository = bindingRepository;
+    this.promptBindingRepository = promptBindingRepository;
+    this.resourceBindingRepository = resourceBindingRepository;
     this.scopeAccessPolicy = scopeAccessPolicy;
     this.mcpServerService = mcpServerService;
     this.artifactVerifier = artifactVerifier;
     this.schemaValidator = schemaValidator;
-    this.templateResolver = templateResolver;
+    this.workflowPlanCompiler = workflowPlanCompiler;
+    this.budgetPolicy = budgetPolicy;
+    this.approvalPolicy = approvalPolicy;
     this.objectMapper = objectMapper;
     this.canonicalMapper = objectMapper.copy()
         .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
@@ -291,6 +323,7 @@ public class AiSkillServiceImpl implements AiSkillService {
     version.setInputSchemaJson(writeJson(normalized.inputSchema()));
     version.setOutputSchemaJson(writeJson(normalized.outputSchema()));
     version.setWorkflowJson(writeJson(normalized.workflow()));
+    version.setBudgetJson(writeJson(normalized.budget()));
     version.setStatus(SkillVersionStatus.DRAFT);
     AiSkillVersion saved = versionRepository.save(version);
 
@@ -310,7 +343,44 @@ public class AiSkillServiceImpl implements AiSkillService {
       binding.setBindingOrder(index);
       bindings.add(bindingRepository.save(binding));
     }
-    return decorate(saved, bindings);
+    List<AiSkillPromptBinding> promptBindings = new ArrayList<>();
+    for (int index = 0; index < normalized.promptBindings().size(); index++) {
+      NormalizedPromptBinding source = normalized.promptBindings().get(index);
+      AiSkillPromptBinding binding = new AiSkillPromptBinding();
+      binding.setSkillVersionId(saved.getId());
+      binding.setScopeType(saved.getScopeType());
+      binding.setTenantId(saved.getTenantId());
+      binding.setMcpServerId(source.serverId());
+      binding.setCapabilitySnapshotId(source.snapshotId());
+      binding.setPromptName(source.promptName());
+      binding.setPromptAlias(source.alias());
+      binding.setDescriptorHash(source.descriptorHash());
+      binding.setBindingOrder(index);
+      promptBindings.add(promptBindingRepository.save(binding));
+    }
+    List<AiSkillResourceBinding> resourceBindings = new ArrayList<>();
+    for (int index = 0; index < normalized.resourceBindings().size(); index++) {
+      NormalizedResourceBinding source =
+          normalized.resourceBindings().get(index);
+      AiSkillResourceBinding binding = new AiSkillResourceBinding();
+      binding.setSkillVersionId(saved.getId());
+      binding.setScopeType(saved.getScopeType());
+      binding.setTenantId(saved.getTenantId());
+      binding.setMcpServerId(source.serverId());
+      binding.setCapabilitySnapshotId(source.snapshotId());
+      binding.setResourceSelector(source.selector());
+      binding.setResourceAlias(source.alias());
+      binding.setResourceTemplate(source.resourceTemplate());
+      binding.setDescriptorHash(source.descriptorHash());
+      binding.setBindingOrder(index);
+      resourceBindings.add(resourceBindingRepository.save(binding));
+    }
+    return decorate(
+        saved,
+        bindings,
+        promptBindings,
+        resourceBindings
+    );
   }
 
   @Override
@@ -439,7 +509,7 @@ public class AiSkillServiceImpl implements AiSkillService {
             "outputSchema",
             "workflow",
             "tools",
-            "promptTemplates",
+            "prompts",
             "resources",
             "budgets",
             "approvals"
@@ -461,16 +531,51 @@ public class AiSkillServiceImpl implements AiSkillService {
         "Skill workflow"
     );
     List<Map<String, Object>> tools = mapList(spec.get("tools"), "Skill tools");
+    List<Map<String, Object>> prompts = optionalMapList(
+        spec.get("prompts"),
+        "Skill prompts"
+    );
+    List<Map<String, Object>> resources = optionalMapList(
+        spec.get("resources"),
+        "Skill resources"
+    );
     List<Map<String, Object>> steps =
         mapList(workflow.get("steps"), "Skill workflow steps");
-    if (tools.size() > MAXIMUM_TOOL_BINDINGS) {
-      throw new IllegalArgumentException("Skill has too many Tool bindings");
+    if (tools.size() > MAXIMUM_CAPABILITY_BINDINGS
+        || prompts.size() > MAXIMUM_CAPABILITY_BINDINGS
+        || resources.size() > MAXIMUM_CAPABILITY_BINDINGS) {
+      throw new IllegalArgumentException(
+          "Skill has too many MCP capability bindings"
+      );
     }
     if (steps.size() > MAXIMUM_WORKFLOW_STEPS) {
       throw new IllegalArgumentException("Skill workflow has too many steps");
     }
     List<NormalizedToolBinding> bindings = normalizeBindings(tools);
-    validateWorkflow(steps, bindings, workflow.get("output"));
+    List<NormalizedPromptBinding> promptBindings =
+        normalizePromptBindings(prompts);
+    List<NormalizedResourceBinding> resourceBindings =
+        normalizeResourceBindings(resources);
+    Set<String> bindingAliases = new HashSet<>();
+    bindings.forEach(binding -> bindingAliases.add(binding.alias()));
+    Set<String> promptAliases = new HashSet<>();
+    promptBindings.forEach(binding -> promptAliases.add(binding.alias()));
+    Set<String> resourceAliases = new HashSet<>();
+    resourceBindings.forEach(binding -> resourceAliases.add(binding.alias()));
+    SkillWorkflowPlanCompiler.WorkflowPlan plan =
+        workflowPlanCompiler.compile(
+            workflow,
+            new WorkflowBindings(
+                bindingAliases,
+                promptAliases,
+                resourceAliases
+            )
+        );
+    SkillExecutionBudget budget = budgetPolicy.normalize(
+        spec.get("budgets"),
+        plan.maximumToolCalls()
+    );
+    approvalPolicy.normalize(spec.get("approvals"));
 
     String manifestJson = writeJson(manifest);
     if (manifestJson.getBytes(StandardCharsets.UTF_8).length
@@ -493,8 +598,11 @@ public class AiSkillServiceImpl implements AiSkillService {
         inputSchema,
         outputSchema,
         workflow,
+        budget,
         sha256(manifestJson),
-        bindings
+        bindings,
+        promptBindings,
+        resourceBindings
     );
   }
 
@@ -545,64 +653,126 @@ public class AiSkillServiceImpl implements AiSkillService {
     return List.copyOf(bindings);
   }
 
-  private void validateWorkflow(
-      final List<Map<String, Object>> steps,
-      final List<NormalizedToolBinding> bindings,
-      final Object outputTemplate
+  private List<NormalizedPromptBinding> normalizePromptBindings(
+      final List<Map<String, Object>> prompts
   ) {
+    List<NormalizedPromptBinding> bindings = new ArrayList<>();
     Set<String> aliases = new HashSet<>();
-    bindings.forEach(binding -> aliases.add(binding.alias()));
-    Set<String> stepIds = new HashSet<>();
-    List<String> availableStepIds = new ArrayList<>();
-    for (Map<String, Object> step : steps) {
+    for (Map<String, Object> source : prompts) {
       assertAllowedKeys(
-          step,
-          Set.of("id", "type", "tool", "arguments"),
-          "Skill workflow step"
+          source,
+          Set.of("alias", "serverId", "snapshotId", "name"),
+          "Skill Prompt binding"
       );
-      String id = requirePattern(step.get("id"), "Workflow step ID", IDENTIFIER);
-      String type = requireText(step.get("type"), "Workflow step type", 32)
-          .toLowerCase(Locale.ROOT);
-      if (!stepIds.add(id)) {
-        throw new IllegalArgumentException("Duplicate workflow step ID: " + id);
-      }
-      if (!ALLOWED_STEP_TYPES.contains(type)) {
-        throw new IllegalArgumentException("Unsupported workflow step type: " + type);
-      }
-      if ("tool".equals(type)) {
-        String alias = requirePattern(
-            step.get("tool"),
-            "Workflow Tool alias",
-            CODE
+      String alias = requirePattern(source.get("alias"), "Prompt alias", CODE);
+      String serverId = requirePattern(
+          source.get("serverId"),
+          "MCP server ID",
+          IDENTIFIER
+      );
+      String snapshotId = requirePattern(
+          source.get("snapshotId"),
+          "MCP capability snapshot ID",
+          IDENTIFIER
+      );
+      String promptName = requirePattern(
+          source.get("name"),
+          "MCP Prompt name",
+          TOOL_NAME
+      );
+      if (!aliases.add(alias)) {
+        throw new IllegalArgumentException(
+            "Duplicate Skill Prompt alias: " + alias
         );
-        if (!aliases.contains(alias)) {
-          throw new IllegalArgumentException(
-              "Workflow references an unbound Tool alias: " + alias
-          );
-        }
-        Object arguments = step.get("arguments");
-        if (arguments != null && !(arguments instanceof Map<?, ?>)) {
-          throw new IllegalArgumentException(
-              "Workflow Tool arguments must be an object"
-          );
-        }
-        if (arguments != null) {
-          templateResolver.validateTemplate(
-              arguments,
-              availableStepIds,
-              "Workflow step " + id + " arguments"
-          );
-        }
       }
-      availableStepIds.add(id);
+      McpCapabilitySnapshotDetails snapshot =
+          mcpServerService.getSnapshot(serverId, snapshotId);
+      McpPromptDescriptor prompt = snapshot.prompts().stream()
+          .filter(candidate -> promptName.equals(candidate.name()))
+          .findFirst()
+          .orElseThrow(() -> new IllegalArgumentException(
+              "MCP Prompt does not exist in pinned snapshot: " + promptName
+          ));
+      bindings.add(new NormalizedPromptBinding(
+          alias,
+          serverId,
+          snapshotId,
+          promptName,
+          sha256(writeJson(prompt))
+      ));
     }
-    if (outputTemplate != null) {
-      templateResolver.validateTemplate(
-          outputTemplate,
-          availableStepIds,
-          "Workflow output"
+    return List.copyOf(bindings);
+  }
+
+  private List<NormalizedResourceBinding> normalizeResourceBindings(
+      final List<Map<String, Object>> resources
+  ) {
+    List<NormalizedResourceBinding> bindings = new ArrayList<>();
+    Set<String> aliases = new HashSet<>();
+    for (Map<String, Object> source : resources) {
+      assertAllowedKeys(
+          source,
+          Set.of("alias", "serverId", "snapshotId", "uri", "uriTemplate"),
+          "Skill Resource binding"
       );
+      String alias = requirePattern(source.get("alias"), "Resource alias", CODE);
+      String serverId = requirePattern(
+          source.get("serverId"),
+          "MCP server ID",
+          IDENTIFIER
+      );
+      String snapshotId = requirePattern(
+          source.get("snapshotId"),
+          "MCP capability snapshot ID",
+          IDENTIFIER
+      );
+      Object uriValue = source.get("uri");
+      Object templateValue = source.get("uriTemplate");
+      if ((uriValue == null) == (templateValue == null)) {
+        throw new IllegalArgumentException(
+            "Skill Resource binding must define exactly one uri or uriTemplate"
+        );
+      }
+      boolean resourceTemplate = templateValue != null;
+      String selector = requireText(
+          resourceTemplate ? templateValue : uriValue,
+          resourceTemplate ? "MCP Resource URI Template" : "MCP Resource URI",
+          1024
+      );
+      if (!aliases.add(alias)) {
+        throw new IllegalArgumentException(
+            "Duplicate Skill Resource alias: " + alias
+        );
+      }
+      McpCapabilitySnapshotDetails snapshot =
+          mcpServerService.getSnapshot(serverId, snapshotId);
+      Object descriptor;
+      if (resourceTemplate) {
+        descriptor = snapshot.resourceTemplates().stream()
+            .filter(candidate -> selector.equals(candidate.uriTemplate()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(
+                "MCP Resource Template does not exist in pinned snapshot: "
+                    + selector
+            ));
+      } else {
+        descriptor = snapshot.resources().stream()
+            .filter(candidate -> selector.equals(candidate.uri()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(
+                "MCP Resource does not exist in pinned snapshot: " + selector
+            ));
+      }
+      bindings.add(new NormalizedResourceBinding(
+          alias,
+          serverId,
+          snapshotId,
+          selector,
+          resourceTemplate,
+          sha256(writeJson(descriptor))
+      ));
     }
+    return List.copyOf(bindings);
   }
 
   private AiSkillDefinition requireManagedSkill(
@@ -647,19 +817,46 @@ public class AiSkillServiceImpl implements AiSkillService {
   private AiSkillVersion decorate(final AiSkillVersion version) {
     return decorate(
         version,
-        bindingRepository.findAllActiveBySkillVersionId(version.getId())
+        bindingRepository.findAllActiveBySkillVersionId(version.getId()),
+        promptBindingRepository.findAllActiveBySkillVersionId(version.getId()),
+        resourceBindingRepository.findAllActiveBySkillVersionId(version.getId())
     );
   }
 
   private AiSkillVersion decorate(
       final AiSkillVersion version,
-      final List<AiSkillToolBinding> bindings
+      final List<AiSkillToolBinding> bindings,
+      final List<AiSkillPromptBinding> promptBindings,
+      final List<AiSkillResourceBinding> resourceBindings
   ) {
     version.setManifest(readMap(version.getManifestJson()));
     version.setInputSchema(readMap(version.getInputSchemaJson()));
     version.setOutputSchema(readMap(version.getOutputSchemaJson()));
     version.setWorkflow(readMap(version.getWorkflowJson()));
+    int maximumToolCalls = workflowPlanCompiler.compile(
+        version.getWorkflow(),
+        new WorkflowBindings(
+            bindings.stream()
+                .map(AiSkillToolBinding::getToolAlias)
+                .collect(java.util.stream.Collectors.toSet()),
+            promptBindings.stream()
+                .map(AiSkillPromptBinding::getPromptAlias)
+                .collect(java.util.stream.Collectors.toSet()),
+            resourceBindings.stream()
+                .map(AiSkillResourceBinding::getResourceAlias)
+                .collect(java.util.stream.Collectors.toSet())
+        )
+    ).maximumToolCalls();
+    version.setBudget(budgetPolicy.read(
+        version.getBudgetJson(),
+        maximumToolCalls
+    ));
+    version.setApprovalPolicy(approvalPolicy.readManifest(
+        version.getManifestJson()
+    ));
     version.setToolBindings(List.copyOf(bindings));
+    version.setPromptBindings(List.copyOf(promptBindings));
+    version.setResourceBindings(List.copyOf(resourceBindings));
     return version;
   }
 
@@ -711,6 +908,13 @@ public class AiSkillServiceImpl implements AiSkillService {
       result.add(requireMap(item, label + " item"));
     }
     return List.copyOf(result);
+  }
+
+  private List<Map<String, Object>> optionalMapList(
+      final Object value,
+      final String label
+  ) {
+    return value == null ? List.of() : mapList(value, label);
   }
 
   private Map<String, Object> requireObjectSchema(
@@ -829,6 +1033,25 @@ public class AiSkillServiceImpl implements AiSkillService {
   ) {
   }
 
+  private record NormalizedPromptBinding(
+      String alias,
+      String serverId,
+      String snapshotId,
+      String promptName,
+      String descriptorHash
+  ) {
+  }
+
+  private record NormalizedResourceBinding(
+      String alias,
+      String serverId,
+      String snapshotId,
+      String selector,
+      boolean resourceTemplate,
+      String descriptorHash
+  ) {
+  }
+
   private record NormalizedVersion(
       String version,
       String artifactReference,
@@ -845,8 +1068,11 @@ public class AiSkillServiceImpl implements AiSkillService {
       Map<String, Object> inputSchema,
       Map<String, Object> outputSchema,
       Map<String, Object> workflow,
+      SkillExecutionBudget budget,
       String contentHash,
-      List<NormalizedToolBinding> toolBindings
+      List<NormalizedToolBinding> toolBindings,
+      List<NormalizedPromptBinding> promptBindings,
+      List<NormalizedResourceBinding> resourceBindings
   ) {
   }
 }

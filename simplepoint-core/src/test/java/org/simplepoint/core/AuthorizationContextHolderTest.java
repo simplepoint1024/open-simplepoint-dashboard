@@ -16,10 +16,20 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 class AuthorizationContextHolderTest {
 
   @Test
-  void getContext_returnsNull_whenNoRequestContext() {
+  void getContext_returnsBackgroundContext_whenNoRequestContext() {
     RequestContextHolder.resetRequestAttributes();
-    AuthorizationContext ctx = AuthorizationContextHolder.getContext();
-    assertThat(ctx).isNull();
+    AuthorizationContext stored = new AuthorizationContext();
+    org.simplepoint.core.RequestContextHolder.setContext(
+        org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY,
+        stored
+    );
+    try {
+      assertThat(AuthorizationContextHolder.getContext()).isEqualTo(stored);
+    } finally {
+      org.simplepoint.core.RequestContextHolder.clearContext(
+          org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY
+      );
+    }
   }
 
   @Test

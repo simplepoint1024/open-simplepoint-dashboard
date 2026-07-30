@@ -52,6 +52,9 @@ import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayToolCallRequest;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayToolCallResult;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayUpstreamEvent;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayUpstreamException;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayWorkflowPromptGetRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayWorkflowResourceReadRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayWorkflowToolCallRequest;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpPromptDescriptor;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpPublicationChangeEvent;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpPublicationManifest;
@@ -75,6 +78,9 @@ import org.simplepoint.plugin.ai.mcp.api.model.McpServerDeploymentType;
 import org.simplepoint.plugin.ai.mcp.api.model.McpServerStatus;
 import org.simplepoint.plugin.ai.mcp.api.model.McpToolCallCommand;
 import org.simplepoint.plugin.ai.mcp.api.model.McpTransportType;
+import org.simplepoint.plugin.ai.mcp.api.model.McpWorkflowPromptGetRequest;
+import org.simplepoint.plugin.ai.mcp.api.model.McpWorkflowRequest;
+import org.simplepoint.plugin.ai.mcp.api.model.McpWorkflowResourceReadRequest;
 import org.simplepoint.plugin.ai.mcp.api.model.McpWorkflowToolCallRequest;
 import org.simplepoint.plugin.ai.mcp.api.repository.AiMcpCapabilitySnapshotRepository;
 import org.simplepoint.plugin.ai.mcp.api.repository.AiMcpOauthAuthorizationRepository;
@@ -82,7 +88,7 @@ import org.simplepoint.plugin.ai.mcp.api.repository.AiMcpPublicationRepository;
 import org.simplepoint.plugin.ai.mcp.api.repository.AiMcpServerDefinitionRepository;
 import org.simplepoint.plugin.ai.mcp.api.service.AiMcpPublicationRuntimeService;
 import org.simplepoint.plugin.ai.mcp.api.service.AiMcpServerDefinitionService;
-import org.simplepoint.plugin.ai.mcp.api.service.AiMcpWorkflowToolExecutionService;
+import org.simplepoint.plugin.ai.mcp.api.service.AiMcpWorkflowExecutionService;
 import org.simplepoint.plugin.ai.mcp.service.support.AiMcpInvocationLedger;
 import org.simplepoint.plugin.ai.mcp.service.support.AiMcpSnapshotStore;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpEndpoint;
@@ -100,7 +106,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AiMcpServerDefinitionServiceImpl
     extends BaseServiceImpl<AiMcpServerDefinitionRepository, AiMcpServerDefinition, String>
     implements AiMcpServerDefinitionService, AiMcpPublicationRuntimeService,
-    AiMcpWorkflowToolExecutionService {
+    AiMcpWorkflowExecutionService {
 
   private static final TypeReference<List<McpToolDescriptor>> TOOL_LIST_TYPE =
       new TypeReference<>() {
@@ -538,44 +544,12 @@ public class AiMcpServerDefinitionServiceImpl
   public McpGatewayToolCallResult callWorkflowTool(
       final McpWorkflowToolCallRequest request
   ) {
-    if (request == null) {
-      throw new IllegalArgumentException(
-          "MCP workflow Tool request must not be null"
-      );
-    }
-    AiMcpServerDefinition server = repository.findActiveById(
-        requireId(request.serverId())
-    ).orElseThrow(() -> new IllegalArgumentException(
-        "MCP workflow Tool server does not exist"
-    ));
-    if (!scopeAccessPolicy.canUseResourceFromScope(
-        server.getScopeType(),
-        server.getTenantId(),
-        request.invocationScope(),
-        request.invocationTenantId()
-    )) {
-      throw new IllegalStateException(
-          "MCP workflow Tool server is outside the execution scope"
-      );
-    }
-    if (!Boolean.TRUE.equals(server.getEnabled())
-        || server.getStatus() != McpServerStatus.READY) {
-      throw new IllegalStateException("MCP workflow Tool server is not READY");
-    }
-    String snapshotId = required(
-        request.snapshotId(),
-        "MCP workflow capability snapshot must not be blank"
-    );
-    AiMcpCapabilitySnapshot snapshot = snapshotRepository
-        .findActiveByIdAndServerId(snapshotId, server.getId())
-        .orElseThrow(() -> new IllegalArgumentException(
-            "Pinned MCP capability snapshot does not exist"
-        ));
+    WorkflowInvocation invocation = requireWorkflowInvocation(request);
     String toolName = required(
         request.toolName(),
         "MCP workflow Tool name must not be blank"
     );
-    McpToolDescriptor tool = readTools(snapshot).stream()
+    McpToolDescriptor tool = readTools(invocation.snapshot()).stream()
         .filter(candidate -> toolName.equals(candidate.name()))
         .findFirst()
         .orElseThrow(() -> new IllegalArgumentException(
@@ -594,39 +568,30 @@ public class AiMcpServerDefinitionServiceImpl
     }
     Map<String, Object> arguments = request.arguments() == null
         ? Map.of() : request.arguments();
-    String executionId = required(
-        request.executionId(),
-        "Skill execution ID must not be blank"
-    );
-    String stepId = required(
-        request.stepId(),
-        "Skill workflow step ID must not be blank"
-    );
-    String operationId = executionId + ":" + stepId;
     String invocationId = invocationLedger.start(
-        server,
-        snapshot.getId(),
+        invocation.server(),
+        invocation.snapshot().getId(),
         McpCapabilityType.TOOL,
         toolName,
         arguments,
         request.subjectId(),
         "simplepoint-skill-workflow",
-        executionId
+        invocation.executionId()
     );
     try {
       McpGatewayToolCallResult result = executeGateway(
-          server,
-          executionId,
-          connection -> gatewayOperations.callTool(
-              new McpGatewayToolCallRequest(
-                  connection,
-                  toolName,
-                  arguments,
-                  Map.of(
-                      "simplepoint/skillExecutionId", executionId,
-                      "simplepoint/skillStepId", stepId
+          invocation.server(),
+          invocation.executionId(),
+          connection -> gatewayOperations.callWorkflowTool(
+              new McpGatewayWorkflowToolCallRequest(
+                  new McpGatewayToolCallRequest(
+                      connection,
+                      toolName,
+                      arguments,
+                      workflowMetadata(request, invocation),
+                      invocation.operationId()
                   ),
-                  operationId
+                  invocation.capabilityToken()
               )
           )
       );
@@ -635,6 +600,250 @@ public class AiMcpServerDefinitionServiceImpl
     } catch (RuntimeException ex) {
       invocationLedger.fail(invocationId, ex);
       throw ex;
+    }
+  }
+
+  @Override
+  public McpGatewayPromptGetResult getWorkflowPrompt(
+      final McpWorkflowPromptGetRequest request
+  ) {
+    WorkflowInvocation invocation = requireWorkflowInvocation(request);
+    String promptName = required(
+        request.promptName(),
+        "MCP workflow Prompt name must not be blank"
+    );
+    McpPromptDescriptor prompt = readPrompts(invocation.snapshot()).stream()
+        .filter(candidate -> promptName.equals(candidate.name()))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException(
+            "MCP workflow Prompt is not part of the pinned snapshot: "
+                + promptName
+        ));
+    assertDescriptorHash(
+        request.expectedDescriptorHash(),
+        prompt,
+        "Prompt"
+    );
+    Map<String, Object> arguments = request.arguments() == null
+        ? Map.of() : request.arguments();
+    String invocationId = invocationLedger.start(
+        invocation.server(),
+        invocation.snapshot().getId(),
+        McpCapabilityType.PROMPT,
+        promptName,
+        arguments,
+        request.subjectId(),
+        "simplepoint-skill-workflow",
+        invocation.executionId()
+    );
+    try {
+      McpGatewayPromptGetResult result = executeGateway(
+          invocation.server(),
+          invocation.executionId(),
+          connection -> gatewayOperations.getWorkflowPrompt(
+              new McpGatewayWorkflowPromptGetRequest(
+                  new McpGatewayPromptGetRequest(
+                      connection,
+                      promptName,
+                      arguments,
+                      workflowMetadata(request, invocation),
+                      invocation.operationId()
+                  ),
+                  invocation.capabilityToken()
+              )
+          )
+      );
+      invocationLedger.succeed(invocationId, result);
+      return result;
+    } catch (RuntimeException ex) {
+      invocationLedger.fail(invocationId, ex);
+      throw ex;
+    }
+  }
+
+  @Override
+  public McpGatewayResourceReadResult readWorkflowResource(
+      final McpWorkflowResourceReadRequest request
+  ) {
+    WorkflowInvocation invocation = requireWorkflowInvocation(request);
+    String uri = normalizeResourceUri(request.uri());
+    String selector = required(
+        request.boundSelector(),
+        "MCP workflow Resource selector must not be blank"
+    );
+    Object descriptor;
+    if (request.resourceTemplate()) {
+      McpResourceTemplateDescriptor template = readResourceTemplates(
+          invocation.snapshot()
+      ).stream()
+          .filter(candidate -> selector.equals(candidate.uriTemplate()))
+          .findFirst()
+          .orElseThrow(() -> new IllegalArgumentException(
+              "MCP workflow Resource Template is not in the pinned snapshot"
+          ));
+      if (!matchesResourceTemplate(template.uriTemplate(), uri)) {
+        throw new IllegalArgumentException(
+            "MCP workflow Resource URI is outside the pinned template"
+        );
+      }
+      descriptor = template;
+    } else {
+      McpResourceDescriptor resource = readResources(
+          invocation.snapshot()
+      ).stream()
+          .filter(candidate -> selector.equals(candidate.uri()))
+          .findFirst()
+          .orElseThrow(() -> new IllegalArgumentException(
+              "MCP workflow Resource is not in the pinned snapshot"
+          ));
+      if (!selector.equals(uri)) {
+        throw new IllegalArgumentException(
+            "MCP workflow Resource URI does not match the pinned binding"
+        );
+      }
+      descriptor = resource;
+    }
+    assertDescriptorHash(
+        request.expectedDescriptorHash(),
+        descriptor,
+        "Resource"
+    );
+    Map<String, Object> payload = Map.of("uri", uri);
+    String invocationId = invocationLedger.start(
+        invocation.server(),
+        invocation.snapshot().getId(),
+        McpCapabilityType.RESOURCE,
+        uri,
+        payload,
+        request.subjectId(),
+        "simplepoint-skill-workflow",
+        invocation.executionId()
+    );
+    try {
+      McpGatewayResourceReadResult result = executeGateway(
+          invocation.server(),
+          invocation.executionId(),
+          connection -> gatewayOperations.readWorkflowResource(
+              new McpGatewayWorkflowResourceReadRequest(
+                  new McpGatewayResourceReadRequest(
+                      connection,
+                      uri,
+                      workflowMetadata(request, invocation),
+                      invocation.operationId()
+                  ),
+                  invocation.capabilityToken()
+              )
+          )
+      );
+      invocationLedger.succeed(invocationId, result);
+      return result;
+    } catch (RuntimeException ex) {
+      invocationLedger.fail(invocationId, ex);
+      throw ex;
+    }
+  }
+
+  private WorkflowInvocation requireWorkflowInvocation(
+      final McpWorkflowRequest request
+  ) {
+    if (request == null || request.invocationScope() == null) {
+      throw new IllegalArgumentException(
+          "MCP workflow request and scope must not be null"
+      );
+    }
+    AiMcpServerDefinition server = repository.findActiveById(
+        requireId(request.serverId())
+    ).orElseThrow(() -> new IllegalArgumentException(
+        "MCP workflow server does not exist"
+    ));
+    if (!scopeAccessPolicy.canUseResourceFromScope(
+        server.getScopeType(),
+        server.getTenantId(),
+        request.invocationScope(),
+        request.invocationTenantId()
+    )) {
+      throw new IllegalStateException(
+          "MCP workflow server is outside the execution scope"
+      );
+    }
+    if (!Boolean.TRUE.equals(server.getEnabled())
+        || server.getStatus() != McpServerStatus.READY) {
+      throw new IllegalStateException("MCP workflow server is not READY");
+    }
+    String snapshotId = required(
+        request.snapshotId(),
+        "MCP workflow capability snapshot must not be blank"
+    );
+    AiMcpCapabilitySnapshot snapshot = snapshotRepository
+        .findActiveByIdAndServerId(snapshotId, server.getId())
+        .orElseThrow(() -> new IllegalArgumentException(
+            "Pinned MCP capability snapshot does not exist"
+        ));
+    String executionId = required(
+        request.executionId(),
+        "Skill execution ID must not be blank"
+    );
+    String skillId = required(
+        request.skillId(),
+        "Skill ID must not be blank"
+    );
+    String skillVersionId = required(
+        request.skillVersionId(),
+        "Skill version ID must not be blank"
+    );
+    String stepId = required(
+        request.stepId(),
+        "Skill workflow step ID must not be blank"
+    );
+    String capabilityToken = required(
+        request.capabilityToken(),
+        "Skill capability token must not be blank"
+    );
+    return new WorkflowInvocation(
+        server,
+        snapshot,
+        skillId,
+        skillVersionId,
+        executionId,
+        stepId,
+        executionId + ":" + stepId,
+        capabilityToken
+    );
+  }
+
+  private static Map<String, Object> workflowMetadata(
+      final McpWorkflowRequest request,
+      final WorkflowInvocation invocation
+  ) {
+    Map<String, Object> metadata = new LinkedHashMap<>();
+    metadata.put("simplepoint/scopeType", request.invocationScope().name());
+    metadata.put("simplepoint/tenantId", request.invocationTenantId());
+    metadata.put("simplepoint/skillId", invocation.skillId());
+    metadata.put("simplepoint/skillVersionId", invocation.skillVersionId());
+    metadata.put("simplepoint/skillExecutionId", invocation.executionId());
+    metadata.put("simplepoint/skillStepId", invocation.stepId());
+    metadata.put(
+        "simplepoint/capabilitySnapshotId",
+        invocation.snapshot().getId()
+    );
+    metadata.put("simplepoint/subjectId", request.subjectId());
+    return metadata;
+  }
+
+  private void assertDescriptorHash(
+      final String expected,
+      final Object descriptor,
+      final String type
+  ) {
+    String expectedHash = required(
+        expected,
+        "MCP workflow " + type + " descriptor hash must not be blank"
+    );
+    if (!expectedHash.equals(sha256(writeCanonicalJson(descriptor)))) {
+      throw new IllegalStateException(
+          "Pinned MCP " + type + " descriptor hash does not match "
+              + "the Skill binding"
+      );
     }
   }
 
@@ -1804,5 +2013,17 @@ public class AiMcpServerDefinitionServiceImpl
     if (value != null && !value.isBlank() && !value.contains(":")) {
       attributes.put(field, "like:" + value.trim());
     }
+  }
+
+  private record WorkflowInvocation(
+      AiMcpServerDefinition server,
+      AiMcpCapabilitySnapshot snapshot,
+      String skillId,
+      String skillVersionId,
+      String executionId,
+      String stepId,
+      String operationId,
+      String capabilityToken
+  ) {
   }
 }

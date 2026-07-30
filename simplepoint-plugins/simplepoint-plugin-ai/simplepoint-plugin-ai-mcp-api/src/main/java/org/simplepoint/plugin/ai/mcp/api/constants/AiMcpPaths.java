@@ -25,6 +25,15 @@ public final class AiMcpPaths {
 
   public static final String INTERNAL_CALL_TOOL = INTERNAL_GATEWAY + "/tools/call";
 
+  public static final String INTERNAL_CALL_WORKFLOW_TOOL =
+      INTERNAL_GATEWAY + "/workflows/tools/call";
+
+  public static final String INTERNAL_GET_WORKFLOW_PROMPT =
+      INTERNAL_GATEWAY + "/workflows/prompts/get";
+
+  public static final String INTERNAL_READ_WORKFLOW_RESOURCE =
+      INTERNAL_GATEWAY + "/workflows/resources/read";
+
   public static final String INTERNAL_READ_RESOURCE =
       INTERNAL_GATEWAY + "/resources/read";
 

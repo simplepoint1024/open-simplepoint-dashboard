@@ -19,6 +19,9 @@ import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayStatus;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayToolCallRequest;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayToolCallResult;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayUpstreamException;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayWorkflowPromptGetRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayWorkflowResourceReadRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayWorkflowToolCallRequest;
 import org.simplepoint.plugin.ai.mcp.api.properties.AiMcpProperties;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -94,6 +97,46 @@ public class HttpMcpGatewayOperations implements McpGatewayOperations {
     } catch (RestClientResponseException ex) {
       throw gatewayFailure("call MCP tool", ex);
     }
+  }
+
+  @Override
+  public McpGatewayToolCallResult callWorkflowTool(
+      final McpGatewayWorkflowToolCallRequest request
+  ) {
+    try {
+      return restClient.post()
+          .uri(AiMcpPaths.INTERNAL_CALL_WORKFLOW_TOOL)
+          .header(internalHeader(), internalToken())
+          .body(request)
+          .retrieve()
+          .body(McpGatewayToolCallResult.class);
+    } catch (RestClientResponseException ex) {
+      throw gatewayFailure("call capability-authorized MCP workflow Tool", ex);
+    }
+  }
+
+  @Override
+  public McpGatewayPromptGetResult getWorkflowPrompt(
+      final McpGatewayWorkflowPromptGetRequest request
+  ) {
+    return post(
+        AiMcpPaths.INTERNAL_GET_WORKFLOW_PROMPT,
+        request,
+        McpGatewayPromptGetResult.class,
+        "get capability-authorized MCP workflow Prompt"
+    );
+  }
+
+  @Override
+  public McpGatewayResourceReadResult readWorkflowResource(
+      final McpGatewayWorkflowResourceReadRequest request
+  ) {
+    return post(
+        AiMcpPaths.INTERNAL_READ_WORKFLOW_RESOURCE,
+        request,
+        McpGatewayResourceReadResult.class,
+        "read capability-authorized MCP workflow Resource"
+    );
   }
 
   @Override

@@ -7,6 +7,7 @@ import { useUserInfo } from '@/fetches/user';
 import { useCurrentRoles, useCurrentTenants, type CurrentRole, type CurrentTenant } from '@/fetches/tenants';
 import { getTenantId, setTenantId } from '@/store/tenant';
 import { getRoleId, setRoleId } from '@/store/role';
+import { setContextId } from '@/store/contextId';
 import { ensureContextId } from '@simplepoint/shared/api/contextId';
 import { clearClientCaches, redirectToLogout } from '@simplepoint/shared/api/session';
 import {get, put} from '@simplepoint/shared/api/methods';
@@ -167,10 +168,13 @@ export const TenantSwitcherTop: React.FC = () => {
       const nextType = tenantTypeLabel(t, nextTenant);
       const nextName = tenantDisplayName(t, nextTenant);
 
-      // 先切租户：保证后续请求头 X-Tenant-Id 立即生效
+      // 先清理目标工作空间的旧角色和授权上下文，再广播租户变化。
+      // App 的租户监听器是同步执行的；若顺序反过来，它可能读到旧角色，
+      // 随后的上下文请求会因角色已变化而被丢弃，并让首页一直停在 loading。
+      setRoleId(undefined, nextId);
+      setContextId(undefined, nextId);
       setTenantId(nextId);
       setTenantIdState(nextId);
-      setRoleId(undefined, nextId);
 
       // 预热授权上下文（best-effort，不阻断切换；真正的当前态由 App 内部按最新 tenant 决定）
       await ensureContextId(nextId, { force: true });

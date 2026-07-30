@@ -1,0 +1,300 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simplepoint.io/schemas/agent-manifest-v1.schema.json",
+  "title": "SimplePoint Agent Manifest v1alpha1",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "const": "simplepoint.io/v1alpha1"
+    },
+    "kind": {
+      "const": "Agent"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+        },
+        "version": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "required": [
+        "systemPrompt",
+        "model",
+        "skills",
+        "memory",
+        "budgets",
+        "approvals",
+        "inputSchema",
+        "outputSchema",
+        "publicAccess"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "systemPrompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32768
+        },
+        "model": {
+          "type": "object",
+          "required": ["primaryModelId"],
+          "additionalProperties": false,
+          "properties": {
+            "primaryModelId": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "fallbackModelIds": {
+              "type": "array",
+              "maxItems": 8,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        "skills": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "required": ["alias", "skillId", "versionId"],
+            "additionalProperties": false,
+            "properties": {
+              "alias": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+              },
+              "skillId": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "versionId": {
+                "type": "string",
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        "behavior": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "instructions": {
+              "type": "array",
+              "maxItems": 64,
+              "items": {
+                "type": "string",
+                "maxLength": 1024
+              }
+            },
+            "responseStyle": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        },
+        "memory": {
+          "type": "object",
+          "required": [
+            "shortTermEnabled",
+            "longTermEnabled",
+            "maximumMessages"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "shortTermEnabled": {
+              "type": "boolean"
+            },
+            "longTermEnabled": {
+              "type": "boolean"
+            },
+            "maximumMessages": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "maximumSummaryCharacters": {
+              "type": "integer",
+              "minimum": 1024,
+              "maximum": 32768
+            },
+            "longTermScope": {
+              "type": "string",
+              "enum": ["SUBJECT"]
+            },
+            "maximumLongTermEntries": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            },
+            "longTermRetrievalTopK": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            },
+            "longTermScoreThreshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "maximumLongTermInjectionCharacters": {
+              "type": "integer",
+              "minimum": 512,
+              "maximum": 32768
+            },
+            "maximumLongTermRecordCharacters": {
+              "type": "integer",
+              "minimum": 512,
+              "maximum": 32768
+            },
+            "longTermRetentionDays": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650
+            }
+          }
+        },
+        "budgets": {
+          "type": "object",
+          "required": [
+            "maximumSteps",
+            "maximumLoopDepth",
+            "maximumConcurrency",
+            "maximumInputTokens",
+            "maximumOutputTokens",
+            "maximumCost"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "maximumSteps": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 256
+            },
+            "maximumLoopDepth": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 32
+            },
+            "maximumConcurrency": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            },
+            "maximumInputTokens": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000000
+            },
+            "maximumOutputTokens": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "maximumCost": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000000
+            }
+          }
+        },
+        "approvals": {
+          "type": "object",
+          "required": ["execution"],
+          "additionalProperties": false,
+          "properties": {
+            "execution": {
+              "type": "object",
+              "required": ["required", "allowSelfApproval"],
+              "additionalProperties": false,
+              "properties": {
+                "required": {
+                  "type": "boolean"
+                },
+                "allowSelfApproval": {
+                  "type": "boolean"
+                },
+                "instructions": {
+                  "type": "string",
+                  "maxLength": 512
+                }
+              }
+            }
+          }
+        },
+        "humanIntervention": {
+          "type": "object",
+          "required": [
+            "enabled",
+            "maximumRequests",
+            "timeoutSeconds",
+            "timeoutAction"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "maximumRequests": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            },
+            "timeoutSeconds": {
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 604800
+            },
+            "timeoutAction": {
+              "type": "string",
+              "enum": ["FAIL", "CANCEL"]
+            }
+          }
+        },
+        "inputSchema": {
+          "type": "object"
+        },
+        "outputSchema": {
+          "type": "object"
+        },
+        "publicAccess": {
+          "type": "boolean"
+        },
+        "workflowRef": {
+          "type": "string",
+          "maxLength": 128
+        }
+      }
+    }
+  }
+}

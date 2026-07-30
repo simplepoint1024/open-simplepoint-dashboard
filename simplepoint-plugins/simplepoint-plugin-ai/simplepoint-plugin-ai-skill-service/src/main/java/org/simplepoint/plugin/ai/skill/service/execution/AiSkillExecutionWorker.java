@@ -6,6 +6,7 @@ import java.util.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.plugin.ai.skill.api.properties.SkillExecutionProperties;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,12 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(
+    prefix = SkillExecutionProperties.PREFIX,
+    name = "enabled",
+    havingValue = "true",
+    matchIfMissing = true
+)
 public class AiSkillExecutionWorker implements DisposableBean {
 
   private final AiSkillExecutionCoordinator coordinator;

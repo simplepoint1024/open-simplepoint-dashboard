@@ -148,6 +148,21 @@ function parseContextId(text: string, contentType: string | null): string | unde
   return finalCtx ? finalCtx : undefined;
 }
 
+function isAuthenticationRedirectResponse(response: Response): boolean {
+  if (!response.redirected) return false;
+  try {
+    const pathname = new URL(response.url, window.location.origin).pathname;
+    if (
+      pathname === '/login'
+      || pathname.startsWith('/oauth2/authorization/')
+      || pathname === '/oauth2/authorize'
+    ) {
+      return true;
+    }
+  } catch {}
+  return (response.headers.get('content-type') || '').toLowerCase().includes('text/html');
+}
+
 // Per-tenant in-flight promise dedupe (module local, not global)
 const inflight = new Map<string, Promise<string | undefined>>();
 
@@ -187,7 +202,7 @@ export async function ensureContextId(
         },
       });
 
-      if (!res.ok) {
+      if (!res.ok || isAuthenticationRedirectResponse(res)) {
         return undefined;
       }
 

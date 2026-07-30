@@ -13,9 +13,12 @@ import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
  * @param toolName exact Tool name
  * @param expectedInputSchemaHash schema hash persisted by the Skill version
  * @param arguments resolved Tool input
+ * @param skillId owning Skill definition
+ * @param skillVersionId pinned immutable Skill version
  * @param executionId durable Skill execution ID used for session affinity
  * @param stepId durable workflow step ID
  * @param subjectId original user that submitted the workflow
+ * @param capabilityToken short-lived single-use Tool capability
  */
 public record McpWorkflowToolCallRequest(
     AiResourceScope invocationScope,
@@ -25,8 +28,11 @@ public record McpWorkflowToolCallRequest(
     String toolName,
     String expectedInputSchemaHash,
     Map<String, Object> arguments,
+    String skillId,
+    String skillVersionId,
     String executionId,
     String stepId,
-    String subjectId
-) {
+    String subjectId,
+    String capabilityToken
+) implements McpWorkflowRequest {
 }

@@ -72,14 +72,18 @@ export async function fetchCurrentRoles(tenantId?: string): Promise<CurrentRole[
         .filter((role) => role.roleId);
 }
 
-export async function fetchCurrentTenantProfile(): Promise<CurrentTenantProfile> {
-    return get<CurrentTenantProfile>('/common/tenants/current-profile');
+export async function fetchCurrentTenantProfile(tenantId: string): Promise<CurrentTenantProfile> {
+    return get<CurrentTenantProfile>(
+        '/common/tenants/current-profile',
+        undefined,
+        {headers: {'X-Tenant-Id': tenantId}},
+    );
 }
 
 export function useCurrentTenantProfile(tenantId?: string, enabled = true) {
     return useQuery({
         queryKey: ['common', 'tenants', 'current-profile', tenantId],
-        queryFn: fetchCurrentTenantProfile,
+        queryFn: () => fetchCurrentTenantProfile(tenantId!),
         enabled: enabled && !!tenantId,
         staleTime: 2 * 60 * 1000,
         refetchOnWindowFocus: false,

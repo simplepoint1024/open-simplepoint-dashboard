@@ -17,6 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillExecution;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionDecisionRequest;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionPauseRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionStartRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionStatus;
 import org.simplepoint.plugin.ai.skill.api.service.AiSkillExecutionService;
@@ -95,6 +97,46 @@ class AiSkillControllerTest {
 
     verify(executionService).findAll(eq("skill-a"), any(Pageable.class));
     verify(executionService).find("skill-a", "execution-a");
+  }
+
+  @Test
+  void bindsApprovalPauseAndResumeRoutes() throws Exception {
+    AiSkillExecution execution = execution();
+    when(executionService.approve(
+        eq("skill-a"),
+        eq("execution-a"),
+        any(SkillExecutionDecisionRequest.class)
+    )).thenReturn(execution);
+    when(executionService.reject(
+        eq("skill-a"),
+        eq("execution-a"),
+        any(SkillExecutionDecisionRequest.class)
+    )).thenReturn(execution);
+    when(executionService.pause(
+        eq("skill-a"),
+        eq("execution-a"),
+        any(SkillExecutionPauseRequest.class)
+    )).thenReturn(execution);
+    when(executionService.resume("skill-a", "execution-a"))
+        .thenReturn(execution);
+
+    String base = "/workbench/skills/skill-a/executions/execution-a";
+    mockMvc.perform(post(base + "/approve")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"comment\":\"approved\"}"))
+        .andExpect(status().isOk());
+    mockMvc.perform(post(base + "/reject")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"comment\":\"rejected\"}"))
+        .andExpect(status().isOk());
+    mockMvc.perform(post(base + "/pause")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"reason\":\"maintenance\"}"))
+        .andExpect(status().isOk());
+    mockMvc.perform(post(base + "/resume"))
+        .andExpect(status().isOk());
+
+    verify(executionService).resume("skill-a", "execution-a");
   }
 
   private static AiSkillExecution execution() {

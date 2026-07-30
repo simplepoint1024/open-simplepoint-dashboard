@@ -45,6 +45,25 @@ type SkillToolBinding = {
   outputSchemaHash?: string;
 };
 
+type SkillPromptBinding = {
+  id: string;
+  mcpServerId: string;
+  capabilitySnapshotId: string;
+  promptName: string;
+  promptAlias: string;
+  descriptorHash: string;
+};
+
+type SkillResourceBinding = {
+  id: string;
+  mcpServerId: string;
+  capabilitySnapshotId: string;
+  resourceSelector: string;
+  resourceAlias: string;
+  resourceTemplate: boolean;
+  descriptorHash: string;
+};
+
 type SkillVersion = {
   id: string;
   version: string;
@@ -63,7 +82,19 @@ type SkillVersion = {
   publishedAt?: string;
   deprecatedAt?: string;
   manifest?: Record<string, unknown>;
+  budget?: {
+    maximumToolCalls: number;
+    maximumDurationSeconds: number;
+    maximumPayloadBytes: number;
+  };
+  approvalPolicy?: {
+    required: boolean;
+    allowSelfApproval: boolean;
+    instructions?: string;
+  };
   toolBindings?: SkillToolBinding[];
+  promptBindings?: SkillPromptBinding[];
+  resourceBindings?: SkillResourceBinding[];
 };
 
 type SkillExecutionStep = {
@@ -71,10 +102,12 @@ type SkillExecutionStep = {
   stepId: string;
   stepType: string;
   stepOrder: number;
-  toolAlias?: string;
-  toolName?: string;
+  capabilityAlias?: string;
+  capabilityName?: string;
+  capabilityTemplate?: boolean;
   status: 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'SKIPPED';
   attemptCount: number;
+  capabilityTokenIdHash?: string;
   input?: Record<string, unknown>;
   output?: unknown;
   errorMessage?: string;
@@ -84,10 +117,41 @@ type SkillExecution = {
   id: string;
   skillId: string;
   skillVersionId: string;
-  status: 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+  status:
+    | 'WAITING_APPROVAL'
+    | 'PENDING'
+    | 'RUNNING'
+    | 'PAUSED'
+    | 'SUCCEEDED'
+    | 'FAILED'
+    | 'REJECTED'
+    | 'CANCELLED';
   currentStepId?: string;
   attemptCount: number;
+  maximumToolCalls?: number;
+  maximumDurationSeconds?: number;
+  maximumPayloadBytes?: number;
+  consumedToolCalls?: number;
+  consumedPayloadBytes?: number;
+  deadlineAt?: string;
   requestedBy?: string;
+  approvalRequired?: boolean;
+  selfApprovalAllowed?: boolean;
+  approvalInstructions?: string;
+  approvalRequestedAt?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  approvalComment?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
+  rejectionReason?: string;
+  pauseRequested?: boolean;
+  pauseRequestedAt?: string;
+  pauseRequestedBy?: string;
+  pauseReason?: string;
+  pausedAt?: string;
+  resumedAt?: string;
+  resumedBy?: string;
   input?: Record<string, unknown>;
   output?: unknown;
   errorCode?: string;
@@ -110,6 +174,14 @@ type VersionFormValues = {
   artifactReference: string;
   artifactDigest: string;
   manifest: string;
+};
+
+type ExecutionAction = 'approve' | 'reject' | 'pause';
+
+type ExecutionActionState = {
+  action: ExecutionAction;
+  skill: SkillDefinition;
+  execution: SkillExecution;
 };
 
 const resolveErrorMessage = (error: unknown, fallback: string) => {
@@ -137,8 +209,16 @@ const defaultManifest = (code: string, version: string) => JSON.stringify({
       additionalProperties: false,
     },
     tools: [],
+    prompts: [],
+    resources: [],
     workflow: {
       steps: [],
+    },
+    approvals: {
+      execution: {
+        required: false,
+        allowSelfApproval: false,
+      },
     },
   },
 }, null, 2);
@@ -159,9 +239,66 @@ const executionStatusColor = (status: SkillExecution['status']) => ({
   SUCCEEDED: 'green',
   RUNNING: 'blue',
   PENDING: 'gold',
+  WAITING_APPROVAL: 'orange',
+  PAUSED: 'purple',
   FAILED: 'red',
+  REJECTED: 'red',
   CANCELLED: 'default',
 }[status]);
+
+const formatBytes = (value?: number) => {
+  if (value === undefined) return '-';
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KiB`;
+  return `${(value / 1024 / 1024).toFixed(2)} MiB`;
+};
+
+const summarizeWorkflow = (manifest?: Record<string, unknown>) => {
+  const spec = manifest?.spec;
+  if (!spec || typeof spec !== 'object' || Array.isArray(spec)) return undefined;
+  const workflow = (spec as Record<string, unknown>).workflow;
+  if (!workflow || typeof workflow !== 'object' || Array.isArray(workflow)) return undefined;
+  const steps = (workflow as Record<string, unknown>).steps;
+  if (!Array.isArray(steps)) return undefined;
+  let tools = 0;
+  let prompts = 0;
+  let resources = 0;
+  let conditions = 0;
+  let parallels = 0;
+  let branches = 0;
+  const countCapabilities = (values: unknown[]) => {
+    values.forEach((value) => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+      const step = value as Record<string, unknown>;
+      if (step.type === 'tool') tools += 1;
+      if (step.type === 'prompt') prompts += 1;
+      if (step.type === 'resource') resources += 1;
+    });
+  };
+  steps.forEach((value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+    const step = value as Record<string, unknown>;
+    if (step.type === 'tool') tools += 1;
+    if (step.type === 'prompt') prompts += 1;
+    if (step.type === 'resource') resources += 1;
+    if (step.type === 'condition') {
+      conditions += 1;
+      countCapabilities(Array.isArray(step.then) ? step.then : []);
+      countCapabilities(Array.isArray(step.else) ? step.else : []);
+    }
+    if (step.type === 'parallel') {
+      parallels += 1;
+      if (!Array.isArray(step.branches)) return;
+      branches += step.branches.length;
+      step.branches.forEach((branchValue) => {
+        if (!branchValue || typeof branchValue !== 'object' || Array.isArray(branchValue)) return;
+        const branchSteps = (branchValue as Record<string, unknown>).steps;
+        countCapabilities(Array.isArray(branchSteps) ? branchSteps : []);
+      });
+    }
+  });
+  return {tools, prompts, resources, conditions, parallels, branches};
+};
 
 const Skills = () => {
   const config = api['ai-workbench.skills'];
@@ -185,6 +322,9 @@ const Skills = () => {
   const [executionHistory, setExecutionHistory] = useState<SkillExecution[]>([]);
   const [executionHistoryLoading, setExecutionHistoryLoading] = useState(false);
   const [executionDetails, setExecutionDetails] = useState<SkillExecution>();
+  const [executionAction, setExecutionAction] = useState<ExecutionActionState>();
+  const [executionActionComment, setExecutionActionComment] = useState('');
+  const [executionActionSubmitting, setExecutionActionSubmitting] = useState(false);
 
   useEffect(() => {
     void ensure(config.i18nNamespaces);
@@ -427,6 +567,95 @@ const Skills = () => {
     `${config.baseUrl}/${skill.id}/executions/${executionId}`,
   ), [config.baseUrl]);
 
+  const applyExecutionResult = useCallback((execution: SkillExecution) => {
+    setExecutionHistory((current) => current.map((candidate) => (
+      candidate.id === execution.id ? execution : candidate
+    )));
+    setExecutionDetails((current) => (
+      current?.id === execution.id ? execution : current
+    ));
+  }, []);
+
+  const watchExecution = useCallback(async (
+    skill: SkillDefinition,
+    initial: SkillExecution,
+    watchedStatuses: SkillExecution['status'][],
+  ) => {
+    let execution = initial;
+    for (let index = 0; index < 60 && watchedStatuses.includes(execution.status); index += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 500));
+      execution = await refreshExecution(skill, execution.id);
+      applyExecutionResult(execution);
+    }
+    return execution;
+  }, [applyExecutionResult, refreshExecution]);
+
+  const openExecutionAction = (
+    action: ExecutionAction,
+    skill: SkillDefinition,
+    execution: SkillExecution,
+  ) => {
+    setExecutionActionComment('');
+    setExecutionAction({action, skill, execution});
+  };
+
+  const submitExecutionAction = async () => {
+    if (!executionAction) return;
+    const {action, skill, execution} = executionAction;
+    setExecutionActionSubmitting(true);
+    try {
+      const updated = await post<SkillExecution>(
+        `${config.baseUrl}/${skill.id}/executions/${execution.id}/${action}`,
+        action === 'pause'
+          ? {reason: executionActionComment || undefined}
+          : {comment: executionActionComment || undefined},
+      );
+      applyExecutionResult(updated);
+      setExecutionAction(undefined);
+      message.success({
+        approve: t('ai.skills.execution.approved', '执行已审批通过'),
+        reject: t('ai.skills.execution.rejected', '执行已驳回'),
+        pause: updated.status === 'RUNNING'
+          ? t('ai.skills.execution.pauseRequested', '暂停请求已提交')
+          : t('ai.skills.execution.paused', '执行已暂停'),
+      }[action]);
+      if (action === 'approve' && updated.status === 'PENDING') {
+        void watchExecution(skill, updated, ['PENDING', 'RUNNING']);
+      } else if (action === 'pause' && updated.status === 'RUNNING') {
+        void watchExecution(skill, updated, ['RUNNING']);
+      }
+    } catch (error) {
+      message.error(resolveErrorMessage(
+        error,
+        t('ai.skills.error.controlExecution', '执行状态变更失败'),
+      ));
+    } finally {
+      setExecutionActionSubmitting(false);
+    }
+  };
+
+  const resumeExecution = async (
+    skill: SkillDefinition,
+    execution: SkillExecution,
+  ) => {
+    try {
+      const updated = await post<SkillExecution>(
+        `${config.baseUrl}/${skill.id}/executions/${execution.id}/resume`,
+        {},
+      );
+      applyExecutionResult(updated);
+      message.success(t('ai.skills.execution.resumed', '执行已恢复'));
+      if (updated.status === 'PENDING') {
+        void watchExecution(skill, updated, ['PENDING', 'RUNNING']);
+      }
+    } catch (error) {
+      message.error(resolveErrorMessage(
+        error,
+        t('ai.skills.error.controlExecution', '执行状态变更失败'),
+      ));
+    }
+  };
+
   const runSkill = async () => {
     if (!executionSkill) return;
     let input: Record<string, unknown>;
@@ -448,13 +677,11 @@ const Skills = () => {
       );
       setExecutionDetails(execution);
       setExecutionSkill(undefined);
-      for (let index = 0; index < 60
-        && (execution.status === 'PENDING' || execution.status === 'RUNNING');
-        index += 1) {
-        await new Promise((resolve) => window.setTimeout(resolve, 500));
-        execution = await refreshExecution(executionSkill, execution.id);
-        setExecutionDetails(execution);
-      }
+      execution = await watchExecution(
+        executionSkill,
+        execution,
+        ['PENDING', 'RUNNING'],
+      );
       message.success(execution.status === 'SUCCEEDED'
         ? t('ai.skills.execution.succeeded', 'Skill 执行成功')
         : execution.status === 'FAILED'
@@ -559,6 +786,18 @@ const Skills = () => {
       width: 100,
     },
     {
+      title: t('ai.skills.execution.capabilityToken', '能力令牌'),
+      dataIndex: 'steps',
+      width: 170,
+      render: (steps?: SkillExecutionStep[]) => {
+        const value = steps?.find((step) => step.capabilityTokenIdHash)
+          ?.capabilityTokenIdHash;
+        return value
+          ? <Text code copyable={{text: value}}>{`${value.slice(0, 12)}…`}</Text>
+          : '-';
+      },
+    },
+    {
       title: t('ai.skills.execution.startedAt', '开始时间'),
       dataIndex: 'startedAt',
       width: 190,
@@ -567,14 +806,53 @@ const Skills = () => {
     {
       title: t('ai.skills.column.action', '操作'),
       key: 'action',
-      width: 90,
-      render: (_: unknown, execution: SkillExecution) => (
-        <Button type="link" onClick={() => setExecutionDetails(execution)}>
-          {t('ai.skills.action.inspect', '查看')}
-        </Button>
-      ),
+      width: 300,
+      render: (_: unknown, execution: SkillExecution) => {
+        const skill = executionHistorySkill;
+        const approvalPending = execution.approvalRequired
+          && !execution.approvedAt
+          && !execution.rejectedAt
+          && (execution.status === 'WAITING_APPROVAL' || execution.status === 'PAUSED');
+        return (
+          <Space size={2}>
+            <Button type="link" onClick={() => setExecutionDetails(execution)}>
+              {t('ai.skills.action.inspect', '查看')}
+            </Button>
+            {skill && approvalPending && (
+              <>
+                <Button
+                  type="link"
+                  onClick={() => openExecutionAction('approve', skill, execution)}
+                >
+                  {t('ai.skills.action.approve', '通过')}
+                </Button>
+                <Button
+                  danger
+                  type="link"
+                  onClick={() => openExecutionAction('reject', skill, execution)}
+                >
+                  {t('ai.skills.action.reject', '驳回')}
+                </Button>
+              </>
+            )}
+            {skill && ['WAITING_APPROVAL', 'PENDING', 'RUNNING'].includes(execution.status) && (
+              <Button
+                type="link"
+                onClick={() => openExecutionAction('pause', skill, execution)}
+              >
+                {t('ai.skills.action.pause', '暂停')}
+              </Button>
+            )}
+            {skill && execution.status === 'PAUSED' && (
+              <Button type="link" onClick={() => void resumeExecution(skill, execution)}>
+                {t('ai.skills.action.resume', '恢复')}
+              </Button>
+            )}
+          </Space>
+        );
+      },
     },
-  ], [t]);
+  ], [executionHistorySkill, t]);
 
   const executionStepColumns = useMemo(() => [
     {
@@ -583,11 +861,29 @@ const Skills = () => {
       width: 140,
     },
     {
-      title: t('ai.skills.execution.tool', 'MCP Tool'),
-      dataIndex: 'toolName',
-      width: 180,
+      title: t('ai.skills.execution.capabilityType', '能力类型'),
+      dataIndex: 'stepType',
+      width: 110,
+      render: (value: string) => (
+        <Tag color={{
+          tool: 'blue',
+          prompt: 'purple',
+          resource: 'cyan',
+        }[value]}>
+          {value.toUpperCase()}
+        </Tag>
+      ),
+    },
+    {
+      title: t('ai.skills.execution.capability', 'MCP 能力'),
+      dataIndex: 'capabilityName',
+      width: 260,
       render: (value?: string, step?: SkillExecutionStep) => (
-        <Text code>{step?.toolAlias ? `${step.toolAlias} → ` : ''}{value ?? '-'}</Text>
+        <Text code>
+          {step?.capabilityAlias ? `${step.capabilityAlias} → ` : ''}
+          {value ?? '-'}
+          {step?.capabilityTemplate ? ' (template)' : ''}
+        </Text>
       ),
     },
     {
@@ -595,7 +891,13 @@ const Skills = () => {
       dataIndex: 'status',
       width: 110,
       render: (value: SkillExecutionStep['status']) => (
-        <Tag color={value === 'SUCCEEDED' ? 'green' : value === 'FAILED' ? 'red' : 'blue'}>
+        <Tag color={value === 'SUCCEEDED'
+          ? 'green'
+          : value === 'FAILED'
+            ? 'red'
+            : value === 'SKIPPED'
+              ? 'default'
+              : 'blue'}>
           {value}
         </Tag>
       ),
@@ -627,10 +929,14 @@ const Skills = () => {
       render: (value: string) => <Text copyable={{text: value}}>{value}</Text>,
     },
     {
-      title: t('ai.skills.column.bindings', '工具绑定'),
-      dataIndex: 'toolBindings',
-      width: 100,
-      render: (value?: SkillToolBinding[]) => value?.length ?? 0,
+      title: t('ai.skills.column.bindings', '能力绑定'),
+      key: 'bindings',
+      width: 110,
+      render: (_: unknown, version: SkillVersion) => (
+        (version.toolBindings?.length ?? 0)
+        + (version.promptBindings?.length ?? 0)
+        + (version.resourceBindings?.length ?? 0)
+      ),
     },
     {
       title: t('ai.skills.column.supplyChain', '供应链'),
@@ -678,6 +984,20 @@ const Skills = () => {
     },
   ], [selectedSkill, t]);
 
+  const executionDetailsSkill = executionDetails
+    ? skills.find((skill) => skill.id === executionDetails.skillId)
+    : undefined;
+  const executionDetailsApprovalPending = Boolean(
+    executionDetails?.approvalRequired
+      && !executionDetails.approvedAt
+      && !executionDetails.rejectedAt
+      && (
+        executionDetails.status === 'WAITING_APPROVAL'
+        || executionDetails.status === 'PAUSED'
+      ),
+  );
+  const inspectingWorkflow = summarizeWorkflow(inspectingVersion?.manifest);
+
   return (
     <div style={{height: '100%', display: 'flex', flexDirection: 'column', gap: 16}}>
       <Alert
@@ -686,7 +1006,7 @@ const Skills = () => {
         message={t('ai.skills.notice.title', '声明式 Skill Registry')}
         description={t(
           'ai.skills.notice.description',
-          'Skill 不包含可执行代码；版本固定 OCI Digest、MCP 能力快照和 Tool Schema。新增 Skill 无需修改平台代码。',
+          'Skill 不包含可执行代码；版本固定 OCI Digest、MCP 能力快照以及 Tool、Prompt、Resource 描述。新增 Skill 无需修改平台代码。',
         )}
       />
       <Card
@@ -828,7 +1148,7 @@ const Skills = () => {
             rules={[{required: true}]}
             extra={t(
               'ai.skills.field.manifestHint',
-              '此 JSON 必须与 OCI Artifact 中的 Skill Manifest 层完全一致；Tool 工作流步骤只能引用已绑定 alias。',
+              '此 JSON 必须与 OCI Artifact 中的 Skill Manifest 层完全一致；Tool、Prompt、Resource 步骤只能引用各自已绑定的 alias。',
             )}
           >
             <TextArea rows={20} spellCheck={false} style={{fontFamily: 'monospace'}} />
@@ -874,7 +1194,96 @@ const Skills = () => {
               <Descriptions.Item label="Content Hash">
                 <Text copyable>{inspectingVersion.contentHash}</Text>
               </Descriptions.Item>
+              <Descriptions.Item label={t('ai.skills.details.executionBudget', '执行预算')}>
+                {inspectingVersion.budget
+                  ? t(
+                    'ai.skills.details.executionBudgetValue',
+                    '{calls} 次 Tool 调用 · {duration} 秒 · {payload}',
+                    {
+                      calls: inspectingVersion.budget.maximumToolCalls,
+                      duration: inspectingVersion.budget.maximumDurationSeconds,
+                      payload: formatBytes(inspectingVersion.budget.maximumPayloadBytes),
+                    },
+                  )
+                  : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('ai.skills.details.workflow', '工作流结构')}>
+                {inspectingWorkflow
+                  ? t(
+                    'ai.skills.details.workflowValue',
+                    '{tools} 个 Tool · {prompts} 个 Prompt · {resources} 个 Resource · {conditions} 个条件 · {parallels} 个并行节点/{branches} 个分支',
+                    inspectingWorkflow,
+                  )
+                  : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('ai.skills.details.approvalPolicy', '执行审批')}>
+                {inspectingVersion.approvalPolicy?.required
+                  ? (
+                    <Space wrap>
+                      <Tag color="orange">
+                        {t('ai.skills.approval.required', '需要审批')}
+                      </Tag>
+                      <Tag color={inspectingVersion.approvalPolicy.allowSelfApproval ? 'gold' : 'green'}>
+                        {inspectingVersion.approvalPolicy.allowSelfApproval
+                          ? t('ai.skills.approval.selfAllowed', '允许自审')
+                          : t('ai.skills.approval.separation', '申请与审批分离')}
+                      </Tag>
+                      {inspectingVersion.approvalPolicy.instructions}
+                    </Space>
+                  )
+                  : t('ai.skills.approval.notRequired', '无需审批')}
+              </Descriptions.Item>
             </Descriptions>
+            <Card
+              size="small"
+              style={{marginTop: 16}}
+              title={t('ai.skills.details.capabilityBindings', '固定 MCP 能力')}
+            >
+              <Space direction="vertical" size={12} style={{width: '100%'}}>
+                <div>
+                  <Text strong>{t('ai.skills.details.toolBindings', 'Tools')}</Text>
+                  <div style={{marginTop: 8}}>
+                    <Space wrap>
+                      {inspectingVersion.toolBindings?.length
+                        ? inspectingVersion.toolBindings.map((binding) => (
+                          <Tag key={binding.id} color="blue">
+                            {`${binding.toolAlias} → ${binding.toolName} · ${binding.mcpServerId}@${binding.capabilitySnapshotId}`}
+                          </Tag>
+                        ))
+                        : <Text type="secondary">-</Text>}
+                    </Space>
+                  </div>
+                </div>
+                <div>
+                  <Text strong>{t('ai.skills.details.promptBindings', 'Prompts')}</Text>
+                  <div style={{marginTop: 8}}>
+                    <Space wrap>
+                      {inspectingVersion.promptBindings?.length
+                        ? inspectingVersion.promptBindings.map((binding) => (
+                          <Tag key={binding.id} color="purple">
+                            {`${binding.promptAlias} → ${binding.promptName} · ${binding.mcpServerId}@${binding.capabilitySnapshotId}`}
+                          </Tag>
+                        ))
+                        : <Text type="secondary">-</Text>}
+                    </Space>
+                  </div>
+                </div>
+                <div>
+                  <Text strong>{t('ai.skills.details.resourceBindings', 'Resources')}</Text>
+                  <div style={{marginTop: 8}}>
+                    <Space wrap>
+                      {inspectingVersion.resourceBindings?.length
+                        ? inspectingVersion.resourceBindings.map((binding) => (
+                          <Tag key={binding.id} color="cyan">
+                            {`${binding.resourceAlias} → ${binding.resourceSelector}${binding.resourceTemplate ? ' (template)' : ''} · ${binding.mcpServerId}@${binding.capabilitySnapshotId}`}
+                          </Tag>
+                        ))
+                        : <Text type="secondary">-</Text>}
+                    </Space>
+                  </div>
+                </div>
+              </Space>
+            </Card>
             <Paragraph
               copyable={{text: JSON.stringify(inspectingVersion.manifest ?? {}, null, 2)}}
               style={{
@@ -906,7 +1315,7 @@ const Skills = () => {
           style={{marginBottom: 16}}
           message={t(
             'ai.skills.execution.notice',
-            '输入会按已发布版本的 Schema 校验；Workflow 只调用版本固定的 MCP Snapshot 和 Tool。',
+            '输入会按已发布版本的 Schema 校验；所有节点只调用版本固定的 MCP Snapshot 及 Tool、Prompt、Resource。',
           )}
         />
         <TextArea
@@ -943,7 +1352,57 @@ const Skills = () => {
       <Modal
         open={Boolean(executionDetails)}
         width={980}
-        footer={null}
+        footer={executionDetails && executionDetailsSkill ? (
+          <Space>
+            {executionDetailsApprovalPending && (
+              <>
+                <Button
+                  type="primary"
+                  onClick={() => openExecutionAction(
+                    'approve',
+                    executionDetailsSkill,
+                    executionDetails,
+                  )}
+                >
+                  {t('ai.skills.action.approve', '通过')}
+                </Button>
+                <Button
+                  danger
+                  onClick={() => openExecutionAction(
+                    'reject',
+                    executionDetailsSkill,
+                    executionDetails,
+                  )}
+                >
+                  {t('ai.skills.action.reject', '驳回')}
+                </Button>
+              </>
+            )}
+            {['WAITING_APPROVAL', 'PENDING', 'RUNNING'].includes(executionDetails.status) && (
+              <Button onClick={() => openExecutionAction(
+                'pause',
+                executionDetailsSkill,
+                executionDetails,
+              )}>
+                {t('ai.skills.action.pause', '暂停')}
+              </Button>
+            )}
+            {executionDetails.status === 'PAUSED' && (
+              <Button
+                type="primary"
+                onClick={() => void resumeExecution(
+                  executionDetailsSkill,
+                  executionDetails,
+                )}
+              >
+                {t('ai.skills.action.resume', '恢复')}
+              </Button>
+            )}
+            <Button onClick={() => setExecutionDetails(undefined)}>
+              {t('ai.skills.action.close', '关闭')}
+            </Button>
+          </Space>
+        ) : null}
         title={`${t('ai.skills.execution.details', '执行详情')} · ${executionDetails?.id ?? ''}`}
         onCancel={() => setExecutionDetails(undefined)}
       >
@@ -964,6 +1423,50 @@ const Skills = () => {
               <Descriptions.Item label={t('ai.skills.execution.startedAt', '开始时间')}>
                 {executionDetails.startedAt ?? '-'}
               </Descriptions.Item>
+              <Descriptions.Item label={t('ai.skills.execution.toolCallBudget', 'Tool 调用预算')}>
+                {`${executionDetails.consumedToolCalls ?? 0} / ${executionDetails.maximumToolCalls ?? '-'}`}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('ai.skills.execution.payloadBudget', '载荷预算')}>
+                {`${formatBytes(executionDetails.consumedPayloadBytes)} / ${formatBytes(executionDetails.maximumPayloadBytes)}`}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('ai.skills.execution.durationBudget', '时长预算')}>
+                {executionDetails.maximumDurationSeconds === undefined
+                  ? '-'
+                  : `${executionDetails.maximumDurationSeconds} s`}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('ai.skills.execution.deadlineAt', '截止时间')}>
+                {executionDetails.deadlineAt ?? '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('ai.skills.execution.requestedBy', '申请人')}>
+                {executionDetails.requestedBy ?? '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('ai.skills.execution.approvalState', '审批状态')}>
+                {executionDetails.rejectedAt
+                  ? `${t('ai.skills.execution.rejected', '已驳回')} · ${executionDetails.rejectedBy ?? '-'}`
+                  : executionDetails.approvedAt
+                    ? `${t('ai.skills.execution.approved', '已通过')} · ${executionDetails.approvedBy ?? '-'}`
+                    : executionDetails.approvalRequired
+                      ? t('ai.skills.execution.awaitingApproval', '等待审批')
+                      : t('ai.skills.approval.notRequired', '无需审批')}
+              </Descriptions.Item>
+              {executionDetails.approvalInstructions && (
+                <Descriptions.Item
+                  span={2}
+                  label={t('ai.skills.execution.approvalInstructions', '审批说明')}
+                >
+                  {executionDetails.approvalInstructions}
+                </Descriptions.Item>
+              )}
+              {(executionDetails.pauseRequestedAt || executionDetails.pausedAt) && (
+                <Descriptions.Item
+                  span={2}
+                  label={t('ai.skills.execution.pauseState', '暂停状态')}
+                >
+                  {executionDetails.status === 'RUNNING' && executionDetails.pauseRequested
+                    ? t('ai.skills.execution.pausePending', '将在当前工具调用结束后暂停')
+                    : `${executionDetails.pausedAt ?? executionDetails.pauseRequestedAt ?? '-'} · ${executionDetails.pauseReason ?? '-'}`}
+                </Descriptions.Item>
+              )}
               <Descriptions.Item
                 span={2}
                 label={t('ai.skills.execution.error', '错误')}
@@ -996,6 +1499,35 @@ const Skills = () => {
             </Paragraph>
           </>
         )}
+      </Modal>
+
+      <Modal
+        open={Boolean(executionAction)}
+        title={{
+          approve: t('ai.skills.execution.approveTitle', '审批通过执行'),
+          reject: t('ai.skills.execution.rejectTitle', '驳回执行'),
+          pause: t('ai.skills.execution.pauseTitle', '暂停执行'),
+        }[executionAction?.action ?? 'pause']}
+        confirmLoading={executionActionSubmitting}
+        okButtonProps={{danger: executionAction?.action === 'reject'}}
+        okText={executionAction?.action === 'approve'
+          ? t('ai.skills.action.approve', '通过')
+          : executionAction?.action === 'reject'
+            ? t('ai.skills.action.reject', '驳回')
+            : t('ai.skills.action.pause', '暂停')}
+        onOk={() => void submitExecutionAction()}
+        onCancel={() => setExecutionAction(undefined)}
+      >
+        <TextArea
+          rows={4}
+          maxLength={1024}
+          showCount
+          value={executionActionComment}
+          placeholder={executionAction?.action === 'pause'
+            ? t('ai.skills.execution.pauseReason', '可填写暂停原因')
+            : t('ai.skills.execution.decisionComment', '可填写审批意见')}
+          onChange={(event) => setExecutionActionComment(event.target.value)}
+        />
       </Modal>
     </div>
   );

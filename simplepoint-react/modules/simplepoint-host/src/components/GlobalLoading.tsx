@@ -17,7 +17,9 @@ export const GlobalLoading: React.FC<Props> = ({visible, text}) => {
             style={{
                 position: 'fixed',
                 inset: 0,
-                zIndex: 9999,
+                // Keep Ant Design Modal/Message above the bootstrap overlay so
+                // authentication and recovery prompts can always be operated.
+                zIndex: 900,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

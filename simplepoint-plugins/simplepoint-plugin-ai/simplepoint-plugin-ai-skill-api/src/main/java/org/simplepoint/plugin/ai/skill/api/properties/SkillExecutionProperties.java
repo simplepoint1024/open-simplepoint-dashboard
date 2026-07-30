@@ -26,4 +26,22 @@ public class SkillExecutionProperties {
   private Integer maxAttempts = 3;
 
   private Integer maximumPayloadBytes = 256 * 1024;
+
+  private Integer defaultMaximumDurationSeconds = 300;
+
+  private Long defaultMaximumTotalPayloadBytes = 1024L * 1024L;
+
+  private Integer maximumToolCalls = 128;
+
+  private Integer maximumDurationSeconds = 3600;
+
+  private Long maximumTotalPayloadBytes = 4L * 1024L * 1024L;
+
+  private String capabilityTokenSigningKey;
+
+  private String capabilityTokenIssuer = "simplepoint-ai-control-plane";
+
+  private String capabilityTokenAudience = "simplepoint-mcp-gateway";
+
+  private Duration capabilityTokenTtl = Duration.ofSeconds(90);
 }

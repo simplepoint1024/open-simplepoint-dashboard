@@ -24,6 +24,8 @@ class RequestContextHolderTest {
   @AfterEach
   void tearDown() {
     org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+    RequestContextHolder.clearContext("KEY");
+    RequestContextHolder.clearContext("BACKGROUND_KEY");
   }
 
   @Test
@@ -55,23 +57,28 @@ class RequestContextHolderTest {
   }
 
   @Test
-  void setContext_withNoRequestAttributes_doesNotThrow() {
+  void setContext_withNoRequestAttributes_storesBackgroundValue() {
     org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
-    // Should silently no-op when no request context
-    RequestContextHolder.setContext("KEY", "value");
+    RequestContextHolder.setContext("BACKGROUND_KEY", "value");
+
+    assertThat(RequestContextHolder.getContext("BACKGROUND_KEY", String.class))
+        .isEqualTo("value");
   }
 
   @Test
-  void getContext_withNoRequestAttributes_returnsNull() {
+  void getContext_withNoBackgroundValue_returnsNull() {
     org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
     String result = RequestContextHolder.getContext("KEY", String.class);
     assertThat(result).isNull();
   }
 
   @Test
-  void clearContext_withNoRequestAttributes_doesNotThrow() {
+  void clearContext_withNoRequestAttributes_removesBackgroundValue() {
     org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+    RequestContextHolder.setContext("KEY", "value");
     RequestContextHolder.clearContext("KEY");
+
+    assertThat(RequestContextHolder.getContext("KEY", String.class)).isNull();
   }
 
   @Test

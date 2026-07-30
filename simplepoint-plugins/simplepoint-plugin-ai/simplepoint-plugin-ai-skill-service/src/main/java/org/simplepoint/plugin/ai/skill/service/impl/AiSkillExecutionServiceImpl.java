@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HexFormat;
@@ -21,8 +23,15 @@ import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy.ScopeA
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillDefinition;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillExecution;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillExecutionStep;
+import org.simplepoint.plugin.ai.skill.api.entity.AiSkillPromptBinding;
+import org.simplepoint.plugin.ai.skill.api.entity.AiSkillResourceBinding;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillToolBinding;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillVersion;
+import org.simplepoint.plugin.ai.skill.api.model.SkillAgentExecutionCommand;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionApprovalPolicy;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionBudget;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionDecisionRequest;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionPauseRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionStartRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionStatus;
 import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionStepStatus;
@@ -31,11 +40,21 @@ import org.simplepoint.plugin.ai.skill.api.properties.SkillExecutionProperties;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillDefinitionRepository;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillExecutionRepository;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillExecutionStepRepository;
+import org.simplepoint.plugin.ai.skill.api.repository.AiSkillPromptBindingRepository;
+import org.simplepoint.plugin.ai.skill.api.repository.AiSkillResourceBindingRepository;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillToolBindingRepository;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillVersionRepository;
 import org.simplepoint.plugin.ai.skill.api.service.AiSkillExecutionService;
+import org.simplepoint.plugin.ai.skill.service.support.SkillApprovalPolicy;
+import org.simplepoint.plugin.ai.skill.service.support.SkillBudgetPolicy;
 import org.simplepoint.plugin.ai.skill.service.support.SkillJsonSchemaValidator;
-import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowTemplateResolver;
+import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowPlanCompiler;
+import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowPlanCompiler.ExecutableNode;
+import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowPlanCompiler.PromptNode;
+import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowPlanCompiler.ResourceNode;
+import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowPlanCompiler.ToolNode;
+import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowPlanCompiler.WorkflowBindings;
+import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowPlanCompiler.WorkflowPlan;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -57,6 +76,10 @@ public class AiSkillExecutionServiceImpl implements AiSkillExecutionService {
 
   private final AiSkillToolBindingRepository bindingRepository;
 
+  private final AiSkillPromptBindingRepository promptBindingRepository;
+
+  private final AiSkillResourceBindingRepository resourceBindingRepository;
+
   private final AiSkillExecutionRepository executionRepository;
 
   private final AiSkillExecutionStepRepository stepRepository;
@@ -65,7 +88,11 @@ public class AiSkillExecutionServiceImpl implements AiSkillExecutionService {
 
   private final SkillJsonSchemaValidator schemaValidator;
 
-  private final SkillWorkflowTemplateResolver templateResolver;
+  private final SkillWorkflowPlanCompiler workflowPlanCompiler;
+
+  private final SkillBudgetPolicy budgetPolicy;
+
+  private final SkillApprovalPolicy approvalPolicy;
 
   private final SkillExecutionProperties properties;
 
@@ -80,22 +107,30 @@ public class AiSkillExecutionServiceImpl implements AiSkillExecutionService {
       final AiSkillDefinitionRepository skillRepository,
       final AiSkillVersionRepository versionRepository,
       final AiSkillToolBindingRepository bindingRepository,
+      final AiSkillPromptBindingRepository promptBindingRepository,
+      final AiSkillResourceBindingRepository resourceBindingRepository,
       final AiSkillExecutionRepository executionRepository,
       final AiSkillExecutionStepRepository stepRepository,
       final AiScopeAccessPolicy scopeAccessPolicy,
       final SkillJsonSchemaValidator schemaValidator,
-      final SkillWorkflowTemplateResolver templateResolver,
+      final SkillWorkflowPlanCompiler workflowPlanCompiler,
+      final SkillBudgetPolicy budgetPolicy,
+      final SkillApprovalPolicy approvalPolicy,
       final SkillExecutionProperties properties,
       final ObjectMapper objectMapper
   ) {
     this.skillRepository = skillRepository;
     this.versionRepository = versionRepository;
     this.bindingRepository = bindingRepository;
+    this.promptBindingRepository = promptBindingRepository;
+    this.resourceBindingRepository = resourceBindingRepository;
     this.executionRepository = executionRepository;
     this.stepRepository = stepRepository;
     this.scopeAccessPolicy = scopeAccessPolicy;
     this.schemaValidator = schemaValidator;
-    this.templateResolver = templateResolver;
+    this.workflowPlanCompiler = workflowPlanCompiler;
+    this.budgetPolicy = budgetPolicy;
+    this.approvalPolicy = approvalPolicy;
     this.properties = properties;
     this.objectMapper = objectMapper;
     this.canonicalMapper = objectMapper.copy()
@@ -128,10 +163,85 @@ public class AiSkillExecutionServiceImpl implements AiSkillExecutionService {
     if (version.getStatus() != SkillVersionStatus.PUBLISHED) {
       throw new IllegalStateException("Active Skill version is not published");
     }
-    String idempotencyKey = requireIdempotencyKey(request.idempotencyKey());
+    return startVersion(
+        skill,
+        version,
+        scope,
+        currentUserId(),
+        request.idempotencyKey(),
+        request.input()
+    );
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public AiSkillExecution startVersionForAgent(
+      final SkillAgentExecutionCommand command
+  ) {
+    if (command == null || command.executionScope() == null) {
+      throw new IllegalArgumentException(
+          "Agent Skill execution command must not be null"
+      );
+    }
+    ScopeAssignment scope = new ScopeAssignment(
+        command.executionScope(),
+        command.tenantId()
+    );
+    AiSkillDefinition skill = skillRepository.findActiveByIdForUpdate(
+        required(command.skillId(), "Skill ID", 64)
+    ).orElseThrow(() -> new IllegalArgumentException("Skill does not exist"));
+    if (!scopeAccessPolicy.canUseResourceFromScope(
+        skill.getScopeType(),
+        skill.getTenantId(),
+        scope.scopeType(),
+        scope.tenantId()
+    ) || !Boolean.TRUE.equals(skill.getEnabled())) {
+      throw new IllegalArgumentException(
+          "Skill does not exist or Agent scope cannot use it"
+      );
+    }
+    AiSkillVersion version = versionRepository.findActiveByIdAndSkillId(
+        required(command.skillVersionId(), "Skill version ID", 64),
+        skill.getId()
+    ).orElseThrow(() -> new IllegalArgumentException(
+        "Pinned Skill version does not exist"
+    ));
+    if (version.getStatus() != SkillVersionStatus.PUBLISHED) {
+      throw new IllegalStateException(
+          "Pinned Skill version is not published"
+      );
+    }
+    if (!required(
+        command.expectedContentHash(),
+        "Skill version content hash",
+        64
+    ).equals(version.getContentHash())) {
+      throw new IllegalStateException(
+          "Pinned Skill version content hash changed"
+      );
+    }
+    return startVersion(
+        skill,
+        version,
+        scope,
+        command.requestedBy(),
+        command.idempotencyKey(),
+        command.input()
+    );
+  }
+
+  private AiSkillExecution startVersion(
+      final AiSkillDefinition skill,
+      final AiSkillVersion version,
+      final ScopeAssignment scope,
+      final String requestedBy,
+      final String rawIdempotencyKey,
+      final Map<String, Object> rawInput
+  ) {
+    String idempotencyKey = requireIdempotencyKey(rawIdempotencyKey);
     String idempotencyHash = sha256(idempotencyKey);
-    Map<String, Object> input = request.input() == null
-        ? Map.of() : new LinkedHashMap<>(request.input());
+    Map<String, Object> input = rawInput == null
+        ? Map.of() : new LinkedHashMap<>(rawInput);
     String inputJson = writeJson(input);
     assertPayloadSize(inputJson, "Skill execution input");
     schemaValidator.validate(
@@ -160,19 +270,37 @@ public class AiSkillExecutionServiceImpl implements AiSkillExecutionService {
         version.getWorkflowJson(),
         "Skill workflow"
     );
-    List<Map<String, Object>> workflowSteps = readObjectList(
-        workflow.get("steps"),
-        "Skill workflow steps"
-    );
-    if (workflowSteps.isEmpty()) {
-      throw new IllegalStateException(
-          "Skill workflow must contain at least one executable step"
-      );
-    }
     Map<String, AiSkillToolBinding> bindings = new HashMap<>();
     bindingRepository.findAllActiveBySkillVersionId(version.getId())
         .forEach(binding -> bindings.put(binding.getToolAlias(), binding));
-
+    Map<String, AiSkillPromptBinding> promptBindings = new HashMap<>();
+    promptBindingRepository.findAllActiveBySkillVersionId(version.getId())
+        .forEach(binding ->
+            promptBindings.put(binding.getPromptAlias(), binding));
+    Map<String, AiSkillResourceBinding> resourceBindings = new HashMap<>();
+    resourceBindingRepository.findAllActiveBySkillVersionId(version.getId())
+        .forEach(binding ->
+            resourceBindings.put(binding.getResourceAlias(), binding));
+    WorkflowPlan workflowPlan = workflowPlanCompiler.compile(
+        workflow,
+        new WorkflowBindings(
+            bindings.keySet(),
+            promptBindings.keySet(),
+            resourceBindings.keySet()
+        )
+    );
+    SkillExecutionBudget budget = budgetPolicy.read(
+        version.getBudgetJson(),
+        workflowPlan.maximumToolCalls()
+    );
+    final SkillExecutionApprovalPolicy approval =
+        approvalPolicy.readManifest(version.getManifestJson());
+    long initialPayloadBytes = payloadBytes(inputJson);
+    if (initialPayloadBytes > budget.maximumPayloadBytes()) {
+      throw new IllegalArgumentException(
+          "Skill execution input exceeds the version payload budget"
+      );
+    }
     AiSkillExecution execution = new AiSkillExecution();
     execution.setSkillId(skill.getId());
     execution.setSkillVersionId(version.getId());
@@ -183,75 +311,134 @@ public class AiSkillExecutionServiceImpl implements AiSkillExecutionService {
     execution.setInputJson(inputJson);
     execution.setOutputTemplateJson(workflow.containsKey("output")
         ? writeJson(workflow.get("output")) : null);
+    execution.setWorkflowPlanJson(writeJson(workflow));
     execution.setOutputSchemaJson(version.getOutputSchemaJson());
-    execution.setStatus(SkillExecutionStatus.PENDING);
+    Instant submittedAt = Instant.now();
+    execution.setStatus(approval.required()
+        ? SkillExecutionStatus.WAITING_APPROVAL
+        : SkillExecutionStatus.PENDING);
+    execution.setApprovalRequired(approval.required());
+    execution.setSelfApprovalAllowed(approval.allowSelfApproval());
+    execution.setApprovalInstructions(approval.instructions());
+    execution.setApprovalRequestedAt(
+        approval.required() ? submittedAt : null
+    );
+    execution.setPauseRequested(false);
+    execution.setInactiveSince(approval.required() ? submittedAt : null);
     execution.setAttemptCount(0);
     execution.setLeaseToken(0);
-    execution.setRequestedBy(currentUserId());
+    execution.setMaximumToolCalls(budget.maximumToolCalls());
+    execution.setMaximumDurationSeconds(budget.maximumDurationSeconds());
+    execution.setMaximumPayloadBytes(budget.maximumPayloadBytes());
+    execution.setConsumedToolCalls(0);
+    execution.setConsumedPayloadBytes(initialPayloadBytes);
+    execution.setDeadlineAt(
+        submittedAt.plusSeconds(budget.maximumDurationSeconds())
+    );
+    execution.setRequestedBy(requestedBy);
     execution = executionRepository.save(execution);
 
-    List<String> availableSteps = new ArrayList<>();
     List<AiSkillExecutionStep> savedSteps = new ArrayList<>();
+    List<ExecutableNode> workflowSteps = workflowPlan.executableSteps();
     for (int index = 0; index < workflowSteps.size(); index++) {
-      Map<String, Object> source = workflowSteps.get(index);
-      final String stepId = required(
-          source.get("id"),
-          "Workflow step ID",
-          64
-      );
-      String stepType = required(source.get("type"), "Workflow step type", 32);
-      if (!"tool".equals(stepType)) {
-        throw new IllegalStateException(
-            "Workflow executor does not support step type yet: " + stepType
-        );
-      }
-      String alias = required(source.get("tool"), "Workflow Tool alias", 64);
-      AiSkillToolBinding binding = bindings.get(alias);
-      if (binding == null) {
-        throw new IllegalStateException(
-            "Workflow Tool binding does not exist: " + alias
-        );
-      }
-      Object arguments = source.get("arguments");
-      if (arguments != null && !(arguments instanceof Map<?, ?>)) {
-        throw new IllegalArgumentException(
-            "Workflow Tool arguments must be an object"
-        );
-      }
-      if (arguments != null) {
-        templateResolver.validateTemplate(
-            arguments,
-            availableSteps,
-            "Workflow step " + stepId + " arguments"
-        );
-      }
-      AiSkillExecutionStep step = new AiSkillExecutionStep();
-      step.setExecutionId(execution.getId());
-      step.setStepId(stepId);
-      step.setStepType(stepType);
-      step.setStepOrder(index);
-      step.setToolBindingId(binding.getId());
-      step.setToolAlias(binding.getToolAlias());
-      step.setMcpServerId(binding.getMcpServerId());
-      step.setCapabilitySnapshotId(binding.getCapabilitySnapshotId());
-      step.setToolName(binding.getToolName());
-      step.setInputSchemaHash(binding.getInputSchemaHash());
-      step.setArgumentsTemplateJson(
-          arguments == null ? null : writeJson(arguments)
+      AiSkillExecutionStep step = createExecutionStep(
+          execution.getId(),
+          index,
+          workflowSteps.get(index),
+          bindings,
+          promptBindings,
+          resourceBindings
       );
       step.setStatus(SkillExecutionStepStatus.PENDING);
       step.setAttemptCount(0);
       savedSteps.add(stepRepository.save(step));
-      availableSteps.add(stepId);
-    }
-    if (workflow.containsKey("output")) {
-      templateResolver.validateTemplate(
-          workflow.get("output"),
-          availableSteps,
-          "Workflow output"
-      );
     }
     return decorate(execution, savedSteps);
+  }
+
+  private AiSkillExecutionStep createExecutionStep(
+      final String executionId,
+      final int order,
+      final ExecutableNode source,
+      final Map<String, AiSkillToolBinding> toolBindings,
+      final Map<String, AiSkillPromptBinding> promptBindings,
+      final Map<String, AiSkillResourceBinding> resourceBindings
+  ) {
+    AiSkillExecutionStep step = new AiSkillExecutionStep();
+    step.setExecutionId(executionId);
+    step.setStepId(source.id());
+    step.setStepOrder(order);
+    switch (source) {
+      case ToolNode tool -> {
+        AiSkillToolBinding binding = toolBindings.get(tool.toolAlias());
+        if (binding == null) {
+          throw new IllegalStateException(
+              "Workflow Tool binding does not exist: " + tool.toolAlias()
+          );
+        }
+        step.setStepType("tool");
+        step.setBindingId(binding.getId());
+        step.setCapabilityAlias(binding.getToolAlias());
+        step.setMcpServerId(binding.getMcpServerId());
+        step.setCapabilitySnapshotId(binding.getCapabilitySnapshotId());
+        step.setCapabilityName(binding.getToolName());
+        step.setCapabilitySchemaHash(binding.getInputSchemaHash());
+        step.setCapabilityTemplate(false);
+        step.setInputTemplateJson(tool.argumentsTemplate() == null
+            ? null : writeJson(tool.argumentsTemplate()));
+      }
+      case PromptNode prompt -> {
+        AiSkillPromptBinding binding = promptBindings.get(
+            prompt.promptAlias()
+        );
+        if (binding == null) {
+          throw new IllegalStateException(
+              "Workflow Prompt binding does not exist: "
+                  + prompt.promptAlias()
+          );
+        }
+        step.setStepType("prompt");
+        step.setBindingId(binding.getId());
+        step.setCapabilityAlias(binding.getPromptAlias());
+        step.setMcpServerId(binding.getMcpServerId());
+        step.setCapabilitySnapshotId(binding.getCapabilitySnapshotId());
+        step.setCapabilityName(binding.getPromptName());
+        step.setCapabilitySchemaHash(binding.getDescriptorHash());
+        step.setCapabilityTemplate(false);
+        step.setInputTemplateJson(prompt.argumentsTemplate() == null
+            ? null : writeJson(prompt.argumentsTemplate()));
+      }
+      case ResourceNode resource -> {
+        AiSkillResourceBinding binding = resourceBindings.get(
+            resource.resourceAlias()
+        );
+        if (binding == null) {
+          throw new IllegalStateException(
+              "Workflow Resource binding does not exist: "
+                  + resource.resourceAlias()
+          );
+        }
+        if (Boolean.TRUE.equals(binding.getResourceTemplate())
+            && resource.uriTemplate() == null) {
+          throw new IllegalArgumentException(
+              "Resource Template workflow step must define uri"
+          );
+        }
+        step.setStepType("resource");
+        step.setBindingId(binding.getId());
+        step.setCapabilityAlias(binding.getResourceAlias());
+        step.setMcpServerId(binding.getMcpServerId());
+        step.setCapabilitySnapshotId(binding.getCapabilitySnapshotId());
+        step.setCapabilityName(binding.getResourceSelector());
+        step.setCapabilitySchemaHash(binding.getDescriptorHash());
+        step.setCapabilityTemplate(
+            Boolean.TRUE.equals(binding.getResourceTemplate())
+        );
+        step.setInputTemplateJson(resource.uriTemplate() == null
+            ? null : writeJson(resource.uriTemplate()));
+      }
+    }
+    return step;
   }
 
   @Override
@@ -289,6 +476,154 @@ public class AiSkillExecutionServiceImpl implements AiSkillExecutionService {
         .map(this::decorate);
   }
 
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public AiSkillExecution approve(
+      final String skillId,
+      final String executionId,
+      final SkillExecutionDecisionRequest request
+  ) {
+    ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
+    AiSkillDefinition skill = requireSkill(skillId, scope);
+    AiSkillExecution execution = requireExecutionForUpdate(
+        skill,
+        scope,
+        executionId
+    );
+    if (execution.getApprovedAt() != null) {
+      return decorate(execution);
+    }
+    assertApprovalPending(execution);
+    String actor = requireCurrentUserId();
+    assertSelfApprovalAllowed(execution, actor);
+    Instant now = Instant.now();
+    execution.setApprovedAt(now);
+    execution.setApprovedBy(actor);
+    execution.setApprovalComment(optionalComment(
+        request == null ? null : request.comment()
+    ));
+    if (execution.getStatus() == SkillExecutionStatus.WAITING_APPROVAL) {
+      activate(execution, now);
+    }
+    executionRepository.save(execution);
+    return decorate(execution);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public AiSkillExecution reject(
+      final String skillId,
+      final String executionId,
+      final SkillExecutionDecisionRequest request
+  ) {
+    ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
+    AiSkillDefinition skill = requireSkill(skillId, scope);
+    AiSkillExecution execution = requireExecutionForUpdate(
+        skill,
+        scope,
+        executionId
+    );
+    if (execution.getStatus() == SkillExecutionStatus.REJECTED) {
+      return decorate(execution);
+    }
+    assertApprovalPending(execution);
+    String actor = requireCurrentUserId();
+    assertSelfApprovalAllowed(execution, actor);
+    if (execution.getStatus() != SkillExecutionStatus.WAITING_APPROVAL
+        && execution.getStatus() != SkillExecutionStatus.PAUSED) {
+      throw new IllegalStateException(
+          "Skill execution is not waiting for an approval decision"
+      );
+    }
+    Instant now = Instant.now();
+    execution.setRejectedAt(now);
+    execution.setRejectedBy(actor);
+    execution.setRejectionReason(optionalComment(
+        request == null ? null : request.comment()
+    ));
+    execution.setStatus(SkillExecutionStatus.REJECTED);
+    execution.setCompletedAt(now);
+    execution.setInactiveSince(null);
+    execution.setPauseRequested(false);
+    clearLease(execution);
+    executionRepository.save(execution);
+    return decorate(execution);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public AiSkillExecution pause(
+      final String skillId,
+      final String executionId,
+      final SkillExecutionPauseRequest request
+  ) {
+    ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
+    AiSkillDefinition skill = requireSkill(skillId, scope);
+    AiSkillExecution execution = requireExecutionForUpdate(
+        skill,
+        scope,
+        executionId
+    );
+    if (execution.getStatus() == SkillExecutionStatus.PAUSED
+        || Boolean.TRUE.equals(execution.getPauseRequested())) {
+      return decorate(execution);
+    }
+    if (isTerminal(execution.getStatus())) {
+      throw new IllegalStateException(
+          "Terminal Skill execution cannot be paused"
+      );
+    }
+    Instant now = Instant.now();
+    execution.setPauseRequested(true);
+    execution.setPauseRequestedAt(now);
+    execution.setPauseRequestedBy(currentUserId());
+    execution.setPauseReason(optionalComment(
+        request == null ? null : request.reason()
+    ));
+    if (execution.getStatus() != SkillExecutionStatus.RUNNING) {
+      execution.setStatus(SkillExecutionStatus.PAUSED);
+      execution.setPausedAt(now);
+      if (execution.getInactiveSince() == null) {
+        execution.setInactiveSince(now);
+      }
+      clearLease(execution);
+    }
+    executionRepository.save(execution);
+    return decorate(execution);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public AiSkillExecution resume(
+      final String skillId,
+      final String executionId
+  ) {
+    ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
+    AiSkillDefinition skill = requireSkill(skillId, scope);
+    AiSkillExecution execution = requireExecutionForUpdate(
+        skill,
+        scope,
+        executionId
+    );
+    if (execution.getStatus() != SkillExecutionStatus.PAUSED) {
+      throw new IllegalStateException(
+          "Only a paused Skill execution can be resumed"
+      );
+    }
+    Instant now = Instant.now();
+    execution.setPauseRequested(false);
+    execution.setResumedAt(now);
+    execution.setResumedBy(currentUserId());
+    if (Boolean.TRUE.equals(execution.getApprovalRequired())
+        && execution.getApprovedAt() == null) {
+      execution.setStatus(SkillExecutionStatus.WAITING_APPROVAL);
+    } else {
+      activate(execution, now);
+    }
+    executionRepository.save(execution);
+    return decorate(execution);
+  }
+
   private AiSkillDefinition requireSkill(
       final String skillId,
       final ScopeAssignment scope
@@ -315,6 +650,95 @@ public class AiSkillExecutionServiceImpl implements AiSkillExecutionService {
       throw new IllegalArgumentException("Skill does not exist");
     }
     return skill;
+  }
+
+  private AiSkillExecution requireExecutionForUpdate(
+      final AiSkillDefinition skill,
+      final ScopeAssignment scope,
+      final String executionId
+  ) {
+    AiSkillExecution execution = executionRepository.findActiveByIdForUpdate(
+        required(executionId, "Skill execution ID", 64)
+    ).orElseThrow(() -> new IllegalArgumentException(
+        "Skill execution does not exist"
+    ));
+    if (!skill.getId().equals(execution.getSkillId())
+        || execution.getScopeType() != scope.scopeType()
+        || !java.util.Objects.equals(
+            execution.getTenantId(),
+            scope.tenantId()
+        )) {
+      throw new IllegalArgumentException("Skill execution does not exist");
+    }
+    return execution;
+  }
+
+  private static void assertApprovalPending(
+      final AiSkillExecution execution
+  ) {
+    if (!Boolean.TRUE.equals(execution.getApprovalRequired())) {
+      throw new IllegalStateException(
+          "Skill execution does not require approval"
+      );
+    }
+    if (execution.getApprovedAt() != null
+        || execution.getRejectedAt() != null
+        || isTerminal(execution.getStatus())) {
+      throw new IllegalStateException(
+          "Skill execution approval was already decided"
+      );
+    }
+  }
+
+  private static void assertSelfApprovalAllowed(
+      final AiSkillExecution execution,
+      final String actor
+  ) {
+    if (!Boolean.TRUE.equals(execution.getSelfApprovalAllowed())
+        && actor.equals(execution.getRequestedBy())) {
+      throw new IllegalStateException(
+          "Skill execution requester cannot approve or reject this execution"
+      );
+    }
+  }
+
+  private static void activate(
+      final AiSkillExecution execution,
+      final Instant now
+  ) {
+    if (execution.getInactiveSince() != null
+        && execution.getDeadlineAt() != null
+        && now.isAfter(execution.getInactiveSince())) {
+      Duration inactive = Duration.between(execution.getInactiveSince(), now);
+      execution.setDeadlineAt(execution.getDeadlineAt().plus(inactive));
+    }
+    execution.setInactiveSince(null);
+    execution.setStatus(SkillExecutionStatus.PENDING);
+  }
+
+  private static boolean isTerminal(final SkillExecutionStatus status) {
+    return status == SkillExecutionStatus.SUCCEEDED
+        || status == SkillExecutionStatus.FAILED
+        || status == SkillExecutionStatus.REJECTED
+        || status == SkillExecutionStatus.CANCELLED;
+  }
+
+  private static void clearLease(final AiSkillExecution execution) {
+    execution.setLeaseOwner(null);
+    execution.setLeaseExpiresAt(null);
+  }
+
+  private static String optionalComment(final String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    String normalized = value.replaceAll("\\s+", " ").trim();
+    if (normalized.length() > 1024) {
+      throw new IllegalArgumentException(
+          "Skill execution decision comment is too long"
+      );
+    }
+    return normalized;
   }
 
   private AiSkillExecution decorate(final AiSkillExecution execution) {
@@ -360,23 +784,6 @@ public class AiSkillExecutionServiceImpl implements AiSkillExecutionService {
     }
   }
 
-  private List<Map<String, Object>> readObjectList(
-      final Object value,
-      final String label
-  ) {
-    if (!(value instanceof List<?> list)) {
-      throw new IllegalStateException(label + " must be an array");
-    }
-    List<Map<String, Object>> result = new ArrayList<>();
-    for (Object item : list) {
-      if (!(item instanceof Map<?, ?> map)) {
-        throw new IllegalStateException(label + " item must be an object");
-      }
-      result.add(objectMapper.convertValue(map, MAP_TYPE));
-    }
-    return List.copyOf(result);
-  }
-
   private String writeJson(final Object value) {
     try {
       return canonicalMapper.writeValueAsString(value);
@@ -395,6 +802,10 @@ public class AiSkillExecutionServiceImpl implements AiSkillExecutionService {
         || json.getBytes(StandardCharsets.UTF_8).length > maximum) {
       throw new IllegalArgumentException(label + " is too large");
     }
+  }
+
+  private static long payloadBytes(final String json) {
+    return json.getBytes(StandardCharsets.UTF_8).length;
   }
 
   private static String requireIdempotencyKey(final String value) {
@@ -419,6 +830,16 @@ public class AiSkillExecutionServiceImpl implements AiSkillExecutionService {
   private static String currentUserId() {
     AuthorizationContext context = AuthorizationContextHolder.getContext();
     return context == null ? null : context.getUserId();
+  }
+
+  private static String requireCurrentUserId() {
+    String userId = currentUserId();
+    if (userId == null || userId.isBlank()) {
+      throw new IllegalStateException(
+          "Authenticated user is required for Skill approval"
+      );
+    }
+    return userId;
   }
 
   private static String sha256(final String value) {

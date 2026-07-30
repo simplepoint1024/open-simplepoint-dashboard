@@ -6,12 +6,12 @@
 
 | 项目 | 状态 |
 | --- | --- |
-| 最后更新 | 2026-07-29 |
-| 当前阶段 | Phase 1 主链完成；Phase 2 本地产品化闭环完成；Phase 3 首版 Skill Workflow 已实现 |
+| 最后更新 | 2026-07-30 |
+| 当前阶段 | Phase 1、Phase 2、Phase 3 已完成；Phase 4 Agent Runtime 已完成记忆、人工介入与持久化可观测执行面 |
 | 设计文档 | [AI 工作台 MCP、Skill、Agent 平台设计](doc/design/ai_mcp_agent_skill_platform.md) |
-| 代码实施 | 已新增 MCP 与 Runtime 四层模块、独立 Gateway、独立 Tool Runtime 和工作台页面 |
-| 数据库变更 | 已新增 MCP、Runtime、加密 Secret、Skill Registry，以及 Skill Execution/Step 队列 |
-| 部署变更 | 已新增 OCI 镜像、开发 PKI、受限 Engine Proxy、Egress Proxy、Image Verifier 与 Runtime 节点 |
+| 代码实施 | 已新增 MCP、Runtime、Skill、Agent 四层模块，独立 Gateway、独立 Tool Runtime 和对应工作台页面 |
+| 数据库变更 | 已新增 MCP、Runtime、加密 Secret、Skill Registry/Execution，以及 Agent Registry/Execution/Trace/Event/Memory/Human Intervention |
+| 部署变更 | 已新增 OCI 镜像、开发 PKI、受限 Engine Proxy、Egress Proxy、Image Verifier、Tool Runtime 与独立 Agent Runtime |
 
 ## 已确认的设计决策
 
@@ -166,23 +166,48 @@ Phase 1 仍保留主流远程 MCP Server 兼容矩阵和 Redis 短暂故障验�
 
 - [x] 实现平台/租户统一的 Skill Registry 和不可变版本。
 - [x] 实现首版声明式 Skill Manifest Schema、OCI Reference/Digest 与 Content Hash。
-- [x] 实现 MCP 能力快照、Tool 名称和输入/输出 Schema Hash 固定。
+- [x] 实现 MCP 能力快照，以及 Tool、Prompt、Resource/Resource Template
+  描述符与 Schema Hash 固定。
 - [x] 实现发布、激活、废弃生命周期和并发锁。
-- [x] 拒绝任意执行字段和未绑定 Tool 的 Workflow 引用。
+- [x] 拒绝任意执行字段和未绑定 MCP 能力的 Workflow 引用。
 - [x] 增加 AI 工作台技能页面。
 - [x] 实现 OCI Registry Artifact 拉取、媒体类型、签名和内容一致性校验。
 - [x] 实现首版顺序 Tool Skill Workflow。
 - [x] 实现 Workflow/Step 持久化、幂等提交、租约/fencing、检查点恢复和执行页面。
-- [ ] 实现 Capability Token、预算、审批、条件/并行节点和运行时端到端测试。
+- [x] 完成签名 OCI Artifact、发布、调度、MCP Tool 调用和步骤检查点真实端到端验收。
+- [x] 新增可重复运行并验证幂等提交的 `verify_skill_workflow_e2e.sh`。
+- [x] 实现短期单次 Capability Token、Gateway 请求精确绑定和 Redis 集群重放防护。
+- [x] 实现不可变版本预算、Execution 预算快照、Tool 调用/时长/累计载荷限制。
+- [x] 工作台显示版本预算、执行消耗/截止时间和不可逆 Capability Token ID Hash。
+- [x] 实现不可变执行审批策略、职责分离、拒绝和审计字段。
+- [x] 实现持久化暂停/恢复、Worker 安全检查点和有效时长预算。
+- [x] 实现有界条件节点、并行 fork/join、分支隔离、跳过检查点和最坏路径预算。
+- [x] 实现 Prompt、Resource/Resource Template 声明式步骤、通用检查点与预算语义。
+- [x] 完成 Tool、Prompt、Resource 的签名 OCI Skill 真实端到端验收。
 
 ### Phase 4：Agent
 
-- [ ] 实现 Agent Registry 和不可变版本。
-- [ ] 新增独立 Agent Runtime。
-- [ ] 接入现有模型网关。
-- [ ] 强制 `Agent -> Skill -> Tool`。
-- [ ] 实现记忆、预算、审批和执行链路。
-- [ ] 增加 AI 工作台 Agent 和执行记录页面。
+- [x] 实现平台/租户 Agent Registry 和不可变版本。
+- [x] 实现定义与版本生命周期、活动版本指针和依赖发布期重校验。
+- [x] 固定可见且可用的主/回退模型，以及已发布 Skill 精确版本和 Content Hash。
+- [x] 实现 Agent Manifest Schema、执行字段拒绝、记忆/预算/审批策略声明。
+- [x] 增加 AI 工作台 Agent 定义、版本、发布和废弃页面。
+- [x] 新增独立 Agent Runtime 和可横向领取的数据库执行队列。
+- [x] 在执行面接入现有模型网关并固定主模型/回退模型。
+- [x] 在执行面强制 `Agent -> Skill -> Tool` 和精确 Skill Version/Content Hash。
+- [x] 强制执行步骤、循环、并发、Token、费用预算和执行前审批。
+- [x] 增加 Agent 执行记录、详情和模型/Skill Trace 页面。
+- [x] 实现短期记忆裁剪/摘要、执行快照和摘要完整性哈希。
+- [x] 实现 Agent 执行中协作式暂停/恢复和工作台控制页面。
+- [x] 实现长期记忆、记忆作用域隔离和受控检索注入。
+- [x] 实现人工介入、可恢复等待、结构化输入、取消和超时边界。
+- [x] 实现追加式持久化执行事件、排他游标增量读取和有界事件载荷。
+- [x] 实现独立 Trace 分页/类型/状态筛选，执行列表不再 N+1 加载完整 Trace。
+- [x] 实现数据库时间窗聚合指标和低基数 Micrometer Agent 事件计数。
+- [x] 工作台增加运行指标、执行事件时间线和服务端分页 Trace 查询。
+- [x] 将 Skill Workflow 隐含的 MCP Resource URI Template 约束增强到模型可见
+  输入契约，并在创建子 Skill 前预校验；无副作用的参数拒绝作为可重试 Tool Result
+  回传模型，同时保留失败 Trace 和事件。
 
 ### Phase 5：Workflow 与生态
 
@@ -197,13 +222,21 @@ Phase 1 仍保留主流远程 MCP Server 兼容矩阵和 Redis 短暂故障验�
 ## 下一步
 
 Phase 2 代码与本地生产化收尾已经完成，Phase 3 Skill Registry、Artifact
-供应链校验和首版持久化 Tool Workflow 已经落地。
+供应链校验、持久化 Tool/Prompt/Resource/条件/并行 Workflow、Capability Token、
+执行预算、审批、暂停/恢复和真实运行验收已经落地。Phase 4 已完成平台/租户
+Agent Registry、不可变版本、固定模型与 Skill Version、独立 Runtime、持久化
+Execution/Trace、预算审批、工作台执行页面和真实 `Agent -> Skill -> MCP` 闭环。
+短期对话裁剪、确定性有界摘要、Agent + 平台/租户 + 登录主体精确隔离的长期记忆、
+不可变检索快照、安全上下文注入，以及模型/Skill 安全检查点上的协作式暂停与恢复
+也已完成。人工介入采用独立持久化任务和 `WAITING_HUMAN` 状态，支持运行时重启恢复、
+结构化输入后继续、人工取消和版本固定的超时动作。执行生命周期、模型、Skill、
+记忆、审批、暂停和人工介入现在统一写入追加式持久事件；工作台通过排他序列游标
+增量读取，Trace 独立分页筛选，时间窗指标直接从持久化执行与 Trace 聚合，因此
+AI 服务或 Agent Runtime 重启不会清空可观测数据。
 下一步按以下顺序推进：
 
-1. Docker 宿主运行时恢复后，重新构建并更新 AI 容器，使用现有托管 OCI Echo
-   MCP 完成 Skill 创建、发布、执行、步骤检查点和结果查询端到端验收；
-2. 为 Skill Workflow 加入 Capability Token、执行预算和审批状态机，再扩展
-   条件/并行、Prompt 与 Resource 步骤；
+1. 进行 Agent Runtime 多副本并发领取、租约超时和 fencing 故障接管验收；
+2. 实现 Agent Workflow、显式补偿节点和长任务编排；
 3. 在目标多主机 Swarm 环境运行 `verify_phase2_runtime_failover.sh`，补齐 Runtime
    Worker drain、跨节点重分配、容量恢复和 AppArmor 强制验收。
 
@@ -431,3 +464,220 @@ Phase 2 代码与本地生产化收尾已经完成，Phase 3 Skill Registry、Ar
   Docker daemon 的健康检查 exec 持续超时并积累大量不可中断 `runc` 进程，
   所有容器因此被误标 unhealthy，且当前用户无权重启 Docker；需先在宿主执行
   `sudo systemctl restart docker`，恢复后继续镜像更新和端到端验收。
+- 2026-07-30：重新构建并更新 Common/Host OCI 镜像，修复工作空间切换时角色与
+  授权上下文事件顺序错位导致的首页永久 loading；同时识别 Fetch 跟随 302 后返回
+  登录 HTML 的会话失效场景并立即回登录页。真实 Chromium 连续切换两个组织工作空间、
+  清除会话和刷新回归全部通过。
+- 2026-07-30：使用现有托管 OCI Echo MCP 的固定 Server、能力快照和 `echo` Tool，
+  构建符合 SimplePoint 固定媒体契约的 Skill OCI Artifact，经 Cosign 公钥签名和独立
+  Image Verifier 准入后创建不可变版本并发布。Artifact Manifest、Config、内容层
+  Digest 和策略 Hash 均完成校验，`artifactSignatureVerified=true`。
+- 2026-07-30：真实 Skill Workflow 从持久队列进入 Worker，按固定
+  `serverId/snapshotId/toolName/inputSchemaHash` 调用 Runtime 中的 MCP Tool，
+  Execution 和 Step 均进入 `SUCCEEDED`，输入、步骤输出和最终输出完整可查询。
+  新增 `verify_skill_workflow_e2e.sh`，重复验证版本复用、发布、幂等提交、步骤完成和
+  预期结果；临时 Registry、公私钥和 Verifier 测试配置已清理，Verifier 恢复
+  keyless、HTTPS Registry 和透明日志默认策略。
+- 2026-07-30：Phase 3 Capability Token 与执行预算切片完成。Skill Worker 为每个
+  未完成步骤签发短期、单次 HMAC 能力，绑定作用域、Skill/版本、Execution/Step、
+  固定 Server/Snapshot/Tool、操作和请求/结果上限；Gateway 专用 Workflow 入口
+  fail-closed 校验并通过 Redis 原子消费 nonce，原始令牌不持久化、不传给上游。
+- 2026-07-30：Skill Version 支持调用次数、时长和累计载荷预算；Execution 提交时
+  快照预算与 Deadline，调度器在调用、结果和最终输出边界原子累计。Codec 篡改、
+  弱密钥、精确绑定、跨副本重放、预算默认/上限/耗尽测试，以及 AI/Gateway Gradle
+  `check`、全前端 TypeScript、AI 微前端生产构建均通过。
+- 2026-07-30：重建并更新
+  `somesimpled/open-simplepoint-ai:local` 与
+  `somesimpled/open-simplepoint-mcp-gateway:local` OCI 镜像；15 个 Compose 服务
+  全部运行且健康。最终主体绑定版本的真实 OCI Skill 执行
+  `ae7075b7-c400-4391-ad0a-22aed2fe7728` 成功调用托管 Echo MCP Tool，数据库确认
+  调用消耗 `1/128`、累计载荷 `242/1048576` bytes、Deadline 和 64 位 nonce Hash，
+  Redis 一次性消费键带短 TTL，公开 `/ai/mf/mf-manifest.json` 与 Skill API 均为 200。
+- 2026-07-30：Phase 3 Skill 审批与暂停/恢复切片完成。不可变 Manifest 新增
+  `spec.approvals.execution`，执行支持 `WAITING_APPROVAL`、`PAUSED`、`REJECTED`
+  状态；默认执行申请人与审批人职责分离，只有版本显式允许时才可自批。审批、拒绝、
+  暂停和恢复均持久化操作者、时间与原因，并通过独立权限保护。
+- 2026-07-30：Worker 实现协作式暂停：排队执行立即暂停，运行中执行在 MCP 调用完成
+  后的步骤检查点安全暂停；恢复继续复用既有检查点，审批和暂停等待不消耗有效执行
+  时长预算。AI 工作台已补齐审批策略、待审批/已暂停状态、审批/拒绝/暂停/恢复操作
+  和执行详情。
+- 2026-07-30：使用签名 Skill OCI Artifact 经真实平台完成等待审批、暂停、恢复、
+  审批和最终 Tool 调用，执行 `68e0b74e-6f24-4681-a31b-afb37fad2aca` 成功；
+  拒绝执行 `b0dfefc7-3954-4b90-be9f-73eddd5e43b2` 保持零 Worker 尝试并以
+  `REJECTED` 终止。临时 Registry、Cosign 密钥和登录会话均已清理，Verifier
+  恢复 keyless 基线；AI 镜像更新为
+  `sha256:3b8eb54f533076bd31ca06864f76ced67f15a1159e04369997c23332a49b9f4c`。
+- 2026-07-30：Phase 3 Skill 条件/并行切片完成。`simplepoint.io/v1alpha1` 新增
+  `condition` 与 `parallel`，条件仅接受有界声明式运算符；未选分支持久化为
+  `SKIPPED`。并行分支使用 Java 21 虚拟线程 fork/join，分支内保持顺序并在编译期
+  拒绝跨分支引用；预算按最坏路径计算，暂停只在整个并行组形成检查点后生效。
+- 2026-07-30：签名 OCI Skill `1.2.0` 经独立 Image Verifier 准入后完成真实平台
+  执行 `43586c40-224b-4d84-8c72-eb6257e425f0`：条件选择 `then`，3 个 Tool 步骤
+  `SUCCEEDED`、1 个未选分支步骤 `SKIPPED`，两个并行 Tool 的执行时间重叠；调用预算
+  消耗 `3/3`、累计载荷 `480/1048576` bytes，最终输出为
+  `{"message":"condition-full-ok","selected":"then"}`。测试版本已废弃并恢复
+  `1.0.0` 活动版本，临时 Registry、Cosign 密钥和会话均已清理，Verifier 恢复
+  keyless、HTTPS Registry 和透明日志默认策略。AI 容器与
+  `somesimpled/open-simplepoint-ai:local` 均运行
+  `sha256:7c3dea96f04eb266bd00dae05540102ff327930a4139294c4c9f3fa97fa26940`。
+- 2026-07-30：Phase 3 Skill MCP 能力工作流切片完成。`simplepoint.io/v1alpha1`
+  新增不可变 Prompt、Resource/Resource Template 绑定和声明式步骤；Execution Step
+  统一为通用 MCP 能力检查点模型。Capability Token 改为绑定操作和目标的单次令牌，
+  覆盖 `tools/call`、`prompts/get` 和 `resources/read`；MCP Service 在调用前重新
+  校验固定描述符 Hash，Resource Template 解析后的 URI 必须仍位于固定模板范围内。
+- 2026-07-30：AI 工作台技能页已显示 Tool、Prompt、Resource 绑定数量、固定能力标签
+  和通用执行步骤；中英文资源同步。Skill/MCP/Gateway 定向单元测试与 Gradle
+  `check`、全前端 `pnpm typecheck`、AI 微前端生产构建和 i18n 校验通过。
+- 2026-07-30：托管 OCI MCP 示例镜像
+  `somesimpled/open-simplepoint-mcp-echo:e2e-20260730-mcp-all` 同时开放 Tool
+  `echo`、Prompt `welcome`、Resource `simplepoint://status` 和 Resource Template
+  `document://{documentId}`。平台 Server `959df84c-f1ad-4a0d-acb0-f4019a33a26c`
+  与 Pool `df5c5e02-fadd-4c40-9cf5-12e09e9ebca4` 发现不可变快照
+  `4c342e4a-a428-4caf-83c0-7d505c98c6d3`，保留为工作台可用示例。
+- 2026-07-30：签名 OCI Skill `mcp-capability-workflow-e2e:1.3.0` 经独立 Verifier
+  准入，版本 `d9af728e-ae92-46d9-8d1d-cb12e4e3c1a2` 的执行
+  `4c8fd359-e128-4944-be5d-d647785640f8` 成功依次调用 Tool、Prompt 和 Resource
+  Template，输出 `mcp-tool-ok`、`Welcome SimplePoint to the MCP workbench.` 和
+  `Document 42 from the managed MCP runtime.`；旧纯 Tool Skill 的迁移后执行
+  `a8279fae-7ac5-473d-b8e0-9a66ffd1b98d` 同样成功。
+- 2026-07-30：Skill Step 数据库迁移已兼容旧库与首次初始化并通过重复启动验证，
+  旧 Tool 专用列已移除。AI 镜像更新为
+  `sha256:df482d0c9d4f5233eacbf9593859112835258d0db1ed078ce8d67f33a1ad034b`，
+  MCP Gateway 镜像更新为
+  `sha256:07687fb04cd23715cecfcbe1ba53a3ec5b30e3ad0a37f6847f82c12559866afe`；
+  15 个 Compose 服务全部运行且健康，Host AI Manifest 返回 200，Image Verifier
+  已恢复 keyless、强制 SBOM、HTTPS Registry 和透明日志校验基线。
+- 2026-07-30：Phase 4 Agent Registry 第一批完成。新增
+  `simplepoint-plugin-ai-agent-api/repository/service/rest` 四层模块和
+  `simpoint_ai_agents`、`simpoint_ai_agent_versions`、
+  `simpoint_ai_agent_skill_bindings` 三张表；实现平台/租户作用域、不可变版本、
+  内容哈希、发布/激活/废弃生命周期、模型可见性校验和已发布 Skill 精确版本固定。
+- 2026-07-30：AI 工作台新增 Agent 定义和版本页面，以结构化表单配置 System
+  Prompt、主/回退模型、Skill Version、记忆、预算、审批和输入/输出 Schema；
+  Agent Manifest 拒绝任意执行字段，发布时重新校验模型与 Skill 状态、作用域及
+  Skill Content Hash。Agent 四层模块、AI 服务整体 Gradle `check`，全前端
+  `pnpm typecheck`、AI 微前端生产构建和 i18n 校验全部通过。
+- 2026-07-30：管理员真实会话创建并发布平台 Agent
+  `phase4-agent-registry-e2e:1.0.0`，定义
+  `f659b4f3-5b34-4e5c-a795-47164de52d6e` 已进入 `ACTIVE`，活动版本
+  `86f30d4d-130f-4f66-b294-3fbf66aec0cb` 固定模型
+  `7bc84b11-32f6-404b-8ac0-40517abc0ad1` 和 Skill
+  `mcp-capability-workflow-e2e:1.3.0`；Agent/Skill Content Hash 与数据库绑定一致。
+  AI 镜像更新为
+  `sha256:effd98da94f555bb3470fa31b2755ad11aebc38f3d9a3ac8d95af69830ac38f7`，
+  容器健康且公开 `/ai/mf/mf-manifest.json` 返回 200。
+- 2026-07-30：Phase 4 Agent Runtime 最小可用闭环完成。新增
+  `simpoint_ai_agent_executions`、`simpoint_ai_agent_execution_traces`，
+  实现作用域幂等提交、数据库 `SKIP LOCKED` 领取、租约/fencing、模型与 Skill
+  检查点、重启恢复、步骤/循环/并发/Token/费用预算和执行前审批。独立
+  `simplepoint-service-agent-runtime` 只运行执行 Worker，AI 服务继续承载控制面，
+  Skill 发布校验器不会装配到执行进程。
+- 2026-07-30：Agent Runtime 通过现有 provider-neutral 模型网关执行固定模型，
+  只把不可变 Agent Version 绑定的 Skill 别名暴露给模型；Skill 子执行固定
+  Skill Version 与 Content Hash，不能直接调用未绑定 MCP 能力。后台授权上下文
+  增加线程级安全载体，工具调用响应中的空文本块在对话检查点被过滤，原始 Trace
+  保持不变。
+- 2026-07-30：真实平台执行
+  `2976b18f-c41e-4a69-a060-70023fb29daa` 成功完成
+  `模型 -> mcp_capabilities:1.3.0 -> Tool/Prompt/Resource Template -> 模型总结`；
+  Skill 子执行 `331c6105-e45f-494b-a5e8-b6444cf14440` 成功，三段 Agent Trace
+  均为 `SUCCEEDED`。AI 镜像为
+  `sha256:be76abb3637128c466e97b796d22807b614a454e50355f1ec51d2a3a68268d50`，
+  Agent Runtime 镜像为
+  `sha256:6975ec69996f1b5beb703e55f68fc4a2fa594dd589d6fe6bf00ac6ae4a819589`；
+  本地 16 个常驻 Compose 服务均运行，3 个初始化服务均以 0 退出，已有健康检查
+  全部 healthy，Host AI Manifest 返回 200。
+- 2026-07-30：Phase 4 Agent 短期记忆与协作式暂停/恢复切片完成。Execution 固定
+  记忆开关、消息上限和摘要字符上限；Runtime 使用确定性有界摘要压缩旧对话，
+  保持 Tool Call/Result 检查点完整，并只对外暴露压缩数量、修订号、摘要 Hash
+  和压缩时间。暂停请求只在模型调用前后或 Skill 等待/结果等安全检查点生效，
+  不会中断结果未知的外部调用；恢复继续使用既有子执行和 Trace。
+- 2026-07-30：真实 Agent 版本
+  `e46db887-a0df-474f-ad70-f2db26ff84bd` 的执行
+  `1ecd991f-a1bc-493f-a235-773ce93c2167` 完成
+  `PAUSED -> PENDING -> RUNNING -> WAITING_SKILL -> RUNNING -> SUCCEEDED`；
+  子 Skill 执行 `bf127948-46f2-49f6-9281-fce112bd2c05` 和三段
+  Model/Skill/Model Trace 全部成功。执行最终 `stepCount=2`、`loopDepth=1`，
+  压缩消息数为 1、记忆修订号为 1，摘要 Hash 为
+  `be4fa241483626f621407568da3214b944028cc39cf3ecebdb4e12c746529c17`。
+- 2026-07-30：Agent Execution Schema 迁移兼容旧 PostgreSQL 自动命名状态约束，
+  重复启动后只保留包含 `PAUSED` 的新约束，同时将零循环深度与 Manifest 规则对齐。
+  最终 AI 镜像为
+  `sha256:e0f478ba5d41ce96c757eb333f20e220c0ad333e309296fbe4aff5d27062b68f`，
+  Agent Runtime 镜像为
+  `sha256:24a9915c803227205d3b841e3e0c1206cffaffef2d2caefd117e75a555c928e6`；
+  本地 16 个常驻 Compose 服务全部运行，3 个初始化服务均以 0 退出，已有健康检查
+  全部 healthy，Host 服务发现刷新后 AI Manifest 返回 200。
+- 2026-07-30：Phase 4 Agent 长期记忆切片完成。新增独立
+  `simpoint_ai_agent_memories` 资源和 PostgreSQL FTS/trigram 检索；作用域固定为
+  `Agent + SYSTEM/TENANT + tenantId + SUBJECT + authenticated subject`，查询、写入、
+  列表和永久删除均使用相同边界。每次执行固定 Top K、相关度、注入字符、单条记录、
+  保留天数和最大条数，首轮模型调用前持久化检索结果、字符数、时间与 SHA-256 快照。
+  注入内容明确标记为不可信历史数据，不能覆盖 System Prompt 或当前用户请求。
+- 2026-07-30：真实 Agent `phase4-agent-registry-e2e:1.4.0`
+  (`4854a512-8b31-4c64-9837-8f2b6cc87315`) 开启长期记忆。首次执行
+  `198be17f-d283-4ace-8160-3cbdf6ffda68` 检索 0 条并写入记忆
+  `c86e557d-7276-4d11-9671-f95b372a8a69`；第二次执行
+  `14189f2c-6834-4617-996b-b39cafbaa5e0` 召回 1 条、注入 782 字符，快照 Hash 为
+  `83cfa7fa980c74ff68532c69a91aa0c52744a8476daafc62b6042076192eb399`，
+  模型 Trace 的实际 instructions 包含不可信边界声明和历史代号
+  `LANTERN-ORBIT-731`。管理 API 查询、跨主体不可见和永久删除均经真实容器验证。
+- 2026-07-30：Agent 长期记忆四层模块、AI/Agent Runtime Gradle `check`、前端
+  TypeScript、i18n 和 AI 生产构建通过；数据库 Schema 重复启动成功。最终 AI 镜像为
+  `sha256:1494dabf92b702375f381385ee9bc22abd5447ea404cf469cdcb254935fab9bd`，
+  修复 JDBC `Instant` 显式时间戳绑定后的 Agent Runtime 镜像为
+  `sha256:7c661443cc33b6000522e22cfb9f957509d54280e500a7f0d454818476038863`；
+  两个容器均 healthy，Host AI Manifest 返回 200。
+- 2026-07-30：Phase 4 Agent 人工介入切片完成。Agent Version 固定启用状态、
+  最大次数、等待时长和 `FAIL|CANCEL` 超时动作；新增独立持久化 Intervention、
+  `WAITING_HUMAN`、安全检查点、结构化输入恢复、主动取消和超时终态，工作台可配置
+  策略、发起介入、提交输入并查看历史。Agent `phase4-agent-registry-e2e:1.5.0`
+  (`48a16761-c7e5-47dc-ba42-dc4f5f5b9ebf`) 的执行
+  `328f095c-c21c-4cb6-918d-adbc79a49ba5` 在 Runtime 重启后仍保持等待，提交
+  `cn-east / HUMAN-731` 后成功恢复，模型 Trace 保留完整
+  `human_intervention_response`；执行
+  `6f9a7cb5-3c28-4fca-8ac2-0b7c85f33b8b` 在模型调用前人工取消且当前等待指针清空；
+  执行 `acd4a96c-40ca-4735-a5bf-33cec4bbb3b8` 按固定策略进入
+  `AGENT_HUMAN_INTERVENTION_TIMEOUT`，Intervention 为 `EXPIRED`，未发生模型调用。
+- 2026-07-30：人工介入四层模块、AI/Agent Runtime Gradle `check`、前端
+  TypeScript、i18n 和 AI 生产构建通过；Schema 连续重启成功。最终 AI 镜像为
+  `sha256:45cfbfb1cfff2fc981a43219fdeb360372f16e283ea244465e4f20aeaeb1afdf`，
+  Agent Runtime 镜像为
+  `sha256:4e659617dce7c738f6ef7866491b60dc90ceec0e9fffb72b41841a93b82fe20a`；
+  本地 16 个常驻服务运行、3 个初始化服务以 0 退出，无 unhealthy，内外网 Host
+  AI Manifest 均返回 200。
+- 2026-07-30：Phase 4 Agent 持久化可观测执行面完成。新增
+  `simpoint_ai_agent_execution_events` 追加式事件表，覆盖 Execution、Approval、
+  Pause、Model、Skill、Memory 和 Human Intervention 生命周期；事件使用
+  Execution 内单调序列和排他 `after` 游标增量查询，载荷有界且不保存 Token、
+  Secret 或完整 Prompt。Trace 新增类型/状态筛选和服务端分页，执行列表改为轻量
+  摘要，避免为每行加载全部 Trace 与 Intervention。运行指标按 Agent、作用域和
+  时间窗从持久化 Execution/Trace 聚合，并同步低基数
+  `simplepoint.agent.events{type,status}` Micrometer 计数。
+- 2026-07-30：真实执行 `f925902d-f7d9-4940-8b63-67fba032d117` 在旧 AI 实例产生，
+  新实例重启后使用 `limit=2` 首次读取
+  `EXECUTION_CREATED, EXECUTION_STARTED`，再从游标 `1` 增量读取至序列 `6`；
+  MODEL Trace 类型筛选返回 1 条成功记录，24 小时指标聚合返回 20 次执行和
+  4 个 Trace 状态分组，证明事件、Trace 和指标不依赖进程内存。Agent API/Service/
+  Repository 四层 Gradle `check`、MockMvc 参数绑定回归测试、前端 TypeScript、
+  i18n 和 AI 生产构建均通过。最终 AI 镜像为
+  `sha256:f9abf9cc3ade6e52f3a83b2d24cd14f4207de41c65806627f43b124e59f8254e`，
+  Agent Runtime 镜像为
+  `sha256:72180efd9a7e6dc24607ee3b0654528df7c70a58ce3802a2554edd0fdad45308`；
+  两个容器均 healthy，Host 服务发现刷新后 AI Manifest 返回 200。
+- 2026-07-30：修复 Agent 调用 Skill 时模型只看到宽泛输入 Schema、实际 Resource
+  步骤才校验固定 URI Template，导致前序 Tool/Prompt 已执行后 Skill 失败的问题。
+  Runtime 现在从不可变 Skill Manifest 提取直接绑定到 `input.*` 的 Resource Template，
+  将格式和示例增强到模型 Tool Schema，并在子执行创建前执行同源模板校验。非法参数
+  写入无 `skill_execution_id` 的失败 Skill Trace，生成
+  `AGENT_SKILL_ARGUMENTS_INVALID` 可重试 Tool Result，不触发任何 Skill/MCP I/O。
+  真实执行 `3426ca9b-0157-4011-b4c0-815956a64d9f` 首次使用 `skill/echo` 被前置拒绝，
+  模型根据 `document://{documentId}` 提示改为 `document://echo`，随后子 Skill
+  `3a2aa825-a00d-4468-86fe-2f47b38f58ae` 成功，最终 Agent 为 `SUCCEEDED`；执行
+  `ca4c1d05-36d6-4afe-bc06-323a31ba592d` 还验证了 Runtime 替换后复用幂等子 Skill
+  和持久化 pending call 恢复为完整 `MODEL -> SKILL -> MODEL` 成功 Trace。
+  Agent Service/REST/Runtime Gradle `check` 与 AI 微前端生产构建通过。最终 AI 镜像为
+  `sha256:487fbb13b874201bd63258230d16a1751078720bb55684bcb6aa1c38220bd995`，
+  Agent Runtime 镜像为
+  `sha256:9ad01125641c833ae4e0998148d47fdf6a4d817531fcb6679aaffb6fb87348e2`；
+  本地 16 个常驻服务全部运行且无 unhealthy，Host AI Manifest 返回 200。

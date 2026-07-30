@@ -4,8 +4,8 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 状态 | 设计已确认，Phase 1 主链完成，Phase 2 代码与本地生产化收尾完成，待真实多主机验收 |
-| 最后更新 | 2026-07-29 |
+| 状态 | 设计已确认，Phase 1 主链、Phase 2 本地生产化闭环、Phase 3 Skill 执行已完成；Phase 4 Agent Runtime 已完成记忆、人工介入和持久化可观测执行面 |
+| 最后更新 | 2026-07-30 |
 | MCP 基线 | 2025-11-25 稳定规范 |
 | 部署约束 | 不依赖 Kubernetes |
 | 运行时约束 | `tool-runtime` 保持独立进程 |
@@ -413,17 +413,42 @@ Agent -> Skill -> Tool
 Capability Token 至少绑定：
 
 ```text
+issuer
+audience
+scopeType
 tenantId
+subjectId
 executionId
+stepId
 agentVersionId
+skillId
 skillVersionId
-serverVersionId
+serverId
+capabilitySnapshotId
 toolName
 allowedOperations
-budget
+maximumCalls
+maximumRequestBytes
+maximumResultBytes
+issuedAt
 expiresAt
 nonce
 ```
+
+当前 Skill Workflow 使用内部 HMAC-SHA256 紧凑令牌。这不是替代北向/远程 MCP OAuth
+Access Token 的新认证协议，而是控制面发给 Gateway 的短期最小权限能力证明：
+
+- AI 与 Gateway 使用同一独立签名密钥，密钥至少 32 bytes，并同时校验固定
+  issuer、audience 和最长 TTL；
+- 每个未完成步骤只发放一次 `tools/call` 能力，精确绑定作用域、Skill/版本、
+  Execution/Step、Server、不可变能力快照和 Tool；
+- Skill 调用只能进入 `/internal/mcp/workflows/tools/call`，普通管理测试和
+  Publication 调用不能冒充 Workflow 能力；
+- Gateway 在调用上游前校验请求绑定和参数上限，并以 Redis `SET NX + TTL`
+  原子消费 nonce 的 SHA-256；任一 Gateway 副本均拒绝再次使用；
+- 原始令牌不写数据库、不写调用审计、也不传给 MCP Server，只在步骤记录中保留
+  nonce SHA-256 作为不可逆审计指纹；
+- Gateway 在返回控制面前再次校验结果大小。校验、Redis 或配置异常均 fail-closed。
 
 Agent 不允许绕过 Skill 直接调用 Tool。直接工具能力由平台生成内部单工具 Skill，审计链仍保持完整。
 
@@ -499,6 +524,13 @@ tests/
         "name": "summarize"
       }
     ],
+    "approvals": {
+      "execution": {
+        "required": true,
+        "allowSelfApproval": false,
+        "instructions": "由当前作用域内的另一名授权用户审批"
+      }
+    },
     "workflow": {
       "steps": [
         {
@@ -522,12 +554,13 @@ tests/
 }
 ```
 
-Registry 在版本创建时读取指定 MCP 能力快照，确认 Tool 存在，并固定
-`serverId + snapshotId + toolName + inputSchemaHash + outputSchemaHash`。版本内容、
-OCI Artifact Reference、Digest 和 Manifest Content Hash 创建后不可更新；发布只改变
-活动版本指针和发布状态。Manifest 会递归拒绝 `script`、`command`、`image`、
-`container`、`entrypoint` 等任意代码执行字段，Workflow 的 Tool 步骤只能引用本版本
-已绑定的 alias。
+Registry 在版本创建时读取指定 MCP 能力快照，确认 Tool、Prompt 和 Resource 或
+Resource Template 存在，并固定 `serverId + snapshotId + capabilityName/URI +
+descriptorHash`；Tool 额外固定输入/输出 Schema Hash，Resource Template 额外固定
+模板。版本内容、OCI Artifact Reference、Digest 和 Manifest Content Hash 创建后不可
+更新；发布只改变活动版本指针和发布状态。Manifest 会递归拒绝 `script`、`command`、
+`image`、`container`、`entrypoint` 等任意代码执行字段，Workflow 的能力步骤只能引用
+本版本已绑定的 alias。
 
 Skill Artifact 使用 OCI Distribution API 和固定媒体类型：
 
@@ -549,7 +582,7 @@ Manifest Layer；逐层验证 descriptor size、原始字节 SHA-256、HTTP/desc
 `repository@sha256:...`。
 
 Registry 中的 Skill Manifest 是权威内容。管理请求附带的 Manifest 仅作为显式预期值，
-其 canonical JSON 必须与 Artifact Layer 完全相同；MCP Tool 快照固定和声明式安全校验
+其 canonical JSON 必须与 Artifact Layer 完全相同；MCP 能力快照固定和声明式安全校验
 都针对已拉取的内容执行。Cosign 校验继续由独立 `tool-image-verifier` 执行：
 AI 控制面使用 `spiffe://open-simplepoint/ai-control-plane` mTLS 身份调用
 `POST /internal/v1/artifacts/verify`，Runtime Node 身份不能调用该接口。Artifact
@@ -569,44 +602,194 @@ POST                     /ai/workbench/skills/{skillId}/versions/{versionId}/dep
 POST                     /ai/workbench/skills/{skillId}/executions
 GET                      /ai/workbench/skills/{skillId}/executions
 GET                      /ai/workbench/skills/{skillId}/executions/{executionId}
+POST                     /ai/workbench/skills/{skillId}/executions/{executionId}/approve
+POST                     /ai/workbench/skills/{skillId}/executions/{executionId}/reject
+POST                     /ai/workbench/skills/{skillId}/executions/{executionId}/pause
+POST                     /ai/workbench/skills/{skillId}/executions/{executionId}/resume
 ```
 
 定义、版本和绑定都继承当前平台/租户授权上下文。已存在不可变版本的 Skill 不允许删除。
-当前切片已经实现首版顺序 Tool Workflow 持久化执行：
+当前切片已经实现 Tool、Prompt、Resource、条件和并行节点的持久化 Workflow 执行：
 
 - 只有启用 Skill 的活动已发布版本可以提交执行；提交使用当前平台/租户上下文。
 - 幂等键只保存 SHA-256，重复键和相同输入返回原执行，不同输入被拒绝。
 - 执行和步骤均持久化；Worker 使用 PostgreSQL `SKIP LOCKED`、租约和单调 fencing
   token 横向领取任务，MCP 网络调用不持有数据库事务。
-- 每一步固定 `serverId + snapshotId + toolName + inputSchemaHash`，调用时重新校验
-  Server、不可变快照、Tool 和 Schema Hash，不读取“当前最新”能力。
-- 步骤开始、成功和失败均独立检查点；Worker 崩溃后从已成功步骤继续。Tool 调用使用
+- 每个 MCP 叶步骤固定 `serverId + snapshotId + capabilityName/URI + descriptorHash`；
+  Tool 同时固定输入 Schema Hash，Resource Template 同时固定模板。调用时重新校验
+  Server、不可变快照、能力描述符和模板约束，不读取“当前最新”能力。
+- 步骤开始、成功和失败均独立检查点；Worker 崩溃后从已成功步骤继续。MCP 调用使用
   稳定的 `executionId:stepId` operation ID 关联 Gateway 会话、取消和调用审计。
 - 参数和输出模板只允许精确的 `input.*` 或已完成 `steps.*` `$ref`，不执行表达式或代码。
 - 输入和输出使用 fail-closed 的有界 JSON Schema 子集并限制深度和 Payload 大小；
   不支持的 Schema 关键字在版本创建时即被拒绝。
+- `spec.budgets` 支持 `maximumToolCalls`、`maximumDurationSeconds` 和
+  `maximumPayloadBytes`。版本创建时按 Workflow 步骤数补默认值并校验平台上限，
+  随不可变版本保存；Execution 提交时快照预算和绝对截止时间。
+- 调度器在网络调用前原子预留请求 bytes，在步骤结果与 Workflow 输出检查点分别累计
+  载荷；只有 Tool 步骤消耗 `maximumToolCalls`。累计范围包含执行输入、MCP 请求、
+  MCP 结果和最终输出；时间、调用次数或载荷任一耗尽均以稳定错误码终止，不继续调用
+  MCP Server。
+- AI 工作台版本详情显示版本预算；执行详情显示调用/载荷消耗、时长、截止时间和
+  每一步 Capability Token nonce Hash，不显示任何可复用凭证。
+- `spec.approvals.execution` 是不可变版本策略；`required=true` 时新执行进入
+  `WAITING_APPROVAL`，审批后进入 `PENDING`，拒绝后以 `REJECTED` 终止且 Worker
+  不会领取。默认禁止申请人自批，只有版本显式声明 `allowSelfApproval=true` 才允许。
+- 审批、拒绝、暂停和恢复均受当前平台/租户作用域与独立权限约束，并记录操作者、
+  时间、意见或原因。审批与暂停等待时间通过 `inactiveSince` 从执行时长预算中扣除，
+  恢复时平移 Deadline，不消耗有效执行时间。
+- `PENDING` 和 `WAITING_APPROVAL` 可立即暂停；`RUNNING` 使用协作式暂停，在当前
+  MCP 调用完成后的步骤检查点进入 `PAUSED`，不对进行中的远程请求做不安全硬终止。
+  恢复时，尚未获批的执行回到 `WAITING_APPROVAL`，已获批执行回到 `PENDING`。
+- 顶层和控制分支叶节点接受 `tool`、`prompt`、`resource`；顶层同时接受
+  `condition` 和 `parallel`。Prompt 参数与 Resource URI 支持有界模板引用，
+  Resource Template 解析后的 URI 必须仍匹配已固定模板。条件节点只支持有界声明式
+  `equals`、`notEquals`、`isTrue`、`all`、`any`、`not`，不接受脚本或表达式；
+  最大嵌套深度为 8，布尔组最多 16 个条件。
+- `condition` 的 `then`/`else` 只执行被选分支，未选分支的 MCP 能力叶节点持久化为
+  `SKIPPED`，因此执行历史、恢复和审计结果确定。条件虚拟节点输出
+  `matched + selectedBranch`，可供后续精确 `$ref` 使用。
+- `parallel` 包含 2 至 16 个命名分支；分支之间并发执行，单个分支内部保持顺序。
+  每个分支只能读取外层先前步骤和本分支先前步骤，跨并行分支引用在版本创建时拒绝。
+  首版不允许在条件或并行分支内部继续嵌套控制节点，避免未定义的恢复和预算语义。
+- 提交执行时快照完整 Workflow Plan，并持久化所有 MCP 能力叶节点。Tool 调用次数
+  预算按条件分支最大值和并行分支总和计算最坏路径；暂停请求会等待当前 fork/join
+  组内已开始的 MCP 调用全部形成检查点，再安全进入 `PAUSED`。恢复只复用
+  `SUCCEEDED`/`SKIPPED` 检查点，不重复产生 MCP I/O。
 
-`simplepoint.io/v1alpha1` 当前只接受顺序 `tool` 步骤。Prompt、Resource、条件、并行、
-预算、审批和 Capability Token 在对应执行语义落地前不允许写入可发布 Manifest。
-外部 Tool 已接收请求但检查点尚未提交时发生进程故障，恢复调用具有 at-least-once
-语义；有副作用 Tool 必须按稳定 operation ID 自身实现幂等。
+`simplepoint.io/v1alpha1` 尚未开放重试和循环节点；这些类型在对应执行、恢复、预算和
+审计语义落地前仍不能写入可发布 Manifest。外部 MCP Server 已接收请求但检查点尚未
+提交时发生进程故障，恢复调用具有 at-least-once 语义；有副作用 Tool 必须按稳定
+operation ID 自身实现幂等。
 
 ### 7.3 Agent
 
-一个 Agent Version 包含：
+Agent 是平台声明式资源，不是 MCP 原生对象。控制面采用“可变定义 + 不可变版本”
+模型：定义只承载作用域内唯一 Code、名称、说明、启用状态和当前活动版本指针；
+所有影响执行结果的内容都进入不可变 Agent Version。
 
-- 模型选择器和回退策略。
+当前 `simplepoint.io/v1alpha1` Agent Manifest 包含：
+
+- 精确的主模型 ID 和回退模型 ID 列表。
 - System Prompt 和行为约束。
-- 允许使用的 Skill Version 范围。
+- 允许使用的精确 Skill ID、Skill Version ID 和作用域内唯一别名。
 - 短期/长期记忆策略。
 - 最大步骤数、循环深度和并发。
-- Token、时间和费用预算。
+- 输入/输出 Token 和费用预算。
 - 审批策略。
+- 人工介入启用状态、最大次数、等待超时和超时动作。
 - 输入、输出 Schema。
 - 是否允许对外发布。
-- Agent Workflow 引用。
+- 可选的 Agent Workflow 引用；在 Workflow 能力落地前只保存声明，不执行。
 
-Agent 定义是不可变版本。每次执行必须固定版本，运行过程中不能自动切换到新版本。
+首批 Registry 必须满足以下约束：
+
+- 平台上下文只创建 `SYSTEM` Agent；租户上下文只创建当前租户的 `TENANT` Agent，
+  页面不提供手工切换作用域的字段。
+- Agent Code 在作用域内不可变且唯一；名称、说明和启用状态可以修改。
+- Agent Version 创建后 Manifest、模型、Skill 绑定和 Content Hash 均不可修改；
+  同一 Agent 的语义版本号不可重复。
+- 模型必须存在、对当前作用域可见、处于启用且可用状态，并且属于 LLM 或
+  MULTIMODAL 类型。平台 Agent 不能引用租户模型。
+- Skill 必须引用精确的已发布版本。平台 Agent 只能引用平台 Skill；租户 Agent
+  可以引用共享平台 Skill 或同租户 Skill。
+- Skill 绑定同时固定 Skill Code、版本号和版本 Content Hash，发布时重新校验
+  版本状态、可见性和 Hash，防止依赖在草稿期被替换。
+- Manifest 不接受脚本、命令、类名、任意执行器等可执行字段；Agent 只能声明
+  Skill 绑定，不能直接声明或绕过 Skill 调用 MCP Tool。
+- 生命周期为 `DRAFT -> PUBLISHED -> DEPRECATED`。发布版本会原子更新定义的活动
+  版本指针和 `ACTIVE` 状态；废弃活动版本时清空活动指针。
+- 已存在版本的 Agent 定义不能直接删除，避免破坏版本和执行追溯。
+
+Agent Version 是不可变版本。每次执行必须固定版本，运行过程中不能自动切换到新版本。
+当前已完成 Registry、生命周期、独立 Agent Runtime、数据库执行队列和工作台执行面：
+
+- 控制面提交 `Agent Execution` 时固定活动 Agent Version、Content Hash、主/回退模型、
+  Skill Version、预算和审批策略，并按作用域保存幂等键与输入 Hash。
+- 独立 `agent-runtime` 进程使用数据库 `SKIP LOCKED`、租约和 fencing 横向领取任务；
+  AI 服务不运行 Agent Worker，Runtime 不装配 Skill Registry/OCI 发布校验器。
+- Runtime 通过现有 provider-neutral 模型网关推理，只向模型暴露当前版本绑定的
+  Skill 别名，不暴露原始 MCP Tool。
+- 每个 Skill 调用固定 Skill ID、Version ID 和 Content Hash，通过内部执行命令创建
+  Skill 子执行；平台在模型轮次与 Skill 子执行边界持久化 Trace 和对话检查点。
+- Runtime 从固定 Skill Manifest 中提取 Workflow 对 `input.*` 的直接 MCP Resource
+  URI Template 约束，将约束说明和合法示例增强到模型可见的 Skill 输入 Schema。
+  模型参数在创建子 Skill 前执行与 Gateway 相同语义的模板预校验；不合法参数不会
+  创建子执行或产生 MCP I/O，而是记录无子执行 ID 的失败 Skill Trace，并作为
+  `AGENT_SKILL_ARGUMENTS_INVALID` 可重试 Tool Result 回传模型。只有通过预校验的
+  参数才能进入持久化 Skill Workflow，避免后置校验造成部分步骤已执行。
+- 执行面强制最大步骤、循环深度、并发、输入/输出 Token 和费用预算，并支持执行前
+  审批、拒绝和取消。
+- 短期记忆在执行提交时固定启用状态、最大消息数和摘要字符上限；Runtime 在模型
+  与 Skill 检查点进行确定性有界压缩，保持 Assistant Tool Call 与对应 Tool Result
+  的完整顺序，并持久化压缩数量、修订号、摘要 SHA-256 和最近压缩时间。
+- 长期记忆是独立的 Agent 跨执行 episodic memory，不复用管理员文档知识库。
+  当前版本只支持 `SUBJECT` 作用域，每条记忆精确绑定 Agent、Agent Version、
+  平台/租户作用域、租户 ID、认证主体和来源 Execution；查询、写入、列表、裁剪
+  和删除均复用同一边界，平台管理员也不能通过管理接口读取其他主体的记忆。
+- Runtime 在第一次模型调用前使用 PostgreSQL FTS/trigram 执行有界 Top K 检索，
+  固定相关度阈值、最大注入字符数并排除当前 Execution。命中结果序列化为不可变
+  快照，持久化命中数、注入字符数、检索时间和 SHA-256；执行重试只恢复该快照，
+  不重新检索正在变化的历史数据。
+- 长期记忆作为明确标记的“不可信历史数据”追加到模型 instructions，禁止其中内容
+  覆盖 System Prompt、行为约束或当前请求。只有成功执行才将有界输入/输出 episode
+  写入记忆；来源 Execution 唯一，写入与 Execution 成功状态在同一事务中提交。
+  过期记录和超出主体配额的旧记录自动硬删除，工作台删除同样是隐私语义的永久删除。
+- 暂停采用协作式安全检查点，不中断结果未知的模型或 Skill 外部调用。排队状态可
+  立即暂停；运行中请求在下一模型调用前、模型失败后、待 Skill 调用的模型结果后，
+  以及 Skill 等待/结果检查点进入 `PAUSED`。恢复时复用已存在的 Skill Execution
+  和 Trace，不重复创建子执行。
+- 人工介入是独立持久化任务，不建模为 MCP Tool。每次 Execution 固定版本中的启用
+  状态、最大请求数、等待秒数和 `FAIL|CANCEL` 超时动作；任务精确绑定 Agent、
+  Execution、平台/租户作用域和租户 ID，状态为
+  `REQUESTED -> WAITING -> COMPLETED|EXPIRED|CANCELLED`。
+- 排队执行可立即进入 `WAITING_HUMAN`；运行中请求只在模型或 Skill 的安全检查点
+  进入等待，不强制中断结果未知的外部调用。结构化人工输入以明确标记的
+  `human_intervention_response` 用户消息追加到持久化对话，清除当前等待指针后由
+  任意 Runtime 副本恢复执行；运行时或 AI 服务重启不会丢失等待任务。
+- 人工选择取消或等待超时会直接进入终态。已经成功完成的模型、Skill 或 Tool 外部
+  效果不会被平台隐式回滚；需要撤销业务副作用时，后续由 Agent Workflow 声明显式
+  补偿节点，并保留原调用与补偿调用两条审计链。
+- 工作台提供执行提交、轮询、历史、详情、预算消耗、短期/长期记忆状态、当前主体
+  记忆查询与永久删除、审批、暂停、恢复、人工介入策略/历史/结构化输入，以及
+  模型/Skill Trace。
+- 每次执行将状态机、审批、暂停、模型、Skill、记忆和人工介入生命周期写入追加式
+  持久事件；事件序列在单个 Execution 内单调递增，查询使用排他 `after` 游标和
+  有界页大小，AI 服务或 Runtime 重启后可以从已确认游标继续。
+- Execution 列表只返回轻量摘要，完整输入、输出、人工任务、事件和 Trace 在打开
+  详情后按需查询。Trace 支持类型/状态筛选和服务端分页，不为列表中的每次执行
+  N+1 加载完整调用链。
+- Agent 指标按当前平台/租户作用域和时间窗直接从持久化 Execution/Trace 聚合，
+  覆盖状态、Token、费用、步骤、人工介入和 Trace 分组；生命周期事件同时写入
+  仅含 `type,status` 标签的低基数 Micrometer Counter。
+
+当前尚未完成 Agent Workflow。跨主体共享记忆在隐私、授权和审计模型明确前不开放，
+当前只允许登录主体读取和管理自己的 Agent 长期记忆。
+
+控制面管理 API 为：
+
+```text
+GET|POST              /workbench/agents
+GET|PUT|DELETE        /workbench/agents/{agentId}
+GET|POST              /workbench/agents/{agentId}/versions
+GET                   /workbench/agents/{agentId}/versions/{versionId}
+POST                  /workbench/agents/{agentId}/versions/{versionId}/publish
+POST                  /workbench/agents/{agentId}/versions/{versionId}/deprecate
+GET|POST              /workbench/agents/{agentId}/executions
+GET                   /workbench/agents/{agentId}/executions/{executionId}
+GET                   /workbench/agents/{agentId}/executions/{executionId}/events?after={sequence}&limit={size}
+GET                   /workbench/agents/{agentId}/executions/{executionId}/traces?type={type}&status={status}
+GET                   /workbench/agents/{agentId}/metrics?from={instant}&to={instant}
+POST                  /workbench/agents/{agentId}/executions/{executionId}/approve
+POST                  /workbench/agents/{agentId}/executions/{executionId}/reject
+POST                  /workbench/agents/{agentId}/executions/{executionId}/pause
+POST                  /workbench/agents/{agentId}/executions/{executionId}/resume
+POST                  /workbench/agents/{agentId}/executions/{executionId}/interventions
+POST                  /workbench/agents/{agentId}/executions/{executionId}/interventions/{interventionId}/respond
+POST                  /workbench/agents/{agentId}/executions/{executionId}/cancel
+GET                   /workbench/agents/{agentId}/memories
+DELETE                /workbench/agents/{agentId}/memories/{memoryId}
+```
 
 ### 7.4 Workflow
 
@@ -879,9 +1062,9 @@ ai_package_deployment
 simpoint_ai_skills
 simpoint_ai_skill_versions
 simpoint_ai_skill_tool_bindings
-ai_agent
-ai_agent_version
-ai_agent_skill_binding
+simpoint_ai_agents
+simpoint_ai_agent_versions
+simpoint_ai_agent_skill_bindings
 ai_workflow
 ai_workflow_version
 ```
@@ -895,6 +1078,11 @@ ai_tool_invocation
 ai_approval_task
 ai_idempotency_record
 ai_outbox_event
+simpoint_ai_agent_executions
+simpoint_ai_agent_execution_traces
+simpoint_ai_agent_execution_events
+simpoint_ai_agent_human_interventions
+simpoint_ai_agent_memories
 ```
 
 ### 13.5 Runtime
@@ -928,7 +1116,7 @@ ai_secret_reference
 /api/ai/mcp/connections
 /api/ai/tools
 /ai/workbench/skills
-/api/ai/agents
+/workbench/agents
 /api/ai/workflows
 /api/ai/executions
 /api/ai/runtime/nodes
@@ -998,6 +1186,11 @@ mcpSessionId
 tenantId
 ```
 
+Agent 执行事件使用数据库追加日志和 Execution 内单调序列，不依赖某个 JVM 的
+内存消息流。控制台使用排他序列游标增量读取；事件 Payload 必须有界，只保存定位
+问题所需的低敏元数据。运行指标使用持久化 Execution/Trace 做时间窗聚合，进程内
+Micrometer 计数只用于实时采集，不能作为重启后历史指标的唯一来源。
+
 必须记录：
 
 - Agent 和 Skill 版本。
@@ -1047,6 +1240,10 @@ AI 工作台
 ```
 
 页面根据当前平台/租户上下文自动确定作用域。平台和租户不重复建设两套页面。
+
+Agent 页面统一包含版本、时间窗运行指标和执行记录。执行详情使用事件时间线呈现
+状态变化，Trace 通过类型/状态筛选和服务端分页独立加载；执行列表不得内嵌所有
+Trace、人工任务或事件。
 
 MCP Server 详情页统一展示：
 
@@ -1175,27 +1372,52 @@ SDK 版本必须通过 BOM 固定，并以协议一致性测试结果为准，�
 - [x] 实现未绑定 Tool 拒绝、Tool Schema Hash 追溯和声明式安全测试。
 - [x] 实现 OCI Registry Artifact 拉取、媒体类型、签名和内容一致性校验。
 - [x] 实现 Workflow/Step 持久化、幂等提交、租约/fencing、检查点恢复和执行页面。
-- [ ] 实现 Capability Token、预算、审批、条件/并行节点和运行时端到端测试。
+- [x] 完成签名 OCI Artifact、发布、调度和 MCP Tool 调用真实端到端测试。
+- [x] 提供 `verify_skill_workflow_e2e.sh` 自动验收脚本。
+- [x] 实现短期单次 Capability Token、Gateway 精确绑定校验和 Redis 重放防护。
+- [x] 实现不可变版本预算、Execution 预算快照、调用/时长/累计载荷强制限制和页面。
+- [x] 实现不可变执行审批策略、职责分离、拒绝和审计字段。
+- [x] 实现持久化暂停/恢复、Worker 安全检查点和有效时长预算。
+- [x] 实现有界条件节点、并行 fork/join、分支隔离、跳过检查点和最坏路径预算。
+- [x] 实现 Prompt、Resource/Resource Template 固定绑定、声明式步骤、恢复和预算语义。
+- [x] 实现通用 MCP Capability Token、描述符 Hash 重校验和 Resource Template 约束。
+- [x] 完成 Tool -> Prompt -> Resource 的签名 OCI Skill 真实端到端测试。
 
 完成标准：
 
 - 新 Skill 不修改平台代码。
-- Skill 不能调用未绑定 Tool。
-- Skill 版本和 Tool Schema 可追溯。
+- Skill 不能调用未绑定的 Tool、Prompt 或 Resource。
+- Skill 版本和 MCP 能力描述符可追溯。
 
 ### Phase 4：Agent
 
-- 实现 Agent Registry 和版本。
-- 实现 Agent Runtime。
-- 接入现有模型网关。
-- 强制 `Agent -> Skill -> Tool`。
-- 实现预算、审批、记忆和执行追踪。
+- [x] 实现平台/租户 Agent Registry、不可变版本和生命周期。
+- [x] 实现精确模型 ID、已发布 Skill Version 和依赖 Content Hash 固定。
+- [x] 实现 Agent Manifest Schema、可执行字段拒绝和发布期依赖重校验。
+- [x] 增加 AI 工作台 Agent 定义、版本、发布和废弃页面。
+- [x] 实现独立 Agent Runtime、数据库队列、租约/fencing 和检查点恢复。
+- [x] 接入现有模型网关并执行固定主模型/回退模型策略。
+- [x] 在执行面强制 `Agent -> Skill -> Tool` 和精确依赖版本。
+- [x] 强制执行预算、执行前审批和模型/Skill Trace。
+- [x] 增加 Agent 执行记录、详情、审批和取消页面。
+- [x] 实现短期记忆裁剪/摘要、执行快照和摘要完整性哈希。
+- [x] 实现 Agent 执行中协作式暂停/恢复和工作台控制页面。
+- [x] 实现长期记忆、记忆作用域隔离和受控检索注入。
+- [x] 实现人工介入、可恢复等待、结构化输入、取消和超时边界。
+- [x] 实现追加式持久执行事件、排他游标增量读取和重启恢复。
+- [x] 实现 Trace 类型/状态筛选、服务端分页和轻量执行摘要。
+- [x] 实现持久化时间窗指标、低基数 Micrometer 事件计数和工作台可视化。
+- [x] 实现 Skill Resource Template 模型契约增强、执行前参数拒绝和无副作用纠错。
 
 完成标准：
 
 - Agent 无法绕过 Skill 调用 Tool。
 - 每次执行固定所有资源版本。
 - 模型、Skill 和 Tool 调用可以在一条 Trace 中关联。
+- 长期记忆不能跨 Agent、平台/租户、租户或认证主体边界读取。
+- 每次检索的结果和完整性哈希可追溯，历史内容不能覆盖当前执行约束。
+- 人工等待可跨 AI 服务和 Agent Runtime 重启恢复，且不能在未知外部调用中途强制切断。
+- 事件游标、Trace 查询和历史指标不依赖单个 AI/Runtime 进程存活。
 
 ### Phase 5：Workflow 与生态
 

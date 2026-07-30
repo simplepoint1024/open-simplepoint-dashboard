@@ -1,5 +1,6 @@
 package org.simplepoint.mcp.gateway.rest;
 
+import org.simplepoint.mcp.gateway.security.SkillCapabilityTokenVerifier;
 import org.simplepoint.plugin.ai.mcp.api.constants.AiMcpPaths;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayConnection;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayDiscoveryResult;
@@ -17,6 +18,10 @@ import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayResourceReadResult;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayStatus;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayToolCallRequest;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayToolCallResult;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayWorkflowPromptGetRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayWorkflowResourceReadRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayWorkflowToolCallRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpSkillCapabilityClaims;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,13 +39,19 @@ public class McpGatewayInternalController {
 
   private final McpGatewayOperations operations;
 
+  private final SkillCapabilityTokenVerifier capabilityTokenVerifier;
+
   /**
    * Creates the internal controller.
    *
    * @param operations remote MCP operations
    */
-  public McpGatewayInternalController(final McpGatewayOperations operations) {
+  public McpGatewayInternalController(
+      final McpGatewayOperations operations,
+      final SkillCapabilityTokenVerifier capabilityTokenVerifier
+  ) {
     this.operations = operations;
+    this.capabilityTokenVerifier = capabilityTokenVerifier;
   }
 
   /**
@@ -78,6 +89,52 @@ public class McpGatewayInternalController {
       @RequestBody final McpGatewayToolCallRequest request
   ) {
     return operations.callTool(request);
+  }
+
+  /**
+   * Invokes one exact Skill Workflow Tool with a single-use capability.
+   */
+  @PostMapping(AiMcpPaths.INTERNAL_CALL_WORKFLOW_TOOL)
+  @ResponseStatus(HttpStatus.OK)
+  public McpGatewayToolCallResult callWorkflowTool(
+      @RequestBody final McpGatewayWorkflowToolCallRequest request
+  ) {
+    McpSkillCapabilityClaims claims =
+        capabilityTokenVerifier.verifyAndConsume(request);
+    McpGatewayToolCallResult result = operations.callTool(request.call());
+    capabilityTokenVerifier.validateResult(claims, result);
+    return result;
+  }
+
+  /**
+   * Renders one exact Skill Workflow Prompt with a single-use capability.
+   */
+  @PostMapping(AiMcpPaths.INTERNAL_GET_WORKFLOW_PROMPT)
+  @ResponseStatus(HttpStatus.OK)
+  public McpGatewayPromptGetResult getWorkflowPrompt(
+      @RequestBody final McpGatewayWorkflowPromptGetRequest request
+  ) {
+    McpSkillCapabilityClaims claims =
+        capabilityTokenVerifier.verifyAndConsume(request);
+    McpGatewayPromptGetResult result = operations.getPrompt(request.call());
+    capabilityTokenVerifier.validateResult(claims, result);
+    return result;
+  }
+
+  /**
+   * Reads one exact Skill Workflow Resource with a single-use capability.
+   */
+  @PostMapping(AiMcpPaths.INTERNAL_READ_WORKFLOW_RESOURCE)
+  @ResponseStatus(HttpStatus.OK)
+  public McpGatewayResourceReadResult readWorkflowResource(
+      @RequestBody final McpGatewayWorkflowResourceReadRequest request
+  ) {
+    McpSkillCapabilityClaims claims =
+        capabilityTokenVerifier.verifyAndConsume(request);
+    McpGatewayResourceReadResult result =
+        operations.readResource(request.call());
+    capabilityTokenVerifier.validateResult(claims, result);
+    return result;
   }
 
   /**

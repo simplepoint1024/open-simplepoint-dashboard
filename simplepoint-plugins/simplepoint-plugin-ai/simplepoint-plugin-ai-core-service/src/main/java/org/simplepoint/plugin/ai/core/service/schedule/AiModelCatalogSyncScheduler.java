@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.ai.core.service.schedule;
 
 import org.simplepoint.plugin.ai.core.api.service.AiModelCatalogService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -8,6 +9,12 @@ import org.springframework.stereotype.Component;
  * Periodically synchronizes providers that opted into automatic discovery.
  */
 @Component
+@ConditionalOnProperty(
+    prefix = "simplepoint.ai.model-sync",
+    name = "enabled",
+    havingValue = "true",
+    matchIfMissing = true
+)
 public class AiModelCatalogSyncScheduler {
 
   private final AiModelCatalogService modelCatalogService;

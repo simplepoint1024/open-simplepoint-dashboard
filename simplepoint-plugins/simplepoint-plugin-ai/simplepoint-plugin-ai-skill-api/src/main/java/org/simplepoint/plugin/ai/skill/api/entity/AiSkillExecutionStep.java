@@ -48,11 +48,11 @@ public class AiSkillExecutionStep extends BaseEntityImpl<String> {
   @Column(name = "step_order", nullable = false)
   private int stepOrder;
 
-  @Column(name = "tool_binding_id", length = 64)
-  private String toolBindingId;
+  @Column(name = "binding_id", length = 64)
+  private String bindingId;
 
-  @Column(name = "tool_alias", length = 64)
-  private String toolAlias;
+  @Column(name = "capability_alias", length = 64)
+  private String capabilityAlias;
 
   @Column(name = "mcp_server_id", length = 64)
   private String mcpServerId;
@@ -60,15 +60,25 @@ public class AiSkillExecutionStep extends BaseEntityImpl<String> {
   @Column(name = "capability_snapshot_id", length = 64)
   private String capabilitySnapshotId;
 
-  @Column(name = "tool_name", length = 128)
-  private String toolName;
+  @Column(name = "capability_name", length = 1024)
+  private String capabilityName;
 
-  @Column(name = "input_schema_hash", length = 64)
-  private String inputSchemaHash;
+  @Column(name = "capability_schema_hash", length = 64)
+  private String capabilitySchemaHash;
+
+  @Column(
+      name = "capability_template",
+      nullable = false,
+      columnDefinition = "BOOLEAN DEFAULT FALSE"
+  )
+  private Boolean capabilityTemplate;
+
+  @Column(name = "capability_token_id_hash", length = 64)
+  private String capabilityTokenIdHash;
 
   @JsonIgnore
-  @Column(name = "arguments_template_json", columnDefinition = "TEXT")
-  private String argumentsTemplateJson;
+  @Column(name = "input_template_json", columnDefinition = "TEXT")
+  private String inputTemplateJson;
 
   @JsonIgnore
   @Column(name = "input_json", columnDefinition = "TEXT")

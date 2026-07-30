@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Input, List, Modal, Typography} from 'antd';
+import {Input, List, Modal, Tag, Typography} from 'antd';
 import {SearchOutlined} from '@ant-design/icons';
 import {createIcon} from '@simplepoint/shared/types/icon.ts';
 import type {RouteInfo} from '@/store/routes';
@@ -9,27 +9,61 @@ interface MenuSearchModalProps {
   open: boolean;
   onClose: () => void;
   menus: RouteInfo[];
+  openTabs: OpenTabSearchItem[];
   onNavigate: (path: string) => void;
   t: (key: string, fallback: string) => string;
 }
 
-const MenuSearchModal: React.FC<MenuSearchModalProps> = ({open, onClose, menus, onNavigate, t}) => {
+interface OpenTabSearchItem {
+  path: string;
+  label: string;
+  icon?: string;
+}
+
+type SearchItem = RouteInfo & {
+  openedTab?: boolean;
+};
+
+const MenuSearchModal: React.FC<MenuSearchModalProps> = ({
+  open,
+  onClose,
+  menus,
+  openTabs,
+  onNavigate,
+  t,
+}) => {
   const [keyword, setKeyword] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<ReturnType<typeof Input> | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const leafMenus = useMemo(() => flattenRoutes(menus), [menus]);
+  const searchItems = useMemo<SearchItem[]>(() => {
+    const openedPaths = new Set(openTabs.map(tab => tab.path));
+    return [
+      ...openTabs.map(tab => ({
+        path: tab.path,
+        label: tab.label,
+        icon: tab.icon,
+        openedTab: true,
+      })),
+      ...leafMenus
+        .filter(menu => !menu.path || !openedPaths.has(menu.path))
+        .map(menu => ({...menu, openedTab: false})),
+    ];
+  }, [leafMenus, openTabs]);
 
   const filtered = useMemo(() => {
-    if (!keyword.trim()) return leafMenus;
+    if (!keyword.trim()) return searchItems;
     const lower = keyword.toLowerCase();
-    return leafMenus.filter(m => {
-      const label = (m.label || m.title || '').toLowerCase();
+    return searchItems.filter(m => {
+      const label = (m.openedTab
+        ? (m.label || m.title || '')
+        : t(m.title || '', m.label || m.title || '')).toLowerCase();
       const path = (m.path || '').toLowerCase();
       return label.includes(lower) || path.includes(lower);
     });
-  }, [keyword, leafMenus]);
+  }, [keyword, searchItems, t]);
 
   useEffect(() => { setActiveIndex(0); }, [filtered]);
 
@@ -63,7 +97,7 @@ const MenuSearchModal: React.FC<MenuSearchModalProps> = ({open, onClose, menus, 
     item?.scrollIntoView({ block: 'nearest' });
   }, [activeIndex]);
 
-  const handleSelect = useCallback((menu: RouteInfo) => {
+  const handleSelect = useCallback((menu: SearchItem) => {
     if (menu.path) {
       onNavigate(menu.path);
       onClose();
@@ -101,7 +135,7 @@ const MenuSearchModal: React.FC<MenuSearchModalProps> = ({open, onClose, menus, 
           autoFocus
           size="large"
           prefix={<SearchOutlined style={{ color: 'var(--ant-color-text-quaternary)', fontSize: 16 }} />}
-          placeholder={t('menu.search.placeholder', '搜索菜单…')}
+          placeholder={t('menu.search.placeholder', '搜索菜单或已打开页签…')}
           value={keyword}
           onChange={e => setKeyword(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -118,7 +152,7 @@ const MenuSearchModal: React.FC<MenuSearchModalProps> = ({open, onClose, menus, 
           dataSource={filtered.slice(0, 50)}
           locale={{ emptyText: (
             <div style={{ padding: '32px 0', textAlign: 'center', opacity: 0.4 }}>
-              {t('menu.search.empty', '没有匹配的菜单')}
+              {t('menu.search.empty', '没有匹配的菜单或页签')}
             </div>
           )}}
           renderItem={(item, index) => (
@@ -143,8 +177,15 @@ const MenuSearchModal: React.FC<MenuSearchModalProps> = ({open, onClose, menus, 
                   : undefined
                 }
                 title={
-                  <span style={{ fontSize: 13, fontWeight: index === activeIndex ? 600 : 400 }}>
-                    {highlightText(t(item.title || '', item.label || item.title || ''))}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: index === activeIndex ? 600 : 400 }}>
+                    {highlightText(item.openedTab
+                      ? (item.label || item.title || '')
+                      : t(item.title || '', item.label || item.title || ''))}
+                    {item.openedTab ? (
+                      <Tag color="blue" bordered={false} style={{marginInlineEnd: 0, fontSize: 10, lineHeight: '18px'}}>
+                        {t('menu.search.openedTab', '已打开')}
+                      </Tag>
+                    ) : null}
                   </span>
                 }
                 description={

@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.function.Supplier;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.ai.skill.api.constants.AiSkillPaths;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionDecisionRequest;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionPauseRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionStartRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillUpsertRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillVersionCreateRequest;
@@ -237,6 +239,72 @@ public class AiSkillController {
     return invoke(() -> executionService.find(id, executionId).orElseThrow(
         () -> new IllegalArgumentException("Skill execution does not exist")
     ));
+  }
+
+  /**
+   * Approves one execution according to its immutable version policy.
+   */
+  @PostMapping("/{id}/executions/{executionId}/approve")
+  @PreAuthorize(
+      "hasRole('Administrator') or hasAuthority('ai.workbench.skills.approve')"
+  )
+  @Operation(summary = "审批通过 Skill 执行")
+  public Response<?> approveExecution(
+      @PathVariable("id") final String id,
+      @PathVariable("executionId") final String executionId,
+      @RequestBody(required = false)
+      final SkillExecutionDecisionRequest request
+  ) {
+    return invoke(() -> executionService.approve(id, executionId, request));
+  }
+
+  /**
+   * Rejects one execution according to its immutable version policy.
+   */
+  @PostMapping("/{id}/executions/{executionId}/reject")
+  @PreAuthorize(
+      "hasRole('Administrator') or hasAuthority('ai.workbench.skills.approve')"
+  )
+  @Operation(summary = "驳回 Skill 执行")
+  public Response<?> rejectExecution(
+      @PathVariable("id") final String id,
+      @PathVariable("executionId") final String executionId,
+      @RequestBody(required = false)
+      final SkillExecutionDecisionRequest request
+  ) {
+    return invoke(() -> executionService.reject(id, executionId, request));
+  }
+
+  /**
+   * Requests a cooperative pause at the next workflow checkpoint.
+   */
+  @PostMapping("/{id}/executions/{executionId}/pause")
+  @PreAuthorize(
+      "hasRole('Administrator') or hasAuthority('ai.workbench.skills.control')"
+  )
+  @Operation(summary = "暂停 Skill 执行")
+  public Response<?> pauseExecution(
+      @PathVariable("id") final String id,
+      @PathVariable("executionId") final String executionId,
+      @RequestBody(required = false)
+      final SkillExecutionPauseRequest request
+  ) {
+    return invoke(() -> executionService.pause(id, executionId, request));
+  }
+
+  /**
+   * Resumes one cooperatively paused workflow execution.
+   */
+  @PostMapping("/{id}/executions/{executionId}/resume")
+  @PreAuthorize(
+      "hasRole('Administrator') or hasAuthority('ai.workbench.skills.control')"
+  )
+  @Operation(summary = "恢复 Skill 执行")
+  public Response<?> resumeExecution(
+      @PathVariable("id") final String id,
+      @PathVariable("executionId") final String executionId
+  ) {
+    return invoke(() -> executionService.resume(id, executionId));
   }
 
   private Response<?> invoke(final Supplier<?> operation) {

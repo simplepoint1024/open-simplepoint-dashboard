@@ -57,6 +57,19 @@ public class McpGatewayProperties {
 
   private String internalToken;
 
+  private String capabilityTokenSigningKey;
+
+  private String capabilityTokenIssuer = "simplepoint-ai-control-plane";
+
+  private String capabilityTokenAudience = "simplepoint-mcp-gateway";
+
+  private Duration capabilityTokenClockSkew = Duration.ofSeconds(5);
+
+  private Duration capabilityTokenMaximumTtl = Duration.ofMinutes(5);
+
+  private String capabilityTokenReplayKeyPrefix =
+      "simplepoint:mcp:capability:used:";
+
   private boolean runtimeMtlsEnabled;
 
   private String runtimeMtlsKeyStore;
@@ -254,6 +267,62 @@ public class McpGatewayProperties {
 
   public void setInternalToken(final String internalToken) {
     this.internalToken = internalToken;
+  }
+
+  public String getCapabilityTokenSigningKey() {
+    return capabilityTokenSigningKey;
+  }
+
+  public void setCapabilityTokenSigningKey(
+      final String capabilityTokenSigningKey
+  ) {
+    this.capabilityTokenSigningKey = capabilityTokenSigningKey;
+  }
+
+  public String getCapabilityTokenIssuer() {
+    return capabilityTokenIssuer;
+  }
+
+  public void setCapabilityTokenIssuer(final String capabilityTokenIssuer) {
+    this.capabilityTokenIssuer = capabilityTokenIssuer;
+  }
+
+  public String getCapabilityTokenAudience() {
+    return capabilityTokenAudience;
+  }
+
+  public void setCapabilityTokenAudience(final String capabilityTokenAudience) {
+    this.capabilityTokenAudience = capabilityTokenAudience;
+  }
+
+  public Duration getCapabilityTokenClockSkew() {
+    return capabilityTokenClockSkew;
+  }
+
+  public void setCapabilityTokenClockSkew(
+      final Duration capabilityTokenClockSkew
+  ) {
+    this.capabilityTokenClockSkew = capabilityTokenClockSkew;
+  }
+
+  public Duration getCapabilityTokenMaximumTtl() {
+    return capabilityTokenMaximumTtl;
+  }
+
+  public void setCapabilityTokenMaximumTtl(
+      final Duration capabilityTokenMaximumTtl
+  ) {
+    this.capabilityTokenMaximumTtl = capabilityTokenMaximumTtl;
+  }
+
+  public String getCapabilityTokenReplayKeyPrefix() {
+    return capabilityTokenReplayKeyPrefix;
+  }
+
+  public void setCapabilityTokenReplayKeyPrefix(
+      final String capabilityTokenReplayKeyPrefix
+  ) {
+    this.capabilityTokenReplayKeyPrefix = capabilityTokenReplayKeyPrefix;
   }
 
   public boolean isRuntimeMtlsEnabled() {

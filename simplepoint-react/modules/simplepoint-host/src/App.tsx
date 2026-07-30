@@ -4,7 +4,7 @@ import 'antd/dist/reset.css';
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {HashRouter, Routes} from 'react-router';
-import {App as AntApp, ConfigProvider, Modal, Table as AntTable, theme} from 'antd';
+import {App as AntApp, Button, ConfigProvider, Modal, Result, Table as AntTable, theme} from 'antd';
 import {QuestionCircleOutlined} from '@ant-design/icons';
 
 import NavigateBar from '@/layouts/navigation-bar';
@@ -76,7 +76,18 @@ const App: React.FC = () => {
     // 1) 租户优先：先取已存租户；没有则拉取 currentTenants 选第一个
     const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
     const [roleId, setRoleIdState] = useState<string | undefined>(() => getRoleId(getTenantId()));
-    const {data: currentTenants, isLoading: tenantsLoading} = useCurrentTenants();
+    const [contextId, setContextIdState] = useState<string | undefined>(
+        () => getContextId(undefined, getRoleId(getTenantId())),
+    );
+    const [contextReady, setContextReady] = useState(false);
+    const contextRequestSeq = useRef(0);
+    const {
+        data: currentTenants,
+        isLoading: tenantsLoading,
+        isError: tenantsFailed,
+        error: tenantsError,
+        refetch: refetchTenants,
+    } = useCurrentTenants();
     const selectedTenantExists = useMemo(() => {
         if (!tenantId || !currentTenants) return false;
         return currentTenants.some((tenant) => tenant.tenantId === tenantId);
@@ -94,6 +105,8 @@ const App: React.FC = () => {
             const nextTenantId = (e?.detail as string) || undefined;
             setTenantIdState(nextTenantId);
             setRoleIdState(getRoleId(nextTenantId));
+            setContextIdState(undefined);
+            setContextReady(false);
         };
         try {
             window.addEventListener('sp-set-tenant', handler as EventListener);
@@ -148,9 +161,6 @@ const App: React.FC = () => {
     }, [tenantId, currentTenants, selectedTenantExists]);
 
     // 2) 上下文其次：tenant 确定后，优先加载/刷新 contextId
-    const [contextId, setContextIdState] = useState<string | undefined>(() => getContextId(undefined, getRoleId(getTenantId())));
-    const [contextReady, setContextReady] = useState(false);
-    const contextRequestSeq = useRef(0);
     useEffect(() => {
         let cancelled = false;
         const requestSeq = ++contextRequestSeq.current;
@@ -163,12 +173,16 @@ const App: React.FC = () => {
 
             const activeRoleId = roleId;
             const ctxId = await ensureContextId(activeTenantId, {force: true, roleId: activeRoleId});
-            if (
-                cancelled
-                || contextRequestSeq.current !== requestSeq
-                || getTenantId() !== activeTenantId
-                || (getRoleId(activeTenantId) ?? '') !== (activeRoleId ?? '')
-            ) return;
+            if (cancelled || contextRequestSeq.current !== requestSeq) return;
+            if (getTenantId() !== activeTenantId) return;
+
+            const storedRoleId = getRoleId(activeTenantId);
+            if ((storedRoleId ?? '') !== (activeRoleId ?? '')) {
+                // 角色存储与 React 状态在同一次工作空间切换中可能短暂错位。
+                // 主动同步状态并触发下一轮上下文加载，避免 contextReady 永久为 false。
+                setRoleIdState(storedRoleId);
+                return;
+            }
 
             setContextId(ctxId, activeTenantId, activeRoleId);
             setContextIdState(ctxId);
@@ -182,7 +196,13 @@ const App: React.FC = () => {
 
     // 3) 路由/菜单最后：必须在 contextId ready 后再加载
     const routesEnabled = Boolean(selectedTenantExists && contextReady);
-    const {data: res, isLoading} = useData<ServiceResourceRouteResult>(
+    const {
+        data: res,
+        isLoading,
+        isError: routesFailed,
+        error: routesError,
+        refetch: refetchRoutes,
+    } = useData<ServiceResourceRouteResult>(
         useMemo(() => ['fetchServiceRoutes', tenantId, roleId, contextId] as const, [tenantId, roleId, contextId]),
         () => {
             if (!routesEnabled) return Promise.resolve(undefined as any);
@@ -208,8 +228,22 @@ const App: React.FC = () => {
     // 每个 path 对应的刷新 key
     const refreshKeyMap = useRefreshKeyMap();
 
+    const bootstrapFailed = tenantsFailed || routesFailed;
+    const bootstrapError = tenantsError ?? routesError;
+
     // 全局 loading 状态：租户、上下文、路由任一未就绪都保持 loading
-    const showLoading = useGlobalLoading(i18nLoading, i18nReady, isLoading || tenantsLoading || !routesEnabled || !remotesReady);
+    const showLoading = useGlobalLoading(
+        i18nLoading,
+        i18nReady,
+        !bootstrapFailed && (isLoading || tenantsLoading || !routesEnabled || !remotesReady),
+    );
+
+    const retryBootstrap = () => {
+        void refetchTenants();
+        if (routesEnabled) {
+            void refetchRoutes();
+        }
+    };
 
     return (
         <div className="content" style={{position: 'relative'}}>
@@ -240,11 +274,30 @@ const App: React.FC = () => {
                 <AntApp>
                     <HashRouter>
                         <TitleSync leafRoutes={leafRoutes} t={t}/>
-                        <NavigateBar data={res?.routes ?? []}>
-                            <Routes>
-                                {remotesReady ? renderRoutes(leafRoutes, refreshKeyMap, t, currentTenantType, remoteRegistryKey) : null}
-                            </Routes>
-                        </NavigateBar>
+                        {bootstrapFailed ? (
+                            <div style={{minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24}}>
+                                <Result
+                                    status="error"
+                                    title={t('error.resourcesLoadFailed', '工作空间资源加载失败')}
+                                    subTitle={
+                                        bootstrapError instanceof Error
+                                            ? bootstrapError.message
+                                            : t('error.requestFailed', '请求失败')
+                                    }
+                                    extra={(
+                                        <Button type="primary" onClick={retryBootstrap}>
+                                            {t('action.retry', '重试')}
+                                        </Button>
+                                    )}
+                                />
+                            </div>
+                        ) : (
+                            <NavigateBar data={res?.routes ?? []}>
+                                <Routes>
+                                    {remotesReady ? renderRoutes(leafRoutes, refreshKeyMap, t, currentTenantType, remoteRegistryKey) : null}
+                                </Routes>
+                            </NavigateBar>
+                        )}
                     </HashRouter>
                     <Modal
                         title={<><QuestionCircleOutlined style={{marginRight: 6}}/>{t('shortcuts.title', '快捷键')}</>}

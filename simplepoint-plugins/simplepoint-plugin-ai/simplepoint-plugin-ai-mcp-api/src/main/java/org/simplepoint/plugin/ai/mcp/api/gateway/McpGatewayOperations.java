@@ -29,6 +29,55 @@ public interface McpGatewayOperations {
   McpGatewayToolCallResult callTool(McpGatewayToolCallRequest request);
 
   /**
+   * Calls one workflow-bound Tool through the Capability Token boundary.
+   *
+   * <p>Gateway implementations may override this method to use a dedicated
+   * internal endpoint. In-process protocol implementations keep the normal Tool
+   * call behavior; the HTTP boundary performs token validation.</p>
+   *
+   * @param request capability-authorized invocation
+   * @return invocation result
+   */
+  default McpGatewayToolCallResult callWorkflowTool(
+      final McpGatewayWorkflowToolCallRequest request
+  ) {
+    if (request == null) {
+      throw new IllegalArgumentException(
+          "MCP workflow Tool request must not be null"
+      );
+    }
+    return callTool(request.call());
+  }
+
+  /**
+   * Renders one workflow-bound Prompt through the Capability Token boundary.
+   */
+  default McpGatewayPromptGetResult getWorkflowPrompt(
+      final McpGatewayWorkflowPromptGetRequest request
+  ) {
+    if (request == null) {
+      throw new IllegalArgumentException(
+          "MCP workflow Prompt request must not be null"
+      );
+    }
+    return getPrompt(request.call());
+  }
+
+  /**
+   * Reads one workflow-bound Resource through the Capability Token boundary.
+   */
+  default McpGatewayResourceReadResult readWorkflowResource(
+      final McpGatewayWorkflowResourceReadRequest request
+  ) {
+    if (request == null) {
+      throw new IllegalArgumentException(
+          "MCP workflow Resource request must not be null"
+      );
+    }
+    return readResource(request.call());
+  }
+
+  /**
    * Reads one remote MCP resource.
    */
   McpGatewayResourceReadResult readResource(McpGatewayResourceReadRequest request);

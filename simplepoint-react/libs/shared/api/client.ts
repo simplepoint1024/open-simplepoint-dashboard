@@ -396,6 +396,24 @@ function isRedirectStatus(status: number) {
   return status >= 300 && status < 400;
 }
 
+function isAuthenticationRedirectResponse(response: Response) {
+  if (!response.redirected) return false;
+  try {
+    const pathname = new URL(
+      response.url,
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
+    ).pathname;
+    if (
+      pathname === '/login'
+      || pathname.startsWith('/oauth2/authorization/')
+      || pathname === '/oauth2/authorize'
+    ) {
+      return true;
+    }
+  } catch {}
+  return (response.headers.get('content-type') || '').toLowerCase().includes('text/html');
+}
+
 async function fetchSessionProbeOnce() {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -766,6 +784,22 @@ export async function request<T>(url: string, options?: RequestOptions): Promise
     externalSignal,
     timeoutMs
   );
+
+  // Spring Security redirects an expired browser session to the HTML login
+  // page. fetch follows that redirect and otherwise exposes it as a successful
+  // 200 response, which leaves bootstrap queries with invalid data forever.
+  if (isAuthenticationRedirectResponse(response)) {
+    const error = new HttpError(401, 'Unauthorized', undefined, {
+      kind: 'http',
+      method,
+      url: finalUrl,
+      userMessage: t('error.unauthorized', '登录状态已失效'),
+    });
+    error.__notified = true;
+    logApiError(error);
+    await redirectToLogin();
+    throw error;
+  }
 
   if (!response.ok) {
     const parsed = await parseBody(response.clone(), 'auto');

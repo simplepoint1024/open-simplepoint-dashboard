@@ -21,7 +21,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {useLocation, useNavigate} from 'react-router';
 import {OssImageUpload} from '@simplepoint/components/SForm/widgets/OssImageUpload';
 import {put} from '@simplepoint/shared/api/methods';
-import {type CurrentTenantProfile, useCurrentTenantProfile} from '@/fetches/tenants.ts';
+import {type CurrentTenantProfile, useCurrentTenantProfile, useCurrentTenants} from '@/fetches/tenants.ts';
 import {useI18n} from '@/layouts/i18n/useI18n.ts';
 import {getTenantId} from '@/store/tenant.ts';
 import './index.css';
@@ -40,7 +40,10 @@ export const TenantHome: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const editWarningShown = useRef(false);
   const [form] = Form.useForm<TenantProfileForm>();
-  const {data, isLoading, isError, refetch} = useCurrentTenantProfile(tenantId, !!tenantId);
+  const {data: currentTenants, isLoading: tenantsLoading} = useCurrentTenants();
+  const activeTenant = currentTenants?.find(tenant => tenant.tenantId === tenantId);
+  const profileEnabled = !!tenantId && !!activeTenant && activeTenant.tenantType !== 'PLATFORM';
+  const {data, isLoading, isError, refetch} = useCurrentTenantProfile(tenantId, profileEnabled);
   const wantsEdit = useMemo(
     () => new URLSearchParams(location.search).get('edit') === '1',
     [location.search],
@@ -96,7 +99,11 @@ export const TenantHome: React.FC = () => {
     try {
       const values = await form.validateFields();
       setSaving(true);
-      const updated = await put<CurrentTenantProfile>('/common/tenants/current-profile', values);
+      const updated = await put<CurrentTenantProfile>(
+        '/common/tenants/current-profile',
+        values,
+        {headers: tenantId ? {'X-Tenant-Id': tenantId} : undefined},
+      );
       queryClient.setQueryData(['common', 'tenants', 'current-profile', tenantId], updated);
       await queryClient.invalidateQueries({queryKey: ['common', 'tenants', 'current']});
       try {
@@ -118,7 +125,15 @@ export const TenantHome: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (activeTenant?.tenantType === 'PLATFORM') {
+    return (
+      <div className="tenant-home-page tenant-home-empty">
+        <Empty description={t('tenant.profile.platformUnavailable', '平台工作空间不提供租户资料，请切换到具体租户')}/>
+      </div>
+    );
+  }
+
+  if (tenantsLoading || isLoading || (!!tenantId && !activeTenant)) {
     return <div className="tenant-home-page"><Skeleton active avatar paragraph={{rows: 8}}/></div>;
   }
 

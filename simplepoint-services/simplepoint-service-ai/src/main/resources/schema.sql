@@ -724,9 +724,173 @@ ALTER TABLE simpoint_ai_skill_tool_bindings
   ADD CONSTRAINT ck_simpoint_ai_skill_binding_order
   CHECK (binding_order >= 0);
 
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_prompt_binding_alias
+  ON simpoint_ai_skill_prompt_bindings (skill_version_id, prompt_alias)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_skill_prompt_bindings
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_prompt_binding_scope;
+ALTER TABLE simpoint_ai_skill_prompt_bindings
+  ADD CONSTRAINT ck_simpoint_ai_skill_prompt_binding_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_skill_prompt_bindings
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_prompt_binding_order;
+ALTER TABLE simpoint_ai_skill_prompt_bindings
+  ADD CONSTRAINT ck_simpoint_ai_skill_prompt_binding_order
+  CHECK (binding_order >= 0);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_resource_binding_alias
+  ON simpoint_ai_skill_resource_bindings (skill_version_id, resource_alias)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_skill_resource_bindings
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_resource_binding_scope;
+ALTER TABLE simpoint_ai_skill_resource_bindings
+  ADD CONSTRAINT ck_simpoint_ai_skill_resource_binding_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_skill_resource_bindings
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_resource_binding_order;
+ALTER TABLE simpoint_ai_skill_resource_bindings
+  ADD CONSTRAINT ck_simpoint_ai_skill_resource_binding_order
+  CHECK (binding_order >= 0);
+
 -- Durable Skill Workflow queue. Idempotency is scoped to one Skill and
 -- ownership context; leases allow multiple AI service replicas to use
 -- skip-locked claims without holding a database transaction during MCP I/O.
+ALTER TABLE simpoint_ai_skill_versions
+  ADD COLUMN IF NOT EXISTS budget_json TEXT;
+UPDATE simpoint_ai_skill_versions
+SET budget_json = '{"maximumToolCalls":128,"maximumDurationSeconds":300,"maximumPayloadBytes":1048576}'
+WHERE budget_json IS NULL;
+ALTER TABLE simpoint_ai_skill_versions
+  ALTER COLUMN budget_json SET NOT NULL;
+
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS maximum_tool_calls INTEGER;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS maximum_duration_seconds INTEGER;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS maximum_payload_bytes BIGINT;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS consumed_tool_calls INTEGER;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS consumed_payload_bytes BIGINT;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS deadline_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS approval_required BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS self_approval_allowed BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS approval_instructions VARCHAR(512);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS approval_requested_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS approved_by VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS approval_comment VARCHAR(1024);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS rejected_by VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS rejection_reason VARCHAR(1024);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS pause_requested BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS pause_requested_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS pause_requested_by VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS pause_reason VARCHAR(1024);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS paused_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS resumed_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS resumed_by VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS inactive_since TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS workflow_plan_json TEXT;
+UPDATE simpoint_ai_skill_executions
+SET maximum_tool_calls = COALESCE(maximum_tool_calls, 128),
+    maximum_duration_seconds = COALESCE(maximum_duration_seconds, 300),
+    maximum_payload_bytes = COALESCE(maximum_payload_bytes, 4194304),
+    consumed_tool_calls = COALESCE(consumed_tool_calls, 0),
+    consumed_payload_bytes = COALESCE(consumed_payload_bytes, 0),
+    deadline_at = COALESCE(
+      deadline_at,
+      completed_at,
+      started_at + INTERVAL '300 seconds',
+      created_at + INTERVAL '300 seconds',
+      CURRENT_TIMESTAMP + INTERVAL '300 seconds'
+    ),
+    approval_required = COALESCE(approval_required, FALSE),
+    self_approval_allowed = COALESCE(self_approval_allowed, FALSE),
+    pause_requested = COALESCE(pause_requested, FALSE);
+ALTER TABLE simpoint_ai_skill_executions
+  ALTER COLUMN maximum_tool_calls SET NOT NULL,
+  ALTER COLUMN maximum_duration_seconds SET NOT NULL,
+  ALTER COLUMN maximum_payload_bytes SET NOT NULL,
+  ALTER COLUMN consumed_tool_calls SET NOT NULL,
+  ALTER COLUMN consumed_payload_bytes SET NOT NULL,
+  ALTER COLUMN deadline_at SET NOT NULL;
+ALTER TABLE simpoint_ai_skill_executions
+  ALTER COLUMN approval_required SET DEFAULT FALSE,
+  ALTER COLUMN approval_required SET NOT NULL,
+  ALTER COLUMN self_approval_allowed SET DEFAULT FALSE,
+  ALTER COLUMN self_approval_allowed SET NOT NULL,
+  ALTER COLUMN pause_requested SET DEFAULT FALSE,
+  ALTER COLUMN pause_requested SET NOT NULL;
+
+ALTER TABLE simpoint_ai_skill_execution_steps
+  ADD COLUMN IF NOT EXISTS capability_token_id_hash VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_execution_steps
+  ADD COLUMN IF NOT EXISTS binding_id VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_execution_steps
+  ADD COLUMN IF NOT EXISTS capability_alias VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_execution_steps
+  ADD COLUMN IF NOT EXISTS capability_name VARCHAR(1024);
+ALTER TABLE simpoint_ai_skill_execution_steps
+  ADD COLUMN IF NOT EXISTS capability_schema_hash VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_execution_steps
+  ADD COLUMN IF NOT EXISTS capability_template BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE simpoint_ai_skill_execution_steps
+  ADD COLUMN IF NOT EXISTS input_template_json TEXT;
+-- Recreate missing legacy columns as nullable migration inputs so this block is
+-- safe both before and after the cleanup, and on a completely new database.
+ALTER TABLE simpoint_ai_skill_execution_steps
+  ADD COLUMN IF NOT EXISTS tool_binding_id VARCHAR(64),
+  ADD COLUMN IF NOT EXISTS tool_alias VARCHAR(64),
+  ADD COLUMN IF NOT EXISTS tool_name VARCHAR(128),
+  ADD COLUMN IF NOT EXISTS input_schema_hash VARCHAR(64),
+  ADD COLUMN IF NOT EXISTS arguments_template_json TEXT;
+UPDATE simpoint_ai_skill_execution_steps
+SET binding_id = COALESCE(binding_id, tool_binding_id),
+    capability_alias = COALESCE(capability_alias, tool_alias),
+    capability_name = COALESCE(capability_name, tool_name),
+    capability_schema_hash = COALESCE(
+      capability_schema_hash,
+      input_schema_hash
+    ),
+    input_template_json = COALESCE(
+      input_template_json,
+      arguments_template_json
+    );
+ALTER TABLE simpoint_ai_skill_execution_steps
+  DROP COLUMN IF EXISTS tool_binding_id,
+  DROP COLUMN IF EXISTS tool_alias,
+  DROP COLUMN IF EXISTS tool_name,
+  DROP COLUMN IF EXISTS input_schema_hash,
+  DROP COLUMN IF EXISTS arguments_template_json;
+
 CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_execution_system_idem
   ON simpoint_ai_skill_executions (skill_id, idempotency_key_hash)
   WHERE scope_type = 'SYSTEM'
@@ -748,10 +912,15 @@ ALTER TABLE simpoint_ai_skill_executions
     OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
   );
 ALTER TABLE simpoint_ai_skill_executions
+  DROP CONSTRAINT IF EXISTS simpoint_ai_skill_executions_status_check;
+ALTER TABLE simpoint_ai_skill_executions
   DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_execution_status;
 ALTER TABLE simpoint_ai_skill_executions
   ADD CONSTRAINT ck_simpoint_ai_skill_execution_status
-  CHECK (status IN ('PENDING', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELLED'));
+  CHECK (status IN (
+    'WAITING_APPROVAL', 'PENDING', 'RUNNING', 'PAUSED',
+    'SUCCEEDED', 'FAILED', 'REJECTED', 'CANCELLED'
+  ));
 ALTER TABLE simpoint_ai_skill_executions
   DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_execution_lease;
 ALTER TABLE simpoint_ai_skill_executions
@@ -764,6 +933,69 @@ ALTER TABLE simpoint_ai_skill_executions
       OR (
         lease_owner IS NOT NULL
         AND lease_expires_at IS NOT NULL
+      )
+    )
+  );
+ALTER TABLE simpoint_ai_skill_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_execution_budget;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD CONSTRAINT ck_simpoint_ai_skill_execution_budget
+  CHECK (
+    maximum_tool_calls > 0
+    AND maximum_duration_seconds > 0
+    AND maximum_payload_bytes >= 1024
+    AND consumed_tool_calls >= 0
+    AND consumed_tool_calls <= maximum_tool_calls
+    AND consumed_payload_bytes >= 0
+    AND consumed_payload_bytes <= maximum_payload_bytes
+    AND deadline_at IS NOT NULL
+  );
+ALTER TABLE simpoint_ai_skill_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_execution_approval;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD CONSTRAINT ck_simpoint_ai_skill_execution_approval
+  CHECK (
+    (self_approval_allowed = FALSE OR approval_required = TRUE)
+    AND (
+      status <> 'WAITING_APPROVAL'
+      OR (
+        approval_required = TRUE
+        AND approval_requested_at IS NOT NULL
+        AND approved_at IS NULL
+        AND rejected_at IS NULL
+        AND inactive_since IS NOT NULL
+      )
+    )
+    AND (
+      status <> 'REJECTED'
+      OR (
+        approval_required = TRUE
+        AND rejected_at IS NOT NULL
+        AND rejected_by IS NOT NULL
+      )
+    )
+    AND (approved_at IS NULL OR approved_by IS NOT NULL)
+    AND (rejected_at IS NULL OR rejected_by IS NOT NULL)
+    AND NOT (approved_at IS NOT NULL AND rejected_at IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_skill_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_execution_pause;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD CONSTRAINT ck_simpoint_ai_skill_execution_pause
+  CHECK (
+    (
+      pause_requested = FALSE
+      OR (
+        pause_requested_at IS NOT NULL
+        AND status IN ('RUNNING', 'PAUSED')
+      )
+    )
+    AND (
+      status <> 'PAUSED'
+      OR (
+        pause_requested = TRUE
+        AND paused_at IS NOT NULL
+        AND inactive_since IS NOT NULL
       )
     )
   );
@@ -784,3 +1016,728 @@ ALTER TABLE simpoint_ai_skill_execution_steps
 ALTER TABLE simpoint_ai_skill_execution_steps
   ADD CONSTRAINT ck_simpoint_ai_skill_execution_step_order
   CHECK (step_order >= 0 AND attempt_count >= 0);
+ALTER TABLE simpoint_ai_skill_execution_steps
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_execution_step_capability;
+ALTER TABLE simpoint_ai_skill_execution_steps
+  ADD CONSTRAINT ck_simpoint_ai_skill_execution_step_capability
+  CHECK (
+    step_type IN ('tool', 'prompt', 'resource')
+    AND binding_id IS NOT NULL
+    AND capability_alias IS NOT NULL
+    AND mcp_server_id IS NOT NULL
+    AND capability_snapshot_id IS NOT NULL
+    AND capability_name IS NOT NULL
+    AND capability_schema_hash IS NOT NULL
+    AND capability_template IS NOT NULL
+    AND (step_type = 'resource' OR capability_template = FALSE)
+  );
+
+-- Declarative Agent Registry. Agent versions pin model selectors and immutable
+-- published Skill versions; execution state is claimed by Agent Runtime.
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_agent_active_system_code
+  ON simpoint_ai_agents (code)
+  WHERE scope_type = 'SYSTEM'
+    AND tenant_id IS NULL
+    AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_agent_active_tenant_code
+  ON simpoint_ai_agents (tenant_id, code)
+  WHERE scope_type = 'TENANT'
+    AND tenant_id IS NOT NULL
+    AND deleted_at IS NULL;
+ALTER TABLE simpoint_ai_agents
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_scope;
+ALTER TABLE simpoint_ai_agents
+  ADD CONSTRAINT ck_simpoint_ai_agent_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_agents
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_status;
+ALTER TABLE simpoint_ai_agents
+  ADD CONSTRAINT ck_simpoint_ai_agent_status
+  CHECK (status IN ('DRAFT', 'ACTIVE', 'DISABLED'));
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_agent_version_name
+  ON simpoint_ai_agent_versions (agent_id, version_name)
+  WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_agent_version_content_hash
+  ON simpoint_ai_agent_versions (content_hash);
+ALTER TABLE simpoint_ai_agent_versions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_version_scope;
+ALTER TABLE simpoint_ai_agent_versions
+  ADD CONSTRAINT ck_simpoint_ai_agent_version_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_agent_versions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_version_status;
+ALTER TABLE simpoint_ai_agent_versions
+  ADD CONSTRAINT ck_simpoint_ai_agent_version_status
+  CHECK (status IN ('DRAFT', 'PUBLISHED', 'DEPRECATED'));
+ALTER TABLE simpoint_ai_agent_versions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_version_content_hash;
+ALTER TABLE simpoint_ai_agent_versions
+  ADD CONSTRAINT ck_simpoint_ai_agent_version_content_hash
+  CHECK (content_hash ~ '^[0-9a-f]{64}$');
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_agent_skill_binding_alias
+  ON simpoint_ai_agent_skill_bindings (agent_version_id, skill_alias)
+  WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_agent_skill_binding_version
+  ON simpoint_ai_agent_skill_bindings (agent_version_id, skill_version_id)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_agent_skill_bindings
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_skill_binding_scope;
+ALTER TABLE simpoint_ai_agent_skill_bindings
+  ADD CONSTRAINT ck_simpoint_ai_agent_skill_binding_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_agent_skill_bindings
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_skill_binding_order;
+ALTER TABLE simpoint_ai_agent_skill_bindings
+  ADD CONSTRAINT ck_simpoint_ai_agent_skill_binding_order
+  CHECK (binding_order >= 0);
+ALTER TABLE simpoint_ai_agent_skill_bindings
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_skill_binding_hash;
+ALTER TABLE simpoint_ai_agent_skill_bindings
+  ADD CONSTRAINT ck_simpoint_ai_agent_skill_binding_hash
+  CHECK (skill_content_hash ~ '^[0-9a-f]{64}$');
+
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS short_term_memory_enabled BOOLEAN;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS long_term_memory_enabled BOOLEAN;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS maximum_memory_messages INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS maximum_memory_summary_characters INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS compacted_message_count INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS memory_revision INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS memory_summary_hash VARCHAR(64);
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS last_memory_compacted_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS long_term_memory_scope VARCHAR(16);
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS maximum_long_term_memory_entries INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS long_term_memory_retrieval_top_k INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS long_term_memory_score_threshold DOUBLE PRECISION;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS
+    maximum_long_term_memory_injection_characters INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS maximum_long_term_memory_record_characters INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS long_term_memory_retention_days INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS long_term_memory_context_json TEXT;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS long_term_memory_retrieved_count INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS long_term_memory_injected_characters INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS long_term_memory_snapshot_hash VARCHAR(64);
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS
+    long_term_memory_retrieved_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS long_term_memory_written_id VARCHAR(64);
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS
+    long_term_memory_written_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS human_intervention_enabled BOOLEAN;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS maximum_human_interventions INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS human_intervention_timeout_seconds INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS human_intervention_timeout_action VARCHAR(16);
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS human_intervention_count INTEGER;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS current_human_intervention_id VARCHAR(64);
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS pause_requested BOOLEAN;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS pause_requested_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS pause_requested_by VARCHAR(64);
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS pause_reason VARCHAR(1024);
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS paused_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS resumed_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD COLUMN IF NOT EXISTS resumed_by VARCHAR(64);
+UPDATE simpoint_ai_agent_executions
+SET short_term_memory_enabled =
+      COALESCE(short_term_memory_enabled, TRUE),
+    long_term_memory_enabled =
+      COALESCE(long_term_memory_enabled, FALSE),
+    maximum_memory_messages =
+      GREATEST(
+        COALESCE(maximum_memory_messages, 20),
+        COALESCE(maximum_concurrency, 1) + 2
+      ),
+    maximum_memory_summary_characters =
+      COALESCE(maximum_memory_summary_characters, 8192),
+    compacted_message_count =
+      COALESCE(compacted_message_count, 0),
+    memory_revision =
+      COALESCE(memory_revision, 0),
+    long_term_memory_scope =
+      COALESCE(long_term_memory_scope, 'SUBJECT'),
+    maximum_long_term_memory_entries =
+      COALESCE(maximum_long_term_memory_entries, 500),
+    long_term_memory_retrieval_top_k =
+      COALESCE(long_term_memory_retrieval_top_k, 5),
+    long_term_memory_score_threshold =
+      COALESCE(long_term_memory_score_threshold, 0.05),
+    maximum_long_term_memory_injection_characters =
+      COALESCE(maximum_long_term_memory_injection_characters, 6000),
+    maximum_long_term_memory_record_characters =
+      COALESCE(maximum_long_term_memory_record_characters, 8192),
+    long_term_memory_retention_days =
+      COALESCE(long_term_memory_retention_days, 365),
+    long_term_memory_retrieved_count =
+      COALESCE(long_term_memory_retrieved_count, 0),
+    long_term_memory_injected_characters =
+      COALESCE(long_term_memory_injected_characters, 0),
+    human_intervention_enabled =
+      COALESCE(human_intervention_enabled, FALSE),
+    maximum_human_interventions =
+      COALESCE(maximum_human_interventions, 4),
+    human_intervention_timeout_seconds =
+      COALESCE(human_intervention_timeout_seconds, 3600),
+    human_intervention_timeout_action =
+      COALESCE(human_intervention_timeout_action, 'FAIL'),
+    human_intervention_count =
+      COALESCE(human_intervention_count, 0),
+    pause_requested =
+      COALESCE(pause_requested, FALSE);
+ALTER TABLE simpoint_ai_agent_executions
+  ALTER COLUMN short_term_memory_enabled SET DEFAULT TRUE,
+  ALTER COLUMN short_term_memory_enabled SET NOT NULL,
+  ALTER COLUMN long_term_memory_enabled SET DEFAULT FALSE,
+  ALTER COLUMN long_term_memory_enabled SET NOT NULL,
+  ALTER COLUMN maximum_memory_messages SET DEFAULT 20,
+  ALTER COLUMN maximum_memory_messages SET NOT NULL,
+  ALTER COLUMN maximum_memory_summary_characters SET DEFAULT 8192,
+  ALTER COLUMN maximum_memory_summary_characters SET NOT NULL,
+  ALTER COLUMN compacted_message_count SET DEFAULT 0,
+  ALTER COLUMN compacted_message_count SET NOT NULL,
+  ALTER COLUMN memory_revision SET DEFAULT 0,
+  ALTER COLUMN memory_revision SET NOT NULL,
+  ALTER COLUMN long_term_memory_scope SET DEFAULT 'SUBJECT',
+  ALTER COLUMN long_term_memory_scope SET NOT NULL,
+  ALTER COLUMN maximum_long_term_memory_entries SET DEFAULT 500,
+  ALTER COLUMN maximum_long_term_memory_entries SET NOT NULL,
+  ALTER COLUMN long_term_memory_retrieval_top_k SET DEFAULT 5,
+  ALTER COLUMN long_term_memory_retrieval_top_k SET NOT NULL,
+  ALTER COLUMN long_term_memory_score_threshold SET DEFAULT 0.05,
+  ALTER COLUMN long_term_memory_score_threshold SET NOT NULL,
+  ALTER COLUMN maximum_long_term_memory_injection_characters
+    SET DEFAULT 6000,
+  ALTER COLUMN maximum_long_term_memory_injection_characters SET NOT NULL,
+  ALTER COLUMN maximum_long_term_memory_record_characters SET DEFAULT 8192,
+  ALTER COLUMN maximum_long_term_memory_record_characters SET NOT NULL,
+  ALTER COLUMN long_term_memory_retention_days SET DEFAULT 365,
+  ALTER COLUMN long_term_memory_retention_days SET NOT NULL,
+  ALTER COLUMN long_term_memory_retrieved_count SET DEFAULT 0,
+  ALTER COLUMN long_term_memory_retrieved_count SET NOT NULL,
+  ALTER COLUMN long_term_memory_injected_characters SET DEFAULT 0,
+  ALTER COLUMN long_term_memory_injected_characters SET NOT NULL,
+  ALTER COLUMN human_intervention_enabled SET DEFAULT FALSE,
+  ALTER COLUMN human_intervention_enabled SET NOT NULL,
+  ALTER COLUMN maximum_human_interventions SET DEFAULT 4,
+  ALTER COLUMN maximum_human_interventions SET NOT NULL,
+  ALTER COLUMN human_intervention_timeout_seconds SET DEFAULT 3600,
+  ALTER COLUMN human_intervention_timeout_seconds SET NOT NULL,
+  ALTER COLUMN human_intervention_timeout_action SET DEFAULT 'FAIL',
+  ALTER COLUMN human_intervention_timeout_action SET NOT NULL,
+  ALTER COLUMN human_intervention_count SET DEFAULT 0,
+  ALTER COLUMN human_intervention_count SET NOT NULL,
+  ALTER COLUMN pause_requested SET DEFAULT FALSE,
+  ALTER COLUMN pause_requested SET NOT NULL;
+
+CREATE TABLE IF NOT EXISTS simpoint_ai_agent_memories (
+  id VARCHAR(64) PRIMARY KEY,
+  agent_id VARCHAR(64) NOT NULL,
+  agent_version_id VARCHAR(64) NOT NULL,
+  source_execution_id VARCHAR(64) NOT NULL,
+  scope_type VARCHAR(16) NOT NULL,
+  tenant_id VARCHAR(64),
+  memory_scope VARCHAR(16) NOT NULL,
+  subject_id VARCHAR(64) NOT NULL,
+  content TEXT NOT NULL,
+  content_tsv TSVECTOR GENERATED ALWAYS AS (
+    to_tsvector('simple', content)
+  ) STORED,
+  content_hash VARCHAR(64) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_agent_memory_execution
+  ON simpoint_ai_agent_memories (source_execution_id)
+  WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_agent_memory_boundary
+  ON simpoint_ai_agent_memories (
+    agent_id, scope_type, tenant_id, memory_scope, subject_id, created_at
+  )
+  WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_agent_memory_tsv
+  ON simpoint_ai_agent_memories USING GIN (content_tsv);
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_agent_memory_trgm
+  ON simpoint_ai_agent_memories USING GIN (content gin_trgm_ops);
+ALTER TABLE simpoint_ai_agent_memories
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_memory_scope;
+ALTER TABLE simpoint_ai_agent_memories
+  ADD CONSTRAINT ck_simpoint_ai_agent_memory_scope
+  CHECK (
+    (
+      scope_type = 'SYSTEM'
+      AND tenant_id IS NULL
+    )
+    OR (
+      scope_type = 'TENANT'
+      AND tenant_id IS NOT NULL
+    )
+  );
+
+CREATE TABLE IF NOT EXISTS simpoint_ai_agent_human_interventions (
+  id VARCHAR(64) PRIMARY KEY,
+  agent_id VARCHAR(64) NOT NULL,
+  execution_id VARCHAR(64) NOT NULL,
+  scope_type VARCHAR(16) NOT NULL,
+  tenant_id VARCHAR(64),
+  status VARCHAR(16) NOT NULL,
+  prompt VARCHAR(1024) NOT NULL,
+  requested_by VARCHAR(64) NOT NULL,
+  requested_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  waiting_at TIMESTAMP WITH TIME ZONE,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  outcome VARCHAR(16),
+  response_json TEXT,
+  response_comment VARCHAR(1024),
+  responded_by VARCHAR(64),
+  responded_at TIMESTAMP WITH TIME ZONE,
+  completion_reason VARCHAR(1024),
+  create_org_dept_id VARCHAR(64),
+  created_by VARCHAR(64),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by VARCHAR(64),
+  updated_at TIMESTAMP WITH TIME ZONE,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  lock_version BIGINT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS simpoint_ai_agent_execution_events (
+  id VARCHAR(64) PRIMARY KEY,
+  agent_id VARCHAR(64) NOT NULL,
+  agent_version_id VARCHAR(64) NOT NULL,
+  execution_id VARCHAR(64) NOT NULL,
+  scope_type VARCHAR(16) NOT NULL,
+  tenant_id VARCHAR(64),
+  event_sequence INTEGER NOT NULL,
+  event_type VARCHAR(48) NOT NULL,
+  execution_status VARCHAR(24) NOT NULL,
+  trace_id VARCHAR(64),
+  intervention_id VARCHAR(64),
+  actor_id VARCHAR(64),
+  occurred_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  payload_json TEXT,
+  create_org_dept_id VARCHAR(64),
+  created_by VARCHAR(64),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by VARCHAR(64),
+  updated_at TIMESTAMP WITH TIME ZONE,
+  deleted_at TIMESTAMP WITH TIME ZONE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_agent_event_sequence
+  ON simpoint_ai_agent_execution_events (execution_id, event_sequence)
+  WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_agent_event_agent
+  ON simpoint_ai_agent_execution_events (agent_id, occurred_at)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_agent_execution_events
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_event_scope;
+ALTER TABLE simpoint_ai_agent_execution_events
+  ADD CONSTRAINT ck_simpoint_ai_agent_event_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_agent_execution_events
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_event_type;
+ALTER TABLE simpoint_ai_agent_execution_events
+  ADD CONSTRAINT ck_simpoint_ai_agent_event_type
+  CHECK (
+    event_type IN (
+      'EXECUTION_CREATED',
+      'EXECUTION_STARTED',
+      'EXECUTION_SUCCEEDED',
+      'EXECUTION_FAILED',
+      'EXECUTION_CANCELLED',
+      'APPROVAL_GRANTED',
+      'APPROVAL_REJECTED',
+      'PAUSE_REQUESTED',
+      'PAUSED',
+      'RESUMED',
+      'MODEL_STARTED',
+      'MODEL_SUCCEEDED',
+      'MODEL_FAILED',
+      'SKILL_STARTED',
+      'SKILL_SUCCEEDED',
+      'SKILL_FAILED',
+      'MEMORY_RETRIEVED',
+      'MEMORY_WRITTEN',
+      'HUMAN_INTERVENTION_REQUESTED',
+      'HUMAN_INTERVENTION_WAITING',
+      'HUMAN_INTERVENTION_COMPLETED',
+      'HUMAN_INTERVENTION_CANCELLED',
+      'HUMAN_INTERVENTION_EXPIRED'
+    )
+  );
+ALTER TABLE simpoint_ai_agent_execution_events
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_event_state;
+ALTER TABLE simpoint_ai_agent_execution_events
+  ADD CONSTRAINT ck_simpoint_ai_agent_event_state
+  CHECK (
+    event_sequence >= 0
+    AND execution_status IN (
+      'WAITING_APPROVAL',
+      'PENDING',
+      'RUNNING',
+      'WAITING_SKILL',
+      'WAITING_HUMAN',
+      'PAUSED',
+      'SUCCEEDED',
+      'FAILED',
+      'REJECTED',
+      'CANCELLED'
+    )
+  );
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_agent_intervention_execution
+  ON simpoint_ai_agent_human_interventions (execution_id, requested_at)
+  WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_agent_intervention_status
+  ON simpoint_ai_agent_human_interventions (status, expires_at)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_agent_human_interventions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_intervention_scope;
+ALTER TABLE simpoint_ai_agent_human_interventions
+  ADD CONSTRAINT ck_simpoint_ai_agent_intervention_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_agent_human_interventions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_intervention_state;
+ALTER TABLE simpoint_ai_agent_human_interventions
+  ADD CONSTRAINT ck_simpoint_ai_agent_intervention_state
+  CHECK (
+    status IN ('REQUESTED', 'WAITING', 'COMPLETED', 'EXPIRED', 'CANCELLED')
+    AND expires_at > requested_at
+    AND (
+      status <> 'WAITING'
+      OR waiting_at IS NOT NULL
+    )
+    AND (
+      status <> 'COMPLETED'
+      OR (
+        outcome = 'CONTINUE'
+        AND response_json IS NOT NULL
+        AND responded_by IS NOT NULL
+        AND responded_at IS NOT NULL
+      )
+    )
+    AND (
+      outcome IS NULL
+      OR outcome IN ('CONTINUE', 'CANCEL')
+    )
+  );
+ALTER TABLE simpoint_ai_agent_memories
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_memory_boundary;
+ALTER TABLE simpoint_ai_agent_memories
+  ADD CONSTRAINT ck_simpoint_ai_agent_memory_boundary
+  CHECK (
+    memory_scope = 'SUBJECT'
+    AND length(subject_id) > 0
+    AND content_hash ~ '^[0-9a-f]{64}$'
+    AND expires_at > created_at
+  );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_agent_execution_idempotency
+  ON simpoint_ai_agent_executions
+    (agent_id, scope_type, COALESCE(tenant_id, ''), idempotency_key_hash)
+  WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_agent_execution_version
+  ON simpoint_ai_agent_executions (agent_version_id, created_at);
+ALTER TABLE simpoint_ai_agent_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_execution_scope;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD CONSTRAINT ck_simpoint_ai_agent_execution_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_agent_executions
+  DROP CONSTRAINT IF EXISTS simpoint_ai_agent_executions_status_check;
+ALTER TABLE simpoint_ai_agent_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_execution_status;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD CONSTRAINT ck_simpoint_ai_agent_execution_status
+  CHECK (
+    status IN (
+      'WAITING_APPROVAL',
+      'PENDING',
+      'RUNNING',
+      'WAITING_SKILL',
+      'WAITING_HUMAN',
+      'PAUSED',
+      'SUCCEEDED',
+      'FAILED',
+      'REJECTED',
+      'CANCELLED'
+    )
+  );
+ALTER TABLE simpoint_ai_agent_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_execution_hashes;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD CONSTRAINT ck_simpoint_ai_agent_execution_hashes
+  CHECK (
+    agent_version_content_hash ~ '^[0-9a-f]{64}$'
+    AND idempotency_key_hash ~ '^[0-9a-f]{64}$'
+    AND input_hash ~ '^[0-9a-f]{64}$'
+  );
+ALTER TABLE simpoint_ai_agent_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_execution_budget;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD CONSTRAINT ck_simpoint_ai_agent_execution_budget
+  CHECK (
+    step_count >= 0
+    AND loop_depth >= 0
+    AND maximum_steps > 0
+    AND maximum_loop_depth >= 0
+    AND maximum_concurrency > 0
+    AND maximum_input_tokens > 0
+    AND maximum_output_tokens > 0
+    AND maximum_cost >= 0
+    AND consumed_input_tokens >= 0
+    AND consumed_output_tokens >= 0
+    AND consumed_cost >= 0
+    AND maximum_memory_messages > 0
+    AND maximum_memory_summary_characters >= 1024
+    AND compacted_message_count >= 0
+    AND memory_revision >= 0
+    AND long_term_memory_scope = 'SUBJECT'
+    AND maximum_long_term_memory_entries BETWEEN 1 AND 10000
+    AND long_term_memory_retrieval_top_k BETWEEN 1 AND 20
+    AND long_term_memory_score_threshold BETWEEN 0 AND 1
+    AND maximum_long_term_memory_injection_characters
+      BETWEEN 512 AND 32768
+    AND maximum_long_term_memory_record_characters
+      BETWEEN 512 AND 32768
+    AND long_term_memory_retention_days BETWEEN 1 AND 3650
+    AND long_term_memory_retrieved_count >= 0
+    AND long_term_memory_injected_characters >= 0
+    AND maximum_human_interventions BETWEEN 1 AND 32
+    AND human_intervention_timeout_seconds BETWEEN 60 AND 604800
+    AND human_intervention_timeout_action IN ('FAIL', 'CANCEL')
+    AND human_intervention_count BETWEEN 0 AND maximum_human_interventions
+    AND attempt_count >= 0
+    AND lease_token >= 0
+  );
+ALTER TABLE simpoint_ai_agent_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_execution_lease;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD CONSTRAINT ck_simpoint_ai_agent_execution_lease
+  CHECK (
+    status <> 'RUNNING'
+    OR (
+      lease_owner IS NOT NULL
+      AND lease_expires_at IS NOT NULL
+    )
+  );
+ALTER TABLE simpoint_ai_agent_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_execution_memory;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD CONSTRAINT ck_simpoint_ai_agent_execution_memory
+  CHECK (
+    maximum_memory_messages >= maximum_concurrency + 2
+    AND (
+      memory_summary_hash IS NULL
+      OR memory_summary_hash ~ '^[0-9a-f]{64}$'
+    )
+    AND (
+      (
+        long_term_memory_context_json IS NULL
+        AND long_term_memory_snapshot_hash IS NULL
+        AND long_term_memory_retrieved_at IS NULL
+        AND long_term_memory_retrieved_count = 0
+        AND long_term_memory_injected_characters = 0
+      )
+      OR (
+        long_term_memory_context_json IS NOT NULL
+        AND long_term_memory_snapshot_hash ~ '^[0-9a-f]{64}$'
+        AND long_term_memory_retrieved_at IS NOT NULL
+      )
+    )
+    AND (
+      (
+        long_term_memory_written_id IS NULL
+        AND long_term_memory_written_at IS NULL
+      )
+      OR (
+        long_term_memory_written_id IS NOT NULL
+        AND long_term_memory_written_at IS NOT NULL
+      )
+    )
+  );
+ALTER TABLE simpoint_ai_agent_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_execution_pause;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD CONSTRAINT ck_simpoint_ai_agent_execution_pause
+  CHECK (
+    (
+      pause_requested = FALSE
+      OR (
+        pause_requested_at IS NOT NULL
+        AND pause_requested_by IS NOT NULL
+        AND status IN ('RUNNING', 'PAUSED')
+      )
+    )
+    AND (
+      status <> 'PAUSED'
+      OR (
+        pause_requested = TRUE
+        AND paused_at IS NOT NULL
+      )
+    )
+  );
+ALTER TABLE simpoint_ai_agent_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_execution_intervention;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD CONSTRAINT ck_simpoint_ai_agent_execution_intervention
+  CHECK (
+    (
+      current_human_intervention_id IS NULL
+      OR human_intervention_enabled = TRUE
+    )
+    AND (
+      status <> 'WAITING_HUMAN'
+      OR (
+        human_intervention_enabled = TRUE
+        AND current_human_intervention_id IS NOT NULL
+        AND next_poll_at IS NOT NULL
+        AND lease_owner IS NULL
+        AND lease_expires_at IS NULL
+      )
+    )
+  );
+ALTER TABLE simpoint_ai_agent_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_execution_approval;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD CONSTRAINT ck_simpoint_ai_agent_execution_approval
+  CHECK (
+    (self_approval_allowed = FALSE OR approval_required = TRUE)
+    AND (
+      status <> 'WAITING_APPROVAL'
+      OR (
+        approval_required = TRUE
+        AND approval_requested_at IS NOT NULL
+        AND approved_at IS NULL
+        AND rejected_at IS NULL
+      )
+    )
+    AND (
+      status <> 'REJECTED'
+      OR (
+        approval_required = TRUE
+        AND rejected_at IS NOT NULL
+        AND rejected_by IS NOT NULL
+      )
+    )
+    AND (approved_at IS NULL OR approved_by IS NOT NULL)
+    AND (rejected_at IS NULL OR rejected_by IS NOT NULL)
+    AND NOT (approved_at IS NOT NULL AND rejected_at IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_agent_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_execution_skill_wait;
+ALTER TABLE simpoint_ai_agent_executions
+  ADD CONSTRAINT ck_simpoint_ai_agent_execution_skill_wait
+  CHECK (
+    status <> 'WAITING_SKILL'
+    OR (
+      current_skill_binding_id IS NOT NULL
+      AND current_skill_execution_id IS NOT NULL
+      AND current_tool_call_id IS NOT NULL
+      AND current_trace_id IS NOT NULL
+      AND next_poll_at IS NOT NULL
+    )
+  );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_agent_trace_sequence
+  ON simpoint_ai_agent_execution_traces (execution_id, trace_sequence)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_agent_execution_traces
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_trace_type;
+ALTER TABLE simpoint_ai_agent_execution_traces
+  ADD CONSTRAINT ck_simpoint_ai_agent_trace_type
+  CHECK (trace_type IN ('MODEL', 'SKILL'));
+ALTER TABLE simpoint_ai_agent_execution_traces
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_trace_status;
+ALTER TABLE simpoint_ai_agent_execution_traces
+  ADD CONSTRAINT ck_simpoint_ai_agent_trace_status
+  CHECK (status IN ('RUNNING', 'SUCCEEDED', 'FAILED'));
+ALTER TABLE simpoint_ai_agent_execution_traces
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_trace_hashes;
+ALTER TABLE simpoint_ai_agent_execution_traces
+  ADD CONSTRAINT ck_simpoint_ai_agent_trace_hashes
+  CHECK (
+    request_hash ~ '^[0-9a-f]{64}$'
+    AND (
+      response_hash IS NULL
+      OR response_hash ~ '^[0-9a-f]{64}$'
+    )
+  );
+ALTER TABLE simpoint_ai_agent_execution_traces
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_trace_target;
+ALTER TABLE simpoint_ai_agent_execution_traces
+  ADD CONSTRAINT ck_simpoint_ai_agent_trace_target
+  CHECK (
+    (
+      trace_type = 'MODEL'
+      AND model_definition_id IS NOT NULL
+      AND skill_execution_id IS NULL
+    )
+    OR (
+      trace_type = 'SKILL'
+      AND model_definition_id IS NULL
+      AND skill_binding_id IS NOT NULL
+      AND skill_id IS NOT NULL
+      AND skill_version_id IS NOT NULL
+      AND (
+        skill_execution_id IS NOT NULL
+        OR (
+          skill_execution_id IS NULL
+          AND status = 'FAILED'
+          AND error_code = 'AGENT_SKILL_ARGUMENTS_INVALID'
+        )
+      )
+      AND capability_alias IS NOT NULL
+      AND tool_call_id IS NOT NULL
+    )
+  );

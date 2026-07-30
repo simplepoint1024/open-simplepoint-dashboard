@@ -81,6 +81,7 @@
   "menu.ai.mcpPublications": "MCP 发布",
   "menu.ai.tools": "工具",
   "menu.ai.skills": "技能",
+  "menu.ai.agents": "Agent",
   "menu.ai.runtime": "运行时管理",
   "menu.ai.billing": "账单"
 }

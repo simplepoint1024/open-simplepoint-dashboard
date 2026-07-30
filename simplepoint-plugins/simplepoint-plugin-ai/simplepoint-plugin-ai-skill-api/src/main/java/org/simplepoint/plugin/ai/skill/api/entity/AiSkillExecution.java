@@ -79,6 +79,10 @@ public class AiSkillExecution extends BaseEntityImpl<String> {
   private String outputTemplateJson;
 
   @JsonIgnore
+  @Column(name = "workflow_plan_json", columnDefinition = "TEXT")
+  private String workflowPlanJson;
+
+  @JsonIgnore
   @Column(name = "output_schema_json", columnDefinition = "TEXT", nullable = false)
   private String outputSchemaJson;
 
@@ -92,8 +96,81 @@ public class AiSkillExecution extends BaseEntityImpl<String> {
   @Column(name = "requested_by", length = 64)
   private String requestedBy;
 
+  @Column(name = "approval_required")
+  private Boolean approvalRequired;
+
+  @Column(name = "self_approval_allowed")
+  private Boolean selfApprovalAllowed;
+
+  @Column(name = "approval_instructions", length = 512)
+  private String approvalInstructions;
+
+  @Column(name = "approval_requested_at")
+  private Instant approvalRequestedAt;
+
+  @Column(name = "approved_at")
+  private Instant approvedAt;
+
+  @Column(name = "approved_by", length = 64)
+  private String approvedBy;
+
+  @Column(name = "approval_comment", length = 1024)
+  private String approvalComment;
+
+  @Column(name = "rejected_at")
+  private Instant rejectedAt;
+
+  @Column(name = "rejected_by", length = 64)
+  private String rejectedBy;
+
+  @Column(name = "rejection_reason", length = 1024)
+  private String rejectionReason;
+
+  @Column(name = "pause_requested")
+  private Boolean pauseRequested;
+
+  @Column(name = "pause_requested_at")
+  private Instant pauseRequestedAt;
+
+  @Column(name = "pause_requested_by", length = 64)
+  private String pauseRequestedBy;
+
+  @Column(name = "pause_reason", length = 1024)
+  private String pauseReason;
+
+  @Column(name = "paused_at")
+  private Instant pausedAt;
+
+  @Column(name = "resumed_at")
+  private Instant resumedAt;
+
+  @Column(name = "resumed_by", length = 64)
+  private String resumedBy;
+
+  @JsonIgnore
+  @Column(name = "inactive_since")
+  private Instant inactiveSince;
+
   @Column(name = "attempt_count", nullable = false)
   private int attemptCount;
+
+  @Column(name = "maximum_tool_calls")
+  private Integer maximumToolCalls;
+
+  @Column(name = "maximum_duration_seconds")
+  private Integer maximumDurationSeconds;
+
+  @Column(name = "maximum_payload_bytes")
+  private Long maximumPayloadBytes;
+
+  @Column(name = "consumed_tool_calls")
+  private Integer consumedToolCalls;
+
+  @Column(name = "consumed_payload_bytes")
+  private Long consumedPayloadBytes;
+
+  @Column(name = "deadline_at")
+  private Instant deadlineAt;
 
   @JsonIgnore
   @Column(name = "lease_owner", length = 128)

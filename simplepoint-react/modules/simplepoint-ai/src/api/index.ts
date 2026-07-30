@@ -64,6 +64,13 @@ export default {
     i18nNamespaces: ['ai-skills'],
     name: 'ai-workbench-skills',
   },
+  'ai-workbench.agents': {
+    baseUrl: `${contextPath}/agents`,
+    modelsUrl: `${contextPath}/models`,
+    skillsUrl: `${contextPath}/skills`,
+    i18nNamespaces: ['ai-agents'],
+    name: 'ai-workbench-agents',
+  },
   'ai-workbench.runtime': {
     nodesUrl: `${contextPath}/runtime/nodes`,
     poolsUrl: `${contextPath}/runtime/pools`,

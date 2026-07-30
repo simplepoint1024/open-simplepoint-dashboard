@@ -8,6 +8,7 @@ x-oci-build-args: &oci-build-args
 services:
   postgres:
     image: ${SIMPLEPOINT_POSTGRES_IMAGE:-somesimpled/open-simplepoint-postgres:${SIMPLEPOINT_IMAGE_TAG:-local}}
+    restart: unless-stopped
     build:
       context: .
       dockerfile: docker/postgres/Dockerfile
@@ -28,6 +29,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     expose:
       - "6379"
@@ -41,6 +43,7 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
       MINIO_ROOT_USER: ${SIMPLEPOINT_MINIO_ROOT_USER:-simplepoint}
@@ -78,6 +81,7 @@ services:
 
   consul:
     image: hashicorp/consul:1.20
+    restart: unless-stopped
     command: ["agent", "-dev", "-client=0.0.0.0", "-ui"]
     ports:
       - "${SIMPLEPOINT_CONSUL_HTTP_PORT:-8500}:8500"
@@ -105,6 +109,7 @@ services:
 
   authorization:
     image: ${SIMPLEPOINT_AUTH_IMAGE:-somesimpled/open-simplepoint-authorization:${SIMPLEPOINT_IMAGE_TAG:-local}}
+    restart: unless-stopped
     build:
       context: .
       dockerfile: simplepoint-services/simplepoint-service-authorization/Dockerfile
@@ -139,6 +144,7 @@ services:
 
   common:
     image: ${SIMPLEPOINT_COMMON_IMAGE:-somesimpled/open-simplepoint-common:${SIMPLEPOINT_IMAGE_TAG:-local}}
+    restart: unless-stopped
     build:
       context: .
       dockerfile: simplepoint-services/simplepoint-service-common/Dockerfile
@@ -182,6 +188,7 @@ services:
 
   auditing:
     image: ${SIMPLEPOINT_AUDITING_IMAGE:-somesimpled/open-simplepoint-auditing:${SIMPLEPOINT_IMAGE_TAG:-local}}
+    restart: unless-stopped
     build:
       context: .
       dockerfile: simplepoint-services/simplepoint-service-auditing/Dockerfile
@@ -212,6 +219,7 @@ services:
 
   dna:
     image: ${SIMPLEPOINT_DNA_IMAGE:-somesimpled/open-simplepoint-dna:${SIMPLEPOINT_IMAGE_TAG:-local}}
+    restart: unless-stopped
     build:
       context: .
       dockerfile: simplepoint-services/simplepoint-service-dna/Dockerfile
@@ -243,6 +251,7 @@ services:
 
   mcp-gateway:
     image: ${SIMPLEPOINT_MCP_GATEWAY_IMAGE:-somesimpled/open-simplepoint-mcp-gateway:${SIMPLEPOINT_IMAGE_TAG:-local}}
+    restart: unless-stopped
     build:
       context: .
       dockerfile: simplepoint-services/simplepoint-service-mcp-gateway/Dockerfile
@@ -253,6 +262,7 @@ services:
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
       SIMPLEPOINT_MCP_GATEWAY_INTERNAL_TOKEN: ${SIMPLEPOINT_MCP_GATEWAY_INTERNAL_TOKEN:-dev-mcp-gateway-internal-token-change-me}
+      SIMPLEPOINT_MCP_CAPABILITY_TOKEN_SIGNING_KEY: ${SIMPLEPOINT_MCP_CAPABILITY_TOKEN_SIGNING_KEY:-dev-mcp-capability-signing-key-change-me-32bytes}
       SIMPLEPOINT_MCP_CONTROL_PLANE_BASE_URL: http://ai:2888
       SIMPLEPOINT_MCP_PUBLICATION_ISSUER_URI: http://${SIMPLEPOINT_PUBLIC_HOST:-localhost}:9000
       SIMPLEPOINT_MCP_PUBLICATION_JWK_SET_URI: http://authorization:9000/oauth2/jwks
@@ -292,6 +302,7 @@ services:
 
   docker-socket-proxy:
     image: tecnativa/docker-socket-proxy:v0.4.2@sha256:1f3a6f303320723d199d2316a3e82b2e2685d86c275d5e3deeaf182573b47476
+    restart: unless-stopped
     environment:
       ALLOW_START: "1"
       ALLOW_STOP: "1"
@@ -313,6 +324,7 @@ services:
 
   tool-egress-proxy:
     image: ${SIMPLEPOINT_TOOL_EGRESS_PROXY_IMAGE:-somesimpled/open-simplepoint-tool-egress-proxy:${SIMPLEPOINT_IMAGE_TAG:-local}}
+    restart: unless-stopped
     build:
       context: .
       dockerfile: simplepoint-services/simplepoint-service-tool-egress-proxy/Dockerfile
@@ -340,6 +352,7 @@ services:
 
   tool-image-verifier:
     image: ${SIMPLEPOINT_TOOL_IMAGE_VERIFIER_IMAGE:-somesimpled/open-simplepoint-tool-image-verifier:${SIMPLEPOINT_IMAGE_TAG:-local}}
+    restart: unless-stopped
     build:
       context: .
       dockerfile: simplepoint-services/simplepoint-service-tool-image-verifier/Dockerfile
@@ -357,7 +370,7 @@ services:
       SIMPLEPOINT_TOOL_IMAGE_VERIFIER_ALLOW_HTTP_REGISTRY: ${SIMPLEPOINT_TOOL_IMAGE_VERIFIER_ALLOW_HTTP_REGISTRY:-false}
       SIMPLEPOINT_TOOL_IMAGE_VERIFIER_ALLOW_INSECURE_REGISTRY: ${SIMPLEPOINT_TOOL_IMAGE_VERIFIER_ALLOW_INSECURE_REGISTRY:-false}
       SIMPLEPOINT_TOOL_IMAGE_VERIFIER_IGNORE_TRANSPARENCY_LOG: ${SIMPLEPOINT_TOOL_IMAGE_VERIFIER_IGNORE_TRANSPARENCY_LOG:-false}
-      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_REQUIRE_SBOM: "true"
+      SIMPLEPOINT_TOOL_IMAGE_VERIFIER_REQUIRE_SBOM: ${SIMPLEPOINT_TOOL_IMAGE_VERIFIER_REQUIRE_SBOM:-true}
       SIMPLEPOINT_TOOL_IMAGE_VERIFIER_BLOCKED_SEVERITIES: ${SIMPLEPOINT_TOOL_IMAGE_BLOCKED_SEVERITIES:-HIGH,CRITICAL}
     read_only: true
     cap_drop:
@@ -383,6 +396,7 @@ services:
 
   tool-runtime:
     image: ${SIMPLEPOINT_TOOL_RUNTIME_IMAGE:-somesimpled/open-simplepoint-tool-runtime:${SIMPLEPOINT_IMAGE_TAG:-local}}
+    restart: unless-stopped
     build:
       context: .
       dockerfile: simplepoint-services/simplepoint-service-tool-runtime-node/Dockerfile
@@ -469,6 +483,7 @@ services:
       SIMPLEPOINT_AI_RUNTIME_MCP_FAILURE_QUARANTINE: ${SIMPLEPOINT_AI_RUNTIME_MCP_FAILURE_QUARANTINE:-10s}
       SIMPLEPOINT_MCP_GATEWAY_BASE_URL: http://mcp-gateway:2890
       SIMPLEPOINT_MCP_GATEWAY_INTERNAL_TOKEN: ${SIMPLEPOINT_MCP_GATEWAY_INTERNAL_TOKEN:-dev-mcp-gateway-internal-token-change-me}
+      SIMPLEPOINT_MCP_CAPABILITY_TOKEN_SIGNING_KEY: ${SIMPLEPOINT_MCP_CAPABILITY_TOKEN_SIGNING_KEY:-dev-mcp-capability-signing-key-change-me-32bytes}
       SIMPLEPOINT_TOOL_RUNTIME_MTLS_ENABLED: "true"
       SIMPLEPOINT_TOOL_RUNTIME_MTLS_KEY_STORE: /run/simplepoint/runtime-pki/ai/identity.p12
       SIMPLEPOINT_TOOL_RUNTIME_MTLS_KEY_STORE_PASSWORD: ${SIMPLEPOINT_RUNTIME_PKI_STORE_PASSWORD:-dev-runtime-pki-password-change-me}
@@ -511,8 +526,42 @@ services:
       retries: 20
       start_period: 60s
 
+  agent-runtime:
+    image: ${SIMPLEPOINT_AGENT_RUNTIME_IMAGE:-somesimpled/open-simplepoint-agent-runtime:${SIMPLEPOINT_IMAGE_TAG:-local}}
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: simplepoint-services/simplepoint-service-agent-runtime/Dockerfile
+      args: *oci-build-args
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_WAIT_FOR: postgres:5432,consul:8500,ai:2888
+      SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
+      SIMPLEPOINT_WAIT_TIMEOUT: 240
+      SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY: ${SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY:-dev-ai-credential-encryption-key-change-me}
+      SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED: ${SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED:-true}
+      SIMPLEPOINT_AI_AGENT_EXECUTION_ENABLED: "true"
+      SIMPLEPOINT_AI_AGENT_EXECUTION_BATCH_SIZE: ${SIMPLEPOINT_AI_AGENT_EXECUTION_BATCH_SIZE:-4}
+      SIMPLEPOINT_AI_AGENT_EXECUTION_LEASE_DURATION: ${SIMPLEPOINT_AI_AGENT_EXECUTION_LEASE_DURATION:-2m}
+    ports:
+      - "${SIMPLEPOINT_AGENT_RUNTIME_PORT:-2894}:2894"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:2894/actuator/health >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+
   host:
     image: ${SIMPLEPOINT_HOST_IMAGE:-somesimpled/open-simplepoint-host:${SIMPLEPOINT_IMAGE_TAG:-local}}
+    restart: unless-stopped
     build:
       context: .
       dockerfile: simplepoint-services/simplepoint-service-host/Dockerfile

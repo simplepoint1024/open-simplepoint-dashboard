@@ -18,6 +18,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionApprovalPolicy;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionBudget;
 import org.simplepoint.plugin.ai.skill.api.model.SkillVersionStatus;
 
 /**
@@ -109,6 +111,10 @@ public class AiSkillVersion extends BaseEntityImpl<String> {
   @Column(name = "workflow_json", columnDefinition = "TEXT", nullable = false)
   private String workflowJson;
 
+  @JsonIgnore
+  @Column(name = "budget_json", columnDefinition = "TEXT")
+  private String budgetJson;
+
   @Enumerated(EnumType.STRING)
   @Column(length = 16, nullable = false)
   private SkillVersionStatus status;
@@ -137,7 +143,23 @@ public class AiSkillVersion extends BaseEntityImpl<String> {
 
   @Transient
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+  private SkillExecutionBudget budget;
+
+  @Transient
+  @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+  private SkillExecutionApprovalPolicy approvalPolicy;
+
+  @Transient
+  @Schema(accessMode = Schema.AccessMode.READ_ONLY)
   private List<AiSkillToolBinding> toolBindings;
+
+  @Transient
+  @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+  private List<AiSkillPromptBinding> promptBindings;
+
+  @Transient
+  @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+  private List<AiSkillResourceBinding> resourceBindings;
 
   @Version
   @Column(name = "lock_version", nullable = false)

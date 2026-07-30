@@ -586,6 +586,156 @@
               "publicAccess": false,
               "grantable": true,
               "disabled": false
+            },
+            {
+              "code": "ai.workbench.skills.approve",
+              "name": "审批 Skill 执行",
+              "label": "审批 Skill 执行",
+              "alias": "i18n:ai.skills.action.approve",
+              "type": "ACTION",
+              "sort": 107,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.skills.control",
+              "name": "控制 Skill 执行",
+              "label": "控制 Skill 执行",
+              "alias": "i18n:ai.skills.action.pause",
+              "type": "ACTION",
+              "sort": 108,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "code": "ai.workbench.agents.view",
+          "name": "Agent",
+          "label": "Agent",
+          "title": "menu.ai.agents",
+          "type": "PAGE",
+          "path": "/ai/workbench/agents",
+          "component": "ai/workbench/Agents",
+          "icon": "DeploymentUnitOutlined",
+          "routeKind": "item",
+          "sort": 57,
+          "publicAccess": false,
+          "grantable": true,
+          "disabled": false,
+          "scopeTypes": ["SYSTEM", "TENANT"],
+          "children": [
+            {
+              "code": "ai.workbench.agents.create",
+              "name": "新增 Agent",
+              "label": "新增 Agent",
+              "alias": "i18n:table.button.create",
+              "type": "ACTION",
+              "sort": 101,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.agents.edit",
+              "name": "修改 Agent",
+              "label": "修改 Agent",
+              "alias": "i18n:table.button.edit",
+              "type": "ACTION",
+              "sort": 102,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.agents.delete",
+              "name": "删除 Agent",
+              "label": "删除 Agent",
+              "alias": "i18n:table.button.delete",
+              "type": "ACTION",
+              "sort": 103,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.agents.versions.manage",
+              "name": "管理 Agent 版本",
+              "label": "管理 Agent 版本",
+              "alias": "i18n:ai.agents.action.version.manage",
+              "type": "ACTION",
+              "sort": 104,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.agents.publish",
+              "name": "发布 Agent 版本",
+              "label": "发布 Agent 版本",
+              "alias": "i18n:ai.agents.action.publish",
+              "type": "ACTION",
+              "sort": 105,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.agents.execute",
+              "name": "执行 Agent",
+              "label": "执行 Agent",
+              "alias": "i18n:ai.agents.action.execute",
+              "type": "ACTION",
+              "sort": 106,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.agents.approve",
+              "name": "审批 Agent 执行",
+              "label": "审批 Agent 执行",
+              "alias": "i18n:ai.agents.action.approve",
+              "type": "ACTION",
+              "sort": 107,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.agents.control",
+              "name": "控制 Agent 执行",
+              "label": "控制 Agent 执行",
+              "alias": "i18n:ai.agents.action.pause",
+              "type": "ACTION",
+              "sort": 108,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.agents.memory.manage",
+              "name": "管理 Agent 长期记忆",
+              "label": "管理 Agent 长期记忆",
+              "alias": "i18n:ai.agents.action.memory",
+              "type": "ACTION",
+              "sort": 109,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.agents.intervene",
+              "name": "人工介入 Agent 执行",
+              "label": "人工介入 Agent 执行",
+              "alias": "i18n:ai.agents.action.intervene",
+              "type": "ACTION",
+              "sort": 110,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
             }
           ]
         },
@@ -599,7 +749,7 @@
           "component": "ai/workbench/Runtime",
           "icon": "CloudServerOutlined",
           "routeKind": "item",
-          "sort": 57,
+          "sort": 58,
           "publicAccess": false,
           "grantable": true,
           "disabled": false,

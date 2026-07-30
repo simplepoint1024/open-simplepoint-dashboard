@@ -1,7 +1,7 @@
 import {JSX} from 'react';
 import {Navigate, Route} from 'react-router';
 import {IframeView} from './IframeView';
-import {withBoundaryAndSuspense} from './withBoundaryAndSuspense';
+import {BoundaryAndSuspense} from './withBoundaryAndSuspense';
 import {parseComponent} from '@/utils/parseComponent';
 import {getLazyComponent} from '@/utils/lazyComponent';
 import {Profile} from '@/layouts/profile';
@@ -82,12 +82,17 @@ export function renderRoutes(
 
             // lazy remote component
             const LazyComp = getLazyComponent(t, component, remoteRegistryKey);
-            const Wrapped = withBoundaryAndSuspense(LazyComp, t, path, rk);
-
             return {
                 key,
                 path,
-                element: <Wrapped/>
+                element: (
+                    <BoundaryAndSuspense
+                        component={LazyComp}
+                        t={t}
+                        path={path}
+                        refreshKey={rk}
+                    />
+                )
             };
         })
         .filter(Boolean) as RouteItem[];

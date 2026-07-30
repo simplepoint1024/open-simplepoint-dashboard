@@ -8,7 +8,7 @@ CONTEXT_ID="${MCP_E2E_CONTEXT_ID:-}"
 IMAGE_REFERENCE="${MCP_E2E_IMAGE_REFERENCE:-}"
 IMAGE_DIGEST="${MCP_E2E_IMAGE_DIGEST:-}"
 TOOL_NAME="${MCP_E2E_TOOL_NAME:-echo}"
-TOOL_ARGUMENTS="${MCP_E2E_TOOL_ARGUMENTS:-{\"message\":\"open-simplepoint-managed-mcp-e2e-ok\"}}"
+TOOL_ARGUMENTS="${MCP_E2E_TOOL_ARGUMENTS:-}"
 EXPECTED_TEXT="${MCP_E2E_EXPECTED_TEXT:-open-simplepoint-managed-mcp-e2e-ok}"
 VERIFY_REDEPLOY="${MCP_E2E_VERIFY_REDEPLOY:-true}"
 KEEP_RESOURCES="${MCP_E2E_KEEP_RESOURCES:-false}"
@@ -17,6 +17,10 @@ WAIT_ATTEMPTS="${MCP_E2E_WAIT_ATTEMPTS:-90}"
 TEMP_DIR=""
 SERVER_ID=""
 POOL_ID=""
+
+if [[ -z "${TOOL_ARGUMENTS}" ]]; then
+  TOOL_ARGUMENTS='{"message":"open-simplepoint-managed-mcp-e2e-ok"}'
+fi
 
 fail() {
   printf 'Managed MCP E2E verification failed: %s\n' "$*" >&2

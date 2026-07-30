@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 import javax.net.ssl.SSLParameters;
 import org.simplepoint.plugin.ai.skill.api.model.VerifiedSkillArtifact;
 import org.simplepoint.plugin.ai.skill.api.service.SkillArtifactVerifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -37,6 +38,12 @@ import org.springframework.util.StringUtils;
  * Bounded OCI Distribution client and supply-chain verifier for Skill content.
  */
 @Service
+@ConditionalOnProperty(
+    prefix = "simplepoint.ai.skill.registry",
+    name = "enabled",
+    havingValue = "true",
+    matchIfMissing = true
+)
 public class OciSkillArtifactVerifier implements SkillArtifactVerifier {
 
   static final String OCI_MANIFEST_MEDIA_TYPE =

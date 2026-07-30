@@ -18,21 +18,33 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpPromptDescriptor;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpResourceDescriptor;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpResourceTemplateDescriptor;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpToolDescriptor;
 import org.simplepoint.plugin.ai.mcp.api.model.McpCapabilitySnapshotDetails;
 import org.simplepoint.plugin.ai.mcp.api.service.AiMcpServerDefinitionService;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillDefinition;
+import org.simplepoint.plugin.ai.skill.api.entity.AiSkillPromptBinding;
+import org.simplepoint.plugin.ai.skill.api.entity.AiSkillResourceBinding;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillToolBinding;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillVersion;
 import org.simplepoint.plugin.ai.skill.api.model.SkillStatus;
 import org.simplepoint.plugin.ai.skill.api.model.SkillVersionCreateRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillVersionStatus;
 import org.simplepoint.plugin.ai.skill.api.model.VerifiedSkillArtifact;
+import org.simplepoint.plugin.ai.skill.api.properties.SkillExecutionProperties;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillDefinitionRepository;
+import org.simplepoint.plugin.ai.skill.api.repository.AiSkillPromptBindingRepository;
+import org.simplepoint.plugin.ai.skill.api.repository.AiSkillResourceBindingRepository;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillToolBindingRepository;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillVersionRepository;
 import org.simplepoint.plugin.ai.skill.api.service.SkillArtifactVerifier;
+import org.simplepoint.plugin.ai.skill.service.support.SkillApprovalPolicy;
+import org.simplepoint.plugin.ai.skill.service.support.SkillBudgetPolicy;
 import org.simplepoint.plugin.ai.skill.service.support.SkillJsonSchemaValidator;
+import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowConditionEvaluator;
+import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowPlanCompiler;
 import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowTemplateResolver;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,6 +58,12 @@ class AiSkillServiceImplTest {
 
   @Mock
   private AiSkillToolBindingRepository bindingRepository;
+
+  @Mock
+  private AiSkillPromptBindingRepository promptBindingRepository;
+
+  @Mock
+  private AiSkillResourceBindingRepository resourceBindingRepository;
 
   @Mock
   private AiScopeAccessPolicy scopeAccessPolicy;
@@ -62,16 +80,31 @@ class AiSkillServiceImplTest {
 
   @BeforeEach
   void setUp() {
+    ObjectMapper objectMapper = new ObjectMapper();
+    SkillWorkflowTemplateResolver templateResolver =
+        new SkillWorkflowTemplateResolver();
+    SkillWorkflowConditionEvaluator conditionEvaluator =
+        new SkillWorkflowConditionEvaluator(templateResolver);
     service = new AiSkillServiceImpl(
         skillRepository,
         versionRepository,
         bindingRepository,
+        promptBindingRepository,
+        resourceBindingRepository,
         scopeAccessPolicy,
         mcpServerService,
         artifactVerifier,
         new SkillJsonSchemaValidator(),
-        new SkillWorkflowTemplateResolver(),
-        new ObjectMapper()
+        new SkillWorkflowPlanCompiler(
+            templateResolver,
+            conditionEvaluator
+        ),
+        new SkillBudgetPolicy(
+            new SkillExecutionProperties(),
+            objectMapper
+        ),
+        new SkillApprovalPolicy(objectMapper),
+        objectMapper
     );
     skill = new AiSkillDefinition();
     skill.setId("skill-a");
@@ -115,6 +148,11 @@ class AiSkillServiceImplTest {
     assertThat(result.getArtifactDigest()).startsWith("sha256:");
     assertThat(result.getArtifactSignatureVerified()).isTrue();
     assertThat(result.getArtifactVerifiedAt()).isNotNull();
+    assertThat(result.getBudget()).satisfies(budget -> {
+      assertThat(budget.maximumToolCalls()).isEqualTo(1);
+      assertThat(budget.maximumDurationSeconds()).isEqualTo(300);
+      assertThat(budget.maximumPayloadBytes()).isEqualTo(1024L * 1024L);
+    });
     assertThat(result.getToolBindings()).singleElement().satisfies(binding -> {
       assertThat(binding.getMcpServerId()).isEqualTo("server-a");
       assertThat(binding.getCapabilitySnapshotId()).isEqualTo("snapshot-a");
@@ -154,20 +192,48 @@ class AiSkillServiceImplTest {
   }
 
   @Test
-  void rejectsWorkflowStepTypesNotImplementedByV1Alpha1Executor() {
-    Map<String, Object> manifest = manifestWithStep(
-        false,
-        Map.of("id", "step-a", "type", "prompt")
-    );
+  void createsVersionWithPinnedPromptAndResourceBindings() {
+    Map<String, Object> manifest = manifestWithPromptAndResource();
     stubArtifact(manifest);
     when(skillRepository.findActiveByIdForUpdate("skill-a"))
         .thenReturn(Optional.of(skill));
+    when(versionRepository.findActiveByVersionAndSkillId("1.0.0", "skill-a"))
+        .thenReturn(Optional.empty());
+    when(mcpServerService.getSnapshot("server-a", "snapshot-a"))
+        .thenReturn(snapshot());
+    when(versionRepository.save(any(AiSkillVersion.class))).thenAnswer(invocation -> {
+      AiSkillVersion version = invocation.getArgument(0);
+      version.setId("version-a");
+      return version;
+    });
+    when(promptBindingRepository.save(any(AiSkillPromptBinding.class)))
+        .thenAnswer(invocation -> {
+          AiSkillPromptBinding binding = invocation.getArgument(0);
+          binding.setId("prompt-binding-a");
+          return binding;
+        });
+    when(resourceBindingRepository.save(any(AiSkillResourceBinding.class)))
+        .thenAnswer(invocation -> {
+          AiSkillResourceBinding binding = invocation.getArgument(0);
+          binding.setId("resource-binding-a");
+          return binding;
+        });
 
-    assertThatThrownBy(() -> service.createVersion(
-        "skill-a",
-        request(manifest)
-    )).isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Unsupported workflow step type");
+    AiSkillVersion result = service.createVersion("skill-a", request(manifest));
+
+    assertThat(result.getBudget().maximumToolCalls()).isEqualTo(1);
+    assertThat(result.getPromptBindings()).singleElement().satisfies(binding -> {
+      assertThat(binding.getPromptAlias()).isEqualTo("welcome");
+      assertThat(binding.getPromptName()).isEqualTo("welcome");
+      assertThat(binding.getDescriptorHash()).hasSize(64);
+    });
+    assertThat(result.getResourceBindings()).singleElement().satisfies(binding -> {
+      assertThat(binding.getResourceAlias()).isEqualTo("document");
+      assertThat(binding.getResourceSelector())
+          .isEqualTo("document://{documentId}");
+      assertThat(binding.getResourceTemplate()).isTrue();
+      assertThat(binding.getDescriptorHash()).hasSize(64);
+    });
   }
 
   @Test
@@ -176,10 +242,12 @@ class AiSkillServiceImplTest {
     version.setId("version-a");
     version.setSkillId(skill.getId());
     version.setStatus(SkillVersionStatus.DRAFT);
-    version.setManifestJson("{}");
+    version.setManifestJson("{\"spec\":{}}");
     version.setInputSchemaJson("{}");
     version.setOutputSchemaJson("{}");
-    version.setWorkflowJson("{}");
+    version.setWorkflowJson(
+        "{\"steps\":[{\"id\":\"step-a\",\"type\":\"tool\",\"tool\":\"echo\"}]}"
+    );
     version.setArtifactVerifiedAt(Instant.now());
     version.setArtifactSignatureRequired(true);
     version.setArtifactSignatureVerified(true);
@@ -189,8 +257,10 @@ class AiSkillServiceImplTest {
         "version-a",
         "skill-a"
     )).thenReturn(Optional.of(version));
+    AiSkillToolBinding binding = new AiSkillToolBinding();
+    binding.setToolAlias("echo");
     when(bindingRepository.findAllActiveBySkillVersionId("version-a"))
-        .thenReturn(List.of());
+        .thenReturn(List.of(binding));
 
     AiSkillVersion result = service.publishVersion("skill-a", "version-a");
 
@@ -268,6 +338,47 @@ class AiSkillServiceImplTest {
     );
   }
 
+  private Map<String, Object> manifestWithPromptAndResource() {
+    return Map.of(
+        "apiVersion", "simplepoint.io/v1alpha1",
+        "kind", "Skill",
+        "metadata", Map.of(
+            "name", "document-summary",
+            "version", "1.0.0"
+        ),
+        "spec", Map.of(
+            "inputSchema", Map.of("type", "object"),
+            "outputSchema", Map.of("type", "object"),
+            "tools", List.of(),
+            "prompts", List.of(Map.of(
+                "alias", "welcome",
+                "serverId", "server-a",
+                "snapshotId", "snapshot-a",
+                "name", "welcome"
+            )),
+            "resources", List.of(Map.of(
+                "alias", "document",
+                "serverId", "server-a",
+                "snapshotId", "snapshot-a",
+                "uriTemplate", "document://{documentId}"
+            )),
+            "workflow", Map.of("steps", List.of(
+                Map.of(
+                    "id", "prompt-step",
+                    "type", "prompt",
+                    "prompt", "welcome"
+                ),
+                Map.of(
+                    "id", "resource-step",
+                    "type", "resource",
+                    "resource", "document",
+                    "uri", "document://42"
+                )
+            ))
+        )
+    );
+  }
+
   private McpCapabilitySnapshotDetails snapshot() {
     McpToolDescriptor tool = new McpToolDescriptor(
         "summarize",
@@ -278,6 +389,36 @@ class AiSkillServiceImplTest {
         Map.of(),
         List.of()
     );
+    McpPromptDescriptor prompt = new McpPromptDescriptor(
+        "welcome",
+        "Welcome",
+        "Builds a welcome message",
+        List.of(Map.of("name", "name", "required", false)),
+        Map.of(),
+        List.of()
+    );
+    McpResourceDescriptor resource = new McpResourceDescriptor(
+        "document://fixed",
+        "Fixed document",
+        null,
+        "A fixed document",
+        "text/plain",
+        null,
+        Map.of(),
+        Map.of(),
+        List.of()
+    );
+    McpResourceTemplateDescriptor resourceTemplate =
+        new McpResourceTemplateDescriptor(
+            "document://{documentId}",
+            "Document",
+            null,
+            "A document by identifier",
+            "text/plain",
+            Map.of(),
+            Map.of(),
+            List.of()
+        );
     return new McpCapabilitySnapshotDetails(
         "snapshot-a",
         "server-a",
@@ -289,9 +430,9 @@ class AiSkillServiceImplTest {
         true,
         Map.of(),
         List.of(tool),
-        List.of(),
-        List.of(),
-        List.of()
+        List.of(resource),
+        List.of(resourceTemplate),
+        List.of(prompt)
     );
   }
 }
