@@ -36,6 +36,7 @@ type MCPExchangeResult struct {
 type MCPEventStream struct {
 	Messages <-chan []byte
 	Done     <-chan struct{}
+	Release  func()
 }
 
 type mcpSessionRegistry struct {
@@ -45,18 +46,21 @@ type mcpSessionRegistry struct {
 }
 
 type mcpSession struct {
-	id           string
-	workloadID   string
-	leaseID      string
-	fencingToken int64
-	attach       client.ContainerAttachResult
-	maxBytes     int64
-	writeMu      sync.Mutex
-	pendingMu    sync.Mutex
-	pending      map[string]chan []byte
-	events       chan []byte
-	done         chan struct{}
-	closeOnce    sync.Once
+	id            string
+	workloadID    string
+	leaseID       string
+	fencingToken  int64
+	attach        client.ContainerAttachResult
+	maxBytes      int64
+	writeMu       sync.Mutex
+	pendingMu     sync.Mutex
+	pending       map[string]chan []byte
+	eventMu       sync.Mutex
+	eventStreams  int
+	eventObserved bool
+	events        chan []byte
+	done          chan struct{}
+	closeOnce     sync.Once
 }
 
 type jsonRPCEnvelope struct {
@@ -151,7 +155,15 @@ func (e *Engine) MCPEvents(
 	if session == nil || !session.matches(workloadID, leaseID, fencingToken) {
 		return MCPEventStream{}, ErrMCPSessionNotFound
 	}
-	return MCPEventStream{Messages: session.events, Done: session.done}, nil
+	release, ok := session.acquireEventStream()
+	if !ok {
+		return MCPEventStream{}, ErrMCPSessionNotFound
+	}
+	return MCPEventStream{
+		Messages: session.events,
+		Done:     session.done,
+		Release:  release,
+	}, nil
 }
 
 // CloseMCPSession detaches one fenced stdio session.
@@ -194,7 +206,9 @@ func (e *Engine) resolveMCPSession(
 	}
 	if existing := e.mcpSessions.workload(workloadID); existing != nil {
 		if existing.matches(workloadID, leaseID, fencingToken) {
-			return nil, errors.New("runtime workload already has an active MCP session")
+			if !existing.takeoverAllowed() {
+				return nil, errors.New("runtime workload already has an active MCP session")
+			}
 		}
 		e.mcpSessions.remove(existing)
 		existing.close()
@@ -364,6 +378,38 @@ func (s *mcpSession) closed() bool {
 	default:
 		return false
 	}
+}
+
+func (s *mcpSession) acquireEventStream() (func(), bool) {
+	s.eventMu.Lock()
+	defer s.eventMu.Unlock()
+	if s.closed() {
+		return nil, false
+	}
+	s.eventObserved = true
+	s.eventStreams++
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			s.eventMu.Lock()
+			defer s.eventMu.Unlock()
+			if s.eventStreams > 0 {
+				s.eventStreams--
+			}
+		})
+	}, true
+}
+
+func (s *mcpSession) takeoverAllowed() bool {
+	s.eventMu.Lock()
+	orphaned := s.eventObserved && s.eventStreams == 0
+	s.eventMu.Unlock()
+	if !orphaned {
+		return false
+	}
+	s.pendingMu.Lock()
+	defer s.pendingMu.Unlock()
+	return len(s.pending) == 0
 }
 
 func (r *mcpSessionRegistry) add(session *mcpSession) {

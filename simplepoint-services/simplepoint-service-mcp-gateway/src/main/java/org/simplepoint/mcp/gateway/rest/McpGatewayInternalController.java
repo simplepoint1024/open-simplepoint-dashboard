@@ -2,6 +2,7 @@ package org.simplepoint.mcp.gateway.rest;
 
 import org.simplepoint.mcp.gateway.security.SkillCapabilityTokenVerifier;
 import org.simplepoint.plugin.ai.mcp.api.constants.AiMcpPaths;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayCancellationRequest;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayConnection;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayDiscoveryResult;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayOauthDiscoveryRequest;
@@ -89,6 +90,17 @@ public class McpGatewayInternalController {
       @RequestBody final McpGatewayToolCallRequest request
   ) {
     return operations.callTool(request);
+  }
+
+  /**
+   * Cooperatively cancels one trusted cluster-wide operation.
+   */
+  @PostMapping(AiMcpPaths.INTERNAL_CANCEL_OPERATION)
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public void cancelOperation(
+      @RequestBody final McpGatewayCancellationRequest request
+  ) {
+    operations.cancel(request);
   }
 
   /**

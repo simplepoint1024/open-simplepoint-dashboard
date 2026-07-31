@@ -76,6 +76,10 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-core-repository"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-core-service"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-core-rest"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-catalog-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-catalog-repository"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-catalog-service"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-catalog-rest"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-knowledge-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-knowledge-repository"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-knowledge-service"))
@@ -96,6 +100,10 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-agent-repository"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-agent-service"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-agent-rest"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-workflow-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-workflow-repository"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-workflow-service"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-workflow-rest"))
 
     // Register AI routes and i18n bundles with the platform services.
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api"))

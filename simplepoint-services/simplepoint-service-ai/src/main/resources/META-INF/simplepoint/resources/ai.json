@@ -315,6 +315,48 @@
           ]
         },
         {
+          "code": "ai.workbench.catalog.view",
+          "name": "扩展市场",
+          "label": "扩展市场",
+          "title": "menu.ai.catalog",
+          "type": "PAGE",
+          "path": "/ai/workbench/catalog",
+          "component": "ai/workbench/Catalog",
+          "icon": "AppstoreOutlined",
+          "routeKind": "item",
+          "sort": 47,
+          "publicAccess": false,
+          "grantable": true,
+          "disabled": false,
+          "scopeTypes": ["SYSTEM", "TENANT"],
+          "children": [
+            {
+              "code": "ai.workbench.catalog.sync",
+              "name": "同步官方 MCP Registry",
+              "label": "同步官方 MCP Registry",
+              "alias": "i18n:ai.catalog.action.sync",
+              "type": "ACTION",
+              "sort": 101,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false,
+              "scopeTypes": ["SYSTEM"]
+            },
+            {
+              "code": "ai.workbench.catalog.import",
+              "name": "导入 MCP Server",
+              "label": "导入 MCP Server",
+              "alias": "i18n:ai.catalog.action.import",
+              "type": "ACTION",
+              "sort": 102,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false,
+              "scopeTypes": ["SYSTEM", "TENANT"]
+            }
+          ]
+        },
+        {
           "code": "ai.workbench.mcp-gateway.view",
           "name": "MCP Gateway",
           "label": "MCP Gateway",
@@ -740,6 +782,101 @@
           ]
         },
         {
+          "code": "ai.workbench.workflows.view",
+          "name": "Agent Workflow",
+          "label": "Agent Workflow",
+          "title": "menu.ai.workflows",
+          "type": "PAGE",
+          "path": "/ai/workbench/workflows",
+          "component": "ai/workbench/Workflows",
+          "icon": "BranchesOutlined",
+          "routeKind": "item",
+          "sort": 58,
+          "publicAccess": false,
+          "grantable": true,
+          "disabled": false,
+          "scopeTypes": ["SYSTEM", "TENANT"],
+          "children": [
+            {
+              "code": "ai.workbench.workflows.create",
+              "name": "新增 Workflow",
+              "label": "新增 Workflow",
+              "alias": "i18n:table.button.create",
+              "type": "ACTION",
+              "sort": 101,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.workflows.edit",
+              "name": "修改 Workflow",
+              "label": "修改 Workflow",
+              "alias": "i18n:table.button.edit",
+              "type": "ACTION",
+              "sort": 102,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.workflows.delete",
+              "name": "删除 Workflow",
+              "label": "删除 Workflow",
+              "alias": "i18n:table.button.delete",
+              "type": "ACTION",
+              "sort": 103,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.workflows.versions.manage",
+              "name": "管理 Workflow 版本",
+              "label": "管理 Workflow 版本",
+              "alias": "i18n:ai.workflows.action.version.manage",
+              "type": "ACTION",
+              "sort": 104,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.workflows.publish",
+              "name": "发布 Workflow 版本",
+              "label": "发布 Workflow 版本",
+              "alias": "i18n:ai.workflows.action.publish",
+              "type": "ACTION",
+              "sort": 105,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.workflows.execute",
+              "name": "执行 Workflow",
+              "label": "执行 Workflow",
+              "alias": "i18n:ai.workflows.action.execute",
+              "type": "ACTION",
+              "sort": 106,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "ai.workbench.workflows.intervene",
+              "name": "干预 Workflow",
+              "label": "干预 Workflow",
+              "alias": "i18n:ai.workflows.action.intervene",
+              "type": "ACTION",
+              "sort": 107,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            }
+          ]
+        },
+        {
           "code": "ai.workbench.runtime.view",
           "name": "运行时管理",
           "label": "运行时管理",
@@ -749,7 +886,7 @@
           "component": "ai/workbench/Runtime",
           "icon": "CloudServerOutlined",
           "routeKind": "item",
-          "sort": 58,
+          "sort": 59,
           "publicAccess": false,
           "grantable": true,
           "disabled": false,

@@ -68,11 +68,28 @@ public class AiAgentExecutionCoordinator {
    */
   @Transactional(rollbackFor = Exception.class)
   public List<ExecutionTask> claim(final String workerId) {
+    return claim(workerId, batchSize());
+  }
+
+  /**
+   * Claims no more than the currently available worker capacity.
+   */
+  @Transactional(rollbackFor = Exception.class)
+  public List<ExecutionTask> claim(
+      final String workerId,
+      final int availableCapacity
+  ) {
+    if (availableCapacity <= 0) {
+      return List.of();
+    }
     Instant now = Instant.now();
     List<AiAgentExecution> candidates =
         executionRepository.findClaimableForUpdate(
             now,
-            PageRequest.of(0, batchSize())
+            PageRequest.of(
+                0,
+                Math.min(batchSize(), Math.max(1, availableCapacity))
+            )
         );
     List<ExecutionTask> tasks = new ArrayList<>();
     for (AiAgentExecution execution : candidates) {
@@ -81,6 +98,9 @@ public class AiAgentExecutionCoordinator {
         expireHumanIntervention(execution, now);
         executionRepository.save(execution);
         continue;
+      }
+      if (previous == AgentExecutionStatus.RUNNING) {
+        reconcileExpiredModelInvocation(execution, now);
       }
       if (previous != AgentExecutionStatus.WAITING_SKILL
           && execution.getAttemptCount() >= maxAttempts()) {
@@ -125,6 +145,67 @@ public class AiAgentExecutionCoordinator {
       ));
     }
     return List.copyOf(tasks);
+  }
+
+  private void reconcileExpiredModelInvocation(
+      final AiAgentExecution execution,
+      final Instant now
+  ) {
+    String traceId = execution.getCurrentTraceId();
+    if (traceId == null) {
+      execution.setCurrentModelId(null);
+      return;
+    }
+    AiAgentExecutionTrace trace = traceRepository.findActiveById(traceId)
+        .filter(candidate -> execution.getId().equals(
+            candidate.getExecutionId()
+        ))
+        .orElse(null);
+    if (trace == null || trace.getType() != AgentTraceType.MODEL) {
+      return;
+    }
+    if (trace.getStatus() == AgentTraceStatus.RUNNING) {
+      trace.setStatus(AgentTraceStatus.FAILED);
+      trace.setCompletedAt(now);
+      trace.setErrorCode("AGENT_RUNTIME_LEASE_EXPIRED");
+      trace.setErrorMessage(
+          "Model invocation outcome was unknown after the Agent runtime "
+              + "lease expired"
+      );
+      traceRepository.save(trace);
+      publish(
+          execution,
+          AgentExecutionEventType.MODEL_FAILED,
+          trace.getId(),
+          null,
+          payloadError(trace.getErrorCode()),
+          now
+      );
+    }
+    execution.setCurrentTraceId(null);
+    execution.setCurrentModelId(null);
+  }
+
+  /**
+   * Renews an active lease while the worker performs bounded external I/O.
+   */
+  @Transactional(rollbackFor = Exception.class)
+  public boolean renewLease(final ExecutionTask task) {
+    AiAgentExecution execution =
+        executionRepository.findActiveByIdForUpdate(task.executionId())
+            .orElse(null);
+    Instant now = Instant.now();
+    if (execution == null
+        || execution.getStatus() != AgentExecutionStatus.RUNNING
+        || execution.getLeaseToken() != task.leaseToken()
+        || !task.workerId().equals(execution.getLeaseOwner())
+        || execution.getLeaseExpiresAt() == null
+        || !now.isBefore(execution.getLeaseExpiresAt())) {
+      return false;
+    }
+    execution.setLeaseExpiresAt(now.plus(leaseDuration()));
+    executionRepository.save(execution);
+    return true;
   }
 
   /**

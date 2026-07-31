@@ -6,12 +6,12 @@
 
 | 项目 | 状态 |
 | --- | --- |
-| 最后更新 | 2026-07-30 |
-| 当前阶段 | Phase 1、Phase 2、Phase 3 已完成；Phase 4 Agent Runtime 已完成记忆、人工介入与持久化可观测执行面 |
+| 最后更新 | 2026-07-31 |
+| 当前阶段 | Phase 0 至 Phase 5 规划内开发已完成；严格双主机 Swarm drain 作为目标部署环境验收项保留 |
 | 设计文档 | [AI 工作台 MCP、Skill、Agent 平台设计](doc/design/ai_mcp_agent_skill_platform.md) |
-| 代码实施 | 已新增 MCP、Runtime、Skill、Agent 四层模块，独立 Gateway、独立 Tool Runtime 和对应工作台页面 |
-| 数据库变更 | 已新增 MCP、Runtime、加密 Secret、Skill Registry/Execution，以及 Agent Registry/Execution/Trace/Event/Memory/Human Intervention |
-| 部署变更 | 已新增 OCI 镜像、开发 PKI、受限 Engine Proxy、Egress Proxy、Image Verifier、Tool Runtime 与独立 Agent Runtime |
+| 代码实施 | 已新增 MCP、Runtime、Skill、Agent、Workflow、扩展目录六层模块，独立 Gateway/Tool/Agent/Workflow Runtime 和对应工作台页面 |
+| 数据库变更 | 已新增 MCP/Task、Runtime、加密 Secret、Skill、Agent、Workflow、扩展目录及完整执行、事件、Trace、人工任务和补偿状态 |
+| 部署变更 | 已新增 OCI 镜像、开发 PKI、受限 Engine Proxy、Egress Proxy、Image Verifier、Tool Runtime、Agent Runtime 与 Workflow Runtime |
 
 ## 已确认的设计决策
 
@@ -59,7 +59,9 @@
 北向 Publication 使用官方 SDK 提供 Streamable HTTP `POST/GET/DELETE` 会话。
 南向连接已改为有界持久会话池，并完成 Pagination、`resources/subscribe`、
 list-changed、Resource Updated、Progress、Cancellation 适配和跨 Gateway 副本会话亲和。
-Phase 1 仍保留主流远程 MCP Server 兼容矩阵和 Redis 短暂故障验收。
+Gateway 双副本故障切换、Redis 会话目录清理、标准内容判别字段和公开 OAuth
+Publication 已完成真实协议验收；更多第三方 Server 品牌兼容矩阵属于持续兼容测试，
+不改变当前 MCP 标准能力边界。
 
 ### Phase 1 已完成的第一批垂直切片
 
@@ -148,6 +150,8 @@ Phase 1 仍保留主流远程 MCP Server 兼容矩阵和 Redis 短暂故障验�
 - [x] 将托管 OCI stdio MCP Server 以标准 Streamable HTTP 会话接入 Gateway。
 - [x] 完成托管会话的 Redis 目录、Rendezvous 多副本分配、同 Pool 跨节点优先分散、
   Workload/Lease/fence 重校验、502 失效隔离和安全切换。
+- [x] Runtime 跟踪 Gateway 事件流所有权；Gateway 异常退出后仅允许无待处理请求的
+  孤立 stdio 会话被同一 Workload Lease/fence 安全接管，避免重启后的首次调用 502。
 - [x] 增加 AI 工作台 Runtime 页面，覆盖 Pool、Workload、平台节点和 Secret 的安全查询
   与现有生命周期操作；平台/租户作用域继续由当前上下文自动确定。
 - [x] MCP Servers 页面支持为 `MANAGED_OCI` Server 直接创建或更新 Runtime Pool，
@@ -211,34 +215,30 @@ Phase 1 仍保留主流远程 MCP Server 兼容矩阵和 Redis 短暂故障验�
 
 ### Phase 5：Workflow 与生态
 
-- [ ] 实现 Agent Workflow。
-- [ ] 实现人工任务、暂停、恢复和补偿。
-- [ ] 实现 MCP Tasks 兼容层。
-- [ ] 提供 Tool 和 Skill 开发脚手架。
+- [x] 实现 Agent Workflow。
+- [x] 实现人工任务、暂停、恢复和补偿。
+- [x] 实现 MCP Tasks 兼容层。
+- [x] 提供 Tool 和 Skill 开发脚手架。
 - [x] 提供平台 OCI build/push、Cosign 签名和 SPDX attestation 脚本。
-- [ ] 提供 Tool/Skill 开发脚手架和 CI 模板。
-- [ ] 完成横向扩展、故障恢复和安全验收。
+- [x] 提供 Tool/Skill 开发脚手架和 CI 模板。
+- [x] 增加内部扩展目录和可选官方 MCP Registry 增量同步。
+- [x] 完成单机多副本横向扩展、故障恢复和安全验收。
 
 ## 下一步
 
-Phase 2 代码与本地生产化收尾已经完成，Phase 3 Skill Registry、Artifact
-供应链校验、持久化 Tool/Prompt/Resource/条件/并行 Workflow、Capability Token、
-执行预算、审批、暂停/恢复和真实运行验收已经落地。Phase 4 已完成平台/租户
-Agent Registry、不可变版本、固定模型与 Skill Version、独立 Runtime、持久化
-Execution/Trace、预算审批、工作台执行页面和真实 `Agent -> Skill -> MCP` 闭环。
-短期对话裁剪、确定性有界摘要、Agent + 平台/租户 + 登录主体精确隔离的长期记忆、
-不可变检索快照、安全上下文注入，以及模型/Skill 安全检查点上的协作式暂停与恢复
-也已完成。人工介入采用独立持久化任务和 `WAITING_HUMAN` 状态，支持运行时重启恢复、
-结构化输入后继续、人工取消和版本固定的超时动作。执行生命周期、模型、Skill、
-记忆、审批、暂停和人工介入现在统一写入追加式持久事件；工作台通过排他序列游标
-增量读取，Trace 独立分页筛选，时间窗指标直接从持久化执行与 Trace 聚合，因此
-AI 服务或 Agent Runtime 重启不会清空可观测数据。
-下一步按以下顺序推进：
+规划内 AI 平台开发已经形成完整闭环：标准 MCP 接入与发布、OCI Tool 调度、
+声明式 Skill、`Agent -> Skill -> Tool`、持久化 Agent Workflow、MCP Tasks、
+独立扩展脚手架和扩展目录均已落地。Agent、Skill 和 Workflow Runtime 分别使用
+数据库租约、fencing 与检查点横向领取任务；人工等待、暂停恢复、定时等待、并行
+分支和显式补偿均可跨 Runtime/AI 服务重启恢复。官方 MCP Registry 采用有界增量
+同步，租户只能导入安全的远程 MCP 条目，不能触发平台级同步。
 
-1. 进行 Agent Runtime 多副本并发领取、租约超时和 fencing 故障接管验收；
-2. 实现 Agent Workflow、显式补偿节点和长任务编排；
-3. 在目标多主机 Swarm 环境运行 `verify_phase2_runtime_failover.sh`，补齐 Runtime
-   Worker drain、跨节点重分配、容量恢复和 AppArmor 强制验收。
+后续工作不再是缺失的产品开发项，而是目标生产环境认证和持续演进：
+
+1. 在至少两个专用 Runtime Worker 的目标 Swarm 环境以严格模式运行
+   `verify_phase2_runtime_failover.sh`，完成真实节点 drain 与跨主机重分配认证；
+2. 按支持策略持续扩充第三方 MCP Server 兼容矩阵、容量压测和告警阈值；
+3. 在正式 Registry、Cosign 身份和生产域名上执行发布演练。
 
 ## 验证记录
 
@@ -681,3 +681,69 @@ AI 服务或 Agent Runtime 重启不会清空可观测数据。
   Agent Runtime 镜像为
   `sha256:9ad01125641c833ae4e0998148d47fdf6a4d817531fcb6679aaffb6fb87348e2`；
   本地 16 个常驻服务全部运行且无 unhealthy，Host AI Manifest 返回 200。
+- 2026-07-31：Agent Runtime 双副本生产化验收完成。运行中副本故障后，过期
+  MODEL Trace 被原子关闭为 `AGENT_RUNTIME_LEASE_EXPIRED`，新副本以更高 fencing
+  token 接管；真实执行 `73fd40b8-747e-49c4-87aa-fdff85ff3388` 最终成功，
+  4 条 Trace 无孤立 `RUNNING` 状态，11 条追加事件保留完整接管链。
+- 2026-07-31：Agent Workflow 控制面、不可变版本、精确 Agent/Skill 依赖、
+  独立 Workflow Runtime 和工作台页面完成。持久化 DAG 支持 Agent、Skill、
+  Condition、Parallel、Wait、Human、End 节点，以及预算、幂等提交、暂停恢复、
+  人工任务、取消、追加事件和显式补偿。`verify_agent_workflow_e2e.sh` 真实验证
+  Runtime 双副本停止重建后继续执行：耐久执行
+  `d1268afc-b77f-42bd-8129-4fa861489538` 成功且包含 6 个节点、20 条事件；
+  失败执行 `408653d9-e27e-4fbf-8eab-305c73c71fd4` 的补偿子 Skill 成功并记录
+  `COMPENSATED` 检查点。
+- 2026-07-31：MCP `2025-11-25` Tasks 兼容层完成。公开 OAuth Publication
+  已真实执行异步 `tools/call`，并通过 `tasks/get`、`tasks/result`、`tasks/list`
+  查询任务 `5a776df6-e1a0-45d0-8ff9-d433dc5ac66d`；内部 Workflow 继续使用平台
+  持久化状态机，不依赖实验性 Task 保存状态。
+- 2026-07-31：Tool/Skill 独立开发脚手架与 GitHub Actions CI 模板完成。
+  `verify_ai_extension_templates.sh` 已验证生成项目无模板占位符、Tool TypeScript
+  类型检查、真实 MCP stdio `initialize/tools/list/tools/call`、Skill Schema，
+  并构建 OCI 镜像检查 `stdio` 与 `2025-11-25` 标签。新增扩展无需修改或重启平台。
+- 2026-07-31：内部扩展目录和官方 MCP Registry 有界增量同步完成。真实同步
+  19,228 个官方条目，深分页、增量游标、重复导入拒绝、平台同步权限和租户作用域
+  导入均通过；租户导入固定为禁用私网的 `DRAFT` 远程 MCP Server。
+- 2026-07-31：安全与横向扩展验收完成。双 Gateway 在 Consul 保持两个唯一健康
+  实例，停止亲和副本后旧会话返回 502、Redis 映射清理且新会话切换到存活副本；
+  8 个标准 MCP 会话分布到 2 个托管 Workload。Docker Socket Proxy 拒绝
+  `/services`，Runtime/Gateway/Verifier 无 mTLS 或内部身份均返回 401，隔离工作负载
+  无直接 Internet，未签名 Egress CONNECT 返回 407，近三小时日志未发现 Token、
+  私钥或默认 Secret 泄露。
+- 2026-07-31：修复 MCP Java SDK 多态 `Content.type()` 默认方法未被 Spring
+  `ObjectMapper.convertValue` 序列化的问题。Gateway 现显式映射 Tool Content 和
+  Prompt Message，真实平台调用及公开 OAuth MCP `tools/call` 均返回标准
+  `{"type":"text","text":"..."}`，双 Gateway 与双托管 Workload 本地横向脚本通过。
+- 2026-07-31：最终代码回归通过根项目 `./gradlew test`（464 个任务）、
+  前端 `pnpm typecheck`、完整 `pnpm build`、Shell/JSON/Compose/差异静态校验，
+  以及 Tool/Skill 脚手架非 Docker 与 Docker 两种验收。三个 Go 服务均在最终
+  Docker 镜像构建中执行并通过 `go test ./...`，Dockerfile 继续以测试作为硬门禁。
+- 2026-07-31：最终容器重建暴露并修复 Gateway 异常退出后 Runtime 残留旧 stdio
+  会话的问题。Runtime 现在记录事件流是否建立及活动消费者数量；事件流断开且无
+  Pending JSON-RPC 请求时，新 Gateway 才能使用相同 Lease/fence 接管，活动会话
+  不允许被并发抢占。新增 Go 回归测试覆盖活动流、断开流、Pending 请求和幂等释放。
+- 2026-07-31：最新镜像真实链路验收完成。双 Gateway 重启后的第一次托管 Tool
+  调用返回 `text:after-gateway-restart`；Workflow 耐久执行
+  `5ca0af73-d618-45c2-82e3-d676e297e068` 6 个节点、20 条事件全部成功，补偿执行
+  `5b5947fa-5adb-41c6-9dbf-b3a084117225` 记录 11 条完整事件；Agent 执行
+  `7851f978-89c0-46d3-8e06-f9641fd11199` 在持有租约的副本被停止后以 fencing
+  token `1 -> 3` 接管并成功，4 条 Trace 无孤立 `RUNNING`，包含 1 条过期租约
+  Trace；公开 OAuth MCP Task
+  `5c04b1b1-0903-4060-8e90-0de9f67ea3ae` 完成并返回标准 `type=text` 内容。
+  本地横向验收将 8 个会话稳定分布到 2 个 Workload。
+- 2026-07-31：最终运行镜像摘要为 AI
+  `sha256:88466881490b46a1db89c9fb343a8c97f9f81ad30cf219ca6c87149d3176099d`、
+  MCP Gateway
+  `sha256:b521c6a42d4fe4c67ffe6a40f9c8e5fcaed5e55ba70eb7610f564893d4981aba`、
+  Agent Runtime
+  `sha256:bdb2d25be549038fcc7b64ea0d0d98136230e4b63a763b8426b809a75a0a9b5b`、
+  Workflow Runtime
+  `sha256:64a4da32da0d4bcca89225cfd0289a0da20b26cbcfcea2e050c875072a4cc6e4`、
+  Tool Runtime
+  `sha256:4ab430b3f6dac32f7d64c34fef9dee993fe6f5b8659da0f15e4e06767246663e`、
+  Tool Egress
+  `sha256:2f425be07877f9832f9547fcdde70c604b2580f42973087a7e6b8e9544382ee3`、
+  Image Verifier
+  `sha256:e215abf41583e4eb890df8caecaccf13d560c11e2f1a8b57def71dc7467320bc`。
+  AI、Tool 三服务均单副本健康，Gateway、Agent Runtime、Workflow Runtime
+  均双副本健康，Host AI Manifest 返回 200。

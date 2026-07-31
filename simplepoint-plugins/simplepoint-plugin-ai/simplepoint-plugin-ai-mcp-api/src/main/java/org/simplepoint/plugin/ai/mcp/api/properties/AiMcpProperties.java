@@ -28,4 +28,24 @@ public class AiMcpProperties {
   private String publicationAuthorizationServerUrl = "http://localhost:9000";
 
   private boolean publicationAllowInsecureHttp;
+
+  private boolean taskExecutionEnabled = true;
+
+  private Duration taskDefaultTtl = Duration.ofHours(1);
+
+  private Duration taskMaximumTtl = Duration.ofHours(24);
+
+  private Duration taskPollInterval = Duration.ofSeconds(1);
+
+  private Duration taskWorkerPollInterval = Duration.ofMillis(500);
+
+  private Duration taskLeaseDuration = Duration.ofMinutes(2);
+
+  private int taskWorkerBatchSize = 4;
+
+  private int taskMaximumConcurrency = 8;
+
+  private int taskMaximumAttempts = 3;
+
+  private int taskMaximumPayloadBytes = 1_048_576;
 }

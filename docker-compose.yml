@@ -542,9 +542,12 @@ services:
       SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED: ${SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED:-true}
       SIMPLEPOINT_AI_AGENT_EXECUTION_ENABLED: "true"
       SIMPLEPOINT_AI_AGENT_EXECUTION_BATCH_SIZE: ${SIMPLEPOINT_AI_AGENT_EXECUTION_BATCH_SIZE:-4}
+      SIMPLEPOINT_AI_AGENT_EXECUTION_MAXIMUM_CONCURRENCY: ${SIMPLEPOINT_AI_AGENT_EXECUTION_MAXIMUM_CONCURRENCY:-8}
       SIMPLEPOINT_AI_AGENT_EXECUTION_LEASE_DURATION: ${SIMPLEPOINT_AI_AGENT_EXECUTION_LEASE_DURATION:-2m}
-    ports:
-      - "${SIMPLEPOINT_AGENT_RUNTIME_PORT:-2894}:2894"
+      SIMPLEPOINT_AI_AGENT_EXECUTION_LEASE_HEARTBEAT_INTERVAL: ${SIMPLEPOINT_AI_AGENT_EXECUTION_LEASE_HEARTBEAT_INTERVAL:-20s}
+      SIMPLEPOINT_AI_AGENT_EXECUTION_SHUTDOWN_TIMEOUT: ${SIMPLEPOINT_AI_AGENT_EXECUTION_SHUTDOWN_TIMEOUT:-30s}
+    expose:
+      - "2894"
     depends_on:
       postgres:
         condition: service_healthy
@@ -554,6 +557,42 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:2894/actuator/health >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+
+  workflow-runtime:
+    image: ${SIMPLEPOINT_WORKFLOW_RUNTIME_IMAGE:-somesimpled/open-simplepoint-workflow-runtime:${SIMPLEPOINT_IMAGE_TAG:-local}}
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: simplepoint-services/simplepoint-service-workflow-runtime/Dockerfile
+      args: *oci-build-args
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,swarm
+      SIMPLEPOINT_WAIT_FOR: postgres:5432,consul:8500,ai:2888
+      SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
+      SIMPLEPOINT_WAIT_TIMEOUT: 240
+      SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY: ${SIMPLEPOINT_AI_CREDENTIAL_ENCRYPTION_KEY:-dev-ai-credential-encryption-key-change-me}
+      SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED: ${SIMPLEPOINT_AI_TENANT_PROVIDER_MANAGEMENT_ENABLED:-true}
+      SIMPLEPOINT_AI_WORKFLOW_EXECUTION_ENABLED: "true"
+      SIMPLEPOINT_AI_WORKFLOW_EXECUTION_BATCH_SIZE: ${SIMPLEPOINT_AI_WORKFLOW_EXECUTION_BATCH_SIZE:-4}
+      SIMPLEPOINT_AI_WORKFLOW_EXECUTION_MAXIMUM_CONCURRENCY: ${SIMPLEPOINT_AI_WORKFLOW_EXECUTION_MAXIMUM_CONCURRENCY:-8}
+      SIMPLEPOINT_AI_WORKFLOW_EXECUTION_LEASE_DURATION: ${SIMPLEPOINT_AI_WORKFLOW_EXECUTION_LEASE_DURATION:-2m}
+      SIMPLEPOINT_AI_WORKFLOW_EXECUTION_LEASE_HEARTBEAT_INTERVAL: ${SIMPLEPOINT_AI_WORKFLOW_EXECUTION_LEASE_HEARTBEAT_INTERVAL:-20s}
+      SIMPLEPOINT_AI_WORKFLOW_EXECUTION_SHUTDOWN_TIMEOUT: ${SIMPLEPOINT_AI_WORKFLOW_EXECUTION_SHUTDOWN_TIMEOUT:-30s}
+    expose:
+      - "2895"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:2895/actuator/health >/dev/null"]
       interval: 15s
       timeout: 5s
       retries: 20

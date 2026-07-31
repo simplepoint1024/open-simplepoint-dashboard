@@ -1,0 +1,27 @@
+{
+  "name": "__EXTENSION_NAME__",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Independent MCP Tool server for Open SimplePoint",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "npm run typecheck && npm test",
+    "start": "node dist/src/index.js",
+    "test": "npm run build && node --test dist/test/**/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
+    "@types/node": "22.19.11",
+    "typescript": "5.9.3"
+  }
+}

@@ -2,10 +2,11 @@ package org.simplepoint.plugin.ai.skill.api.service;
 
 import java.util.Optional;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillExecution;
+import org.simplepoint.plugin.ai.skill.api.model.SkillAgentExecutionCommand;
 import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionDecisionRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionPauseRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionStartRequest;
-import org.simplepoint.plugin.ai.skill.api.model.SkillAgentExecutionCommand;
+import org.simplepoint.plugin.ai.skill.api.model.SkillWorkflowExecutionCommand;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -29,6 +30,16 @@ public interface AiSkillExecutionService {
    * REST endpoint.</p>
    */
   AiSkillExecution startVersionForAgent(SkillAgentExecutionCommand command);
+
+  /**
+   * Starts the exact published Skill version pinned by a Workflow.
+   *
+   * <p>This internal Java contract is deliberately not exposed as a public
+   * REST endpoint.</p>
+   */
+  AiSkillExecution startVersionForWorkflow(
+      SkillWorkflowExecutionCommand command
+  );
 
   /**
    * Pages durable executions owned by one visible Skill.

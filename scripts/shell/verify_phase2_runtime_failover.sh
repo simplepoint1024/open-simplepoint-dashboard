@@ -8,15 +8,20 @@ MCP_SERVER_ID="${PHASE2_MCP_SERVER_ID:-}"
 MCP_SCOPE="${PHASE2_MCP_SCOPE:-SYSTEM}"
 MCP_TENANT_ID="${PHASE2_MCP_TENANT_ID:-}"
 MCP_TOOL_NAME="${PHASE2_MCP_TOOL_NAME:-}"
-MCP_TOOL_ARGUMENTS="${PHASE2_MCP_TOOL_ARGUMENTS:-{}}"
+MCP_TOOL_ARGUMENTS="${PHASE2_MCP_TOOL_ARGUMENTS:-}"
 SESSION_COUNT="${PHASE2_SESSION_COUNT:-16}"
 DIRECTORY_PREFIX="${SIMPLEPOINT_AI_RUNTIME_MCP_SESSION_DIRECTORY_KEY_PREFIX:-simplepoint:ai:runtime:mcp:sessions:}"
 ALLOW_NODE_DRAIN="${PHASE2_ALLOW_NODE_DRAIN:-false}"
+REQUIRE_DISTINCT_NODES="${PHASE2_REQUIRE_DISTINCT_NODES:-true}"
 REDIS_CONTAINER="${PHASE2_REDIS_CONTAINER:-}"
 POSTGRES_CONTAINER="${PHASE2_POSTGRES_CONTAINER:-}"
 
 TEMP_DIR=""
 DRAINED_NODE=""
+
+if [[ -z "${MCP_TOOL_ARGUMENTS}" ]]; then
+  MCP_TOOL_ARGUMENTS='{}'
+fi
 
 cleanup() {
   if [[ -n "${DRAINED_NODE}" ]]; then
@@ -211,13 +216,17 @@ wait_for_reassignment() {
 }
 
 validate_runtime_nodes() {
+  local required=2
+  if [[ "${REQUIRE_DISTINCT_NODES}" == "false" ]]; then
+    required=1
+  fi
   local ready_nodes
   ready_nodes="$(
     postgres_query \
       "SELECT COUNT(*) FROM simpoint_ai_runtime_nodes WHERE deleted_at IS NULL AND status = 'READY' AND heartbeat_expires_at > CURRENT_TIMESTAMP"
   )"
-  [[ "${ready_nodes}" =~ ^[0-9]+$ && "${ready_nodes}" -ge 2 ]] \
-    || fail "at least two READY Runtime nodes are required"
+  [[ "${ready_nodes}" =~ ^[0-9]+$ && "${ready_nodes}" -ge "${required}" ]] \
+    || fail "at least ${required} READY Runtime node(s) are required"
 }
 
 main() {
@@ -240,10 +249,19 @@ main() {
   [[ "${SESSION_COUNT}" =~ ^[0-9]+$ && "${SESSION_COUNT}" -ge 8 \
     && "${SESSION_COUNT}" -le 128 ]] \
     || fail "PHASE2_SESSION_COUNT must be between 8 and 128"
+  [[ "${REQUIRE_DISTINCT_NODES}" == "true"
+      || "${REQUIRE_DISTINCT_NODES}" == "false" ]] \
+    || fail "PHASE2_REQUIRE_DISTINCT_NODES must be true or false"
+  if [[ "${ALLOW_NODE_DRAIN}" == "true"
+      && "${REQUIRE_DISTINCT_NODES}" != "true" ]]; then
+    fail "node drain requires PHASE2_REQUIRE_DISTINCT_NODES=true"
+  fi
   jq -e 'type == "object"' <<< "${MCP_TOOL_ARGUMENTS}" >/dev/null \
     || fail "PHASE2_MCP_TOOL_ARGUMENTS must be one JSON object"
-  docker node ls >/dev/null 2>&1 \
-    || fail "run this verifier on a Swarm manager"
+  if [[ "${REQUIRE_DISTINCT_NODES}" == "true" ]]; then
+    docker node ls >/dev/null 2>&1 \
+      || fail "run this verifier on a Swarm manager"
+  fi
 
   TEMP_DIR="$(mktemp -d /tmp/open-simplepoint-phase2.XXXXXX)"
   if [[ -z "${REDIS_CONTAINER}" ]]; then
@@ -304,8 +322,13 @@ main() {
   done < "${workloads_file}"
   local unique_nodes
   unique_nodes="$(sed '/^$/d' "${nodes_file}" | sort -u | wc -l)"
-  [[ "${unique_nodes}" -ge 2 ]] \
-    || fail "managed MCP replicas were not spread across Runtime nodes"
+  if [[ "${REQUIRE_DISTINCT_NODES}" == "true" ]]; then
+    [[ "${unique_nodes}" -ge 2 ]] \
+      || fail "managed MCP replicas were not spread across Runtime nodes"
+  else
+    [[ "${unique_nodes}" -ge 1 ]] \
+      || fail "managed MCP replicas have no READY Runtime node"
+  fi
   printf 'Validated %s sessions across %s workloads on %s Runtime nodes.\n' \
     "${SESSION_COUNT}" "${unique_workloads}" "${unique_nodes}"
 

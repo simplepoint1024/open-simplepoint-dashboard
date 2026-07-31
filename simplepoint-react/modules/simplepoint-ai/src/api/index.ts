@@ -40,6 +40,13 @@ export default {
     i18nNamespaces: ['ai-mcp'],
     name: 'ai-workbench-mcp-gateway',
   },
+  'ai-workbench.catalog': {
+    baseUrl: `${contextPath}/catalog`,
+    syncUrl: `${contextPath}/catalog/sync`,
+    syncStatusUrl: `${contextPath}/catalog/sync-status`,
+    i18nNamespaces: ['ai-catalog'],
+    name: 'ai-workbench-catalog',
+  },
   'ai-workbench.mcp-servers': {
     baseUrl: `${contextPath}/mcp/servers`,
     poolsUrl: `${contextPath}/runtime/pools`,
@@ -70,6 +77,13 @@ export default {
     skillsUrl: `${contextPath}/skills`,
     i18nNamespaces: ['ai-agents'],
     name: 'ai-workbench-agents',
+  },
+  'ai-workbench.workflows': {
+    baseUrl: `${contextPath}/workflows`,
+    agentsUrl: `${contextPath}/agents`,
+    skillsUrl: `${contextPath}/skills`,
+    i18nNamespaces: ['ai-workflows'],
+    name: 'ai-workbench-workflows',
   },
   'ai-workbench.runtime': {
     nodesUrl: `${contextPath}/runtime/nodes`,

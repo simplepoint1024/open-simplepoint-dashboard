@@ -29,6 +29,13 @@ public interface McpGatewayOperations {
   McpGatewayToolCallResult callTool(McpGatewayToolCallRequest request);
 
   /**
+   * Cooperatively cancels one cluster-wide in-flight operation.
+   */
+  default void cancel(final McpGatewayCancellationRequest request) {
+    // In-process test adapters may not have a cancellable transport.
+  }
+
+  /**
    * Calls one workflow-bound Tool through the Capability Token boundary.
    *
    * <p>Gateway implementations may override this method to use a dedicated

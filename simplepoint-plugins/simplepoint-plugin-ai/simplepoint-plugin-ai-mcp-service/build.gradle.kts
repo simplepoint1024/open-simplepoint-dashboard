@@ -8,6 +8,7 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-runtime-api"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework:spring-tx")
+    implementation("io.micrometer:micrometer-core")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

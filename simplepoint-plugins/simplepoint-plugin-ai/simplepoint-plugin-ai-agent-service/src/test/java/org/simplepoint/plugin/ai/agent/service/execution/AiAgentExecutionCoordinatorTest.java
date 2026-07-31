@@ -3,11 +3,13 @@ package org.simplepoint.plugin.ai.agent.service.execution;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,7 @@ import org.simplepoint.plugin.ai.agent.api.entity.AiAgentHumanIntervention;
 import org.simplepoint.plugin.ai.agent.api.model.AgentExecutionStatus;
 import org.simplepoint.plugin.ai.agent.api.model.AgentHumanInterventionStatus;
 import org.simplepoint.plugin.ai.agent.api.model.AgentTraceStatus;
+import org.simplepoint.plugin.ai.agent.api.model.AgentTraceType;
 import org.simplepoint.plugin.ai.agent.api.properties.AgentExecutionProperties;
 import org.simplepoint.plugin.ai.agent.api.repository.AiAgentExecutionRepository;
 import org.simplepoint.plugin.ai.agent.api.repository.AiAgentExecutionTraceRepository;
@@ -43,6 +46,8 @@ class AiAgentExecutionCoordinatorTest {
     traceRepository = mock(AiAgentExecutionTraceRepository.class);
     interventionRepository = mock(AiAgentHumanInterventionRepository.class);
     when(executionRepository.save(any(AiAgentExecution.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(traceRepository.save(any(AiAgentExecutionTrace.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
     coordinator = new AiAgentExecutionCoordinator(
         executionRepository,
@@ -184,5 +189,84 @@ class AiAgentExecutionCoordinatorTest {
     assertThat(trace.getValue().getSkillExecutionId()).isNull();
     assertThat(trace.getValue().getErrorCode())
         .isEqualTo("AGENT_SKILL_ARGUMENTS_INVALID");
+  }
+
+  @Test
+  void renewsOnlyTheCurrentFencedLease() {
+    AiAgentExecution execution = new AiAgentExecution();
+    execution.setId("execution-1");
+    execution.setStatus(AgentExecutionStatus.RUNNING);
+    execution.setLeaseOwner("worker-1");
+    execution.setLeaseToken(7);
+    execution.setLeaseExpiresAt(Instant.now().plusSeconds(10));
+    Instant previousExpiry = execution.getLeaseExpiresAt();
+    when(executionRepository.findActiveByIdForUpdate("execution-1"))
+        .thenReturn(Optional.of(execution));
+
+    boolean renewed = coordinator.renewLease(
+        new ExecutionTask("execution-1", "worker-1", 7)
+    );
+
+    assertThat(renewed).isTrue();
+    assertThat(execution.getLeaseExpiresAt()).isAfter(previousExpiry);
+    verify(executionRepository).save(execution);
+  }
+
+  @Test
+  void rejectsHeartbeatFromStaleFencedWorker() {
+    AiAgentExecution execution = new AiAgentExecution();
+    execution.setId("execution-1");
+    execution.setStatus(AgentExecutionStatus.RUNNING);
+    execution.setLeaseOwner("worker-2");
+    execution.setLeaseToken(8);
+    execution.setLeaseExpiresAt(Instant.now().plusSeconds(10));
+    when(executionRepository.findActiveByIdForUpdate("execution-1"))
+        .thenReturn(Optional.of(execution));
+
+    boolean renewed = coordinator.renewLease(
+        new ExecutionTask("execution-1", "worker-1", 7)
+    );
+
+    assertThat(renewed).isFalse();
+    verify(executionRepository, never()).save(execution);
+  }
+
+  @Test
+  void fencesAndClosesAnInFlightModelTraceAfterLeaseExpiry() {
+    Instant expiredAt = Instant.now().minusSeconds(1);
+    AiAgentExecution execution = new AiAgentExecution();
+    execution.setId("execution-1");
+    execution.setStatus(AgentExecutionStatus.RUNNING);
+    execution.setAttemptCount(1);
+    execution.setLeaseOwner("worker-1");
+    execution.setLeaseToken(7);
+    execution.setLeaseExpiresAt(expiredAt);
+    execution.setCurrentTraceId("trace-1");
+    execution.setCurrentModelId("model-1");
+    AiAgentExecutionTrace trace = new AiAgentExecutionTrace();
+    trace.setId("trace-1");
+    trace.setExecutionId("execution-1");
+    trace.setType(AgentTraceType.MODEL);
+    trace.setStatus(AgentTraceStatus.RUNNING);
+    when(executionRepository.findClaimableForUpdate(any(), any()))
+        .thenReturn(List.of(execution));
+    when(traceRepository.findActiveById("trace-1"))
+        .thenReturn(Optional.of(trace));
+
+    List<ExecutionTask> tasks = coordinator.claim("worker-2", 1);
+
+    assertThat(tasks).containsExactly(
+        new ExecutionTask("execution-1", "worker-2", 8)
+    );
+    assertThat(execution.getStatus()).isEqualTo(AgentExecutionStatus.RUNNING);
+    assertThat(execution.getCurrentTraceId()).isNull();
+    assertThat(execution.getCurrentModelId()).isNull();
+    assertThat(execution.getLeaseOwner()).isEqualTo("worker-2");
+    assertThat(execution.getLeaseToken()).isEqualTo(8);
+    assertThat(trace.getStatus()).isEqualTo(AgentTraceStatus.FAILED);
+    assertThat(trace.getErrorCode())
+        .isEqualTo("AGENT_RUNTIME_LEASE_EXPIRED");
+    assertThat(trace.getCompletedAt()).isNotNull();
+    verify(traceRepository).save(trace);
   }
 }

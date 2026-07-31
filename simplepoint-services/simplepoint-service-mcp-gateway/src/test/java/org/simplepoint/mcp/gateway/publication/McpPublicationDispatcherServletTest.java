@@ -20,10 +20,13 @@ class McpPublicationDispatcherServletTest {
     McpPublicationRegistry registry = mock(McpPublicationRegistry.class);
     McpCancellationRegistry cancellationRegistry =
         mock(McpCancellationRegistry.class);
+    McpPublicationControlPlaneClient controlPlaneClient =
+        mock(McpPublicationControlPlaneClient.class);
     final McpPublicationDispatcherServlet servlet =
         new McpPublicationDispatcherServlet(
             registry,
             cancellationRegistry,
+            controlPlaneClient,
             new ObjectMapper(),
             new McpGatewayProperties()
         );

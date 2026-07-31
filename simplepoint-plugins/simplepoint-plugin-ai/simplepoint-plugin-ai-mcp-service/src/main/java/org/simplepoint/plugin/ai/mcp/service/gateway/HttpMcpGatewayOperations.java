@@ -2,6 +2,7 @@ package org.simplepoint.plugin.ai.mcp.service.gateway;
 
 import java.net.http.HttpClient;
 import org.simplepoint.plugin.ai.mcp.api.constants.AiMcpPaths;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayCancellationRequest;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayConnection;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayDiscoveryResult;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayOauthDiscoveryRequest;
@@ -96,6 +97,20 @@ public class HttpMcpGatewayOperations implements McpGatewayOperations {
           .body(McpGatewayToolCallResult.class);
     } catch (RestClientResponseException ex) {
       throw gatewayFailure("call MCP tool", ex);
+    }
+  }
+
+  @Override
+  public void cancel(final McpGatewayCancellationRequest request) {
+    try {
+      restClient.post()
+          .uri(AiMcpPaths.INTERNAL_CANCEL_OPERATION)
+          .header(internalHeader(), internalToken())
+          .body(request)
+          .retrieve()
+          .toBodilessEntity();
+    } catch (RestClientResponseException ex) {
+      throw gatewayFailure("cancel MCP operation", ex);
     }
   }
 

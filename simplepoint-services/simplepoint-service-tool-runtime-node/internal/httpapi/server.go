@@ -245,6 +245,9 @@ func (s *Server) mcpEvents(response http.ResponseWriter, request *http.Request) 
 		s.mcpError(response, err)
 		return
 	}
+	if stream.Release != nil {
+		defer stream.Release()
+	}
 	flusher, ok := response.(http.Flusher)
 	if !ok {
 		writeError(response, http.StatusInternalServerError, "streaming is unavailable")

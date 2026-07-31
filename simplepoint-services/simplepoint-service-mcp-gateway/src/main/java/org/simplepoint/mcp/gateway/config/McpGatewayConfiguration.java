@@ -3,6 +3,7 @@ package org.simplepoint.mcp.gateway.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.simplepoint.mcp.gateway.event.McpCancellationRegistry;
 import org.simplepoint.mcp.gateway.event.McpGatewayClusterEventBus;
+import org.simplepoint.mcp.gateway.publication.McpPublicationControlPlaneClient;
 import org.simplepoint.mcp.gateway.publication.McpPublicationDispatcherServlet;
 import org.simplepoint.mcp.gateway.publication.McpPublicationRegistry;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -28,6 +29,7 @@ public class McpGatewayConfiguration {
       mcpPublicationServlet(
           final McpPublicationRegistry registry,
           final McpCancellationRegistry cancellationRegistry,
+          final McpPublicationControlPlaneClient controlPlaneClient,
           final ObjectMapper objectMapper,
           final McpGatewayProperties properties
   ) {
@@ -36,6 +38,7 @@ public class McpGatewayConfiguration {
             new McpPublicationDispatcherServlet(
                 registry,
                 cancellationRegistry,
+                controlPlaneClient,
                 objectMapper,
                 properties
             ),

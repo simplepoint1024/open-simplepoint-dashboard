@@ -76,12 +76,14 @@
   "menu.ai.providers": "供应商",
   "menu.ai.models": "模型管理",
   "menu.ai.knowledgeBases": "知识库",
+  "menu.ai.catalog": "扩展市场",
   "menu.ai.mcpGateway": "MCP Gateway",
   "menu.ai.mcpServers": "MCP Servers",
   "menu.ai.mcpPublications": "MCP 发布",
   "menu.ai.tools": "工具",
   "menu.ai.skills": "技能",
   "menu.ai.agents": "Agent",
+  "menu.ai.workflows": "Agent Workflow",
   "menu.ai.runtime": "运行时管理",
   "menu.ai.billing": "账单"
 }

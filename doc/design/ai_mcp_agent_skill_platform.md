@@ -307,6 +307,12 @@ Runtime Pool，必要时从 scale-to-zero 激活，并从 READY 节点上的 RUN
 标准 Streamable HTTP `POST/GET/DELETE` 会话，并把 JSON-RPC 消息关联到持久
 Docker attach stdio 通道。Tool 代码始终只存在于独立 OCI 容器内。
 
+Runtime 同时跟踪每个 stdio 会话的 Gateway 事件流。正常活动事件流和存在 Pending
+JSON-RPC 请求的会话不能被替换；Gateway 进程退出或连接永久断开后，事件流消费者
+归零，且 Pending 请求清空时，新的 Gateway 才能用相同 Workload Lease 与 fencing
+token 接管。这样既避免两个健康 Gateway 抢占同一 attach，也不会让异常退出遗留的
+会话阻塞首次恢复调用。
+
 协议边界：
 
 - 调度控制通道可以使用内部 gRPC。
@@ -680,7 +686,8 @@ Agent 是平台声明式资源，不是 MCP 原生对象。控制面采用“可
 - 人工介入启用状态、最大次数、等待超时和超时动作。
 - 输入、输出 Schema。
 - 是否允许对外发布。
-- 可选的 Agent Workflow 引用；在 Workflow 能力落地前只保存声明，不执行。
+- 可选的 Workflow 逻辑引用；实际可执行编排由独立 Workflow Version 精确固定
+  Agent/Skill Version，不能在 Agent 运行中解析可变别名。
 
 首批 Registry 必须满足以下约束：
 
@@ -763,8 +770,8 @@ Agent Version 是不可变版本。每次执行必须固定版本，运行过程
   覆盖状态、Token、费用、步骤、人工介入和 Trace 分组；生命周期事件同时写入
   仅含 `type,status` 标签的低基数 Micrometer Counter。
 
-当前尚未完成 Agent Workflow。跨主体共享记忆在隐私、授权和审计模型明确前不开放，
-当前只允许登录主体读取和管理自己的 Agent 长期记忆。
+Agent Workflow 已由独立控制面和 Workflow Runtime 承载。跨主体共享记忆在隐私、
+授权和审计模型明确前不开放，当前只允许登录主体读取和管理自己的 Agent 长期记忆。
 
 控制面管理 API 为：
 
@@ -801,6 +808,54 @@ DELETE                /workbench/agents/{agentId}/memories/{memoryId}
 | Agent Workflow | 组合 Agent、Skill、审批、条件、等待和人工任务 |
 
 Workflow 使用平台持久化状态机，不依赖单个进程存活，也不依赖实验性的 MCP Tasks。
+
+Agent Workflow 采用“可变定义 + 不可变版本 + 版本固定执行”模型。Manifest 是有界
+声明式 DAG，最多 128 个节点和 512 条边，不允许 `script`、`command`、`container`
+等任意执行字段。当前节点类型为：
+
+- `agent`：固定已发布 Agent ID、Version ID 和 Content Hash；
+- `skill`：固定已发布 Skill ID、Version ID 和 Content Hash；
+- `condition`：使用有界表达式选择后继分支；
+- `parallel`：启动相互隔离的就绪分支，并在依赖边界汇合；
+- `wait`：将下一轮调度时间持久化，不占用工作线程；
+- `human`：创建结构化人工任务，支持 `FAIL|CONTINUE|CANCEL` 超时动作；
+- `end`：生成版本声明的最终输出。
+
+Agent/Skill 节点可以声明精确补偿 Skill。正向执行失败后，Runtime 按已经成功产生
+副作用的节点逆序创建固定版本的补偿子执行；正向调用与补偿调用分别保留节点检查点、
+子执行 ID、事件和结果 Hash，不伪装成数据库回滚。
+
+每次 Workflow Execution 固定 Version、Content Hash、展开后的计划、输入 Hash、
+最大持续时间、最大节点执行数和最大并行度。独立 `workflow-runtime` 副本通过
+PostgreSQL `SKIP LOCKED`、租约和 fencing token 横向领取任务，所有状态转换、
+Node Execution、Human Task 和追加事件都在数据库中持久化。租约过期、Runtime
+重启或 AI 服务重启后，其他副本从已提交检查点继续；已提交的 Agent/Skill 子执行
+按稳定幂等键复用。
+
+暂停是协作式安全检查点，不会切断结果未知的外部调用；恢复、人工响应和取消均检查
+当前平台/租户作用域。事件读取采用排他 `after` 序列游标，可供工作台增量恢复。
+管理 API 为：
+
+```text
+GET|POST              /workbench/workflows
+GET|PUT|DELETE        /workbench/workflows/{workflowId}
+GET|POST              /workbench/workflows/{workflowId}/versions
+GET                   /workbench/workflows/{workflowId}/versions/{versionId}
+POST                  /workbench/workflows/{workflowId}/versions/{versionId}/publish
+POST                  /workbench/workflows/{workflowId}/versions/{versionId}/deprecate
+GET|POST              /workbench/workflows/{workflowId}/executions
+GET                   /workbench/workflows/{workflowId}/executions/{executionId}
+GET                   /workbench/workflows/{workflowId}/executions/{executionId}/events
+POST                  /workbench/workflows/{workflowId}/executions/{executionId}/pause
+POST                  /workbench/workflows/{workflowId}/executions/{executionId}/resume
+POST                  /workbench/workflows/{workflowId}/executions/{executionId}/cancel
+POST                  /workbench/workflows/{workflowId}/executions/{executionId}/human-tasks/{taskId}/respond
+```
+
+内部扩展目录统一展示平台内 Tool/Skill/Agent/Workflow 包和官方 MCP Registry 条目。
+官方同步仅允许平台上下文执行，使用持久化游标、有界分页、响应大小和超时限制；
+租户可以导入可见的官方远程 MCP 条目，但导入结果固定禁用私网访问并处于 `DRAFT`，
+仍需完成凭证、能力发现和发布治理。
 
 ## 8. 包与扩展规范
 
@@ -1354,7 +1409,12 @@ SDK 版本必须通过 BOM 固定，并以协议一致性测试结果为准，�
 - [x] 实现托管 OCI stdio MCP Server 到 Gateway 的标准会话主链。
 - [x] 实现托管会话在多个 READY 副本之间的稳定负载分配、跨节点副本分散和
   连接失效安全切换。
-- [ ] 在真实多主机 Swarm 环境完成 Runtime Worker 故障注入验收。
+- [x] 实现 Gateway 事件流断开检测、Pending 请求保护和同 Lease/fence 孤立会话接管。
+- [ ] 目标部署认证：在真实多主机 Swarm 环境完成 Runtime Worker drain 故障注入。
+
+上述未勾选项是需要目标基础设施的部署认证，不是缺失的调度实现。仓库脚本默认以
+严格模式要求至少两个 READY 节点、跨节点副本分散、普通 Worker drain、会话重绑定
+和节点恢复；单机开发环境可显式关闭跨节点断言，只验证多副本分配且禁止伪造 drain。
 
 完成标准：
 
@@ -1421,16 +1481,21 @@ SDK 版本必须通过 BOM 固定，并以协议一致性测试结果为准，�
 
 ### Phase 5：Workflow 与生态
 
-- 实现 Agent Workflow 和人工节点。
-- 实现暂停、恢复、补偿和长任务。
-- 对接 MCP Tasks 兼容层。
-- 提供 Tool/Skill 项目脚手架和 CI 模板。
-- 增加内部包市场和可选官方 Registry 同步。
+- [x] 实现 Agent Workflow 和人工节点。
+- [x] 实现暂停、恢复、补偿和长任务。
+- [x] 对接 MCP Tasks 兼容层。
+- [x] 提供 Tool/Skill 项目脚手架和 CI 模板。
+- [x] 增加内部扩展目录和可选官方 MCP Registry 同步。
+- [x] 增加独立 Workflow Runtime、数据库租约/fencing 和工作台管理执行面。
+- [x] 完成 Runtime 重启恢复、人工响应、并行等待和显式补偿真实端到端验收。
+- [x] 完成 Agent/Gateway/Managed MCP 单机多副本故障与安全边界验收。
 
 完成标准：
 
 - 工作流可在服务重启后恢复。
 - 工具和技能具备独立开发、测试、发布和回滚流程。
+- MCP Tasks 只作为北向协议兼容层，不替代内部持久化状态机。
+- 新扩展不需要修改或重启平台主服务。
 
 ## 20. 明确禁止的实现方式
 

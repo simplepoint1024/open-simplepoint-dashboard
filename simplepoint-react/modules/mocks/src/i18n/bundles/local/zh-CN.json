@@ -2272,8 +2272,10 @@
   },
   "menu": {
     "menu.ai.agents": "Agent",
+    "menu.ai.workflows": "Agent Workflow",
     "menu.ai.apiKeys": "API Keys",
     "menu.ai.billing": "账单",
+    "menu.ai.catalog": "扩展市场",
     "menu.ai.knowledgeBases": "知识库",
     "menu.ai.mcpGateway": "MCP Gateway",
     "menu.ai.mcpPublications": "MCP 发布",

@@ -47,4 +47,9 @@ class UuidStringIdentifierGeneratorTest {
     EnumSet<EventType> eventTypes = generator.getEventTypes();
     assertThat(eventTypes).containsExactly(EventType.INSERT);
   }
+
+  @Test
+  void allowAssignedIdentifiers_supportsPinnedDurableIds() {
+    assertThat(generator.allowAssignedIdentifiers()).isTrue();
+  }
 }

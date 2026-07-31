@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OUTPUT_MODE="load"
 OCI_OUTPUT_DIR=""
 SIGN_AFTER_PUSH=false
-ALL_TARGETS=(postgres bootstrap authorization common auditing dna ai mcp-gateway runtime-pki tool-egress-proxy tool-image-verifier tool-runtime host)
+ALL_TARGETS=(postgres bootstrap authorization common auditing dna ai mcp-gateway agent-runtime workflow-runtime runtime-pki tool-egress-proxy tool-image-verifier tool-runtime host)
 TARGETS=()
 
 usage() {
@@ -117,6 +117,8 @@ export SIMPLEPOINT_AUDITING_IMAGE="${SIMPLEPOINT_AUDITING_IMAGE:-$(image_name au
 export SIMPLEPOINT_DNA_IMAGE="${SIMPLEPOINT_DNA_IMAGE:-$(image_name dna)}"
 export SIMPLEPOINT_AI_IMAGE="${SIMPLEPOINT_AI_IMAGE:-$(image_name ai)}"
 export SIMPLEPOINT_MCP_GATEWAY_IMAGE="${SIMPLEPOINT_MCP_GATEWAY_IMAGE:-$(image_name mcp-gateway)}"
+export SIMPLEPOINT_AGENT_RUNTIME_IMAGE="${SIMPLEPOINT_AGENT_RUNTIME_IMAGE:-$(image_name agent-runtime)}"
+export SIMPLEPOINT_WORKFLOW_RUNTIME_IMAGE="${SIMPLEPOINT_WORKFLOW_RUNTIME_IMAGE:-$(image_name workflow-runtime)}"
 export SIMPLEPOINT_RUNTIME_PKI_IMAGE="${SIMPLEPOINT_RUNTIME_PKI_IMAGE:-$(image_name runtime-pki)}"
 export SIMPLEPOINT_TOOL_EGRESS_PROXY_IMAGE="${SIMPLEPOINT_TOOL_EGRESS_PROXY_IMAGE:-$(image_name tool-egress-proxy)}"
 export SIMPLEPOINT_TOOL_IMAGE_VERIFIER_IMAGE="${SIMPLEPOINT_TOOL_IMAGE_VERIFIER_IMAGE:-$(image_name tool-image-verifier)}"

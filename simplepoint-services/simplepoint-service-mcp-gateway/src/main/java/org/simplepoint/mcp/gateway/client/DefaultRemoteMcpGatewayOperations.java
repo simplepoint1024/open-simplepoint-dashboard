@@ -18,7 +18,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +32,7 @@ import java.util.function.Function;
 import org.simplepoint.mcp.gateway.config.McpGatewayProperties;
 import org.simplepoint.mcp.gateway.event.McpCancellationRegistry;
 import org.simplepoint.mcp.gateway.event.McpUpstreamEventCoordinator;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayCancellationRequest;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayConnection;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayConnectionKind;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayDiscoveryResult;
@@ -144,6 +147,19 @@ public class DefaultRemoteMcpGatewayOperations implements McpGatewayOperations {
   }
 
   @Override
+  public void cancel(final McpGatewayCancellationRequest request) {
+    if (request == null) {
+      throw new IllegalArgumentException(
+          "MCP cancellation request must not be null"
+      );
+    }
+    cancellationRegistry.cancelOperation(
+        request.operationId(),
+        request.reason()
+    );
+  }
+
+  @Override
   public McpGatewayDiscoveryResult discover(final McpGatewayConnection connection) {
     return withClient(connection, session -> {
       McpGatewayDiscoveryResult discovery = discovery(session);
@@ -198,7 +214,7 @@ public class DefaultRemoteMcpGatewayOperations implements McpGatewayOperations {
       );
       McpGatewayPromptGetResult mapped = new McpGatewayPromptGetResult(
           result.description(),
-          objectMapper.convertValue(result.messages(), MAP_LIST_TYPE),
+          mapPromptMessages(result.messages()),
           result.meta() == null ? Map.of() : result.meta()
       );
       assertSerializedSize(mapped, properties.getMaxResultBytes(), "MCP prompt result");
@@ -236,7 +252,7 @@ public class DefaultRemoteMcpGatewayOperations implements McpGatewayOperations {
               .build()
       );
       McpGatewayToolCallResult mapped = new McpGatewayToolCallResult(
-          objectMapper.convertValue(result.content(), MAP_LIST_TYPE),
+          mapContent(result.content()),
           Boolean.TRUE.equals(result.isError()),
           result.structuredContent(),
           result.meta()
@@ -244,6 +260,42 @@ public class DefaultRemoteMcpGatewayOperations implements McpGatewayOperations {
       assertSerializedSize(mapped, properties.getMaxResultBytes(), "MCP tool result");
       return mapped;
     });
+  }
+
+  private List<Map<String, Object>> mapPromptMessages(
+      final List<McpSchema.PromptMessage> messages
+  ) {
+    if (messages == null || messages.isEmpty()) {
+      return List.of();
+    }
+    return messages.stream().map(message -> {
+      Map<String, Object> mapped = new LinkedHashMap<>();
+      mapped.put(
+          "role",
+          message.role().name().toLowerCase(Locale.ROOT)
+      );
+      mapped.put("content", mapContent(message.content()));
+      return mapped;
+    }).toList();
+  }
+
+  private List<Map<String, Object>> mapContent(
+      final List<McpSchema.Content> content
+  ) {
+    if (content == null || content.isEmpty()) {
+      return List.of();
+    }
+    return content.stream().map(this::mapContent).toList();
+  }
+
+  private Map<String, Object> mapContent(
+      final McpSchema.Content content
+  ) {
+    Map<String, Object> mapped = new LinkedHashMap<>(
+        objectMapper.convertValue(content, MAP_TYPE)
+    );
+    mapped.put("type", content.type());
+    return mapped;
   }
 
   @Override

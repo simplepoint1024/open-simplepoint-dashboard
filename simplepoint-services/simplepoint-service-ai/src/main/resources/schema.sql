@@ -1741,3 +1741,292 @@ ALTER TABLE simpoint_ai_agent_execution_traces
       AND tool_call_id IS NOT NULL
     )
   );
+
+-- Agent Workflow registry. Definitions own mutable display metadata, while
+-- versions and exact Agent/Skill dependency bindings are immutable.
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_workflow_system_code
+  ON simpoint_ai_workflows (code)
+  WHERE scope_type = 'SYSTEM'
+    AND tenant_id IS NULL
+    AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_workflow_tenant_code
+  ON simpoint_ai_workflows (tenant_id, code)
+  WHERE scope_type = 'TENANT'
+    AND tenant_id IS NOT NULL
+    AND deleted_at IS NULL;
+ALTER TABLE simpoint_ai_workflows
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_scope;
+ALTER TABLE simpoint_ai_workflows
+  ADD CONSTRAINT ck_simpoint_ai_workflow_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_workflows
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_status;
+ALTER TABLE simpoint_ai_workflows
+  ADD CONSTRAINT ck_simpoint_ai_workflow_status
+  CHECK (status IN ('DRAFT', 'ACTIVE', 'DISABLED'));
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_workflow_version_name
+  ON simpoint_ai_workflow_versions (workflow_id, version_name)
+  WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_workflow_version_hash
+  ON simpoint_ai_workflow_versions (content_hash);
+ALTER TABLE simpoint_ai_workflow_versions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_version_scope;
+ALTER TABLE simpoint_ai_workflow_versions
+  ADD CONSTRAINT ck_simpoint_ai_workflow_version_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_workflow_versions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_version_status;
+ALTER TABLE simpoint_ai_workflow_versions
+  ADD CONSTRAINT ck_simpoint_ai_workflow_version_status
+  CHECK (status IN ('DRAFT', 'PUBLISHED', 'DEPRECATED'));
+ALTER TABLE simpoint_ai_workflow_versions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_version_hash;
+ALTER TABLE simpoint_ai_workflow_versions
+  ADD CONSTRAINT ck_simpoint_ai_workflow_version_hash
+  CHECK (content_hash ~ '^[0-9a-f]{64}$');
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_workflow_dependency_order
+  ON simpoint_ai_workflow_dependencies (workflow_version_id, binding_order)
+  WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_workflow_dependency_version
+  ON simpoint_ai_workflow_dependencies (resource_version_id);
+ALTER TABLE simpoint_ai_workflow_dependencies
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_dependency_scope;
+ALTER TABLE simpoint_ai_workflow_dependencies
+  ADD CONSTRAINT ck_simpoint_ai_workflow_dependency_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_workflow_dependencies
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_dependency_type;
+ALTER TABLE simpoint_ai_workflow_dependencies
+  ADD CONSTRAINT ck_simpoint_ai_workflow_dependency_type
+  CHECK (dependency_type IN ('AGENT', 'SKILL', 'COMPENSATION_SKILL'));
+ALTER TABLE simpoint_ai_workflow_dependencies
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_dependency_hash;
+ALTER TABLE simpoint_ai_workflow_dependencies
+  ADD CONSTRAINT ck_simpoint_ai_workflow_dependency_hash
+  CHECK (
+    binding_order >= 0
+    AND resource_content_hash ~ '^[0-9a-f]{64}$'
+  );
+
+-- Durable Workflow executions. Idempotency is scope-aware, leases are fenced,
+-- node checkpoints are unique, and the event stream is append-only by sequence.
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_workflow_execution_system_key
+  ON simpoint_ai_workflow_executions (workflow_id, idempotency_key_hash)
+  WHERE scope_type = 'SYSTEM'
+    AND tenant_id IS NULL
+    AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_workflow_execution_tenant_key
+  ON simpoint_ai_workflow_executions
+    (workflow_id, tenant_id, idempotency_key_hash)
+  WHERE scope_type = 'TENANT'
+    AND tenant_id IS NOT NULL
+    AND deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_workflow_execution_due
+  ON simpoint_ai_workflow_executions
+    (status, next_poll_at, lease_expires_at);
+ALTER TABLE simpoint_ai_workflow_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_execution_scope;
+ALTER TABLE simpoint_ai_workflow_executions
+  ADD CONSTRAINT ck_simpoint_ai_workflow_execution_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_workflow_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_execution_status;
+ALTER TABLE simpoint_ai_workflow_executions
+  ADD CONSTRAINT ck_simpoint_ai_workflow_execution_status
+  CHECK (
+    status IN (
+      'PENDING', 'RUNNING', 'WAITING_CHILD', 'WAITING_HUMAN',
+      'WAITING_TIMER', 'PAUSED', 'COMPENSATING', 'SUCCEEDED',
+      'FAILED', 'CANCELLED'
+    )
+  );
+ALTER TABLE simpoint_ai_workflow_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_execution_integrity;
+ALTER TABLE simpoint_ai_workflow_executions
+  ADD CONSTRAINT ck_simpoint_ai_workflow_execution_integrity
+  CHECK (
+    workflow_version_content_hash ~ '^[0-9a-f]{64}$'
+    AND idempotency_key_hash ~ '^[0-9a-f]{64}$'
+    AND input_hash ~ '^[0-9a-f]{64}$'
+    AND maximum_duration_seconds > 0
+    AND maximum_node_executions > 0
+    AND maximum_parallelism > 0
+    AND consumed_node_executions >= 0
+    AND consumed_node_executions <= maximum_node_executions
+    AND attempt_count >= 0
+    AND lease_token >= 0
+  );
+ALTER TABLE simpoint_ai_workflow_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_execution_lease;
+ALTER TABLE simpoint_ai_workflow_executions
+  ADD CONSTRAINT ck_simpoint_ai_workflow_execution_lease
+  CHECK (
+    (lease_owner IS NULL AND lease_expires_at IS NULL)
+    OR (lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_workflow_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_execution_pause;
+ALTER TABLE simpoint_ai_workflow_executions
+  ADD CONSTRAINT ck_simpoint_ai_workflow_execution_pause
+  CHECK (
+    (
+      pause_requested = FALSE
+      OR (
+        pause_requested_at IS NOT NULL
+        AND pause_requested_by IS NOT NULL
+      )
+    )
+    AND (
+      status <> 'PAUSED'
+      OR (
+        pause_requested = TRUE
+        AND paused_at IS NOT NULL
+      )
+    )
+  );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_workflow_node_checkpoint
+  ON simpoint_ai_workflow_node_executions (execution_id, node_id)
+  WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_workflow_node_order
+  ON simpoint_ai_workflow_node_executions (execution_id, node_order)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_workflow_node_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_node_status;
+ALTER TABLE simpoint_ai_workflow_node_executions
+  ADD CONSTRAINT ck_simpoint_ai_workflow_node_status
+  CHECK (
+    status IN (
+      'PENDING', 'RUNNING', 'WAITING', 'SUCCEEDED', 'FAILED',
+      'SKIPPED', 'COMPENSATING', 'COMPENSATED',
+      'COMPENSATION_FAILED'
+    )
+  );
+ALTER TABLE simpoint_ai_workflow_node_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_node_integrity;
+ALTER TABLE simpoint_ai_workflow_node_executions
+  ADD CONSTRAINT ck_simpoint_ai_workflow_node_integrity
+  CHECK (
+    node_order >= 0
+    AND attempt_count >= 0
+    AND node_type IN (
+      'agent', 'skill', 'human', 'wait', 'condition', 'parallel', 'end'
+    )
+    AND (output_hash IS NULL OR output_hash ~ '^[0-9a-f]{64}$')
+    AND (
+      child_type IS NULL
+      OR child_type IN ('AGENT', 'SKILL')
+    )
+    AND (
+      compensation_content_hash IS NULL
+      OR compensation_content_hash ~ '^[0-9a-f]{64}$'
+    )
+  );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_workflow_human_node
+  ON simpoint_ai_workflow_human_tasks (node_execution_id)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_workflow_human_tasks
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_human_scope;
+ALTER TABLE simpoint_ai_workflow_human_tasks
+  ADD CONSTRAINT ck_simpoint_ai_workflow_human_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_workflow_human_tasks
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_human_state;
+ALTER TABLE simpoint_ai_workflow_human_tasks
+  ADD CONSTRAINT ck_simpoint_ai_workflow_human_state
+  CHECK (
+    status IN ('OPEN', 'COMPLETED', 'TIMED_OUT', 'CANCELLED')
+    AND timeout_action IN ('FAIL', 'CANCEL', 'CONTINUE')
+    AND (output_hash IS NULL OR output_hash ~ '^[0-9a-f]{64}$')
+    AND (
+      status = 'OPEN'
+      OR (resolved_at IS NOT NULL AND resolved_by IS NOT NULL)
+    )
+  );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_workflow_event_sequence
+  ON simpoint_ai_workflow_execution_events (execution_id, event_sequence)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_workflow_execution_events
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_workflow_event_integrity;
+ALTER TABLE simpoint_ai_workflow_execution_events
+  ADD CONSTRAINT ck_simpoint_ai_workflow_event_integrity
+  CHECK (
+    event_sequence > 0
+    AND execution_status IN (
+      'PENDING', 'RUNNING', 'WAITING_CHILD', 'WAITING_HUMAN',
+      'WAITING_TIMER', 'PAUSED', 'COMPENSATING', 'SUCCEEDED',
+      'FAILED', 'CANCELLED'
+    )
+  );
+
+-- MCP Tasks is a northbound compatibility projection. Authorization ownership,
+-- expiry, terminal-state immutability, and horizontal worker fencing are
+-- enforced independently from the internal Workflow state machine.
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_mcp_task_due
+  ON simpoint_ai_mcp_tasks (status, next_attempt_at, lease_expires_at);
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_mcp_task_owner_cursor
+  ON simpoint_ai_mcp_tasks
+    (publication_code, subject_hash, client_hash, created_at DESC, id DESC);
+ALTER TABLE simpoint_ai_mcp_tasks
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_mcp_task_status;
+ALTER TABLE simpoint_ai_mcp_tasks
+  ADD CONSTRAINT ck_simpoint_ai_mcp_task_status
+  CHECK (status IN ('PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED'));
+ALTER TABLE simpoint_ai_mcp_tasks
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_mcp_task_integrity;
+ALTER TABLE simpoint_ai_mcp_tasks
+  ADD CONSTRAINT ck_simpoint_ai_mcp_task_integrity
+  CHECK (
+    subject_hash ~ '^[0-9a-f]{64}$'
+    AND client_hash ~ '^[0-9a-f]{64}$'
+    AND ttl_millis >= 1000
+    AND poll_interval_millis > 0
+    AND lease_token >= 0
+    AND attempt_count >= 0
+    AND (
+      (lease_owner IS NULL AND lease_expires_at IS NULL)
+      OR (lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)
+    )
+    AND (
+      status NOT IN ('COMPLETED', 'FAILED', 'CANCELLED')
+      OR completed_at IS NOT NULL
+    )
+  );
+
+-- External extension catalog. Internal MCP Servers and Skills remain the source
+-- of truth in their owning modules; only external Registry metadata is cached.
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_catalog_external_key
+  ON simpoint_ai_catalog_entries (external_key)
+  WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_catalog_sync_source
+  ON simpoint_ai_catalog_sync_states (source)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_catalog_entries
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_catalog_entry_status;
+ALTER TABLE simpoint_ai_catalog_entries
+  ADD CONSTRAINT ck_simpoint_ai_catalog_entry_status
+  CHECK (status IN ('ACTIVE', 'DELETED'));
+ALTER TABLE simpoint_ai_catalog_sync_states
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_catalog_sync_status;
+ALTER TABLE simpoint_ai_catalog_sync_states
+  ADD CONSTRAINT ck_simpoint_ai_catalog_sync_status
+  CHECK (status IN ('NEVER', 'RUNNING', 'SUCCEEDED', 'PARTIAL', 'FAILED'));

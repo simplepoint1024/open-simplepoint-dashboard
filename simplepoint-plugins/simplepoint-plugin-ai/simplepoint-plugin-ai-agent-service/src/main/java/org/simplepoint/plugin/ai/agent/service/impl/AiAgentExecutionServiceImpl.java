@@ -43,6 +43,7 @@ import org.simplepoint.plugin.ai.agent.api.model.AgentTraceMetric;
 import org.simplepoint.plugin.ai.agent.api.model.AgentTraceStatus;
 import org.simplepoint.plugin.ai.agent.api.model.AgentTraceType;
 import org.simplepoint.plugin.ai.agent.api.model.AgentVersionStatus;
+import org.simplepoint.plugin.ai.agent.api.model.AgentWorkflowExecutionCommand;
 import org.simplepoint.plugin.ai.agent.api.properties.AgentExecutionProperties;
 import org.simplepoint.plugin.ai.agent.api.repository.AiAgentDefinitionRepository;
 import org.simplepoint.plugin.ai.agent.api.repository.AiAgentExecutionEventRepository;
@@ -63,6 +64,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -165,13 +167,98 @@ public class AiAgentExecutionServiceImpl implements AiAgentExecutionService {
           "Active Agent version is not published"
       );
     }
-    String idempotencyHash = sha256(required(
+    AuthorizationContext context = AuthorizationContextHolder.getContext();
+    return startVersion(
+        agent,
+        version,
+        scope,
+        context == null ? null : context.getUserId(),
+        context == null ? null : context.getContextId(),
         request.idempotencyKey(),
+        request.input()
+    );
+  }
+
+  @Override
+  @Transactional(
+      propagation = Propagation.REQUIRES_NEW,
+      rollbackFor = Exception.class
+  )
+  public AiAgentExecution startVersionForWorkflow(
+      final AgentWorkflowExecutionCommand command
+  ) {
+    if (command == null || command.executionScope() == null) {
+      throw new IllegalArgumentException(
+          "Workflow Agent execution command must not be null"
+      );
+    }
+    ScopeAssignment scope = new ScopeAssignment(
+        command.executionScope(),
+        command.tenantId()
+    );
+    AiAgentDefinition agent = agentRepository.findActiveById(
+        required(command.agentId(), "Agent ID", 64)
+    ).orElseThrow(() -> new IllegalArgumentException(
+        "Pinned Agent does not exist"
+    ));
+    if (!scopeAccessPolicy.canUseResourceFromScope(
+        agent.getScopeType(),
+        agent.getTenantId(),
+        scope.scopeType(),
+        scope.tenantId()
+    ) || !Boolean.TRUE.equals(agent.getEnabled())) {
+      throw new IllegalArgumentException(
+          "Pinned Agent is unavailable to the Workflow scope"
+      );
+    }
+    AiAgentVersion version = versionRepository
+        .findActiveByIdAndAgentId(
+            required(command.agentVersionId(), "Agent version ID", 64),
+            agent.getId()
+        ).orElseThrow(() -> new IllegalArgumentException(
+            "Pinned Agent version does not exist"
+        ));
+    if (version.getStatus() != AgentVersionStatus.PUBLISHED) {
+      throw new IllegalStateException(
+          "Pinned Agent version is not published"
+      );
+    }
+    if (!required(
+        command.expectedContentHash(),
+        "Agent version content hash",
+        64
+    ).equals(version.getContentHash())) {
+      throw new IllegalStateException(
+          "Pinned Agent version content hash changed"
+      );
+    }
+    return startVersion(
+        agent,
+        version,
+        scope,
+        command.requestedBy(),
+        command.requestContextId(),
+        command.idempotencyKey(),
+        command.input()
+    );
+  }
+
+  private AiAgentExecution startVersion(
+      final AiAgentDefinition agent,
+      final AiAgentVersion version,
+      final ScopeAssignment scope,
+      final String requestedBy,
+      final String requestContextId,
+      final String rawIdempotencyKey,
+      final Map<String, Object> rawInput
+  ) {
+    String idempotencyHash = sha256(required(
+        rawIdempotencyKey,
         "Agent execution idempotency key",
         128
     ));
-    Map<String, Object> input = request.input() == null
-        ? Map.of() : new LinkedHashMap<>(request.input());
+    Map<String, Object> input = rawInput == null
+        ? Map.of() : new LinkedHashMap<>(rawInput);
     String inputJson = writeJson(input);
     assertPayloadSize(inputJson, "Agent execution input");
     Map<String, Object> manifest = readMap(
@@ -217,17 +304,14 @@ public class AiAgentExecutionServiceImpl implements AiAgentExecutionService {
         false
     );
     final Instant submittedAt = Instant.now();
-    AuthorizationContext context = AuthorizationContextHolder.getContext();
     AiAgentExecution execution = new AiAgentExecution();
     execution.setAgentId(agent.getId());
     execution.setAgentVersionId(version.getId());
     execution.setAgentVersionContentHash(version.getContentHash());
     execution.setScopeType(scope.scopeType());
     execution.setTenantId(scope.tenantId());
-    execution.setRequestedBy(context == null ? null : context.getUserId());
-    execution.setRequestContextId(
-        context == null ? null : context.getContextId()
-    );
+    execution.setRequestedBy(requestedBy);
+    execution.setRequestContextId(requestContextId);
     execution.setIdempotencyKeyHash(idempotencyHash);
     execution.setInputHash(sha256(inputJson));
     execution.setInputJson(inputJson);

@@ -10,7 +10,13 @@ import org.simplepoint.plugin.ai.mcp.api.gateway.McpPublicationChangeEvent;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpPublicationManifest;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpPublicationPromptGetRequest;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpPublicationResourceReadRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpPublicationTaskCreateRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpPublicationTaskListRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpPublicationTaskRequest;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpPublicationToolCallRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpTaskDescriptor;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpTaskListResult;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpTaskResult;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -70,6 +76,76 @@ public class McpPublicationControlPlaneClient {
         request,
         McpGatewayToolCallResult.class,
         "call published MCP tool"
+    );
+  }
+
+  /**
+   * Creates one durable task-augmented published Tool call.
+   */
+  public McpTaskDescriptor createTask(
+      final McpPublicationTaskCreateRequest request
+  ) {
+    return post(
+        "/internal/mcp/publications/tasks/create",
+        request,
+        McpTaskDescriptor.class,
+        "create published MCP Task"
+    );
+  }
+
+  /**
+   * Returns one authorization-bound MCP Task.
+   */
+  public McpTaskDescriptor getTask(
+      final McpPublicationTaskRequest request
+  ) {
+    return post(
+        "/internal/mcp/publications/tasks/get",
+        request,
+        McpTaskDescriptor.class,
+        "get published MCP Task"
+    );
+  }
+
+  /**
+   * Lists authorization-bound MCP Tasks.
+   */
+  public McpTaskListResult listTasks(
+      final McpPublicationTaskListRequest request
+  ) {
+    return post(
+        "/internal/mcp/publications/tasks/list",
+        request,
+        McpTaskListResult.class,
+        "list published MCP Tasks"
+    );
+  }
+
+  /**
+   * Returns one Task's underlying result projection.
+   */
+  public McpTaskResult taskResult(
+      final McpPublicationTaskRequest request
+  ) {
+    return post(
+        "/internal/mcp/publications/tasks/result",
+        request,
+        McpTaskResult.class,
+        "get published MCP Task result"
+    );
+  }
+
+  /**
+   * Cancels one non-terminal Task.
+   */
+  public McpTaskDescriptor cancelTask(
+      final McpPublicationTaskRequest request
+  ) {
+    return post(
+        "/internal/mcp/publications/tasks/cancel",
+        request,
+        McpTaskDescriptor.class,
+        "cancel published MCP Task"
     );
   }
 
@@ -156,13 +232,41 @@ public class McpPublicationControlPlaneClient {
     return value.trim().replaceAll("/+$", "");
   }
 
-  private static IllegalStateException failure(
+  private static McpControlPlaneException failure(
       final String operation,
       final RestClientResponseException exception
   ) {
-    return new IllegalStateException(
+    return new McpControlPlaneException(
         "Unable to " + operation + ": HTTP " + exception.getStatusCode().value(),
+        exception.getStatusCode().value(),
         exception
     );
+  }
+
+  /**
+   * Preserves the private control-plane status for JSON-RPC error mapping.
+   */
+  public static class McpControlPlaneException extends IllegalStateException {
+
+    private final int statusCode;
+
+    /**
+     * Creates one control-plane failure.
+     */
+    public McpControlPlaneException(
+        final String message,
+        final int statusCode,
+        final Throwable cause
+    ) {
+      super(message, cause);
+      this.statusCode = statusCode;
+    }
+
+    /**
+     * Returns the upstream HTTP status.
+     */
+    public int statusCode() {
+      return statusCode;
+    }
   }
 }

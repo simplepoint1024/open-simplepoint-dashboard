@@ -87,12 +87,43 @@ public class McpCancellationRegistry {
       return;
     }
     active.thread().interrupt();
+    publishCancellation(
+        active.operationId(),
+        reason,
+        List.of(publicationCode)
+    );
+  }
+
+  /**
+   * Cancels an operation identified directly by its trusted cluster ID.
+   */
+  public void cancelOperation(
+      final String operationId,
+      final String reason
+  ) {
+    if (operationId == null || operationId.isBlank()) {
+      throw new IllegalArgumentException(
+          "MCP operation ID must not be blank"
+      );
+    }
+    Thread local = southbound.remove(operationId);
+    if (local != null) {
+      local.interrupt();
+    }
+    publishCancellation(operationId, reason, List.of());
+  }
+
+  private void publishCancellation(
+      final String operationId,
+      final String reason,
+      final List<String> publicationCodes
+  ) {
     eventBus.publish(new McpGatewayClusterEvent(
         McpGatewayClusterEvent.Kind.CANCELLATION,
-        List.of(publicationCode),
+        publicationCodes,
         Set.of(),
         List.of(),
-        active.operationId(),
+        operationId,
         null,
         null,
         truncate(reason),

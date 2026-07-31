@@ -5,14 +5,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import org.simplepoint.mcp.gateway.config.McpGatewayProperties;
 import org.simplepoint.mcp.gateway.event.McpCancellationRegistry;
@@ -30,6 +36,8 @@ public class McpPublicationDispatcherServlet extends HttpServlet {
 
   private final ObjectMapper objectMapper;
 
+  private final McpTaskProtocolHandler taskProtocolHandler;
+
   private final int maxRequestBytes;
 
   /**
@@ -38,12 +46,18 @@ public class McpPublicationDispatcherServlet extends HttpServlet {
   public McpPublicationDispatcherServlet(
       final McpPublicationRegistry registry,
       final McpCancellationRegistry cancellationRegistry,
+      final McpPublicationControlPlaneClient controlPlaneClient,
       final ObjectMapper objectMapper,
       final McpGatewayProperties properties
   ) {
     this.registry = registry;
     this.cancellationRegistry = cancellationRegistry;
     this.objectMapper = objectMapper;
+    this.taskProtocolHandler = new McpTaskProtocolHandler(
+        registry,
+        controlPlaneClient,
+        objectMapper
+    );
     this.maxRequestBytes = Math.max(1024, properties.getMaxProtocolRequestBytes());
   }
 
@@ -60,7 +74,33 @@ public class McpPublicationDispatcherServlet extends HttpServlet {
     try {
       HttpServletRequest protocolRequest = inspect(code, request, response);
       if (protocolRequest != null) {
-        registry.transport(code).service(protocolRequest, response);
+        JsonNode message = (JsonNode) protocolRequest.getAttribute(
+            JsonNode.class.getName()
+        );
+        if (message == null) {
+          registry.transport(code).service(protocolRequest, response);
+          if ("DELETE".equalsIgnoreCase(request.getMethod())) {
+            taskProtocolHandler.forgetSession(
+                request.getHeader("Mcp-Session-Id")
+            );
+          }
+        } else if ("initialize".equals(message.path("method").asText())) {
+          BufferedResponse buffered = new BufferedResponse(response);
+          registry.transport(code).service(protocolRequest, buffered);
+          taskProtocolHandler.decorateInitialize(
+              code,
+              protocolRequest,
+              response,
+              buffered.body()
+          );
+        } else if (!taskProtocolHandler.handle(
+            code,
+            protocolRequest,
+            response,
+            message
+        )) {
+          registry.transport(code).service(protocolRequest, response);
+        }
       }
     } catch (IllegalArgumentException ex) {
       response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -108,7 +148,9 @@ public class McpPublicationDispatcherServlet extends HttpServlet {
           requestId
       );
     }
-    return new CachedBodyRequest(request, body);
+    CachedBodyRequest cached = new CachedBodyRequest(request, body);
+    cached.setAttribute(JsonNode.class.getName(), message);
+    return cached;
   }
 
   private static String requestId(final JsonNode value) {
@@ -217,6 +259,62 @@ public class McpPublicationDispatcherServlet extends HttpServlet {
         final int length
     ) {
       return input.read(bytes, offset, length);
+    }
+  }
+
+  private static final class BufferedResponse
+      extends HttpServletResponseWrapper {
+
+    private final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+    private PrintWriter writer;
+
+    private BufferedResponse(final HttpServletResponse response) {
+      super(response);
+    }
+
+    @Override
+    public PrintWriter getWriter() {
+      if (writer == null) {
+        writer = new PrintWriter(new OutputStreamWriter(
+            output,
+            StandardCharsets.UTF_8
+        ));
+      }
+      return writer;
+    }
+
+    @Override
+    public ServletOutputStream getOutputStream() {
+      return new ServletOutputStream() {
+        @Override
+        public boolean isReady() {
+          return true;
+        }
+
+        @Override
+        public void setWriteListener(final WriteListener writeListener) {
+          if (writeListener != null) {
+            try {
+              writeListener.onWritePossible();
+            } catch (IOException ex) {
+              writeListener.onError(ex);
+            }
+          }
+        }
+
+        @Override
+        public void write(final int value) {
+          output.write(value);
+        }
+      };
+    }
+
+    private byte[] body() {
+      if (writer != null) {
+        writer.flush();
+      }
+      return output.toByteArray();
     }
   }
 }

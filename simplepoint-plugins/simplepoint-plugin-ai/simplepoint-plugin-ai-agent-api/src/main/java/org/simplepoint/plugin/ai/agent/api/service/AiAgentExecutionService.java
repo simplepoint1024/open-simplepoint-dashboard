@@ -13,6 +13,7 @@ import org.simplepoint.plugin.ai.agent.api.model.AgentHumanInterventionRequest;
 import org.simplepoint.plugin.ai.agent.api.model.AgentHumanInterventionResponseRequest;
 import org.simplepoint.plugin.ai.agent.api.model.AgentTraceStatus;
 import org.simplepoint.plugin.ai.agent.api.model.AgentTraceType;
+import org.simplepoint.plugin.ai.agent.api.model.AgentWorkflowExecutionCommand;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -27,6 +28,15 @@ public interface AiAgentExecutionService {
   AiAgentExecution start(
       String agentId,
       AgentExecutionStartRequest request
+  );
+
+  /**
+   * Starts the exact published Agent version pinned by a Workflow.
+   *
+   * <p>This internal Java contract is not exposed as a public REST endpoint.</p>
+   */
+  AiAgentExecution startVersionForWorkflow(
+      AgentWorkflowExecutionCommand command
   );
 
   /**

@@ -81,12 +81,14 @@
   "menu.ai.providers": "Providers",
   "menu.ai.models": "Model Management",
   "menu.ai.knowledgeBases": "Knowledge Bases",
+  "menu.ai.catalog": "Extension Catalog",
   "menu.ai.mcpGateway": "MCP Gateway",
   "menu.ai.mcpServers": "MCP Servers",
   "menu.ai.mcpPublications": "MCP Publications",
   "menu.ai.tools": "Tools",
   "menu.ai.skills": "Skills",
   "menu.ai.agents": "Agents",
+  "menu.ai.workflows": "Agent Workflows",
   "menu.ai.runtime": "Runtime",
   "menu.ai.billing": "Billing"
 }

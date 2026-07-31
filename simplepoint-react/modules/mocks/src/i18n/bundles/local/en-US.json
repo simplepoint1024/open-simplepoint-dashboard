@@ -2272,8 +2272,10 @@
   },
   "menu": {
     "menu.ai.agents": "Agents",
+    "menu.ai.workflows": "Agent Workflows",
     "menu.ai.apiKeys": "API Keys",
     "menu.ai.billing": "Billing",
+    "menu.ai.catalog": "Extension Catalog",
     "menu.ai.knowledgeBases": "Knowledge Bases",
     "menu.ai.mcpGateway": "MCP Gateway",
     "menu.ai.mcpPublications": "MCP Publications",

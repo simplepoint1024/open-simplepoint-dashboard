@@ -25,6 +25,8 @@ import org.simplepoint.mcp.gateway.security.McpOauthClientMetadataDocument;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayConnection;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayConnectionKind;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayDiscoveryResult;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayPromptGetRequest;
+import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayPromptGetResult;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayStatus;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayToolCallRequest;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayToolCallResult;
@@ -133,11 +135,35 @@ class DefaultRemoteMcpGatewayOperationsTest {
     );
 
     assertFalse(result.error());
+    assertEquals("text", result.content().getFirst().get("type"));
+    assertEquals(
+        "Hello SimplePoint",
+        result.content().getFirst().get("text")
+    );
     assertEquals(
         "Hello SimplePoint",
         result.structuredContent() instanceof Map<?, ?> content
             ? content.get("greeting")
             : null
+    );
+  }
+
+  @Test
+  void preservesPromptRoleAndContentDiscriminator() {
+    McpGatewayPromptGetResult result = operations.getPrompt(
+        new McpGatewayPromptGetRequest(
+            connection,
+            "welcome",
+            Map.of("name", "SimplePoint"),
+            Map.of(),
+            null
+        )
+    );
+
+    assertEquals("user", result.messages().getFirst().get("role"));
+    assertEquals(
+        "text",
+        ((Map<?, ?>) result.messages().getFirst().get("content")).get("type")
     );
   }
 
@@ -173,7 +199,10 @@ class DefaultRemoteMcpGatewayOperationsTest {
         initializeCount.incrementAndGet();
         yield Map.of(
             "protocolVersion", "2025-11-25",
-            "capabilities", Map.of("tools", Map.of("listChanged", false)),
+            "capabilities", Map.of(
+                "tools", Map.of("listChanged", false),
+                "prompts", Map.of("listChanged", false)
+            ),
             "serverInfo", Map.of(
                 "name", "simplepoint-test-mcp",
                 "title", "SimplePoint Test MCP",
@@ -230,6 +259,29 @@ class DefaultRemoteMcpGatewayOperationsTest {
             "structuredContent", Map.of("greeting", "Hello " + name)
         );
       }
+      case "prompts/list" -> Map.of(
+          "prompts", java.util.List.of(Map.of(
+              "name", "welcome",
+              "title", "Welcome",
+              "description", "Returns a welcome prompt",
+              "arguments", java.util.List.of(Map.of(
+                  "name", "name",
+                  "required", true
+              ))
+          ))
+      );
+      case "prompts/get" -> Map.of(
+          "description", "Welcome prompt",
+          "messages", java.util.List.of(Map.of(
+              "role", "user",
+              "content", Map.of(
+                  "type", "text",
+                  "text", "Welcome "
+                      + request.path("params").path("arguments")
+                          .path("name").asText()
+              )
+          ))
+      );
       default -> throw new IllegalArgumentException("Unexpected MCP method: " + method);
     };
     byte[] response = objectMapper.writeValueAsBytes(Map.of(

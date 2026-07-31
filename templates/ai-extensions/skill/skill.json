@@ -1,0 +1,70 @@
+{
+  "apiVersion": "simplepoint.io/v1alpha1",
+  "kind": "Skill",
+  "metadata": {
+    "name": "__EXTENSION_NAME__",
+    "version": "1.0.0",
+    "title": "__EXTENSION_NAME__",
+    "description": "Calls one immutable MCP Tool capability."
+  },
+  "spec": {
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "tools": [
+      {
+        "alias": "__TOOL_ALIAS__",
+        "serverId": "__SERVER_ID__",
+        "snapshotId": "__SNAPSHOT_ID__",
+        "name": "__TOOL_NAME__"
+      }
+    ],
+    "budgets": {
+      "maximumToolCalls": 1,
+      "maximumDurationSeconds": 60,
+      "maximumPayloadBytes": 262144
+    },
+    "workflow": {
+      "steps": [
+        {
+          "id": "invoke",
+          "type": "tool",
+          "tool": "__TOOL_ALIAS__",
+          "arguments": {
+            "message": {
+              "$ref": "input.message"
+            }
+          }
+        }
+      ],
+      "output": {
+        "message": {
+          "$ref": "steps.invoke.structuredContent.message"
+        }
+      }
+    }
+  }
+}

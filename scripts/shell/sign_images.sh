@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-ALL_TARGETS=(postgres bootstrap authorization common auditing dna ai mcp-gateway runtime-pki tool-egress-proxy tool-image-verifier tool-runtime host)
+ALL_TARGETS=(postgres bootstrap authorization common auditing dna ai mcp-gateway agent-runtime workflow-runtime runtime-pki tool-egress-proxy tool-image-verifier tool-runtime host)
 TARGETS=("$@")
 
 if ((${#TARGETS[@]} == 0)); then
@@ -43,6 +43,8 @@ image_variable() {
     dna) printf 'SIMPLEPOINT_DNA_IMAGE\n' ;;
     ai) printf 'SIMPLEPOINT_AI_IMAGE\n' ;;
     mcp-gateway) printf 'SIMPLEPOINT_MCP_GATEWAY_IMAGE\n' ;;
+    agent-runtime) printf 'SIMPLEPOINT_AGENT_RUNTIME_IMAGE\n' ;;
+    workflow-runtime) printf 'SIMPLEPOINT_WORKFLOW_RUNTIME_IMAGE\n' ;;
     runtime-pki) printf 'SIMPLEPOINT_RUNTIME_PKI_IMAGE\n' ;;
     tool-egress-proxy) printf 'SIMPLEPOINT_TOOL_EGRESS_PROXY_IMAGE\n' ;;
     tool-image-verifier) printf 'SIMPLEPOINT_TOOL_IMAGE_VERIFIER_IMAGE\n' ;;

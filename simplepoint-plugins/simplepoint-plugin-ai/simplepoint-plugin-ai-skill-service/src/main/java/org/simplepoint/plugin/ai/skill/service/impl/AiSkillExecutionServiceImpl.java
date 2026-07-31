@@ -36,6 +36,7 @@ import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionStartRequest;
 import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionStatus;
 import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionStepStatus;
 import org.simplepoint.plugin.ai.skill.api.model.SkillVersionStatus;
+import org.simplepoint.plugin.ai.skill.api.model.SkillWorkflowExecutionCommand;
 import org.simplepoint.plugin.ai.skill.api.properties.SkillExecutionProperties;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillDefinitionRepository;
 import org.simplepoint.plugin.ai.skill.api.repository.AiSkillExecutionRepository;
@@ -58,6 +59,7 @@ import org.simplepoint.plugin.ai.skill.service.support.SkillWorkflowPlanCompiler
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -198,6 +200,68 @@ public class AiSkillExecutionServiceImpl implements AiSkillExecutionService {
     ) || !Boolean.TRUE.equals(skill.getEnabled())) {
       throw new IllegalArgumentException(
           "Skill does not exist or Agent scope cannot use it"
+      );
+    }
+    AiSkillVersion version = versionRepository.findActiveByIdAndSkillId(
+        required(command.skillVersionId(), "Skill version ID", 64),
+        skill.getId()
+    ).orElseThrow(() -> new IllegalArgumentException(
+        "Pinned Skill version does not exist"
+    ));
+    if (version.getStatus() != SkillVersionStatus.PUBLISHED) {
+      throw new IllegalStateException(
+          "Pinned Skill version is not published"
+      );
+    }
+    if (!required(
+        command.expectedContentHash(),
+        "Skill version content hash",
+        64
+    ).equals(version.getContentHash())) {
+      throw new IllegalStateException(
+          "Pinned Skill version content hash changed"
+      );
+    }
+    return startVersion(
+        skill,
+        version,
+        scope,
+        command.requestedBy(),
+        command.idempotencyKey(),
+        command.input()
+    );
+  }
+
+  @Override
+  @Transactional(
+      propagation = Propagation.REQUIRES_NEW,
+      rollbackFor = Exception.class
+  )
+  public AiSkillExecution startVersionForWorkflow(
+      final SkillWorkflowExecutionCommand command
+  ) {
+    if (command == null || command.executionScope() == null) {
+      throw new IllegalArgumentException(
+          "Workflow Skill execution command must not be null"
+      );
+    }
+    ScopeAssignment scope = new ScopeAssignment(
+        command.executionScope(),
+        command.tenantId()
+    );
+    AiSkillDefinition skill = skillRepository.findActiveByIdForUpdate(
+        required(command.skillId(), "Skill ID", 64)
+    ).orElseThrow(() -> new IllegalArgumentException(
+        "Pinned Skill does not exist"
+    ));
+    if (!scopeAccessPolicy.canUseResourceFromScope(
+        skill.getScopeType(),
+        skill.getTenantId(),
+        scope.scopeType(),
+        scope.tenantId()
+    ) || !Boolean.TRUE.equals(skill.getEnabled())) {
+      throw new IllegalArgumentException(
+          "Pinned Skill is unavailable to the Workflow scope"
       );
     }
     AiSkillVersion version = versionRepository.findActiveByIdAndSkillId(

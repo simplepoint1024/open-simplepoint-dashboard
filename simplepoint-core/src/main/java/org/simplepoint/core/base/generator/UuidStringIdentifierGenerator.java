@@ -28,4 +28,16 @@ public class UuidStringIdentifierGenerator implements BeforeExecutionGenerator {
     // 告诉 Hibernate 在 INSERT 时调用这个生成器
     return EnumSet.of(EventType.INSERT);
   }
+
+  /**
+   * Allows callers to pin a stable UUID before persistence.
+   *
+   * <p>Invocation ledgers and durable execution traces use the same UUID
+   * across process boundaries. Hibernate 7 requires custom generators to
+   * opt in explicitly before accepting such identifiers.</p>
+   */
+  @Override
+  public boolean allowAssignedIdentifiers() {
+    return true;
+  }
 }

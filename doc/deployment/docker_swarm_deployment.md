@@ -454,6 +454,20 @@ export PHASE2_MCP_TOOL_ARGUMENTS='{"value":"phase2"}'
 - 新会话至少分布到两个 READY Workload；
 - 对应托管副本至少落在两个不同的 Runtime 节点。
 
+默认 `PHASE2_REQUIRE_DISTINCT_NODES=true`，这是生产验收模式。单机开发机只能显式
+执行无 drain 的多副本验证：
+
+```bash
+PHASE2_REQUIRE_DISTINCT_NODES=false \
+PHASE2_ALLOW_NODE_DRAIN=false \
+PHASE2_SESSION_COUNT=8 \
+  ./scripts/shell/verify_phase2_runtime_failover.sh
+```
+
+该模式仍要求至少两个 READY Workload 并验证会话分布、亲和、Lease 和 fence，
+但允许它们位于同一个 Runtime 节点。它不能作为多主机认证结果，也不能开启节点
+drain；脚本会拒绝把单机结果误报为跨节点故障验收。
+
 在维护窗口内显式允许故障注入：
 
 ```bash

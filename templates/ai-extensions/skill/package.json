@@ -1,0 +1,17 @@
+{
+  "name": "__EXTENSION_NAME__",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Independent declarative Skill Artifact for Open SimplePoint",
+  "license": "Apache-2.0",
+  "scripts": {
+    "package": "bash scripts/package.sh",
+    "test": "node scripts/validate.mjs skill.json",
+    "validate": "npm test"
+  },
+  "devDependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  }
+}

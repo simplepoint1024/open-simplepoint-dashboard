@@ -42,6 +42,14 @@ variable "SIMPLEPOINT_MCP_GATEWAY_IMAGE" {
   default = "somesimpled/open-simplepoint-mcp-gateway:local"
 }
 
+variable "SIMPLEPOINT_AGENT_RUNTIME_IMAGE" {
+  default = "somesimpled/open-simplepoint-agent-runtime:local"
+}
+
+variable "SIMPLEPOINT_WORKFLOW_RUNTIME_IMAGE" {
+  default = "somesimpled/open-simplepoint-workflow-runtime:local"
+}
+
 variable "SIMPLEPOINT_TOOL_RUNTIME_IMAGE" {
   default = "somesimpled/open-simplepoint-tool-runtime:local"
 }
@@ -72,6 +80,8 @@ group "default" {
     "dna",
     "ai",
     "mcp-gateway",
+    "agent-runtime",
+    "workflow-runtime",
     "runtime-pki",
     "tool-egress-proxy",
     "tool-image-verifier",
@@ -139,6 +149,18 @@ target "mcp-gateway" {
   inherits   = ["_java"]
   dockerfile = "simplepoint-services/simplepoint-service-mcp-gateway/Dockerfile"
   tags       = [SIMPLEPOINT_MCP_GATEWAY_IMAGE]
+}
+
+target "agent-runtime" {
+  inherits   = ["_java"]
+  dockerfile = "simplepoint-services/simplepoint-service-agent-runtime/Dockerfile"
+  tags       = [SIMPLEPOINT_AGENT_RUNTIME_IMAGE]
+}
+
+target "workflow-runtime" {
+  inherits   = ["_java"]
+  dockerfile = "simplepoint-services/simplepoint-service-workflow-runtime/Dockerfile"
+  tags       = [SIMPLEPOINT_WORKFLOW_RUNTIME_IMAGE]
 }
 
 target "tool-runtime" {
