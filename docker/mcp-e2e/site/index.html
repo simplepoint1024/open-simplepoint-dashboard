@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>SimplePoint Playwright MCP acceptance</title>
+  </head>
+  <body>
+    <main>
+      <h1>Open SimplePoint MCP test site</h1>
+      <button id="verify" type="button">Verify browser session</button>
+      <output id="result" aria-live="polite">waiting</output>
+    </main>
+    <script>
+      document.querySelector('#verify').addEventListener('click', () => {
+        document.querySelector('#result').textContent =
+          'open-simplepoint-playwright-mcp-e2e-ok';
+      });
+    </script>
+  </body>
+</html>

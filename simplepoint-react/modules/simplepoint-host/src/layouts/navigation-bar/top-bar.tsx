@@ -1,5 +1,5 @@
 import type {ItemType} from "antd/es/menu/interface";
-import {Avatar, Badge, Button, Drawer, Dropdown, List, MenuProps, Tooltip, Popconfirm, Tag, message} from "antd";
+import {App as AntdApp, Avatar, Badge, Button, Drawer, Dropdown, List, MenuProps, Tooltip, Popconfirm, Tag} from "antd";
 import {ApartmentOutlined, BellOutlined, CreditCardOutlined, DeleteOutlined, DesktopOutlined, DownOutlined, EditOutlined, FontSizeOutlined, FullscreenExitOutlined, FullscreenOutlined, GithubOutlined, GlobalOutlined, HomeOutlined, LogoutOutlined, MoonOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SearchOutlined, SettingOutlined, SunOutlined, UserOutlined} from "@ant-design/icons";
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
@@ -115,6 +115,7 @@ function roleDisplayName(
  * 顶部栏上下文区：工作空间切换。
  */
 export const TenantSwitcherTop: React.FC = () => {
+  const {message} = AntdApp.useApp();
   const { t } = useI18n();
   const { data, isFetching, refetch } = useCurrentTenants();
   const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
@@ -218,6 +219,7 @@ export const TenantSwitcherTop: React.FC = () => {
  * 顶部栏上下文区：跟随当前工作空间的角色切换。
  */
 export const RoleSwitcherTop: React.FC = () => {
+  const {message} = AntdApp.useApp();
   const { t } = useI18n();
   const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
   const [roleId, setRoleIdState] = useState<string | undefined>(() => getRoleId(getTenantId()));
@@ -368,7 +370,7 @@ export const logoItem = (navigate: (path: string) => void): ItemType => {
         <RoleSwitcherTop />
       </div>
     ),
-    onClick: () => navigate('/')
+    onClick: () => navigate('/dashboard')
   }
 }
 
@@ -394,10 +396,10 @@ export const HeaderLogo: React.FC<{ navigate: (path: string) => void }> = ({ nav
     <div className="nb-header-brand">
       <div
         className="nb-header-logo"
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/dashboard')}
         role="button"
         tabIndex={0}
-        onKeyDown={e => e.key === 'Enter' && navigate('/')}
+        onKeyDown={e => e.key === 'Enter' && navigate('/dashboard')}
       >
         <img src={logo} alt={currentTenant?.tenantName || 'Logo'} className="nb-header-logo-image" />
         <LogoTitle />
@@ -459,6 +461,7 @@ const SizeButton = React.memo<{ type?: 'text'|'default' }>(({ type = 'default' }
  * 清理全局缓存按钮
  */
 const ClearCacheButton = React.memo<{ type?: 'text'|'default' }>(({ type = 'default' }) => {
+  const {message} = AntdApp.useApp();
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
 
@@ -521,6 +524,7 @@ const ThemeButton = React.memo<{ compact?: boolean }>(({ compact }) => {
  * 全屏切换按钮
  */
 const FullscreenButton = React.memo<{ type?: 'text'|'default' }>(({ type = 'default' }) => {
+  const {message} = AntdApp.useApp();
   const { t } = useI18n();
   const [isFull, setIsFull] = useState<boolean>(() => {
     try { return !!document.fullscreenElement; } catch { return false; }
@@ -697,9 +701,8 @@ const consumeNotificationStream = async (
       if (tenantId) headers.set('X-Tenant-Id', tenantId);
       if (roleId) headers.set('X-Role-Id', roleId);
       if (contextId) headers.set('X-Context-Id', contextId);
-      const response = await fetch(`${NOTIFICATION_BASE_URL}/stream`, {
-        method: 'GET',
-        credentials: 'include',
+      const response = await get<Response>(`${NOTIFICATION_BASE_URL}/stream`, undefined, {
+        responseType: 'response',
         cache: 'no-store',
         headers,
         signal,
@@ -752,6 +755,7 @@ const notificationTagColor = (category: InboxNotification['category']) => {
 };
 
 const NotificationButton: React.FC = () => {
+  const {message} = AntdApp.useApp();
   const {t, ensure, locale} = useI18n();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -828,7 +832,7 @@ const NotificationButton: React.FC = () => {
       }
     });
     return () => controller.abort();
-  }, [contextRevision, loadInbox, loadUnread, t]);
+  }, [contextRevision, loadInbox, loadUnread, message, t]);
 
   const openNotificationCenter = () => {
     setOpen(true);

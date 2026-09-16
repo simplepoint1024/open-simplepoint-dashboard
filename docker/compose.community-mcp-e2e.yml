@@ -1,0 +1,69 @@
+services:
+  mcp-e2e-postgres:
+    image: postgres:17-alpine@sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193
+    environment:
+      POSTGRES_DB: mcp_e2e
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mcp-e2e-admin-local
+    volumes:
+      - ./docker/mcp-e2e/postgres-init.sql:/docker-entrypoint-initdb.d/10-mcp-e2e.sql:ro
+    networks:
+      runtime-mcp-e2e-postgres:
+        aliases:
+          - postgres.mcp-e2e.local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mcp_e2e"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mcp-e2e-site:
+    image: nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+    volumes:
+      - ./docker/mcp-e2e/site:/usr/share/nginx/html:ro
+    networks:
+      runtime-mcp-e2e-site:
+        aliases:
+          - site.mcp-e2e.local
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  registry:
+    image: registry:2@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+    restart: unless-stopped
+    expose:
+      - "5000"
+    ports:
+      - "127.0.0.1:5001:5000"
+
+  tool-runtime:
+    environment:
+      SIMPLEPOINT_TOOL_RUNTIME_INTERNAL_SERVICE_ROUTES: >-
+        postgres:5432=${SIMPLEPOINT_RUNTIME_POSTGRES_NETWORK:-open-simplepoint-runtime-postgres},
+        postgres.mcp-e2e.local:5432=open-simplepoint-runtime-mcp-e2e-postgres,
+        site.mcp-e2e.local:80=open-simplepoint-runtime-mcp-e2e-site
+
+  ai:
+    environment:
+      SIMPLEPOINT_AI_SKILL_ARTIFACT_SIGNATURE_REQUIRED: "false"
+
+networks:
+  runtime-mcp-e2e-postgres:
+    name: open-simplepoint-runtime-mcp-e2e-postgres
+    internal: true
+  runtime-mcp-e2e-site:
+    name: open-simplepoint-runtime-mcp-e2e-site
+    internal: true

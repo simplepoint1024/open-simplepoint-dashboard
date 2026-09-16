@@ -54,4 +54,7 @@ public interface AiRuntimePoolRepository
       List<RuntimePoolStatus> statuses,
       Pageable pageable
   );
+
+  /** Locks all non-deleted pools attached to one Runtime Profile. */
+  List<AiRuntimePool> findActiveByRuntimeProfileForUpdate(String profileId);
 }

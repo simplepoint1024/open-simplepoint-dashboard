@@ -31,7 +31,13 @@ SIMPLEPOINT_TOOL_EGRESS_ADDRESS=:2892
 SIMPLEPOINT_TOOL_EGRESS_CONNECT_TIMEOUT=10s
 SIMPLEPOINT_TOOL_EGRESS_MAX_TUNNEL_DURATION=24h
 SIMPLEPOINT_TOOL_EGRESS_TOKEN_CLOCK_SKEW=15s
+SIMPLEPOINT_TOOL_EGRESS_UPSTREAM_PROXY_URL=http://proxy.example.com:3128
 ```
+
+`SIMPLEPOINT_TOOL_EGRESS_UPSTREAM_PROXY_URL` optionally chains approved traffic
+through an HTTP enterprise proxy. `HTTPS_PROXY` and `HTTP_PROXY` are also used
+as fallbacks, including values injected by the local Docker client. The signed
+per-workload hostname policy and public-address validation still run first.
 
 Production must inject the same random signing key into trusted Runtime nodes
 and Egress Proxy replicas. Never inject this key into a workload.

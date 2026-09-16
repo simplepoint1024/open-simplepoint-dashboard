@@ -58,6 +58,9 @@ type Config struct {
 	EgressProxyURL             string
 	EgressSigningKey           string
 	MaxEgressHosts             int
+	TCPEgressRoutes            map[string]string
+	InternalServiceRoutes      map[string]string
+	TransportNetworkName       string
 	RequiredProtocolVersion    string
 	MTLSEnabled                bool
 	TLSCertificateFile         string
@@ -69,6 +72,9 @@ type Config struct {
 	SecretRoot                 string
 	SecretVolumeName           string
 	SecretMountTarget          string
+	LauncherEnabled            bool
+	LauncherSource             string
+	LauncherMountTarget        string
 	MaxSecretFiles             int
 	MaxSecretFileBytes         int64
 	MaxSecretTotalBytes        int64
@@ -110,28 +116,35 @@ func Load() (Config, error) {
 			"SIMPLEPOINT_TOOL_RUNTIME_MAX_REPORTED_IMAGE_DIGESTS",
 			defaultReportedImages,
 		)),
-		RegistrationRetry:       envDuration("SIMPLEPOINT_TOOL_RUNTIME_REGISTRATION_RETRY", defaultRegistrationRetry),
-		Namespace:               env("SIMPLEPOINT_TOOL_RUNTIME_NAMESPACE", "open-simplepoint-tool-"),
-		AllowedRegistries:       csvSet(env("SIMPLEPOINT_TOOL_RUNTIME_ALLOWED_REGISTRIES", "docker.io")),
-		RequireDigest:           envBool("SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_DIGEST", true),
-		RequireMCPLabels:        envBool("SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_MCP_LABELS", true),
-		DefaultMemoryBytes:      envInt64("SIMPLEPOINT_TOOL_RUNTIME_DEFAULT_MEMORY_BYTES", defaultMemoryBytes),
-		MaxMemoryBytes:          envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_MEMORY_BYTES", defaultMaxMemoryBytes),
-		DefaultNanoCPUs:         envInt64("SIMPLEPOINT_TOOL_RUNTIME_DEFAULT_NANO_CPUS", defaultNanoCPUs),
-		MaxNanoCPUs:             envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_NANO_CPUS", defaultMaxNanoCPUs),
-		DefaultPidsLimit:        envInt64("SIMPLEPOINT_TOOL_RUNTIME_DEFAULT_PIDS_LIMIT", defaultPidsLimit),
-		MaxPidsLimit:            envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_PIDS_LIMIT", defaultMaxPidsLimit),
-		RequestTimeout:          envDuration("SIMPLEPOINT_TOOL_RUNTIME_REQUEST_TIMEOUT", defaultRequestTimeout),
-		ShutdownTimeout:         envDuration("SIMPLEPOINT_TOOL_RUNTIME_SHUTDOWN_TIMEOUT", defaultShutdownTimeout),
-		MaxRequestBytes:         envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_REQUEST_BYTES", 512*1024),
-		DefaultWorkloadUser:     env("SIMPLEPOINT_TOOL_RUNTIME_WORKLOAD_USER", "65532:65532"),
-		DefaultTmpfsSizeBytes:   envInt64("SIMPLEPOINT_TOOL_RUNTIME_TMPFS_SIZE_BYTES", 64*1024*1024),
-		AllowBridgeNetwork:      envBool("SIMPLEPOINT_TOOL_RUNTIME_ALLOW_BRIDGE_NETWORK", false),
-		EgressEnabled:           envBool("SIMPLEPOINT_TOOL_RUNTIME_EGRESS_ENABLED", false),
-		EgressNetworkName:       strings.TrimSpace(os.Getenv("SIMPLEPOINT_TOOL_RUNTIME_EGRESS_NETWORK")),
-		EgressProxyURL:          strings.TrimRight(strings.TrimSpace(os.Getenv("SIMPLEPOINT_TOOL_RUNTIME_EGRESS_PROXY_URL")), "/"),
-		EgressSigningKey:        strings.TrimSpace(os.Getenv("SIMPLEPOINT_TOOL_RUNTIME_EGRESS_SIGNING_KEY")),
-		MaxEgressHosts:          int(envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_EGRESS_HOSTS", 32)),
+		RegistrationRetry:     envDuration("SIMPLEPOINT_TOOL_RUNTIME_REGISTRATION_RETRY", defaultRegistrationRetry),
+		Namespace:             env("SIMPLEPOINT_TOOL_RUNTIME_NAMESPACE", "open-simplepoint-tool-"),
+		AllowedRegistries:     csvSet(env("SIMPLEPOINT_TOOL_RUNTIME_ALLOWED_REGISTRIES", "docker.io")),
+		RequireDigest:         envBool("SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_DIGEST", true),
+		RequireMCPLabels:      envBool("SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_MCP_LABELS", false),
+		DefaultMemoryBytes:    envInt64("SIMPLEPOINT_TOOL_RUNTIME_DEFAULT_MEMORY_BYTES", defaultMemoryBytes),
+		MaxMemoryBytes:        envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_MEMORY_BYTES", defaultMaxMemoryBytes),
+		DefaultNanoCPUs:       envInt64("SIMPLEPOINT_TOOL_RUNTIME_DEFAULT_NANO_CPUS", defaultNanoCPUs),
+		MaxNanoCPUs:           envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_NANO_CPUS", defaultMaxNanoCPUs),
+		DefaultPidsLimit:      envInt64("SIMPLEPOINT_TOOL_RUNTIME_DEFAULT_PIDS_LIMIT", defaultPidsLimit),
+		MaxPidsLimit:          envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_PIDS_LIMIT", defaultMaxPidsLimit),
+		RequestTimeout:        envDuration("SIMPLEPOINT_TOOL_RUNTIME_REQUEST_TIMEOUT", defaultRequestTimeout),
+		ShutdownTimeout:       envDuration("SIMPLEPOINT_TOOL_RUNTIME_SHUTDOWN_TIMEOUT", defaultShutdownTimeout),
+		MaxRequestBytes:       envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_REQUEST_BYTES", 512*1024),
+		DefaultWorkloadUser:   env("SIMPLEPOINT_TOOL_RUNTIME_WORKLOAD_USER", "65532:65532"),
+		DefaultTmpfsSizeBytes: envInt64("SIMPLEPOINT_TOOL_RUNTIME_TMPFS_SIZE_BYTES", 64*1024*1024),
+		AllowBridgeNetwork:    envBool("SIMPLEPOINT_TOOL_RUNTIME_ALLOW_BRIDGE_NETWORK", false),
+		EgressEnabled:         envBool("SIMPLEPOINT_TOOL_RUNTIME_EGRESS_ENABLED", false),
+		EgressNetworkName:     strings.TrimSpace(os.Getenv("SIMPLEPOINT_TOOL_RUNTIME_EGRESS_NETWORK")),
+		EgressProxyURL:        strings.TrimRight(strings.TrimSpace(os.Getenv("SIMPLEPOINT_TOOL_RUNTIME_EGRESS_PROXY_URL")), "/"),
+		EgressSigningKey:      strings.TrimSpace(os.Getenv("SIMPLEPOINT_TOOL_RUNTIME_EGRESS_SIGNING_KEY")),
+		MaxEgressHosts:        int(envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_EGRESS_HOSTS", 32)),
+		TCPEgressRoutes: routeMap(
+			os.Getenv("SIMPLEPOINT_TOOL_RUNTIME_TCP_EGRESS_ROUTES"),
+		),
+		InternalServiceRoutes: routeMap(
+			os.Getenv("SIMPLEPOINT_TOOL_RUNTIME_INTERNAL_SERVICE_ROUTES"),
+		),
+		TransportNetworkName:    env("SIMPLEPOINT_TOOL_RUNTIME_TRANSPORT_NETWORK", "open-simplepoint-runtime-transport"),
 		RequiredProtocolVersion: env("SIMPLEPOINT_TOOL_RUNTIME_MCP_PROTOCOL_VERSION", "2025-11-25"),
 		MTLSEnabled:             envBool("SIMPLEPOINT_TOOL_RUNTIME_MTLS_ENABLED", false),
 		TLSCertificateFile:      strings.TrimSpace(os.Getenv("SIMPLEPOINT_TOOL_RUNTIME_TLS_CERT_FILE")),
@@ -143,6 +156,9 @@ func Load() (Config, error) {
 		SecretRoot:              env("SIMPLEPOINT_TOOL_RUNTIME_SECRET_ROOT", "/run/simplepoint/runtime-secrets"),
 		SecretVolumeName:        env("SIMPLEPOINT_TOOL_RUNTIME_SECRET_VOLUME", "open-simplepoint-runtime-secrets"),
 		SecretMountTarget:       env("SIMPLEPOINT_TOOL_RUNTIME_SECRET_MOUNT_TARGET", "/run/secrets/simplepoint"),
+		LauncherEnabled:         envBool("SIMPLEPOINT_TOOL_RUNTIME_LAUNCHER_ENABLED", false),
+		LauncherSource:          env("SIMPLEPOINT_TOOL_RUNTIME_LAUNCHER_SOURCE", "/simplepoint-runtime-launcher"),
+		LauncherMountTarget:     env("SIMPLEPOINT_TOOL_RUNTIME_LAUNCHER_MOUNT_TARGET", "/run/simplepoint-runtime"),
 		MaxSecretFiles:          int(envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_SECRET_FILES", 16)),
 		MaxSecretFileBytes:      envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_SECRET_FILE_BYTES", 16*1024),
 		MaxSecretTotalBytes:     envInt64("SIMPLEPOINT_TOOL_RUNTIME_MAX_SECRET_TOTAL_BYTES", 48*1024),
@@ -219,6 +235,11 @@ func (c Config) Validate() error {
 		return errors.New("tool runtime secret paths are invalid")
 	case !safeIdentifier(c.SecretVolumeName, 255):
 		return errors.New("tool runtime secret volume name is invalid")
+	case c.LauncherEnabled &&
+		(!safeAbsolutePath(c.LauncherSource) ||
+			!safeAbsolutePath(c.LauncherMountTarget) ||
+			c.LauncherMountTarget == c.SecretMountTarget):
+		return errors.New("tool runtime launcher paths are invalid")
 	case c.MaxSecretFiles <= 0 || c.MaxSecretFiles > 64:
 		return errors.New("tool runtime maximum secret file count is invalid")
 	case c.MaxSecretFileBytes <= 0 ||
@@ -242,6 +263,12 @@ func (c Config) Validate() error {
 		return errors.New("tool runtime egress configuration is invalid")
 	case c.MaxEgressHosts <= 0 || c.MaxEgressHosts > 32:
 		return errors.New("tool runtime maximum egress host count is invalid")
+	case !validRouteMap(c.TCPEgressRoutes) ||
+		!validRouteMap(c.InternalServiceRoutes):
+		return errors.New("tool runtime endpoint route configuration is invalid")
+	case c.TransportNetworkName != "" &&
+		!safeIdentifier(c.TransportNetworkName, 255):
+		return errors.New("tool runtime transport network name is invalid")
 	case c.MaxWorkloads <= 0 || c.MaxWorkloads > 10_000:
 		return errors.New("tool runtime maximum workload count is invalid")
 	case c.MaxReportedImageDigests <= 0 ||
@@ -385,6 +412,39 @@ func csvSet(value string) map[string]struct{} {
 		}
 	}
 	return result
+}
+
+func routeMap(value string) map[string]string {
+	result := make(map[string]string)
+	for item := range strings.SplitSeq(value, ",") {
+		endpoint, networkName, found := strings.Cut(
+			strings.ToLower(strings.TrimSpace(item)),
+			"=",
+		)
+		if found && endpoint != "" && networkName != "" {
+			result[endpoint] = networkName
+		}
+	}
+	return result
+}
+
+func validRouteMap(routes map[string]string) bool {
+	if len(routes) > 32 {
+		return false
+	}
+	for endpoint, networkName := range routes {
+		separator := strings.LastIndexByte(endpoint, ':')
+		if separator < 1 || separator == len(endpoint)-1 ||
+			!safeIdentifier(endpoint[:separator], 253) ||
+			!safeIdentifier(networkName, 255) {
+			return false
+		}
+		port, err := strconv.Atoi(endpoint[separator+1:])
+		if err != nil || port < 1 || port > 65535 {
+			return false
+		}
+	}
+	return true
 }
 
 func labelMap(value string) (map[string]string, error) {

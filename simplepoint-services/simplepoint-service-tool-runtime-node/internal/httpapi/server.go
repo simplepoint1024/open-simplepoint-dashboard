@@ -22,6 +22,10 @@ import (
 type Runtime interface {
 	NodeStatus(context.Context) (runtimeapi.NodeStatus, error)
 	Prepare(context.Context, string) (runtimeapi.ImageStatus, error)
+	ProbeMCP(
+		context.Context,
+		runtimeapi.StartRequest,
+	) (runtimeapi.MCPProbeReport, error)
 	Start(context.Context, runtimeapi.StartRequest) (runtimeapi.WorkloadStatus, error)
 	Status(context.Context, string, string, int64) (runtimeapi.WorkloadStatus, error)
 	Stop(context.Context, string, string, int64) (runtimeapi.WorkloadStatus, error)
@@ -58,6 +62,7 @@ func New(cfg config.Config, runtime Runtime, logger *slog.Logger) http.Handler {
 	mux.HandleFunc("GET /health", server.health)
 	mux.HandleFunc("GET /internal/v1/node/status", server.authenticate(server.nodeStatus))
 	mux.HandleFunc("POST /internal/v1/images/prepare", server.authenticate(server.prepare))
+	mux.HandleFunc("POST /internal/v1/mcp/probe", server.authenticate(server.probeMCP))
 	mux.HandleFunc("POST /internal/v1/workloads", server.authenticate(server.start))
 	mux.HandleFunc("GET /internal/v1/workloads/{workloadID}", server.authenticate(server.status))
 	mux.HandleFunc("POST /internal/v1/workloads/{workloadID}/stop", server.authenticate(server.stop))
@@ -66,6 +71,19 @@ func New(cfg config.Config, runtime Runtime, logger *slog.Logger) http.Handler {
 	mux.HandleFunc("GET /mcp/v1/workloads/{workloadID}", server.authenticateGateway(server.mcpEvents))
 	mux.HandleFunc("DELETE /mcp/v1/workloads/{workloadID}", server.authenticateGateway(server.mcpDelete))
 	return securityHeaders(mux)
+}
+
+func (s *Server) probeMCP(response http.ResponseWriter, request *http.Request) {
+	var body runtimeapi.StartRequest
+	if err := s.decode(response, request, &body); err != nil {
+		return
+	}
+	report, err := s.runtime.ProbeMCP(request.Context(), body)
+	if err != nil {
+		s.runtimeError(response, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(response, http.StatusOK, report)
 }
 
 func (s *Server) health(response http.ResponseWriter, request *http.Request) {

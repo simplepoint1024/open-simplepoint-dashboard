@@ -12,6 +12,6 @@ public record AiCatalogSyncResult(
     long syncedCount,
     String nextCursor,
     Instant completedAt,
-    String error
+    AiCatalogSyncErrorCode errorCode
 ) {
 }

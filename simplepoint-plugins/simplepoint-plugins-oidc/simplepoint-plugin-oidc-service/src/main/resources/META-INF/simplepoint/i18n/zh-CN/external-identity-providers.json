@@ -46,5 +46,8 @@
   "external-idp.page.test.success": "配置有效",
   "external-idp.page.test.failed": "配置测试失败：{msg}",
   "external-idp.page.form.secret.edit": "留空表示保持当前加密密钥不变",
-  "external-idp.page.callback": "回调地址：{url}"
+  "external-idp.page.callback": "回调地址：{url}",
+  "external-idp.page.test.callback": "回调地址",
+  "external-idp.page.github.title": "GitHub 接入检查",
+  "external-idp.page.github.description": "GitHub OAuth App 必须填写与授权服务完全一致的 Authorization callback URL；授权范围保留 read:user,user:email。配置测试只校验端点与格式，Client ID/Secret 需要通过一次真实登录确认。"
 }

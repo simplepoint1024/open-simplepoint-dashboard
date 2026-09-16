@@ -1,0 +1,33 @@
+{
+  "descriptorName": "io.modelcontextprotocol/git",
+  "descriptorVersion": "b4ee623039a6c60053ce67269701ad9e95073306",
+  "artifact": {
+    "source": "CATALOG_ORIGINAL",
+    "type": "OCI",
+    "reference": "mcp/git@sha256:ad6af958e79466a14b895891e772fdda28fdc12c06fff4a70637b66773303a2c"
+  },
+  "transport": {"type": "STDIO", "containerPort": null, "path": null},
+  "process": {
+    "entrypoint": [],
+    "command": [],
+    "arguments": ["--repository", "/workspace"],
+    "workingDirectory": "/workspace",
+    "userMode": "IMAGE_DEFAULT",
+    "initializationCommand": ["git", "-C", "/workspace", "init"]
+  },
+  "configuration": [],
+  "secrets": [],
+  "storage": [
+    {
+      "name": "workspace",
+      "type": "WORKSPACE_RW",
+      "storageReference": "community-e2e-git",
+      "targetPath": "/workspace",
+      "readOnly": false,
+      "sizeBytes": null
+    }
+  ],
+  "network": {"mode": "NONE", "allowlist": []},
+  "session": {"mode": "DEDICATED", "maxSessions": 1},
+  "sandbox": {"profile": "WORKSPACE", "limits": {}}
+}

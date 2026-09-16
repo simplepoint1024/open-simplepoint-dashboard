@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import ReactDOM from 'react-dom/client';
 import '@simplepoint/components/Simplepoint.css';
 import App from '@/App';
@@ -6,6 +6,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {applyInitialHtmlAttributes} from "@/utils/initHtmlAttributes.ts";
 import {I18nProvider} from "@/layouts/i18n/I18nProvider.tsx";
 import {isHttpError} from '@simplepoint/shared/api/client';
+import {bindQueryScope} from '@simplepoint/shared/api/queryScope';
 
 applyInitialHtmlAttributes();
 
@@ -31,6 +32,11 @@ const queryClient = new QueryClient({
   },
 });
 
+function ScopedApp() {
+  useEffect(() => bindQueryScope(queryClient), []);
+  return <App/>;
+}
+
 function createRoot() {
   const rootEl = document.getElementById('root');
   if (!rootEl) throw new Error('Root element not found');
@@ -38,7 +44,7 @@ function createRoot() {
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
         <I18nProvider>
-          <App/>
+          <ScopedApp/>
         </I18nProvider>
       </QueryClientProvider>
     </React.StrictMode>

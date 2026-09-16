@@ -122,7 +122,7 @@ AI 身份 URI SAN 固定为 `spiffe://open-simplepoint/ai-control-plane`；节�
 - `KEYWORD`：PostgreSQL 全文排名与 pg_trgm 字符相似度；
 - `HYBRID`：向量与关键词分别召回候选，再按知识库权重执行归一化 RRF 融合。
 
-PostgreSQL 必须包含 `vector` 和 `pg_trgm` 扩展。Docker Compose 会基于 `postgres:16-alpine` 构建轻量的 `simplepoint/postgres-pgvector:16`，Swarm 使用 `pgvector/pgvector:0.8.1-pg16`。AI 服务启动时会幂等创建扩展、分块表、GIN 索引和 HNSW 索引。向量索引存储上限为 2000 维；对于原生输出超过 2000 维的模型，应在知识库中设置不超过 2000 的输出维度。
+PostgreSQL 必须包含 `vector` 和 `pg_trgm` 扩展。Docker Compose 会基于 `postgres:16-alpine` 构建轻量的 `simplepoint/postgres-pgvector:16`。AI 服务启动时会幂等创建扩展、分块表、GIN 索引和 HNSW 索引。向量索引存储上限为 2000 维；对于原生输出超过 2000 维的模型，应在知识库中设置不超过 2000 的输出维度。
 
 ## 凭证加密
 

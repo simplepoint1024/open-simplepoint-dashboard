@@ -4,7 +4,7 @@ import SimpleTable from '@simplepoint/components/SimpleTable';
 import {get} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {Page} from '@simplepoint/shared/types/request';
-import {Alert, message} from 'antd';
+import {Alert, App as AntApp} from 'antd';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {resolveErrorMessage} from '../shared';
 
@@ -29,6 +29,7 @@ const resolveSchemaLabel = (schema: FederationSchemaOption, disabledSuffix: stri
 
 const App = () => {
   const {t, ensure, locale} = useI18n();
+  const {message} = AntApp.useApp();
   const [schemas, setSchemas] = useState<FederationSchemaOption[]>([]);
   const [schemasLoaded, setSchemasLoaded] = useState(false);
 
@@ -47,7 +48,7 @@ const App = () => {
       setSchemasLoaded(true);
       message.error(resolveErrorMessage(error, t('dna.federation.views.page.error.loadSchemas', '逻辑 Schema 列表加载失败')));
     });
-  }, [loadSchemas, t]);
+  }, [loadSchemas, message, t]);
 
   const formSchemaTransform = useCallback((schema: any) => {
     const nextSchema = structuredClone(schema ?? {});

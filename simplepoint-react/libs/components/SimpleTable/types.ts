@@ -1,4 +1,5 @@
 import type { ColumnType } from 'antd/es/table';
+import type {Page} from '@simplepoint/shared/types/request';
 import type { TableButtonProps } from '../Table';
 
 export type SimpleTableRefreshTargets = {
@@ -11,6 +12,24 @@ export type SimpleTableColumnOverride<T> = Partial<ColumnType<T>> & {
 };
 
 export type SimpleTableSubmitAction = 'add' | 'edit';
+export type SimpleTableErrorAction = SimpleTableSubmitAction | 'delete';
+export type SimpleTableErrorMessageResolver = (
+  error: unknown,
+  action: SimpleTableErrorAction,
+) => string | undefined;
+
+export type SimpleTablePageRequest = {
+  page: number;
+  size: number;
+  filters: Record<string, string>;
+  sort?: string;
+  signal?: AbortSignal;
+};
+
+export type SimpleTableTreeConfig<T> = {
+  hasChildren: (record: T) => boolean;
+  loadChildren: (record: T) => Promise<T[]>;
+};
 
 export type SimpleTableBeforeSubmitContext = {
   action: SimpleTableSubmitAction;
@@ -49,5 +68,7 @@ export interface SimpleTableProps<T> {
   i18nNamespaces: string[];
   submitRefreshTargets?: SimpleTableRefreshTargets;
   deleteRefreshTargets?: SimpleTableRefreshTargets;
+  errorMessageResolver?: SimpleTableErrorMessageResolver;
+  loadPage?: (request: SimpleTablePageRequest) => Promise<Page<T>>;
+  tree?: SimpleTableTreeConfig<T>;
 }
-

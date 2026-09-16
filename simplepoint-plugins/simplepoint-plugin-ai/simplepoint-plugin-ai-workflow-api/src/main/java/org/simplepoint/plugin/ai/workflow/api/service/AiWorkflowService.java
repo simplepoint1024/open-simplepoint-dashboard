@@ -1,6 +1,10 @@
 package org.simplepoint.plugin.ai.workflow.api.service;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import org.simplepoint.plugin.ai.core.api.model.AiDependencyKind;
+import org.simplepoint.plugin.ai.core.api.model.AiDependencyOption;
 import org.simplepoint.plugin.ai.workflow.api.entity.AiWorkflowDefinition;
 import org.simplepoint.plugin.ai.workflow.api.entity.AiWorkflowVersion;
 import org.simplepoint.plugin.ai.workflow.api.model.WorkflowUpsertRequest;
@@ -55,6 +59,26 @@ public interface AiWorkflowService {
   Optional<AiWorkflowVersion> findVersion(
       String workflowId,
       String versionId
+  );
+
+  /**
+   * Searches selectable Agent or Skill dependencies for one Workflow.
+   */
+  Page<AiDependencyOption> findDependencyOptions(
+      String workflowId,
+      AiDependencyKind kind,
+      String query,
+      int page,
+      int size
+  );
+
+  /**
+   * Resolves current and historical Agent or Skill dependency labels.
+   */
+  List<AiDependencyOption> resolveDependencyOptions(
+      String workflowId,
+      AiDependencyKind kind,
+      Collection<String> optionIds
   );
 
   /**

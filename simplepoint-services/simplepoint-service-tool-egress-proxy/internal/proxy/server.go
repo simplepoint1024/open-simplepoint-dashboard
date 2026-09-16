@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"bufio"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -10,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -45,6 +47,7 @@ type Server struct {
 	resolver Resolver
 	dialer   net.Dialer
 	logger   *slog.Logger
+	upstream *url.URL
 }
 
 // New creates an Egress Proxy handler.
@@ -56,6 +59,10 @@ func New(
 	if resolver == nil {
 		resolver = net.DefaultResolver
 	}
+	var upstream *url.URL
+	if cfg.UpstreamProxyURL != "" {
+		upstream, _ = url.Parse(cfg.UpstreamProxyURL)
+	}
 	server := &Server{
 		config:   cfg,
 		resolver: resolver,
@@ -63,7 +70,8 @@ func New(
 			Timeout:   cfg.ConnectTimeout,
 			KeepAlive: 30 * time.Second,
 		},
-		logger: logger,
+		logger:   logger,
+		upstream: upstream,
 	}
 	return http.HandlerFunc(server.serveHTTP)
 }
@@ -193,7 +201,9 @@ func (s *Server) connect(
 	address string,
 	claims policy.Claims,
 ) {
-	upstream, err := s.dialer.DialContext(request.Context(), "tcp", address)
+	upstream, bufferedUpstream, err := s.openTunnel(
+		request.Context(), request.Host, address,
+	)
 	if err != nil {
 		http.Error(response, "egress connection failed", http.StatusBadGateway)
 		return
@@ -233,12 +243,58 @@ func (s *Server) connect(
 		completed <- struct{}{}
 	}()
 	go func() {
-		_, _ = io.Copy(client, upstream)
+		_, _ = io.Copy(client, bufferedUpstream)
 		completed <- struct{}{}
 	}()
 	<-completed
 	_ = client.Close()
 	_ = upstream.Close()
+}
+
+func (s *Server) openTunnel(
+	ctx context.Context,
+	destination string,
+	directAddress string,
+) (net.Conn, io.Reader, error) {
+	if s.upstream == nil {
+		connection, err := s.dialer.DialContext(ctx, "tcp", directAddress)
+		return connection, connection, err
+	}
+	connection, err := s.dialer.DialContext(ctx, "tcp", s.upstream.Host)
+	if err != nil {
+		return nil, nil, err
+	}
+	request := &http.Request{
+		Method: http.MethodConnect,
+		URL:    &url.URL{Opaque: destination},
+		Host:   destination,
+		Header: make(http.Header),
+	}
+	if s.upstream.User != nil {
+		password, _ := s.upstream.User.Password()
+		request.Header.Set(
+			"Proxy-Authorization",
+			basicAuthorization(s.upstream.User.Username(), password),
+		)
+	}
+	if err = request.Write(connection); err != nil {
+		_ = connection.Close()
+		return nil, nil, err
+	}
+	reader := bufio.NewReader(connection)
+	response, err := http.ReadResponse(reader, request)
+	if err != nil {
+		_ = connection.Close()
+		return nil, nil, err
+	}
+	if response.StatusCode != http.StatusOK {
+		_ = response.Body.Close()
+		_ = connection.Close()
+		return nil, nil, fmt.Errorf(
+			"upstream proxy returned HTTP %d", response.StatusCode,
+		)
+	}
+	return connection, reader, nil
 }
 
 func (s *Server) forwardHTTP(
@@ -252,18 +308,20 @@ func (s *Server) forwardHTTP(
 	removeHopHeaders(outbound.Header)
 	outbound.Header.Del("Proxy-Authorization")
 	transport := &http.Transport{
-		Proxy:                 nil,
+		Proxy:                 http.ProxyURL(s.upstream),
 		DisableKeepAlives:     true,
 		ForceAttemptHTTP2:     false,
 		MaxIdleConns:          0,
 		ResponseHeaderTimeout: s.config.ConnectTimeout,
-		DialContext: func(
+	}
+	if s.upstream == nil {
+		transport.DialContext = func(
 			ctx context.Context,
 			network string,
 			_ string,
 		) (net.Conn, error) {
 			return s.dialer.DialContext(ctx, network, address)
-		},
+		}
 	}
 	defer transport.CloseIdleConnections()
 	upstream, err := transport.RoundTrip(outbound)
@@ -342,6 +400,12 @@ func proxyBasicAuth(value string) (string, string, bool) {
 	}
 	username, password, found := strings.Cut(string(decoded), ":")
 	return username, password, found && username != "" && password != ""
+}
+
+func basicAuthorization(username string, password string) string {
+	return "Basic " + base64.StdEncoding.EncodeToString(
+		[]byte(username+":"+password),
+	)
 }
 
 func removeHopHeaders(header http.Header) {

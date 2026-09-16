@@ -182,7 +182,7 @@ export const Dashboard: React.FC = () => {
         {label: t('host.dashboard.feature.infra.consul', 'Consul 配置中心')},
         {label: t('host.dashboard.feature.infra.redis', 'Redis WebSession / 缓存')},
         {label: t('host.dashboard.feature.infra.amqp', 'Service Router 服务间调用')},
-        {label: t('host.dashboard.feature.infra.docker', 'Docker Swarm 编排')},
+        {label: t('host.dashboard.feature.infra.docker', 'Docker Compose 编排')},
       ],
     },
     {
@@ -327,7 +327,7 @@ export const Dashboard: React.FC = () => {
                 ['Lombok',                     '#389e0d'],
                 ['Hutool',                     '#389e0d'],
                 ['Kotlin DSL',                 '#7b68ee'],
-                ['Docker Swarm',               '#2496ed'],
+                ['Docker Compose',             '#2496ed'],
               ].map(([name, color]) => (
                 <Col key={name}>
                   <Tag color={color as string} style={{fontSize: 12, padding: '2px 10px', marginRight: 0}}>

@@ -2,6 +2,7 @@ import SimpleTable from '@simplepoint/components/SimpleTable';
 import api from '@/api/index';
 import {useCallback, useEffect} from 'react';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import EffectiveScopePreview from './EffectiveScopePreview';
 
 const baseConfig = api['rbac-data-scopes'];
 
@@ -72,6 +73,8 @@ const App = () => {
     }, []);
 
     return (
+      <>
+        <EffectiveScopePreview />
         <SimpleTable
             {...baseConfig}
             submitRefreshTargets={{page: true, schema: false}}
@@ -80,6 +83,7 @@ const App = () => {
             beforeSubmit={beforeSubmit}
             formUiSchema={{customDeptIds: {'ui:widget': 'OrgTreeMultiSelect'}}}
         />
+      </>
     );
 };
 

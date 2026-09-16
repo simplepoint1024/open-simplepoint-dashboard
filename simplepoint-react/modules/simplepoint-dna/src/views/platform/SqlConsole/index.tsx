@@ -7,6 +7,7 @@ import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {Page} from '@simplepoint/shared/types/request';
 import {
   Alert,
+  App as AntApp,
   Button,
   Card,
   Col,
@@ -23,7 +24,6 @@ import {
   Tag,
   Tree,
   Typography,
-  message,
 } from 'antd';
 import type {TabsProps} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
@@ -282,6 +282,7 @@ const renderCellValue = (value: unknown) => {
 
 const App = () => {
   const {t, ensure, locale} = useI18n();
+  const {message} = AntApp.useApp();
   const [catalogs, setCatalogs] = useState<FederationCatalogOption[]>([]);
   const [catalogCode, setCatalogCode] = useState<string>();
   const [dataSources, setDataSources] = useState<JdbcDataSourceOption[]>([]);
@@ -332,13 +333,13 @@ const App = () => {
     } finally {
       setTreeLoading(false);
     }
-  }, []);
+  }, [message, resolveNodeTypeLabel, t]);
 
   useEffect(() => {
     void loadCatalogs().catch((error) => {
       message.error(resolveErrorMessage(error, t('dna.federation.sqlConsole.page.error.loadCatalogs', '数据目录列表加载失败')));
     });
-  }, [loadCatalogs]);
+  }, [loadCatalogs, message, t]);
 
   useEffect(() => {
     void loadDataSources();
@@ -360,7 +361,7 @@ const App = () => {
     } catch (error) {
       message.error(resolveErrorMessage(error, t('dna.federation.sqlConsole.page.error.loadChildren', '树节点加载失败')));
     }
-  }, [loadChildren]);
+  }, [loadChildren, message, t]);
 
   const handleSelectTreeNode = useCallback((keys: Key[]) => {
     setSelectedKeys(keys);
@@ -370,7 +371,7 @@ const App = () => {
   const handleRefreshTree = useCallback(async () => {
     await loadDataSources();
     message.success(t('dna.federation.sqlConsole.page.success.refreshTree', '数据源树已刷新'));
-  }, [loadDataSources]);
+  }, [loadDataSources, message, t]);
 
   const selectedTreePath = useMemo(() => {
     if (!selectedTreeNode?.dataSourceId) {
@@ -432,7 +433,7 @@ const App = () => {
       payload.parameters = parameters;
     }
     return payload;
-  }, [catalogCode, defaultSchema, maxRows, parametersText, sql, t]);
+  }, [catalogCode, defaultSchema, maxRows, message, parametersText, sql, t]);
 
   const submit = useCallback(async (mode: 'explain' | 'query') => {
     const payload = buildSqlConsolePayload({allowGlobalFlush: mode === 'query'});
@@ -493,7 +494,7 @@ const App = () => {
       hide();
       setLoadingMode(null);
     }
-  }, [buildSqlConsolePayload, t]);
+  }, [buildSqlConsolePayload, message, t]);
 
   const exportResults = useCallback(async (format: 'CSV' | 'JSON') => {
     const payload = buildSqlConsolePayload();
@@ -522,7 +523,7 @@ const App = () => {
       hide();
       setExportFormat(null);
     }
-  }, [buildSqlConsolePayload, t]);
+  }, [buildSqlConsolePayload, message, t]);
 
   const analysisResult = queryResult ?? explainResult;
 
@@ -761,6 +762,7 @@ const App = () => {
               {selectedTreePath ? (
                 <Alert
                   type="info"
+                  closable
                   showIcon
                   style={{marginTop: 12}}
                   message={t('dna.federation.sqlConsole.page.message.selectedPath', '当前选中路径')}
@@ -813,6 +815,7 @@ const App = () => {
                 {selectedTreePath ? (
                   <Alert
                     type="info"
+                    closable
                     showIcon
                     message={t('dna.federation.sqlConsole.page.message.selectedObject', '左侧树当前选中对象')}
                     description={selectedTreePath}

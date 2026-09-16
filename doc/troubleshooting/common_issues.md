@@ -20,7 +20,6 @@
 | Host UI | `http://127.0.0.1:8080` |
 | Authorization | `http://127.0.0.1:9000` |
 | Consul UI | `http://127.0.0.1:8500` |
-| RabbitMQ 管理台 | `http://127.0.0.1:15672` |
 
 如果这些基础入口都不通，先不要排菜单或按钮问题。
 
@@ -35,31 +34,21 @@
 
 **常见原因**
 
-1. 只起了数据库 / Redis / RabbitMQ，没有起 Consul
-2. 起了 Consul，但没有执行 `init_profile.sh`
-3. 使用了 `docker-compose`，但起完依赖后没有继续执行 `init_profile.sh`
+1. 只起了数据库 / Redis，没有起 Consul
+2. 起了 Consul，但没有执行 `./dev init`
+3. Consul 中仍是旧配置
 
 **建议处理**
 
-如果你走本机 CLI 路径，优先执行：
+本地无 Docker 路径执行：
 
 ```bash
-./scripts/shell/start_developer.sh
+./dev doctor core
+./dev init core
 ```
 
-它会顺序完成：
-
-1. 启动本地 Consul dev agent
-2. 通过 Terraform 把开发配置写入 Consul
-
-如果你走容器路径，则先执行：
-
-```bash
-docker compose -f docker/docker-compose.yaml up -d
-./scripts/shell/init_profile.sh
-```
-
-不要在 compose 已经占用 `8500` 端口时，再执行 `start_dev_consul.sh`。
+`./dev init` 通过 Consul HTTP API 幂等同步配置，随后立即校验，不依赖 Terraform 或
+Consul CLI。可先用 `./dev config plan` 查看差异。
 
 ### 3.2 PostgreSQL 端口通了，但 JPA 仍然连库失败
 
@@ -72,12 +61,10 @@ docker compose -f docker/docker-compose.yaml up -d
 
 当前仓库默认的 `docker/docker-compose.yaml` 已经使用 `postgres/postgres`，但如果你复用了旧容器、旧数据卷，或连接了另一套本地 PostgreSQL，依然可能和 Consul 开发配置不一致。
 
-**建议处理**
-
 建议处理：
 
-1. 确认当前实际数据库账号密码和 `infrastructure/consul/config/simplepoint/config/application/application.properties` 一致
-2. 如果你沿用了旧的 PostgreSQL 数据，删除旧容器 / 数据卷后按当前 compose 重新创建，或同步修改 Consul 开发配置后再执行一次 `init_profile.sh`
+1. 确认实际数据库账号密码和 `.simplepoint/dev.env` 一致
+2. 执行 `./dev database verify` 验证目标库，再执行 `./dev config apply`
 
 ## 4. 登录与认证问题
 
@@ -100,7 +87,7 @@ docker compose -f docker/docker-compose.yaml up -d
 开发配置里，host / common 的 OIDC 相关地址默认写的是：
 
 - issuer：`http://127.0.0.1:9000`
-- redirect：`http://127.0.0.1:2555/login/oauth2/code/oidc`
+- redirect：`http://127.0.0.1:8080/login/oauth2/code/oidc`
 
 所以本地开发时，优先使用：
 
@@ -296,9 +283,9 @@ x-ui.dictCode
 
 如果你想最快定位问题，推荐按这个顺序：
 
-1. 中间件是否都起来：PostgreSQL / Redis / RabbitMQ / Consul
-2. `start_developer.sh` / `init_profile.sh` 是否执行过
-3. `authorization`、`common`、`host` 是否按顺序启动
+1. 中间件是否都起来：PostgreSQL / Redis / Consul
+2. `./dev doctor` 和 `./dev init` 是否通过
+3. `./dev status` 中 authorization、common、host 是否健康
 4. 是否严格使用 `127.0.0.1` 的开发地址
 5. `/common/tenants/authorization-context-id` 是否正常
 6. `/common/resources/service-routes` 是否正常
@@ -308,7 +295,6 @@ x-ui.dictCode
 ## 10. 关联文档
 
 - 本地开发：`doc/deployment/local_development.md`
-- Docker Swarm 部署：`doc/deployment/docker_swarm_deployment.md`
 - 授权上下文：`doc/resource/authorization_context.md`
 - 授权流程：`doc/design/authorization_flow.md`
 - API 约定：`doc/api/api_conventions.md`

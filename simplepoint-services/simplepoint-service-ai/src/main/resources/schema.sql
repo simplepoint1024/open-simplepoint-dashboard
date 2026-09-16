@@ -12,7 +12,8 @@ DELETE FROM sp_ai_workbench_resource_migration;
 INSERT INTO sp_ai_workbench_resource_migration (old_code, new_code) VALUES
   ('ai.view', 'ai.workbench.view'),
   ('ai.system.view', 'ai.workbench.view'),
-  ('ai.workspace.view', 'ai.workbench.workspace.view'),
+  ('ai.workspace.view', 'ai.workbench.view'),
+  ('ai.workbench.workspace.view', 'ai.workbench.view'),
   ('ai.api-keys.view', 'ai.workbench.api-keys.view'),
   ('ai.system.api-keys.view', 'ai.workbench.api-keys.view'),
   ('ai.api-keys.create', 'ai.workbench.api-keys.create'),
@@ -112,12 +113,55 @@ ALTER TABLE simpoint_ai_providers
 DROP INDEX IF EXISTS uk_simpoint_ai_provider_scope_code;
 UPDATE simpoint_ai_providers SET scope_type = 'SYSTEM' WHERE scope_type IS NULL;
 ALTER TABLE simpoint_ai_providers ALTER COLUMN scope_type SET NOT NULL;
+ALTER TABLE simpoint_ai_providers
+  ADD COLUMN IF NOT EXISTS vendor VARCHAR(32);
+ALTER TABLE simpoint_ai_providers
+  ADD COLUMN IF NOT EXISTS model_discovery_url VARCHAR(2048);
+ALTER TABLE simpoint_ai_providers
+  DROP COLUMN IF EXISTS discovery_model_type;
+ALTER TABLE simpoint_ai_providers
+  DROP COLUMN IF EXISTS organization_id;
+ALTER TABLE simpoint_ai_providers
+  DROP COLUMN IF EXISTS project_id;
+ALTER TABLE simpoint_ai_providers
+  DROP COLUMN IF EXISTS api_version;
+UPDATE simpoint_ai_providers
+SET vendor = CASE provider_type
+  WHEN 'OPENAI' THEN 'OPENAI'
+  WHEN 'ANTHROPIC' THEN 'ANTHROPIC'
+  ELSE 'CUSTOM'
+END
+WHERE vendor IS NULL;
+UPDATE simpoint_ai_providers
+SET provider_type = CASE vendor
+  WHEN 'OPENAI' THEN 'OPENAI'
+  WHEN 'ANTHROPIC' THEN 'ANTHROPIC'
+  ELSE 'OPENAI_COMPATIBLE'
+END;
+ALTER TABLE simpoint_ai_models
+  ADD COLUMN IF NOT EXISTS pricing_auto_detected BOOLEAN;
+UPDATE simpoint_ai_models
+SET pricing_auto_detected = COALESCE(discovered, FALSE)
+WHERE pricing_auto_detected IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_provider_active_system_code
   ON simpoint_ai_providers (code)
   WHERE scope_type = 'SYSTEM' AND tenant_id IS NULL AND deleted_at IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_provider_active_tenant_code
   ON simpoint_ai_providers (tenant_id, code)
   WHERE scope_type = 'TENANT' AND tenant_id IS NOT NULL AND deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_model_dependency_options
+  ON simpoint_ai_models (
+    scope_type,
+    tenant_id,
+    model_type,
+    lower(coalesce(nullif(display_name, ''), model_id)),
+    id
+  )
+  WHERE deleted_at IS NULL
+    AND enabled = TRUE
+    AND available = TRUE
+    AND model_type IN ('LLM', 'MULTIMODAL');
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_api_key_active_system_name
   ON simpoint_ai_api_keys (lower(name))
@@ -165,7 +209,7 @@ ALTER TABLE simpoint_ai_mcp_servers
       deployment_type = 'MANAGED_OCI'
       AND transport_type = 'STDIO'
       AND endpoint_url IS NULL
-      AND authentication_type = 'NONE'
+      AND authentication_type IN ('NONE', 'OAUTH2')
       AND allow_private_network = FALSE
     )
   );
@@ -216,6 +260,14 @@ ALTER TABLE simpoint_ai_mcp_tool_invocations
     (scope_type = 'SYSTEM' AND tenant_id IS NULL)
     OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
   );
+-- Hibernate creates only the current capability columns on a fresh database.
+-- Re-introduce nullable legacy columns for the duration of this migration so
+-- the same script is valid for both fresh schemas and upgrades from tool-only
+-- invocation records.
+ALTER TABLE simpoint_ai_mcp_tool_invocations
+  ADD COLUMN IF NOT EXISTS tool_name VARCHAR(255);
+ALTER TABLE simpoint_ai_mcp_tool_invocations
+  ADD COLUMN IF NOT EXISTS arguments_hash VARCHAR(128);
 UPDATE simpoint_ai_mcp_tool_invocations
 SET capability_type = 'TOOL'
 WHERE capability_type IS NULL;
@@ -235,11 +287,39 @@ ALTER TABLE simpoint_ai_mcp_tool_invocations
   ALTER COLUMN tool_name DROP NOT NULL;
 ALTER TABLE simpoint_ai_mcp_tool_invocations
   ALTER COLUMN arguments_hash DROP NOT NULL;
+ALTER TABLE simpoint_ai_mcp_tool_invocations
+  DROP COLUMN IF EXISTS tool_name;
+ALTER TABLE simpoint_ai_mcp_tool_invocations
+  DROP COLUMN IF EXISTS arguments_hash;
 CREATE INDEX IF NOT EXISTS idx_simpoint_ai_mcp_invocation_capability
   ON simpoint_ai_mcp_tool_invocations (capability_type, capability_name);
+ALTER TABLE simpoint_ai_mcp_tool_invocations
+  ADD COLUMN IF NOT EXISTS runtime_revision_id VARCHAR(64);
 CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_mcp_oauth_state
   ON simpoint_ai_mcp_oauth_authorizations (state_hash)
   WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_mcp_oauth_authorizations
+  ADD COLUMN IF NOT EXISTS connection_id VARCHAR(64);
+ALTER TABLE simpoint_ai_mcp_oauth_authorizations
+  ADD COLUMN IF NOT EXISTS user_id VARCHAR(64);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_mcp_provider_connection_subject
+  ON simpoint_ai_mcp_provider_connections (server_id, user_id)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_mcp_provider_connections
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_mcp_provider_connection_scope;
+ALTER TABLE simpoint_ai_mcp_provider_connections
+  ADD CONSTRAINT ck_simpoint_ai_mcp_provider_connection_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_mcp_provider_connections
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_mcp_provider_connection_status;
+ALTER TABLE simpoint_ai_mcp_provider_connections
+  ADD CONSTRAINT ck_simpoint_ai_mcp_provider_connection_status
+  CHECK (status IN (
+    'CONFIGURED', 'AUTHORIZATION_PENDING', 'CONNECTED', 'EXPIRED', 'ERROR'
+  ));
 ALTER TABLE simpoint_ai_mcp_oauth_authorizations
   DROP CONSTRAINT IF EXISTS ck_simpoint_ai_mcp_oauth_scope;
 ALTER TABLE simpoint_ai_mcp_oauth_authorizations
@@ -369,6 +449,91 @@ ALTER TABLE simpoint_ai_runtime_nodes
     AND max_workload_pids_limit <= 4096
   );
 
+-- Normalized MCP Runtime Descriptor/Profile/Revision model. Descriptors and
+-- revisions are immutable snapshots; Profiles carry only the editable draft
+-- and active revision pointer.
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_runtime_descriptor_system
+  ON simpoint_ai_runtime_mcp_descriptors
+    (registry_name, server_version, content_hash)
+  WHERE scope_type = 'SYSTEM'
+    AND tenant_id IS NULL
+    AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_runtime_descriptor_tenant
+  ON simpoint_ai_runtime_mcp_descriptors
+    (tenant_id, registry_name, server_version, content_hash)
+  WHERE scope_type = 'TENANT'
+    AND tenant_id IS NOT NULL
+    AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_runtime_profile_system_code
+  ON simpoint_ai_runtime_mcp_profiles (code)
+  WHERE scope_type = 'SYSTEM'
+    AND tenant_id IS NULL
+    AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_runtime_profile_tenant_code
+  ON simpoint_ai_runtime_mcp_profiles (tenant_id, code)
+  WHERE scope_type = 'TENANT'
+    AND tenant_id IS NOT NULL
+    AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_runtime_revision_number
+  ON simpoint_ai_runtime_mcp_revisions (profile_id, revision_number)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_runtime_mcp_descriptors
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_runtime_descriptor_scope;
+ALTER TABLE simpoint_ai_runtime_mcp_descriptors
+  ADD CONSTRAINT ck_simpoint_ai_runtime_descriptor_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_runtime_mcp_profiles
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_runtime_profile_scope;
+ALTER TABLE simpoint_ai_runtime_mcp_profiles
+  ADD CONSTRAINT ck_simpoint_ai_runtime_profile_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_runtime_mcp_profiles
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_runtime_profile_status;
+ALTER TABLE simpoint_ai_runtime_mcp_profiles
+  ADD CONSTRAINT ck_simpoint_ai_runtime_profile_status
+  CHECK (status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED'));
+ALTER TABLE simpoint_ai_runtime_mcp_revisions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_runtime_revision_scope;
+ALTER TABLE simpoint_ai_runtime_mcp_revisions
+  ADD COLUMN IF NOT EXISTS admission_report_json TEXT;
+ALTER TABLE simpoint_ai_runtime_mcp_revisions
+  ADD CONSTRAINT ck_simpoint_ai_runtime_revision_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_runtime_mcp_revisions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_runtime_revision_integrity;
+ALTER TABLE simpoint_ai_runtime_mcp_revisions
+  ADD CONSTRAINT ck_simpoint_ai_runtime_revision_integrity
+  CHECK (
+    revision_number > 0
+    AND descriptor_content_hash ~ '^[0-9a-f]{64}$'
+    AND profile_hash ~ '^[0-9a-f]{64}$'
+    AND (
+      (image_reference IS NULL AND image_digest IS NULL)
+      OR (
+        image_reference IS NOT NULL
+        AND image_digest ~ '^sha256:[0-9a-f]{64}$'
+      )
+    )
+  );
+
+ALTER TABLE simpoint_ai_runtime_pools
+  ADD COLUMN IF NOT EXISTS runtime_profile_id VARCHAR(64);
+ALTER TABLE simpoint_ai_runtime_pools
+  ADD COLUMN IF NOT EXISTS active_revision_id VARCHAR(64);
+ALTER TABLE simpoint_ai_runtime_pools
+  ADD COLUMN IF NOT EXISTS runtime_spec_json TEXT;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_runtime_pool_profile
+  ON simpoint_ai_runtime_pools (runtime_profile_id, active_revision_id)
+  WHERE deleted_at IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_runtime_pool_system_code
   ON simpoint_ai_runtime_pools (code)
   WHERE scope_type = 'SYSTEM'
@@ -427,7 +592,10 @@ ALTER TABLE simpoint_ai_runtime_pools
 ALTER TABLE simpoint_ai_runtime_pools
   ADD CONSTRAINT ck_simpoint_ai_runtime_pool_network
   CHECK (
-    (network_mode = 'egress' AND egress_allowlist_json <> '[]')
+    (
+      network_mode IN ('egress', 'tcp-egress', 'internal-service')
+      AND egress_allowlist_json <> '[]'
+    )
     OR (
       network_mode IN ('none', 'bridge')
       AND egress_allowlist_json = '[]'
@@ -446,6 +614,12 @@ ALTER TABLE simpoint_ai_runtime_workloads
   ADD COLUMN IF NOT EXISTS secret_references_json TEXT DEFAULT '[]';
 ALTER TABLE simpoint_ai_runtime_workloads
   ADD COLUMN IF NOT EXISTS egress_allowlist_json TEXT DEFAULT '[]';
+ALTER TABLE simpoint_ai_runtime_workloads
+  ADD COLUMN IF NOT EXISTS runtime_profile_id VARCHAR(64);
+ALTER TABLE simpoint_ai_runtime_workloads
+  ADD COLUMN IF NOT EXISTS runtime_revision_id VARCHAR(64);
+ALTER TABLE simpoint_ai_runtime_workloads
+  ADD COLUMN IF NOT EXISTS runtime_spec_json TEXT;
 UPDATE simpoint_ai_runtime_workloads
 SET secret_references_json = '[]'
 WHERE secret_references_json IS NULL;
@@ -489,7 +663,10 @@ ALTER TABLE simpoint_ai_runtime_workloads
 ALTER TABLE simpoint_ai_runtime_workloads
   ADD CONSTRAINT ck_simpoint_ai_runtime_workload_network
   CHECK (
-    (network_mode = 'egress' AND egress_allowlist_json <> '[]')
+    (
+      network_mode IN ('egress', 'tcp-egress', 'internal-service')
+      AND egress_allowlist_json <> '[]'
+    )
     OR (
       network_mode IN ('none', 'bridge')
       AND egress_allowlist_json = '[]'
@@ -642,8 +819,196 @@ CREATE INDEX IF NOT EXISTS idx_simpoint_ai_kb_chunk_trgm
 CREATE INDEX IF NOT EXISTS idx_simpoint_ai_kb_chunk_embedding
   ON simpoint_ai_knowledge_chunks USING HNSW (embedding vector_cosine_ops);
 
--- Declarative Skill Registry. Hibernate owns table creation; this section adds
+-- Declarative Skill Registry. Draft tables are created explicitly for
+-- environments without Hibernate DDL updates; remaining statements add
 -- cross-row uniqueness and ownership invariants that cannot be expressed by JPA.
+CREATE TABLE IF NOT EXISTS simpoint_ai_skill_drafts (
+  id VARCHAR(64) PRIMARY KEY,
+  skill_id VARCHAR(64) NOT NULL,
+  scope_type VARCHAR(16) NOT NULL,
+  tenant_id VARCHAR(64),
+  revision BIGINT NOT NULL,
+  designer_json TEXT NOT NULL,
+  compiled_manifest_json TEXT,
+  content_hash VARCHAR(64),
+  validation_status VARCHAR(16) NOT NULL,
+  validation_result_json TEXT NOT NULL,
+  lock_version BIGINT NOT NULL DEFAULT 0,
+  create_org_dept_id VARCHAR(255),
+  created_by VARCHAR(255),
+  updated_by VARCHAR(255),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP WITH TIME ZONE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_draft_active_skill
+  ON simpoint_ai_skill_drafts (skill_id)
+  WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_skill_draft_scope
+  ON simpoint_ai_skill_drafts (scope_type, tenant_id);
+ALTER TABLE simpoint_ai_skill_drafts
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_draft_scope;
+ALTER TABLE simpoint_ai_skill_drafts
+  ADD CONSTRAINT ck_simpoint_ai_skill_draft_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_skill_drafts
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_draft_revision;
+ALTER TABLE simpoint_ai_skill_drafts
+  ADD CONSTRAINT ck_simpoint_ai_skill_draft_revision CHECK (revision >= 1);
+ALTER TABLE simpoint_ai_skill_drafts
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_draft_validation;
+ALTER TABLE simpoint_ai_skill_drafts
+  ADD CONSTRAINT ck_simpoint_ai_skill_draft_validation
+  CHECK (validation_status IN ('VALID', 'INVALID'));
+
+CREATE TABLE IF NOT EXISTS simpoint_ai_skill_draft_revisions (
+  id VARCHAR(64) PRIMARY KEY,
+  draft_id VARCHAR(64) NOT NULL,
+  skill_id VARCHAR(64) NOT NULL,
+  revision BIGINT NOT NULL,
+  revision_source VARCHAR(24) NOT NULL DEFAULT 'SAVE',
+  designer_json TEXT NOT NULL,
+  compiled_manifest_json TEXT,
+  content_hash VARCHAR(64),
+  validation_status VARCHAR(16) NOT NULL,
+  validation_result_json TEXT NOT NULL,
+  create_org_dept_id VARCHAR(255),
+  created_by VARCHAR(255),
+  updated_by VARCHAR(255),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP WITH TIME ZONE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_draft_revision
+  ON simpoint_ai_skill_draft_revisions (draft_id, revision);
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_skill_draft_revision_draft
+  ON simpoint_ai_skill_draft_revisions (draft_id, revision DESC);
+ALTER TABLE simpoint_ai_skill_draft_revisions
+  ADD COLUMN IF NOT EXISTS revision_source VARCHAR(24) DEFAULT 'SAVE';
+UPDATE simpoint_ai_skill_draft_revisions
+  SET revision_source = 'SAVE'
+  WHERE revision_source IS NULL;
+ALTER TABLE simpoint_ai_skill_draft_revisions
+  ALTER COLUMN revision_source SET NOT NULL;
+ALTER TABLE simpoint_ai_skill_draft_revisions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_draft_revision_number;
+ALTER TABLE simpoint_ai_skill_draft_revisions
+  ADD CONSTRAINT ck_simpoint_ai_skill_draft_revision_number
+  CHECK (revision >= 1);
+ALTER TABLE simpoint_ai_skill_draft_revisions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_draft_revision_validation;
+ALTER TABLE simpoint_ai_skill_draft_revisions
+  ADD CONSTRAINT ck_simpoint_ai_skill_draft_revision_validation
+  CHECK (validation_status IN ('VALID', 'INVALID'));
+ALTER TABLE simpoint_ai_skill_draft_revisions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_draft_revision_source;
+ALTER TABLE simpoint_ai_skill_draft_revisions
+  ADD CONSTRAINT ck_simpoint_ai_skill_draft_revision_source
+  CHECK (revision_source IN ('SAVE', 'RESTORE', 'VERSION_COPY'));
+
+CREATE TABLE IF NOT EXISTS simpoint_ai_skill_publish_tasks (
+  id VARCHAR(64) PRIMARY KEY,
+  skill_id VARCHAR(64) NOT NULL,
+  draft_id VARCHAR(64) NOT NULL,
+  draft_revision BIGINT NOT NULL,
+  draft_content_hash VARCHAR(64) NOT NULL,
+  scope_type VARCHAR(16) NOT NULL,
+  tenant_id VARCHAR(64),
+  requested_by VARCHAR(64),
+  version_name VARCHAR(64) NOT NULL,
+  activate_version BOOLEAN NOT NULL,
+  idempotency_key_hash VARCHAR(64) NOT NULL,
+  manifest_json TEXT NOT NULL,
+  status VARCHAR(16) NOT NULL,
+  stage VARCHAR(24) NOT NULL,
+  attempt_count INTEGER NOT NULL DEFAULT 0,
+  next_attempt_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lease_owner VARCHAR(128),
+  lease_token BIGINT NOT NULL DEFAULT 0,
+  lease_expires_at TIMESTAMP WITH TIME ZONE,
+  artifact_reference VARCHAR(512),
+  artifact_digest VARCHAR(71),
+  artifact_config_digest VARCHAR(71),
+  artifact_content_digest VARCHAR(71),
+  content_hash VARCHAR(64),
+  skill_version_id VARCHAR(64),
+  error_code VARCHAR(64),
+  error_message VARCHAR(2048),
+  started_at TIMESTAMP WITH TIME ZONE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  lock_version BIGINT NOT NULL DEFAULT 0,
+  create_org_dept_id VARCHAR(255),
+  created_by VARCHAR(255),
+  updated_by VARCHAR(255),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP WITH TIME ZONE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_publish_system_key
+  ON simpoint_ai_skill_publish_tasks (skill_id, idempotency_key_hash)
+  WHERE scope_type = 'SYSTEM'
+    AND tenant_id IS NULL
+    AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_publish_tenant_key
+  ON simpoint_ai_skill_publish_tasks
+    (skill_id, tenant_id, idempotency_key_hash)
+  WHERE scope_type = 'TENANT'
+    AND tenant_id IS NOT NULL
+    AND deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_skill_publish_task_skill
+  ON simpoint_ai_skill_publish_tasks (skill_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_skill_publish_task_due
+  ON simpoint_ai_skill_publish_tasks
+    (status, next_attempt_at, lease_expires_at);
+ALTER TABLE simpoint_ai_skill_publish_tasks
+  ADD COLUMN IF NOT EXISTS requested_by VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_publish_tasks
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_publish_scope;
+ALTER TABLE simpoint_ai_skill_publish_tasks
+  ADD CONSTRAINT ck_simpoint_ai_skill_publish_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_skill_publish_tasks
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_publish_state;
+ALTER TABLE simpoint_ai_skill_publish_tasks
+  ADD CONSTRAINT ck_simpoint_ai_skill_publish_state
+  CHECK (
+    status IN ('PENDING', 'RUNNING', 'SUCCEEDED', 'FAILED')
+    AND stage IN (
+      'QUEUED', 'GENERATING', 'PUSHING', 'VERIFYING',
+      'CREATING_VERSION', 'ACTIVATING', 'COMPLETED'
+    )
+    AND draft_revision >= 1
+    AND draft_content_hash ~ '^[0-9a-f]{64}$'
+    AND idempotency_key_hash ~ '^[0-9a-f]{64}$'
+    AND attempt_count >= 0
+    AND lease_token >= 0
+    AND (
+      (lease_owner IS NULL AND lease_expires_at IS NULL)
+      OR (lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)
+    )
+    AND (
+      status NOT IN ('SUCCEEDED', 'FAILED')
+      OR completed_at IS NOT NULL
+    )
+    AND (
+      status <> 'SUCCEEDED'
+      OR (
+        stage = 'COMPLETED'
+        AND artifact_digest ~ '^sha256:[0-9a-f]{64}$'
+        AND artifact_config_digest ~ '^sha256:[0-9a-f]{64}$'
+        AND artifact_content_digest ~ '^sha256:[0-9a-f]{64}$'
+        AND content_hash ~ '^[0-9a-f]{64}$'
+        AND skill_version_id IS NOT NULL
+      )
+    )
+  );
+
 CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_active_system_code
   ON simpoint_ai_skills (code)
   WHERE scope_type = 'SYSTEM'
@@ -675,6 +1040,17 @@ CREATE INDEX IF NOT EXISTS idx_simpoint_ai_skill_version_digest
   ON simpoint_ai_skill_versions (artifact_digest);
 CREATE INDEX IF NOT EXISTS idx_simpoint_ai_skill_version_content_digest
   ON simpoint_ai_skill_versions (artifact_content_digest);
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_skill_dependency_options
+  ON simpoint_ai_skill_versions (
+    scope_type,
+    tenant_id,
+    status,
+    skill_id,
+    published_at DESC,
+    id
+  )
+  WHERE deleted_at IS NULL
+    AND status IN ('PUBLISHED', 'DEPRECATED');
 ALTER TABLE simpoint_ai_skill_versions
   DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_version_scope;
 ALTER TABLE simpoint_ai_skill_versions
@@ -761,6 +1137,104 @@ ALTER TABLE simpoint_ai_skill_resource_bindings
 -- Durable Skill Workflow queue. Idempotency is scoped to one Skill and
 -- ownership context; leases allow multiple AI service replicas to use
 -- skip-locked claims without holding a database transaction during MCP I/O.
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS source_type VARCHAR(16) DEFAULT 'PUBLISHED';
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS draft_id VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS draft_revision BIGINT;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS draft_content_hash VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS debug_mode VARCHAR(16);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS test_case_id VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS mock_config_hash VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS mock_config_json TEXT;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS assertions_passed BOOLEAN;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS assertion_results_json TEXT;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS test_run_id VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS test_run_order INTEGER;
+UPDATE simpoint_ai_skill_executions
+SET source_type = 'PUBLISHED'
+WHERE source_type IS NULL;
+ALTER TABLE simpoint_ai_skill_executions
+  ALTER COLUMN source_type SET DEFAULT 'PUBLISHED',
+  ALTER COLUMN source_type SET NOT NULL,
+  ALTER COLUMN skill_version_id DROP NOT NULL;
+ALTER TABLE simpoint_ai_skill_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_execution_source;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD CONSTRAINT ck_simpoint_ai_skill_execution_source
+  CHECK (
+    (
+      source_type = 'PUBLISHED'
+      AND skill_version_id IS NOT NULL
+      AND draft_id IS NULL
+      AND draft_revision IS NULL
+      AND draft_content_hash IS NULL
+      AND debug_mode IS NULL
+      AND test_case_id IS NULL
+      AND mock_config_hash IS NULL
+      AND mock_config_json IS NULL
+      AND assertions_passed IS NULL
+      AND assertion_results_json IS NULL
+      AND test_run_id IS NULL
+      AND test_run_order IS NULL
+    )
+    OR (
+      source_type = 'DRAFT'
+      AND skill_version_id IS NULL
+      AND draft_id IS NOT NULL
+      AND draft_revision > 0
+      AND draft_content_hash ~ '^[0-9a-f]{64}$'
+      AND debug_mode IN ('LIVE', 'MOCK')
+      AND (
+        (
+          debug_mode = 'LIVE'
+          AND test_case_id IS NULL
+          AND mock_config_hash IS NULL
+          AND mock_config_json IS NULL
+          AND assertions_passed IS NULL
+          AND assertion_results_json IS NULL
+          AND test_run_id IS NULL
+          AND test_run_order IS NULL
+        )
+        OR (
+          debug_mode = 'MOCK'
+          AND test_case_id IS NOT NULL
+          AND mock_config_hash ~ '^[0-9a-f]{64}$'
+          AND mock_config_json IS NOT NULL
+          AND (
+            (test_run_id IS NULL AND test_run_order IS NULL)
+            OR (
+              test_run_id IS NOT NULL
+              AND test_run_order IS NOT NULL
+              AND test_run_order >= 0
+            )
+          )
+          AND (
+            (assertions_passed IS NULL AND assertion_results_json IS NULL)
+            OR (assertions_passed IS NOT NULL AND assertion_results_json IS NOT NULL)
+          )
+        )
+      )
+    )
+  );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_execution_test_run_order
+  ON simpoint_ai_skill_executions (test_run_id, test_run_order)
+  WHERE test_run_id IS NOT NULL AND deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_skill_execution_test_run
+  ON simpoint_ai_skill_executions (test_run_id, test_run_order)
+  WHERE test_run_id IS NOT NULL AND deleted_at IS NULL;
+
 ALTER TABLE simpoint_ai_skill_versions
   ADD COLUMN IF NOT EXISTS budget_json TEXT;
 UPDATE simpoint_ai_skill_versions
@@ -816,6 +1290,18 @@ ALTER TABLE simpoint_ai_skill_executions
 ALTER TABLE simpoint_ai_skill_executions
   ADD COLUMN IF NOT EXISTS resumed_by VARCHAR(64);
 ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS cancel_requested BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS cancel_requested_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS cancel_requested_by VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS cancel_reason VARCHAR(1024);
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS breakpoint_step_ids_json TEXT;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD COLUMN IF NOT EXISTS breakpoint_bypassed_step_id VARCHAR(64);
+ALTER TABLE simpoint_ai_skill_executions
   ADD COLUMN IF NOT EXISTS inactive_since TIMESTAMP WITH TIME ZONE;
 ALTER TABLE simpoint_ai_skill_executions
   ADD COLUMN IF NOT EXISTS workflow_plan_json TEXT;
@@ -834,7 +1320,8 @@ SET maximum_tool_calls = COALESCE(maximum_tool_calls, 128),
     ),
     approval_required = COALESCE(approval_required, FALSE),
     self_approval_allowed = COALESCE(self_approval_allowed, FALSE),
-    pause_requested = COALESCE(pause_requested, FALSE);
+    pause_requested = COALESCE(pause_requested, FALSE),
+    cancel_requested = COALESCE(cancel_requested, FALSE);
 ALTER TABLE simpoint_ai_skill_executions
   ALTER COLUMN maximum_tool_calls SET NOT NULL,
   ALTER COLUMN maximum_duration_seconds SET NOT NULL,
@@ -848,7 +1335,9 @@ ALTER TABLE simpoint_ai_skill_executions
   ALTER COLUMN self_approval_allowed SET DEFAULT FALSE,
   ALTER COLUMN self_approval_allowed SET NOT NULL,
   ALTER COLUMN pause_requested SET DEFAULT FALSE,
-  ALTER COLUMN pause_requested SET NOT NULL;
+  ALTER COLUMN pause_requested SET NOT NULL,
+  ALTER COLUMN cancel_requested SET DEFAULT FALSE,
+  ALTER COLUMN cancel_requested SET NOT NULL;
 
 ALTER TABLE simpoint_ai_skill_execution_steps
   ADD COLUMN IF NOT EXISTS capability_token_id_hash VARCHAR(64);
@@ -864,6 +1353,8 @@ ALTER TABLE simpoint_ai_skill_execution_steps
   ADD COLUMN IF NOT EXISTS capability_template BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE simpoint_ai_skill_execution_steps
   ADD COLUMN IF NOT EXISTS input_template_json TEXT;
+ALTER TABLE simpoint_ai_skill_execution_steps
+  ADD COLUMN IF NOT EXISTS error_code VARCHAR(128);
 -- Recreate missing legacy columns as nullable migration inputs so this block is
 -- safe both before and after the cleanup, and on a completely new database.
 ALTER TABLE simpoint_ai_skill_execution_steps
@@ -891,17 +1382,37 @@ ALTER TABLE simpoint_ai_skill_execution_steps
   DROP COLUMN IF EXISTS input_schema_hash,
   DROP COLUMN IF EXISTS arguments_template_json;
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_execution_system_idem
+DROP INDEX IF EXISTS uk_simpoint_ai_skill_execution_system_idem;
+DROP INDEX IF EXISTS uk_simpoint_ai_skill_execution_tenant_idem;
+CREATE UNIQUE INDEX uk_simpoint_ai_skill_execution_system_idem
   ON simpoint_ai_skill_executions (skill_id, idempotency_key_hash)
   WHERE scope_type = 'SYSTEM'
     AND tenant_id IS NULL
+    AND source_type = 'PUBLISHED'
     AND deleted_at IS NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_execution_tenant_idem
+CREATE UNIQUE INDEX uk_simpoint_ai_skill_execution_tenant_idem
   ON simpoint_ai_skill_executions (
     tenant_id, skill_id, idempotency_key_hash
   )
   WHERE scope_type = 'TENANT'
     AND tenant_id IS NOT NULL
+    AND source_type = 'PUBLISHED'
+    AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_debug_system_idem
+  ON simpoint_ai_skill_executions (
+    skill_id, draft_id, draft_revision, idempotency_key_hash
+  )
+  WHERE scope_type = 'SYSTEM'
+    AND tenant_id IS NULL
+    AND source_type = 'DRAFT'
+    AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_debug_tenant_idem
+  ON simpoint_ai_skill_executions (
+    tenant_id, skill_id, draft_id, draft_revision, idempotency_key_hash
+  )
+  WHERE scope_type = 'TENANT'
+    AND tenant_id IS NOT NULL
+    AND source_type = 'DRAFT'
     AND deleted_at IS NULL;
 ALTER TABLE simpoint_ai_skill_executions
   DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_execution_scope;
@@ -999,6 +1510,29 @@ ALTER TABLE simpoint_ai_skill_executions
       )
     )
   );
+ALTER TABLE simpoint_ai_skill_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_execution_cancel;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD CONSTRAINT ck_simpoint_ai_skill_execution_cancel
+  CHECK (
+    cancel_requested = FALSE
+    OR (
+      cancel_requested_at IS NOT NULL
+      AND cancel_requested_by IS NOT NULL
+      AND status IN ('RUNNING', 'CANCELLED')
+    )
+  );
+ALTER TABLE simpoint_ai_skill_executions
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_execution_breakpoints;
+ALTER TABLE simpoint_ai_skill_executions
+  ADD CONSTRAINT ck_simpoint_ai_skill_execution_breakpoints
+  CHECK (
+    breakpoint_step_ids_json IS NULL
+    OR (
+      source_type = 'DRAFT'
+      AND jsonb_typeof(breakpoint_step_ids_json::jsonb) = 'array'
+    )
+  );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_execution_step
   ON simpoint_ai_skill_execution_steps (execution_id, step_id)
@@ -1032,6 +1566,83 @@ ALTER TABLE simpoint_ai_skill_execution_steps
     AND (step_type = 'resource' OR capability_template = FALSE)
   );
 
+CREATE TABLE IF NOT EXISTS simpoint_ai_skill_execution_events (
+  id VARCHAR(64) PRIMARY KEY,
+  skill_id VARCHAR(64) NOT NULL,
+  execution_id VARCHAR(64) NOT NULL,
+  scope_type VARCHAR(16) NOT NULL,
+  tenant_id VARCHAR(64),
+  event_sequence BIGINT NOT NULL,
+  event_type VARCHAR(48) NOT NULL,
+  execution_status VARCHAR(24) NOT NULL,
+  step_id VARCHAR(64),
+  actor_id VARCHAR(64),
+  occurred_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  payload_json TEXT,
+  create_org_dept_id VARCHAR(64),
+  created_by VARCHAR(64),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by VARCHAR(64),
+  updated_at TIMESTAMP WITH TIME ZONE,
+  deleted_at TIMESTAMP WITH TIME ZONE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_skill_event_sequence
+  ON simpoint_ai_skill_execution_events (execution_id, event_sequence)
+  WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_skill_event_skill
+  ON simpoint_ai_skill_execution_events (skill_id, occurred_at)
+  WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_skill_execution_events
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_event_scope;
+ALTER TABLE simpoint_ai_skill_execution_events
+  ADD CONSTRAINT ck_simpoint_ai_skill_event_scope
+  CHECK (
+    (scope_type = 'SYSTEM' AND tenant_id IS NULL)
+    OR (scope_type = 'TENANT' AND tenant_id IS NOT NULL)
+  );
+ALTER TABLE simpoint_ai_skill_execution_events
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_event_type;
+ALTER TABLE simpoint_ai_skill_execution_events
+  ADD CONSTRAINT ck_simpoint_ai_skill_event_type
+  CHECK (
+    event_type IN (
+      'EXECUTION_CREATED',
+      'APPROVAL_REQUIRED',
+      'APPROVAL_GRANTED',
+      'APPROVAL_REJECTED',
+      'EXECUTION_STARTED',
+      'PAUSE_REQUESTED',
+      'EXECUTION_PAUSED',
+      'EXECUTION_RESUMED',
+      'CANCEL_REQUESTED',
+      'BREAKPOINTS_UPDATED',
+      'STEP_STARTED',
+      'STEP_SUCCEEDED',
+      'STEP_FAILED',
+      'STEP_SKIPPED',
+      'EXECUTION_SUCCEEDED',
+      'EXECUTION_FAILED',
+      'EXECUTION_CANCELLED'
+    )
+  );
+ALTER TABLE simpoint_ai_skill_execution_events
+  DROP CONSTRAINT IF EXISTS ck_simpoint_ai_skill_event_state;
+ALTER TABLE simpoint_ai_skill_execution_events
+  ADD CONSTRAINT ck_simpoint_ai_skill_event_state
+  CHECK (
+    event_sequence > 0
+    AND execution_status IN (
+      'WAITING_APPROVAL',
+      'PENDING',
+      'RUNNING',
+      'PAUSED',
+      'SUCCEEDED',
+      'FAILED',
+      'REJECTED',
+      'CANCELLED'
+    )
+  );
+
 -- Declarative Agent Registry. Agent versions pin model selectors and immutable
 -- published Skill versions; execution state is claimed by Agent Runtime.
 CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_agent_active_system_code
@@ -1063,6 +1674,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_agent_version_name
   WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_simpoint_ai_agent_version_content_hash
   ON simpoint_ai_agent_versions (content_hash);
+CREATE INDEX IF NOT EXISTS idx_simpoint_ai_agent_dependency_options
+  ON simpoint_ai_agent_versions (
+    scope_type,
+    tenant_id,
+    status,
+    agent_id,
+    published_at DESC,
+    id
+  )
+  WHERE deleted_at IS NULL
+    AND status IN ('PUBLISHED', 'DEPRECATED');
 ALTER TABLE simpoint_ai_agent_versions
   DROP CONSTRAINT IF EXISTS ck_simpoint_ai_agent_version_scope;
 ALTER TABLE simpoint_ai_agent_versions
@@ -2020,6 +2642,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_catalog_external_key
 CREATE UNIQUE INDEX IF NOT EXISTS uk_simpoint_ai_catalog_sync_source
   ON simpoint_ai_catalog_sync_states (source)
   WHERE deleted_at IS NULL;
+ALTER TABLE simpoint_ai_catalog_entries
+  ADD COLUMN IF NOT EXISTS descriptor_json TEXT;
 ALTER TABLE simpoint_ai_catalog_entries
   DROP CONSTRAINT IF EXISTS ck_simpoint_ai_catalog_entry_status;
 ALTER TABLE simpoint_ai_catalog_entries

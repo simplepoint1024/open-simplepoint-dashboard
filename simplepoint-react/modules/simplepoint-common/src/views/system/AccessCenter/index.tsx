@@ -1,10 +1,10 @@
 import {
+  App as AntdApp,
   Alert,
   Button,
   Checkbox,
   Empty,
   Input,
-  message,
   Select,
   Skeleton,
   Space,
@@ -262,6 +262,7 @@ function getScopeLabel(options: ScopeOption[], value: string | null, emptyText: 
 }
 
 const AccessCenter = () => {
+  const {message, modal} = AntdApp.useApp();
   const {t, ensure, locale} = useI18n();
   const [roleSearch, setRoleSearch] = useState('');
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
@@ -434,7 +435,7 @@ const AccessCenter = () => {
   const dataScopeLabel = getScopeLabel(
     dataScopeOptions,
     dataScopeId,
-    t('roles.resourceConfig.noDataScope', '不限制数据范围'),
+    t('roles.resourceConfig.noDataScope', '默认仅本人'),
     detail?.dataScope?.name,
   );
   const fieldScopeLabel = getScopeLabel(
@@ -480,7 +481,15 @@ const AccessCenter = () => {
   }, [baselineResourceCodes, baselineDataScopeId, baselineFieldScopeId]);
 
   const handleSave = useCallback(async () => {
-    if (!selectedRoleId) return;
+    if (!selectedRoleId || detailQuery.isFetching || detailQuery.error
+        || detailQuery.data?.role.id !== selectedRoleId) return;
+    if (detailQuery.data?.scopeAssignment?.legacyConflict) {
+      const confirmed = await modal.confirm({
+        title: t('roles.resourceConfig.legacyConflict', '旧授权存在多个范围，是否用当前选择替换全部旧范围？'),
+        content: t('roles.resourceConfig.legacyReplacement', '清空数据范围将恢复为默认仅本人；清空字段范围将取消字段限制。请确认两个选择。'),
+      });
+      if (!confirmed) return;
+    }
     setSaving(true);
     try {
       const saved = await saveRoleAuthorization({
@@ -488,6 +497,8 @@ const AccessCenter = () => {
         resourceCodes: selectedResourceCodes,
         dataScopeId,
         fieldScopeId,
+        revision: detailQuery.data?.scopeAssignment?.revision,
+        confirmLegacyReplacement: !!detailQuery.data?.scopeAssignment?.legacyConflict,
       });
       const savedResourceCodes = orderResourceCodes(saved.authorizedResources ?? [], resourceIndex.resourceOrder);
       const savedDataScopeId = saved.scopeAssignment?.dataScopeId ?? null;
@@ -509,6 +520,8 @@ const AccessCenter = () => {
     dataScopeId,
     detailQuery,
     fieldScopeId,
+    message,
+    modal,
     resourceIndex.resourceOrder,
     resourceTreeQuery,
     roleQuery,
@@ -590,7 +603,7 @@ const AccessCenter = () => {
             <Button onClick={handleReset} disabled={!hasChanges || saving}>
               {t('accessCenter.action.reset', '重置')}
             </Button>
-            <Button type="primary" onClick={handleSave} disabled={!hasChanges || !selectedRoleId} loading={saving}>
+            <Button type="primary" onClick={handleSave} disabled={!hasChanges || !selectedRoleId || loading || !!loadFailed} loading={saving}>
               {t('accessCenter.action.save', '保存授权')}
             </Button>
           </Space>
@@ -605,6 +618,8 @@ const AccessCenter = () => {
         ) : null}
 
         <section className="access-center-scope-band">
+          {detailQuery.data?.scopeAssignment?.legacyConflict && <Alert type="warning" showIcon
+            message={t('roles.resourceConfig.legacyConflict', '旧授权包含多个范围，请确认是否替换')} />}
           <label className="access-center-field">
             <span>{t('roles.resourceConfig.dataScope', '数据权限')}</span>
             <Select
@@ -613,7 +628,7 @@ const AccessCenter = () => {
               options={dataScopeOptions}
               loading={dataScopeQuery.isFetching}
               disabled={!selectedRoleId || saving}
-              placeholder={t('roles.resourceConfig.noDataScope', '不限制数据范围')}
+              placeholder={t('roles.resourceConfig.noDataScope', '默认仅本人')}
               onChange={(value) => setDataScopeId(value ?? null)}
             />
           </label>

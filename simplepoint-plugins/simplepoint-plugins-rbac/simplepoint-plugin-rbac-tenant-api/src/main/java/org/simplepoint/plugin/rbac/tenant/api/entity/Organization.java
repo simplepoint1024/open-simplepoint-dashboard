@@ -110,8 +110,8 @@ public class Organization extends TenantBaseEntityImpl<String> {
       maxLength = 36,
       extensions = {
           @Extension(name = "x-ui", properties = {
-              @ExtensionProperty(name = "x-list-visible", value = "true"),
-              @ExtensionProperty(name = "widget", value = "select"),
+              @ExtensionProperty(name = "x-list-visible", value = "false"),
+              @ExtensionProperty(name = "widget", value = "OrganizationSelect"),
           })
       }
   )

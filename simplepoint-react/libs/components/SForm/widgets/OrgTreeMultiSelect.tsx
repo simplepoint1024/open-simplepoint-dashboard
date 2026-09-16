@@ -8,38 +8,51 @@ import {
   type OrganizationTransferItem,
 } from '../../EntityTransfer';
 
-function pageOrganizations(
-  items: OrganizationTransferItem[],
-  query: EntityTransferQuery,
-): Page<OrganizationTransferItem> {
-  const keyword = query.search.trim().toLowerCase();
-  const filtered = keyword
-    ? items.filter((item) =>
-      item.id.toLowerCase().includes(keyword) ||
-      item.name.toLowerCase().includes(keyword) ||
-      (item.code ?? '').toLowerCase().includes(keyword) ||
-      (item.type ?? '').toLowerCase().includes(keyword) ||
-      (item.description ?? '').toLowerCase().includes(keyword)
-    )
-    : items;
-  const start = query.page * query.pageSize;
+type OrganizationOptionPage = {
+  content: OrganizationTransferItem[];
+  number: number;
+  size: number;
+  hasNext: boolean;
+};
+
+const endpoint = '/common/platform/organizations/options';
+
+function toTransferPage(result: OrganizationOptionPage, query: EntityTransferQuery): Page<OrganizationTransferItem> {
+  const number = result.number ?? query.page;
+  const size = result.size ?? query.pageSize;
+  const totalPages = number + 1 + (result.hasNext ? 1 : 0);
   return {
-    content: filtered.slice(start, start + query.pageSize),
+    content: result.content ?? [],
     page: {
-      size: query.pageSize,
-      number: query.page,
-      totalElements: filtered.length,
-      totalPages: Math.ceil(filtered.length / query.pageSize),
+      size,
+      number,
+      totalPages,
+      totalElements: result.hasNext ? totalPages * size : number * size + (result.content?.length ?? 0),
     },
   };
 }
 
 async function fetchOrganizationPage(query: EntityTransferQuery) {
-  const page = await get<Page<OrganizationTransferItem>>('/common/platform/organizations', {
-    page: '0',
-    size: '1000',
+  const result = await get<OrganizationOptionPage>(endpoint, {
+    page: String(query.page),
+    size: String(query.pageSize),
+    flat: 'true',
+    ...(query.search.trim() ? {keyword: query.search.trim()} : {}),
   });
-  return pageOrganizations(page.content ?? [], query);
+  return toTransferPage(result, query);
+}
+
+async function fetchSelectedOrganizations(keys: string[]) {
+  if (keys.length === 0) return [];
+  const batches: string[][] = [];
+  for (let index = 0; index < keys.length; index += 100) {
+    batches.push(keys.slice(index, index + 100));
+  }
+  const pages = await Promise.all(batches.map(batch => get<OrganizationOptionPage>(endpoint, {
+    ids: batch.join(','),
+    size: String(batch.length),
+  })));
+  return pages.flatMap(page => page.content ?? []);
 }
 
 const OrgTreeMultiSelect = ({value, disabled, readonly, onChange, rawErrors}: WidgetProps) => {
@@ -56,12 +69,13 @@ const OrgTreeMultiSelect = ({value, disabled, readonly, onChange, rawErrors}: Wi
     >
       <OrganizationTransferSelect
         fetchItems={fetchOrganizationPage}
+        fetchSelectedItems={fetchSelectedOrganizations}
         value={selectedValues}
         onValueChange={(nextKeys) => onChange(nextKeys.length > 0 ? nextKeys : undefined)}
         disabled={disabled || readonly}
         listHeight={280}
         defaultPageSize={5}
-        selectedLookupPageSize={1000}
+        selectedLookupPageSize={0}
         titles={[
           t('organizations.selector.available', '可选组织'),
           t('organizations.selector.selected', '已选组织'),

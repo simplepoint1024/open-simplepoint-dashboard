@@ -27,7 +27,7 @@
 5. `doc/architecture/service_topology.md`：核心服务职责与调用关系。
 6. `doc/resource/resource_model.md`：权限、角色、资源、菜单关系。
 7. `doc/design/plugin_architecture.md`：插件加载、依赖与生命周期。
-8. `doc/deployment/local_development.md` / `docker_swarm_deployment.md`：本地与部署说明。
+8. `doc/deployment/local_development.md` / `container_images.md`：本地与容器部署说明。
 9. `doc/troubleshooting/common_issues.md`：常见问题与排障路径。
 
 ## 4. 文档结构建议
@@ -69,7 +69,6 @@
 | `doc/resource/` | `resource_menu_mapping.md` | 新增 | 资源、菜单、按钮、路由映射规则 | P1 |
 | `doc/resource/` | `best_practices.md` | 新增 | 权限命名规范、菜单设计规范、常见误区 | P1 |
 | `doc/deployment/` | `local_development.md` | 新增 | 本地依赖、启动顺序、联调方式、最小 smoke check | P0 |
-| `doc/deployment/` | `docker_swarm_deployment.md` | 完善 | 当前仓库已有能力的推荐部署文档 | P0 |
 | `doc/deployment/` | `docker_compose_deployment.md` | 新增 | 适合开发和演示环境的轻量部署方式 | P1 |
 | `doc/deployment/` | `configuration_matrix.md` | 新增 | 各服务关键配置项、环境变量、默认值与依赖关系 | P0 |
 | `doc/deployment/` | `production_checklist.md` | 新增 | 生产发布前检查项：安全、日志、备份、监控、扩缩容 | P1 |
@@ -182,4 +181,3 @@
 - 开发者可以根据文档理解插件是如何安装、加载、卸载和扩展的。
 - 使用者可以根据文档理解权限、菜单、资源和按钮之间的关系。
 - 运维可以根据文档完成基础部署并定位常见启动问题。
-

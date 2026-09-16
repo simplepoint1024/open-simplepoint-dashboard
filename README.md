@@ -5,7 +5,7 @@
 
 `open-simplepoint-dashboard` 是一个面向企业后台与平台型应用的开源框架仓库，当前形态是：
 
-- 一个动态装配的 **Gradle 多模块后端工作区**
+- 一个显式登记叶子模块的 **Gradle 多模块后端工作区**
 - 一个内嵌在仓库中的 **React + Nx + Module Federation 前端工作区**
 - 一套围绕 **认证、授权、多租户、插件化、Schema 驱动 UI、数据接入** 组织起来的服务与基础设施约定
 
@@ -34,8 +34,8 @@
 | `simplepoint-services/` | 可运行服务：`host`、`authorization`、`common`、`auditing`、`dna`、`ai` |
 | `simplepoint-react/` | 前端 Nx 工作区，包含 host shell 与多个 remote |
 | `doc/` | 架构、部署、权限、设计、排障文档 |
-| `docker/` | 本地开发与 Swarm 部署资产 |
-| `scripts/` | 本地开发、配置初始化、Swarm 启动等脚本 |
+| `docker/` | Docker Compose、镜像与运行时资产 |
+| `scripts/` | 本地开发、配置初始化与镜像构建脚本 |
 
 ## 运行时服务
 
@@ -57,10 +57,12 @@
 ## 环境要求
 
 - **JDK 21**（当前构建基线）
+- **Gradle 8.12+**（无 Docker 本地开发）
 - **Git**
-- **Docker / Docker Compose**（推荐，用于本地依赖编排）
-- **Node.js 22.22+ + Corepack + pnpm 11.15.1**（仅当前端工作区开发或构建时需要）
-- **Terraform / Consul CLI**（仅走本机开发脚本链路时需要）
+- **本地开发中间件**：Consul、PostgreSQL、Redis
+- **curl、psql**（本地初始化与诊断使用）
+- **Docker / Docker Compose**（仅容器部署或受管 OCI Tool Runtime 需要）
+- Node.js 24.19.0 与 pnpm 11.15.1 由 Gradle 自动下载；无需全局安装
 
 ## 后端快速开始
 
@@ -187,26 +189,34 @@ docker compose down -v
 
 CI 当前也是按 **Checkstyle + Backend Test + Frontend Typecheck/Build** 这条链路执行。
 
-### 4. 本机开发：启动本地依赖
+### 4. 本机开发：无 Docker 快速启动
 
-推荐直接使用仓库自带的 compose：
-
-```bash
-docker compose -f docker/docker-compose.yaml up -d
-./scripts/shell/init_profile.sh
-```
-
-这一步会把开发态需要的基础依赖拉起来，并把开发配置写入 Consul。
-
-### 5. 本机开发：按顺序启动核心服务
-
-分别打开三个终端：
+本机启动 Consul、PostgreSQL、Redis 后，只配置一个被 Git 忽略的环境文件：
 
 ```bash
-./gradlew :simplepoint-services:simplepoint-service-authorization:run
-./gradlew :simplepoint-services:simplepoint-service-common:run
-./gradlew :simplepoint-services:simplepoint-service-host:run
+mkdir -p .simplepoint
+cp config/dev.env.example .simplepoint/dev.env
+# 编辑 .simplepoint/dev.env
+./dev doctor core
+./dev init core
+./dev up core
 ```
+
+`./dev init` 会创建数据库、幂等写入并校验 Consul 配置，不依赖 Terraform 或 Consul
+CLI；`./dev up` 会按顺序启动、等待健康检查并管理 PID 和日志。
+
+包含 AI、MCP、Skill、Agent 与 Workflow Runtime 的组合：
+
+```bash
+./dev doctor ai
+./dev init ai
+./dev up ai
+```
+
+AI 组合要求 PostgreSQL 安装 pgvector。只调试后端时可使用 `./dev up ai --backend-only`。
+详细说明见 [`doc/deployment/local_development.md`](doc/deployment/local_development.md)。
+
+### 5. 本机开发：访问与管理
 
 启动完成后，默认入口如下：
 
@@ -257,27 +267,15 @@ pnpm dev:ai
 
 这个脚本会构建 `host`、`common`、`audit`、`dna` 四个前端应用，并把产物复制到对应服务的 `src/main/resources/static/` 目录下。
 
-## 一键拉起完整环境
-
-如果你的目标不是逐个服务调试，而是尽快得到一个完整可访问环境，可以直接使用：
-
-```bash
-./scripts/shell/start_swarm.sh
-```
-
-该脚本会在本地 / 单机 Swarm Manager 上并行构建并编排 PostgreSQL、Redis、Consul、
-bootstrap、authorization、common、auditing、dna、ai、host。
-Compose/Swarm 同时部署独立 `mcp-gateway` 和节点级 `tool-runtime`。
-
 ## 文档入口
 
 | 文档 | 说明 |
 | --- | --- |
 | `doc/deployment/local_development.md` | 当前最准确的本地开发启动路径 |
 | `doc/deployment/container_images.md` | 镜像命名、OCI 构建、SBOM 与发布约定 |
-| `doc/deployment/docker_swarm_deployment.md` | Docker Swarm 一键部署说明 |
 | `doc/architecture/service_topology.md` | 服务边界、职责与前后端映射 |
 | `doc/architecture/project_structure_diagram.md` | 当前仓库目录与模块分层 |
+| `doc/architecture/module_consolidation.md` | P0/P1 模块合并映射、Gradle 新路径与服务装配边界 |
 | `doc/architecture/plugin_architecture.md` | 插件运行时与装配模型 |
 | `doc/architecture/multi_tenant_model.md` | 多租户约定与上下文传递 |
 | `doc/architecture/schema_driven_ui.md` | Schema 驱动 UI 的后端与前端约定 |

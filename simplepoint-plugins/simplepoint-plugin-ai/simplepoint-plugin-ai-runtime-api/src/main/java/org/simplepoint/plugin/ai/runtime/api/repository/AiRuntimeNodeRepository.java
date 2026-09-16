@@ -31,7 +31,9 @@ public interface AiRuntimeNodeRepository
   Page<AiRuntimeNode> findAllActive(Pageable pageable);
 
   /**
-   * Finds nodes whose heartbeat lease has expired in a live status.
+   * Finds and locks nodes whose heartbeat lease has expired in a live status.
+   * Implementations should skip nodes already locked by a concurrent
+   * control-plane mutation.
    */
   List<AiRuntimeNode> findExpiredNodes(
       Instant now,

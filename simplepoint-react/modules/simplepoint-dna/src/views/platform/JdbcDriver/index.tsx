@@ -5,7 +5,7 @@ import SimpleTable from '@simplepoint/components/SimpleTable';
 import {request} from '@simplepoint/shared/api/client';
 import {post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {Alert, Form, Input, Modal, Switch, Typography, Upload, message} from 'antd';
+import {Alert, App as AntApp, Form, Input, Modal, Switch, Typography, Upload} from 'antd';
 import type {UploadFile} from 'antd/es/upload/interface';
 import React, {useCallback, useEffect, useState} from 'react';
 import {formatDateTime, resolveErrorMessage} from '../shared';
@@ -53,6 +53,7 @@ const normalizeUploadEvent = (event: {fileList?: UploadFile[]} | UploadFile[]) =
 
 const App = () => {
   const {t, ensure, locale} = useI18n();
+  const {message, modal} = AntApp.useApp();
   const [tableKey, setTableKey] = useState(0);
   const [uploadForm] = Form.useForm<UploadFormValues>();
   const [uploading, setUploading] = useState(false);
@@ -110,7 +111,7 @@ const App = () => {
   };
 
   const showArtifactResult = useCallback((result: JdbcDriverArtifactResult, fallbackDriverLabel?: string) => {
-    Modal.success({
+    modal.success({
       title: t('dna.drivers.page.importResult.title', '驱动导入完成'),
       content: (
         <div style={{marginTop: 16}}>
@@ -145,7 +146,7 @@ const App = () => {
         </div>
       ),
     });
-  }, [t]);
+  }, [modal, t]);
 
   const handleDownload = useCallback(async (_keys: React.Key[], rows: JdbcDriverRow[]) => {
     const driver = rows?.[0];
@@ -165,7 +166,7 @@ const App = () => {
       hide();
       message.error(resolveErrorMessage(error, t('dna.drivers.page.error.download', '驱动下载失败')));
     }
-  }, [refreshTable, showArtifactResult, t]);
+  }, [message, refreshTable, showArtifactResult, t]);
 
   const closeUploadModal = useCallback(() => {
     if (uploading) {
@@ -239,7 +240,7 @@ const App = () => {
     } finally {
       setUploading(false);
     }
-  }, [baseConfig.baseUrl, closeUploadModal, refreshTable, showArtifactResult, t, uploadForm, uploadMode, uploadTarget]);
+  }, [baseConfig.baseUrl, closeUploadModal, message, refreshTable, showArtifactResult, t, uploadForm, uploadMode, uploadTarget]);
 
   const customButtonEvents: Record<string, (selectedRowKeys: React.Key[], selectedRows: JdbcDriverRow[],
     props: TableButtonProps) => void> = {
@@ -277,6 +278,7 @@ const App = () => {
         {uploadMode === 'create' ? (
           <Alert
             type="info"
+            closable
             showIcon
             style={{marginBottom: 16}}
             message={t('dna.drivers.page.modal.createAlert.title', '上传本地驱动 JAR')}
@@ -288,6 +290,7 @@ const App = () => {
         ) : (
           <Alert
             type="info"
+            closable
             showIcon
             style={{marginBottom: 16}}
             message={t('dna.drivers.page.modal.replaceAlert.title', '替换已有驱动包')}

@@ -43,6 +43,7 @@ class BaseServiceImplTest {
   // ---- Stub entity --------------------------------------------------------
 
   static class StubEntity implements BaseEntity<String> {
+    private boolean active;
     @Serial
     private static final long serialVersionUID = 1L;
     private String id;
@@ -179,9 +180,29 @@ class BaseServiceImplTest {
     repository = mock(BaseRepository.class);
     detailsProviderService = mock(DetailsProviderService.class);
     service = new TestServiceImpl(repository, detailsProviderService);
+    service.injectedContext = new AuthorizationContext();
+    service.injectedContext.setDataScopeType("ALL");
   }
 
   // ---- Tests: delegation to repository -----------------------------------
+
+  @Test
+  void createCannotBypassNonWritablePrimitiveField() {
+    service.injectedContext.setFieldPermissions(Map.of("StubEntity#active", "VISIBLE"));
+    StubEntity incoming = new StubEntity();
+    incoming.active = true;
+    assertThatThrownBy(() -> service.create(incoming)).isInstanceOf(AccessDeniedException.class);
+    verify(repository, never()).save(any());
+  }
+
+  @Test
+  void noAuthorizationContextCannotReadOrCreateBusinessRows() {
+    service.injectedContext = null;
+    when(repository.findById("row")).thenReturn(Optional.of(new StubEntity()));
+    assertThat(service.findById("row")).isEmpty();
+    assertThatThrownBy(() -> service.create(new StubEntity())).isInstanceOf(AccessDeniedException.class);
+    verify(repository, never()).save(any());
+  }
 
   @Test
   void findById_delegatesToRepository() {
@@ -332,6 +353,7 @@ class BaseServiceImplTest {
   @Test
   void applyCurrentTenantId_setsIdOnTenantEntity_whenContextPresent() {
     AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setDataScopeType("ALL");
     ctx.setAttributes(Map.of("X-Tenant-Id", "tenant-abc"));
     service.injectedContext = ctx;
 
@@ -347,6 +369,7 @@ class BaseServiceImplTest {
   @Test
   void applyCurrentTenantId_overwritesClientTenantWithCurrentTenant() {
     AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setDataScopeType("ALL");
     ctx.setAttributes(Map.of("X-Tenant-Id", "tenant-abc"));
     service.injectedContext = ctx;
 
@@ -375,6 +398,7 @@ class BaseServiceImplTest {
   @Test
   void applyCurrentTenantId_skipsNonTenantEntity() {
     AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setDataScopeType("ALL");
     ctx.setAttributes(Map.of("X-Tenant-Id", "tenant-abc"));
     service.injectedContext = ctx;
 
@@ -569,6 +593,7 @@ class BaseServiceImplTest {
     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
     setupSchemaGeneratorMocks(StubEntity.class, om);
     service.injectedContext = new AuthorizationContext();
+    service.injectedContext.setDataScopeType("ALL");
 
     Set<String> names = service.getAllFieldNames(StubEntity.class);
 
@@ -611,6 +636,7 @@ class BaseServiceImplTest {
     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
     setupSchemaGeneratorMocks(StubEntity.class, om);
     service.injectedContext = new AuthorizationContext();
+    service.injectedContext.setDataScopeType("ALL");
 
     StubEntity existing = new StubEntity();
     existing.setId("id-1");
@@ -723,6 +749,7 @@ class BaseServiceImplTest {
   @Test
   void create_clearsNonEditableFields() {
     AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setDataScopeType("ALL");
     ctx.setFieldPermissions(Map.of("StubEntity#createdBy", "VISIBLE"));
     service.injectedContext = ctx;
 

@@ -11,6 +11,7 @@ const baseConfig = api['rbac-field-scopes'];
 const App = () => {
     const {t, ensure, locale} = useI18n();
     const [open, setOpen] = useState(false);
+    const [tableRevision, setTableRevision] = useState(0);
     const [selectedScope, setSelectedScope] = useState<{id: string; entries?: any[]} | null>(null);
     const [drawerHeight, setDrawerHeight] = useState(480);
 
@@ -55,7 +56,12 @@ const App = () => {
     return (
         <div>
             <SimpleTable
+                key={tableRevision}
                 {...baseConfig}
+                beforeSubmit={({formData}: {formData: Record<string, unknown>}) => {
+                    const {entries: _entries, ...metadata} = formData;
+                    return metadata;
+                }}
                 customButtonEvents={customButtonEvents}
                 submitRefreshTargets={{page: true, schema: false}}
                 deleteRefreshTargets={{page: true, schema: false}}
@@ -79,6 +85,11 @@ const App = () => {
                             key={selectedScope.id}
                             fieldScopeId={selectedScope.id}
                             initialEntries={selectedScope.entries}
+                            onSuccess={() => {
+                                setOpen(false);
+                                setSelectedScope(null);
+                                setTableRevision((revision) => revision + 1);
+                            }}
                         />
                     </Suspense>
                 ) : null}

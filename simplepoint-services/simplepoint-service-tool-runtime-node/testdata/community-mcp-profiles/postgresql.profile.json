@@ -1,0 +1,32 @@
+{
+  "descriptorName": "ai.dbhub/dbhub",
+  "descriptorVersion": "0.24.0",
+  "artifact": {
+    "source": "UPSTREAM_ORIGINAL",
+    "type": "OCI",
+    "reference": "bytebase/dbhub@sha256:098c16d168fc397c054396e604801e9dd9e138cd4e7aa8f865ac18dc53d3aa4e"
+  },
+  "transport": {"type": "STDIO", "containerPort": null, "path": null},
+  "process": {
+    "entrypoint": [],
+    "command": [],
+    "arguments": ["--transport=stdio", "--config=/run/secrets/simplepoint/dbhub.toml"],
+    "workingDirectory": "/app"
+  },
+  "configuration": [],
+  "secrets": [
+    {
+      "name": "dbhub-readonly-config",
+      "secretReference": "MCP_E2E_POSTGRES_SECRET_ID",
+      "target": "FILE",
+      "targetName": "/run/secrets/simplepoint/dbhub.toml"
+    }
+  ],
+  "storage": [],
+  "network": {
+    "mode": "INTERNAL_SERVICE",
+    "allowlist": ["postgres.mcp-e2e.local:5432"]
+  },
+  "session": {"mode": "POOL_AFFINE", "maxSessions": 8},
+  "sandbox": {"profile": "DATA", "limits": {}}
+}

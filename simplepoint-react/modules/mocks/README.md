@@ -6,9 +6,9 @@ This package contains development-only MSW handlers for the SimplePoint React wo
 
 Mock modules mirror backend REST module boundaries:
 
-- `src/rbac/core/*` -> `simplepoint-plugin-rbac-core-rest`
-- `src/rbac/tenant/*` -> `simplepoint-plugin-rbac-tenant-rest`
-- `src/rbac/router/*` -> `simplepoint-plugin-rbac-router-rest`
+- `src/rbac/core/*` -> `simplepoint-service-common`
+- `src/rbac/tenant/*` -> `simplepoint-service-common`
+- `src/rbac/router/*` -> `simplepoint-service-common`
 - `src/i18n/*` -> `simplepoint-plugin-i18n-rest`
 - `src/auditing/*` -> auditing plugin REST modules
 - `src/storage/*` -> storage plugin endpoints

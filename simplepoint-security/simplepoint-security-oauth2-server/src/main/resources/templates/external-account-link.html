@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="#{external.link.title} + ' · SimplePoint'">Connect account · SimplePoint</title>
+  <link rel="stylesheet" th:href="${#strings.startsWith(loginUrl, '/authorization') ? '/authorization/identity.css' : '/identity.css'}">
+</head>
+<body class="identity-page">
+<main class="identity-shell narrow">
+  <div class="identity-brand"><span class="identity-brand-mark">S·P</span><span>SimplePoint</span></div>
+  <h1 class="identity-title" th:text="#{external.link.title}">Connect your platform account</h1>
+  <div th:if="${param.error}" class="identity-alert error" th:switch="${param.error[0]}">
+    <span th:case="'invalid_credentials'" th:text="#{login.error.invalid_credentials}">Invalid credentials.</span>
+    <span th:case="'*'" th:text="#{external.link.conflict}">This external account cannot be connected to the selected platform account.</span>
+  </div>
+
+  <th:block th:if="${pending != null}">
+    <p class="identity-subtitle" th:text="#{external.link.subtitle(${pending.providerName()})}">The provider account is valid but is not connected yet.</p>
+    <div class="identity-alert warning">
+      <strong th:text="${pending.providerName()}">Provider</strong>
+      <span th:if="${pending.email() != null}" th:text="${' · ' + pending.email()}"></span>
+    </div>
+    <p class="identity-note" th:text="#{external.link.securityNote}">For security, sign in to the existing platform account before the connection is created.</p>
+    <form class="identity-form" method="post" th:action="${loginUrl}">
+      <label for="username" th:text="#{login.username}">Email or phone</label>
+      <input id="username" type="text" name="username" autocomplete="username" required autofocus>
+      <label for="password" th:text="#{login.password}">Password</label>
+      <input id="password" type="password" name="password" autocomplete="current-password" required>
+      <button class="identity-button" type="submit" th:text="#{external.link.signInAndLink}">Sign in and connect</button>
+    </form>
+    <div class="identity-options">
+      <a class="identity-button secondary" th:href="${registerUrl}" th:text="#{external.link.register}">Create a platform account</a>
+      <form method="post" th:action="${cancelUrl}"><button class="identity-button secondary" type="submit" th:text="#{action.cancel}">Cancel</button></form>
+    </div>
+  </th:block>
+
+  <th:block th:unless="${pending != null}">
+    <p class="identity-subtitle" th:text="#{external.link.expired}">This connection request has expired.</p>
+    <div class="identity-alert error" th:text="#{external.link.retry}">Return to sign in and try again.</div>
+    <a class="identity-button" th:href="${loginUrl}" th:text="#{action.backToLogin}">Back to sign in</a>
+  </th:block>
+</main>
+</body>
+</html>

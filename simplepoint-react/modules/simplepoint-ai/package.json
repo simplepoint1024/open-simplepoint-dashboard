@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "build": "rslib build",
-    "dev": "rslib mf-dev"
+    "dev": "rslib mf-dev",
+    "test": "node --experimental-strip-types --test src/views/workbench/modelLabels.test.mjs src/views/workbench/workbenchErrorCodes.test.mjs src/views/workbench/executionDiagnostics.test.mjs src/views/workbench/platformComponents.test.mjs src/views/workbench/components/jsonSchemaObject.test.mjs src/views/workbench/components/dependencyOptions.test.mjs src/views/workbench/Agents/permissions.test.mjs src/views/workbench/Billing/labels.test.mjs src/views/workbench/Catalog/syncErrorCodes.test.mjs src/views/workbench/KnowledgeBases/labels.test.mjs src/views/workbench/Providers/messageCodes.test.mjs src/views/workbench/McpServers/labels.test.mjs src/views/workbench/McpServers/Runtime/utils.test.mjs src/views/workbench/Skills/Designer/document.test.mjs src/views/workbench/Skills/Designer/labels.test.mjs src/views/workbench/Workflows/permissions.test.mjs src/views/workbench/Workflows/labels.test.mjs src/views/workbench/Workflows/Designer/model.test.mjs"
   },
   "dependencies": {
+    "@xyflow/react": "^12.10.0",
+    "elkjs": "^0.11.0",
     "@simplepoint/shared": "workspace:*",
     "@simplepoint/components": "workspace:*"
   }

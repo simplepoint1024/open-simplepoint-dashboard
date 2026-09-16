@@ -10,13 +10,16 @@ import {QuestionCircleOutlined} from '@ant-design/icons';
 import NavigateBar from '@/layouts/navigation-bar';
 
 import {useI18n} from '@/layouts/i18n/useI18n';
+import {isHttpError} from '@simplepoint/shared/api/client';
 import {useData} from '@simplepoint/shared/api/methods';
 import {fetchServiceRoutes, ServiceResourceRouteResult} from '@/fetches/routes';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {useCurrentTenants} from '@/fetches/tenants';
 import {getTenantId, setTenantId} from '@/store/tenant';
 import {getRoleId, setRoleId} from '@/store/role';
-import {getContextId, setContextId} from '@/store/contextId';
+import {setContextId} from '@/store/contextId';
 import {ensureContextId} from '@simplepoint/shared/api/contextId';
+import {registerFeedbackBridge} from '@simplepoint/shared/api/feedbackBridge';
 
 import {useLocaleLoader} from '@/hooks/useLocaleLoader';
 import {useRegisterRemotes} from '@/hooks/useRegisterRemotes';
@@ -38,6 +41,14 @@ export type RuntimeScopeContext = {
 };
 
 const RUNTIME_SCOPE_EVENT = 'sp-runtime-scope';
+
+const FeedbackBridgeRegistrar: React.FC = () => {
+    const {message, modal} = AntApp.useApp();
+
+    useEffect(() => registerFeedbackBridge({message, modal}), [message, modal]);
+
+    return null;
+};
 
 const App: React.FC = () => {
     const {globalSize} = useGlobalSize();
@@ -76,10 +87,10 @@ const App: React.FC = () => {
     // 1) 租户优先：先取已存租户；没有则拉取 currentTenants 选第一个
     const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
     const [roleId, setRoleIdState] = useState<string | undefined>(() => getRoleId(getTenantId()));
-    const [contextId, setContextIdState] = useState<string | undefined>(
-        () => getContextId(undefined, getRoleId(getTenantId())),
-    );
     const [contextReady, setContextReady] = useState(false);
+    const queryScope = useQueryScope();
+    const [scopeTenantId, scopeRoleId, scopeContextId] = queryScope;
+    const contextId = scopeContextId ?? undefined;
     const contextRequestSeq = useRef(0);
     const {
         data: currentTenants,
@@ -100,41 +111,12 @@ const App: React.FC = () => {
     }, [tenantId, currentTenants]);
 
     useEffect(() => {
-        // 同步外部 tenant 变更（例如顶部切换器）
-        const handler = (e: any) => {
-            const nextTenantId = (e?.detail as string) || undefined;
-            setTenantIdState(nextTenantId);
-            setRoleIdState(getRoleId(nextTenantId));
-            setContextIdState(undefined);
-            setContextReady(false);
-        };
-        try {
-            window.addEventListener('sp-set-tenant', handler as EventListener);
-            return () => window.removeEventListener('sp-set-tenant', handler as EventListener);
-        } catch {
-            return;
-        }
-    }, []);
-
-    useEffect(() => {
-        const handler = (e: Event) => {
-            const detail = (e as CustomEvent<{ tenantId?: string; roleId?: string }>).detail;
-            if (detail && typeof detail === 'object') {
-                if ((detail.tenantId ?? '') !== (tenantId ?? '')) {
-                    return;
-                }
-                setRoleIdState(detail.roleId);
-                return;
-            }
-            setRoleIdState(getRoleId(tenantId));
-        };
-        try {
-            window.addEventListener('sp-set-role', handler as EventListener);
-            return () => window.removeEventListener('sp-set-role', handler as EventListener);
-        } catch {
-            return;
-        }
-    }, [tenantId]);
+        // Use the same active storage snapshot as query keys, including changes
+        // made in another tab. Ignore event payloads for inactive workspaces.
+        setTenantIdState(scopeTenantId ?? undefined);
+        setRoleIdState(scopeRoleId ?? undefined);
+        setContextReady(false);
+    }, [scopeTenantId, scopeRoleId]);
 
     useEffect(() => {
         if (!currentTenants) return;
@@ -167,7 +149,6 @@ const App: React.FC = () => {
         const activeTenantId = selectedTenantExists ? tenantId : undefined;
         const run = async () => {
             setContextReady(false);
-            setContextIdState(undefined);
 
             if (!activeTenantId) return;
 
@@ -185,7 +166,6 @@ const App: React.FC = () => {
             }
 
             setContextId(ctxId, activeTenantId, activeRoleId);
-            setContextIdState(ctxId);
             setContextReady(true);
         };
         void run();
@@ -195,7 +175,9 @@ const App: React.FC = () => {
     }, [tenantId, roleId, selectedTenantExists]);
 
     // 3) 路由/菜单最后：必须在 contextId ready 后再加载
-    const routesEnabled = Boolean(selectedTenantExists && contextReady);
+    const routesEnabled = Boolean(selectedTenantExists && contextReady
+        && (tenantId ?? null) === scopeTenantId
+        && (roleId ?? null) === scopeRoleId);
     const {
         data: res,
         isLoading,
@@ -204,9 +186,9 @@ const App: React.FC = () => {
         refetch: refetchRoutes,
     } = useData<ServiceResourceRouteResult>(
         useMemo(() => ['fetchServiceRoutes', tenantId, roleId, contextId] as const, [tenantId, roleId, contextId]),
-        () => {
+        ({signal}) => {
             if (!routesEnabled) return Promise.resolve(undefined as any);
-            return fetchServiceRoutes();
+            return fetchServiceRoutes(signal);
         },
         {
             enabled: routesEnabled,
@@ -228,8 +210,11 @@ const App: React.FC = () => {
     // 每个 path 对应的刷新 key
     const refreshKeyMap = useRefreshKeyMap();
 
-    const bootstrapFailed = tenantsFailed || routesFailed;
     const bootstrapError = tenantsError ?? routesError;
+    const redirectingToLogin = isHttpError(bootstrapError)
+        && bootstrapError.status === 401
+        && !bootstrapError.sessionActive;
+    const bootstrapFailed = (tenantsFailed || routesFailed) && !redirectingToLogin;
 
     // 全局 loading 状态：租户、上下文、路由任一未就绪都保持 loading
     const showLoading = useGlobalLoading(
@@ -272,6 +257,7 @@ const App: React.FC = () => {
                     }
                 }}>
                 <AntApp>
+                    <FeedbackBridgeRegistrar/>
                     <HashRouter>
                         <TitleSync leafRoutes={leafRoutes} t={t}/>
                         {bootstrapFailed ? (
@@ -292,9 +278,9 @@ const App: React.FC = () => {
                                 />
                             </div>
                         ) : (
-                            <NavigateBar data={res?.routes ?? []}>
-                                <Routes>
-                                    {remotesReady ? renderRoutes(leafRoutes, refreshKeyMap, t, currentTenantType, remoteRegistryKey) : null}
+                            <NavigateBar data={res?.routes}>
+                                <Routes key={JSON.stringify(queryScope)}>
+                                    {routesEnabled && remotesReady ? renderRoutes(leafRoutes, refreshKeyMap, t, currentTenantType, remoteRegistryKey) : null}
                                 </Routes>
                             </NavigateBar>
                         )}

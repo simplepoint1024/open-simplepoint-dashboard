@@ -21,6 +21,7 @@ const ROUTE_KIND_CONFIG: Record<string, { color: string; labelKey: string; fallb
   submenu: {color: 'green', labelKey: 'resources.routeKind.submenu', fallback: '子菜单'},
   group: {color: 'purple', labelKey: 'resources.routeKind.group', fallback: '分组'},
   divider: {color: 'default', labelKey: 'resources.routeKind.divider', fallback: '分隔符'},
+  hidden: {color: 'default', labelKey: 'resources.routeKind.hidden', fallback: '隐藏路由'},
 };
 
 const RESOURCE_SCOPE_CONFIG = {

@@ -6,7 +6,17 @@ import {
   shouldAutoEnsureContextId,
   shouldUseTenantContext,
 } from './contextId';
+import {
+  getFeedbackBridge,
+  waitForFeedbackBridge,
+} from '@simplepoint/shared/api/feedbackBridge';
+import {isMachineErrorCode, selectApiErrorMessage} from './errorMessage';
 import {redirectToLogin} from './session';
+import {
+  classifySessionProbeResponse,
+  isAuthenticationRedirectResponse,
+  type SessionProbeStatus,
+} from './sessionProbe';
 
 export type QueryValue = string | number | boolean | Date | null | undefined;
 export type QueryParams = URLSearchParams | object;
@@ -229,6 +239,7 @@ function isGenericHttpReason(value: string) {
 function usefulMessage(value?: string) {
   if (!textIsUsefulMessage(value)) return undefined;
   const trimmed = value!.trim();
+  if (isMachineErrorCode(trimmed)) return undefined;
   return isGenericHttpReason(trimmed) ? undefined : trimmed;
 }
 
@@ -313,42 +324,17 @@ function logApiError(error: HttpError) {
   } catch {}
 }
 
-let unauthorizedModalOpen = false;
-
 const SESSION_PROBE_URL = '/userinfo';
 const SESSION_PROBE_DELAYS_MS = [0, 250, 750] as const;
 const UNAUTHORIZED_RECOVERY_RETRY_DELAY_MS = 250;
-let sessionProbeInflight: Promise<boolean> | undefined;
+let sessionProbeInflight: Promise<SessionProbeStatus> | undefined;
 
 async function handleUnauthorized(error: HttpError) {
   if (error.sessionActive) {
     return;
   }
-  if (unauthorizedModalOpen) {
-    error.__notified = true;
-    return;
-  }
-  unauthorizedModalOpen = true;
   error.__notified = true;
-  try {
-    const {Modal} = await import('antd');
-    await new Promise<void>((resolve) => {
-      Modal.confirm({
-        title: t('error.unauthorized.title', '登录状态已失效'),
-        content: t('error.unauthorized.content', '检测到当前登录状态失效。你可以留在当前页面，或返回登录页面重新登录。'),
-        okText: t('error.unauthorized.goLogin', '返回登录页'),
-        cancelText: t('error.unauthorized.stay', '留在当前页'),
-        centered: true,
-        onOk: async () => {
-          resolve();
-          await redirectToLogin();
-        },
-        onCancel: () => resolve(),
-      });
-    });
-  } finally {
-    unauthorizedModalOpen = false;
-  }
+  await redirectToLogin();
 }
 
 const notifyTimestamps = new Map<string, number>();
@@ -360,11 +346,17 @@ async function notifyError(error: HttpError) {
   const last = notifyTimestamps.get(key) ?? 0;
   if (now - last < 3000) return;
   notifyTimestamps.set(key, now);
-  try {
-    const {message} = await import('antd');
-    message.error(error.userMessage || error.message);
-    error.__notified = true;
-  } catch {}
+
+  const contextualMessage = (
+    getFeedbackBridge() ?? await waitForFeedbackBridge()
+  )?.message;
+  if (contextualMessage) {
+    try {
+      contextualMessage.error(error.userMessage || error.message);
+      error.__notified = true;
+      return;
+    } catch {}
+  }
 }
 
 async function handleError(error: HttpError, options: RequestOptions) {
@@ -392,28 +384,6 @@ function isSessionProbeUrl(url: string) {
   }
 }
 
-function isRedirectStatus(status: number) {
-  return status >= 300 && status < 400;
-}
-
-function isAuthenticationRedirectResponse(response: Response) {
-  if (!response.redirected) return false;
-  try {
-    const pathname = new URL(
-      response.url,
-      typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
-    ).pathname;
-    if (
-      pathname === '/login'
-      || pathname.startsWith('/oauth2/authorization/')
-      || pathname === '/oauth2/authorize'
-    ) {
-      return true;
-    }
-  } catch {}
-  return (response.headers.get('content-type') || '').toLowerCase().includes('text/html');
-}
-
 async function fetchSessionProbeOnce() {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -430,33 +400,30 @@ async function fetchSessionProbeOnce() {
       },
       signal: controller.signal,
     });
-    if (isRedirectStatus(response.status) || response.status === 401 || response.status === 403) {
-      return false;
-    }
-    if (!response.ok) {
-      return false;
-    }
-    const contentType = response.headers.get('content-type') || '';
-    return !contentType.toLowerCase().includes('text/html');
+    return classifySessionProbeResponse(
+      response,
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost',
+    );
   } catch {
-    return false;
+    return 'unknown' as const;
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
-async function verifySessionStillActive() {
+async function verifySessionStatus() {
   if (!sessionProbeInflight) {
     sessionProbeInflight = (async () => {
       for (const waitMs of SESSION_PROBE_DELAYS_MS) {
         if (waitMs > 0) {
           await delay(waitMs);
         }
-        if (await fetchSessionProbeOnce()) {
-          return true;
+        const status = await fetchSessionProbeOnce();
+        if (status !== 'unknown') {
+          return status;
         }
       }
-      return false;
+      return 'unknown';
     })().finally(() => {
       sessionProbeInflight = undefined;
     });
@@ -560,6 +527,22 @@ async function sendRequest(
   } catch (error: any) {
     const aborted = signal?.aborted || error?.name === 'AbortError';
     const kind: ApiErrorKind = isTimeout() ? 'timeout' : aborted ? 'abort' : 'network';
+    if (
+      kind === 'network'
+      && requestOptions.handleUnauthorized !== false
+      && !isSessionProbeUrl(finalUrl)
+      && await verifySessionStatus() === 'inactive'
+    ) {
+      const unauthorized = new HttpError(401, 'Unauthorized', undefined, {
+        kind: 'http',
+        method,
+        url: finalUrl,
+        cause: error,
+        userMessage: t('error.unauthorized', '登录状态已失效'),
+      });
+      await handleError(unauthorized, requestOptions);
+      throw unauthorized;
+    }
     const message = kind === 'timeout'
       ? t('error.timeout', '请求超时，请稍后再试')
       : kind === 'abort'
@@ -681,8 +664,8 @@ async function recoverUnauthorizedRequest(
     return {recovered: false, error};
   }
 
-  const sessionActive = await verifySessionStillActive();
-  if (!sessionActive) {
+  const sessionStatus = await verifySessionStatus();
+  if (sessionStatus !== 'active') {
     return {recovered: false, error};
   }
 
@@ -828,7 +811,14 @@ export async function request<T>(url: string, options?: RequestOptions): Promise
 
 export function resolveApiErrorMessage(error: unknown, fallback?: string) {
   if (isHttpError(error)) {
-    return error.userMessage || extractServerMessage(error.data, error.body) || fallback || error.message;
+    const serverMessage = extractServerMessage(error.data, error.body);
+    return selectApiErrorMessage({
+      serverMessage,
+      errorCode: error.code,
+      userMessage: error.userMessage,
+      fallback,
+      errorMessage: error.message,
+    });
   }
   if (error instanceof Error && error.message) {
     return error.message;

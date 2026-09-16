@@ -1,7 +1,16 @@
 import React, {MouseEventHandler, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import type {TableRowSelection} from 'antd/es/table/interface';
-import {Button, Col, Row, Space, Table as AntTable, Tag, Tooltip, type ButtonProps} from 'antd';
-import {FilterFilled, FilterOutlined, InboxOutlined, ReloadOutlined, SettingOutlined} from '@ant-design/icons';
+import {Button, Col, Row, Space, Table as AntTable, Tag, Tooltip, type ButtonProps, type TableProps as AntTableProps} from 'antd';
+import {
+  ClearOutlined,
+  FilterFilled,
+  FilterOutlined,
+  FullscreenExitOutlined,
+  FullscreenOutlined,
+  InboxOutlined,
+  ReloadOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
 import type {ColumnType, ColumnsType} from 'antd/es/table';
 import {Resizable} from 'react-resizable';
 import 'react-resizable/css/styles.css';
@@ -12,7 +21,14 @@ import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {get, put} from '@simplepoint/shared/api/methods';
 import {request} from '@simplepoint/shared/api/client';
 import ColumnFilter, {ColumnFilterType} from './ColumnFilter';
-import ColumnSettings, {ColumnFixed, ColumnSetting} from './ColumnSettings';
+import ColumnSettings, {
+  ColumnFixed,
+  ColumnSetting,
+  DEFAULT_TABLE_DISPLAY_SETTINGS,
+  TableDisplaySettings,
+  normalizeColumnSettings,
+} from './ColumnSettings';
+import {MAX_TABLE_COLUMN_WIDTH, normalizeTableDisplaySettings} from './settings';
 
 const MIN_COLUMN_WIDTH = 80;
 const DEFAULT_ICON_COLUMN_WIDTH = 80;
@@ -53,6 +69,7 @@ export interface TableProps<T> {
   ) => boolean;
   buttons?: TableButtonProps[]
   storageKey?: string;
+  expandable?: AntTableProps<T>['expandable'];
 }
 
 const parseOp = (stored?: string) => {
@@ -236,7 +253,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
   const [filters, setFilters] = useState<Record<string, string>>(props.filters ?? {});
 
   // ── 列配置持久化类型 ───────────────────────────────────────────────────────
-  type StoredColConfig = { visible: boolean; fixed?: ColumnFixed; order?: number };
+  type StoredColConfig = { visible: boolean; fixed?: ColumnFixed | null; order?: number };
 
   // 解析外部传入的排序状态，用于给对应列设置 sortOrder
   const [sortField, sortDir] = useMemo(() => {
@@ -297,19 +314,37 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     return `sp.table.widths.${getUserId()}.${props.storageKey}`;
   }, [props.storageKey]);
 
+  const displayStorageKey = useMemo(() => {
+    if (!props.storageKey) return undefined;
+    return `sp.table.display.${getUserId()}.${props.storageKey}`;
+  }, [props.storageKey]);
+
   // Backend preference keys (userId is implicit — the server scopes by JWT sub)
   const apiColsKey = props.storageKey ? `sp.table.cols.${props.storageKey}` : undefined;
   const apiWidthsKey = props.storageKey ? `sp.table.widths.${props.storageKey}` : undefined;
+  const apiDisplayKey = props.storageKey ? `sp.table.display.${props.storageKey}` : undefined;
 
   const [colConfigs, setColConfigs] = useState<Record<string, StoredColConfig>>({});
+  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
+    if (!props.storageKey) return {};
+    try {
+      const key = `sp.table.widths.${getUserId()}.${props.storageKey}`;
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as Record<string, number>) : {};
+    } catch { return {}; }
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Debounce timers for backend saves
   const colSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const widthSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const displaySaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Skip initial-load triggers
   const colConfigsInitialized = useRef(false);
   const colWidthsInitialized = useRef(false);
+  const displayInitialized = useRef(false);
+  const [displaySettings, setDisplaySettings] = useState<TableDisplaySettings>(DEFAULT_TABLE_DISPLAY_SETTINGS);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Load from localStorage first (instant), then fetch backend (async override)
   useEffect(() => {
@@ -387,30 +422,41 @@ const App = <T extends object = any>(props: TableProps<T>) => {
       const sd: any = properties[key] || {};
       const rawLabel = sd.title ?? key;
       const cfg = colConfigs[key];
+      const configuredFixed = props.columnOverrides?.[key]?.fixed;
+      const defaultFixed: ColumnFixed = configuredFixed === true || configuredFixed === 'left'
+        ? 'left'
+        : configuredFixed === 'right' ? 'right' : undefined;
+      const hasStoredFixed = Boolean(cfg && Object.prototype.hasOwnProperty.call(cfg, 'fixed'));
       return {
         key,
         label: resolveI18nLabel(rawLabel),
         visible: cfg?.visible ?? true,
-        fixed: cfg?.fixed as ColumnFixed,
+        fixed: hasStoredFixed ? (cfg?.fixed ?? undefined) : defaultFixed,
+        width: colWidths[key],
         _order: typeof cfg?.order === 'number' ? cfg.order : schemaIdx,
       };
     });
     entries.sort((a, b) => a._order - b._order);
-    return entries.map(({_order: _, ...rest}) => rest);
-  }, [visibleKeys, properties, colConfigs]);
+    return normalizeColumnSettings(entries.map(({_order: _, ...rest}) => rest));
+  }, [visibleKeys, properties, colConfigs, colWidths, props.columnOverrides]);
 
-  const handleSettingsSave = useCallback((items: ColumnSetting[]) => {
+  const handleSettingsSave = useCallback((items: ColumnSetting[], nextDisplaySettings: TableDisplaySettings) => {
     const next: Record<string, StoredColConfig> = {};
+    const nextWidths: Record<string, number> = {};
     items.forEach((item, idx) => {
-      next[item.key] = {visible: item.visible, fixed: item.fixed, order: idx};
+      next[item.key] = {visible: item.visible, fixed: item.fixed ?? null, order: idx};
+      if (typeof item.width === 'number') nextWidths[item.key] = item.width;
     });
     setColConfigs(next);
+    setColWidths(nextWidths);
+    setDisplaySettings(nextDisplaySettings);
   }, []);
 
   const handleSettingsReset = useCallback(() => {
     try {
       if (storageKey) localStorage.removeItem(storageKey);
       if (widthStorageKey) localStorage.removeItem(widthStorageKey);
+      if (displayStorageKey) localStorage.removeItem(displayStorageKey);
     } catch { /* ignore */ }
     if (apiColsKey) {
       request(preferenceUrl(apiColsKey), {method: 'DELETE'})
@@ -420,20 +466,16 @@ const App = <T extends object = any>(props: TableProps<T>) => {
       request(preferenceUrl(apiWidthsKey), {method: 'DELETE'})
         .catch(() => { /* ignore */ });
     }
+    if (apiDisplayKey) {
+      request(preferenceUrl(apiDisplayKey), {method: 'DELETE'})
+        .catch(() => { /* ignore */ });
+    }
     const next: Record<string, StoredColConfig> = {};
     visibleKeys.forEach((k) => { next[k] = {visible: true}; });
     setColConfigs(next);
     setColWidths({});
-  }, [storageKey, widthStorageKey, apiColsKey, apiWidthsKey, visibleKeys]);
-
-  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
-    if (!props.storageKey) return {};
-    try {
-      const key = `sp.table.widths.${getUserId()}.${props.storageKey}`;
-      const raw = localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as Record<string, number>) : {};
-    } catch { return {}; }
-  });
+    setDisplaySettings(DEFAULT_TABLE_DISPLAY_SETTINGS);
+  }, [storageKey, widthStorageKey, displayStorageKey, apiColsKey, apiWidthsKey, apiDisplayKey, visibleKeys]);
 
   const handleResize = useCallback((key: string) => (_: React.SyntheticEvent, {size}: {size: {width: number; height: number}}) => {
     const width = Math.max(MIN_COLUMN_WIDTH, Math.round(size.width));
@@ -462,7 +504,6 @@ const App = <T extends object = any>(props: TableProps<T>) => {
   // Persist column widths whenever they change
   useEffect(() => {
     if (!colWidthsInitialized.current) return;
-    if (!Object.keys(colWidths).length) return;
     try {
       if (widthStorageKey) localStorage.setItem(widthStorageKey, JSON.stringify(colWidths));
     } catch { /* ignore */ }
@@ -474,6 +515,71 @@ const App = <T extends object = any>(props: TableProps<T>) => {
       }, 800);
     }
   }, [colWidths, widthStorageKey, apiWidthsKey]);
+
+  // Display and pagination preferences use the same local-first, account-synced strategy.
+  useEffect(() => {
+    displayInitialized.current = false;
+    let localSettings = DEFAULT_TABLE_DISPLAY_SETTINGS;
+    try {
+      if (displayStorageKey) {
+        const raw = localStorage.getItem(displayStorageKey);
+        if (raw) localSettings = normalizeTableDisplaySettings(JSON.parse(raw));
+      }
+    } catch { /* ignore */ }
+    setDisplaySettings(localSettings);
+
+    if (!apiDisplayKey) {
+      displayInitialized.current = true;
+      return;
+    }
+    get<string | undefined>(preferenceUrl(apiDisplayKey))
+      .then(raw => {
+        if (!raw) return;
+        const saved = normalizeTableDisplaySettings(JSON.parse(raw));
+        setDisplaySettings(saved);
+        if (displayStorageKey) {
+          try { localStorage.setItem(displayStorageKey, JSON.stringify(saved)); } catch { /* ignore */ }
+        }
+      })
+      .catch(() => { /* use localStorage fallback */ })
+      .finally(() => { displayInitialized.current = true; });
+  }, [apiDisplayKey, displayStorageKey]);
+
+  useEffect(() => {
+    if (!displayInitialized.current) return;
+    const json = JSON.stringify(displaySettings);
+    try {
+      if (displayStorageKey) localStorage.setItem(displayStorageKey, json);
+    } catch { /* ignore */ }
+    if (apiDisplayKey) {
+      if (displaySaveTimer.current) clearTimeout(displaySaveTimer.current);
+      displaySaveTimer.current = setTimeout(() => {
+        put(preferenceUrl(apiDisplayKey), {value: json}).catch(() => { /* ignore */ });
+      }, 800);
+    }
+  }, [displaySettings, displayStorageKey, apiDisplayKey]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => setIsFullscreen(document.fullscreenElement === containerRef.current);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  useEffect(() => () => {
+    if (colSaveTimer.current) clearTimeout(colSaveTimer.current);
+    if (widthSaveTimer.current) clearTimeout(widthSaveTimer.current);
+    if (displaySaveTimer.current) clearTimeout(displaySaveTimer.current);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const container = containerRef.current;
+    if (!container || typeof document === 'undefined') return;
+    if (document.fullscreenElement === container) {
+      void document.exitFullscreen().catch(() => { /* browser may deny fullscreen */ });
+    } else {
+      void container.requestFullscreen().catch(() => { /* browser may deny fullscreen */ });
+    }
+  }, []);
 
   const columns = useMemo<ColumnsType<T>>(() => {
     const entries = Object.entries(properties);
@@ -520,7 +626,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
                 : resolveOptionLabel(schemaDef, val) ?? val
              : undefined;
 
-        const textEllipsisRender = (!isBoolean && key !== 'icon' && !hasOptions)
+        const textEllipsisRender = (!displaySettings.wrapText && !isBoolean && key !== 'icon' && !hasOptions)
           ? (val: any) => {
               if (val === null || val === undefined || val === '') return null;
               const str = String(val);
@@ -568,7 +674,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           sortOrder: key === sortField
             ? (sortDir === 'asc' ? 'ascend' : 'descend')
             : null,
-          ...((!isBoolean && key !== 'icon') ? {ellipsis: true} : {}),
+          ...((!displaySettings.wrapText && !isBoolean && key !== 'icon') ? {ellipsis: true} : {}),
         };
 
         (column as any).filterDropdown = ({close}: any) => (
@@ -587,8 +693,8 @@ const App = <T extends object = any>(props: TableProps<T>) => {
                 const next = {...filters};
                 if (value) next[key] = value; else delete next[key];
                 setFilters(next);
-                props.onFilterChange?.(next);
-                props.refresh();
+                if (props.onFilterChange) props.onFilterChange(next);
+                else props.refresh();
                 try { close?.(); } catch { /* ignore */ }
               }}
             />
@@ -606,11 +712,16 @@ const App = <T extends object = any>(props: TableProps<T>) => {
         const {order: overrideOrder, ...overrideRest} = override || {};
         const overrideOnHeaderCell = overrideRest.onHeaderCell;
         const overrideWidth = toNumberWidth(overrideRest.width);
-        const columnWidth = colWidths[key] ?? overrideWidth ?? defaultWidth;
+        const requestedWidth = colWidths[key] ?? overrideWidth ?? defaultWidth;
+        const columnWidth = typeof requestedWidth === 'number' && Number.isFinite(requestedWidth)
+          ? Math.max(MIN_COLUMN_WIDTH, Math.min(MAX_TABLE_COLUMN_WIDTH, Math.round(requestedWidth)))
+          : defaultWidth;
 
         // User config order takes precedence over schema/override order
         const userOrder = colConfigs[key]?.order;
-        const userFixed = colConfigs[key]?.fixed;
+        const columnConfig = colConfigs[key];
+        const hasUserFixed = Boolean(columnConfig && Object.prototype.hasOwnProperty.call(columnConfig, 'fixed'));
+        const userFixed = columnConfig?.fixed ?? undefined;
         const finalOrder = typeof userOrder === 'number'
           ? userOrder
           : typeof overrideOrder === 'number' ? overrideOrder : Number.MAX_SAFE_INTEGER;
@@ -620,7 +731,8 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           column: {
             ...column,
             ...overrideRest,
-            ...(userFixed !== undefined ? {fixed: userFixed} : {}),
+            ...(hasUserFixed ? {fixed: userFixed} : {}),
+            ...(displaySettings.wrapText ? {ellipsis: false} : {}),
             key,
             dataIndex: key,
             width: columnWidth,
@@ -634,9 +746,15 @@ const App = <T extends object = any>(props: TableProps<T>) => {
       });
 
     return generated
-      .sort((left, right) => left.order - right.order)
+      .sort((left, right) => {
+        const fixedRank = (fixed: ColumnType<T>['fixed']) => (
+          fixed === true || fixed === 'left' ? 0 : fixed === 'right' ? 2 : 1
+        );
+        return fixedRank(left.column.fixed) - fixedRank(right.column.fixed)
+          || left.order - right.order;
+      })
       .map((item) => item.column);
-  }, [properties, colConfigs, visibleKeys, filters, sortField, sortDir, colWidths, handleResize, props.onFilterChange, props.refresh, props.columnOverrides, t, locale])
+  }, [properties, colConfigs, visibleKeys, filters, sortField, sortDir, colWidths, displaySettings.wrapText, handleResize, props.onFilterChange, props.refresh, props.columnOverrides, t, locale])
 
   const anonKeyMapRef = useRef(new WeakMap<object, number>());
   const anonKeySeqRef = useRef(1);
@@ -654,7 +772,10 @@ const App = <T extends object = any>(props: TableProps<T>) => {
   }, []);
 
   const rawDataSource = props.pageable?.content ?? [];
-  const dataSource = useMemo(() => normalizeTreeRows(rawDataSource), [rawDataSource]);
+  const dataSource = useMemo(
+    () => props.expandable ? rawDataSource : normalizeTreeRows(rawDataSource),
+    [props.expandable, rawDataSource],
+  );
   const rowByKey = useMemo(() => {
     const rowsByKey = new Map<React.Key, T>();
     const visit = (rows: T[]) => {
@@ -670,7 +791,12 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     return rowsByKey;
   }, [dataSource, keyOfRecord]);
 
-  const pagination = toPagination(props.pageable);
+  const pagination = {
+    ...toPagination(props.pageable),
+    showSizeChanger: displaySettings.showSizeChanger,
+    showQuickJumper: displaySettings.showQuickJumper,
+    showTotal: (total: number) => t('table.total', '共 {total} 条', {total}),
+  };
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>(props.rowSelection?.selectedKeys ?? []);
   const [selectedRows, setSelectedRows] = useState<T[]>([]);
@@ -798,16 +924,44 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           </Col>
           <Col className="sp-table-toolbar-actions">
             <Space size={4}>
-              <Button
-                className="sp-table-icon-button"
-                type="text"
-                icon={<ReloadOutlined/>}
-                onClick={() => props.refresh()}
-                loading={props.loading}
-                disabled={props.refreshDisabled}
-              />
-              <Tooltip title={t('table.columnSettings.title', '列设置')}>
+              {Object.keys(filters).length > 0 && (
+                <Tooltip title={t('table.clearFilters', '清除全部筛选')}>
+                  <Button
+                    aria-label={t('table.clearFilters', '清除全部筛选')}
+                    className="sp-table-icon-button"
+                    type="text"
+                    icon={<ClearOutlined/>}
+                    onClick={() => {
+                      setFilters({});
+                      if (props.onFilterChange) props.onFilterChange({});
+                      else props.refresh();
+                    }}
+                  />
+                </Tooltip>
+              )}
+              <Tooltip title={t('table.refresh', '刷新')}>
                 <Button
+                  aria-label={t('table.refresh', '刷新')}
+                  className="sp-table-icon-button"
+                  type="text"
+                  icon={<ReloadOutlined/>}
+                  onClick={() => props.refresh()}
+                  loading={props.loading}
+                  disabled={props.refreshDisabled}
+                />
+              </Tooltip>
+              <Tooltip title={isFullscreen ? t('table.exitFullscreen', '退出全屏') : t('table.fullscreen', '全屏')}>
+                <Button
+                  aria-label={isFullscreen ? t('table.exitFullscreen', '退出全屏') : t('table.fullscreen', '全屏')}
+                  className="sp-table-icon-button"
+                  icon={isFullscreen ? <FullscreenExitOutlined/> : <FullscreenOutlined/>}
+                  type="text"
+                  onClick={toggleFullscreen}
+                />
+              </Tooltip>
+              <Tooltip title={t('table.settings.title', '表格设置')}>
+                <Button
+                  aria-label={t('table.settings.title', '表格设置')}
                   className="sp-table-icon-button"
                   icon={<SettingOutlined/>}
                   type="text"
@@ -820,12 +974,20 @@ const App = <T extends object = any>(props: TableProps<T>) => {
       </div>
       <div style={{flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
         <AntTable<T>
-          className="sp-table-fill"
-          bordered
+          className={[
+            'sp-table-fill',
+            displaySettings.striped && 'sp-table-striped',
+            displaySettings.wrapText && 'sp-table-wrap',
+            !displaySettings.rowHover && 'sp-table-no-hover',
+          ].filter(Boolean).join(' ')}
+          bordered={displaySettings.bordered}
           columns={columns}
           dataSource={dataSource}
+          expandable={props.expandable}
           loading={props.loading}
           pagination={pagination}
+          size={displaySettings.size}
+          sticky={displaySettings.stickyHeader}
           rowKey={keyOfRecord}
           onChange={props.onChange}
           onRow={props.onRowDoubleClick ? record => ({
@@ -848,6 +1010,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
       <ColumnSettings
         open={settingsOpen}
         settings={settingsItems}
+        displaySettings={displaySettings}
         onSave={handleSettingsSave}
         onClose={() => setSettingsOpen(false)}
         onReset={handleSettingsReset}

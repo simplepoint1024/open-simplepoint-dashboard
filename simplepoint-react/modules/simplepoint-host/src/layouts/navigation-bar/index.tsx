@@ -5,12 +5,13 @@ import {
   DeleteOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  MoreOutlined,
   ReloadOutlined,
   VerticalLeftOutlined,
   VerticalRightOutlined
 } from '@ant-design/icons';
 import {Breadcrumb, Button, Dropdown, Layout, Menu, Skeleton, Tabs} from 'antd';
-import type {TabsProps} from 'antd';
+import type {MenuProps, TabsProps} from 'antd';
 import {DndContext, PointerSensor, useSensor, closestCenter} from '@dnd-kit/core';
 import type {DragEndEvent} from '@dnd-kit/core';
 import {SortableContext, horizontalListSortingStrategy, useSortable, arrayMove} from '@dnd-kit/sortable';
@@ -24,8 +25,15 @@ import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import MenuSearchModal from "@/layouts/navigation-bar/menu-search-modal.tsx";
 import {useCurrentTenantProfile, useCurrentTenants} from '@/fetches/tenants.ts';
 import {getTenantId} from '@/store/tenant.ts';
+import {
+  DASHBOARD_PATH,
+  migrateLegacyAiWorkspacePath,
+  migrateLegacyAiWorkspaceTabs,
+  resolveLegacyAiWorkspaceTarget,
+} from '@/components/legacyAiWorkspace';
 
 const {Header, Content, Footer, Sider} = Layout;
+const MAX_VISIBLE_TABS = 10;
 
 interface DraggableTabNodeProps extends React.HTMLAttributes<HTMLDivElement> {
   'data-node-key': string;
@@ -62,7 +70,7 @@ const DraggableTabNode: React.FC<DraggableTabNodeProps> = ({className, ...props}
   return <div ref={setNodeRef} style={style} {...attributes} {...listeners} {...props} className={className} />;
 };
 
-const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteInfo> }> = ({children, data}) => {
+const NavigateBar: React.FC<{ children?: React.ReactElement, data?: Array<RouteInfo> }> = ({children, data}) => {
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768);
   const navigate = useNavigate();
   const location = useLocation();
@@ -162,9 +170,14 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
   }, []);
 
   const STORAGE_KEY = 'sp.nav.tabs';
-  const DASHBOARD_PATH = '/dashboard';
+  const routesReady = data !== undefined;
+  const routeData = useMemo(() => data ?? [], [data]);
   // 统一拍平叶子菜单，供后续映射复用
-  const leafNodes = useMemo(() => flattenRoutes(data || []), [data]);
+  const leafNodes = useMemo(() => flattenRoutes(routeData), [routeData]);
+  const legacyAiWorkspaceTarget = useMemo(
+    () => resolveLegacyAiWorkspaceTarget(routeData),
+    [routeData],
+  );
 
   // 补充：对未在菜单中的内部路由，提供固定的名称与图标
   const extraTabs = useMemo(() => ([
@@ -292,29 +305,38 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
 
   // 规范化 tabs：去重、dashboard 固定在首位且不可关闭
   const normalizeTabs = useCallback((input: NavigationTab[]) => {
-    const seen = new Set<string>();
-    const out: NavigationTab[] = [];
-    input.forEach(t => {
-      const key = normalizeRoutePath(t.key || t.location);
-      if (!seen.has(key)) {
-        seen.add(key);
-        out.push({
-          ...t,
-          key,
-          location: normalizeRoutePath(t.location) === key ? t.location : key,
-        });
-      }
+    const normalized = input.map(t => {
+      const normalizedKey = normalizeRoutePath(t.key || t.location);
+      // 根路由只负责重定向到 Dashboard，不应成为一个独立页签。
+      // 同时迁移旧版本已持久化的根页签和 AI Workspace 页签。
+      const rootNormalizedKey = normalizedKey === '/' ? DASHBOARD_PATH : normalizedKey;
+      return {
+        ...t,
+        key: rootNormalizedKey,
+        location: normalizeRoutePath(t.location) === rootNormalizedKey
+          ? t.location
+          : rootNormalizedKey,
+      };
     });
+    const out = migrateLegacyAiWorkspaceTabs(
+      normalized,
+      legacyAiWorkspaceTarget,
+      routesReady,
+    ).map(tab => ({...tab, label: getTabLabel(tab.key)}));
     const dashboardTab = getDashboardTab();
     const filtered = out.filter(t => t.key !== DASHBOARD_PATH);
     return [dashboardTab, ...filtered];
-  }, [DASHBOARD_PATH, getDashboardTab]);
+  }, [getDashboardTab, getTabLabel, legacyAiWorkspaceTarget, routesReady]);
 
   // HashRouter 已将 hash 中的路径解析到 useLocation，Tab key 只使用 pathname，
   // query/hash 记录在 location 中，避免 /tenant 与 /tenant?edit=1 被拆成两个 Tab。
   const getCurrentPath = useCallback(
-    () => normalizeRoutePath(location.pathname || '/'),
-    [location.pathname],
+    () => migrateLegacyAiWorkspacePath(
+      normalizeRoutePath(location.pathname || '/'),
+      legacyAiWorkspaceTarget,
+      routesReady,
+    ),
+    [legacyAiWorkspaceTarget, location.pathname, routesReady],
   );
   const getCurrentLocation = useCallback(
     () => `${getCurrentPath()}${location.search || ''}${location.hash || ''}`,
@@ -369,15 +391,21 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
   // 首次加载：如果当前 URL 不在持久化的 tabs 中，不再将其加入，而是跳到第一个（dashboard）
   const initialSynced = useRef(false);
   useEffect(() => {
-    if (initialSynced.current) return;
+    if (initialSynced.current || !routesReady) return;
+    const requested = normalizeRoutePath(location.pathname || '/');
     const current = getCurrentPath();
+    if (requested !== current) {
+      navigate(current, {replace: true});
+      initialSynced.current = true;
+      return;
+    }
     const exists = tabs.some(t => t.key === current);
     if (!exists) {
       const target = tabs[0]?.key || DASHBOARD_PATH;
       if (target && target !== current) navigate(target, {replace: true});
     }
     initialSynced.current = true;
-  }, [tabs, getCurrentPath, navigate]);
+  }, [tabs, getCurrentPath, location.pathname, navigate, routesReady]);
 
   // 菜单变化时，用最新映射更新已有标签文字，并保持 dashboard 固定首位
   useEffect(() => {
@@ -390,6 +418,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
 
   // 路由变化时，自动把当前路由加入页签，并持久化
   useEffect(() => {
+    if (!routesReady) return;
     const path = getCurrentPath();
     if (!path) return;
     const currentLocation = getCurrentLocation();
@@ -412,10 +441,30 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
       persistTabs(normalized);
       return normalized;
     });
-  }, [getCurrentLocation, getCurrentPath, getTabLabel, normalizeTabs, persistTabs]);
+  }, [getCurrentLocation, getCurrentPath, getTabLabel, normalizeTabs, persistTabs, routesReady]);
 
   const activeKey = getCurrentPath();
-  const activeMenuChain = useMemo(() => findRouteChainByPath(data || [], activeKey), [data, activeKey]);
+  const activeMenuChain = useMemo(
+    () => findRouteChainByPath(routeData, activeKey),
+    [activeKey, routeData],
+  );
+
+  // Keep the bar predictable: the first nine tabs stay stable and the tenth
+  // slot follows the active tab when it comes from the overflow menu.
+  const {visibleTabs, overflowTabs} = useMemo(() => {
+    if (tabs.length <= MAX_VISIBLE_TABS) {
+      return {visibleTabs: tabs, overflowTabs: [] as NavigationTab[]};
+    }
+    const activeIndex = tabs.findIndex(tab => tab.key === activeKey);
+    const nextVisible = activeIndex >= MAX_VISIBLE_TABS
+      ? [...tabs.slice(0, MAX_VISIBLE_TABS - 1), tabs[activeIndex]]
+      : tabs.slice(0, MAX_VISIBLE_TABS);
+    const visibleKeys = new Set(nextVisible.map(tab => tab.key));
+    return {
+      visibleTabs: nextVisible,
+      overflowTabs: tabs.filter(tab => !visibleKeys.has(tab.key)),
+    };
+  }, [activeKey, tabs]);
 
   // 面包屑 items：放在 Header Logo 后面，只显示菜单路径链（无首页图标）
   const breadcrumbItems = useMemo(() => {
@@ -445,7 +494,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (tabBarProps: any, DefaultTabBar: any) => (
       <DndContext sensors={[tabDndSensor]} onDragEnd={handleTabDragEnd} collisionDetection={closestCenter}>
-        <SortableContext items={tabs.map(t => t.key)} strategy={horizontalListSortingStrategy}>
+        <SortableContext items={visibleTabs.map(t => t.key)} strategy={horizontalListSortingStrategy}>
           <DefaultTabBar {...tabBarProps}>
             {(node: React.ReactElement) => (
               <DraggableTabNode {...(node.props as DraggableTabNodeProps)} key={node.key ?? undefined} />
@@ -454,7 +503,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
         </SortableContext>
       </DndContext>
     ),
-    [tabDndSensor, handleTabDragEnd, tabs]
+    [tabDndSensor, handleTabDragEnd, visibleTabs]
   );
   const selectedMenuKeys = useMemo(() => {
     const current = activeMenuChain[activeMenuChain.length - 1];
@@ -463,7 +512,10 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
   }, [activeMenuChain]);
 
   // 侧边菜单 items（must be declared before onMenuOpenChange which references it）
-  const sideMenuItems = useMemo(() => useSideNavigation(navigate, data).items, [navigate, data]);
+  const sideMenuItems = useMemo(
+    () => useSideNavigation(navigate, routeData).items,
+    [navigate, routeData],
+  );
 
   // Menu open keys: fully user-controlled after initial sync from active route
   const [openMenuKeys, setOpenMenuKeys] = useState<string[]>([]);
@@ -584,6 +636,53 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
     onClick: onContextMenuClick,
   }), [onContextMenuClick, t]);
 
+  const overflowTabMenu = useMemo<MenuProps>(() => ({
+    items: overflowTabs.map(tab => ({
+      key: tab.key,
+      label: (
+        <span className="nb-tabs-overflow-menu-label">
+          <span className="nb-tabs-overflow-menu-title">{tab.label}</span>
+          {tab.closable !== false ? (
+            <Button
+              type="text"
+              size="small"
+              className="nb-tabs-overflow-close"
+              icon={<CloseOutlined />}
+              title={t('nav.closeTab', '关闭页签')}
+              aria-label={t('nav.closeTab', '关闭页签')}
+              onPointerDown={event => event.stopPropagation()}
+              onClick={event => {
+                event.stopPropagation();
+                onTabEdit(tab.key, 'remove');
+              }}
+            />
+          ) : null}
+        </span>
+      ),
+    })),
+    onClick: ({key}) => onTabChange(String(key)),
+  }), [onTabChange, onTabEdit, overflowTabs, t]);
+
+  const overflowTabTrigger = overflowTabs.length > 0 ? (
+    <Dropdown
+      menu={overflowTabMenu}
+      trigger={['hover', 'click']}
+      mouseEnterDelay={0.12}
+      mouseLeaveDelay={0.25}
+      overlayClassName="nb-tabs-overflow-dropdown"
+    >
+      <Button
+        type="text"
+        className="nb-tabs-overflow-trigger"
+        icon={<MoreOutlined />}
+        aria-label={t('nav.moreTabs', '还有 {count} 个页签', {count: overflowTabs.length})}
+        title={t('nav.moreTabs', '还有 {count} 个页签', {count: overflowTabs.length})}
+      >
+        <span className="nb-tabs-overflow-count">{overflowTabs.length}</span>
+      </Button>
+    </Dropdown>
+  ) : null;
+
   const searchableTabs = useMemo(() => tabs.map(tab => ({
     path: tab.key,
     label: pathLabelMap.get(tab.key) ?? storedLabelMap.get(tab.key) ?? tab.key,
@@ -669,11 +768,12 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
                   hideAdd
                   type="editable-card"
                   size="small"
-                  items={tabs}
+                  items={visibleTabs}
                   activeKey={activeKey}
                   onChange={onTabChange}
                   onEdit={onTabEdit as any}
                   tabBarGutter={6}
+                  tabBarExtraContent={overflowTabTrigger}
                   renderTabBar={renderTabBar}
                 />
               </div>
@@ -702,7 +802,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data: Array<RouteIn
       <MenuSearchModal
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
-        menus={data}
+        menus={routeData}
         openTabs={searchableTabs}
         onNavigate={onSearchNavigate}
         t={t}

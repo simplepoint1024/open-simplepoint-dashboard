@@ -17,4 +17,7 @@ public interface ExternalIdentityProviderRepository
 
   /** Lists enabled providers in login-page order. */
   List<ExternalIdentityProvider> findAllActiveEnabled();
+
+  /** Lists all active providers for account-binding management. */
+  List<ExternalIdentityProvider> findAllActive();
 }

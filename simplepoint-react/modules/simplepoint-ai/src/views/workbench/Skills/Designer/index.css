@@ -1,0 +1,264 @@
+.skill-designer-page {
+  position: relative;
+  height: calc(100vh - 104px);
+  min-height: 620px;
+  margin: -16px;
+  overflow: hidden;
+  background: #f0f5ff;
+}
+
+.skill-designer-toolbar {
+  position: absolute;
+  z-index: 20;
+  top: 16px;
+  right: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 58px;
+  padding: 10px 16px;
+  border: 1px solid rgba(5, 5, 5, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(5, 5, 5, 0.12);
+  backdrop-filter: blur(12px);
+}
+
+.skill-designer-toolbar-actions {
+  justify-content: flex-end;
+}
+
+.skill-designer-toolbar-restore,
+.skill-designer-palette-restore,
+.skill-designer-inspector-restore,
+.skill-designer-diagnostics-restore {
+  position: absolute;
+  z-index: 21;
+  box-shadow: 0 6px 18px rgba(5, 5, 5, 0.16);
+}
+
+.skill-designer-toolbar-restore {
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.skill-designer-palette-restore {
+  top: 136px;
+  left: 16px;
+}
+
+.skill-designer-inspector-restore {
+  top: 136px;
+  right: 16px;
+}
+
+.skill-designer-diagnostics-restore {
+  right: 50%;
+  bottom: 20px;
+  transform: translateX(50%);
+}
+
+.skill-designer-palette,
+.skill-designer-inspector,
+.skill-designer-diagnostics {
+  position: absolute;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(5, 5, 5, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(5, 5, 5, 0.12);
+  backdrop-filter: blur(12px);
+}
+
+.skill-designer-palette {
+  top: 132px;
+  bottom: 20px;
+  left: 16px;
+  width: 244px;
+}
+
+.skill-designer-palette [role='button']:focus-visible,
+.skill-designer-canvas .react-flow__node:focus-visible,
+.skill-test-cases-list [role='button']:focus-visible {
+  outline: 3px solid #1677ff;
+  outline-offset: 2px;
+}
+
+.skill-designer-inspector {
+  top: 132px;
+  right: 16px;
+  bottom: 20px;
+  width: min(380px, calc(100vw - 72px));
+}
+
+.skill-designer-floating-panel-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  padding: 6px 10px 6px 14px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.skill-designer-floating-panel-body,
+.skill-designer-diagnostics-body {
+  min-height: 0;
+  overflow: auto;
+}
+
+.skill-designer-canvas {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.skill-designer-diagnostics {
+  right: 412px;
+  bottom: 20px;
+  left: 276px;
+  max-height: min(240px, 34vh);
+}
+
+.skill-designer-diagnostics-body {
+  padding: 10px 14px;
+}
+
+@keyframes skill-node-running-pulse {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(22, 119, 255, 0)); }
+  50% { filter: drop-shadow(0 0 7px rgba(22, 119, 255, 0.6)); }
+}
+
+.skill-node-running {
+  animation: skill-node-running-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skill-node-running {
+    animation: none;
+  }
+}
+
+.skill-test-cases-layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  min-height: calc(100vh - 150px);
+  margin: -24px;
+}
+
+.skill-test-cases-list {
+  padding: 16px;
+  overflow: auto;
+  border-right: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.skill-test-cases-list .ant-list-item {
+  margin-bottom: 6px;
+  padding: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.skill-test-cases-list .ant-list-item:hover {
+  background: #fff;
+}
+
+.skill-test-cases-list .skill-test-case-selected {
+  border-color: #91caff;
+  background: #e6f4ff;
+}
+
+.skill-test-case-editor {
+  min-width: 0;
+  padding: 20px 24px;
+  overflow: auto;
+}
+
+.skill-test-assertion-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.skill-test-assertion-expected {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1100px) {
+  .skill-designer-page {
+    margin: -12px;
+  }
+
+  .skill-designer-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    max-height: 160px;
+    overflow: auto;
+  }
+
+  .skill-designer-palette,
+  .skill-designer-inspector {
+    top: 180px;
+  }
+
+  .skill-designer-palette {
+    width: 220px;
+  }
+
+  .skill-designer-inspector {
+    width: min(330px, calc(100vw - 56px));
+  }
+
+  .skill-designer-diagnostics {
+    right: 362px;
+    left: 252px;
+  }
+
+  .skill-test-cases-layout {
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+
+  .skill-test-assertion-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .skill-test-assertion-expected {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .skill-designer-page {
+    height: calc(100vh - 88px);
+    min-height: 560px;
+  }
+
+  .skill-designer-toolbar {
+    right: 8px;
+    left: 8px;
+  }
+
+  .skill-designer-palette,
+  .skill-designer-inspector {
+    top: 180px;
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    width: auto;
+  }
+
+  .skill-designer-diagnostics {
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+  }
+}

@@ -3,7 +3,7 @@ import SimpleTable from '@simplepoint/components/SimpleTable';
 import {get} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {Page} from '@simplepoint/shared/types/request';
-import {Alert, Tag, message} from 'antd';
+import {Alert, App as AntApp, Tag} from 'antd';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {resolveErrorMessage} from '../shared';
 
@@ -33,6 +33,7 @@ const renderBooleanTag = (value: boolean | undefined, yes: string, no: string) =
 
 const App = () => {
   const {t, ensure, locale} = useI18n();
+  const {message} = AntApp.useApp();
   const [dataSources, setDataSources] = useState<DataSourceOption[]>([]);
   const [dataSourcesLoaded, setDataSourcesLoaded] = useState(false);
 
@@ -51,7 +52,7 @@ const App = () => {
       setDataSourcesLoaded(true);
       message.error(resolveErrorMessage(error, t('dna.federation.queryPolicies.page.error.loadDataSources', '数据源列表加载失败')));
     });
-  }, [loadDataSources, t]);
+  }, [loadDataSources, message, t]);
 
   const formSchemaTransform = useCallback((schema: any) => {
     const nextSchema = structuredClone(schema ?? {});

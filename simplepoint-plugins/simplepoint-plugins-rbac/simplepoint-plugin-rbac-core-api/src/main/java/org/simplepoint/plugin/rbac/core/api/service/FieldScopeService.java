@@ -18,6 +18,8 @@ import org.simplepoint.security.entity.FieldScopeEntry;
  */
 public interface FieldScopeService extends BaseService<FieldScope, String> {
 
+  java.util.Map<String, java.util.List<String>> catalog();
+
   /**
    * Replaces all entries in the given field scope with the provided list.
    *

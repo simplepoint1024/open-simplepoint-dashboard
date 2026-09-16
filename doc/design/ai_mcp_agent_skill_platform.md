@@ -1016,7 +1016,7 @@ updated_at
 
 推荐技术组合：
 
-- Docker Swarm：长期服务、副本和滚动发布。
+- 容器编排层：长期服务、副本和滚动发布，具体实现保持可替换。
 - Traefik：TLS、入口、负载均衡和 MCP 会话路由。
 - Docker Engine 或 containerd：OCI 工作负载执行。
 - PostgreSQL：权威配置、版本、执行状态和租约。
@@ -1031,7 +1031,7 @@ updated_at
 - Agent Runtime 和 Workflow Worker 根据队列积压扩容。
 - `tool-runtime-node` 以每节点一个实例部署。
 - Scheduler 根据 CPU、内存、节点标签、租户、镜像缓存和亲和规则选点。
-- 长期服务使用 Swarm 服务副本。
+- 长期服务使用编排层管理的服务副本。
 - 高频 Tool 使用预热池。
 - 低频 Tool 使用按需启动和 scale-to-zero。
 - 单次高风险 Tool 使用单次容器，完成后销毁。
@@ -1081,7 +1081,7 @@ Tool annotation、Tool 描述、Tool 输出和远程 Resource 都视为不可信
 Docker Socket 禁令适用于所有受管工作负载；可信 runtime-node 自身也只允许访问受限
 Socket Proxy，代理与真实 Socket 位于节点内部网络且不得发布到公网。
 seccomp 文件作为版本化部署资源进入 Runtime 镜像并使用 SHA-256 摘要上报；AppArmor
-Profile 由宿主安装脚本加载，Swarm 启动前必须验证 Docker 同时声明 seccomp 与
+Profile 由宿主安装脚本加载，容器服务启动前必须验证 Docker 同时声明 seccomp 与
 AppArmor 支持。策略不可用时不能自动回退到 Docker 默认策略。
 
 ## 13. 数据模型
@@ -1353,7 +1353,7 @@ simplepoint-plugin-ai-workflow-{api,repository,service,rest}
 | Agent Runtime | Java、官方 MCP Java SDK、现有模型网关 |
 | Runtime Node | 独立轻量进程，优先 Go；也可根据团队维护能力选择 Java |
 | OCI Runtime | Docker Engine 或 containerd |
-| 集群 | Docker Swarm |
+| 集群 | 可替换的容器编排层 |
 | 入口 | Traefik |
 | 状态 | PostgreSQL |
 | 消息 | NATS JetStream |
@@ -1410,7 +1410,7 @@ SDK 版本必须通过 BOM 固定，并以协议一致性测试结果为准，�
 - [x] 实现托管会话在多个 READY 副本之间的稳定负载分配、跨节点副本分散和
   连接失效安全切换。
 - [x] 实现 Gateway 事件流断开检测、Pending 请求保护和同 Lease/fence 孤立会话接管。
-- [ ] 目标部署认证：在真实多主机 Swarm 环境完成 Runtime Worker drain 故障注入。
+- [ ] 目标部署认证：在真实多主机容器环境完成 Runtime Worker 下线故障注入。
 
 上述未勾选项是需要目标基础设施的部署认证，不是缺失的调度实现。仓库脚本默认以
 严格模式要求至少两个 READY 节点、跨节点副本分散、普通 Worker drain、会话重绑定

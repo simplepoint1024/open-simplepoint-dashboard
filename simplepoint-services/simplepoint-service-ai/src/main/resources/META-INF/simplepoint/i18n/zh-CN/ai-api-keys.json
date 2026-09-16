@@ -1,5 +1,8 @@
 {
   "ai.api-keys.entity.title": "模型 API Key",
+  "ai.api-keys.error.operationFailed": "API Key 操作失败，请稍后重试",
+  "ai.api-keys.error.operationUnavailable": "当前 API Key 操作暂不可用，请刷新后重试",
+  "ai.api-keys.error.requestInvalid": "API Key 配置无效，请检查后重试",
   "ai.api-keys.title.scopeType": "作用域",
   "ai.api-keys.title.tenantId": "租户 ID",
   "ai.api-keys.title.name": "名称",
@@ -24,5 +27,7 @@
   "ai.api-keys.guide.title": "OpenAI / Anthropic 兼容模型 API",
   "ai.api-keys.guide.openai": "OpenAI：POST /ai/v1/chat/completions，使用 Authorization: Bearer <API_KEY>",
   "ai.api-keys.guide.anthropic": "Anthropic：POST /ai/v1/messages，使用 x-api-key: <API_KEY>",
-  "ai.api-keys.guide.models": "可先调用 GET /ai/v1/models 获取当前 Key 可访问的模型 ID。"
+  "ai.api-keys.guide.models": "可先调用 GET /ai/v1/models 获取当前 Key 可访问的模型 ID。",
+  "ai.api-keys.scope.system": "系统共享",
+  "ai.api-keys.scope.tenant": "租户私有"
 }

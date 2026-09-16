@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.ai.runtime.api.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,6 +18,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
+import org.simplepoint.plugin.ai.runtime.api.model.AiRuntimeErrorCodeSerializer;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeWorkloadStatus;
 
 /**
@@ -65,6 +67,16 @@ public class AiRuntimeWorkload extends BaseEntityImpl<String> {
 
   @Column(name = "pool_id", length = 64)
   private String poolId;
+
+  @Column(name = "runtime_profile_id", length = 64)
+  private String runtimeProfileId;
+
+  @Column(name = "runtime_revision_id", length = 64)
+  private String runtimeRevisionId;
+
+  @JsonIgnore
+  @Column(name = "runtime_spec_json", columnDefinition = "TEXT")
+  private String runtimeSpecJson;
 
   @Column(name = "replica_sequence")
   private Long replicaSequence;
@@ -146,6 +158,7 @@ public class AiRuntimeWorkload extends BaseEntityImpl<String> {
   private Instant lastObservedAt;
 
   @Column(name = "last_error", length = 1024)
+  @JsonSerialize(using = AiRuntimeErrorCodeSerializer.class)
   private String lastError;
 
   @Version

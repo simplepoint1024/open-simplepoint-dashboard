@@ -1,4 +1,3 @@
-import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.language.jvm.tasks.ProcessResources
 
@@ -13,36 +12,6 @@ application {
 val frontendRoot = rootProject.file("simplepoint-react")
 val frontendCommonDir = frontendRoot.resolve("modules/simplepoint-common")
 val frontendCommonDistDir = frontendCommonDir.resolve("dist")
-val pnpmCommand = if (System.getProperty("os.name").lowercase().contains("windows")) {
-    "pnpm.cmd"
-} else {
-    "pnpm"
-}
-
-val buildCommonFrontend by tasks.registering(Exec::class) {
-    group = "build"
-    description = "Builds the SimplePoint common frontend."
-    dependsOn(rootProject.tasks.named("installFrontendDependencies"))
-    workingDir = frontendRoot
-    commandLine(pnpmCommand, "run", "build:common")
-
-    inputs.files(
-        frontendRoot.resolve("package.json"),
-        frontendRoot.resolve("pnpm-lock.yaml"),
-        frontendRoot.resolve("pnpm-workspace.yaml"),
-        frontendCommonDir.resolve("package.json"),
-        frontendCommonDir.resolve("module.exposes.ts"),
-        frontendCommonDir.resolve("rslib.config.ts"),
-        frontendCommonDir.resolve("tsconfig.json")
-    )
-    inputs.files(fileTree(frontendRoot.resolve("libs")) {
-        exclude("**/node_modules/**", "**/dist/**")
-    })
-    inputs.files(fileTree(frontendCommonDir.resolve("src")) {
-        exclude("**/node_modules/**", "**/dist/**")
-    })
-    outputs.dir(frontendCommonDistDir)
-}
 
 configure<SourceSetContainer> {
     named("main") {
@@ -51,13 +20,21 @@ configure<SourceSetContainer> {
 }
 
 tasks.named<ProcessResources>("processResources") {
-    dependsOn(buildCommonFrontend)
-    from(frontendCommonDistDir) {
-        into("static")
+    if (!providers.gradleProperty("simplepoint.frontend.skip").map(String::toBoolean).getOrElse(false)) {
+        dependsOn(rootProject.tasks.named("buildCommonFrontend"))
+        from(frontendCommonDistDir) {
+            into("static")
+        }
     }
 }
 
 dependencies {
+    implementation(project(":simplepoint-core"))
+    implementation(libs.swagger.annotations)
+    api(project(":simplepoint-core"))
+    api(project(":simplepoint-security:simplepoint-security-core"))
+    implementation("org.springframework.security:spring-security-oauth2-core")
+
     implementation(project(":simplepoint-boot:simplepoint-boot-starter"))
     implementation(project(":simplepoint-boot:simplepoint-boot-config-consul-starter"))
 
@@ -79,14 +56,11 @@ dependencies {
 
     // 引入RBAC权限体系核心插件
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-api"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-repository"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-service"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-rest"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation"))
     // 引入RBAC权限体路由插件
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-repository"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-service"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-rest"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-implementation"))
     // 引入OIDC体系插件
     implementation(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-repository"))
@@ -101,16 +75,11 @@ dependencies {
 
     // 引入租户管理插件
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-api"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-repository"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-service"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-rest"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation"))
 
     // 引入对象存储插件
     implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-api"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-repository"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-service"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-rest"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-s3"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-implementation"))
 
     // 系统通知、用户收件箱与主动推送
     implementation(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-api"))

@@ -134,5 +134,6 @@
   "dna.metadata.page.table.constraints.reference": "Reference",
   "dna.metadata.page.table.constraints.checkExpression": "CHECK Expression",
   "dna.metadata.page.table.constraints.actions": "Actions",
-  "dna.metadata.page.table.constraints.drop": "Delete"
+  "dna.metadata.page.table.constraints.drop": "Delete",
+  "dna.metadata.page.nodeType.DATA_SOURCE": "Data Source"
 }

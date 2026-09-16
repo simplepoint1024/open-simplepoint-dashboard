@@ -4,7 +4,7 @@ import handlers from './handlers';
 const contract = defineResource({
   id: 'auditing.logging.resource-grant-logs',
   scope: 'auditing',
-  backendModule: 'simplepoint-plugin-auditing-logging-rest',
+  backendModule: 'simplepoint-plugin-auditing-logging-implementation',
   backendController: 'ResourceGrantLogController',
   contextPath: '/auditing',
   paths: ['/logging/resource-grant-logs'],

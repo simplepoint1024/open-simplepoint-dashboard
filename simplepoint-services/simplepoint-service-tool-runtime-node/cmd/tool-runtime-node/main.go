@@ -32,6 +32,10 @@ func main() {
 		logger.Error("invalid tool runtime configuration", "error", err)
 		os.Exit(1)
 	}
+	if err = runtimeapi.InstallLauncher(cfg); err != nil {
+		logger.Error("install trusted Runtime launcher", "error", err)
+		os.Exit(1)
+	}
 	engine, err := runtimeapi.NewEngine(cfg)
 	if err != nil {
 		logger.Error("initialize OCI runtime engine", "error", err)

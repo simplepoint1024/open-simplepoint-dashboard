@@ -1,13 +1,14 @@
 import api from '@/api/index';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Drawer, message} from 'antd';
+import {App as AntdApp, Drawer} from 'antd';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import ResourceConfig from './config/resource';
 
 const baseConfig = api['platform.applications'];
 
 const App = () => {
+  const {message} = AntdApp.useApp();
   const [openResourceConfig, setOpenResourceConfig] = useState(false);
   const [applicationCode, setApplicationCode] = useState<string>('');
   const [drawerHeight, setDrawerHeight] = useState<number>(480);
@@ -55,7 +56,7 @@ const App = () => {
       setApplicationCode(nextApplicationCode);
       setOpenResourceConfig(true);
     },
-  }), [t]);
+  }), [message, t]);
 
   return (
     <div>

@@ -12,7 +12,7 @@ export interface RouteInfo {
   label?: string;
   icon?: string;
   danger?: boolean;
-  routeKind?: 'group' | 'divider' | 'submenu' | 'item';
+  routeKind?: 'group' | 'divider' | 'submenu' | 'item' | 'hidden';
   type?: string;
   disabled?: boolean;
   component?: string;
@@ -33,8 +33,10 @@ export const flattenRoutes = (nodes: RouteInfo[] = []): RouteInfo[] => {
   const res: RouteInfo[] = [];
   const dfs = (arr: RouteInfo[]) => {
     arr.forEach(n => {
-      if (hasChildren(n)) {
-        dfs(n!.children!);
+      if (n.routeKind === 'hidden') return;
+      const visibleChildren = (n.children ?? []).filter(child => child.routeKind !== 'hidden');
+      if (visibleChildren.length > 0) {
+        dfs(visibleChildren);
       } else {
         res.push(n);
       }

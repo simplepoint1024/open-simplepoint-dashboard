@@ -1,8 +1,12 @@
 package org.simplepoint.plugin.ai.agent.api.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.plugin.ai.agent.api.entity.AiAgentVersion;
+import org.simplepoint.plugin.ai.core.api.repository.AiDependencyOptionView;
+import org.simplepoint.plugin.ai.core.api.repository.AiDependencyResolutionView;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -53,4 +57,23 @@ public interface AiAgentVersionRepository
    * Counts non-deleted versions owned by an Agent.
    */
   long countActiveByAgentId(String agentId);
+
+  /**
+   * Searches selectable published Agent version labels for one owner.
+   */
+  Page<AiDependencyOptionView> searchDependencyOptions(
+      boolean tenantOwner,
+      String ownerTenantId,
+      String searchPattern,
+      Pageable pageable
+  );
+
+  /**
+   * Resolves visible published or deprecated Agent version labels.
+   */
+  List<AiDependencyResolutionView> resolveDependencyOptions(
+      boolean tenantOwner,
+      String ownerTenantId,
+      Collection<String> resourceVersionIds
+  );
 }

@@ -4,7 +4,7 @@ import type {TableButtonProps} from '@simplepoint/components/Table';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {Alert, Descriptions, Modal, Tag, message} from 'antd';
+import {Alert, App as AntdApp, Descriptions, Tag} from 'antd';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 
 const baseConfig = api['external-identity-providers'];
@@ -26,9 +26,11 @@ type ConnectionTestResult = {
   tokenUri?: string;
   userInfoUri?: string;
   jwkSetUri?: string;
+  callbackUri?: string;
 };
 
 const IdentityProviderView = () => {
+  const {message, modal} = AntdApp.useApp();
   const {ensure, locale, t} = useI18n();
   const [tableKey, setTableKey] = useState(0);
 
@@ -143,7 +145,7 @@ const IdentityProviderView = () => {
         {}
       );
       hide();
-      Modal.success({
+      modal.success({
         title: t('external-idp.page.test.success', '配置有效'),
         content: (
           <Descriptions column={1} size="small" style={{marginTop: 16}}>
@@ -159,6 +161,9 @@ const IdentityProviderView = () => {
             <Descriptions.Item label="JWK Set URI">
               {result.jwkSetUri || '--'}
             </Descriptions.Item>
+            <Descriptions.Item label={t('external-idp.page.test.callback', '回调地址')}>
+              {result.callbackUri || '--'}
+            </Descriptions.Item>
           </Descriptions>
         ),
       });
@@ -171,7 +176,7 @@ const IdentityProviderView = () => {
         {msg: resolveApiErrorMessage(error, '')}
       ));
     }
-  }, [t]);
+  }, [message, modal, t]);
 
   const customButtonEvents = useMemo<Record<string, (
     selectedRowKeys: React.Key[],
@@ -198,6 +203,7 @@ const IdentityProviderView = () => {
     <div>
       <Alert
         type="info"
+        closable
         showIcon
         style={{marginBottom: 16}}
         message={t(
@@ -208,6 +214,16 @@ const IdentityProviderView = () => {
           'external-idp.page.callback',
           '在外部平台登记回调地址：{url}',
           {url: 'https://授权服务域名/login/oauth2/code/{registrationId}'}
+        )}
+      />
+      <Alert
+        type="warning"
+        showIcon
+        style={{marginBottom: 16}}
+        message={t('external-idp.page.github.title', 'GitHub 接入检查')}
+        description={t(
+          'external-idp.page.github.description',
+          'GitHub OAuth App 必须填写与授权服务完全一致的 Authorization callback URL；授权范围保留 read:user,user:email。配置测试只校验端点与格式，Client ID/Secret 需要通过一次真实登录确认。'
         )}
       />
       <SimpleTable

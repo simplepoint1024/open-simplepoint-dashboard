@@ -1,68 +1,40 @@
 # Data Permission Integration Guide
 
-This guide explains how to integrate the row-level and field-level data permission system into a new resource, controller, or service module.
+## Security contract
 
----
+The effective authorization context is resolved after JWT authentication, using the verified JWT subject. Client `X-Context-Id` is a hint, not a credential. Caller-supplied user, organization, scope and administrator attributes are not forwarded to policy calculation.
 
-## Architecture Overview
+A cache entry is keyed by subject + tenant + selected role + current tenant authorization version. Every request checks the current committed version before reuse. Unversioned scopes are recalculated rather than cached. Deploy the authorization provider and resource-server consumers together; old providers do not expose the new `currentVersion` remote method.
 
-The system has two independent permission dimensions:
+| Dimension | Storage | Enforcement |
+|-----------|---------|-------------|
+| Tenant | Tenant-aware entity + active tenant context | Query filter and explicit by-ID ownership check |
+| Rows | `DataScope` | Base service checks and JPA predicates |
+| Fields | `FieldScope` / `FieldScopeEntry` | Jackson output, base writes and JSON Schema |
+| Role assignment | `RoleScopeBinding` | One independent, revisioned binding per tenant + role |
 
-| Dimension | Entity | Controls |
-|-----------|--------|----------|
-| Row-level | `DataScope` | Which rows a user can see (filters injected via AOP + JPA Specification) |
-| Field-level | `FieldScope` / `FieldScopeEntry` | How individual fields are presented (visible, masked, hidden, or editable) |
+An explicit `ALL` row scope never disables tenant isolation. A platform administrator without a selected tenant retains the explicit platform-level exception. Security/configuration services can bypass row scope, but still require their own tenant and function authorization.
 
-Both dimensions are resolved at login time and stored inside the user's `AuthorizationContext` (cached in Redis):
+## Row-level filtering
 
-- `AuthorizationContext#dataScopeType` — `String` name of the winning `DataScopeType`
-- `AuthorizationContext#deptIds` — set of department IDs for DEPT / DEPT_AND_BELOW / CUSTOM scopes
-- `AuthorizationContext#fieldPermissions` — `Map<String, String>` keyed as `"resource#field"` → `FieldAccessType` name
+Base service defaults use `createdBy` and `createOrgDeptId`. The user's current `orgId` is an input to authorization resolution, not the default department field of a business row.
 
-### DataScopeType merge semantics
+| Scope | Effective rule within the current tenant |
+|-------|-----------------------------------------|
+| ALL | All rows |
+| SELF | Creator equals the authenticated user |
+| DEPT | Current valid organization |
+| DEPT_AND_BELOW | Current organization and tenant-qualified descendants |
+| CUSTOM | Selected organization IDs |
+| Missing/unknown execution context | Deny; never silently use ALL |
 
-Multiple roles are merged into one effective row predicate:
+A normally authenticated user with no configured data scope defaults to SELF. Multiple configured roles retain the existing union semantics: department sets are combined, SELF can be OR-ed with departments, and ALL wins. A missing department retains the existing SELF fallback. New CUSTOM policies must contain valid, active organizations from the current tenant.
 
-| Type | Meaning |
-|------|---------|
-| `ALL` | Access all data; overrides all restrictive scopes |
-| `DEPT_AND_BELOW` | Adds own department + all sub-departments to the effective department set |
-| `DEPT` | Adds own department to the effective department set |
-| `CUSTOM` | Adds explicitly listed department IDs to the effective department set |
-| `SELF` | Adds `ownerField = currentUserId` as an OR condition |
+`BaseServiceImpl` protects page contents/totals, counts, existence checks, by-ID reads, creates, updates and deletes. Bulk deletion requires explicit ALL and is disabled for scope-policy/organization management.
 
-If no `DataScope` is configured for a role-bearing user, the effective scope falls back to `SELF`.
-
-### FieldAccessType precedence (most-permissive wins across roles)
-
-| Level | Type | Meaning |
-|-------|------|---------|
-| 3 | `EDITABLE` | Full read + write |
-| 2 | `VISIBLE` | Read-only, full value |
-| 1 | `MASKED` | Read-only, partially obscured |
-| 0 | `HIDDEN` | Not returned in responses |
-
----
-
-## Row-Level Filtering
-
-### Automatic filtering (recommended)
-
-`BaseServiceImpl.limit()` is already annotated with `@DataScopeFilter(ownerField = "createdBy", deptField = "orgId")`. All services that extend `BaseServiceImpl` automatically get row-level filtering applied whenever the calling user has a `DataScope` configured on their role.
-
-The `BaseRepositoryImpl` reads `DataScopeContext` inside `readSpecification()` and appends the appropriate JPA predicate automatically. No repository changes are needed.
-
-If your entity uses standard field names (`createdBy` / `orgId`), you get filtering for free. Restrictive scopes are **fail-closed**: if the configured field is missing, `CUSTOM` has no department IDs, or an unknown scope type is encountered, the predicate resolves to no rows instead of silently dropping the filter.
-
-The base service also applies row-level checks to generic ID and mutation paths (`findById`, `findAllByIds`, `findAll`, `modifyById`, `removeById`, `removeByIds`, `exists`, and `count`). This prevents a user from listing only permitted rows but then modifying or deleting an out-of-scope row by ID.
-
-### Custom field names
-
-If your service overrides `limit()` with different field names, annotate the override:
+Custom field names must be configured consistently:
 
 ```java
-import org.simplepoint.core.datascopeannotation.DataScopeFilter;
-
 @Override
 @DataScopeFilter(ownerField = "authorId", deptField = "departmentId")
 public <S extends Article> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
@@ -70,169 +42,84 @@ public <S extends Article> Page<S> limit(Map<String, String> attributes, Pageabl
 }
 
 @Override
-protected String dataScopeOwnerField() {
-    return "authorId";
-}
+protected String dataScopeOwnerField() { return "authorId"; }
 
 @Override
-protected String dataScopeDeptField() {
-    return "departmentId";
-}
+protected String dataScopeDeptField() { return "departmentId"; }
 ```
 
-The protected field-name methods are used by base ID/mutation checks (`findById`, `modifyById`, `removeById`, etc.); override them together with the `limit()` annotation so list and by-ID behavior stay consistent.
+Omitting an annotation does not disable base-service checks. Only reviewed security/configuration services should override `isDataScopeApplicable()` to return false. This is not an exemption from tenant or endpoint authorization.
 
-### Opting out
+Custom SQL, repositories called directly, exports, background jobs and external query engines do not acquire automatic protection merely by sharing an entity. They must explicitly apply tenant and row predicates. Missing conditions must deny access. Base methods install a fallback condition even on self-invocation; AOP-only custom methods still require a Spring proxy.
 
-To disable row-level filtering for a specific service's list endpoint, override `limit()` without the annotation:
+## Field-level enforcement
+
+New field entries use a fully qualified entity name and Java property name, for example `org.simplepoint.security.entity.User#phoneNumber`. Unambiguous legacy simple names remain accepted and are normalized on save. Existing legacy policies remain readable. Renaming/moving a resource class requires a policy migration.
+
+| Access | Response | Base write / schema |
+|--------|----------|---------------------|
+| EDITABLE | Original value | Writable |
+| VISIBLE | Original value | Read-only |
+| MASKED | Constant `***` (null stays null) | Read-only; sensitive defaults/examples removed |
+| HIDDEN | Omitted | Read-only; removed from schema properties and required list |
+
+For the same stored key, multiple roles retain most-permissive merge semantics. Unspecified fields remain unrestricted. During mixed canonical/legacy configuration, the stricter of the two aliases is used to avoid unintentionally weakening an old policy.
+
+Serialization does not modify managed entities. On creation, protected reference fields are cleared; protected primitives reject creation because an absent value cannot be distinguished from a supplied primitive default. Use nullable domain fields or a reviewed explicit server-side creation policy where needed. A database default does not necessarily apply when Hibernate sends an explicit null: required values need server-side handling. Updates preserve protected database values.
+
+Application bean serialization is automatic when the ObjectMapper registers `FieldScopeJacksonModule`. A DTO with matching property names can share its entity policy:
 
 ```java
-@Override
-public <S extends AuditLog> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
-    // audit logs are intentionally exempt from data scope filtering
-    return super.limit(attributes, pageable);
+@PermissionResource(User.class)
+public class UserView {
+    public String phoneNumber;
 }
 ```
 
-### Reading the condition manually (advanced)
-
-If you need to build a custom query outside of `BaseServiceImpl.limit()`, you can read the condition directly. Annotate your method with `@DataScopeFilter` first, then:
+Maps have no reliable entity identity. A projection adapter must supply it explicitly:
 
 ```java
-import org.simplepoint.core.datascopeannotation.DataScopeCondition;
-import org.simplepoint.core.datascopeannotation.DataScopeContext;
-
-DataScopeCondition condition = DataScopeContext.get();
-if (condition != null && !condition.isAllData()) {
-    if (condition.isSelf()) {
-        // filter by condition.getUserId() on ownerField
-    } else if (condition.getDeptIds() != null) {
-        // filter by condition.getDeptIds() on deptField
-        // if condition.isIncludeSelf(), OR with condition.getUserId() on ownerField
-    }
-}
+return FieldPermissionPolicy.project(User.class, projection);
 ```
 
-`DataScopeCondition` provides:
+This helper is a shallow, named-field projection, not a generic recursive scrubber. DTOs with renamed fields, nested projections, custom serializers and raw SQL/Map exports require explicit adapters and endpoint tests. The current schema filtering covers the generated top-level entity properties, not arbitrary nested schema composition.
 
-| Method | Description |
-|--------|-------------|
-| `isAllData()` | `true` when scope type is `ALL` |
-| `isSelf()` | `true` when scope type is `SELF` |
-| `getDeptIds()` | Non-null set for DEPT / DEPT_AND_BELOW / CUSTOM; `null` otherwise |
-| `isIncludeSelf()` | `true` when SELF should be OR-ed into a department/custom predicate |
-| `getUserId()` | Current user's ID |
-| `getDeptField()` | Value of `@DataScopeFilter#deptField` |
-| `getOwnerField()` | Value of `@DataScopeFilter#ownerField` |
+## Configuration API
 
-> **Spring proxy boundary warning:** `@DataScopeFilter` is intercepted by Spring AOP, which only fires when a method is called through the Spring proxy — i.e., from outside the bean, via an injected reference. Internal calls such as `this.limit(...)`, constructor calls, or calls from private/final methods bypass the proxy and will **not** trigger data scope filtering. If you need filtering in such cases, extract the call to a separate Spring bean or invoke the method through the self-injected proxy.
+All paths below are backend paths; the frontend may add its configured gateway prefix.
 
----
+- `GET/POST/PUT/DELETE /data-scopes`; PUT carries the ID in its body.
+- `GET/POST/PUT/DELETE /field-scopes`; POST/PUT only edit policy metadata.
+- `GET /field-scopes/catalog` returns this service's managed entity/field catalog.
+- `PUT /field-scopes/entries?fieldScopeId={id}` replaces validated entries (maximum 500).
+- `GET /roles/scope-assignment?roleId={id}` reads the independent binding or legacy state.
+- `PUT /roles/scope-assignment` saves both scope selections together.
+- `GET /data-scopes/effective` shows only the caller's verified effective scope, departments, field policies and version.
 
-## Field-Level Filtering
-
-Field permissions are enforced **automatically** via a Jackson `BeanSerializerModifier` registered in `FieldScopeJacksonModule`. No controller or service code is needed.
-
-When an object is serialized to JSON:
-- Fields with `HIDDEN` permission are omitted entirely from the response.
-- Fields with `MASKED` permission are replaced with a partially obscured string (first 3 chars + `****` + last char).
-- Fields with `VISIBLE` or `EDITABLE` permission are returned as-is.
-
-The lookup key used is `"SimpleClassName#fieldName"` — e.g., `"User#phoneNumber"`. This must match the value of `FieldScopeEntry#field` and `FieldScopeEntry#resource` stored in the database.
-
-### Write-side enforcement
-
-`BaseServiceImpl` also enforces field permissions on writes:
-- **`create()`**: Non-EDITABLE fields (HIDDEN/MASKED/VISIBLE) supplied by the client are cleared to `null` before the entity is persisted. Primitive fields are not affected.
-- **`modifyById()`**: Non-EDITABLE fields are excluded from the set of modifiable fields, so the DB-persisted value is automatically preserved regardless of what the client sent.
-
-> **Note:** If a non-EDITABLE field has a `NOT NULL` DB constraint, marking it as HIDDEN/MASKED in a FieldScope is a configuration error — creation of new records would fail at the DB level. Only mark fields HIDDEN/MASKED that are either auto-populated by auditing or have a DB default.
-
-### Registering a field for masking
-
-Create a `FieldScope` with one or more `FieldScopeEntry` records:
-
-```
-POST /field-scopes
-{ "name": "Sensitive User Fields" }
-
-PUT /field-scopes/{id}/entries
-[
-  { "resource": "User", "field": "phoneNumber", "access": "MASKED" },
-  { "resource": "User", "field": "idCard",      "access": "HIDDEN" }
-]
-```
-
-Then assign the `FieldScope` to a role (see [Configuration Management](#configuration-management)).
-
----
-
-## Configuration Management
-
-### DataScope (row-level)
-
-REST endpoints: `GET /data-scopes`, `POST /data-scopes`, `PUT /data-scopes/{id}`, `DELETE /data-scopes`
-
-### FieldScope (field-level)
-
-REST endpoints: `GET /field-scopes`, `POST /field-scopes`, `PUT /field-scopes/{id}`, `DELETE /field-scopes`
-
-Replace entries for a scope: `PUT /field-scopes/{id}/entries`
-
-### Assign scopes to a role
-
-Scopes are assigned per role via the role permissions UI, or directly through the API:
-
-```
-GET  /roles/scope-assignment?roleId={roleId}
-PUT  /roles/scope-assignment
-Body: { "roleId": "...", "dataScopeId": "...", "fieldScopeId": "..." }
-```
-
-The scope assignment is also included when authorizing role permissions:
-
-```
-PUT /roles/{roleId}/permissions
-Body: { "permissionIds": [...], "dataScopeId": "...", "fieldScopeId": "..." }
-```
-
----
-
-## User Organization Membership
-
-For `DEPT` and `DEPT_AND_BELOW` scope types to work, users must have an `orgId` field populated (references the `Organization` entity). This is set when creating or updating a user:
+Example assignment:
 
 ```json
-POST /users
 {
-  "username": "alice",
-  "orgId": "<organization-id>"
+  "roleId": "role-id",
+  "dataScopeId": "data-policy-id",
+  "fieldScopeId": "field-policy-id",
+  "revision": 2,
+  "confirmLegacyReplacement": false
 }
 ```
 
-The authorization service performs a BFS traversal of the `Organization` tree (via `OrganizationRepository#findIdsByParentIds`) to compute the full set of department IDs for `DEPT_AND_BELOW`.
+For an unbound role, revision is null. After every successful write, read the new revision before another edit. A stale revision rejects the write. A role with zero resource grants can still save a scope binding. Null data scope explicitly restores SELF; null field scope removes field restrictions.
 
----
+Existing grants are a compatibility fallback only when no independent binding exists. All legacy combinations are preserved on read; conflicting combinations require explicit confirmation before replacement. An independently saved empty binding suppresses legacy fallback. Resource-only saves can use `updateScope: false` on the access-center API; full access-center saves must include the scope revision.
 
-## Cache Invalidation
+Role binding writes require the current tenant owner or administrator. Supplied policy IDs must belong to the tenant and not be deleted. Unknown/duplicate fields are rejected before mutating entries; existing rows are reused to avoid unique-key collisions.
 
-`AuthorizationContext` is cached in Redis with a 2-hour TTL. Mutations to `DataScope` or `FieldScope` automatically increment the tenant's permission version (same mechanism as role/permission mutations), which causes the next request to recompute the context.
+The field catalog currently covers the common service's persistence unit, not a distributed AI/DNA catalog. Existing remote-module policies can still be resolved, but registering/editing new remote fields needs a catalog contribution from that module. The effective preview is not another-user impersonation or an unsaved-policy simulator, and does not prove that every business endpoint has integrated enforcement.
 
-No manual cache flushing is required.
+## Version invalidation and operations
 
----
+Policy/role edits and organization changes increment the tenant authorization version in the same database transaction. User modification refreshes every tenant returned by the user's membership lookup, since the current User model stores organization globally. Failed transactions must not publish a new version. A new request checks the committed version; requests already in flight are not forcibly terminated. The two-hour cache TTL is a retention limit, not the revocation delay.
 
-## Entity Field Conventions
+Before deleting a policy, detach it from all effective roles. A dangling/deleted policy is fail-closed and can deny requests until repaired. This release does not add policy-reference deletion prevention.
 
-To make filtering work correctly, entities that need row-level filtering should follow these field naming conventions (or configure alternatives via `@DataScopeFilter`):
-
-| Convention field | Default annotation value | Description |
-|-----------------|--------------------------|-------------|
-| `createdBy` | `ownerField = "createdBy"` | Populated automatically by JPA auditing |
-| `orgId` | `deptField = "orgId"` | Department the record belongs to |
-
-If your entity uses different field names, pass them explicitly:
-
-```java
-@DataScopeFilter(ownerField = "authorId", deptField = "departmentId")
-```
+Apply the additive [PostgreSQL migration](../deployment/sql/20260908-role-scope-binding.sql) before deploying the updated provider/consumers. No bulk legacy data rewrite is required. Do not drop legacy scope columns. The [rollout notes](../deployment/data-permission-hardening.md) describe validation and rollback constraints.

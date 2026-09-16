@@ -3,7 +3,7 @@ import SimpleTable from '@simplepoint/components/SimpleTable';
 import {get} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {Page} from '@simplepoint/shared/types/request';
-import {Alert, Tag, message} from 'antd';
+import {Alert, App as AntApp, Tag} from 'antd';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {resolveErrorMessage} from '../shared';
 
@@ -19,6 +19,7 @@ type DataSourceOption = {
 
 const App = () => {
   const {t, ensure, locale} = useI18n();
+  const {message} = AntApp.useApp();
   const [dataSources, setDataSources] = useState<DataSourceOption[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -43,7 +44,7 @@ const App = () => {
       setLoaded(true);
       message.error(resolveErrorMessage(error, t('dna.dataAssets.error.loadDataSources', 'Failed to load data source list')));
     });
-  }, [loadDataSources]);
+  }, [loadDataSources, message, t]);
 
   const formSchemaTransform = useCallback((schema: any) => {
     const nextSchema = structuredClone(schema ?? {});

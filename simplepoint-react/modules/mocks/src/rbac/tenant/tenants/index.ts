@@ -5,7 +5,7 @@ import handlers from './handlers';
 const contract = defineResource({
   id: 'rbac.tenant.tenants',
   scope: 'common',
-  backendModule: 'simplepoint-plugin-rbac-tenant-rest',
+  backendModule: 'simplepoint-service-common',
   backendController: 'TenantController',
   contextPath: '/common',
   paths: ['/tenants', '/platform/tenants'],

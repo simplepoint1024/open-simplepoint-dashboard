@@ -11,6 +11,7 @@ import org.simplepoint.plugin.ai.agent.api.model.AgentExecutionPauseRequest;
 import org.simplepoint.plugin.ai.agent.api.model.AgentExecutionStartRequest;
 import org.simplepoint.plugin.ai.agent.api.model.AgentHumanInterventionRequest;
 import org.simplepoint.plugin.ai.agent.api.model.AgentHumanInterventionResponseRequest;
+import org.simplepoint.plugin.ai.agent.api.model.AgentPinnedChildCancelCommand;
 import org.simplepoint.plugin.ai.agent.api.model.AgentTraceStatus;
 import org.simplepoint.plugin.ai.agent.api.model.AgentTraceType;
 import org.simplepoint.plugin.ai.agent.api.model.AgentWorkflowExecutionCommand;
@@ -37,6 +38,16 @@ public interface AiAgentExecutionService {
    */
   AiAgentExecution startVersionForWorkflow(
       AgentWorkflowExecutionCommand command
+  );
+
+  /**
+   * Cancels the exact child execution pinned by a parent runtime.
+   *
+   * <p>This transaction-bound Java contract is not exposed as a public REST
+   * endpoint and does not use the current management scope.</p>
+   */
+  AiAgentExecution cancelPinnedChild(
+      AgentPinnedChildCancelCommand command
   );
 
   /**

@@ -9,6 +9,13 @@
   "ai.model-debug.cancelled": "Generation stopped",
   "ai.model-debug.failed": "This invocation failed",
   "ai.model-debug.unavailable": "Only enabled, available language or multimodal models can be debugged",
+  "ai.model-debug.error.busy": "Too many debug requests are running. Please try again later",
+  "ai.model-debug.error.failed": "Model debugging failed. Please try again later",
   "ai.model-debug.error.generate": "Model invocation failed",
-  "ai.model-debug.error.incomplete": "The model response did not complete normally"
+  "ai.model-debug.error.generationFailed": "Model generation failed. Please try again later",
+  "ai.model-debug.error.incomplete": "The model response did not complete normally",
+  "ai.model-debug.error.operationUnavailable": "This model cannot be debugged right now. Refresh and try again",
+  "ai.model-debug.error.providerFailed": "The model access request failed. Please try again later",
+  "ai.model-debug.error.requestInvalid": "The debug request is invalid. Check the conversation and try again",
+  "ai.model-debug.error.streamUnavailable": "The streaming response body is unavailable"
 }

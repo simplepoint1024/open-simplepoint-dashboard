@@ -449,19 +449,18 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 }
 
 .nb-tabs-bar {
-    min-height: 43px;
-    padding: 5px 8px 4px;
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--nb-bg) 92%, var(--ant-color-primary, #1677ff) 8%),
-            color-mix(in srgb, var(--nb-bg) 96%, #7a8ca5 4%)
-        );
+    min-height: 42px;
+    padding: 5px 10px 4px;
+    background: var(--nb-bg);
     border-bottom: 1px solid var(--nb-border);
     flex-shrink: 0;
 }
 
-/* ——— Tab 页签：轻量浮层卡片风格 ——— */
+/* Global navigation tabs: compact, neutral and consistent with Ant Design. */
+.nb-tabs-bar .ant-tabs {
+    min-width: 0;
+}
+
 .nb-tabs-bar .ant-tabs-nav {
     margin-bottom: 0;
     min-height: 33px;
@@ -472,38 +471,34 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 }
 
 .nb-tabs-bar .ant-tabs-tab {
-    background: color-mix(in srgb, var(--nb-bg) 72%, transparent) !important;
-    border: 1px solid transparent !important;
-    border-radius: 7px !important;
-    padding: 0 9px 0 12px !important;
+    background: color-mix(in srgb, var(--nb-bg) 96%, var(--ant-color-text, #1f1f1f) 4%) !important;
+    border: 1px solid var(--nb-border) !important;
+    border-radius: 6px !important;
+    padding: 0 9px 0 10px !important;
     height: 32px !important;
     margin: 0 !important;
     transition:
         color 0.16s,
         background 0.16s,
         border-color 0.16s,
-        box-shadow 0.16s,
-        transform 0.16s !important;
+        box-shadow 0.16s !important;
     font-size: 12px !important;
 }
 
 .nb-tabs-bar .ant-tabs-tab:hover {
-    background: color-mix(in srgb, var(--nb-bg) 94%, var(--ant-color-primary, #1677ff) 6%) !important;
-    border-color: color-mix(in srgb, var(--nb-border) 72%, var(--ant-color-primary, #1677ff) 28%) !important;
-    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--nb-bg) 92%, var(--ant-color-primary, #1677ff) 8%) !important;
+    border-color: color-mix(in srgb, var(--nb-border) 55%, var(--ant-color-primary, #1677ff) 45%) !important;
 }
 
 .nb-tabs-bar .ant-tabs-tab-active {
-    background: var(--nb-bg, #fff) !important;
-    border-color: color-mix(in srgb, var(--nb-border) 76%, var(--ant-color-primary, #1677ff) 24%) !important;
-    box-shadow:
-        0 2px 8px rgba(15, 38, 70, 0.09),
-        inset 3px 0 0 var(--ant-color-primary, #1677ff);
+    background: color-mix(in srgb, var(--nb-bg) 94%, var(--ant-color-primary, #1677ff) 6%) !important;
+    border-color: color-mix(in srgb, var(--nb-border) 40%, var(--ant-color-primary, #1677ff) 60%) !important;
+    box-shadow: inset 0 -2px 0 var(--ant-color-primary, #1677ff);
 }
 
 .nb-tabs-bar .ant-tabs-tab-active .ant-tabs-tab-btn {
     color: var(--ant-color-primary, #1677ff) !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
 }
 
 .nb-tab-label {
@@ -542,6 +537,66 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 
 .nb-tabs-bar .ant-tabs-nav-add {
     display: none !important;
+}
+
+.nb-tabs-overflow-trigger {
+    height: 32px !important;
+    min-width: 42px;
+    margin-left: 6px;
+    padding: 0 8px !important;
+    border: 1px solid var(--nb-border) !important;
+    border-radius: 6px !important;
+    color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65)) !important;
+    background: color-mix(in srgb, var(--nb-bg) 96%, var(--ant-color-text, #1f1f1f) 4%) !important;
+}
+
+.nb-tabs-overflow-trigger:hover,
+.nb-tabs-overflow-trigger[aria-expanded="true"] {
+    color: var(--ant-color-primary, #1677ff) !important;
+    border-color: color-mix(in srgb, var(--nb-border) 45%, var(--ant-color-primary, #1677ff) 55%) !important;
+    background: color-mix(in srgb, var(--nb-bg) 92%, var(--ant-color-primary, #1677ff) 8%) !important;
+}
+
+.nb-tabs-overflow-count {
+    min-width: 14px;
+    font-size: 11px;
+    line-height: 1;
+    text-align: center;
+}
+
+.nb-tabs-overflow-dropdown .ant-dropdown-menu {
+    max-height: min(420px, calc(100vh - 120px));
+    min-width: 230px;
+    padding: 6px;
+    overflow-y: auto;
+}
+
+.nb-tabs-overflow-menu-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+}
+
+.nb-tabs-overflow-menu-title,
+.nb-tabs-overflow-menu-title .nb-tab-label {
+    min-width: 0;
+    flex: 1;
+}
+
+.nb-tabs-overflow-close {
+    flex: 0 0 auto;
+    width: 22px !important;
+    height: 22px !important;
+    padding: 0 !important;
+    opacity: 0.45;
+}
+
+.nb-tabs-overflow-close:hover {
+    color: var(--ant-color-error, #ff4d4f) !important;
+    opacity: 1;
 }
 
 .nb-inner-content {

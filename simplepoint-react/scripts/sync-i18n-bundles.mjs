@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {checkProjectTranslationUsage} from './i18n/check-usage.mjs';
 
 const args = new Set(process.argv.slice(2));
 const checkOnly = args.has('--check');
@@ -14,6 +15,7 @@ const frontendBundlesDir = path.join(
   reactRoot,
   'modules/mocks/src/i18n/bundles/local'
 );
+const dynamicRulesFile = path.join(scriptDir, 'i18n/dynamic-keys.json');
 
 const frontendNamespaceSources = [
   'modules/simplepoint-host/src/fetches/index.ts',
@@ -140,6 +142,24 @@ const assertDeclaredNamespacesExist = bundles => {
   }
 };
 
+const assertSharedKeysCompatible = bundles => {
+  for (const [locale, namespaces] of Object.entries(bundles)) {
+    const seen = new Map();
+    for (const [namespace, messages] of Object.entries(namespaces)) {
+      for (const [code, message] of Object.entries(messages)) {
+        const existing = seen.get(code);
+        if (existing && existing.message !== message) {
+          throw new Error(
+            `${locale} key ${code} conflicts between namespaces `
+            + `${existing.namespace} and ${namespace}`
+          );
+        }
+        if (!existing) seen.set(code, {message, namespace});
+      }
+    }
+  }
+};
+
 const assertFrontendBundlesMatch = bundles => {
   const expectedFiles = new Set(Object.keys(bundles).map(locale => `${locale}.json`));
   const actualFiles = fs.existsSync(frontendBundlesDir)
@@ -181,13 +201,21 @@ try {
   const bundles = readBackendBundles();
   assertLocaleParity(bundles);
   assertDeclaredNamespacesExist(bundles);
+  assertSharedKeysCompatible(bundles);
+  const usageSummary = checkProjectTranslationUsage({reactRoot, bundles, rulesFile: dynamicRulesFile});
 
   if (checkOnly) {
     assertFrontendBundlesMatch(bundles);
-    console.log('i18n bundles are in sync.');
+    console.log(
+      `i18n bundles and usage are valid: ${usageSummary.literalCalls} literal calls, `
+      + `${usageSummary.dynamicCalls} reviewed dynamic calls.`
+    );
   } else {
     writeFrontendBundles(bundles);
-    console.log('i18n bundles synced from backend resources.');
+    console.log(
+      `i18n bundles synced; usage is valid: ${usageSummary.literalCalls} literal calls, `
+      + `${usageSummary.dynamicCalls} reviewed dynamic calls.`
+    );
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);

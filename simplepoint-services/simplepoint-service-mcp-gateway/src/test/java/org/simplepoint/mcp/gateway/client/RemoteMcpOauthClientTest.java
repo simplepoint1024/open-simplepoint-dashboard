@@ -1,6 +1,7 @@
 package org.simplepoint.mcp.gateway.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -133,6 +134,30 @@ class RemoteMcpOauthClientTest {
         "resource=" + encoded(origin + "/mcp/demo")
     ));
     assertTrue(tokenRequestBody.get().contains("code_verifier=pkce-verifier"));
+  }
+
+  @Test
+  void exchangesAuthorizationCodeWithoutOptionalResourceIndicator() {
+    McpGatewayOauthTokenResult result = client.exchange(
+        new McpGatewayOauthTokenRequest(
+            origin + "/oauth2/token",
+            "authorization_code",
+            "github-client",
+            "github-secret",
+            "client_secret_post",
+            "authorization-code",
+            "pkce-verifier",
+            "http://127.0.0.1:8080/ai/workbench/mcp-servers",
+            null,
+            null,
+            null,
+            true
+        )
+    );
+
+    assertEquals("access-token", result.accessToken());
+    assertFalse(tokenRequestBody.get().contains("resource="));
+    assertTrue(tokenRequestBody.get().contains("client_secret=github-secret"));
   }
 
   private void protectedResourceMetadata(final HttpExchange exchange)

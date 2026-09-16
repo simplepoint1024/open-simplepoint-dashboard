@@ -5,7 +5,7 @@ import type {TableButtonProps} from '@simplepoint/components/Table';
 import {get, post, put} from '@simplepoint/shared/api/methods';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {message, Tag} from 'antd';
+import {App as AntdApp, Tag} from 'antd';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 
 const baseConfig = api['oidc-clients'];
@@ -176,6 +176,7 @@ const formToConfiguration = (
 });
 
 const App = () => {
+  const {message} = AntdApp.useApp();
   const {ensure, locale, t} = useI18n();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<OidcClientFormData | null>(null);
@@ -393,7 +394,7 @@ const App = () => {
         }
       },
     }),
-    [t]
+    [message, t]
   );
 
   const handleSubmit = useCallback(async (
@@ -412,7 +413,7 @@ const App = () => {
     }
     await post(`${baseConfig.baseUrl}/configuration`, payload);
     message.success(t('table.addSuccess', '新增成功'));
-  }, [t]);
+  }, [message, t]);
 
   const columnOverrides = useMemo(() => ({
     clientAuthenticationMethods: {

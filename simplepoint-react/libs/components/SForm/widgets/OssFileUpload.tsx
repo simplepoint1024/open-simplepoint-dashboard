@@ -1,5 +1,5 @@
 import {DeleteOutlined, DownloadOutlined, LoadingOutlined, UploadOutlined} from '@ant-design/icons';
-import {Button, Space, Upload, message} from 'antd';
+import {App, Button, Space, Upload} from 'antd';
 import {useState} from 'react';
 import {request} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
@@ -32,6 +32,7 @@ const OssFileUpload = ({
   accept,
 }: OssFileUploadProps) => {
   const {t} = useI18n();
+  const {message} = App.useApp();
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string>();
   const blocked = disabled || readOnly || uploading;

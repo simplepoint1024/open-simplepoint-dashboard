@@ -4,16 +4,20 @@ provider "consul" {
 }
 
 locals {
-  services_dir = "${path.module}/config"
-  service_configs = {
-    for relpath in fileset(local.services_dir, "**") :
-    relpath => file("${local.services_dir}/${relpath}")
-  }
+  config_root = "${path.module}/../../config/consul"
+  profile     = var.environment
+  base_dir    = "${local.config_root}/base"
+  profile_dir = "${local.config_root}/profiles/${local.profile}"
 
-  all_config = {
-    for relpath, content in local.service_configs :
-    relpath => content
+  base_configs = {
+    for relpath in fileset(local.base_dir, "**/*.properties") :
+    relpath => file("${local.base_dir}/${relpath}")
   }
+  profile_configs = {
+    for relpath in try(fileset(local.profile_dir, "**/*.properties"), toset([])) :
+    relpath => file("${local.profile_dir}/${relpath}")
+  }
+  all_config = merge(local.base_configs, local.profile_configs)
 }
 
 resource "consul_keys" "service_config" {

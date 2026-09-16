@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.ai.runtime.api.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,6 +18,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.plugin.ai.runtime.api.model.AiRuntimeErrorCodeSerializer;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeNodeStatus;
 
 /**
@@ -209,6 +211,7 @@ public class AiRuntimeNode extends BaseEntityImpl<String> {
 
   @Column(name = "last_error", length = 1024)
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+  @JsonSerialize(using = AiRuntimeErrorCodeSerializer.class)
   private String lastError;
 
   @Version

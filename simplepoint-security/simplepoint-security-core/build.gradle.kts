@@ -6,6 +6,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation(libs.swagger.annotations)
     api("org.springframework.boot:spring-boot-starter-security")
+    implementation("commons-codec:commons-codec")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

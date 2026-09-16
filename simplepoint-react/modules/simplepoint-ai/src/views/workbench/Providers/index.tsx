@@ -1,18 +1,26 @@
 import api from '@/api';
 import type {TableButtonProps} from '@simplepoint/components/Table';
 import SimpleTable from '@simplepoint/components/SimpleTable';
+import DataTable from '@simplepoint/components/DataTable';
 import {get, post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {Modal, Table, Tag, Typography, message} from 'antd';
+import {App, Tag, Typography} from 'antd';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {modelTypeLabel, resourceScopeLabel} from '../modelLabels';
+import {
+  resolveProviderMessage,
+  resolveProviderOperationError,
+  resolveProviderStatus,
+} from './messageCodes';
 
 const {Text} = Typography;
 type ProviderRow = {
   id?: string;
   name?: string;
   code?: string;
-  providerType?: string;
+  vendor?: string;
   lastStatus?: string;
+  lastMessage?: string;
   hasApiKey?: boolean;
   scopeType?: string;
   tenantId?: string;
@@ -23,12 +31,19 @@ type DiscoveredModel = {
   displayName?: string;
   modelType?: string;
   ownedBy?: string;
+  pricing?: {
+    currency?: string;
+    inputTokenPrice?: number;
+    cachedInputTokenPrice?: number;
+    outputTokenPrice?: number;
+    requestPrice?: number;
+  };
 };
 
 type ConnectionTestResult = {
   discoveredModelCount?: number;
   testedAt?: string;
-  message?: string;
+  messageCode?: string;
 };
 
 type ModelSyncResult = {
@@ -38,21 +53,40 @@ type ModelSyncResult = {
   unavailable?: number;
 };
 
-const providerTypeLabels: Record<string, string> = {
+const providerVendorLabels: Record<string, string> = {
   OPENAI: 'OpenAI',
   ANTHROPIC: 'Anthropic',
-  OPENAI_COMPATIBLE: 'OpenAI Compatible',
-};
-
-const resolveErrorMessage = (error: unknown, fallback: string) => {
-  if (error instanceof Error && error.message) return error.message;
-  if (typeof error === 'string' && error) return error;
-  return fallback;
+  GOOGLE_GEMINI: 'Google Gemini',
+  AZURE_OPENAI: 'Azure OpenAI',
+  MISTRAL: 'Mistral AI',
+  GROQ: 'Groq',
+  DEEPSEEK: 'DeepSeek',
+  XAI: 'xAI',
+  OPENROUTER: 'OpenRouter',
+  TOGETHER_AI: 'Together AI',
+  FIREWORKS_AI: 'Fireworks AI',
+  ALIBABA_QWEN: 'Alibaba Qwen / DashScope',
+  MOONSHOT: 'Moonshot / Kimi',
+  MINIMAX: 'MiniMax',
+  STEPFUN: 'StepFun',
+  ZHIPU_AI: 'Zhipu AI / GLM',
+  BAIDU_QIANFAN: 'Baidu Qianfan',
+  TENCENT_HUNYUAN: 'Tencent Hunyuan',
+  VOLCENGINE_DOUBAO: 'Volcengine Doubao',
+  SILICONFLOW: 'SiliconFlow',
+  NVIDIA_NIM: 'NVIDIA NIM',
+  HUGGING_FACE: 'Hugging Face',
+  COHERE: 'Cohere',
+  OLLAMA: 'Ollama',
+  LM_STUDIO: 'LM Studio',
+  VLLM: 'vLLM',
+  CUSTOM: 'Custom',
 };
 
 const Providers = () => {
   const baseConfig = api['ai-workbench.providers'];
   const {t, ensure, locale} = useI18n();
+  const {message, modal} = App.useApp();
   const [tableKey, setTableKey] = useState(0);
 
   useEffect(() => {
@@ -64,11 +98,11 @@ const Providers = () => {
   const requireProvider = useCallback((rows: ProviderRow[]) => {
     const provider = rows?.[0];
     if (!provider?.id) {
-      message.warning(t('ai.providers.page.warning.select', '请选择一个模型供应商'));
+      message.warning(t('ai.providers.page.warning.select', '请选择一个模型接入'));
       return null;
     }
     return provider;
-  }, [t]);
+  }, [message, t]);
 
   const handleTest = useCallback(async (rows: ProviderRow[]) => {
     const provider = requireProvider(rows);
@@ -77,8 +111,12 @@ const Providers = () => {
     try {
       const result = await post<ConnectionTestResult>(`${baseConfig.baseUrl}/${provider.id}/test`, {});
       hide();
-      message.success(result.message || t('ai.providers.page.success.test', '连接测试成功'));
-      Modal.success({
+      const descriptor = resolveProviderMessage(result.messageCode) ?? {
+        key: 'ai.providers.page.success.test',
+        fallback: '连接测试成功',
+      };
+      message.success(t(descriptor.key, descriptor.fallback));
+      modal.success({
         title: t('ai.providers.page.modal.test.title', '连接测试成功'),
         content: t(
           'ai.providers.page.modal.test.content',
@@ -89,10 +127,14 @@ const Providers = () => {
       refresh();
     } catch (error) {
       hide();
-      message.error(resolveErrorMessage(error, t('ai.providers.page.error.test', '连接测试失败')));
+      const descriptor = resolveProviderOperationError(error, {
+        key: 'ai.providers.page.error.test',
+        fallback: '连接测试失败',
+      });
+      message.error(t(descriptor.key, descriptor.fallback));
       refresh();
     }
-  }, [refresh, requireProvider, t]);
+  }, [baseConfig.baseUrl, message, modal, refresh, requireProvider, t]);
 
   const handleDiscover = useCallback(async (rows: ProviderRow[]) => {
     const provider = requireProvider(rows);
@@ -101,11 +143,11 @@ const Providers = () => {
     try {
       const models = await get<DiscoveredModel[]>(`${baseConfig.baseUrl}/${provider.id}/models/discover`);
       hide();
-      Modal.info({
-        width: 860,
-        title: t('ai.providers.page.modal.discover.title', '供应商可用模型'),
+      modal.info({
+        width: 1280,
+        title: t('ai.providers.page.modal.discover.title', '接入可用模型'),
         content: (
-          <Table
+          <DataTable<DiscoveredModel>
             style={{marginTop: 16}}
             size="small"
             rowKey="modelId"
@@ -114,17 +156,41 @@ const Providers = () => {
             dataSource={models}
             columns={[
               {title: t('ai.models.title.modelId', '模型 ID'), dataIndex: 'modelId'},
-              {title: t('ai.models.title.modelType', '模型类型'), dataIndex: 'modelType', width: 140},
+              {
+                title: t('ai.models.title.modelType', '模型类型'),
+                dataIndex: 'modelType',
+                width: 140,
+                render: (value: string) => modelTypeLabel(t, value),
+              },
               {title: t('ai.models.title.ownedBy', '所有者'), dataIndex: 'ownedBy', width: 160},
+              {
+                title: t('ai.models.title.billingCurrency', '币种'),
+                dataIndex: ['pricing', 'currency'],
+                width: 80,
+              },
+              {
+                title: t('ai.models.title.inputTokenPrice', '输入 / 百万 Token'),
+                dataIndex: ['pricing', 'inputTokenPrice'],
+                width: 150,
+              },
+              {
+                title: t('ai.models.title.outputTokenPrice', '输出 / 百万 Token'),
+                dataIndex: ['pricing', 'outputTokenPrice'],
+                width: 150,
+              },
             ]}
           />
         ),
       });
     } catch (error) {
       hide();
-      message.error(resolveErrorMessage(error, t('ai.providers.page.error.discover', '获取模型列表失败')));
+      const descriptor = resolveProviderOperationError(error, {
+        key: 'ai.providers.page.error.discover',
+        fallback: '获取模型列表失败',
+      });
+      message.error(t(descriptor.key, descriptor.fallback));
     }
-  }, [requireProvider, t]);
+  }, [baseConfig.baseUrl, message, modal, requireProvider, t]);
 
   const handleSync = useCallback(async (rows: ProviderRow[]) => {
     const provider = requireProvider(rows);
@@ -141,19 +207,25 @@ const Providers = () => {
       refresh();
     } catch (error) {
       hide();
-      message.error(resolveErrorMessage(error, t('ai.providers.page.error.sync', '同步模型列表失败')));
+      const descriptor = resolveProviderOperationError(error, {
+        key: 'ai.providers.page.error.sync',
+        fallback: '同步模型列表失败',
+      });
+      message.error(t(descriptor.key, descriptor.fallback));
       refresh();
     }
-  }, [refresh, requireProvider, t]);
+  }, [baseConfig.baseUrl, message, refresh, requireProvider, t]);
 
   const formSchemaTransform = useCallback((schema: any) => {
     const nextSchema = structuredClone(schema ?? {});
     const properties = nextSchema?.properties ?? {};
-    if (properties.providerType) {
-      properties.providerType.oneOf = Object.entries(providerTypeLabels).map(([value, title]) => ({
+    if (properties.vendor) {
+      properties.vendor.oneOf = Object.entries(providerVendorLabels).map(([value, title]) => ({
         const: value,
         title,
       }));
+      delete properties.vendor.enum;
+      delete properties.vendor.enumNames;
     }
     if (properties.apiKey) {
       properties.apiKey.description = t(
@@ -176,15 +248,17 @@ const Providers = () => {
       width: 110,
       render: (value: string) => (
         <Tag color={value === 'TENANT' ? 'blue' : 'purple'}>
-          {t(`ai.scope.${value}`, value || '-')}
+          {resourceScopeLabel(t, value)}
         </Tag>
       ),
     },
-    providerType: {
-      width: 180,
-      render: (value: string) => providerTypeLabels[value] || value || '-',
+    vendor: {
+      width: 190,
+      render: (value: string) => providerVendorLabels[value]
+        || t('ai.providers.vendor.unknown', '未知模型厂商'),
     },
     baseUrl: {width: 300, ellipsis: true},
+    modelDiscoveryUrl: {width: 320, ellipsis: true},
     enabled: {
       width: 100,
       render: (value: boolean) => (
@@ -202,11 +276,32 @@ const Providers = () => {
     lastStatus: {
       width: 110,
       render: (value: string) => {
-        const color = value === 'SUCCESS' || value === 'SYNCED' ? 'green' : value === 'FAILED' ? 'red' : 'default';
-        return <Tag color={color}>{value || t('ai.common.notTested', '未测试')}</Tag>;
+        const descriptor = resolveProviderStatus(value);
+        const color = descriptor.tone === 'success'
+          ? 'green'
+          : descriptor.tone === 'error' ? 'red' : 'default';
+        return (
+          <Tag color={color}>
+            {t(descriptor.key, descriptor.fallback)}
+          </Tag>
+        );
+      },
+    },
+    lastMessage: {
+      width: 180,
+      render: (value: string) => {
+        const descriptor = resolveProviderMessage(value);
+        return descriptor
+          ? t(descriptor.key, descriptor.fallback)
+          : '-';
       },
     },
   }), [t]);
+
+  const errorMessageResolver = useCallback((error: unknown) => {
+    const descriptor = resolveProviderOperationError(error);
+    return t(descriptor.key, descriptor.fallback);
+  }, [t]);
 
   const customButtonEvents: Record<string, (
     selectedRowKeys: React.Key[],
@@ -225,6 +320,7 @@ const Providers = () => {
       customButtonEvents={customButtonEvents}
       formSchemaTransform={formSchemaTransform}
       columnOverrides={columnOverrides}
+      errorMessageResolver={errorMessageResolver}
     />
   );
 };

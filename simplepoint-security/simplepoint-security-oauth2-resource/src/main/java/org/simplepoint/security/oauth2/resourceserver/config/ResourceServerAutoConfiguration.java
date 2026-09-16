@@ -12,8 +12,6 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Collections;
 import org.simplepoint.cache.CacheService;
-import org.simplepoint.core.AuthorizationContext;
-import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.AuthorizationGrantedAuthorityLoader;
 import org.simplepoint.security.context.AuthorizationContextResolver;
 import org.simplepoint.security.context.AuthorizationContextService;
@@ -111,7 +109,7 @@ public class ResourceServerAutoConfiguration {
         "simplepoint.service-router.internal-auth.oauth2.required-authority",
         "SCOPE_service-router.invoke"
     );
-    http.addFilterBefore(
+    http.addFilterAfter(
         new AuthorizationContextFilter(authorizationContextResolver, serviceRouterExposePath),
         BearerTokenAuthenticationFilter.class
     );
@@ -261,13 +259,8 @@ public class ResourceServerAutoConfiguration {
    */
   @Bean
   public AuthorizationGrantedAuthorityLoader authorizationGrantedAuthorityLoader() {
-    return claims -> {
-      AuthorizationContext authorizationContext = AuthorizationContextHolder.getContext();
-      if (authorizationContext == null) {
-        return Collections.emptyList();
-      }
-      return authorizationContext.asAuthorities();
-    };
+    // The authenticated subject's policy is added by AuthorizationContextFilter.
+    return claims -> Collections.emptyList();
   }
 
 

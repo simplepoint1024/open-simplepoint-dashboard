@@ -25,6 +25,7 @@ import org.simplepoint.plugin.oidc.api.service.ExternalIdentityProviderService;
 import org.simplepoint.plugin.oidc.service.security.ExternalIdentityProviderCredentialCipher;
 import org.simplepoint.plugin.oidc.service.security.ExternalIdentityProviderUrlValidator;
 import org.simplepoint.plugin.oidc.service.support.ExternalIdentityClientRegistrationFactory;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -53,6 +54,8 @@ public class ExternalIdentityProviderServiceImpl
 
   private final ExternalIdentityClientRegistrationFactory registrationFactory;
 
+  private final Environment environment;
+
   /**
    * Creates the provider service.
    */
@@ -61,13 +64,15 @@ public class ExternalIdentityProviderServiceImpl
       final DetailsProviderService detailsProviderService,
       final ExternalIdentityLinkRepository linkRepository,
       final ExternalIdentityProviderCredentialCipher credentialCipher,
-      final ExternalIdentityClientRegistrationFactory registrationFactory
+      final ExternalIdentityClientRegistrationFactory registrationFactory,
+      final Environment environment
   ) {
     super(repository, detailsProviderService);
     this.repository = repository;
     this.linkRepository = linkRepository;
     this.credentialCipher = credentialCipher;
     this.registrationFactory = registrationFactory;
+    this.environment = environment;
   }
 
   @Override
@@ -188,8 +193,21 @@ public class ExternalIdentityProviderServiceImpl
         details.getAuthorizationUri(),
         details.getTokenUri(),
         details.getUserInfoEndpoint().getUri(),
-        details.getJwkSetUri()
+        details.getJwkSetUri(),
+        callbackUri(provider.getRegistrationId())
     );
+  }
+
+  private String callbackUri(final String registrationId) {
+    String issuer = environment.getProperty("server.oauth2.issuer-uri");
+    if (trimToNull(issuer) == null) {
+      issuer = environment.getProperty("spring.security.oauth2.authorizationserver.issuer");
+    }
+    String baseUrl = trimToNull(issuer);
+    if (baseUrl == null) {
+      return "/login/oauth2/code/" + registrationId;
+    }
+    return baseUrl.replaceAll("/+$", "") + "/login/oauth2/code/" + registrationId;
   }
 
   private ResolvedExternalIdentityProvider toResolved(

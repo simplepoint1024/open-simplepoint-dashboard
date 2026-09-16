@@ -62,6 +62,9 @@ public class AiMcpInvocation extends BaseEntityImpl<String> {
   @Column(name = "snapshot_id", length = 64, nullable = false)
   private String snapshotId;
 
+  @Column(name = "runtime_revision_id", length = 64)
+  private String runtimeRevisionId;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "capability_type", length = 16)
   private McpCapabilityType capabilityType;

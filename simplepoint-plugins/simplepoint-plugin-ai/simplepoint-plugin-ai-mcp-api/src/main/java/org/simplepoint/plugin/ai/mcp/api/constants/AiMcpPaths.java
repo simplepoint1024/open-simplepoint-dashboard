@@ -11,6 +11,8 @@ public final class AiMcpPaths {
 
   public static final String PUBLICATIONS = "/workbench/mcp/publications";
 
+  public static final String INVOCATIONS = "/workbench/mcp/invocations";
+
   public static final String INTERNAL_GATEWAY = "/internal/mcp";
 
   public static final String INTERNAL_PUBLICATIONS =
@@ -51,6 +53,9 @@ public final class AiMcpPaths {
 
   public static final String INTERNAL_OAUTH_TOKEN =
       INTERNAL_GATEWAY + "/oauth/token";
+
+  public static final String BROWSER_OAUTH_CALLBACK =
+      "/workbench/mcp-servers/oauth/callback";
 
   private AiMcpPaths() {
   }

@@ -40,8 +40,8 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
@@ -56,6 +56,9 @@ import org.springframework.util.StringUtils;
 @Configuration
 @EnableWebSecurity
 public class AuthorizationServerConfiguration {
+
+  private static final AuthenticationEntryPoint LOGIN_AUTHENTICATION_ENTRY_POINT =
+      new GatewayAwareLoginAuthenticationEntryPoint();
 
   /**
    * Adds standards-based Client ID Metadata Document lookup around persistent clients.
@@ -175,7 +178,7 @@ public class AuthorizationServerConfiguration {
         )
         .exceptionHandling(exceptions -> exceptions
             .defaultAuthenticationEntryPointFor(
-                new LoginUrlAuthenticationEntryPoint("/login"),
+                LOGIN_AUTHENTICATION_ENTRY_POINT,
                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
             )
         );
@@ -207,7 +210,8 @@ public class AuthorizationServerConfiguration {
             authorize -> authorize.requestMatchers(
                     "/actuator/**", "/static/**", "/webjars/**", "/favicon.ico", "/assets/**",
                     "/v3/api-docs/**", "/swagger-ui/**", "/error", "/css/**", "/js/**", "/images/**", "/**.svg",
-                    "/.well-known/appspecific/**", "/register", "/login"
+                    "/.well-known/appspecific/**", "/register", "/login", "/identity.css",
+                    "/external-account/link", "/external-account/cancel"
                 ).permitAll().anyRequest()
                 .authenticated())
         .formLogin(configurer -> {
@@ -223,6 +227,8 @@ public class AuthorizationServerConfiguration {
           configurer.successHandler(loginAuthenticationSuccessHandler);
           configurer.failureHandler(loginAuthenticationFailureHandler);
         })
+        .exceptionHandling(configurer ->
+            configurer.authenticationEntryPoint(LOGIN_AUTHENTICATION_ENTRY_POINT))
         .requestCache(configurer ->
             configurer.requestCache(new HttpSessionRequestCache()));
 

@@ -39,6 +39,8 @@ class DefaultRemoteMcpGatewayOperationsTest {
 
   private DefaultRemoteMcpGatewayOperations operations;
 
+  private McpGatewayProperties properties;
+
   private McpGatewayConnection connection;
 
   private AtomicInteger initializeCount;
@@ -49,7 +51,7 @@ class DefaultRemoteMcpGatewayOperationsTest {
     initializeCount = new AtomicInteger();
     server.createContext("/mcp", this::handleMcp);
     server.start();
-    McpGatewayProperties properties = new McpGatewayProperties();
+    properties = new McpGatewayProperties();
     operations = new DefaultRemoteMcpGatewayOperations(
         new McpEndpointPolicy(),
         properties,
@@ -146,6 +148,12 @@ class DefaultRemoteMcpGatewayOperationsTest {
             ? content.get("greeting")
             : null
     );
+    assertEquals(
+        "preserved",
+        result.structuredContent() instanceof Map<?, ?> content
+            ? content.get("upstreamField")
+            : null
+    );
   }
 
   @Test
@@ -178,6 +186,26 @@ class DefaultRemoteMcpGatewayOperationsTest {
     );
 
     assertThrows(IllegalArgumentException.class, () -> operations.callTool(request));
+  }
+
+  @Test
+  void rejectsToolResultsAboveTheConfiguredSerializedLimit() {
+    properties.setMaxResultBytes(64);
+    McpGatewayToolCallRequest request = new McpGatewayToolCallRequest(
+        connection,
+        "greet",
+        Map.of("name", "SimplePoint"),
+        Map.of(),
+        null
+    );
+
+    IllegalArgumentException failure = assertThrows(
+        IllegalArgumentException.class,
+        () -> operations.callTool(request)
+    );
+
+    assertEquals("MCP tool result exceeds 64 bytes",
+        failure.getMessage());
   }
 
   private void handleMcp(final HttpExchange exchange) throws IOException {
@@ -241,7 +269,8 @@ class DefaultRemoteMcpGatewayOperationsTest {
                         "greeting",
                         Map.of("type", "string")
                     ),
-                    "required", java.util.List.of("greeting")
+                    "required", java.util.List.of("greeting"),
+                    "additionalProperties", false
                 )
             )),
             "nextCursor",
@@ -256,7 +285,10 @@ class DefaultRemoteMcpGatewayOperationsTest {
                 "text", "Hello " + name
             )),
             "isError", false,
-            "structuredContent", Map.of("greeting", "Hello " + name)
+            "structuredContent", Map.of(
+                "greeting", "Hello " + name,
+                "upstreamField", "preserved"
+            )
         );
       }
       case "prompts/list" -> Map.of(

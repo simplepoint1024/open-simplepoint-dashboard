@@ -1,6 +1,4 @@
 {
-  "ai.common.disabled": "Disabled",
-  "ai.common.enabled": "Enabled",
   "ai.knowledge-bases.button.documents": "Documents",
   "ai.knowledge-bases.button.reindex": "Reindex",
   "ai.knowledge-bases.button.retrieve": "Test Retrieval",
@@ -13,9 +11,16 @@
   "ai.knowledge-bases.documents.upload": "Upload Document",
   "ai.knowledge-bases.entity.title": "AI Knowledge Base",
   "ai.knowledge-bases.error.index": "Document indexing failed",
+  "ai.knowledge-bases.error.addText": "Failed to add the text document. Check the content and try again.",
+  "ai.knowledge-bases.error.deleteDocument": "Failed to delete the document. Refresh and try again.",
+  "ai.knowledge-bases.error.loadDocuments": "Failed to load documents",
   "ai.knowledge-bases.error.loadModels": "Failed to load available embedding models",
+  "ai.knowledge-bases.error.reindex": "Failed to reindex the document. Refresh and try again.",
+  "ai.knowledge-bases.error.retrieve": "Knowledge retrieval failed. Check the query and try again.",
+  "ai.knowledge-bases.error.upload": "Failed to upload the document. Check the file and try again.",
   "ai.knowledge-bases.mode.HYBRID": "Hybrid",
   "ai.knowledge-bases.mode.KEYWORD": "Keyword",
+  "ai.knowledge-bases.mode.UNKNOWN": "Unknown retrieval mode",
   "ai.knowledge-bases.mode.VECTOR": "Vector",
   "ai.knowledge-bases.progress.reindex": "Submitting reindex job...",
   "ai.knowledge-bases.retrieve.content": "Matched Content",
@@ -55,6 +60,10 @@
   "ai.knowledge-documents.status.PROCESSING": "Processing",
   "ai.knowledge-documents.status.READY": "Ready",
   "ai.knowledge-documents.status.REINDEXING": "Reindexing (old index available)",
+  "ai.knowledge-documents.status.UNKNOWN": "Unknown status",
+  "ai.knowledge-documents.source.TEXT": "Text entry",
+  "ai.knowledge-documents.source.UNKNOWN": "Unknown source",
+  "ai.knowledge-documents.source.UPLOAD": "File upload",
   "ai.knowledge-documents.status.REINDEX_FAILED": "Reindex failed (old index available)",
   "ai.knowledge-documents.title.chunkCount": "Chunks",
   "ai.knowledge-documents.title.errorMessage": "Failure Reason",
@@ -66,5 +75,7 @@
   "ai.knowledge-documents.title.processedAt": "Processed At",
   "ai.knowledge-documents.title.sourceType": "Source",
   "ai.knowledge-documents.title.storageObjectId": "Storage Object ID",
-  "ai.knowledge-documents.title.status": "Status"
+  "ai.knowledge-documents.title.status": "Status",
+  "ai.knowledge-documents.error.indexFailed": "Document indexing failed. Check the document content and embedding model configuration, then try again.",
+  "ai.knowledge-documents.error.unknown": "Document processing failed. Check the configuration and try again."
 }

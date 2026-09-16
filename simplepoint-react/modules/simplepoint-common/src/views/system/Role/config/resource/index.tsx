@@ -1,6 +1,6 @@
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {useEffect, useMemo, useState} from 'react';
-import {Alert, Button, Select, Space, Spin, Tag, Tree, Typography, message} from 'antd';
+import {Alert, App as AntdApp, Button, Select, Space, Spin, Tag, Tree, Typography} from 'antd';
 import type {DataNode} from 'antd/es/tree';
 import {useData} from '@simplepoint/shared/api/methods';
 import {createIcon} from '@simplepoint/shared/types/icon';
@@ -82,6 +82,7 @@ const checkedCodesFromKeys = (
 };
 
 const App = ({roleId}: RoleResourceConfigProps) => {
+  const {message, modal} = AntdApp.useApp();
   const {t, ensure, locale} = useI18n();
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
   const [dataScopeId, setDataScopeId] = useState<string | null>(null);
@@ -110,7 +111,7 @@ const App = ({roleId}: RoleResourceConfigProps) => {
     {enabled: !!roleId},
   );
 
-  const {data: scopeAssignment, isFetching: scopeAssignmentLoading, error: scopeAssignmentError} = useData(
+  const {data: scopeAssignment, isFetching: scopeAssignmentLoading, error: scopeAssignmentError, refetch: refetchScopeAssignment} = useData(
     roleId ? ['roleScopeAssignment', roleId] : '',
     () => fetchScopeAssignment(roleId),
     {enabled: !!roleId},
@@ -199,8 +200,7 @@ const App = ({roleId}: RoleResourceConfigProps) => {
       await saveRoleAuthorization({
         roleId,
         resourceCodes: checkedCodesFromKeys(nextCheckedKeys, nodeByKey),
-        dataScopeId,
-        fieldScopeId,
+        updateScope: false,
       });
       message.success(t('roles.resourceConfig.resourceUpdateSuccess', '资源授权已更新'));
       void refetchResourceTree?.();
@@ -212,35 +212,27 @@ const App = ({roleId}: RoleResourceConfigProps) => {
     }
   };
 
-  const handleDataScopeChange = async (value?: string | null) => {
-    const nextValue = value ?? null;
-    const previous = dataScopeId;
-    setDataScopeId(nextValue);
-    if (!roleId) return;
-    try {
-      setScopeSaving(true);
-      await updateScopeAssignment({roleId, dataScopeId: nextValue, fieldScopeId});
-      message.success(t('roles.resourceConfig.scopeUpdateSuccess', '范围配置已保存'));
-    } catch {
-      setDataScopeId(previous);
-      message.error(t('roles.resourceConfig.scopeUpdateFailed', '范围配置保存失败'));
-    } finally {
-      setScopeSaving(false);
+  const saveScope = async () => {
+    if (!roleId || scopeAssignmentLoading || scopeAssignmentError) return;
+    if (scopeAssignment?.legacyConflict) {
+      const confirmed = await modal.confirm({
+        title: t('roles.resourceConfig.legacyConflict', '旧授权存在多个范围，是否用当前选择替换全部旧范围？'),
+        content: t('roles.resourceConfig.legacyReplacement', '清空数据范围将恢复为默认仅本人；清空字段范围将取消字段限制。请确认两个选择。'),
+      });
+      if (!confirmed) return;
     }
-  };
-
-  const handleFieldScopeChange = async (value?: string | null) => {
-    const nextValue = value ?? null;
-    const previous = fieldScopeId;
-    setFieldScopeId(nextValue);
-    if (!roleId) return;
+    setScopeSaving(true);
     try {
-      setScopeSaving(true);
-      await updateScopeAssignment({roleId, dataScopeId, fieldScopeId: nextValue});
+      await updateScopeAssignment({
+        roleId, dataScopeId, fieldScopeId,
+        revision: scopeAssignment?.revision,
+        confirmLegacyReplacement: !!scopeAssignment?.legacyConflict,
+      });
+      await refetchScopeAssignment();
       message.success(t('roles.resourceConfig.scopeUpdateSuccess', '范围配置已保存'));
     } catch {
-      setFieldScopeId(previous);
-      message.error(t('roles.resourceConfig.scopeUpdateFailed', '范围配置保存失败'));
+      await refetchScopeAssignment();
+      message.error(t('roles.resourceConfig.scopeUpdateFailed', '范围配置保存失败，请刷新后重试'));
     } finally {
       setScopeSaving(false);
     }
@@ -266,19 +258,20 @@ const App = ({roleId}: RoleResourceConfigProps) => {
             </div>
           </div>
         </div>
+        {scopeAssignment?.legacyConflict && <Alert type="warning" showIcon message={t('roles.resourceConfig.legacyConflict', '旧授权存在多个范围，请确认后重新保存')} />}
         <div className="role-resource-scope-grid">
           <label className="role-resource-field">
             <span>{t('roles.resourceConfig.dataScope', '数据权限')}</span>
             <Select
               allowClear
               className="role-resource-select"
-              placeholder={t('roles.resourceConfig.noDataScope', '不限制数据范围')}
+              placeholder={t('roles.resourceConfig.noDataScope', '默认仅本人')}
               value={dataScopeId}
               options={dataScopeOptions}
               loading={dataScopeLoading || scopeAssignmentLoading}
-              disabled={scopeSaving}
+              disabled={scopeSaving || scopeAssignmentLoading || !!scopeAssignmentError}
               notFoundContent={t('table.emptyText', '暂无数据')}
-              onChange={handleDataScopeChange}
+              onChange={(value) => setDataScopeId(value ?? null)}
             />
           </label>
           <label className="role-resource-field">
@@ -290,12 +283,15 @@ const App = ({roleId}: RoleResourceConfigProps) => {
               value={fieldScopeId}
               options={fieldScopeOptions}
               loading={fieldScopeLoading || scopeAssignmentLoading}
-              disabled={scopeSaving}
+              disabled={scopeSaving || scopeAssignmentLoading || !!scopeAssignmentError}
               notFoundContent={t('table.emptyText', '暂无数据')}
-              onChange={handleFieldScopeChange}
+              onChange={(value) => setFieldScopeId(value ?? null)}
             />
           </label>
         </div>
+        <Button onClick={saveScope} loading={scopeSaving} disabled={scopeAssignmentLoading || !!scopeAssignmentError}>
+          {t('roles.resourceConfig.saveScope', '保存范围')}
+        </Button>
       </section>
 
       {loadError ? (

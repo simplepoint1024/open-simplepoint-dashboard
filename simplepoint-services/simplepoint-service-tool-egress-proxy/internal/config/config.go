@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -22,6 +23,7 @@ type Config struct {
 	ConnectTimeout    time.Duration
 	MaxTunnelDuration time.Duration
 	TokenClockSkew    time.Duration
+	UpstreamProxyURL  string
 }
 
 // Load reads and validates Egress Proxy environment configuration.
@@ -46,6 +48,7 @@ func Load() (Config, error) {
 			"SIMPLEPOINT_TOOL_EGRESS_TOKEN_CLOCK_SKEW",
 			defaultClockSkew,
 		),
+		UpstreamProxyURL: upstreamProxyURL(),
 	}
 	return cfg, cfg.Validate()
 }
@@ -66,7 +69,27 @@ func (c Config) Validate() error {
 	case c.TokenClockSkew < 0 || c.TokenClockSkew > time.Minute:
 		return errors.New("tool egress token clock skew is invalid")
 	}
+	if c.UpstreamProxyURL != "" {
+		parsed, err := url.Parse(c.UpstreamProxyURL)
+		if err != nil || parsed.Scheme != "http" || parsed.Hostname() == "" ||
+			parsed.Port() == "" || parsed.Path != "" || parsed.RawQuery != "" ||
+			parsed.Fragment != "" {
+			return errors.New("tool egress upstream proxy URL is invalid")
+		}
+	}
 	return nil
+}
+
+func upstreamProxyURL() string {
+	if value := strings.TrimSpace(os.Getenv(
+		"SIMPLEPOINT_TOOL_EGRESS_UPSTREAM_PROXY_URL",
+	)); value != "" {
+		return value
+	}
+	if value := strings.TrimSpace(os.Getenv("HTTPS_PROXY")); value != "" {
+		return value
+	}
+	return strings.TrimSpace(os.Getenv("HTTP_PROXY"))
 }
 
 func env(name string, fallback string) string {

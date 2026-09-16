@@ -47,7 +47,7 @@ Tool Runtime、Egress Proxy 和 Image Verifier 是独立 Go 服务；Runtime 与
 distroless nonroot 运行时，Verifier 使用 nonroot Alpine 并固定 Cosign、Trivy 供应链
 镜像的版本与 digest。Runtime PKI 镜像只用于
 Compose 开发环境生成短期证书；PostgreSQL/pgvector 和 Consul bootstrap 不是 Java
-服务，Dockerfile 分别位于 `docker/postgres/` 和 `docker/swarm/bootstrap/`。
+服务，Dockerfile 分别位于 `docker/postgres/` 和 `docker/bootstrap/`。
 
 ## 本地构建
 
@@ -117,7 +117,7 @@ SIMPLEPOINT_IMAGE_TAG=1.0.0 \
 | `SIMPLEPOINT_IMAGE_REVISION` | 当前 Git commit | OCI `revision` |
 | `SIMPLEPOINT_IMAGE_SOURCE` | GitHub 仓库地址 | OCI `source` |
 
-单个镜像名仍可通过 `SIMPLEPOINT_*_IMAGE` 变量覆盖，适合 Swarm 或私有仓库部署。
+单个镜像名仍可通过 `SIMPLEPOINT_*_IMAGE` 变量覆盖，适合 Compose 或私有仓库部署。
 
 ## 运行时基线
 

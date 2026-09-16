@@ -4,7 +4,7 @@ import type {TableButtonProps} from '@simplepoint/components/Table';
 import {post} from '@simplepoint/shared/api/methods';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {Modal, Typography, message} from 'antd';
+import {App as AntdApp, Typography} from 'antd';
 import {useCallback, useMemo, useState} from 'react';
 
 const {Text} = Typography;
@@ -28,6 +28,7 @@ type NotificationAction = 'publish' | 'revoke' | 'duplicate';
 const displayDate = (value?: string) => value ? new Date(value).toLocaleString() : '-';
 
 const NotificationView = () => {
+  const {message, modal} = AntdApp.useApp();
   const {t} = useI18n();
   const [tableKey, setTableKey] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -96,7 +97,7 @@ const NotificationView = () => {
       message.warning(current.invalidMessage);
       return;
     }
-    Modal.confirm({
+    modal.confirm({
       title: current.title,
       content: current.content,
       okText: current.okText,
@@ -123,7 +124,7 @@ const NotificationView = () => {
         }
       },
     });
-  }, [t]);
+  }, [message, modal, t]);
 
   const customButtonEvents = useMemo<Record<string, (
     selectedRowKeys: React.Key[],

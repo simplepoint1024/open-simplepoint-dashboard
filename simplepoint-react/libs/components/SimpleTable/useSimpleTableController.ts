@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import type {QueryFunctionContext} from '@tanstack/react-query';
 import type { IChangeEvent } from '@rjsf/core';
-import { Modal, message } from 'antd';
+import { App } from 'antd';
 import { sortSchemaProperties, useSchema } from '@simplepoint/shared/hooks/useSchema';
 import { isHttpError, resolveApiErrorMessage } from '@simplepoint/shared/api/client';
 import { del, get, post, put, usePage } from '@simplepoint/shared/api/methods';
@@ -8,6 +9,7 @@ import { useI18n } from '@simplepoint/shared/hooks/useI18n';
 import { getStoredContextId, getStoredRoleId, getStoredTenantId } from '@simplepoint/shared/api/contextId';
 import type { TableButtonProps } from '../Table';
 import type { SimpleTableAfterSubmitContext, SimpleTableBeforeSubmitContext, SimpleTableProps, SimpleTableRefreshTargets, SimpleTableSubmitAction } from './types';
+import {resolveSimpleTableOperationError} from './errorMessage';
 
 const nsLoadedCache = new Set<string>();
 
@@ -53,6 +55,7 @@ export type SimpleTableController<T> = {
 
 export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): SimpleTableController<T> {
   const { t, ensure, locale, ready } = useI18n();
+  const {message, modal} = App.useApp();
   const [i18nReady, setI18nReady] = useState(false);
   const [page, setPage] = useState<number>(1);
   const [size, setSize] = useState<number>(20);
@@ -122,13 +125,15 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     if (props.editingRecord === undefined) setInnerEditing(rec);
   };
 
-  const fetchPage = () =>
-    get<import('@simplepoint/shared/types/request').Page<any>>(props.baseUrl, {
-      page: page - 1,
-      size,
-      ...filters,
-      ...(sort ? {sort} : {}),
-    });
+  const fetchPage = ({signal}: QueryFunctionContext) =>
+    props.loadPage
+      ? props.loadPage({page: page - 1, size, filters, sort, signal})
+      : get<import('@simplepoint/shared/types/request').Page<any>>(props.baseUrl, {
+          page: page - 1,
+          size,
+          ...filters,
+          ...(sort ? {sort} : {}),
+        }, {signal});
 
   const { data: pageData, isLoading: pageLoading, error: pageError, refetch: refetchPage } = usePage(
     [props.name, tenantId, roleId, contextId, page, size, filters, sort],
@@ -215,13 +220,11 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
       : (sorter?.field as string | undefined);
     const dir = sorter?.order === 'ascend' ? 'asc' : sorter?.order === 'descend' ? 'desc' : undefined;
     setSort(field && dir ? `${field},${dir}` : undefined);
-    void refetchPage();
   };
 
   const handleFilterChange = (nextFilters: Record<string, string>) => {
     setFilters(nextFilters);
     setPage(1);
-    void refetchPage();
   };
 
   const handleAdd = () => {
@@ -235,7 +238,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   };
 
   const handleDelete = (keys: React.Key[]) => {
-    Modal.confirm({
+    modal.confirm({
       title: t('table.confirmDeleteTitle', '确认删除'),
       content: t('table.confirmDeleteContent', '确定要删除选中的 {count} 条数据吗？', { count: keys.length }),
       onOk: async () => {
@@ -248,7 +251,13 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
           if (isHttpError(e) && e.status === 401) {
             return;
           }
-          message.error(t('table.deleteFail', '删除失败: {msg}', { msg: resolveApiErrorMessage(e, '') }));
+          const detail = resolveSimpleTableOperationError(
+            e,
+            'delete',
+            props.errorMessageResolver,
+            () => resolveApiErrorMessage(e, ''),
+          );
+          message.error(t('table.deleteFail', '删除失败: {msg}', {msg: detail}));
         } finally {
           setSubmitLoading(false);
         }
@@ -302,7 +311,14 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
       if (isHttpError(e) && e.status === 401) {
         return;
       }
-      message.error(t('table.actionFail', '操作失败: {msg}', { msg: resolveApiErrorMessage(e, '') }));
+      const action: SimpleTableSubmitAction = editingRecord ? 'edit' : 'add';
+      const detail = resolveSimpleTableOperationError(
+        e,
+        action,
+        props.errorMessageResolver,
+        () => resolveApiErrorMessage(e, ''),
+      );
+      message.error(t('table.actionFail', '操作失败: {msg}', {msg: detail}));
     } finally {
       setSubmitLoading(false);
     }

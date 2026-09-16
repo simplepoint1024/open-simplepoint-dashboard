@@ -1,5 +1,8 @@
 {
   "ai.api-keys.entity.title": "Model API key",
+  "ai.api-keys.error.operationFailed": "API key operation failed. Please try again later",
+  "ai.api-keys.error.operationUnavailable": "This API key operation is currently unavailable. Refresh and try again",
+  "ai.api-keys.error.requestInvalid": "The API key configuration is invalid. Check it and try again",
   "ai.api-keys.title.scopeType": "Scope",
   "ai.api-keys.title.tenantId": "Tenant ID",
   "ai.api-keys.title.name": "Name",
@@ -24,5 +27,7 @@
   "ai.api-keys.guide.title": "OpenAI / Anthropic compatible model API",
   "ai.api-keys.guide.openai": "OpenAI: POST /ai/v1/chat/completions with Authorization: Bearer <API_KEY>",
   "ai.api-keys.guide.anthropic": "Anthropic: POST /ai/v1/messages with x-api-key: <API_KEY>",
-  "ai.api-keys.guide.models": "Call GET /ai/v1/models first to list the model IDs available to the key."
+  "ai.api-keys.guide.models": "Call GET /ai/v1/models first to list the model IDs available to the key.",
+  "ai.api-keys.scope.system": "System shared",
+  "ai.api-keys.scope.tenant": "Tenant private"
 }

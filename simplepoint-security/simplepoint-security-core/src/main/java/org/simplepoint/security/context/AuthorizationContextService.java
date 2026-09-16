@@ -13,6 +13,14 @@ import org.simplepoint.remoting.RemoteContract;
 @RemoteContract(name = "security.authorization-context")
 public interface AuthorizationContextService {
 
+  /** Global account version; null disables cache reuse for older providers. */
+  default Long currentSubjectVersion(String userId) { return null; }
+
+  /** Current committed policy version; null disables cache reuse for an unversioned scope. */
+  default Long currentVersion(String tenantId) {
+    return null;
+  }
+
   /**
    * Calculates the authorization context based on the provided tenant ID, user ID, context ID, and additional attributes.
    *

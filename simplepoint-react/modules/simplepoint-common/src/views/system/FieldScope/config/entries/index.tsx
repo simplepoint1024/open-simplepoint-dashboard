@@ -1,8 +1,10 @@
-import {Button, Form, message, Select, Space} from 'antd';
+import {App as AntdApp, Alert, Button, Form, Select, Space} from 'antd';
 import {MinusCircleOutlined, PlusOutlined} from '@ant-design/icons';
-import {useState} from 'react';
-import {replaceEntries, FieldScopeEntryDto} from '@/api/system/field-scope';
+import {useEffect, useState} from 'react';
+import {fetchFieldCatalog, replaceEntries, FieldScopeEntryDto} from '@/api/system/field-scope';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+
+import {useData} from '@simplepoint/shared/api/methods';
 
 const ACCESS_OPTIONS = [
     {value: 'EDITABLE', labelKey: 'field-scopes.title.entry.access.EDITABLE'},
@@ -11,20 +13,39 @@ const ACCESS_OPTIONS = [
     {value: 'HIDDEN', labelKey: 'field-scopes.title.entry.access.HIDDEN'},
 ];
 
+const EMPTY_ENTRIES: FieldScopeEntryDto[] = [];
+
 export interface FieldScopeEntriesConfigProps {
     fieldScopeId: string;
     initialEntries?: FieldScopeEntryDto[];
     onSuccess?: () => void;
 }
 
-const App = ({fieldScopeId, initialEntries = [], onSuccess}: FieldScopeEntriesConfigProps) => {
+const App = ({fieldScopeId, initialEntries = EMPTY_ENTRIES, onSuccess}: FieldScopeEntriesConfigProps) => {
+    const {message} = AntdApp.useApp();
     const {t} = useI18n();
     const [form] = Form.useForm();
     const [saving, setSaving] = useState(false);
+    const {data: catalog, isFetching, error} = useData(['fieldScopeCatalog'], fetchFieldCatalog);
+    const entries = Form.useWatch('entries', form) as FieldScopeEntryDto[] | undefined;
+    useEffect(() => {
+        form.setFieldsValue({entries: initialEntries});
+    }, [fieldScopeId, initialEntries, form]);
+    const fieldsFor = (resource?: string) => {
+        if (!catalog || !resource) return [];
+        if (catalog[resource]) return catalog[resource];
+        const matches = Object.keys(catalog).filter((key) => key.split('.').pop() === resource);
+        return matches.length === 1 ? catalog[matches[0]] : [];
+    };
 
     const handleSave = async () => {
         try {
             const values = await form.validateFields();
+            const keys = (values.entries ?? []).map((entry: FieldScopeEntryDto) => entry.resource + '#' + entry.field);
+            if (new Set(keys).size !== keys.length) {
+                message.error(t('field-scopes.rule.duplicate', '同一资源字段不能重复配置'));
+                return;
+            }
             setSaving(true);
             await replaceEntries(fieldScopeId, values.entries ?? []);
             message.success(t('field-scopes.message.entriesSaveSuccess', '保存成功'));
@@ -40,9 +61,11 @@ const App = ({fieldScopeId, initialEntries = [], onSuccess}: FieldScopeEntriesCo
     return (
         <Form
             form={form}
+            disabled={saving || isFetching || !!error}
             initialValues={{entries: initialEntries}}
             style={{maxWidth: 720}}
         >
+            {error && <Alert type="error" showIcon message={t('field-scopes.message.catalogFailed', '字段目录加载失败，请刷新后重试')} />}
             <Form.List name="entries">
                 {(fields, {add, remove}) => (
                     <>
@@ -58,15 +81,12 @@ const App = ({fieldScopeId, initialEntries = [], onSuccess}: FieldScopeEntriesCo
                                     rules={[{required: true, message: t('field-scopes.rule.entry.resource', '请输入资源名')}]}
                                     style={{marginBottom: 0, minWidth: 160}}
                                 >
-                                    <input
+                                    <Select
+                                        showSearch optionFilterProp="label"
                                         placeholder={t('field-scopes.title.entry.resource', '资源')}
-                                        style={{
-                                            border: '1px solid #d9d9d9',
-                                            borderRadius: 6,
-                                            padding: '4px 11px',
-                                            width: '100%',
-                                            outline: 'none',
-                                        }}
+                                        options={Object.keys(catalog ?? {}).map((resource) => ({value: resource, label: resource}))}
+                                        onChange={() => form.setFieldValue(['entries', name, 'field'], undefined)}
+                                        loading={isFetching}
                                     />
                                 </Form.Item>
                                 <Form.Item
@@ -75,15 +95,10 @@ const App = ({fieldScopeId, initialEntries = [], onSuccess}: FieldScopeEntriesCo
                                     rules={[{required: true, message: t('field-scopes.rule.entry.field', '请输入字段名')}]}
                                     style={{marginBottom: 0, minWidth: 160}}
                                 >
-                                    <input
+                                    <Select
+                                        showSearch
                                         placeholder={t('field-scopes.title.entry.field', '字段')}
-                                        style={{
-                                            border: '1px solid #d9d9d9',
-                                            borderRadius: 6,
-                                            padding: '4px 11px',
-                                            width: '100%',
-                                            outline: 'none',
-                                        }}
+                                        options={fieldsFor(entries?.[name]?.resource).map((field) => ({value: field, label: field}))}
                                     />
                                 </Form.Item>
                                 <Form.Item

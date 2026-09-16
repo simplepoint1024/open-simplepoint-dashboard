@@ -2,6 +2,7 @@ package org.simplepoint.plugin.ai.mcp.api.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -20,6 +21,7 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
+import org.simplepoint.plugin.ai.mcp.api.model.AiMcpDiscoveryErrorCodeSerializer;
 import org.simplepoint.plugin.ai.mcp.api.model.McpAuthenticationType;
 import org.simplepoint.plugin.ai.mcp.api.model.McpOauthStatus;
 import org.simplepoint.plugin.ai.mcp.api.model.McpServerDeploymentType;
@@ -73,11 +75,21 @@ import org.springframework.core.annotation.Order;
         authority = "ai.workbench.mcp-servers.delete"
     ),
     @ButtonDeclaration(
+        title = "i18n:ai.mcp-servers.button.capabilities",
+        key = "capabilities",
+        icon = "ToolOutlined",
+        color = "blue",
+        sort = 3,
+        argumentMinSize = 1,
+        argumentMaxSize = 1,
+        authority = "ai.workbench.mcp-servers.view"
+    ),
+    @ButtonDeclaration(
         title = "i18n:ai.mcp-servers.button.discover",
         key = "discover",
         icon = "CloudSyncOutlined",
         color = "blue",
-        sort = 3,
+        sort = 4,
         argumentMinSize = 1,
         argumentMaxSize = 1,
         authority = "ai.workbench.mcp-servers.discover"
@@ -87,7 +99,7 @@ import org.springframework.core.annotation.Order;
         key = "authorize",
         icon = "SafetyCertificateOutlined",
         color = "purple",
-        sort = 4,
+        sort = 5,
         argumentMinSize = 1,
         argumentMaxSize = 1,
         authority = "ai.workbench.mcp-servers.authorize"
@@ -97,7 +109,7 @@ import org.springframework.core.annotation.Order;
         key = "deploy",
         icon = "CloudServerOutlined",
         color = "cyan",
-        sort = 5,
+        sort = 6,
         argumentMinSize = 1,
         argumentMaxSize = 1,
         authority = "ai.workbench.runtime.pools.manage"
@@ -226,14 +238,12 @@ public class AiMcpServerDefinition extends BaseEntityImpl<String> {
   @Column(name = "oauth_authorization_server", length = 2048)
   private String oauthAuthorizationServer;
 
-  @JsonIgnore
-  @Schema(hidden = true)
   @Column(name = "oauth_authorization_endpoint", length = 2048)
+  @Schema(title = "OAuth authorization endpoint", maxLength = 2048)
   private String oauthAuthorizationEndpoint;
 
-  @JsonIgnore
-  @Schema(hidden = true)
   @Column(name = "oauth_token_endpoint", length = 2048)
+  @Schema(title = "OAuth token endpoint", maxLength = 2048)
   private String oauthTokenEndpoint;
 
   @JsonIgnore
@@ -303,6 +313,7 @@ public class AiMcpServerDefinition extends BaseEntityImpl<String> {
   private Instant lastDiscoveredAt;
 
   @Column(name = "last_error", length = 1024)
+  @JsonSerialize(using = AiMcpDiscoveryErrorCodeSerializer.class)
   @Schema(title = "i18n:ai.mcp-servers.title.lastError",
       accessMode = Schema.AccessMode.READ_ONLY)
   private String lastError;

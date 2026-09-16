@@ -46,5 +46,8 @@
   "external-idp.page.test.success": "Configuration is valid",
   "external-idp.page.test.failed": "Configuration test failed: {msg}",
   "external-idp.page.form.secret.edit": "Leave blank to keep the existing encrypted credential",
-  "external-idp.page.callback": "Callback URL: {url}"
+  "external-idp.page.callback": "Callback URL: {url}",
+  "external-idp.page.test.callback": "Callback URL",
+  "external-idp.page.github.title": "GitHub integration checklist",
+  "external-idp.page.github.description": "The GitHub OAuth App Authorization callback URL must exactly match the authorization service. Keep the read:user,user:email scopes. Configuration testing validates endpoint shape and reachability; complete one real sign-in to verify the Client ID and secret."
 }

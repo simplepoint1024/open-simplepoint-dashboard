@@ -5,6 +5,8 @@
   "ai.billing.action.refresh": "刷新",
   "ai.billing.action.invocations": "查看调用明细",
   "ai.billing.error.load": "模型计费数据加载失败",
+  "ai.billing.error.queryFailed": "计费数据查询失败，请稍后重试",
+  "ai.billing.error.rangeInvalid": "计费时间范围无效，请重新选择",
   "ai.billing.stat.invocations": "调用总数",
   "ai.billing.stat.priced": "已计费调用",
   "ai.billing.stat.unpriced": "成功但未配置价格",
@@ -16,5 +18,7 @@
   "ai.billing.table.inputTokens": "输入 Token",
   "ai.billing.table.outputTokens": "输出 Token",
   "ai.billing.table.totalCost": "总费用",
-  "ai.billing.empty": "所选时间范围暂无已计费调用"
+  "ai.billing.empty": "所选时间范围暂无已计费调用",
+  "ai.billing.tab.invocations": "调用明细",
+  "ai.billing.tab.summary": "账单概览"
 }

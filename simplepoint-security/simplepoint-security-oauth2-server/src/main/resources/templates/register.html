@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
-    <title>Sign up</title>
+    <title th:text="#{register.title} + ' · SimplePoint'">Create account · SimplePoint</title>
     <style>
         body {
             margin: 0;
@@ -166,29 +166,29 @@
 <div class="blob"></div>
 
 <div class="card">
-    <form method="post" th:action="@{/register}">
-        <h2>Sign up</h2>
-        <div class="subtitle">Create your Simple·point account</div>
+    <form method="post" th:action="${registerAction}">
+        <h2 th:text="#{register.title}">Create account</h2>
+        <div class="subtitle" th:text="#{register.subtitle}">Create your SimplePoint account</div>
 
         <div th:if="${error}" class="alert" style="color:#d93025;" th:text="${error}"></div>
 
         <label>
-            <input type="email" name="email" placeholder="Email address" required autofocus />
+            <input type="email" name="email" th:value="${suggestedEmail}" th:placeholder="#{register.email}" required autofocus />
         </label>
         <label>
-            <input type="text" name="nickname" placeholder="Nickname (optional)" />
+            <input type="text" name="nickname" th:placeholder="#{register.nickname}" />
         </label>
         <label>
-            <input type="password" name="password" placeholder="Password (min 6 characters)" required />
+            <input type="password" name="password" th:placeholder="#{register.password}" required />
         </label>
         <label>
-            <input type="password" name="confirmPassword" placeholder="Confirm password" required />
+            <input type="password" name="confirmPassword" th:placeholder="#{register.confirmPassword}" required />
         </label>
 
-        <button type="submit" class="sign-in-btn">Create account</button>
+        <button type="submit" class="sign-in-btn" th:text="#{register.submit}">Create account</button>
 
         <div class="link-row">
-            Already have an account? <a href="/login">Sign in</a>
+            <span th:text="#{register.hasAccount}">Already have an account?</span> <a th:href="${loginUrl}" th:text="#{register.signIn}">Sign in</a>
         </div>
     </form>
 </div>

@@ -109,6 +109,7 @@ public class SecurityConfig {
       );
       return Mono.just(endpointUri(
           endSessionEndpoint,
+          parameters.getClientRegistration().getClientId(),
           oidcUser.getIdToken().getTokenValue(),
           postLogoutRedirectUri
       ));
@@ -147,10 +148,12 @@ public class SecurityConfig {
 
   private String endpointUri(
       final URI endSessionEndpoint,
+      final String clientId,
       final String idToken,
       final String postLogoutRedirectUri
   ) {
     return UriComponentsBuilder.fromUri(endSessionEndpoint)
+        .queryParam("client_id", clientId)
         .queryParam("id_token_hint", idToken)
         .queryParam("post_logout_redirect_uri", postLogoutRedirectUri)
         .encode(StandardCharsets.UTF_8)

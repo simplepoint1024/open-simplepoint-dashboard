@@ -53,7 +53,7 @@ public class SimplepointConsulEnvironmentPostProcessor
     }
 
     // Spring applies later active profiles with higher precedence. Load the profile
-    // property sources in reverse so "dev,swarm" lets swarm override dev.
+    // property sources in reverse so "dev,compose" lets compose override dev.
     List<String> profiles = List.of(activeProfiles.split(","));
     for (int index = profiles.size() - 1; index >= 0; index--) {
       String profile = profiles.get(index).trim();
@@ -67,7 +67,7 @@ public class SimplepointConsulEnvironmentPostProcessor
 
     // 4. 将 spring.profiles.active 的原始值（来自环境变量）添加为最高优先级，
     //    确保 application-consul.properties 中的默认值不会覆盖它。
-    //    这样 Spring Boot 激活 profile 时会使用完整的 profiles（如 dev,swarm）。
+    //    这样 Spring Boot 激活 profile 时会使用完整的 profiles（如 dev,compose）。
     if (originalProfiles != null && !originalProfiles.isBlank()) {
       sources.addFirst(new MapPropertySource(
           SOURCE_NAME_PREFIX + "-profileOverride",

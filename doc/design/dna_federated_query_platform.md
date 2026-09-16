@@ -128,9 +128,9 @@
 建议新增以下模块：
 
 1. `simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-api`
-2. `simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-repository`
-3. `simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-service`
-4. `simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-rest`
+2. `simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation`
+3. `simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation`
+4. `simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation`
 
 并在前端 `apps/simplepoint-dna/src/views/platform/` 下新增对应页面：
 

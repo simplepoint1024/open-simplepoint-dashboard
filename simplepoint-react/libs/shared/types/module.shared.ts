@@ -57,6 +57,12 @@ export default {
     singleton: true,
     eager: true,
   },
+  // The feedback bridge owns process-wide UI state, so host and remotes must
+  // resolve this exact subpath to one Module Federation instance.
+  '@simplepoint/shared/api/feedbackBridge': {
+    singleton: true,
+    eager: true,
+  },
   '@tanstack/react-query': {
     singleton: true,
     eager: true,

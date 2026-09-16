@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
+  App as AntdApp,
   Avatar,
   Button,
   Card,
@@ -9,7 +10,6 @@ import {
   Empty,
   Form,
   Input,
-  message,
   Row,
   Skeleton,
   Space,
@@ -21,9 +21,10 @@ import {useQueryClient} from '@tanstack/react-query';
 import {useLocation, useNavigate} from 'react-router';
 import {OssImageUpload} from '@simplepoint/components/SForm/widgets/OssImageUpload';
 import {put} from '@simplepoint/shared/api/methods';
+import {scopedQueryKey} from '@simplepoint/shared/api/queryScope';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {type CurrentTenantProfile, useCurrentTenantProfile, useCurrentTenants} from '@/fetches/tenants.ts';
 import {useI18n} from '@/layouts/i18n/useI18n.ts';
-import {getTenantId} from '@/store/tenant.ts';
 import './index.css';
 
 type TenantProfileForm = Pick<CurrentTenantProfile, 'name' | 'description' | 'logo' | 'backgroundImage'>;
@@ -31,11 +32,13 @@ type TenantProfileForm = Pick<CurrentTenantProfile, 'name' | 'description' | 'lo
 const displayValue = (value?: string | null) => value?.trim() || '-';
 
 export const TenantHome: React.FC = () => {
+  const {message} = AntdApp.useApp();
   const {t} = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [tenantId, setTenantId] = useState<string | undefined>(() => getTenantId());
+  const queryScope = useQueryScope();
+  const tenantId = queryScope[0] ?? undefined;
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const editWarningShown = useRef(false);
@@ -50,14 +53,9 @@ export const TenantHome: React.FC = () => {
   );
 
   useEffect(() => {
-    const handler = (event: Event) => {
-      setTenantId((event as CustomEvent<string | undefined>).detail ?? getTenantId());
-      setEditOpen(false);
-      editWarningShown.current = false;
-    };
-    window.addEventListener('sp-set-tenant', handler as EventListener);
-    return () => window.removeEventListener('sp-set-tenant', handler as EventListener);
-  }, []);
+    setEditOpen(false);
+    editWarningShown.current = false;
+  }, [queryScope]);
 
   useEffect(() => {
     if (!data || !wantsEdit) return;
@@ -76,7 +74,7 @@ export const TenantHome: React.FC = () => {
       message.warning(t('tenant.profile.noPermission', '当前账号无权修改租户资料'));
     }
     navigate('/tenant', {replace: true});
-  }, [data, form, navigate, t, wantsEdit]);
+  }, [data, form, message, navigate, t, wantsEdit]);
 
   const openEditor = () => {
     if (!data?.profileEditable) return;
@@ -104,7 +102,7 @@ export const TenantHome: React.FC = () => {
         values,
         {headers: tenantId ? {'X-Tenant-Id': tenantId} : undefined},
       );
-      queryClient.setQueryData(['common', 'tenants', 'current-profile', tenantId], updated);
+      queryClient.setQueryData(scopedQueryKey(queryScope, ['common', 'tenants', 'current-profile', tenantId]), updated);
       await queryClient.invalidateQueries({queryKey: ['common', 'tenants', 'current']});
       try {
         Object.keys(sessionStorage)

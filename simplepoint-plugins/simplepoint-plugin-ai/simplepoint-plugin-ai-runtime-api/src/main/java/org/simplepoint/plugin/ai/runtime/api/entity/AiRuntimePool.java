@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.ai.runtime.api.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,6 +18,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
+import org.simplepoint.plugin.ai.runtime.api.model.AiRuntimeErrorCodeSerializer;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimePoolStatus;
 
 /**
@@ -57,6 +59,16 @@ public class AiRuntimePool extends BaseEntityImpl<String> {
 
   @Column(name = "server_id", length = 64, nullable = false)
   private String serverId;
+
+  @Column(name = "runtime_profile_id", length = 64)
+  private String runtimeProfileId;
+
+  @Column(name = "active_revision_id", length = 64)
+  private String activeRevisionId;
+
+  @JsonIgnore
+  @Column(name = "runtime_spec_json", columnDefinition = "TEXT")
+  private String runtimeSpecJson;
 
   @Column(name = "image_reference", length = 512, nullable = false)
   private String imageReference;
@@ -147,6 +159,7 @@ public class AiRuntimePool extends BaseEntityImpl<String> {
   private Instant lastPrewarmAt;
 
   @Column(name = "last_error", length = 1024)
+  @JsonSerialize(using = AiRuntimeErrorCodeSerializer.class)
   private String lastError;
 
   @Version

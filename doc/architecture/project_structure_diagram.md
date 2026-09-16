@@ -125,7 +125,9 @@ graph LR
 - Starter 模块优先被业务/服务引用，确保与 API 契约兼容。
 - 插件与内置插件分离管理，外部插件可独立发布于 `plugins/`。
 - 数据与安全相关改动需关注跨模块兼容（API、Data、Security、Cloud）。
-- 构建入口：根目录 `settings.gradle.kts` 动态 include 所有子项目，`buildSrc/libs.versions.toml` 管理版本。
+- 构建入口：根目录 `settings.gradle.kts` 显式登记 95 个实际构建模块，Gradle 项目 ID 与目录层级一致；`buildSrc/libs.versions.toml` 管理版本。
+- 24 个分组父项目只组织 IDE/Gradle 层级，不创建 Java 源集、测试或空 JAR；公共构建约定集中在 `gradle/project-conventions.gradle.kts`。
+- P0/P1 合并映射、实现模块与服务 REST 归属见 `doc/architecture/module_consolidation.md`。
 - 需要排除子模块时可使用 `-PexcludeProjects` 参数，匹配 settings 脚本中的处理逻辑。
 
 ## 5. 关联文档

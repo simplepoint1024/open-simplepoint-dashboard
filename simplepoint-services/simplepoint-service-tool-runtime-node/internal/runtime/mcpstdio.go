@@ -64,10 +64,11 @@ type mcpSession struct {
 }
 
 type jsonRPCEnvelope struct {
-	ID     json.RawMessage `json:"id"`
-	Method string          `json:"method"`
-	Result json.RawMessage `json:"result"`
-	Error  json.RawMessage `json:"error"`
+	JSONRPC string          `json:"jsonrpc"`
+	ID      json.RawMessage `json:"id"`
+	Method  string          `json:"method"`
+	Result  json.RawMessage `json:"result"`
+	Error   json.RawMessage `json:"error"`
 }
 
 func newMCPSessionRegistry() *mcpSessionRegistry {
@@ -89,6 +90,22 @@ func (e *Engine) ExchangeMCP(
 	envelope, err := validateMCPMessage(message, e.config.MaxMCPMessageBytes)
 	if err != nil {
 		return MCPExchangeResult{}, err
+	}
+	transport, _, err := e.workloadMCPTransport(
+		ctx, workloadID, leaseID, fencingToken,
+	)
+	if err != nil {
+		return MCPExchangeResult{}, err
+	}
+	if transport == "streamable-http" {
+		return e.exchangeHTTPMCP(
+			ctx,
+			workloadID,
+			leaseID,
+			fencingToken,
+			sessionID,
+			message,
+		)
 	}
 	session, err := e.resolveMCPSession(
 		ctx,
@@ -148,6 +165,17 @@ func (e *Engine) MCPEvents(
 	fencingToken int64,
 	sessionID string,
 ) (MCPEventStream, error) {
+	transport, _, err := e.workloadMCPTransport(
+		ctx, workloadID, leaseID, fencingToken,
+	)
+	if err != nil {
+		return MCPEventStream{}, err
+	}
+	if transport == "streamable-http" {
+		return e.httpMCPEvents(
+			ctx, workloadID, leaseID, fencingToken, sessionID,
+		)
+	}
 	if _, err := e.Status(ctx, workloadID, leaseID, fencingToken); err != nil {
 		return MCPEventStream{}, err
 	}
@@ -174,6 +202,17 @@ func (e *Engine) CloseMCPSession(
 	fencingToken int64,
 	sessionID string,
 ) error {
+	transport, _, err := e.workloadMCPTransport(
+		ctx, workloadID, leaseID, fencingToken,
+	)
+	if err != nil {
+		return err
+	}
+	if transport == "streamable-http" {
+		return e.closeHTTPMCPSession(
+			ctx, workloadID, leaseID, fencingToken, sessionID,
+		)
+	}
 	if _, err := e.Status(ctx, workloadID, leaseID, fencingToken); err != nil {
 		return err
 	}
@@ -218,7 +257,11 @@ func (e *Engine) resolveMCPSession(
 		return nil, err
 	}
 	if status.State != "running" {
-		return nil, errors.New("runtime workload is not running")
+		return nil, fmt.Errorf(
+			"runtime workload is not running (state %s, exit code %d)",
+			status.State,
+			status.ExitCode,
+		)
 	}
 	inspect, err := e.client.ContainerInspect(
 		ctx,
@@ -320,7 +363,17 @@ func validateMCPMessage(
 	if err := decoder.Decode(&envelope); err != nil {
 		return jsonRPCEnvelope{}, errors.New("MCP message is invalid JSON")
 	}
-	if len(envelope.ID) == 0 && envelope.Method == "" {
+	var trailing json.RawMessage
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		return jsonRPCEnvelope{}, errors.New("MCP message contains trailing JSON")
+	}
+	if envelope.JSONRPC != "2.0" {
+		return jsonRPCEnvelope{}, errors.New("MCP JSON-RPC version is invalid")
+	}
+	isRequest := envelope.Method != ""
+	isResponse := len(envelope.ID) > 0 &&
+		(len(envelope.Result) > 0 || len(envelope.Error) > 0)
+	if isRequest == isResponse {
 		return jsonRPCEnvelope{}, errors.New("MCP JSON-RPC envelope is invalid")
 	}
 	return envelope, nil

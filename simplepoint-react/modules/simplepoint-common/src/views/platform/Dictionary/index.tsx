@@ -1,13 +1,14 @@
 import api from '@/api/index';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Drawer, message} from 'antd';
+import {App as AntdApp, Drawer} from 'antd';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import ItemConfig from './config/item';
 
 const baseConfig = api['platform.dictionaries'];
 
 const App = () => {
+  const {message} = AntdApp.useApp();
   const [openItemConfig, setOpenItemConfig] = useState(false);
   const [dictionaryCode, setDictionaryCode] = useState<string>('');
   const [drawerHeight, setDrawerHeight] = useState<number>(480);
@@ -55,7 +56,7 @@ const App = () => {
       setDictionaryCode(nextDictionaryCode);
       setOpenItemConfig(true);
     },
-  }), [t]);
+  }), [message, t]);
 
   return (
     <div>

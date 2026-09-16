@@ -24,6 +24,6 @@ export type ServiceEntry = {
     pluginVersion?: string;
 }
 
-export function fetchServiceRoutes() {
-    return get<ServiceResourceRouteResult>('/common/resources/service-routes');
+export function fetchServiceRoutes(signal?: AbortSignal) {
+    return get<ServiceResourceRouteResult>('/common/resources/service-routes', undefined, {signal});
 }

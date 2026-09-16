@@ -41,6 +41,8 @@ export interface AccessCenterRoleDetail {
     roleId: string;
     dataScopeId?: string | null;
     fieldScopeId?: string | null;
+    revision?: number | null;
+    legacyConflict?: boolean;
   };
   dataScope?: AccessCenterScope | null;
   fieldScope?: AccessCenterScope | null;
@@ -72,6 +74,9 @@ export interface AccessCenterRoleAuthorizationDto {
   resourceCodes: string[];
   dataScopeId?: string | null;
   fieldScopeId?: string | null;
+  revision?: number | null;
+  confirmLegacyReplacement?: boolean;
+  updateScope?: boolean;
 }
 
 export async function fetchRoleOverviews(params?: Record<string, string>) {

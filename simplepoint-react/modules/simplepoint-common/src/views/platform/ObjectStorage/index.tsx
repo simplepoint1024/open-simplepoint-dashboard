@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  App as AntdApp,
   Alert,
   Button,
   Descriptions,
@@ -16,7 +17,6 @@ import {
   Tag,
   Typography,
   Upload,
-  message,
 } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
@@ -161,6 +161,7 @@ const formatDateTime = (value?: string | null) => {
 };
 
 const App = () => {
+  const {message} = AntdApp.useApp();
   const { ensure, locale, t } = useI18n();
   const storageSection = useMemo<StorageSection>(() => {
     const path = typeof window === 'undefined' ? '' : window.location.hash;
@@ -394,7 +395,7 @@ const App = () => {
     } finally {
       setUploading(false);
     }
-  }, [refreshObjects, refreshQuotas, t, uploadForm]);
+  }, [message, refreshObjects, refreshQuotas, t, uploadForm]);
 
   const handleSaveProvider = useCallback(async () => {
     const values = await providerForm.validateFields();
@@ -427,7 +428,7 @@ const App = () => {
     } finally {
       setProviderSaving(false);
     }
-  }, [baseConfig.baseUrl, loadProviderConfigs, loadProviders, providerConfigsPage.page.size, providerForm, providerMode, t]);
+  }, [baseConfig.baseUrl, loadProviderConfigs, loadProviders, message, providerConfigsPage.page.size, providerForm, providerMode, t]);
 
   const handleDeleteProvider = useCallback(async (record: ProviderConfig) => {
     await request<string[]>(`${baseConfig.baseUrl}/provider-configs?ids=${encodeURIComponent(record.id)}`, {
@@ -438,7 +439,7 @@ const App = () => {
       loadProviderConfigs(1, providerConfigsPage.page.size || 10),
       loadProviders(),
     ]);
-  }, [baseConfig.baseUrl, loadProviderConfigs, loadProviders, providerConfigsPage.page.size, t]);
+  }, [baseConfig.baseUrl, loadProviderConfigs, loadProviders, message, providerConfigsPage.page.size, t]);
 
   const handleTestProvider = useCallback(async (record: ProviderConfig) => {
     setProviderTestingId(record.id);
@@ -451,7 +452,7 @@ const App = () => {
     } finally {
       setProviderTestingId(null);
     }
-  }, [baseConfig.baseUrl, t]);
+  }, [baseConfig.baseUrl, message, t]);
 
   const handleDeleteObject = useCallback(async (record: StorageObject) => {
     await request<string[]>(`${baseConfig.baseUrl}/objects?ids=${encodeURIComponent(record.id)}`, {
@@ -460,7 +461,7 @@ const App = () => {
     message.success(t('table.deleteSuccess', '删除成功'));
     await refreshObjects();
     await refreshQuotas();
-  }, [baseConfig.baseUrl, refreshObjects, refreshQuotas, t]);
+  }, [baseConfig.baseUrl, message, refreshObjects, refreshQuotas, t]);
 
   const handleSaveQuota = useCallback(async () => {
     const values = await quotaForm.validateFields();
@@ -486,7 +487,7 @@ const App = () => {
     } finally {
       setQuotaSaving(false);
     }
-  }, [baseConfig.baseUrl, quotaForm, quotaMode, refreshQuotas, t]);
+  }, [baseConfig.baseUrl, message, quotaForm, quotaMode, refreshQuotas, t]);
 
   const handleDeleteQuota = useCallback(async (record: StorageQuota) => {
     await request<string[]>(`${baseConfig.baseUrl}/quotas?ids=${encodeURIComponent(record.id)}`, {
@@ -494,7 +495,7 @@ const App = () => {
     });
     message.success(t('table.deleteSuccess', '删除成功'));
     await refreshQuotas();
-  }, [baseConfig.baseUrl, refreshQuotas, t]);
+  }, [baseConfig.baseUrl, message, refreshQuotas, t]);
 
   const objectColumns = useMemo<ColumnsType<StorageObject>>(() => [
     {
@@ -756,6 +757,7 @@ const App = () => {
               <Space direction="vertical" style={{ width: '100%' }} size={16}>
                 <Alert
                   type="info"
+                  closable
                   showIcon
                   message={t(
                     'storage.provider.tip',
@@ -860,6 +862,7 @@ const App = () => {
               <Space direction="vertical" style={{ width: '100%' }} size={16}>
                 <Alert
                   type="info"
+                  closable
                   showIcon
                   message={t('storage.quota.tip', '未配置配额或配额为空时表示租户对象存储不限额。')}
                 />
@@ -1040,6 +1043,7 @@ const App = () => {
         <Form form={uploadForm} layout="vertical" initialValues={{ file: [] }}>
           <Alert
             type="info"
+            closable
             showIcon
             style={{ marginBottom: 16 }}
             message={t('storage.upload.defaultProvider', '文件将通过统一上传入口写入系统默认 OSS，并自动加入当前租户目录。')}

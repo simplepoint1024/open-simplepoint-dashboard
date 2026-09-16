@@ -2,6 +2,7 @@ import api from '@/api';
 import {get} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {
+  App as AntApp,
   Badge,
   Button,
   Card,
@@ -14,7 +15,6 @@ import {
   Table,
   Tooltip,
   Typography,
-  message,
 } from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import {useCallback, useEffect, useMemo, useState} from 'react';
@@ -95,6 +95,7 @@ const MiniBarChart = ({data, t}: {data: QueryTrendPoint[]; t: (key: string, fall
 
 const App = () => {
   const {t, ensure, locale} = useI18n();
+  const {message} = AntApp.useApp();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
@@ -113,7 +114,7 @@ const App = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [message, t]);
 
   useEffect(() => {
     void load();

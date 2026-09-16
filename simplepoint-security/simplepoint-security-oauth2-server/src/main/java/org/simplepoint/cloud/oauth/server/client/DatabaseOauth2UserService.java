@@ -1,11 +1,12 @@
 package org.simplepoint.cloud.oauth.server.client;
 
-import java.util.LinkedHashMap;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import org.simplepoint.plugin.oidc.api.model.ResolvedExternalIdentityProvider;
 import org.simplepoint.plugin.oidc.api.service.ExternalIdentityProviderService;
 import org.simplepoint.security.entity.User;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -28,6 +29,10 @@ public class DatabaseOauth2UserService
 
   private final ExternalIdentityAccountLinker accountLinker;
 
+  private final ExternalIdentityLinkFlow linkFlow;
+
+  private final ObjectProvider<HttpServletRequest> requestProvider;
+
   private final GithubEmailAttributeEnricher githubEmailAttributeEnricher;
 
   /**
@@ -36,11 +41,15 @@ public class DatabaseOauth2UserService
   public DatabaseOauth2UserService(
       final ExternalIdentityProviderService providerService,
       final ExternalIdentityAccountLinker accountLinker,
-      final GithubEmailAttributeEnricher githubEmailAttributeEnricher
+      final GithubEmailAttributeEnricher githubEmailAttributeEnricher,
+      final ExternalIdentityLinkFlow linkFlow,
+      final ObjectProvider<HttpServletRequest> requestProvider
   ) {
     this.providerService = providerService;
     this.accountLinker = accountLinker;
     this.githubEmailAttributeEnricher = githubEmailAttributeEnricher;
+    this.linkFlow = linkFlow;
+    this.requestProvider = requestProvider;
   }
 
   @Override
@@ -54,7 +63,10 @@ public class DatabaseOauth2UserService
         provider,
         external.getAttributes()
     );
-    User localUser = accountLinker.link(provider, attributes);
+    HttpServletRequest request = requestProvider.getIfAvailable();
+    User localUser = request == null
+        ? accountLinker.link(provider, attributes)
+        : linkFlow.resolve(request, provider, attributes);
     attributes.put(LOCAL_USER_ID, localUser.getId());
     LinkedHashSet<GrantedAuthority> authorities =
         new LinkedHashSet<>(external.getAuthorities());

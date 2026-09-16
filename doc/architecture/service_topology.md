@@ -118,6 +118,11 @@ sequenceDiagram
 
 例如 `simplepoint-service-common` 的 `build.gradle.kts` 直接引入了 RBAC、OIDC、i18n、tenant、storage 等插件模块；这说明运行时服务边界更多体现在“哪些模块被组装到哪个服务”上，而不是每个能力都单独拆成一个可运行服务。
 
+P0/P1 合并后，AI 各领域的 repository/service 归入 `-implementation`，管理 REST
+及其测试直接由 AI 服务拥有。RBAC 管理 REST 由 Common 服务拥有。这样可让
+Agent/Workflow Worker 和授权服务继续共享领域实现，而不加载管理端点。
+详细映射见 [模块合并记录](module_consolidation.md)。
+
 ## 7. 阅读建议
 
 如果你要追某个页面是怎么显示出来的，推荐按下面顺序看：

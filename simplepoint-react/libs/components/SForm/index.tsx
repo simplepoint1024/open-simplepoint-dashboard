@@ -7,6 +7,7 @@ import {RJSFValidationError, SubmitButtonProps} from "@rjsf/utils";
 import {memo, useMemo} from "react";
 import IconPicker from "./widgets/IconPicker";
 import OrgTreeMultiSelect from "./widgets/OrgTreeMultiSelect";
+import OrganizationSelect from "./widgets/OrganizationSelectWidget";
 import RemoteSelect from "./widgets/RemoteSelect";
 import OssFileWidget from "./widgets/OssFileWidget";
 import OssImageWidget from "./widgets/OssImageWidget";
@@ -15,6 +16,7 @@ import {useI18n} from "@simplepoint/shared/hooks/useI18n";
 
 type SFormProps = Omit<FormProps, "validator">& {
   i18nNamespaces?: string[];
+  hideSubmit?: boolean;
   submitLoading?: boolean;
 };
 
@@ -41,6 +43,7 @@ const formTemplates = {
 const defaultWidgets = {
   IconPicker,
   OrgTreeMultiSelect,
+  OrganizationSelect,
   RemoteSelect,
   UserPicker,
   OssFile: OssFileWidget,
@@ -52,7 +55,7 @@ const TEXTAREA_AUTOSIZE = { minRows: 4, maxRows: 16 } as const;
 
 const SForm = (props: SFormProps) => {
   const {t} = useI18n();
-  const {schema, uiSchema, validate, submitLoading, ...rest} = props as any;
+  const {schema, uiSchema, validate, hideSubmit, submitLoading, ...rest} = props as any;
 
   // 从 schema.x-ui.widget 自动生成基础 uiSchema（含通用映射与 textarea 特例）
   const autoUiSchema = useMemo(() => {
@@ -131,6 +134,9 @@ const SForm = (props: SFormProps) => {
   };
 
   const transformErrors = (errors: RJSFValidationError[]) => errors;
+  const resolvedTemplates = useMemo(() => hideSubmit
+    ? {ButtonTemplates: {SubmitButton: () => null}}
+    : formTemplates, [hideSubmit]);
   return (
     <Form
       {...rest}
@@ -141,7 +147,7 @@ const SForm = (props: SFormProps) => {
       validate={mergedValidate}
       showErrorList={false}
       transformErrors={transformErrors}
-      templates={formTemplates}
+      templates={resolvedTemplates}
       widgets={defaultWidgets as any}
     />
   );

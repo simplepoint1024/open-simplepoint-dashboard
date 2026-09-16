@@ -57,6 +57,25 @@ func TestValidateRejectsUnsafeLimits(t *testing.T) {
 	if err := cfg.Validate(); err == nil {
 		t.Fatal("expected an insecure image verifier URL to be rejected")
 	}
+	cfg = validConfig()
+	cfg.InternalServiceRoutes = map[string]string{
+		"postgres:not-a-port": "runtime-postgres",
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected an invalid endpoint route to be rejected")
+	}
+}
+
+func TestRouteMapParsesExactEndpointToNetworkMappings(t *testing.T) {
+	routes := routeMap(
+		"POSTGRES:5432=Open-SimplePoint-Runtime-Postgres," +
+			"db.example.com:6432=runtime-db",
+	)
+	if routes["postgres:5432"] !=
+		"open-simplepoint-runtime-postgres" ||
+		routes["db.example.com:6432"] != "runtime-db" {
+		t.Fatalf("unexpected endpoint route map: %#v", routes)
+	}
 }
 
 func TestValidateAcceptsControlPlaneConfiguration(t *testing.T) {

@@ -1,7 +1,7 @@
 import api from '@/api/index';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Avatar, Drawer, Space, message} from 'antd';
+import {App as AntdApp, Avatar, Drawer, Space} from 'antd';
 import {ApartmentOutlined, UserOutlined} from '@ant-design/icons';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import PackageConfig from './config/package';
@@ -11,6 +11,7 @@ import type {TableButtonProps} from '@simplepoint/components/Table';
 const baseConfig = api['platform.tenants'];
 
 const App = () => {
+  const {message} = AntdApp.useApp();
   const [formDrawerOpen, setFormDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any | null>(null);
   const [openPackageConfig, setOpenPackageConfig] = useState(false);
@@ -71,7 +72,7 @@ const App = () => {
     setTenantOwnerId(String(row?.ownerId ?? '').trim());
     setOpenPackageConfig(target === 'package');
     setOpenUserConfig(target === 'user');
-  }, [t]);
+  }, [message, t]);
 
   const customButtonEvents = useMemo(() => ({
     'config.package': (_keys: React.Key[], rows: any[]) => {

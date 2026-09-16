@@ -9,6 +9,7 @@
 package org.simplepoint.plugin.rbac.core.api.repository;
 
 import java.util.List;
+import java.util.Optional;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.security.entity.FieldScope;
 
@@ -16,6 +17,9 @@ import org.simplepoint.security.entity.FieldScope;
  * Repository interface for managing {@link FieldScope} entities.
  */
 public interface FieldScopeRepository extends BaseRepository<FieldScope, String> {
+
+  /** Resolves only an active policy owned by the requested tenant. */
+  Optional<FieldScope> findByIdAndTenantIdAndDeletedAtIsNull(String id, String tenantId);
 
   /**
    * Finds all FieldScope entities whose IDs are in the given collection.

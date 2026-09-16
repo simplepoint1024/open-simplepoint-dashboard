@@ -1,12 +1,14 @@
 import api from '@/api';
 import type {TableButtonProps} from '@simplepoint/components/Table';
 import SimpleTable from '@simplepoint/components/SimpleTable';
-import {request} from '@simplepoint/shared/api/client';
+import DataTable from '@simplepoint/components/DataTable';
+import {request, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {del, get, post} from '@simplepoint/shared/api/methods';
 import type {Page} from '@simplepoint/shared/types/request';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {
   Alert,
+  App,
   Button,
   Form,
   Input,
@@ -15,16 +17,21 @@ import {
   Popconfirm,
   Select,
   Space,
-  Table,
   Tag,
   Typography,
   Upload,
-  message,
 } from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import type {UploadFile} from 'antd/es/upload/interface';
 import {DeleteOutlined, InboxOutlined, ReloadOutlined} from '@ant-design/icons';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {
+  knowledgeDocumentErrorLabel,
+  knowledgeDocumentSourceLabel,
+  knowledgeDocumentStatusLabel,
+  knowledgeRetrievalModeLabel,
+} from './labels';
+import {localizeWorkbenchOperationError} from '../workbenchErrorCodes';
 
 const {Paragraph, Text} = Typography;
 const {TextArea} = Input;
@@ -83,11 +90,6 @@ const emptyDocuments: Page<KnowledgeDocument> = {
   page: {number: 0, size: 20, totalElements: 0, totalPages: 0},
 };
 
-const errorMessage = (error: unknown, fallback: string) => {
-  const value = error as {userMessage?: string; message?: string};
-  return value?.userMessage || value?.message || fallback;
-};
-
 const formatBytes = (bytes?: number) => {
   if (bytes == null) return '-';
   if (bytes < 1024) return `${bytes} B`;
@@ -100,6 +102,7 @@ const scoreText = (value?: number) => value == null ? '-' : value.toFixed(4);
 const KnowledgeBases = () => {
   const baseConfig = api['ai-workbench.knowledge-bases'];
   const {t, ensure, locale} = useI18n();
+  const {message} = App.useApp();
   const [tableKey, setTableKey] = useState(0);
   const [embeddingModels, setEmbeddingModels] = useState<EmbeddingModel[]>([]);
   const [selectedKnowledgeBase, setSelectedKnowledgeBase] = useState<KnowledgeBaseRow | null>(null);
@@ -117,6 +120,13 @@ const KnowledgeBases = () => {
   const [retrieveForm] = Form.useForm();
   const [retrievalResult, setRetrievalResult] = useState<RetrievalResult | null>(null);
 
+  const tableErrorMessageResolver = useCallback((error: unknown) => (
+    localizeWorkbenchOperationError(t, error, {
+      key: 'ai.error.operationFailed',
+      fallback: '知识库操作失败，请稍后重试',
+    })
+  ), [t]);
+
   useEffect(() => {
     void ensure(baseConfig.i18nNamespaces);
   }, [baseConfig.i18nNamespaces, ensure, locale]);
@@ -124,11 +134,11 @@ const KnowledgeBases = () => {
   useEffect(() => {
     get<EmbeddingModel[]>(`${baseConfig.baseUrl}/embedding-models`)
       .then(setEmbeddingModels)
-      .catch((error) => message.error(errorMessage(
+      .catch((error) => message.error(resolveApiErrorMessage(
         error,
         t('ai.knowledge-bases.error.loadModels', '可用 Embedding 模型加载失败'),
       )));
-  }, [baseConfig.baseUrl, t]);
+  }, [baseConfig.baseUrl, message, t]);
 
   const refreshKnowledgeBases = useCallback(() => {
     setTableKey((value) => value + 1);
@@ -145,10 +155,17 @@ const KnowledgeBases = () => {
         {page: 0, size: 100, sort: 'createdAt,desc'},
       );
       setDocuments(result);
+    } catch (error) {
+      if (!silent) {
+        message.error(resolveApiErrorMessage(
+          error,
+          t('ai.knowledge-bases.error.loadDocuments', '文档列表加载失败'),
+        ));
+      }
     } finally {
       if (!silent) setDocumentsLoading(false);
     }
-  }, [baseConfig.baseUrl]);
+  }, [baseConfig.baseUrl, message, t]);
 
   const hasActiveIndexJobs = useMemo(
     () => documents.content.some((document) => (
@@ -216,10 +233,15 @@ const KnowledgeBases = () => {
       setUploadFiles([]);
       await loadDocuments(selectedKnowledgeBase);
       refreshKnowledgeBases();
+    } catch (error) {
+      message.error(resolveApiErrorMessage(
+        error,
+        t('ai.knowledge-bases.error.upload', '文档上传失败，请检查文件后重试'),
+      ));
     } finally {
       setUploading(false);
     }
-  }, [baseConfig.baseUrl, loadDocuments, refreshKnowledgeBases, selectedKnowledgeBase, t, uploadFiles]);
+  }, [baseConfig.baseUrl, loadDocuments, message, refreshKnowledgeBases, selectedKnowledgeBase, t, uploadFiles]);
 
   const handleAddText = useCallback(async () => {
     if (!selectedKnowledgeBase) return;
@@ -235,10 +257,15 @@ const KnowledgeBases = () => {
       textForm.resetFields();
       await loadDocuments(selectedKnowledgeBase);
       refreshKnowledgeBases();
+    } catch (error) {
+      message.error(resolveApiErrorMessage(
+        error,
+        t('ai.knowledge-bases.error.addText', '文本文档新增失败，请检查内容后重试'),
+      ));
     } finally {
       setTextSaving(false);
     }
-  }, [baseConfig.baseUrl, loadDocuments, refreshKnowledgeBases, selectedKnowledgeBase, t, textForm]);
+  }, [baseConfig.baseUrl, loadDocuments, message, refreshKnowledgeBases, selectedKnowledgeBase, t, textForm]);
 
   const handleReindex = useCallback(async (document: KnowledgeDocument) => {
     if (!selectedKnowledgeBase) return;
@@ -254,17 +281,27 @@ const KnowledgeBases = () => {
       refreshKnowledgeBases();
     } catch (error) {
       hide();
-      throw error;
+      message.error(resolveApiErrorMessage(
+        error,
+        t('ai.knowledge-bases.error.reindex', '重新索引失败，请刷新后重试'),
+      ));
     }
-  }, [baseConfig.baseUrl, loadDocuments, refreshKnowledgeBases, selectedKnowledgeBase, t]);
+  }, [baseConfig.baseUrl, loadDocuments, message, refreshKnowledgeBases, selectedKnowledgeBase, t]);
 
   const handleDeleteDocument = useCallback(async (document: KnowledgeDocument) => {
     if (!selectedKnowledgeBase) return;
-    await del(`${baseConfig.baseUrl}/${selectedKnowledgeBase.id}/documents`, document.id);
-    message.success(t('table.deleteSuccess', '删除成功'));
-    await loadDocuments(selectedKnowledgeBase);
-    refreshKnowledgeBases();
-  }, [baseConfig.baseUrl, loadDocuments, refreshKnowledgeBases, selectedKnowledgeBase, t]);
+    try {
+      await del(`${baseConfig.baseUrl}/${selectedKnowledgeBase.id}/documents`, document.id);
+      message.success(t('table.deleteSuccess', '删除成功'));
+      await loadDocuments(selectedKnowledgeBase);
+      refreshKnowledgeBases();
+    } catch (error) {
+      message.error(resolveApiErrorMessage(
+        error,
+        t('ai.knowledge-bases.error.deleteDocument', '文档删除失败，请刷新后重试'),
+      ));
+    }
+  }, [baseConfig.baseUrl, loadDocuments, message, refreshKnowledgeBases, selectedKnowledgeBase, t]);
 
   const handleRetrieve = useCallback(async () => {
     if (!selectedKnowledgeBase) return;
@@ -279,10 +316,15 @@ const KnowledgeBases = () => {
       if (!result.hits?.length) {
         message.info(t('ai.knowledge-bases.retrieve.empty', '没有找到达到相关度要求的内容'));
       }
+    } catch (error) {
+      message.error(resolveApiErrorMessage(
+        error,
+        t('ai.knowledge-bases.error.retrieve', '知识检索失败，请检查查询条件后重试'),
+      ));
     } finally {
       setRetrieving(false);
     }
-  }, [baseConfig.baseUrl, retrieveForm, selectedKnowledgeBase, t]);
+  }, [baseConfig.baseUrl, message, retrieveForm, selectedKnowledgeBase, t]);
 
   const formSchemaTransform = useCallback((schema: any) => {
     const nextSchema = structuredClone(schema ?? {});
@@ -310,7 +352,7 @@ const KnowledgeBases = () => {
   const columnOverrides = useMemo(() => ({
     retrievalMode: {
       width: 120,
-      render: (value: RetrievalMode) => t(`ai.knowledge-bases.mode.${value}`, value || '-'),
+      render: (value: RetrievalMode) => knowledgeRetrievalModeLabel(t, value),
     },
     enabled: {
       width: 100,
@@ -326,7 +368,12 @@ const KnowledgeBases = () => {
 
   const documentColumns: ColumnsType<KnowledgeDocument> = [
     {title: t('ai.knowledge-documents.title.name', '文档名称'), dataIndex: 'name', ellipsis: true},
-    {title: t('ai.knowledge-documents.title.sourceType', '来源'), dataIndex: 'sourceType', width: 90},
+    {
+      title: t('ai.knowledge-documents.title.sourceType', '来源'),
+      dataIndex: 'sourceType',
+      width: 90,
+      render: (value: string) => knowledgeDocumentSourceLabel(t, value),
+    },
     {title: t('ai.knowledge-documents.title.fileSize', '大小'), dataIndex: 'fileSize', width: 100, render: formatBytes},
     {
       title: t('ai.knowledge-documents.title.status', '状态'),
@@ -341,9 +388,11 @@ const KnowledgeBases = () => {
               : value === 'REINDEX_FAILED'
                 ? 'orange'
                 : 'blue'}
-          title={record.errorMessage}
+          title={record.errorMessage
+            ? knowledgeDocumentErrorLabel(t, record.errorMessage)
+            : undefined}
         >
-          {t(`ai.knowledge-documents.status.${value}`, value || '-')}
+          {knowledgeDocumentStatusLabel(t, value)}
         </Tag>
       ),
     },
@@ -365,7 +414,7 @@ const KnowledgeBases = () => {
           >
             {t('ai.knowledge-bases.button.reindex', '重建')}
           </Button>
-          <Popconfirm title={t('table.deleteConfirm', '确定删除吗？')} onConfirm={() => void handleDeleteDocument(record)}>
+          <Popconfirm title={t('table.confirmDeleteTitle', '确认删除')} onConfirm={() => void handleDeleteDocument(record)}>
             <Button type="link" danger size="small" icon={<DeleteOutlined/>}/>
           </Popconfirm>
         </Space>
@@ -400,6 +449,7 @@ const KnowledgeBases = () => {
         key={tableKey}
         {...baseConfig}
         customButtonEvents={customButtonEvents}
+        errorMessageResolver={tableErrorMessageResolver}
         formSchemaTransform={formSchemaTransform}
         columnOverrides={columnOverrides}
         initialValues={{
@@ -432,7 +482,7 @@ const KnowledgeBases = () => {
             {t('ai.knowledge-bases.documents.supported', '支持 PDF、Office、OpenDocument、TXT、Markdown、CSV、JSON、XML、HTML、RTF 和 EPUB')}
           </Text>
         </Space>
-        <Table
+        <DataTable
           rowKey="id"
           size="small"
           loading={documentsLoading}
@@ -487,6 +537,7 @@ const KnowledgeBases = () => {
       >
         <Alert
           type="info"
+          closable
           showIcon
           style={{marginBottom: 16}}
           message={t('ai.knowledge-bases.retrieve.tip', '可临时覆盖检索模式、Top K 和最低相关度，不会修改知识库配置。')}
@@ -510,7 +561,7 @@ const KnowledgeBases = () => {
           <Form.Item name="topK"><InputNumber min={1} max={100} addonBefore="Top K"/></Form.Item>
           <Form.Item name="scoreThreshold"><InputNumber min={0} max={1} step={0.05} addonBefore={t('ai.knowledge-bases.retrieve.threshold', '阈值')}/></Form.Item>
         </Form>
-        <Table
+        <DataTable
           rowKey="chunkId"
           size="small"
           loading={retrieving}

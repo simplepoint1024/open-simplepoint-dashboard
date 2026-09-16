@@ -18,4 +18,10 @@ public class AccessCenterRoleAuthorizationDto implements Serializable {
   private String dataScopeId;
 
   private String fieldScopeId;
+
+  private Long revision;
+
+  private boolean confirmLegacyReplacement;
+
+  private Boolean updateScope;
 }

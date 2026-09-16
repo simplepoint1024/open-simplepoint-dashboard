@@ -59,4 +59,4 @@ SIMPLEPOINT_TOOL_IMAGE_VERIFIER_IGNORE_TRANSPARENCY_LOG=false
 
 The image pins the Cosign and Trivy tool images by OCI index digest. The Trivy
 cache is the only writable persistent path; the service itself runs as UID
-`65532` with a read-only root filesystem in Compose and Swarm.
+`65532` with a read-only root filesystem in Compose.

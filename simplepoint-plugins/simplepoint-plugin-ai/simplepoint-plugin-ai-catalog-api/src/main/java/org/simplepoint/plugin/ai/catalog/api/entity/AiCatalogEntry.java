@@ -84,6 +84,10 @@ public class AiCatalogEntry extends BaseEntityImpl<String> {
   @Column(name = "raw_json", columnDefinition = "TEXT", nullable = false)
   private String rawJson;
 
+  @JsonIgnore
+  @Column(name = "descriptor_json", columnDefinition = "TEXT")
+  private String descriptorJson;
+
   @Version
   @Column(name = "lock_version", nullable = false)
   @Schema(hidden = true)

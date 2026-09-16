@@ -7,6 +7,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Objects;
 import java.util.HashMap;
 import java.util.Map;
 import org.simplepoint.cache.CacheService;
@@ -56,19 +60,6 @@ public class AuthorizationContextResolver {
   }
 
   /**
-   * Loads the authorization context from the cache using the provided context ID.
-   *
-   * @param contextId the ID of the authorization context to load from the cache
-   * @return the loaded AuthorizationContext, or null if not found in the cache
-   */
-  public AuthorizationContext load(String contextId) {
-    if (contextId == null || contextId.isBlank()) {
-      return null;
-    }
-    return cacheService.get(cacheKeyPrefix + contextId, AuthorizationContext.class);
-  }
-
-  /**
    * Resolves the authorization context for a given user ID and HTTP headers.
    *
    * @param httpHeaders a map of HTTP headers that may contain additional information for resolving the context
@@ -78,32 +69,64 @@ public class AuthorizationContextResolver {
   public AuthorizationContext resolve(Map<String, String> httpHeaders) {
     final String authorization = getHeader(httpHeaders, HttpHeaders.AUTHORIZATION);
     if (authorization != null && !authorization.isBlank()) {
-      final String contextId = getHeader(httpHeaders, "X-Context-Id");
-      final String tenantId = getHeader(httpHeaders, "X-Tenant-Id");
       Map<String, Object> userInfo = getUserInfo(authorization);
       final String userId = resolveSubject(userInfo);
-      final Map<String, String> attributes = new HashMap<>();
-      attributes.put("X-User-Id", userId);
-      httpHeaders.forEach((k, v) -> {
-        if (k != null && k.regionMatches(true, 0, "X-", 0, 2)) {
-          attributes.put(normalizeHeaderName(k), v);
-        }
-      });
-      // 先从缓存加载，加载不到再计算并保存到缓存
-      AuthorizationContext authorizationContext = load(contextId);
-      if (authorizationContext != null) {
-        return authorizationContext;
-      }
-      authorizationContext = contextService.calculate(tenantId, userId, contextId, attributes);
-      if (authorizationContext != null) {
-        if (contextId != null && !contextId.isBlank()) {
-          cacheService.put(cacheKeyPrefix + contextId, authorizationContext, 2 * 60 * 60); // 设置过期时间为 2 小时
-        }
-        return authorizationContext;
-      }
-      throw new RuntimeException("无法解析授权上下文");
+      return resolveAuthenticated(userId, httpHeaders);
     }
     return null;
+  }
+
+  /** Called only after token validation; client context IDs are hints, never cache credentials. */
+  public AuthorizationContext resolveAuthenticated(String userId, Map<String, String> headers) {
+    if (!StringUtils.hasText(userId)) {
+      throw new BadCredentialsException("认证主体缺少用户标识");
+    }
+    String tenantId = trim(getHeader(headers, "X-Tenant-Id"));
+    String roleId = trim(getHeader(headers, "X-Role-Id"));
+    String contextId = trim(getHeader(headers, "X-Context-Id"));
+    Long version = contextService.currentVersion(tenantId);
+    Long subjectVersion = contextService.currentSubjectVersion(userId);
+    String key = version == null || subjectVersion == null ? null : verifiedCacheKey(userId, tenantId, roleId, version, subjectVersion);
+    AuthorizationContext cached = key == null ? null : cacheService.get(key, AuthorizationContext.class);
+    if (cached != null && Objects.equals(userId, cached.getUserId())
+        && Objects.equals(tenantId, trim(cached.getAttribute("X-Tenant-Id")))
+        && Objects.equals(roleId, trim(cached.getAttribute("X-Role-Id")))
+        && Objects.equals(version, cached.getVersion())
+        && Objects.equals(String.valueOf(subjectVersion), cached.getAttribute("X-Subject-Version"))) {
+      return cached;
+    }
+    Map<String, String> attributes = new HashMap<>();
+    attributes.put("X-User-Id", userId);
+    if (tenantId != null) attributes.put("X-Tenant-Id", tenantId);
+    if (roleId != null) attributes.put("X-Role-Id", roleId);
+    AuthorizationContext resolved = contextService.calculate(tenantId, userId, contextId, attributes);
+    if (resolved == null || !userId.equals(resolved.getUserId())) {
+      throw new BadCredentialsException("无法解析授权上下文");
+    }
+    if ((key != null && !Objects.equals(tenantId, trim(resolved.getAttribute("X-Tenant-Id"))))
+        || (roleId != null && !Objects.equals(roleId, trim(resolved.getAttribute("X-Role-Id"))))) {
+      throw new BadCredentialsException("授权上下文与请求范围不匹配");
+    }
+    // If policy changed during calculation, do not cache under the earlier version.
+    if (key != null && Objects.equals(version, resolved.getVersion())
+        && Objects.equals(subjectVersion, contextService.currentSubjectVersion(userId))) {
+      resolved.mergeAttributes(Map.of("X-Subject-Version", String.valueOf(subjectVersion)));
+      cacheService.put(key, resolved, 2 * 60 * 60);
+    }
+    return resolved;
+  }
+
+  private String verifiedCacheKey(String userId, String tenantId, String roleId, Long version, Long subjectVersion) {
+    try {
+      byte[] identity = objectMapper.writeValueAsBytes(new Object[]{userId, tenantId, roleId, version, subjectVersion});
+      return cacheKeyPrefix + "verified-v3:" + HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(identity));
+    } catch (IOException | NoSuchAlgorithmException error) {
+      throw new AuthenticationServiceException("无法生成权限缓存标识", error);
+    }
+  }
+
+  private static String trim(String value) {
+    return StringUtils.hasText(value) ? value.trim() : null;
   }
 
   private String resolveSubject(Map<String, Object> userInfo) {
@@ -121,22 +144,6 @@ public class AuthorizationContextResolver {
       }
     }
     return null;
-  }
-
-  private static String normalizeHeaderName(String headerName) {
-    if ("X-Tenant-Id".equalsIgnoreCase(headerName)) {
-      return "X-Tenant-Id";
-    }
-    if ("X-Context-Id".equalsIgnoreCase(headerName)) {
-      return "X-Context-Id";
-    }
-    if ("X-Role-Id".equalsIgnoreCase(headerName)) {
-      return "X-Role-Id";
-    }
-    if ("X-User-Id".equalsIgnoreCase(headerName)) {
-      return "X-User-Id";
-    }
-    return headerName;
   }
 
   /**

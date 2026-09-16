@@ -9,6 +9,7 @@
 package org.simplepoint.plugin.rbac.core.api.repository;
 
 import java.util.List;
+import java.util.Optional;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.security.entity.DataScope;
 
@@ -16,6 +17,9 @@ import org.simplepoint.security.entity.DataScope;
  * Repository interface for managing {@link DataScope} entities.
  */
 public interface DataScopeRepository extends BaseRepository<DataScope, String> {
+
+  /** Resolves only an active policy owned by the requested tenant. */
+  Optional<DataScope> findByIdAndTenantIdAndDeletedAtIsNull(String id, String tenantId);
 
   /**
    * Finds all DataScope entities whose IDs are in the given collection.

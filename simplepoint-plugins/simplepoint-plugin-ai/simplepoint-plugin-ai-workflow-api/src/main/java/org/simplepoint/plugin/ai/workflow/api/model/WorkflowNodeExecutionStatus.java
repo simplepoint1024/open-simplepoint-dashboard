@@ -9,6 +9,7 @@ public enum WorkflowNodeExecutionStatus {
   WAITING,
   SUCCEEDED,
   FAILED,
+  CANCELLED,
   SKIPPED,
   COMPENSATING,
   COMPENSATED,

@@ -80,6 +80,59 @@ public class ExternalIdentityAccountLinker {
     return requireUsable(matched);
   }
 
+  /**
+   * Explicitly binds an authenticated external identity to a locally authenticated account.
+   * This path is used by account settings and by the first-login confirmation flow.
+   */
+  @Transactional(rollbackFor = Exception.class)
+  public User linkToUser(
+      final ResolvedExternalIdentityProvider provider,
+      final String subject,
+      final String email,
+      final String userId
+  ) {
+    String normalizedSubject = trimToNull(subject);
+    if (normalizedSubject == null) {
+      throw failure("身份提供商未返回稳定的 subject");
+    }
+    User target = requireUsable(loadById(userId));
+    ExternalIdentityLink subjectLink = linkRepository
+        .findActiveByProviderAndSubject(provider.id(), normalizedSubject)
+        .orElse(null);
+    if (subjectLink != null) {
+      if (!target.getId().equals(subjectLink.getUserId())) {
+        throw failure("该外部账号已绑定到其他平台账号");
+      }
+      subjectLink.setLastLoginAt(Instant.now());
+      linkRepository.save(subjectLink);
+      return target;
+    }
+    ExternalIdentityLink userLink = linkRepository
+        .findActiveByProviderAndUserId(provider.id(), target.getId())
+        .orElse(null);
+    if (userLink != null) {
+      throw failure("当前平台账号已绑定该身份提供商的其他账号");
+    }
+
+    ExternalIdentityLink link = new ExternalIdentityLink();
+    link.setProviderId(provider.id());
+    link.setExternalSubject(normalizedSubject);
+    link.setUserId(target.getId());
+    link.setEmailAtLink(trimToNull(email));
+    link.setLastLoginAt(Instant.now());
+    try {
+      linkRepository.save(link);
+    } catch (DataIntegrityViolationException ex) {
+      ExternalIdentityLink concurrent = linkRepository
+          .findActiveByProviderAndSubject(provider.id(), normalizedSubject)
+          .orElseThrow(() -> ex);
+      if (!target.getId().equals(concurrent.getUserId())) {
+        throw failure("该外部账号已绑定到其他平台账号");
+      }
+    }
+    return target;
+  }
+
   private User matchLocalUser(
       final ResolvedExternalIdentityProvider provider,
       final Map<String, Object> attributes
@@ -142,6 +195,21 @@ public class ExternalIdentityAccountLinker {
     String value = attribute(attributes, name);
     return value != null
         && ("true".equalsIgnoreCase(value) || "1".equals(value));
+  }
+
+  static String attributeValue(
+      final Map<String, Object> attributes,
+      final String name
+  ) {
+    return attribute(attributes, name);
+  }
+
+  private static String trimToNull(final String value) {
+    if (value == null) {
+      return null;
+    }
+    String normalized = value.trim();
+    return normalized.isEmpty() ? null : normalized;
   }
 
   private static OAuth2AuthenticationException failure(final String description) {

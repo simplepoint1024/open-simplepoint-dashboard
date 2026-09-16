@@ -1,0 +1,18 @@
+services:
+  runtime-pki:
+    environment:
+      SIMPLEPOINT_TOOL_RUNTIME_TLS_SERVER_NAME: localhost
+
+  tool-runtime:
+    environment:
+      SIMPLEPOINT_TOOL_RUNTIME_NODE_ID: local-runtime-node
+      SIMPLEPOINT_TOOL_RUNTIME_MTLS_ENABLED: "true"
+      SIMPLEPOINT_TOOL_RUNTIME_TLS_SERVER_NAME: localhost
+      SIMPLEPOINT_TOOL_RUNTIME_TLS_CONTROL_SERVER_NAME: ai
+      SIMPLEPOINT_TOOL_RUNTIME_CONTROL_PLANE_URL: https://host.docker.internal:2889
+      SIMPLEPOINT_TOOL_RUNTIME_ADVERTISE_URL: https://localhost:2891
+      SIMPLEPOINT_TOOL_RUNTIME_NODE_LABELS: environment=dev,orchestrator=compose-host-e2e
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ./docker/runtime-security/seccomp.json:/etc/simplepoint/runtime-security/seccomp.json:ro

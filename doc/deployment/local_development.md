@@ -1,226 +1,150 @@
-# 本地开发环境（Local Development）
+# 本地开发环境（无 Docker）
 
-## 1. 背景与目标
+本文给出仓库的标准本地启动路径。目标是：机器已安装 Consul、Redis、PostgreSQL 和
+JDK 后，克隆代码、修改一个环境文件即可初始化并启动，不要求 Docker、Terraform、
+Consul CLI、系统 Node.js 或系统 pnpm。
 
-本文档描述**当前仓库已经具备的本地开发路径**，重点回答三个问题：
+## 1. 前置条件
 
-1. 本地最少要准备哪些中间件和工具。
-2. 配置中心和业务服务在开发态是怎么接起来的。
-3. 什么时候应该走“本地进程调试”，什么时候应该直接用 Docker Swarm。
-
-如果你的目标是逐个服务调试 Java 进程、排查权限 / 菜单 / 登录链路，优先看本文；如果你的目标是把基础设施和主服务一口气全拉起来，直接看 `doc/deployment/docker_swarm_deployment.md`。
-
-## 2. 当前仓库支持的两种本地方式
-
-| 方式 | 适用场景 | 主要特点 |
+| 组件 | 要求 / 默认地址 | 说明 |
 | --- | --- | --- |
-| 本地进程调试（推荐） | 需要单步调试 `authorization` / `common` / `host`，或逐项确认配置来源 | Java 服务用 `./gradlew ...:run` 启动；中间件可以本机安装，也可以部分用 Docker。 |
-| Docker Swarm 一键拉起 | 想快速得到一个完整可访问环境，不想手工准备 Consul 初始化 | 基础设施、配置初始化和主服务一并拉起，见 `doc/deployment/docker_swarm_deployment.md`。 |
+| JDK | 21+ | 后端构建与运行基线 |
+| Gradle | 8.12+ | 本地脚本默认使用系统 `gradle`；也可在环境文件中改为 `./gradlew` |
+| Consul | `http://127.0.0.1:8500` | 配置与服务发现 |
+| PostgreSQL | `127.0.0.1:5432` | 账号需要访问目标库；自动建库时需要 `CREATEDB` |
+| Redis | `127.0.0.1:6379` | 有密码时本机需有 `redis-cli` 用于预检 |
+| curl、psql | PATH 可用 | 初始化和诊断使用 |
 
-本文主要展开第一种。
+核心链路不依赖 RabbitMQ、MinIO。前端正式资源由 Gradle 下载并管理固定版本的
+Node.js 24.19.0 和 pnpm 11.15.1；使用 `--backend-only` 时完全跳过前端构建。
 
-## 3. 配置来源与依赖关系
+AI 组合额外要求 PostgreSQL 已安装 `pgvector`，初始化脚本会创建 `vector` 与
+`pg_trgm` 扩展。
 
-### 3.1 Spring Profile 与配置中心
-
-当前服务默认会先加载两类环境配置：
-
-1. `application-consul.properties` / `application-consul-dev.properties`
-
-这意味着：
-
-- `dev` 是当前默认本地 profile。
-- Consul 是本地开发的主配置入口。
-
-### 3.2 `init_profile.sh` 做了什么
-
-仓库根目录下的 `./scripts/shell/init_profile.sh` 会：
-
-1. 等待本地 `Consul` 可访问；
-2. 进入 `infrastructure/`；
-3. 执行 `make apply ENV=dev`；
-4. 通过 Terraform 把 `infrastructure/consul/config/simplepoint/config/**/*` 写入 Consul；
-5. 授权服务使用本地 JWK 签名。
-
-所以，本地开发不只是“把中间件端口开起来”就够了，还要把配置初始化进去。
-
-## 4. 本地依赖清单
-
-### 4.1 必备工具
-
-| 组件 | 默认地址 / 版本期望 | 用途 |
-| --- | --- | --- |
-| JDK 21+ | 本机安装 | 运行 Gradle 和所有 Java 服务。 |
-| Gradle Wrapper | `./gradlew` | 构建、测试、启动各服务。 |
-| Consul CLI | `127.0.0.1:8500` | `start_dev_consul.sh` 使用本机 `consul` 命令启动 dev agent。 |
-| Terraform 1.5+ | 本机安装 | `infrastructure/Makefile` 会调用 `terraform init` / `terraform apply`。 |
-| curl / make | 本机安装 | `init_profile.sh` 用于可达性检查和 Terraform 包装。 |
-
-### 4.2 中间件与默认地址
-
-| 组件 | 默认地址 | 说明 |
-| --- | --- | --- |
-| PostgreSQL | `localhost:5432` | 默认开发数据源来自 Consul 配置。 |
-| Redis | `localhost:6379` | 本地开发默认直接走 Spring 默认主机地址。 |
-| RabbitMQ | `localhost:5672` / 管理台 `localhost:15672` | 本地开发默认也走 Spring 默认主机地址。 |
-| Consul | `http://127.0.0.1:8500` | `application-consul-dev.properties` 指向本机。 |
-
-### 4.3 一个必须提前知道的前提
-
-当前的 `docker/docker-compose.yaml` 已经把本地开发常用依赖补齐到了：
-
-1. PostgreSQL 凭据与默认 Consul 开发配置对齐（`postgres/postgres`）。
-2. Compose 内已包含 Consul。
-
-但这**不等于**服务已经能直接启动。  
-
-## 5. 推荐启动路径
-
-### 5.1 启动本地依赖容器
-
-当前仓库自带的 `docker/docker-compose.yaml` 可以直接拉起本地开发需要的基础依赖：
+## 2. 首次启动
 
 ```bash
-docker compose -f docker/docker-compose.yaml up -d
+git clone https://github.com/simplepoint1024/open-simplepoint-dashboard.git
+cd open-simplepoint-dashboard
+mkdir -p .simplepoint
+cp config/dev.env.example .simplepoint/dev.env
 ```
 
-说明：
+只需编辑 `.simplepoint/dev.env`。通常需要修改 PostgreSQL 的地址、数据库、用户和
+密码；非默认端口或启用 ACL 时再修改 Redis、Consul 项。该文件已被 Git 忽略，禁止
+把真实凭据写入 `acp.json` 或提交到仓库。
 
-- `simple_point_mysql` 也在 compose 里，但默认开发配置并不使用它。
-- 如果你已经有本地 PostgreSQL / Redis / RabbitMQ / Consul，也可以直接复用现成实例，只要最终地址、凭据和开发配置保持一致即可。
-
-### 5.2 初始化配置中心
-
-起完 compose 后，再执行：
+启动核心平台：
 
 ```bash
-./scripts/shell/init_profile.sh
+./dev doctor core
+./dev init core
+./dev up core
 ```
 
-这个脚本会：
-
-1. 等待 `127.0.0.1:8500` 的 Consul 可访问；
-2. 通过 Terraform 把开发配置写入 Consul。
-
-如果你更习惯完全走本机 CLI 的方式，而不是 compose 起 Consul，那么再使用：
+启动包含 AI 工作台、MCP Gateway、Agent Runtime、Workflow Runtime 的组合：
 
 ```bash
-./scripts/shell/start_developer.sh
+./dev doctor ai
+./dev init ai
+./dev up ai
 ```
 
-不要在 compose 已经占用 `8500` 端口时，再执行 `start_dev_consul.sh`，否则会发生端口冲突。
-
-### 5.3 校验后端工程
-
-在正式起服务前，先跑一次后端测试是当前仓库推荐的最小校验方式：
+首次完整构建会下载 Node.js、pnpm 和项目依赖，之后使用本地缓存。只调试 API
+且不需要页面时可执行：
 
 ```bash
-./gradlew test
+./dev up ai --backend-only
 ```
 
-### 5.4 按顺序启动核心服务
+## 3. 命令说明
 
-推荐开三个终端，分别执行：
-
-```bash
-./gradlew :simplepoint-services:simplepoint-service-authorization:run
-./gradlew :simplepoint-services:simplepoint-service-common:run
-./gradlew :simplepoint-services:simplepoint-service-host:run
-```
-
-推荐顺序仍然是：
-
-1. `authorization`
-2. `common`
-3. `host`
-
-补充说明：
-
-- `authorization` 先起来，OIDC issuer 和登录入口就先就位了。
-- `common` 在 `dev` 下会执行平台启动贡献；默认超级管理员账号也是在这里注册进去的。
-- `host` 最后起来后，浏览器可以直接从 `http://127.0.0.1:8080` 进入完整登录链路。
-
-### 5.5 可选：单独启动前端工作区
-
-如果仓库里存在 `simplepoint-react/`，并且你需要微前端热更新，可以额外启动前端工作区：
-
-```bash
-cd simplepoint-react
-corepack enable
-corepack prepare pnpm@11.15.1 --activate
-pnpm install --frozen-lockfile
-pnpm dev:host
-pnpm dev:common
-```
-
-常见后端联调场景里，这一步不是必选项；先把 `authorization`、`common`、`host` 三个后端服务跑通，再决定是否需要前端单独热更新，通常更稳妥。
-
-## 6. 默认端口与入口
-
-| 服务 / 组件 | 默认地址 |
+| 命令 | 作用 |
 | --- | --- |
-| Host UI | `http://127.0.0.1:8080` |
-| Authorization | `http://127.0.0.1:9000` |
-| Common API | `http://127.0.0.1:7000` |
-| Consul UI | `http://127.0.0.1:8500` |
-| RabbitMQ 管理台 | `http://127.0.0.1:15672` |
+| `./dev doctor [core\|ai\|full]` | 检查 JDK、Consul、PostgreSQL、Redis、扩展与端口冲突 |
+| `./dev init [core\|ai\|full]` | 创建数据库、创建 AI 扩展、幂等同步 Consul 并校验 |
+| `./dev config plan` | 显示配置的新增、变化、旧键清理和未变化项 |
+| `./dev config apply` | 仅同步差异；覆盖或清理前备份旧值 |
+| `./dev config verify` | 校验 Consul 内容与仓库配置完全一致 |
+| `./dev status` | 显示服务 PID、健康状态与地址 |
+| `./dev logs host --follow` | 查看或持续跟踪单个服务日志 |
+| `./dev restart common` | 重启单个服务 |
+| `./dev down [core\|ai\|full]` | 按反向依赖顺序停止服务 |
 
-在开发态配置里，host / common 的 OAuth2 issuer 和 redirect URI 都默认指向：
+运行状态、PID、日志和 Consul 备份都位于 `.simplepoint/`。
 
-- issuer：`http://127.0.0.1:9000`
-- redirect：`http://127.0.0.1:2555/login/oauth2/code/oidc`
+## 4. 配置模型
 
-## 7. 平台启动贡献与默认账号
+Consul 配置只有一个仓库来源：
 
-`simplepoint-service-common` 的开发配置会打开平台启动贡献，并初始化一组可验证作用域和角色差异的账号：
-
-| 身份 | 邮箱 | 默认密码 |
-| --- | --- | --- |
-| 系统管理员 / 默认组织所有者 | `simplepoint@mail.com` | `123456` |
-| 默认组织租户管理员 | `manager@simplepoint.local` | `123456` |
-| 默认组织普通成员 | `member@simplepoint.local` | `123456` |
-
-初始化还会创建默认组织、组织与个人套餐、核心/对象存储/AI 应用以及对应资源授权。生产部署必须通过环境变量修改默认密码，或关闭该启动贡献。
-
-首次验证时，建议按下面顺序做：
-
-1. 确认 `common` 已经启动完成并完成平台启动贡献。
-2. 打开 `http://127.0.0.1:8080`。
-3. 走 host -> authorization 的登录跳转。
-4. 用默认账号登录，确认菜单、路由和页面能正常加载。
-
-## 8. 常见卡点
-
-### 8.1 只起了中间件，没有执行 `init_profile.sh`
-
-这种情况下，Consul 里没有开发配置；服务通常会在配置导入、OIDC issuer 或数据源读取阶段失败。先执行：
-
-```bash
-./scripts/shell/init_profile.sh
+```text
+config/consul/
+├── base/                 # 所有环境共享
+└── profiles/
+    ├── dev/              # 本地开发环境覆盖
+    └── compose/          # Docker Compose 覆盖
 ```
 
-### 8.2 PostgreSQL 能连端口，但用户名 / 密码不一致
+本地进程只使用 `dev` Spring Profile。Consul 的公共键和服务键先加载，随后由
+`*-dev` 键覆盖地址与端口。`./dev config apply` 直接调用 Consul HTTP API，不依赖
+Terraform 或 Consul CLI，并在 `simplepoint/bootstrap/dev/status` 写入配置摘要、Git
+版本和更新时间。重复执行是安全的；未变化配置不会重写。
 
-虽然当前 `docker-compose.yaml` 已经默认使用 `postgres/postgres`，但如果你复用了旧容器、旧数据卷，或直接连接了另一套本地 PostgreSQL，仍然可能和 Consul 开发配置不一致，进而导致 JPA 服务认证失败。
+从旧版脚本升级时，首次执行会把 `.simplepoint/local.env` 自动迁移为 `dev.env`，并在
+备份后删除 Consul 中由旧脚本管理的 `*-local` 键；后续不再存在额外的 local 环境层。
 
-### 8.3 只开了 `authorization`，还没开 `common`
+本地端口如下：
 
-登录入口虽然已经存在，但默认开发账号和很多菜单 / 权限相关初始化是在 `common` 侧完成的。首次验证时，请至少保证 `common` 已经完整启动一次。
+| 服务 | 端口 |
+| --- | ---: |
+| authorization | 9000 |
+| common | 7000 |
+| host | 8080 |
+| auditing / dna | 6000 / 2777 |
+| ai / mcp-gateway | 2888 / 2890 |
+| agent-runtime / workflow-runtime | 2894 / 2895 |
 
-## 9. 何时直接改用 Swarm
+## 5. 启动组合与能力边界
 
-如果你更在意“尽快得到一个完整可访问环境”，而不是逐个服务排查问题，建议直接改走：
+- `core`：authorization、common、host，适合权限、租户、菜单和普通业务开发。
+- `ai`：core + ai、mcp-gateway、agent-runtime、workflow-runtime，支持模型接入、知识库、
+  Skill、Agent 和工作流设计/执行。
+- `full`：ai + auditing、dna。
 
-```bash
-./scripts/shell/start_swarm.sh
-```
+无 Docker 的 `ai` 组合支持远程 MCP Server 和内建能力。受管 OCI Tool Runtime 本身以
+隔离容器作为安全边界，仍需要 Docker/容器运行时，不会在本地模式中降级为不安全的
+宿主进程执行。因此 dev 配置默认关闭 OCI Runtime 的数据库调度；以后启动了 Runtime
+Node，再在 `.simplepoint/dev.env` 中设置
+`SIMPLEPOINT_TOOL_RUNTIME_SCHEDULING_ENABLED=true` 并执行 `./dev config apply`。
 
-Swarm 方案会把 PostgreSQL、Redis、RabbitMQ、Consul、bootstrap、authorization、common、host 一起编排起来，并自动完成配置初始化。完整说明见 `doc/deployment/docker_swarm_deployment.md`。
+AI 的持久化任务 Worker 在队列为空时会自动指数降频，本地上限默认是 5 秒；一旦发现
+任务会立即恢复原始轮询频率。可通过
+`SIMPLEPOINT_AI_POLLING_MAXIMUM_IDLE_INTERVAL` 调整空闲间隔，通过
+`SIMPLEPOINT_AI_ADAPTIVE_POLLING_ENABLED=false` 完全关闭自适应降频。开发环境默认不打印
+Hibernate SQL；需要临时排查 SQL 时设置 `SIMPLEPOINT_JPA_SHOW_SQL=true`。
 
-## 10. 关联文档
+## 6. 验证与排障
 
-- 快速开始：`doc/quick_start.md`
-- 服务拓扑：`doc/architecture/service_topology.md`
-- Docker Swarm 部署：`doc/deployment/docker_swarm_deployment.md`
-- 资源授权模型：`doc/resource/resource_model.md`
-- 常见问题：`doc/troubleshooting/common_issues.md`
+启动成功后访问：
+
+- Host UI：`http://127.0.0.1:8080`
+- Authorization：`http://127.0.0.1:9000`
+- Common：`http://127.0.0.1:7000`
+- Consul UI：`http://127.0.0.1:8500`
+
+默认开发账号为 `simplepoint@mail.com` / `123456`；另有
+`manager@simplepoint.local` 和 `member@simplepoint.local`，默认密码相同。仅限本地使用。
+
+启动失败时先执行 `./dev status`，再看 `./dev logs <service>`。常见处理：
+
+- Consul 不一致：`./dev config plan && ./dev config apply`。
+- 数据库不存在：`./dev database create`；账号无建库权限时由 DBA 手工创建。
+- AI 扩展失败：先为 PostgreSQL 安装 pgvector，再执行 `./dev database extensions`。
+- 端口被占用：根据 `./dev doctor` 输出停止冲突进程或调整配置与端口映射。
+- 前端下载受代理影响：配置 Gradle 的 HTTP/HTTPS 代理，或使用 `--backend-only`。
+
+## 7. IntelliJ IDEA
+
+先完成 `./dev init`。运行配置中设置 `SPRING_PROFILES_ACTIVE=dev`，并从
+`.simplepoint/dev.env` 导入环境变量，然后直接运行对应服务主类。不要把本地密码放进
+项目共享的 Run Configuration。

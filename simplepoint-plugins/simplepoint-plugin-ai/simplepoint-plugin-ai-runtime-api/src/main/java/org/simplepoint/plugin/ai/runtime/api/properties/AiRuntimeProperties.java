@@ -26,6 +26,8 @@ public class AiRuntimeProperties {
 
   private Duration staleScanInterval = Duration.ofSeconds(10);
 
+  private Boolean schedulingEnabled = true;
+
   private String dispatchInternalHeader = "X-SimplePoint-Runtime-Token";
 
   private String dispatchInternalToken;

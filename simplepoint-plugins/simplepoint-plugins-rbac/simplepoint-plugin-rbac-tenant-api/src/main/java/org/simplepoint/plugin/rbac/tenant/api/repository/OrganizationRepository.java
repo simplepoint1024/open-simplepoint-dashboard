@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.Optional;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 
 /**
  * Repository for tenant-scoped organizations.
@@ -47,13 +49,26 @@ public interface OrganizationRepository extends BaseRepository<Organization, Str
    */
   Collection<Organization> findAllByIdsAndTenantId(Collection<String> ids, String tenantId);
 
-  /**
-   * Lists all organizations for a tenant.
-   *
-   * @param tenantId the tenant identifier
-   * @return the organizations that belong to the tenant
-   */
-  Collection<Organization> findAllByTenantId(String tenantId);
+  Slice<Organization> findRootOptions(String tenantId, String excludeId, Pageable pageable);
+
+  Slice<Organization> findFlatOptions(String tenantId, String excludeId, Pageable pageable);
+
+  Slice<Organization> findChildOptions(
+      String tenantId,
+      String parentId,
+      String excludeId,
+      Pageable pageable
+  );
+
+  Slice<Organization> searchOptions(
+      String tenantId,
+      String keyword,
+      String pattern,
+      String excludeId,
+      Pageable pageable
+  );
+
+  Collection<String> findParentIdsWithChildren(Collection<String> parentIds, String tenantId);
 
   /**
    * Finds child organization ids for the supplied parent ids within a tenant.

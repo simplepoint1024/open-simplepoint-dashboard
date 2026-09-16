@@ -11,20 +11,15 @@ package org.simplepoint.core.base.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -38,16 +33,13 @@ import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.api.base.TenantBaseEntity;
 import org.simplepoint.api.base.audit.ModifyDataAuditingService;
-import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.api.security.service.DetailsProviderService;
-import org.simplepoint.api.security.service.JsonSchemaDetailsService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
-import org.simplepoint.core.annotation.ButtonDeclaration;
-import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.datascopeannotation.DataScopeCondition;
 import org.simplepoint.core.datascopeannotation.DataScopeContext;
 import org.simplepoint.core.datascopeannotation.DataScopeFilter;
+import org.simplepoint.core.schema.AnnotatedTableSchemaProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -89,6 +81,8 @@ public class BaseServiceImpl
 
   private final DetailsProviderService detailsProviderService;
 
+  private final AnnotatedTableSchemaProvider tableSchemaProvider;
+
 
   /**
    * Constructs a new BaseServiceImpl instance with the specified repository,
@@ -103,6 +97,7 @@ public class BaseServiceImpl
   ) {
     this.repository = repository;
     this.detailsProviderService = detailsProviderService;
+    this.tableSchemaProvider = new AnnotatedTableSchemaProvider(detailsProviderService);
   }
 
   /**
@@ -149,41 +144,7 @@ public class BaseServiceImpl
    * @return the generated JSON schema with applied field permissions
    */
   protected ObjectNode getJsonSchema(Class<T> domainClass) {
-    if (detailsProviderService == null) {
-      throw new IllegalStateException("DetailsProviderService is null");
-    }
-
-    var formSchemaGenerator = detailsProviderService.getDialect(JsonSchemaDetailsService.class);
-    if (formSchemaGenerator == null) {
-      throw new RuntimeException("Form Schema Generator has not been initialized");
-    }
-    var jsonSchemaGenerate = detailsProviderService.getDialect(JsonSchemaGenerator.class);
-    ObjectNode schema = jsonSchemaGenerate.generateSchema(domainClass);
-
-    // 获取 properties 节点
-    ObjectNode propertiesNode = (ObjectNode) schema.get("properties");
-
-    // 收集字段和对应的 x-order
-    List<Map.Entry<String, JsonNode>> fields = new LinkedList<>(propertiesNode.properties());
-
-    // 按 x-order 排序
-    fields.sort(Comparator.comparingInt(entry -> {
-      JsonNode orderNode = entry.getValue().get("x-order");
-      return orderNode != null ? orderNode.asInt() : Integer.MAX_VALUE;
-    }));
-
-    // 重新构建 properties
-    ObjectNode sortedProperties = mapper.createObjectNode();
-    for (Map.Entry<String, JsonNode> entry : fields) {
-      sortedProperties.set(entry.getKey(), entry.getValue());
-    }
-
-    // 替换原来的 properties
-    schema.set("properties", sortedProperties);
-    //BaseUser details = userContext.getDetails();
-    //Set<SimpleFieldPermissions> fields = formSchemaGenerator.loadCurrentUserSchemaPropertiesPermissions(details, domainClass.getName());
-
-    return schema;
+    return tableSchemaProvider.jsonSchema(domainClass);
   }
 
   /**
@@ -193,24 +154,7 @@ public class BaseServiceImpl
    * @return a set of maps representing button declaration attributes
    */
   protected Set<Map<String, Object>> getButtonDeclarationsSchema(Class<T> domainClass) {
-    boolean annotationPresent = domainClass.isAnnotationPresent(ButtonDeclarations.class);
-    AuthorizationContext authorizationContext = getAuthorizationContext();
-    Collection<String> resources = authorizationContext.getResources();
-    if (annotationPresent) {
-      ButtonDeclarations annotation = domainClass.getAnnotation(ButtonDeclarations.class);
-      ButtonDeclaration[] buttonDeclarations = annotation.value();
-      if (buttonDeclarations.length > 0) {
-        Set<Map<String, Object>> result = new HashSet<>();
-        for (ButtonDeclaration buttonDeclaration : buttonDeclarations) {
-          // 检查用户是否具有按钮声明所需的权限
-          if (resources.contains(buttonDeclaration.authority()) || authorizationContext.getIsAdministrator()) {
-            result.add(extractAnnotationAttributes(buttonDeclaration));
-          }
-        }
-        return result;
-      }
-    }
-    return Set.of();
+    return tableSchemaProvider.buttonSchemas(domainClass, getAuthorizationContext());
   }
 
   /**
@@ -220,17 +164,7 @@ public class BaseServiceImpl
    * @return a map containing the annotation's attribute names and their corresponding values
    */
   protected Map<String, Object> extractAnnotationAttributes(Annotation annotation) {
-    Map<String, Object> result = new HashMap<>();
-    Method[] methods = annotation.annotationType().getDeclaredMethods();
-    for (Method method : methods) {
-      try {
-        Object value = method.invoke(annotation);
-        result.put(method.getName(), value);
-      } catch (Exception e) {
-        log.warn("Could not extract annotation attributes from method {}", method.getName(), e);
-      }
-    }
-    return result;
+    return tableSchemaProvider.annotationAttributes(annotation);
   }
 
   /**
@@ -437,6 +371,9 @@ public class BaseServiceImpl
    */
   @Override
   public void removeAll() {
+    if (isDataScopeRestricted()) {
+      throw new AccessDeniedException("Deleting all rows requires an explicit ALL data scope");
+    }
     repository.enableTenantFilter();
     repository.deleteAll();
   }
@@ -615,19 +552,20 @@ public class BaseServiceImpl
     if (fieldPerms == null || fieldPerms.isEmpty()) {
       return Set.of();
     }
-    String prefix = entityClass.getSimpleName() + "#";
     Set<String> result = new HashSet<>();
-    fieldPerms.forEach((key, access) -> {
-      if (key.startsWith(prefix) && !"EDITABLE".equals(access)) {
-        result.add(key.substring(prefix.length()));
+    for (Class<?> type = entityClass; type != null && type != Object.class; type = type.getSuperclass()) {
+      for (Field field : type.getDeclaredFields()) {
+        if (!org.simplepoint.core.jackson.FieldPermissionPolicy.writable(ctx, entityClass, field.getName())) {
+          result.add(field.getName());
+        }
       }
-    });
+    }
     return result;
   }
 
   /**
    * Clears fields that the current user cannot write (non-EDITABLE) from an entity before creation.
-   * Only non-primitive, non-static, non-final fields are affected.
+   * Reference fields are cleared; restricted primitives reject creation because absence cannot be represented.
    * This prevents clients from supplying values for fields they have no write permission for.
    *
    * @param entity the entity being created
@@ -644,20 +582,21 @@ public class BaseServiceImpl
     if (fieldPerms == null || fieldPerms.isEmpty()) {
       return;
     }
-    String className = entity.getClass().getSimpleName();
     Class<?> clazz = entity.getClass();
     while (clazz != null && clazz != Object.class) {
       for (Field field : clazz.getDeclaredFields()) {
         if (Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers())) {
           continue;
         }
-        String access = fieldPerms.get(className + "#" + field.getName());
-        if (access != null && !"EDITABLE".equals(access) && !field.getType().isPrimitive()) {
+        if (!org.simplepoint.core.jackson.FieldPermissionPolicy.writable(ctx, entity.getClass(), field.getName())) {
+          if (field.getType().isPrimitive()) {
+            throw new AccessDeniedException("Non-writable primitive field requires an explicit server-side creation policy: " + field.getName());
+          }
           try {
             field.setAccessible(true);
             field.set(entity, null);
-          } catch (Exception ignored) {
-            // skip inaccessible fields (e.g. security manager restrictions)
+          } catch (IllegalAccessException | RuntimeException error) {
+            throw new AccessDeniedException("Cannot enforce field permission: " + field.getName(), error);
           }
         }
       }
@@ -698,20 +637,20 @@ public class BaseServiceImpl
 
   private DataScopeCondition buildDefaultDataScopeCondition() {
     AuthorizationContext ctx = getAuthorizationContext();
-    if (ctx == null || Boolean.TRUE.equals(ctx.getIsAdministrator())) {
+    if (ctx != null && Boolean.TRUE.equals(ctx.getIsAdministrator())) {
       return null;
     }
-    String scopeType = ctx.getDataScopeType();
-    if (scopeType == null || scopeType.isBlank() || DATA_SCOPE_ALL.equals(scopeType)) {
+    String scopeType = ctx == null ? null : ctx.getDataScopeType();
+    if (DATA_SCOPE_ALL.equals(scopeType)) {
       return null;
     }
     return new DataScopeCondition(
-        scopeType,
+        scopeType == null || scopeType.isBlank() ? "DENY" : scopeType,
         dataScopeDeptField(),
         dataScopeOwnerField(),
-        ctx.getUserId(),
-        ctx.getDeptIds(),
-        Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf())
+        ctx == null ? null : ctx.getUserId(),
+        ctx == null ? Set.of() : ctx.getDeptIds(),
+        ctx != null && Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf())
     );
   }
 
@@ -737,12 +676,18 @@ public class BaseServiceImpl
       return false;
     }
     AuthorizationContext ctx = getAuthorizationContext();
-    if (!isDataScopeApplicable() || ctx == null || Boolean.TRUE.equals(ctx.getIsAdministrator())) {
+    if (!isDataScopeApplicable() || (ctx != null && Boolean.TRUE.equals(ctx.getIsAdministrator()))) {
       return true;
     }
+    if (ctx == null) {
+      return false;
+    }
     String scopeType = ctx.getDataScopeType();
-    if (scopeType == null || scopeType.isBlank() || DATA_SCOPE_ALL.equals(scopeType)) {
+    if (DATA_SCOPE_ALL.equals(scopeType)) {
       return true;
+    }
+    if (scopeType == null || scopeType.isBlank()) {
+      return false;
     }
     return switch (scopeType) {
       case DATA_SCOPE_SELF -> {
@@ -767,7 +712,20 @@ public class BaseServiceImpl
   }
 
   private boolean isActive(T entity) {
-    return entity != null && entity.getDeletedAt() == null;
+    return entity != null && entity.getDeletedAt() == null && isInCurrentTenant(entity);
+  }
+
+  private boolean isInCurrentTenant(T entity) {
+    if (!(entity instanceof TenantBaseEntity<?> tenantEntity)) {
+      return true;
+    }
+    String tenantId = currentTenantId();
+    AuthorizationContext context = getAuthorizationContext();
+    if (tenantId == null && context != null && Boolean.TRUE.equals(context.getIsAdministrator())
+        && context.getScopeType() == org.simplepoint.core.AuthorizationScopeType.PLATFORM) {
+      return true;
+    }
+    return tenantId != null && tenantId.equals(tenantEntity.getTenantId());
   }
 
   /**

@@ -63,6 +63,13 @@
   background: color-mix(in srgb, var(--ant-color-success, #52c41a) 12%, transparent);
 }
 
+.profile-security-icon.external {
+  color: var(--ant-color-primary, #1677ff);
+  background: color-mix(in srgb, var(--ant-color-primary, #1677ff) 10%, transparent);
+}
+
+.profile-security-divider.ant-divider { margin: 18px 0; }
+
 .profile-security-copy { flex: 1; min-width: 0; }
 .profile-security-copy .ant-typography { margin: 0; }
 .profile-security-copy p.ant-typography { margin-top: 4px; color: var(--ant-color-text-secondary); }

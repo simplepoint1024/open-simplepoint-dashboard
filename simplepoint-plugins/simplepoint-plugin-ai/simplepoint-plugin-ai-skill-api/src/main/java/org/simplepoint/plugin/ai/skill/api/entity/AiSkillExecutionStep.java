@@ -104,6 +104,13 @@ public class AiSkillExecutionStep extends BaseEntityImpl<String> {
   @Column(name = "error_message", length = 1024)
   private String errorMessage;
 
+  @Column(name = "error_code", length = 128)
+  private String errorCode;
+
+  @Transient
+  @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+  private Object inputTemplate;
+
   @Transient
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)
   private Map<String, Object> input;

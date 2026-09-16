@@ -2,10 +2,13 @@ import api from '@/api';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import type {TableButtonProps} from '@simplepoint/components/Table';
 import {post} from '@simplepoint/shared/api/methods';
-import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {Alert, Modal, Space, Tag, Typography, message} from 'antd';
+import {Alert, App, Space, Tag, Typography} from 'antd';
 import {useCallback, useMemo, useState} from 'react';
+import {
+  localizeWorkbenchError,
+  resolveWorkbenchOperationError,
+} from '../workbenchErrorCodes';
 
 const {Paragraph, Text} = Typography;
 
@@ -23,15 +26,26 @@ type ApiKeyRow = {
 
 const displayDate = (value?: string) => value ? new Date(value).toLocaleString() : '-';
 
+const apiKeyOperationFallback = {
+  key: 'ai.api-keys.error.operationFailed',
+  fallback: 'API Key 操作失败，请稍后重试',
+};
+
+const apiKeyRotationFallback = {
+  key: 'ai.api-keys.rotate.failed',
+  fallback: 'API Key 轮换失败',
+};
+
 const ApiKeys = () => {
   const baseConfig = api['ai-workbench.api-keys'];
   const {t} = useI18n();
+  const {message, modal} = App.useApp();
   const [tableKey, setTableKey] = useState(0);
 
   const revealIssuedKey = useCallback((result: unknown) => {
     const issuedKey = (result as ApiKeyRow | null)?.issuedKey;
     if (!issuedKey) return;
-    Modal.success({
+    modal.success({
       title: t('ai.api-keys.secret.title', '请立即保存 API Key'),
       width: 640,
       content: (
@@ -45,12 +59,12 @@ const ApiKeys = () => {
         </Space>
       ),
     });
-  }, [t]);
+  }, [modal, t]);
 
   const rotate = useCallback((rows: ApiKeyRow[]) => {
     const row = rows[0];
     if (!row?.id) return;
-    Modal.confirm({
+    modal.confirm({
       title: t('ai.api-keys.rotate.title', '轮换 API Key'),
       content: t('ai.api-keys.rotate.confirm', '轮换后旧 Key 会立即失效，确定继续吗？'),
       okText: t('ai.api-keys.rotate.ok', '确认轮换'),
@@ -62,15 +76,15 @@ const ApiKeys = () => {
           setTableKey((current) => current + 1);
           message.success(t('ai.api-keys.rotate.success', 'API Key 已轮换'));
         } catch (error) {
-          message.error(resolveApiErrorMessage(
-            error,
-            t('ai.api-keys.rotate.failed', 'API Key 轮换失败'),
+          message.error(localizeWorkbenchError(
+            t,
+            resolveWorkbenchOperationError(error, apiKeyRotationFallback),
           ));
           throw error;
         }
       },
     });
-  }, [baseConfig.baseUrl, revealIssuedKey, t]);
+  }, [baseConfig.baseUrl, message, modal, revealIssuedKey, t]);
 
   const customButtonEvents = useMemo<Record<string, (
     selectedRowKeys: React.Key[],
@@ -98,7 +112,11 @@ const ApiKeys = () => {
     scopeType: {
       width: 105,
       render: (value: string) => (
-        <Tag color={value === 'TENANT' ? 'blue' : 'purple'}>{value || '-'}</Tag>
+        <Tag color={value === 'TENANT' ? 'blue' : 'purple'}>
+          {value === 'TENANT'
+            ? t('ai.api-keys.scope.tenant', '租户私有')
+            : t('ai.api-keys.scope.system', '系统共享')}
+        </Tag>
       ),
     },
     keyPrefix: {
@@ -120,10 +138,18 @@ const ApiKeys = () => {
     usageCount: {width: 110},
   }), [t]);
 
+  const errorMessageResolver = useCallback((error: unknown) => (
+    localizeWorkbenchError(
+      t,
+      resolveWorkbenchOperationError(error, apiKeyOperationFallback),
+    )
+  ), [t]);
+
   return (
     <div style={{height: '100%', display: 'flex', flexDirection: 'column', gap: 12}}>
       <Alert
         type="info"
+        closable
         showIcon
         message={t('ai.api-keys.guide.title', 'OpenAI / Anthropic 兼容模型 API')}
         description={(
@@ -148,6 +174,7 @@ const ApiKeys = () => {
           formSchemaTransform={formSchemaTransform}
           columnOverrides={columnOverrides}
           afterSubmit={({result}) => revealIssuedKey(result)}
+          errorMessageResolver={errorMessageResolver}
         />
       </div>
     </div>

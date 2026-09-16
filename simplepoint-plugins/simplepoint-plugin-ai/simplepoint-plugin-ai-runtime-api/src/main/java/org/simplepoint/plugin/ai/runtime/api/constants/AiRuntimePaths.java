@@ -11,6 +11,8 @@ public final class AiRuntimePaths {
 
   public static final String POOLS = "/workbench/runtime/pools";
 
+  public static final String PROFILES = "/workbench/runtime/profiles";
+
   public static final String SECRETS = "/workbench/runtime/secrets";
 
   public static final String INTERNAL = "/internal/runtime";

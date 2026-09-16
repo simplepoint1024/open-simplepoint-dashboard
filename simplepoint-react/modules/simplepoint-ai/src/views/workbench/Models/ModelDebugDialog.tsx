@@ -5,11 +5,11 @@ import {
   StopOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {
   Avatar,
+  App,
   Button,
   Empty,
   Input,
@@ -17,9 +17,12 @@ import {
   Space,
   Spin,
   Typography,
-  message,
 } from 'antd';
 import {useEffect, useRef, useState} from 'react';
+import {
+  localizeWorkbenchError,
+  resolveWorkbenchOperationError,
+} from '../workbenchErrorCodes';
 
 const {Paragraph, Text} = Typography;
 const {TextArea} = Input;
@@ -38,7 +41,7 @@ type GenerationEvent = {
   type: string;
   textDelta?: string;
   result?: GenerationResult;
-  errorMessage?: string;
+  errorCode?: string;
 };
 
 type ChatMessage = {
@@ -56,6 +59,21 @@ type ModelDebugDialogProps = {
 
 let localId = 0;
 
+const debugOperationFallback = {
+  key: 'ai.model-debug.error.generate',
+  fallback: '模型调用失败',
+};
+
+class ModelDebugOperationError extends Error {
+  readonly code: string;
+
+  constructor(code: string) {
+    super('Model debug operation failed');
+    this.name = 'ModelDebugOperationError';
+    this.code = code;
+  }
+}
+
 const messageId = (role: string) => `${role}-${Date.now()}-${++localId}`;
 
 const finalText = (result?: GenerationResult) => (
@@ -70,7 +88,9 @@ const readSse = async (
   response: Response,
   onEvent: (event: GenerationEvent) => void,
 ) => {
-  if (!response.body) throw new Error('Streaming response body is unavailable');
+  if (!response.body) {
+    throw new ModelDebugOperationError('AI_MODEL_DEBUG_STREAM_UNAVAILABLE');
+  }
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -101,6 +121,7 @@ const readSse = async (
 const ModelDebugDialog = ({model, open, onClose}: ModelDebugDialogProps) => {
   const config = api['ai-workbench.models'];
   const {t} = useI18n();
+  const {message} = App.useApp();
   const [conversation, setConversation] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -176,11 +197,13 @@ const ModelDebugDialog = ({model, open, onClose}: ModelDebugDialogProps) => {
           text ||= finalText(event.result);
           updateAssistant(assistantId, {content: text, status: 'completed'});
         } else if (event.type === 'ERROR') {
-          throw new Error(event.errorMessage || t('ai.model-debug.error.generate', '模型调用失败'));
+          throw new ModelDebugOperationError(
+            event.errorCode || 'AI_MODEL_DEBUG_GENERATION_FAILED',
+          );
         }
       });
       if (!completed) {
-        throw new Error(t('ai.model-debug.error.incomplete', '模型响应未正常完成'));
+        throw new ModelDebugOperationError('AI_MODEL_DEBUG_INCOMPLETE');
       }
     } catch (error) {
       if (controller.signal.aborted) {
@@ -189,9 +212,9 @@ const ModelDebugDialog = ({model, open, onClose}: ModelDebugDialogProps) => {
           status: 'cancelled',
         });
       } else {
-        const errorText = resolveApiErrorMessage(
-          error,
-          t('ai.model-debug.error.generate', '模型调用失败'),
+        const errorText = localizeWorkbenchError(
+          t,
+          resolveWorkbenchOperationError(error, debugOperationFallback),
         );
         updateAssistant(assistantId, {content: text || errorText, status: 'failed'});
         message.error(errorText);

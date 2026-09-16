@@ -3,7 +3,7 @@ import { InboxOutlined, PlusOutlined } from '@ant-design/icons';
 import { request } from '@simplepoint/shared/api/client';
 import { get } from '@simplepoint/shared/api/methods';
 import { useI18n } from '@simplepoint/shared/hooks/useI18n';
-import { Alert, Button, Form, Input, Modal, Space, Switch, Table, Tabs, Tag, Typography, Upload, message } from 'antd';
+import { Alert, App as AntApp, Button, Form, Input, Modal, Space, Switch, Table, Tabs, Tag, Typography, Upload } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -75,6 +75,7 @@ const sourceTypeColorMap: Record<SourceType, string> = {
 
 const App = () => {
   const { t, ensure, locale } = useI18n();
+  const { message } = AntApp.useApp();
   const [loadedDialects, setLoadedDialects] = useState<DialectDescriptor[]>([]);
   const [sources, setSources] = useState<DialectSourceSummary[]>([]);
   const [loading, setLoading] = useState(false);
@@ -92,7 +93,7 @@ const App = () => {
 
   const resolveSourceTypeLabel = useCallback((value: SourceType) => {
     return t(`dna.dialects.page.sourceType.${value}`, value);
-  }, [t]);
+  }, [message, t]);
 
   const loadDialects = useCallback(async () => {
     setLoading(true);
@@ -104,7 +105,7 @@ const App = () => {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [message, t]);
 
   const loadSources = useCallback(async () => {
     setSourceLoading(true);
@@ -158,7 +159,7 @@ const App = () => {
     } finally {
       setSaving(false);
     }
-  }, [baseConfig.baseUrl, reload, t, urlForm]);
+  }, [baseConfig.baseUrl, message, reload, t, urlForm]);
 
   const handleUploadSource = useCallback(async () => {
     const values = await uploadForm.validateFields();
@@ -189,7 +190,7 @@ const App = () => {
     } finally {
       setSaving(false);
     }
-  }, [baseConfig.baseUrl, reload, t, uploadForm]);
+  }, [baseConfig.baseUrl, message, reload, t, uploadForm]);
 
   const handleDeleteSources = useCallback(async () => {
     if (selectedSourceIds.length === 0) {
@@ -209,7 +210,7 @@ const App = () => {
     } finally {
       setSaving(false);
     }
-  }, [baseConfig.baseUrl, reload, selectedSourceIds, t]);
+  }, [baseConfig.baseUrl, message, reload, selectedSourceIds, t]);
 
   const dialectColumns = useMemo<ColumnsType<DialectDescriptor>>(() => [
     {
@@ -377,6 +378,7 @@ const App = () => {
               <>
                 <Alert
                   type="info"
+                  closable
                   showIcon
                   style={{ marginBottom: 16 }}
                   message={t('dna.dialects.page.alert.loaded.title', 'Unified dialect source view')}

@@ -13,9 +13,14 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
  */
 @Data
 @Entity
-@Table(name = "simpoint_saas_tenant_user_rel")
+@Table(name = "simpoint_saas_tenant_user_rel", uniqueConstraints = @jakarta.persistence.UniqueConstraint(
+    name = "uk_tenant_member_user", columnNames = {"tenant_id", "user_id"}))
 @EqualsAndHashCode(callSuper = true)
 public class TenantUserRelevance extends BaseEntityImpl<String> {
   private String userId;
   private String tenantId;
+  private String orgId;
+  private Boolean enabled = true;
+  @jakarta.persistence.Version
+  private Long revision;
 }

@@ -107,6 +107,48 @@ class ExternalIdentityAccountLinkerTest {
     verify(linkRepository, never()).save(any());
   }
 
+  @Test
+  void explicitlyBindsExternalSubjectAfterLocalAccountAuthentication() {
+    User user = usableUser("user-1", "member@example.com");
+    when(linkRepository.findActiveByProviderAndSubject("provider-1", "subject-1"))
+        .thenReturn(Optional.empty());
+    when(linkRepository.findActiveByProviderAndUserId("provider-1", "user-1"))
+        .thenReturn(Optional.empty());
+    when(usersService.findByIdForAuthorization("user-1")).thenReturn(Optional.of(user));
+    when(linkRepository.save(any(ExternalIdentityLink.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    User result = linker.linkToUser(
+        provider(true), "subject-1", "private@example.com", "user-1"
+    );
+
+    ArgumentCaptor<ExternalIdentityLink> captor =
+        ArgumentCaptor.forClass(ExternalIdentityLink.class);
+    verify(linkRepository).save(captor.capture());
+    assertThat(result).isSameAs(user);
+    assertThat(captor.getValue().getExternalSubject()).isEqualTo("subject-1");
+    assertThat(captor.getValue().getUserId()).isEqualTo("user-1");
+  }
+
+  @Test
+  void refusesToMoveAnExternalSubjectBetweenLocalAccounts() {
+    ExternalIdentityLink existing = new ExternalIdentityLink();
+    existing.setProviderId("provider-1");
+    existing.setExternalSubject("subject-1");
+    existing.setUserId("other-user");
+    User user = usableUser("user-1", "member@example.com");
+    when(linkRepository.findActiveByProviderAndSubject("provider-1", "subject-1"))
+        .thenReturn(Optional.of(existing));
+    when(usersService.findByIdForAuthorization("user-1")).thenReturn(Optional.of(user));
+
+    assertThatThrownBy(() -> linker.linkToUser(
+        provider(true), "subject-1", "member@example.com", "user-1"
+    )).isInstanceOf(OAuth2AuthenticationException.class)
+        .hasMessageContaining("其他平台账号");
+
+    verify(linkRepository, never()).save(any());
+  }
+
   private ResolvedExternalIdentityProvider provider(
       final boolean requireVerifiedEmail
   ) {

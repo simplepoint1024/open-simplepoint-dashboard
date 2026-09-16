@@ -80,7 +80,7 @@
   "host.dashboard.feature.infra.consul": "Consul configuration center",
   "host.dashboard.feature.infra.redis": "Redis WebSession / cache",
   "host.dashboard.feature.infra.amqp": "AMQP RPC inter-service calls",
-  "host.dashboard.feature.infra.docker": "Docker Swarm orchestration",
+  "host.dashboard.feature.infra.docker": "Docker Compose orchestration",
   "host.dashboard.feature.observability.actuator": "Spring Actuator",
   "host.dashboard.feature.observability.audit": "Operation audit log",
   "host.dashboard.feature.observability.coverage": "JaCoCo unit test coverage",

@@ -1,254 +1,110 @@
 package org.simplepoint.security.oauth2.resourceserver;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import java.io.IOException;
-import java.util.Map;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.core.AuthorizationContext;
-import org.simplepoint.core.RequestContextHolder;
+import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.security.context.AuthorizationContextResolver;
-import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 class AuthorizationContextFilterTest {
+  private final AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
+  private final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
 
   @AfterEach
-  void tearDown() {
-    org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+  void cleanup() {
+    SecurityContextHolder.clearContext();
+    org.simplepoint.core.RequestContextHolder.clearContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+  }
+
+  private MockHttpServletRequest request(String path) {
+    var request = new MockHttpServletRequest("GET", path);
+    request.addHeader("Authorization", "Bearer validated-token");
+    return request;
+  }
+
+  private void authenticate() {
+    Jwt jwt = Jwt.withTokenValue("validated-token").header("alg", "RS256").subject("u1").build();
+    SecurityContextHolder.getContext().setAuthentication(
+        new JwtAuthenticationToken(jwt, List.of(new SimpleGrantedAuthority("SCOPE_read"))));
   }
 
   @Test
-  void doFilterInternal_resolvesContextWhenOnlyAuthorizationHeaderPresent() throws ServletException, IOException {
-    AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
+  void requiresValidatedJwtBeforeResolvingAuthorization() throws Exception {
+    var response = new MockHttpServletResponse();
+    filter.doFilter(request("/api/data"), response, (req, res) -> { throw new AssertionError("must not run"); });
+    assertThat(response.getStatus()).isEqualTo(401);
+    verifyNoInteractions(resolver);
+  }
+
+  @Test
+  void usesVerifiedSubjectAndInstallsContextAndAuthoritiesThenCleansUp() throws Exception {
+    authenticate();
     AuthorizationContext context = new AuthorizationContext();
     context.setUserId("u1");
-    when(resolver.load(null)).thenReturn(null);
-    when(resolver.resolve(org.mockito.ArgumentMatchers.anyMap())).thenReturn(context);
-
-    final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/resources/service-routes");
-    request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
-    MockHttpServletResponse response = new MockHttpServletResponse();
-    org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request, response));
-
-    final AuthorizationContext[] seen = new AuthorizationContext[1];
-    FilterChain chain = (req, res) -> seen[0] =
-        RequestContextHolder.getContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, AuthorizationContext.class);
-
-    filter.doFilter(request, response, chain);
-
-    assertThat(seen[0]).isSameAs(context);
-    assertThat(RequestContextHolder.getContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, AuthorizationContext.class))
-        .isNull();
+    context.setResources(List.of("data.view"));
+    when(resolver.resolveAuthenticated(eq("u1"), anyMap())).thenReturn(context);
+    var request = request("/api/data");
+    request.addHeader("X-User-Id", "forged-user");
+    request.addHeader("X-Context-Id", "another-users-context");
+    var called = new AtomicBoolean();
+    filter.doFilter(request, new MockHttpServletResponse(), (req, res) -> {
+      called.set(true);
+      assertThat(AuthorizationContextHolder.getContext()).isSameAs(context);
+      assertThat(SecurityContextHolder.getContext().getAuthentication().getAuthorities())
+          .extracting("authority").contains("SCOPE_read", "data.view");
+    });
+    assertThat(called).isTrue();
+    assertThat(AuthorizationContextHolder.getContext()).isNull();
   }
 
   @Test
-  void doFilterInternal_ignoresContextHeadersWithoutAuthorization() throws ServletException, IOException {
-    AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
-    final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/resources/service-routes");
-    request.addHeader("X-Context-Id", "ctx1");
-    request.addHeader("X-Tenant-Id", "tenant-a");
-    MockHttpServletResponse response = new MockHttpServletResponse();
-    org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request, response));
+  void resolutionFailuresNeverReachApplication() throws Exception {
+    authenticate();
+    for (RuntimeException error : List.of(new AccessDeniedException("forbidden"), new BadCredentialsException("invalid"))) {
+      when(resolver.resolveAuthenticated(eq("u1"), anyMap())).thenThrow(error);
+      var response = new MockHttpServletResponse();
+      filter.doFilter(request("/api/data"), response, (req, res) -> { throw new AssertionError("must not run"); });
+      assertThat(response.getStatus()).isEqualTo(error instanceof AccessDeniedException ? 403 : 401);
+      assertThat(AuthorizationContextHolder.getContext()).isNull();
+      reset(resolver);
+    }
+  }
 
-    final boolean[] chainCalled = new boolean[1];
-    FilterChain chain = (req, res) -> chainCalled[0] = true;
+  @Test
+  void nullPolicyDoesNotAllowRequest() throws Exception {
+    authenticate();
+    var response = new MockHttpServletResponse();
+    filter.doFilter(request("/api/data"), response, (req, res) -> { throw new AssertionError("must not run"); });
+    assertThat(response.getStatus()).isEqualTo(403);
+  }
 
-    filter.doFilter(request, response, chain);
-
-    assertThat(chainCalled[0]).isTrue();
+  @Test
+  void noBearerHeaderDoesNotResolveContext() throws Exception {
+    filter.doFilter(new MockHttpServletRequest("GET", "/public"), new MockHttpServletResponse(), (req, res) -> {});
     verifyNoInteractions(resolver);
-    assertThat(RequestContextHolder.getContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, AuthorizationContext.class))
-        .isNull();
   }
 
   @Test
-  void doFilterInternal_returnsUnauthorizedWhenContextAuthenticationFails() throws ServletException, IOException {
-    AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
-    when(resolver.load(null)).thenReturn(null);
-    when(resolver.resolve(org.mockito.ArgumentMatchers.anyMap()))
-        .thenThrow(new BadCredentialsException("用户不存在"));
-
-    final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/resources/service-routes");
-    request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
-    MockHttpServletResponse response = new MockHttpServletResponse();
-    org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request, response));
-
-    final boolean[] chainCalled = new boolean[1];
-    FilterChain chain = (req, res) -> chainCalled[0] = true;
-
-    filter.doFilter(request, response, chain);
-
-    assertThat(response.getStatus()).isEqualTo(MockHttpServletResponse.SC_UNAUTHORIZED);
-    assertThat(chainCalled[0]).isFalse();
-    assertThat(RequestContextHolder.getContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, AuthorizationContext.class))
-        .isNull();
-  }
-
-  @Test
-  void doFilterInternal_returnsForbiddenWhenContextAuthorizationFails() throws ServletException, IOException {
-    AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
-    when(resolver.load(null)).thenReturn(null);
-    when(resolver.resolve(org.mockito.ArgumentMatchers.anyMap()))
-        .thenThrow(new AccessDeniedException("当前用户未加入指定租户"));
-
-    final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/resources/service-routes");
-    request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
-    MockHttpServletResponse response = new MockHttpServletResponse();
-    org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request, response));
-
-    final boolean[] chainCalled = new boolean[1];
-    FilterChain chain = (req, res) -> chainCalled[0] = true;
-
-    filter.doFilter(request, response, chain);
-
-    assertThat(response.getStatus()).isEqualTo(MockHttpServletResponse.SC_FORBIDDEN);
-    assertThat(chainCalled[0]).isFalse();
-    assertThat(RequestContextHolder.getContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, AuthorizationContext.class))
-        .isNull();
-  }
-
-  @Test
-  void doFilter_skipsMfAssetsEvenWhenAuthorizationHeaderPresent() throws ServletException, IOException {
-    AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
-    final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/mf/mf-manifest.json");
-    request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
-    MockHttpServletResponse response = new MockHttpServletResponse();
-
-    final boolean[] chainCalled = new boolean[1];
-    FilterChain chain = (req, res) -> chainCalled[0] = true;
-
-    filter.doFilter(request, response, chain);
-
-    assertThat(chainCalled[0]).isTrue();
+  void internalAndStaticRoutesDoNotResolveUserPolicies() throws Exception {
+    for (String path : List.of("/_simplepoint/service-router/invoke", "/static/a.js", "/mf/manifest.json", "/actuator/health", "/error")) {
+      var called = new AtomicBoolean();
+      filter.doFilter(request(path), new MockHttpServletResponse(), (req, res) -> called.set(true));
+      assertThat(called).isTrue();
+    }
     verifyNoInteractions(resolver);
-    assertThat(RequestContextHolder.getContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, AuthorizationContext.class))
-        .isNull();
-  }
-
-  @Test
-  void doFilter_skipsServiceRouterEndpointEvenWhenAuthorizationHeaderPresent() throws ServletException, IOException {
-    AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
-    final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/_simplepoint/service-router/invoke");
-    request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer service-token");
-    MockHttpServletResponse response = new MockHttpServletResponse();
-
-    final boolean[] chainCalled = new boolean[1];
-    FilterChain chain = (req, res) -> chainCalled[0] = true;
-
-    filter.doFilter(request, response, chain);
-
-    assertThat(chainCalled[0]).isTrue();
-    verifyNoInteractions(resolver);
-    assertThat(RequestContextHolder.getContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, AuthorizationContext.class))
-        .isNull();
-  }
-
-
-  @Test
-  void doFilterInternal_rejectsCachedContextWhenTenantDoesNotMatch() throws ServletException, IOException {
-    AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
-    AuthorizationContext cached = new AuthorizationContext();
-    cached.setAttributes(Map.of("X-Tenant-Id", "tenant-a"));
-    when(resolver.load("ctx1")).thenReturn(cached);
-
-    final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/resources/service-routes");
-    request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
-    request.addHeader("X-Context-Id", "ctx1");
-    request.addHeader("X-Tenant-Id", "tenant-b");
-    MockHttpServletResponse response = new MockHttpServletResponse();
-    org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request, response));
-
-    final boolean[] chainCalled = new boolean[1];
-    FilterChain chain = (req, res) -> chainCalled[0] = true;
-
-    filter.doFilter(request, response, chain);
-
-    assertThat(response.getStatus()).isEqualTo(MockHttpServletResponse.SC_FORBIDDEN);
-    assertThat(chainCalled[0]).isFalse();
-    assertThat(RequestContextHolder.getContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, AuthorizationContext.class))
-        .isNull();
-  }
-
-  @Test
-  void doFilterInternal_rejectsCachedContextWhenRoleDoesNotMatch() throws ServletException, IOException {
-    AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
-    AuthorizationContext cached = new AuthorizationContext();
-    cached.setAttributes(Map.of("X-Tenant-Id", "tenant-a", "X-Role-Id", "role-a"));
-    when(resolver.load("ctx1")).thenReturn(cached);
-
-    final AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/resources/service-routes");
-    request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
-    request.addHeader("X-Context-Id", "ctx1");
-    request.addHeader("X-Tenant-Id", "tenant-a");
-    request.addHeader("X-Role-Id", "role-b");
-    MockHttpServletResponse response = new MockHttpServletResponse();
-    org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request, response));
-
-    final boolean[] chainCalled = new boolean[1];
-    FilterChain chain = (req, res) -> chainCalled[0] = true;
-
-    filter.doFilter(request, response, chain);
-
-    assertThat(response.getStatus()).isEqualTo(MockHttpServletResponse.SC_FORBIDDEN);
-    assertThat(chainCalled[0]).isFalse();
-  }
-
-  @Test
-  void doFilterInternal_keepsProtectedHeadersFromCachedContext() throws ServletException, IOException {
-    AuthorizationContextResolver resolver = mock(AuthorizationContextResolver.class);
-    AuthorizationContext cached = new AuthorizationContext();
-    cached.setAttributes(Map.of(
-        "X-Tenant-Id", "tenant-a",
-        "X-Role-Id", "role-a",
-        "X-User-Id", "user-a",
-        "X-Scope-Type", "TENANT",
-        "X-Actor-Role", "TENANT_ADMIN"
-    ));
-    when(resolver.load("ctx1")).thenReturn(cached);
-
-    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/resources/service-routes");
-    request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
-    request.addHeader("X-Context-Id", "ctx1");
-    request.addHeader("X-Tenant-Id", "tenant-a");
-    request.addHeader("X-Role-Id", "role-a");
-    request.addHeader("X-User-Id", "user-b");
-    request.addHeader("X-Scope-Type", "PLATFORM");
-    request.addHeader("X-Actor-Role", "PLATFORM_ADMIN");
-    MockHttpServletResponse response = new MockHttpServletResponse();
-    org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request, response));
-
-    final AuthorizationContext[] seen = new AuthorizationContext[1];
-    FilterChain chain = (req, res) -> seen[0] =
-        RequestContextHolder.getContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, AuthorizationContext.class);
-
-    AuthorizationContextFilter filter = new AuthorizationContextFilter(resolver);
-    filter.doFilter(request, response, chain);
-
-    assertThat(seen[0]).isSameAs(cached);
-    assertThat(cached.getAttribute("X-Tenant-Id")).isEqualTo("tenant-a");
-    assertThat(cached.getAttribute("X-Role-Id")).isEqualTo("role-a");
-    assertThat(cached.getAttribute("X-User-Id")).isEqualTo("user-a");
-    assertThat(cached.getAttribute("X-Scope-Type")).isEqualTo("TENANT");
-    assertThat(cached.getAttribute("X-Actor-Role")).isEqualTo("TENANT_ADMIN");
-    assertThat(cached.getAttribute("X-Context-Id")).isEqualTo("ctx1");
   }
 }

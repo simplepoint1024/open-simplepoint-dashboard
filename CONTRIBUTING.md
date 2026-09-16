@@ -20,10 +20,10 @@ cd open-simplepoint-dashboard
 ./gradlew build
 ./gradlew test
 ```
-- 示例运行（如 AMQP RPC Provider）：
+- 示例运行（Host 与 service-router Provider）：
 ```shell
 ./gradlew :simplepoint-services:simplepoint-service-host:run
-./gradlew :simplepoint-examples:simplepoint-amqprpc-examples:simplepoint-amqprpc-example-provider:run
+./gradlew :simplepoint-examples:simplepoint-service-router-examples:simplepoint-service-router-example-provider:run
 ```
 
 ## 分支与提交流程

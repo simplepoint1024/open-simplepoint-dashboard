@@ -7,6 +7,7 @@ public record ExternalIdentityProviderConnectionTestResult(
     String authorizationUri,
     String tokenUri,
     String userInfoUri,
-    String jwkSetUri
+    String jwkSetUri,
+    String callbackUri
 ) {
 }

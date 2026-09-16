@@ -2,6 +2,8 @@ import {useQuery} from '@tanstack/react-query';
 import {useEffect} from 'react';
 import {get} from '@simplepoint/shared/api/methods';
 import {getStoredTenantId} from '@simplepoint/shared/api/contextId';
+import {scopedQueryOptions} from '@simplepoint/shared/api/queryScope';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 
 export type CurrentTenant = {
     tenantId: string;
@@ -72,19 +74,19 @@ export async function fetchCurrentRoles(tenantId?: string): Promise<CurrentRole[
         .filter((role) => role.roleId);
 }
 
-export async function fetchCurrentTenantProfile(tenantId: string): Promise<CurrentTenantProfile> {
+export async function fetchCurrentTenantProfile(tenantId: string, signal?: AbortSignal): Promise<CurrentTenantProfile> {
     return get<CurrentTenantProfile>(
         '/common/tenants/current-profile',
         undefined,
-        {headers: {'X-Tenant-Id': tenantId}},
+        {headers: {'X-Tenant-Id': tenantId}, signal},
     );
 }
 
 export function useCurrentTenantProfile(tenantId?: string, enabled = true) {
+    const queryScope = useQueryScope();
     return useQuery({
-        queryKey: ['common', 'tenants', 'current-profile', tenantId],
-        queryFn: () => fetchCurrentTenantProfile(tenantId!),
-        enabled: enabled && !!tenantId,
+        ...scopedQueryOptions(queryScope, ['common', 'tenants', 'current-profile', tenantId], ({signal}) => fetchCurrentTenantProfile(tenantId!, signal)),
+        enabled: enabled && !!tenantId && tenantId === queryScope[0],
         staleTime: 2 * 60 * 1000,
         refetchOnWindowFocus: false,
     });

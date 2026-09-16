@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {Dispatch, Key, SetStateAction} from 'react';
-import {Alert, Button, Empty, Input, Pagination, Space, Spin, Tag, Tree, Typography, message} from 'antd';
+import {Alert, App as AntdApp, Button, Empty, Input, Pagination, Space, Spin, Tag, Tree, Typography} from 'antd';
 import {DeleteOutlined, ReloadOutlined, SearchOutlined} from '@ant-design/icons';
 import type {DataNode} from 'antd/es/tree';
 import {createIcon} from '@simplepoint/shared/types/icon';
@@ -272,6 +272,7 @@ const ResourceTreeTransfer = ({
   onAssign,
   onUnassign,
 }: ResourceTreeTransferProps) => {
+  const {message} = AntdApp.useApp();
   const {t, ensure, locale} = useI18n();
   const [treeData, setTreeData] = useState<ResourceTreeNode[]>([]);
   const [assignedTreeData, setAssignedTreeData] = useState<ResourceTreeNode[]>([]);
@@ -332,7 +333,7 @@ const ResourceTreeTransfer = ({
     } finally {
       setAssignedLoading(false);
     }
-  }, [enabled, fetchAssignedCodes, t]);
+  }, [enabled, fetchAssignedCodes, message, t]);
 
   const loadRoot = useCallback(async () => {
     if (!enabled) {
@@ -362,7 +363,7 @@ const ResourceTreeTransfer = ({
     } finally {
       setTreeLoading(false);
     }
-  }, [enabled, keyword, rootPage, t]);
+  }, [enabled, keyword, message, rootPage, t]);
 
   useEffect(() => {
     void loadAssignedCodes();
@@ -394,7 +395,7 @@ const ResourceTreeTransfer = ({
     } finally {
       setTreeLoading(false);
     }
-  }, [t]);
+  }, [message, t]);
 
   const loadMoreChildren = useCallback(async (node: ResourceTreeNode) => {
     if (!node.loadMore) return;
@@ -421,7 +422,7 @@ const ResourceTreeTransfer = ({
     } finally {
       setTreeLoading(false);
     }
-  }, [t]);
+  }, [message, t]);
 
   const resolveNodeCodes = useCallback(async (node: ResourceTreeNode) => {
     if (node.resource?.id && (node.resource.hasChildren || (node.children?.length ?? 0) > 0)) {
@@ -465,7 +466,7 @@ const ResourceTreeTransfer = ({
     } finally {
       setTreeSaving(false);
     }
-  }, [assignedCodes, onAssign, onUnassign, resolveNodeCodes, t]);
+  }, [assignedCodes, message, onAssign, onUnassign, resolveNodeCodes, t]);
 
   const handleCheck = useCallback((keys: unknown, info: {checked?: boolean; node?: ResourceTreeNode}) => {
     if (!info.node?.resource) return;
@@ -516,7 +517,7 @@ const ResourceTreeTransfer = ({
     } finally {
       setAssignedTreeLoading(false);
     }
-  }, [assignedCodes, assignedRootPage, buildAssignedTreeNode, enabled, t]);
+  }, [assignedCodes, assignedRootPage, buildAssignedTreeNode, enabled, message, t]);
 
   const loadAssignedChildren = useCallback(async (node: ResourceTreeNode) => {
     const resource = node.resource;
@@ -540,7 +541,7 @@ const ResourceTreeTransfer = ({
     } finally {
       setAssignedTreeLoading(false);
     }
-  }, [assignedCodes, buildAssignedTreeNode, t]);
+  }, [assignedCodes, buildAssignedTreeNode, message, t]);
 
   const loadMoreAssignedChildren = useCallback(async (node: ResourceTreeNode) => {
     if (!node.loadMore || assignedCodes.length === 0) return;
@@ -567,7 +568,7 @@ const ResourceTreeTransfer = ({
     } finally {
       setAssignedTreeLoading(false);
     }
-  }, [assignedCodes, buildAssignedTreeNode, t]);
+  }, [assignedCodes, buildAssignedTreeNode, message, t]);
 
   const handleAssignedSelect = useCallback((_: Key[], info: {node?: ResourceTreeNode}) => {
     if (info.node?.loadMore) {

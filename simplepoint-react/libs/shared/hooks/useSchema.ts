@@ -70,7 +70,7 @@ const castDictionaryOptionValue = (value: unknown, schemaType: unknown) => {
   return typeof value === 'string' ? value : String(value);
 };
 
-const applyDictionaryOptions = async (schema: any) => {
+const applyDictionaryOptions = async (schema: any, signal?: AbortSignal) => {
   const cache = new Map<string, Promise<DictionaryOptionVo[]>>();
 
   const walk = async (node: any): Promise<void> => {
@@ -88,7 +88,7 @@ const applyDictionaryOptions = async (schema: any) => {
     if (dictCode) {
       let optionsPromise = cache.get(dictCode);
       if (!optionsPromise) {
-        optionsPromise = get<DictionaryOptionVo[]>('/common/platform/dictionaries/options', {dictionaryCode: dictCode});
+        optionsPromise = get<DictionaryOptionVo[]>('/common/platform/dictionaries/options', {dictionaryCode: dictCode}, {signal});
         cache.set(dictCode, optionsPromise);
       }
       const options = await optionsPromise;
@@ -240,8 +240,8 @@ export function useSchema(
     };
   }, [tenantId, roleId, useTenantContext]);
 
-  return useData([`${baseUrl}/schema`, useTenantContext ? tenantId : "", useTenantContext ? roleId : "", useTenantContext ? contextId : ""], async () => {
-    const res = await get<TableSchemaProps>(`${baseUrl}/schema`);
+  return useData([`${baseUrl}/schema`, useTenantContext ? tenantId : "", useTenantContext ? roleId : "", useTenantContext ? contextId : ""], async ({signal}) => {
+    const res = await get<TableSchemaProps>(`${baseUrl}/schema`, undefined, {signal});
     if (!res) return res;
 
     const schema = sortSchemaProperties(res.schema);
@@ -250,7 +250,7 @@ export function useSchema(
     const normalizedSchema = normalizeSchemaI18n(schema);
     const enhancedSchema = Array.isArray(normalizedSchema)
       ? normalizedSchema
-      : await applyDictionaryOptions(normalizedSchema);
+      : await applyDictionaryOptions(normalizedSchema, signal);
 
     return {
       ...res,

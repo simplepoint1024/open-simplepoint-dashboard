@@ -38,4 +38,12 @@ public interface JpaExternalIdentityProviderRepository
       order by p.sortOrder asc, p.displayName asc
       """)
   List<ExternalIdentityProvider> findAllActiveEnabled();
+
+  @Override
+  @Query("""
+      select p from ExternalIdentityProvider p
+      where p.deletedAt is null
+      order by p.sortOrder asc, p.displayName asc
+      """)
+  List<ExternalIdentityProvider> findAllActive();
 }

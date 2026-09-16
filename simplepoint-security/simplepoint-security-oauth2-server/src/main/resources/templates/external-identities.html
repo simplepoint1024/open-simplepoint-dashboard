@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="#{external.accounts.title} + ' · SimplePoint'">Connected accounts · SimplePoint</title>
+  <link rel="stylesheet" th:href="${#strings.startsWith(actionPrefix, '/authorization') ? '/authorization/identity.css' : '/identity.css'}">
+</head>
+<body class="identity-page">
+<main class="identity-shell">
+  <div class="identity-brand"><span class="identity-brand-mark">S·P</span><span>SimplePoint</span></div>
+  <h1 class="identity-title" th:text="#{external.accounts.title}">Connected accounts</h1>
+  <p class="identity-subtitle" th:text="#{external.accounts.subtitle}">Manage sign-in providers connected to your account.</p>
+
+  <p th:if="${param.linked}" class="identity-alert success" th:text="#{external.accounts.linked}">Account connected.</p>
+  <p th:if="${param.unlinked}" class="identity-alert success" th:text="#{external.accounts.unlinked}">Account disconnected.</p>
+  <p th:if="${param.alreadyLinked}" class="identity-alert warning" th:text="#{external.accounts.alreadyLinked}">This provider is already connected.</p>
+  <p th:if="${param.error}" class="identity-alert error" th:text="#{external.accounts.oauthError}">The provider could not be connected.</p>
+
+  <div th:if="${connections.isEmpty()}" class="identity-alert warning" th:text="#{external.accounts.empty}">No providers are currently available.</div>
+  <div class="connection-list">
+    <article class="connection-item" th:each="connection : ${connections}">
+      <span class="connection-mark"
+            th:classappend="${#strings.toLowerCase(connection.preset().name())}"
+            th:text="${#strings.substring(connection.displayName(), 0, 1)}">P</span>
+      <div class="connection-copy">
+        <div class="connection-heading">
+          <strong th:text="${connection.displayName()}">Provider</strong>
+          <span class="identity-tag linked" th:if="${connection.linked()}" th:text="#{external.accounts.status.linked}">Connected</span>
+          <span class="identity-tag" th:unless="${connection.linked()}" th:text="#{external.accounts.status.unlinked}">Not connected</span>
+          <span class="identity-tag" th:unless="${connection.enabled()}" th:text="#{external.accounts.status.disabled}">Disabled</span>
+        </div>
+        <div class="connection-meta" th:if="${connection.linked()}"
+             th:text="${connection.email() != null ? connection.email() : #messages.msg('external.accounts.emailUnavailable')}">Email</div>
+        <div class="connection-meta" th:unless="${connection.linked()}" th:text="#{external.accounts.providerHint}">Connect this provider for quicker sign-in.</div>
+      </div>
+      <div class="connection-actions">
+        <form th:unless="${connection.linked()}" method="post"
+              th:action="${actionPrefix + connection.registrationId() + '/link' + actionSuffix}">
+          <button class="identity-button" type="submit" th:disabled="${!connection.enabled()}" th:text="#{external.accounts.action.link}">Connect</button>
+        </form>
+        <form th:if="${connection.linked()}" method="post"
+              th:action="${actionPrefix + connection.registrationId() + '/unlink' + actionSuffix}">
+          <button class="identity-button danger" type="submit" th:attr="data-confirm=#{external.accounts.unlinkConfirm}"
+                  onclick="return confirm(this.dataset.confirm)" th:text="#{external.accounts.action.unlink}">Disconnect</button>
+        </form>
+      </div>
+    </article>
+  </div>
+  <div class="identity-footer"><button class="identity-button secondary" type="button" onclick="window.close()" th:text="#{action.close}">Close</button></div>
+</main>
+</body>
+</html>

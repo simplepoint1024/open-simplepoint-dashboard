@@ -1,7 +1,8 @@
 package org.simplepoint.plugin.i18n.service.impl;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
@@ -60,8 +61,27 @@ public class I18nMessageServiceImpl extends BaseServiceImpl<I18nMessageRepositor
   @Override
   public Map<String, String> mapping(String locale, String ns) {
     boolean notNull = ns != null && !ns.isEmpty();
-    return (notNull ? getRepository().mapping(locale, ns.split(",")) : getRepository().global(locale))
-        .stream()
-        .collect(Collectors.toMap(Message::getCode, Message::getMessage));
+    Collection<Message> messages = notNull
+        ? getRepository().mapping(locale, ns.split(","))
+        : getRepository().global(locale);
+    return mergeMapping(messages);
+  }
+
+  static Map<String, String> mergeMapping(
+      final Collection<Message> messages
+  ) {
+    Map<String, String> result = new LinkedHashMap<>();
+    for (Message message : messages) {
+      String existing = result.putIfAbsent(
+          message.getCode(),
+          message.getMessage()
+      );
+      if (existing != null && !existing.equals(message.getMessage())) {
+        throw new IllegalStateException(
+            "Conflicting i18n message for code: " + message.getCode()
+        );
+      }
+    }
+    return Map.copyOf(result);
   }
 }

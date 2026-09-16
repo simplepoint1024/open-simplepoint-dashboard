@@ -5,6 +5,8 @@
   "ai.billing.action.refresh": "Refresh",
   "ai.billing.action.invocations": "View invocation details",
   "ai.billing.error.load": "Failed to load model billing data",
+  "ai.billing.error.queryFailed": "Failed to query billing data. Please try again later",
+  "ai.billing.error.rangeInvalid": "The billing time range is invalid. Select another range",
   "ai.billing.stat.invocations": "Invocations",
   "ai.billing.stat.priced": "Priced invocations",
   "ai.billing.stat.unpriced": "Successful but unpriced",
@@ -16,5 +18,7 @@
   "ai.billing.table.inputTokens": "Input tokens",
   "ai.billing.table.outputTokens": "Output tokens",
   "ai.billing.table.totalCost": "Total cost",
-  "ai.billing.empty": "No priced invocations in the selected period"
+  "ai.billing.empty": "No priced invocations in the selected period",
+  "ai.billing.tab.invocations": "Invocation Details",
+  "ai.billing.tab.summary": "Billing Summary"
 }

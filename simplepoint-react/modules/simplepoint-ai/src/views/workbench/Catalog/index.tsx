@@ -1,21 +1,27 @@
 import api from '@/api';
+import DataTable from '@simplepoint/components/DataTable';
+import type {DataTableProps} from '@simplepoint/components/DataTable';
 import {get, post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {
   Alert,
+  App,
   Button,
   Card,
   Input,
-  Modal,
   Select,
   Space,
-  Table,
   Tag,
   Typography,
-  message,
 } from 'antd';
-import type {TableProps} from 'antd';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import {
+  resolveCatalogItemStatus,
+  resolveCatalogOperationError,
+  resolveCatalogSyncMode,
+  resolveCatalogSyncNotice,
+  resolveCatalogSyncStatus,
+} from './syncErrorCodes';
 
 const {Link, Text} = Typography;
 
@@ -57,12 +63,6 @@ type SyncState = {
   syncedCount?: number;
 };
 
-const resolveError = (error: unknown, fallback: string) => {
-  if (error instanceof Error && error.message) return error.message;
-  if (typeof error === 'string' && error) return error;
-  return fallback;
-};
-
 const formatTime = (value?: string) => {
   if (!value) return '-';
   const date = new Date(value);
@@ -72,6 +72,7 @@ const formatTime = (value?: string) => {
 const Catalog = () => {
   const config = api['ai-workbench.catalog'];
   const {t, ensure, locale} = useI18n();
+  const {message, modal} = App.useApp();
   const [data, setData] = useState<CatalogPage>({
     content: [],
     number: 0,
@@ -102,26 +103,23 @@ const Catalog = () => {
       if (source) params.source = source;
       if (kind) params.kind = kind;
       setData(await get<CatalogPage>(config.baseUrl, params));
-    } catch (error) {
-      message.error(resolveError(
-        error,
-        t('ai.catalog.error.load', '扩展市场加载失败'),
-      ));
+    } catch {
+      message.error(t('ai.catalog.error.load', '扩展市场加载失败'));
     } finally {
       setLoading(false);
     }
-  }, [config.baseUrl, data.number, data.size, kind, query, source, t]);
+  }, [config.baseUrl, data.number, data.size, kind, message, query, source, t]);
 
   const loadSyncState = useCallback(async () => {
     try {
       setSyncState(await get<SyncState>(config.syncStatusUrl));
-    } catch (error) {
-      message.error(resolveError(
-        error,
-        t('ai.catalog.error.syncStatus', '同步状态加载失败'),
+    } catch {
+      message.error(t(
+        'ai.catalog.error.syncStatus',
+        '同步状态加载失败',
       ));
     }
-  }, [config.syncStatusUrl, t]);
+  }, [config.syncStatusUrl, message, t]);
 
   useEffect(() => {
     void load(0, data.size);
@@ -136,12 +134,18 @@ const Catalog = () => {
   const synchronize = useCallback(async () => {
     setSyncing(true);
     try {
-      const result = await post<{status?: string; error?: string}>(
+      const result = await post<{status?: string; errorCode?: string}>(
         config.syncUrl,
         {},
       );
-      if (result.error) {
-        message.warning(result.error);
+      const notice = resolveCatalogSyncNotice(
+        result.errorCode
+          || (result.status === 'FAILED' ? 'UNKNOWN_SYNC_FAILURE' : undefined),
+      );
+      if (notice?.tone === 'warning') {
+        message.warning(t(notice.key, notice.fallback));
+      } else if (notice) {
+        message.error(t(notice.key, notice.fallback));
       } else {
         message.success(t(
           'ai.catalog.success.sync',
@@ -149,18 +153,18 @@ const Catalog = () => {
         ));
       }
       await Promise.all([load(0, data.size), loadSyncState()]);
-    } catch (error) {
-      message.error(resolveError(
-        error,
-        t('ai.catalog.error.sync', '官方 MCP Registry 同步失败'),
+    } catch {
+      message.error(t(
+        'ai.catalog.error.syncUnknown',
+        '官方 MCP Registry 同步失败',
       ));
     } finally {
       setSyncing(false);
     }
-  }, [config.syncUrl, data.size, load, loadSyncState, t]);
+  }, [config.syncUrl, data.size, load, loadSyncState, message, t]);
 
   const importServer = useCallback((item: CatalogItem) => {
-    Modal.confirm({
+    modal.confirm({
       title: t('ai.catalog.import.title', '导入 MCP Server'),
       content: t(
         'ai.catalog.import.description',
@@ -177,17 +181,18 @@ const Catalog = () => {
           ));
           await load();
         } catch (error) {
-          message.error(resolveError(
-            error,
-            t('ai.catalog.error.import', 'MCP Server 导入失败'),
-          ));
+          const descriptor = resolveCatalogOperationError(error, {
+            key: 'ai.catalog.error.import',
+            fallback: 'MCP Server 导入失败',
+          });
+          message.error(t(descriptor.key, descriptor.fallback));
           throw error;
         }
       },
     });
-  }, [config.baseUrl, load, t]);
+  }, [config.baseUrl, load, message, modal, t]);
 
-  const columns = useMemo<TableProps<CatalogItem>['columns']>(() => [
+  const columns = useMemo<DataTableProps<CatalogItem>['columns']>(() => [
     {
       title: t('ai.catalog.column.package', '扩展'),
       key: 'package',
@@ -232,11 +237,19 @@ const Catalog = () => {
       title: t('ai.catalog.column.status', '状态'),
       dataIndex: 'status',
       width: 110,
-      render: (value?: string) => (
-        <Tag color={value === 'ACTIVE' || value === 'READY' ? 'green' : 'gold'}>
-          {value || '-'}
-        </Tag>
-      ),
+      render: (value?: string) => {
+        const status = resolveCatalogItemStatus(value);
+        return (
+          <Tag color={{
+            success: 'green',
+            error: 'red',
+            warning: 'gold',
+            default: 'default',
+          }[status.tone]}>
+            {t(status.key, status.fallback)}
+          </Tag>
+        );
+      },
     },
     {
       title: t('ai.catalog.column.updatedAt', '更新时间'),
@@ -266,19 +279,31 @@ const Catalog = () => {
     },
   ], [importServer, t]);
 
+  const syncNotice = useMemo(() => resolveCatalogSyncNotice(
+    syncState?.lastError
+      || (syncState?.status === 'FAILED' ? 'UNKNOWN_SYNC_FAILURE' : undefined),
+  ), [syncState?.lastError, syncState?.status]);
+  const syncStatus = resolveCatalogSyncStatus(syncState?.status);
+  const syncMode = resolveCatalogSyncMode(syncState?.syncMode);
+
   return (
     <Space direction="vertical" size={16} style={{display: 'flex'}}>
       <Alert
-        type={syncState?.status === 'FAILED' ? 'error' : 'info'}
+        type={syncNotice?.tone || 'info'}
         showIcon
         message={t('ai.catalog.notice.title', '隔离式 AI 扩展市场')}
-        description={syncState?.lastError || t(
-          'ai.catalog.notice.description',
-          '内部扩展按当前工作空间实时展示；官方 Registry 仅同步元数据，导入后仍使用现有安全校验与 OAuth 流程。',
-        )}
+        description={syncNotice
+          ? t(syncNotice.key, syncNotice.fallback)
+          : t(
+            'ai.catalog.notice.description',
+            '内部扩展按当前工作空间实时展示；官方 Registry 仅同步元数据，导入后仍使用现有安全校验与 OAuth 流程。',
+          )}
         action={(
           <Space>
-            <Tag>{`${syncState?.status || 'NEVER'} · ${syncState?.syncMode || 'FULL'}`}</Tag>
+            <Tag>
+              {t(syncStatus.key, syncStatus.fallback)} ·{' '}
+              {t(syncMode.key, syncMode.fallback)}
+            </Tag>
             <Text type="secondary">
               {t('ai.catalog.sync.last', '最近完成')}：{formatTime(syncState?.lastCompletedAt)}
             </Text>
@@ -330,7 +355,7 @@ const Catalog = () => {
             {t('ai.catalog.action.refresh', '刷新')}
           </Button>
         </Space>
-        <Table<CatalogItem>
+        <DataTable<CatalogItem>
           rowKey="id"
           loading={loading}
           columns={columns}

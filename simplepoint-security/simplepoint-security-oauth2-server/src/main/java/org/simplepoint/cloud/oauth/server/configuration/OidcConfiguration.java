@@ -49,6 +49,7 @@ import org.springframework.security.oauth2.server.authorization.OAuth2Authorizat
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationGrantAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.util.CollectionUtils;
@@ -83,12 +84,14 @@ public class OidcConfiguration {
   public OidcConfigurerExpansion oidcConfigurer(
       final OidcUserInfoAuthenticationExpansion oidcUserInfoAuthenticationExpansion,
       final OAuth2AuthorizationService authorizationService,
-      final TokenRevocationService tokenRevocationService
+      final TokenRevocationService tokenRevocationService,
+      final RegisteredClientRepository registeredClientRepository
   ) {
     return new DefaultOidcConfigurerExpansion(
         oidcUserInfoAuthenticationExpansion,
         authorizationService,
-        tokenRevocationService
+        tokenRevocationService,
+        registeredClientRepository
     );
   }
 

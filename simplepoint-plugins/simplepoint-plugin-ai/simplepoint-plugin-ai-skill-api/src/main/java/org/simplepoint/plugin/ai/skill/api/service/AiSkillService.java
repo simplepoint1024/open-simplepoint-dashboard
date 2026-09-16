@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.ai.skill.api.service;
 
 import java.util.Optional;
+import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillDefinition;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillVersion;
 import org.simplepoint.plugin.ai.skill.api.model.SkillUpsertRequest;
@@ -56,10 +57,27 @@ public interface AiSkillService {
       SkillVersionCreateRequest request
   );
 
+  /** Creates a version for a durable managed publication worker. */
+  AiSkillVersion createManagedVersion(
+      String skillId,
+      AiResourceScope scopeType,
+      String tenantId,
+      SkillVersionCreateRequest request
+  );
+
   /**
    * Publishes a version and makes it active.
    */
   AiSkillVersion publishVersion(String skillId, String versionId);
+
+  /** Publishes a verified version and optionally activates it for a worker. */
+  AiSkillVersion publishManagedVersion(
+      String skillId,
+      AiResourceScope scopeType,
+      String tenantId,
+      String versionId,
+      boolean activate
+  );
 
   /**
    * Deprecates a published version.

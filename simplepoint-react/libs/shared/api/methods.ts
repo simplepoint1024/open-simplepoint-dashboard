@@ -1,6 +1,9 @@
 import {appendQueryParams, request, RequestOptions, QueryParams} from './client';
 import {useQuery, UseQueryOptions} from '@tanstack/react-query';
 import {Page} from "../types/request"
+import type {QueryFunctionContext} from '@tanstack/react-query';
+import {scopedQueryOptions} from './queryScope';
+import {useQueryScope} from '../hooks/useQueryScope';
 
 /**
  * GET 请求封装
@@ -45,13 +48,13 @@ export function del<T>(url: string, ids: string | number | (string | number)[], 
  */
 export function usePage<T>(
     key: string | readonly unknown[],
-    fetchFn: () => Promise<Page<T>>,
+    fetchFn: (context: QueryFunctionContext) => Promise<Page<T>>,
     options?: Omit<UseQueryOptions<Page<T>, Error, Page<T>, readonly unknown[]>, 'queryKey' | 'queryFn'>
 ) {
-    const queryKey = Array.isArray(key) ? key : [key];
+    const scope = useQueryScope();
+    const queryKey = typeof key === 'string' ? [key] : key;
     return useQuery<Page<T>, Error, Page<T>, readonly unknown[]>({
-        queryKey,
-        queryFn: fetchFn,
+        ...scopedQueryOptions(scope, queryKey, fetchFn),
         ...options,
     });
 }
@@ -61,13 +64,13 @@ export function usePage<T>(
  */
 export function useData<T>(
     key: string | readonly unknown[],
-    fetchFn: () => Promise<T>,
+    fetchFn: (context: QueryFunctionContext) => Promise<T>,
     options?: Omit<UseQueryOptions<T, Error, T, readonly unknown[]>, 'queryKey' | 'queryFn'>
 ) {
-    const queryKey = Array.isArray(key) ? key : [key];
+    const scope = useQueryScope();
+    const queryKey = typeof key === 'string' ? [key] : key;
     return useQuery<T, Error, T, readonly unknown[]>({
-        queryKey,
-        queryFn: fetchFn,
+        ...scopedQueryOptions(scope, queryKey, fetchFn),
         ...options,
     });
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/moby/moby/api/types/image"
@@ -27,6 +28,11 @@ func (rejectingAdmissionVerifier) Verify(
 
 func TestValidateImageReferenceRequiresDigestAndAllowedRegistry(t *testing.T) {
 	engine := &Engine{config: testConfig()}
+	if err := engine.validateResolvableImageReference(
+		"somesimpled/tool:latest",
+	); err != nil {
+		t.Fatalf("expected an allowed tag to be resolvable: %v", err)
+	}
 	if err := engine.validateImageReference("somesimpled/tool:latest"); err == nil {
 		t.Fatal("expected a mutable tag to be rejected")
 	}
@@ -97,6 +103,17 @@ func TestNormalizeForcesBoundedSandboxValues(t *testing.T) {
 	}
 	if request.PidsLimit != testConfig().DefaultPidsLimit {
 		t.Fatalf("unexpected PID default: %d", request.PidsLimit)
+	}
+	if request.ProcessUserMode != "RUNTIME_DEFAULT" {
+		t.Fatalf("unexpected process user mode: %q", request.ProcessUserMode)
+	}
+	request.ProcessUserMode = "IMAGE_DEFAULT"
+	if _, err = engine.normalize(request); err != nil {
+		t.Fatalf("expected image default user mode to be accepted: %v", err)
+	}
+	request.ProcessUserMode = "ARBITRARY_USER"
+	if _, err = engine.normalize(request); err == nil {
+		t.Fatal("expected arbitrary process user mode to be rejected")
 	}
 }
 
@@ -218,6 +235,150 @@ func TestNormalizeAllowsOnlyPolicyBoundEgress(t *testing.T) {
 	}
 }
 
+func TestNormalizeAllowsOnlyConfiguredEndpointRoutes(t *testing.T) {
+	cfg := testConfig()
+	cfg.InternalServiceRoutes = map[string]string{
+		"postgres:5432": "open-simplepoint-runtime-postgres",
+	}
+	engine := &Engine{config: cfg}
+	request, err := engine.normalize(StartRequest{
+		WorkloadID:      "workload-1",
+		LeaseID:         "lease-1",
+		FencingToken:    1,
+		ExecutionID:     "execution-1",
+		Image:           "somesimpled/tool@sha256:" + repeat("a", 64),
+		TimeoutSeconds:  60,
+		NetworkMode:     networkInternal,
+		EgressAllowlist: []string{"POSTGRES:5432"},
+	})
+	if err != nil {
+		t.Fatalf("expected configured internal endpoint: %v", err)
+	}
+	if len(request.EgressAllowlist) != 1 ||
+		request.EgressAllowlist[0] != "postgres:5432" {
+		t.Fatalf("unexpected endpoint normalization: %v", request.EgressAllowlist)
+	}
+	if networks := routeNetworks(
+		request.EgressAllowlist,
+		cfg.InternalServiceRoutes,
+	); len(networks) != 1 ||
+		networks[0] != "open-simplepoint-runtime-postgres" {
+		t.Fatalf("unexpected route networks: %v", networks)
+	}
+	request.EgressAllowlist = []string{"redis:6379"}
+	if _, err = engine.normalize(request); err == nil {
+		t.Fatal("expected an unconfigured endpoint to be rejected")
+	}
+}
+
+func TestNormalizeAllowsOnlyPlatformManagedStorage(t *testing.T) {
+	engine := &Engine{config: testConfig()}
+	request, err := engine.normalize(StartRequest{
+		WorkloadID:     "workload-1",
+		LeaseID:        "lease-1",
+		FencingToken:   1,
+		ExecutionID:    "execution-1",
+		Image:          "somesimpled/tool@sha256:" + repeat("a", 64),
+		TimeoutSeconds: 60,
+		Storage: []StorageMount{
+			{
+				Type:       "WORKSPACE_RO",
+				Source:     "open-simplepoint-managed-" + repeat("b", 40),
+				TargetPath: "/workspace",
+				ReadOnly:   true,
+			},
+			{
+				Type:       "TMPFS",
+				TargetPath: "/dev/shm",
+				SizeBytes:  8 * 1024 * 1024,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected managed storage to be accepted: %v", err)
+	}
+	if request.Storage[1].SizeBytes != 8*1024*1024 {
+		t.Fatal("expected the ephemeral storage limit to be preserved")
+	}
+	request.Storage[0].Source = "/home/user/workspace"
+	if _, err = engine.normalize(request); err == nil {
+		t.Fatal("expected a host path storage source to be rejected")
+	}
+	request.Storage[0].Source = "open-simplepoint-managed-" + repeat("b", 40)
+	request.Storage[1].TargetPath = "/workspace/cache"
+	if _, err = engine.normalize(request); err == nil {
+		t.Fatal("expected nested storage targets to be rejected")
+	}
+}
+
+func TestNormalizeRejectsTraversalAndSymlinkBackedHostStorage(t *testing.T) {
+	engine := &Engine{config: testConfig()}
+	base := StartRequest{
+		WorkloadID:     "workload-1",
+		LeaseID:        "lease-1",
+		FencingToken:   1,
+		ExecutionID:    "execution-1",
+		Image:          "somesimpled/tool@sha256:" + repeat("a", 64),
+		TimeoutSeconds: 60,
+	}
+	for _, target := range []string{
+		"workspace", "/workspace/../host", "/run/secrets/simplepoint/escape",
+	} {
+		request := base
+		request.Storage = []StorageMount{{
+			Type:       "WORKSPACE_RO",
+			Source:     "open-simplepoint-managed-" + repeat("b", 40),
+			TargetPath: target,
+			ReadOnly:   true,
+		}}
+		if _, err := engine.normalize(request); err == nil {
+			t.Fatalf("expected storage target %q to be rejected", target)
+		}
+	}
+
+	hostDirectory := t.TempDir()
+	symlink := filepath.Join(t.TempDir(), "workspace-link")
+	if err := os.Symlink(hostDirectory, symlink); err != nil {
+		t.Fatalf("create host storage symlink: %v", err)
+	}
+	request := base
+	request.Storage = []StorageMount{{
+		Type:       "WORKSPACE_RO",
+		Source:     symlink,
+		TargetPath: "/workspace",
+		ReadOnly:   true,
+	}}
+	if _, err := engine.normalize(request); err == nil {
+		t.Fatal("expected a symlink-backed host path source to be rejected")
+	}
+}
+
+func TestNormalizeEnforcesNamedSandboxStorageAndNetwork(t *testing.T) {
+	engine := &Engine{config: testConfig()}
+	base := StartRequest{
+		WorkloadID:     "workload-1",
+		LeaseID:        "lease-1",
+		FencingToken:   1,
+		ExecutionID:    "execution-1",
+		Image:          "somesimpled/tool@sha256:" + repeat("a", 64),
+		TimeoutSeconds: 60,
+		SandboxProfile: "BROWSER",
+	}
+	if _, err := engine.normalize(base); err == nil {
+		t.Fatal("expected browser sandbox without /dev/shm to be rejected")
+	}
+	base.Storage = []StorageMount{{
+		Type: "TMPFS", TargetPath: "/dev/shm", SizeBytes: 64 * 1024 * 1024,
+	}}
+	if _, err := engine.normalize(base); err != nil {
+		t.Fatalf("expected bounded browser sandbox: %v", err)
+	}
+	base.SandboxProfile = "WORKSPACE"
+	if _, err := engine.normalize(base); err == nil {
+		t.Fatal("expected workspace sandbox without managed workspace")
+	}
+}
+
 func TestPrepareAndCleanupSecretsUseIsolatedReadOnlyFiles(t *testing.T) {
 	cfg := testConfig()
 	cfg.SecretRoot = t.TempDir()
@@ -237,7 +398,13 @@ func TestPrepareAndCleanupSecretsUseIsolatedReadOnlyFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("normalize secret request: %v", err)
 	}
-	subpath, err := engine.prepareSecrets(request)
+	launcher := &workloadLauncherConfig{
+		Command: []string{"github-mcp-server", "stdio"},
+		SecretEnvironment: map[string]string{
+			"GITHUB_PERSONAL_ACCESS_TOKEN": cfg.SecretMountTarget + "/alpha",
+		},
+	}
+	subpath, err := engine.prepareSecrets(request, launcher)
 	if err != nil {
 		t.Fatalf("prepare secrets: %v", err)
 	}
@@ -258,6 +425,15 @@ func TestPrepareAndCleanupSecretsUseIsolatedReadOnlyFiles(t *testing.T) {
 	}
 	if info.Mode().Perm() != 0o400 {
 		t.Fatalf("unexpected secret mode: %o", info.Mode().Perm())
+	}
+	launcherPath := filepath.Join(cfg.SecretRoot, subpath, ".runtime-launcher.json")
+	launcherValue, err := os.ReadFile(launcherPath)
+	if err != nil {
+		t.Fatalf("read Runtime launcher config: %v", err)
+	}
+	if strings.Contains(string(launcherValue), "first") ||
+		!strings.Contains(string(launcherValue), cfg.SecretMountTarget+"/alpha") {
+		t.Fatal("launcher config must contain only the secret path, never its value")
 	}
 	if err = engine.cleanupSecrets("workload-1", 7); err != nil {
 		t.Fatalf("cleanup secrets: %v", err)

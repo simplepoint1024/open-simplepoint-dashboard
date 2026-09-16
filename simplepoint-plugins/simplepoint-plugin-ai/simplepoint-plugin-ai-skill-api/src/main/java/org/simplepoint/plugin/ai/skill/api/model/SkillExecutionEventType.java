@@ -1,0 +1,22 @@
+package org.simplepoint.plugin.ai.skill.api.model;
+
+/** Durable lifecycle events emitted by one Skill execution. */
+public enum SkillExecutionEventType {
+  EXECUTION_CREATED,
+  APPROVAL_REQUIRED,
+  APPROVAL_GRANTED,
+  APPROVAL_REJECTED,
+  EXECUTION_STARTED,
+  PAUSE_REQUESTED,
+  EXECUTION_PAUSED,
+  EXECUTION_RESUMED,
+  CANCEL_REQUESTED,
+  BREAKPOINTS_UPDATED,
+  STEP_STARTED,
+  STEP_SUCCEEDED,
+  STEP_FAILED,
+  STEP_SKIPPED,
+  EXECUTION_SUCCEEDED,
+  EXECUTION_FAILED,
+  EXECUTION_CANCELLED
+}

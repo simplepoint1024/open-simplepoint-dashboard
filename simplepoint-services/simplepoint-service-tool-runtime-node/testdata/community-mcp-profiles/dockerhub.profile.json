@@ -1,0 +1,45 @@
+{
+  "descriptorName": "io.docker/hub-mcp",
+  "descriptorVersion": "ad806e2cab0489a296aec0f32f3d3eea807d65c2",
+  "artifact": {
+    "source": "CATALOG_ORIGINAL",
+    "type": "OCI",
+    "reference": "mcp/dockerhub@sha256:76454af4edfd21571d9740113104d0d9f707220453d1c8f7c9971b21848d4248"
+  },
+  "transport": {"type": "STDIO", "containerPort": null, "path": null},
+  "process": {
+    "entrypoint": [],
+    "command": [],
+    "arguments": ["--transport=stdio"],
+    "workingDirectory": "/app"
+  },
+  "configuration": [
+    {
+      "name": "node-environment-proxy",
+      "targetEnvironment": "NODE_USE_ENV_PROXY",
+      "value": "1"
+    }
+  ],
+  "secrets": [],
+  "storage": [
+    {
+      "name": "application-logs",
+      "type": "TMPFS",
+      "storageReference": null,
+      "targetPath": "/app/logs",
+      "readOnly": false,
+      "sizeBytes": 16777216
+    }
+  ],
+  "network": {
+    "mode": "HTTP_EGRESS",
+    "allowlist": [
+      "hub.docker.com:443",
+      "auth.docker.io:443",
+      "registry-1.docker.io:443",
+      "index.docker.io:443"
+    ]
+  },
+  "session": {"mode": "SHARED_STATELESS", "maxSessions": 32},
+  "sandbox": {"profile": "STRICT", "limits": {}}
+}

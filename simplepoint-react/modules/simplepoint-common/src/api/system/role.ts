@@ -30,6 +30,11 @@ export interface RoleScopeAssignmentVo {
   roleId: string;
   dataScopeId?: string | null;
   fieldScopeId?: string | null;
+  revision?: number | null;
+  legacyConflict?: boolean;
+  confirmLegacyReplacement?: boolean;
+  legacyDataScopeIds?: string[];
+  legacyFieldScopeIds?: string[];
 }
 
 /**

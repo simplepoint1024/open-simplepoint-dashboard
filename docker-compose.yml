@@ -21,6 +21,9 @@ services:
       - "5432"
     volumes:
       - simplepoint_postgres_data:/var/lib/postgresql/data
+    networks:
+      - default
+      - runtime-postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d simplepoint"]
       interval: 10s
@@ -97,11 +100,12 @@ services:
     image: ${SIMPLEPOINT_BOOTSTRAP_IMAGE:-somesimpled/open-simplepoint-bootstrap:${SIMPLEPOINT_IMAGE_TAG:-local}}
     build:
       context: .
-      dockerfile: docker/swarm/bootstrap/Dockerfile
+      dockerfile: docker/bootstrap/Dockerfile
       args: *oci-build-args
     environment:
       CONSUL_ADDR: http://consul:8500
       PUBLIC_HOST: ${SIMPLEPOINT_PUBLIC_HOST:-localhost}
+      CONFIG_PROFILE: compose
     depends_on:
       consul:
         condition: service_healthy
@@ -115,7 +119,7 @@ services:
       dockerfile: simplepoint-services/simplepoint-service-authorization/Dockerfile
       args: *oci-build-args
     environment:
-      SPRING_PROFILES_ACTIVE: dev,swarm
+      SPRING_PROFILES_ACTIVE: dev,compose
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,minio:9000
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
@@ -150,7 +154,7 @@ services:
       dockerfile: simplepoint-services/simplepoint-service-common/Dockerfile
       args: *oci-build-args
     environment:
-      SPRING_PROFILES_ACTIVE: dev,swarm
+      SPRING_PROFILES_ACTIVE: dev,compose
       SIMPLEPOINT_ADMIN_EMAIL: ${SIMPLEPOINT_ADMIN_EMAIL:-simplepoint@mail.com}
       SIMPLEPOINT_ADMIN_PASSWORD: ${SIMPLEPOINT_ADMIN_PASSWORD:-123456}
       SIMPLEPOINT_TENANT_MANAGER_EMAIL: ${SIMPLEPOINT_TENANT_MANAGER_EMAIL:-manager@simplepoint.local}
@@ -194,7 +198,7 @@ services:
       dockerfile: simplepoint-services/simplepoint-service-auditing/Dockerfile
       args: *oci-build-args
     environment:
-      SPRING_PROFILES_ACTIVE: dev,swarm
+      SPRING_PROFILES_ACTIVE: dev,compose
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
@@ -225,7 +229,7 @@ services:
       dockerfile: simplepoint-services/simplepoint-service-dna/Dockerfile
       args: *oci-build-args
     environment:
-      SPRING_PROFILES_ACTIVE: dev,swarm
+      SPRING_PROFILES_ACTIVE: dev,compose
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
@@ -257,7 +261,7 @@ services:
       dockerfile: simplepoint-services/simplepoint-service-mcp-gateway/Dockerfile
       args: *oci-build-args
     environment:
-      SPRING_PROFILES_ACTIVE: dev,swarm
+      SPRING_PROFILES_ACTIVE: dev,compose
       SIMPLEPOINT_WAIT_FOR: redis:6379,consul:8500,authorization:9000
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
@@ -311,6 +315,7 @@ services:
       IMAGES: "1"
       INFO: "1"
       POST: "1"
+      VOLUMES: "1"
     read_only: true
     tmpfs:
       - /run
@@ -331,6 +336,7 @@ services:
       args: *oci-build-args
     environment:
       SIMPLEPOINT_TOOL_EGRESS_SIGNING_KEY: ${SIMPLEPOINT_TOOL_EGRESS_SIGNING_KEY:-dev-tool-egress-signing-key-change-me}
+      SIMPLEPOINT_TOOL_EGRESS_UPSTREAM_PROXY_URL: ${SIMPLEPOINT_TOOL_EGRESS_UPSTREAM_PROXY_URL:-}
     read_only: true
     cap_drop:
       - ALL
@@ -415,17 +421,20 @@ services:
       SIMPLEPOINT_TOOL_RUNTIME_NODE_LABELS: ${SIMPLEPOINT_TOOL_RUNTIME_NODE_LABELS:-environment=local,orchestrator=compose}
       SIMPLEPOINT_TOOL_RUNTIME_MAX_WORKLOADS: ${SIMPLEPOINT_TOOL_RUNTIME_MAX_WORKLOADS:-64}
       SIMPLEPOINT_TOOL_RUNTIME_MAX_REPORTED_IMAGE_DIGESTS: ${SIMPLEPOINT_TOOL_RUNTIME_MAX_REPORTED_IMAGE_DIGESTS:-256}
-      SIMPLEPOINT_TOOL_RUNTIME_ALLOWED_REGISTRIES: ${SIMPLEPOINT_TOOL_RUNTIME_ALLOWED_REGISTRIES:-docker.io}
+      SIMPLEPOINT_TOOL_RUNTIME_ALLOWED_REGISTRIES: ${SIMPLEPOINT_TOOL_RUNTIME_ALLOWED_REGISTRIES:-docker.io,ghcr.io,mcr.microsoft.com}
       SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_DIGEST: ${SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_DIGEST:-true}
-      SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_MCP_LABELS: ${SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_MCP_LABELS:-true}
+      SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_MCP_LABELS: ${SIMPLEPOINT_TOOL_RUNTIME_REQUIRE_MCP_LABELS:-false}
       SIMPLEPOINT_TOOL_RUNTIME_ALLOW_BRIDGE_NETWORK: ${SIMPLEPOINT_TOOL_RUNTIME_ALLOW_BRIDGE_NETWORK:-false}
       SIMPLEPOINT_TOOL_RUNTIME_EGRESS_ENABLED: "true"
       SIMPLEPOINT_TOOL_RUNTIME_EGRESS_NETWORK: ${SIMPLEPOINT_RUNTIME_EGRESS_NETWORK:-open-simplepoint-runtime-egress}
       SIMPLEPOINT_TOOL_RUNTIME_EGRESS_PROXY_URL: http://tool-egress-proxy:2892
       SIMPLEPOINT_TOOL_RUNTIME_EGRESS_SIGNING_KEY: ${SIMPLEPOINT_TOOL_EGRESS_SIGNING_KEY:-dev-tool-egress-signing-key-change-me}
+      SIMPLEPOINT_TOOL_RUNTIME_TRANSPORT_NETWORK: ${SIMPLEPOINT_RUNTIME_TRANSPORT_NETWORK:-open-simplepoint-runtime-transport}
+      SIMPLEPOINT_TOOL_RUNTIME_INTERNAL_SERVICE_ROUTES: postgres:5432=${SIMPLEPOINT_RUNTIME_POSTGRES_NETWORK:-open-simplepoint-runtime-postgres}
       SIMPLEPOINT_TOOL_RUNTIME_SECRET_ROOT: /run/simplepoint/runtime-secrets
       SIMPLEPOINT_TOOL_RUNTIME_SECRET_VOLUME: ${SIMPLEPOINT_RUNTIME_SECRET_VOLUME:-open-simplepoint-dashboard_simplepoint_runtime_secrets}
       SIMPLEPOINT_TOOL_RUNTIME_SECRET_MOUNT_TARGET: /run/secrets/simplepoint
+      SIMPLEPOINT_TOOL_RUNTIME_LAUNCHER_ENABLED: "true"
       SIMPLEPOINT_TOOL_RUNTIME_SUPPLY_CHAIN_ENABLED: ${SIMPLEPOINT_TOOL_RUNTIME_SUPPLY_CHAIN_ENABLED:-false}
       SIMPLEPOINT_TOOL_RUNTIME_IMAGE_VERIFIER_URL: https://tool-image-verifier:2893
       SIMPLEPOINT_TOOL_RUNTIME_IMAGE_VERIFIER_SERVER_NAME: tool-image-verifier
@@ -443,6 +452,7 @@ services:
     networks:
       - default
       - runtime-engine
+      - runtime-transport
     depends_on:
       runtime-pki:
         condition: service_completed_successfully
@@ -469,7 +479,7 @@ services:
       dockerfile: simplepoint-services/simplepoint-service-ai/Dockerfile
       args: *oci-build-args
     environment:
-      SPRING_PROFILES_ACTIVE: dev,swarm
+      SPRING_PROFILES_ACTIVE: dev,compose
       SIMPLEPOINT_SERVICE_AI_OPTS: "-XX:CompileCommand=exclude,org/springframework/web/util/UriComponentsBuilder.build"
       SIMPLEPOINT_WAIT_FOR: postgres:5432,redis:6379,consul:8500,authorization:9000,common:7000,mcp-gateway:2890
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
@@ -534,7 +544,7 @@ services:
       dockerfile: simplepoint-services/simplepoint-service-agent-runtime/Dockerfile
       args: *oci-build-args
     environment:
-      SPRING_PROFILES_ACTIVE: dev,swarm
+      SPRING_PROFILES_ACTIVE: dev,compose
       SIMPLEPOINT_WAIT_FOR: postgres:5432,consul:8500,ai:2888
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
@@ -570,7 +580,7 @@ services:
       dockerfile: simplepoint-services/simplepoint-service-workflow-runtime/Dockerfile
       args: *oci-build-args
     environment:
-      SPRING_PROFILES_ACTIVE: dev,swarm
+      SPRING_PROFILES_ACTIVE: dev,compose
       SIMPLEPOINT_WAIT_FOR: postgres:5432,consul:8500,ai:2888
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
@@ -606,7 +616,7 @@ services:
       dockerfile: simplepoint-services/simplepoint-service-host/Dockerfile
       args: *oci-build-args
     environment:
-      SPRING_PROFILES_ACTIVE: dev,swarm
+      SPRING_PROFILES_ACTIVE: dev,compose
       SIMPLEPOINT_WAIT_FOR: redis:6379,consul:8500
       SIMPLEPOINT_WAIT_FOR_URLS: http://consul:8500/v1/kv/simplepoint/bootstrap/status?raw
       SIMPLEPOINT_WAIT_TIMEOUT: 240
@@ -653,4 +663,10 @@ networks:
     internal: true
   runtime-egress:
     name: ${SIMPLEPOINT_RUNTIME_EGRESS_NETWORK:-open-simplepoint-runtime-egress}
+    internal: true
+  runtime-transport:
+    name: ${SIMPLEPOINT_RUNTIME_TRANSPORT_NETWORK:-open-simplepoint-runtime-transport}
+    internal: true
+  runtime-postgres:
+    name: ${SIMPLEPOINT_RUNTIME_POSTGRES_NETWORK:-open-simplepoint-runtime-postgres}
     internal: true

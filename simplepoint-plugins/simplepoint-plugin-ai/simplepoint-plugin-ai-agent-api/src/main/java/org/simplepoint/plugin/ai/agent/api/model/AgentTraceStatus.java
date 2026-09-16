@@ -6,5 +6,6 @@ package org.simplepoint.plugin.ai.agent.api.model;
 public enum AgentTraceStatus {
   RUNNING,
   SUCCEEDED,
-  FAILED
+  FAILED,
+  CANCELLED
 }

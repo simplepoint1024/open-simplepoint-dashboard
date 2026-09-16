@@ -4,7 +4,7 @@ import handlers from './handlers';
 const contract = defineResource({
   id: 'auditing.logging.error-logs',
   scope: 'auditing',
-  backendModule: 'simplepoint-plugin-auditing-logging-rest',
+  backendModule: 'simplepoint-plugin-auditing-logging-implementation',
   backendController: 'ErrorLogController',
   contextPath: '/auditing',
   paths: ['/logging/error-logs'],

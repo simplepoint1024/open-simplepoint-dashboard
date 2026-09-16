@@ -31,6 +31,17 @@ func (r fencedRuntime) Prepare(
 	return runtimeapi.ImageStatus{}, nil
 }
 
+func (r fencedRuntime) ProbeMCP(
+	context.Context,
+	runtimeapi.StartRequest,
+) (runtimeapi.MCPProbeReport, error) {
+	return runtimeapi.MCPProbeReport{
+		ProtocolVersion: "2025-11-25",
+		ToolsSupported:  true,
+		ToolCount:       2,
+	}, nil
+}
+
 func (r fencedRuntime) Start(
 	_ context.Context,
 	request runtimeapi.StartRequest,
@@ -145,6 +156,31 @@ func TestStartRequiresMatchingLeaseFence(t *testing.T) {
 	handler.ServeHTTP(result, request)
 	if result.Code != http.StatusCreated {
 		t.Fatalf("expected a matching fence to return 201, got %d", result.Code)
+	}
+}
+
+func TestMCPProbeUsesControlPlaneAuthenticationWithoutLeaseFence(t *testing.T) {
+	handler := testHandler(fencedRuntime{})
+	body := []byte(`{
+		"image":"somesimpled/tool@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"transport":"stdio",
+		"timeoutSeconds":30
+	}`)
+	request := httptest.NewRequest(
+		http.MethodPost,
+		"/internal/v1/mcp/probe",
+		bytes.NewReader(body),
+	)
+	request.Header.Set("X-SimplePoint-Runtime-Token", testRuntimeToken)
+	result := httptest.NewRecorder()
+
+	handler.ServeHTTP(result, request)
+
+	if result.Code != http.StatusOK {
+		t.Fatalf("expected MCP probe to return 200, got %d", result.Code)
+	}
+	if !bytes.Contains(result.Body.Bytes(), []byte(`"toolsSupported":true`)) {
+		t.Fatalf("expected a sanitized MCP probe report, got %s", result.Body.String())
 	}
 }
 

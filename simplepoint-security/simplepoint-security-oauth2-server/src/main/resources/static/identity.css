@@ -1,0 +1,86 @@
+:root {
+  color-scheme: light;
+  --sp-bg: #f4f7fc;
+  --sp-panel: rgba(255, 255, 255, .92);
+  --sp-text: #172033;
+  --sp-muted: #667085;
+  --sp-line: #d9e1ed;
+  --sp-primary: #3166f5;
+  --sp-primary-hover: #2455d8;
+  --sp-danger: #b42318;
+  --sp-success: #067647;
+  --sp-warning: #b54708;
+}
+
+* { box-sizing: border-box; }
+
+body.identity-page {
+  min-height: 100vh;
+  margin: 0;
+  padding: 32px 18px;
+  display: grid;
+  place-items: center;
+  color: var(--sp-text);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 12% 15%, rgba(94, 149, 255, .25), transparent 34%),
+    radial-gradient(circle at 88% 82%, rgba(142, 113, 255, .2), transparent 34%),
+    linear-gradient(145deg, var(--sp-bg), #eef3fb);
+}
+
+.identity-shell {
+  width: min(720px, 100%);
+  padding: 32px;
+  border: 1px solid rgba(255, 255, 255, .82);
+  border-radius: 20px;
+  background: var(--sp-panel);
+  box-shadow: 0 24px 70px rgba(37, 55, 92, .14);
+  backdrop-filter: blur(20px);
+}
+
+.identity-shell.narrow { width: min(480px, 100%); }
+.identity-brand { display: flex; align-items: center; gap: 11px; margin-bottom: 24px; font-weight: 700; }
+.identity-brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; color: #fff; background: linear-gradient(145deg, #4778ff, #6f5ce7); }
+.identity-title { margin: 0; font-size: 25px; line-height: 1.3; }
+.identity-subtitle { margin: 8px 0 24px; color: var(--sp-muted); font-size: 14px; line-height: 1.6; }
+
+.identity-alert { margin: 0 0 16px; padding: 11px 13px; border: 1px solid; border-radius: 9px; font-size: 13px; line-height: 1.5; }
+.identity-alert.error { color: var(--sp-danger); border-color: #fecdca; background: #fef3f2; }
+.identity-alert.success { color: var(--sp-success); border-color: #abefc6; background: #ecfdf3; }
+.identity-alert.warning { color: var(--sp-warning); border-color: #fedf89; background: #fffaeb; }
+
+.connection-list { display: grid; gap: 12px; }
+.connection-item { display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px solid var(--sp-line); border-radius: 12px; background: #fff; }
+.connection-mark { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border-radius: 11px; color: #fff; font-weight: 750; background: #596780; }
+.connection-mark.github { background: #24292f; }
+.connection-mark.google { background: #4285f4; }
+.connection-mark.microsoft { background: #1674d1; }
+.connection-mark.apple { background: #111; }
+.connection-copy { min-width: 0; flex: 1; }
+.connection-heading { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.connection-heading strong { font-size: 15px; }
+.connection-meta { margin-top: 4px; color: var(--sp-muted); font-size: 12px; line-height: 1.5; word-break: break-word; }
+.identity-tag { padding: 2px 8px; border-radius: 999px; color: var(--sp-muted); background: #f2f4f7; font-size: 11px; }
+.identity-tag.linked { color: var(--sp-success); background: #ecfdf3; }
+.connection-actions { display: flex; gap: 8px; }
+
+.identity-button { min-height: 38px; padding: 0 15px; border: 1px solid transparent; border-radius: 8px; color: #fff; background: var(--sp-primary); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; text-decoration: none; }
+.identity-button:hover { background: var(--sp-primary-hover); }
+.identity-button.secondary { color: var(--sp-text); border-color: var(--sp-line); background: #fff; }
+.identity-button.danger { color: var(--sp-danger); border-color: #fecdca; background: #fff; }
+.identity-button:disabled { opacity: .5; cursor: not-allowed; }
+.identity-footer { display: flex; justify-content: flex-end; margin-top: 22px; }
+
+.identity-form label { display: block; margin: 0 0 7px; color: #344054; font-size: 13px; font-weight: 620; }
+.identity-form input { width: 100%; height: 44px; margin-bottom: 14px; padding: 0 13px; border: 1px solid var(--sp-line); border-radius: 9px; outline: none; font: inherit; }
+.identity-form input:focus { border-color: #7598ff; box-shadow: 0 0 0 4px rgba(49, 102, 245, .12); }
+.identity-form .identity-button { width: 100%; }
+.identity-options { display: grid; gap: 10px; margin-top: 18px; }
+.identity-note { margin: 18px 0 0; color: var(--sp-muted); font-size: 12px; line-height: 1.55; }
+
+@media (max-width: 600px) {
+  body.identity-page { align-items: start; padding: 14px; }
+  .identity-shell { padding: 24px 18px; border-radius: 16px; }
+  .connection-item { align-items: flex-start; flex-wrap: wrap; }
+  .connection-actions { width: 100%; padding-left: 56px; }
+}

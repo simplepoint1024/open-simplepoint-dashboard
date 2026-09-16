@@ -4,7 +4,7 @@ import handlers from './handlers';
 const contract = defineResource({
   id: 'auditing.redis.entries',
   scope: 'auditing',
-  backendModule: 'simplepoint-plugin-auditing-redis-rest',
+  backendModule: 'simplepoint-plugin-auditing-redis-implementation',
   backendController: 'RedisMonitoringController',
   contextPath: '/auditing',
   paths: ['/redis/entries'],

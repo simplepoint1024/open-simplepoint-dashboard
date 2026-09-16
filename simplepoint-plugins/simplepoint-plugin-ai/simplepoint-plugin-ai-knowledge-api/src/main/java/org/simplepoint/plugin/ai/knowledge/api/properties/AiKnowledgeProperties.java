@@ -26,6 +26,8 @@ public class AiKnowledgeProperties {
 
   private Integer indexWorkerConcurrency = 2;
 
+  private Boolean indexExecutionEnabled = true;
+
   private Integer indexClaimBatchSize = 2;
 
   private Long indexPollDelayMs = 1000L;

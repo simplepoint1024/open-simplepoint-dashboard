@@ -5,12 +5,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
+import org.simplepoint.cloud.oauth.server.client.ExternalIdentityLinkFlow;
 import org.simplepoint.cloud.oauth.server.event.LoginAuditEventPublisher;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -25,22 +27,49 @@ public final class LoginAuthenticationSuccessHandler implements AuthenticationSu
   private final AuthenticationSuccessHandler delegate = new SavedRequestAwareAuthenticationSuccessHandler();
   private final LoginAuditEventPublisher loginAuditEventPublisher;
   private final UsersService usersService;
+  private final ExternalIdentityLinkFlow externalIdentityLinkFlow;
 
   /**
    * Login Authentication Success Handler.
    */
   public LoginAuthenticationSuccessHandler(
       final LoginAuditEventPublisher loginAuditEventPublisher,
-      final UsersService usersService
+      final UsersService usersService,
+      final ExternalIdentityLinkFlow externalIdentityLinkFlow
   ) {
     this.loginAuditEventPublisher = loginAuditEventPublisher;
     this.usersService = usersService;
+    this.externalIdentityLinkFlow = externalIdentityLinkFlow;
   }
 
   @Override
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
       throws IOException, ServletException {
     User currentUser = resolveLocalUser(authentication);
+    try {
+      if (currentUser != null) {
+        externalIdentityLinkFlow.completeAfterLocalLogin(request.getSession(), currentUser);
+      }
+    } catch (OAuth2AuthenticationException ex) {
+      ExternalIdentityLinkFlow.PendingLink pending =
+          externalIdentityLinkFlow.pending(request.getSession());
+      boolean gateway = pending != null && pending.gateway();
+      String prefix = gateway ? "/authorization" : request.getContextPath();
+      String query = gateway ? "?gateway=true&error=link_conflict" : "?error=link_conflict";
+      response.sendRedirect(prefix + "/external-account/link" + query);
+      return;
+    }
+    ExternalIdentityLinkFlow.RecentlyLinked recentlyLinked =
+        externalIdentityLinkFlow.consumeRecentlyLinked(request.getSession());
+    if (recentlyLinked != null && recentlyLinked.returnToSettings()) {
+      loginAuditEventPublisher.publishSuccess(request, authentication);
+      String prefix = recentlyLinked.gateway() ? "/authorization" : "";
+      String query = recentlyLinked.gateway()
+          ? "?gateway=true&linked=" + recentlyLinked.registrationId()
+          : "?linked=" + recentlyLinked.registrationId();
+      response.sendRedirect(prefix + "/account/external-identities" + query);
+      return;
+    }
     if (currentUser != null
         && Boolean.TRUE.equals(currentUser.getTwoFactorEnabled())
         && currentUser.getTwoFactorSecret() != null) {

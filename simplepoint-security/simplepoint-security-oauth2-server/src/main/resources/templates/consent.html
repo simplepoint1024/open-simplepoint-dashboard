@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Authorize Application</title>
+  <title th:text="#{consent.title} + ' · SimplePoint'">Authorize application · SimplePoint</title>
   <style>
     :root {
       color-scheme: light;
@@ -221,11 +221,11 @@
   <form name="consent_form" method="post" th:action="${requestURI}">
     <section class="panel" aria-labelledby="consent-title">
       <div class="header">
-        <p class="eyebrow">OAuth2 Authorization</p>
-        <h1 id="consent-title">Authorize application access</h1>
+        <p class="eyebrow" th:text="#{consent.eyebrow}">OAuth 2.0 authorization</p>
+        <h1 id="consent-title" th:text="#{consent.heading}">Authorize application access</h1>
         <p class="summary">
           <strong th:text="${clientId}">client</strong>
-          wants to access the account
+          <span th:text="#{consent.wantsAccess}">wants to access the account</span>
           <strong th:text="${principalName}">user</strong>.
         </p>
       </div>
@@ -236,12 +236,12 @@
         <input th:if="${userCode}" type="hidden" name="user_code" th:value="${userCode}">
 
         <p class="notice" th:if="${userCode}">
-          You provided code <strong th:text="${userCode}">code</strong>.
-          Confirm that it matches the code displayed on your device.
+          <span th:text="#{consent.deviceCode}">Device code</span> <strong th:text="${userCode}">code</strong>.
+          <span th:text="#{consent.deviceConfirm}">Confirm that it matches the code displayed on your device.</span>
         </p>
 
         <p class="section-title" th:if="${not #lists.isEmpty(scopes)}">
-          Requested permissions
+          <span th:text="#{consent.requestedPermissions}">Requested permissions</span>
         </p>
         <ul class="scope-list" th:if="${not #lists.isEmpty(scopes)}">
           <li th:each="scope: ${scopes}" class="scope-item">
@@ -254,7 +254,7 @@
         </ul>
 
         <p class="section-title" th:if="${not #lists.isEmpty(previouslyApprovedScopes)}">
-          Already approved
+          <span th:text="#{consent.alreadyApproved}">Already approved</span>
         </p>
         <ul class="scope-list" th:if="${not #lists.isEmpty(previouslyApprovedScopes)}">
           <li th:each="scope: ${previouslyApprovedScopes}" class="scope-item approved">
@@ -269,8 +269,8 @@
       </div>
 
       <div class="footer">
-        <button class="btn-cancel" type="button" onclick="cancelConsent()">Cancel</button>
-        <button class="btn-primary" type="submit">Authorize</button>
+        <button class="btn-cancel" type="button" onclick="cancelConsent()" th:text="#{action.cancel}">Cancel</button>
+        <button class="btn-primary" type="submit" th:text="#{consent.authorize}">Authorize</button>
       </div>
     </section>
   </form>

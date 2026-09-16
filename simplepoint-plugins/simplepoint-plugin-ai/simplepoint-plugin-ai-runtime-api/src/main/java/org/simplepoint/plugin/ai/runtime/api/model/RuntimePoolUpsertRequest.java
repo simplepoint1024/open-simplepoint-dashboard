@@ -4,6 +4,8 @@ import java.util.List;
 
 /**
  * Desired state for a horizontally scalable OCI MCP runtime pool.
+ * The image digest is optional; when omitted, the service resolves the tag to
+ * an immutable digest before persisting or deploying the pool.
  */
 public record RuntimePoolUpsertRequest(
     String code,

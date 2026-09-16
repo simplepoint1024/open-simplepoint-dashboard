@@ -23,6 +23,10 @@ public class McpGatewayProperties {
 
   private long maxOauthResponseBytes = 1024L * 1024L;
 
+  private String oauthProxyUrl;
+
+  private String oauthNoProxy;
+
   private int maxProtocolRequestBytes = 2 * 1024 * 1024;
 
   private boolean allowInsecureOauthEndpoints;
@@ -128,6 +132,22 @@ public class McpGatewayProperties {
 
   public void setMaxOauthResponseBytes(final long maxOauthResponseBytes) {
     this.maxOauthResponseBytes = maxOauthResponseBytes;
+  }
+
+  public String getOauthProxyUrl() {
+    return oauthProxyUrl;
+  }
+
+  public void setOauthProxyUrl(final String oauthProxyUrl) {
+    this.oauthProxyUrl = oauthProxyUrl;
+  }
+
+  public String getOauthNoProxy() {
+    return oauthNoProxy;
+  }
+
+  public void setOauthNoProxy(final String oauthNoProxy) {
+    this.oauthNoProxy = oauthNoProxy;
   }
 
   public int getMaxProtocolRequestBytes() {

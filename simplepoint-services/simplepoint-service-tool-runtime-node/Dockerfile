@@ -21,7 +21,12 @@ RUN go test ./... \
       -trimpath \
       -ldflags="-s -w -X main.version=${OCI_IMAGE_VERSION}" \
       -o /out/tool-runtime-node \
-      ./cmd/tool-runtime-node
+      ./cmd/tool-runtime-node \
+    && CGO_ENABLED=0 go build \
+      -trimpath \
+      -ldflags="-s -w" \
+      -o /out/runtime-launcher \
+      ./cmd/runtime-launcher
 
 FROM ${RUNTIME_IMAGE}
 
@@ -31,11 +36,14 @@ ARG OCI_IMAGE_REVISION=unknown
 ARG OCI_IMAGE_SOURCE=https://github.com/simplepoint1024/open-simplepoint-dashboard
 
 COPY --link --from=build /out/tool-runtime-node /tool-runtime-node
+COPY --link --from=build /out/runtime-launcher /simplepoint-runtime-launcher
 COPY --link --chown=65532:65532 docker/runtime-security/seccomp.json \
   /etc/simplepoint/runtime-security/seccomp.json
 
 EXPOSE 2891
 USER 65532:65532
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=10 \
+  CMD ["/tool-runtime-node", "healthcheck"]
 ENTRYPOINT ["/tool-runtime-node"]
 
 LABEL org.opencontainers.image.title="open-simplepoint-tool-runtime" \

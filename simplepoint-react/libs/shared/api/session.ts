@@ -6,7 +6,7 @@ import {
   setStoredContextId,
   setStoredRoleId,
   setStoredTenantId,
-} from './contextId';
+} from './contextId.ts';
 
 export type SessionSnapshot = {
   tenantId?: string;
@@ -122,8 +122,13 @@ export async function clearClientCaches(options?: {
   }
 }
 
-export async function redirectToLogin() {
-  await clearClientCaches({ preserveSessionContext: false });
+let loginRedirectPromise: Promise<void> | undefined;
+
+export function redirectToLogin() {
+  if (loginRedirectPromise) {
+    return loginRedirectPromise;
+  }
+  const cleanup = clearClientCaches({ preserveSessionContext: false });
   try {
     window.location.assign('/login');
   } catch {
@@ -131,6 +136,11 @@ export async function redirectToLogin() {
       window.location.href = '/login';
     } catch {}
   }
+  loginRedirectPromise = Promise.race([
+    cleanup,
+    new Promise<void>((resolve) => setTimeout(resolve, 250)),
+  ]);
+  return loginRedirectPromise;
 }
 
 export async function redirectToLogout() {

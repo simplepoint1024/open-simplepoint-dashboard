@@ -2,7 +2,7 @@ import api from '@/api';
 import { DeleteOutlined, EyeOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { get, post } from '@simplepoint/shared/api/methods';
 import { useI18n } from '@simplepoint/shared/hooks/useI18n';
-import { Button, Card, Col, Descriptions, Empty, Form, Input, InputNumber, Modal, Row, Select, Space, Spin, Switch, Table, Tabs, Tag, Tree, Typography, message } from 'antd';
+import { App as AntApp, Button, Card, Col, Descriptions, Empty, Form, Input, InputNumber, Modal, Row, Select, Space, Spin, Switch, Table, Tabs, Tag, Tree, Typography } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -149,6 +149,7 @@ const splitCommaValues = (value?: string) => value?.split(',').map((item) => ite
 
 const App = () => {
   const { t, ensure, locale } = useI18n();
+  const { message } = AntApp.useApp();
   const [dataSources, setDataSources] = useState<JdbcDataSourceOption[]>([]);
   const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>();
   const [treeData, setTreeData] = useState<MetadataTreeNode[]>([]);
@@ -196,7 +197,7 @@ const App = () => {
     } catch (error) {
       message.error(resolveErrorMessage(error, t('dna.metadata.page.error.loadDataSources', 'Failed to load data sources.')));
     }
-  }, [selectedDataSourceId, t]);
+  }, [message, selectedDataSourceId, t]);
 
   const loadChildren = useCallback(async (path: PathSegment[]) => {
     if (!selectedDataSourceId) {
@@ -224,7 +225,7 @@ const App = () => {
     } finally {
       setTreeLoading(false);
     }
-  }, [loadChildren, selectedDataSourceId, t]);
+  }, [loadChildren, message, selectedDataSourceId, t]);
 
   useEffect(() => {
     void loadDataSources();
@@ -296,7 +297,7 @@ const App = () => {
     } finally {
       setDetailLoading(false);
     }
-  }, [selectedDataSourceId, t]);
+  }, [message, selectedDataSourceId, t]);
 
   const loadPreview = useCallback(async (path: PathSegment[], current = 1, pageSize = 20) => {
     if (!selectedDataSourceId) {
@@ -319,7 +320,7 @@ const App = () => {
     } finally {
       setPreviewLoading(false);
     }
-  }, [selectedDataSourceId, t]);
+  }, [message, selectedDataSourceId, t]);
 
   useEffect(() => {
     if (!relationPath) {
@@ -347,7 +348,7 @@ const App = () => {
     } catch (error) {
       message.error(resolveErrorMessage(error, t('dna.metadata.page.error.loadChildren', 'Failed to load child nodes.')));
     }
-  }, [loadChildren, t]);
+  }, [loadChildren, message, t]);
 
   const handleSelect = useCallback((keys: React.Key[]) => {
     setSelectedKeys(keys);
@@ -358,7 +359,7 @@ const App = () => {
   const handleRefresh = useCallback(async () => {
     await reloadRoot();
     message.success(t('dna.metadata.page.success.refresh', 'Metadata refreshed.'));
-  }, [reloadRoot, t]);
+  }, [message, reloadRoot, t]);
 
   const handlePreviewTableChange = useCallback((pagination: TablePaginationConfig) => {
     if (!relationPath) {
@@ -468,7 +469,7 @@ const App = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [metadataConfig.baseUrl, namespaceForm, reloadRoot, selectedDataSourceId, selectedNamespacePath, t]);
+  }, [message, metadataConfig.baseUrl, namespaceForm, reloadRoot, selectedDataSourceId, selectedNamespacePath, t]);
 
   const handleCreateTable = useCallback(async () => {
     if (!selectedDataSourceId || selectedNamespacePath == null) {
@@ -502,7 +503,7 @@ const App = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedNamespacePath, t, tableForm]);
+  }, [message, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedNamespacePath, t, tableForm]);
 
   const handleCreateView = useCallback(async () => {
     if (!selectedDataSourceId || selectedNamespacePath == null) {
@@ -525,7 +526,7 @@ const App = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedNamespacePath, t, viewForm]);
+  }, [message, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedNamespacePath, t, viewForm]);
 
   const handleSubmitColumn = useCallback(async () => {
     if (!selectedDataSourceId || !selectedTablePath) {
@@ -568,7 +569,7 @@ const App = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [columnForm, columnMode, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedTablePath, t]);
+  }, [columnForm, columnMode, message, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedTablePath, t]);
 
   const handleDropColumn = useCallback(async () => {
     if (!selectedDataSourceId || !selectedTablePath || selectedNode?.type !== 'COLUMN') {
@@ -588,7 +589,7 @@ const App = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedNode, selectedTablePath, t]);
+  }, [message, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedNode, selectedTablePath, t]);
 
   const handleAddConstraint = useCallback(async () => {
     if (!selectedDataSourceId || !selectedTablePath) {
@@ -631,7 +632,7 @@ const App = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [constraintForm, metadataConfig.baseUrl, reloadRoot, rootNamespaceType, selectedDataSourceId, selectedTablePath, t]);
+  }, [constraintForm, message, metadataConfig.baseUrl, reloadRoot, rootNamespaceType, selectedDataSourceId, selectedTablePath, t]);
 
   const handleDropConstraint = useCallback(async (record: ConstraintDefinition) => {
     if (!selectedDataSourceId || !selectedTablePath) {
@@ -651,7 +652,7 @@ const App = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedTablePath, t]);
+  }, [message, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedTablePath, t]);
 
   const handleDropObject = useCallback(async () => {
     if (!selectedDataSourceId || !selectedNode || selectedNode.type === 'COLUMN') {
@@ -670,7 +671,7 @@ const App = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedNode, t]);
+  }, [message, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedNode, t]);
 
   const dataSourceLabel = useCallback((item: JdbcDataSourceOption) => {
     const primary = item.name || item.code || item.id;

@@ -74,7 +74,7 @@ public class MessageExampleController {
 
 ## 5. 配置要点
 - 依赖：
-  - API 模块：`api(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))`
+  - API 模块：`api(project(":simplepoint-data-amqp-rpc"))`
   - Provider/Consumer：引入 `simplepoint-data-amqp-rpc`、Starter（Web/WebFlux）、Consul/LoadBalancer 视需要。
 - 队列命名：由 `@RemoteContract(name = "<queue>")` 指定；Provider 默认监听同名队列。
 - 序列化：基于框架默认序列化（遵循 DTO 的可序列化约束）。
@@ -84,11 +84,11 @@ public class MessageExampleController {
 1) 准备 AMQP Broker（如 RabbitMQ），并在配置中指向正确地址（参考 `simplepoint-data-amqp-rpc` 的默认配置项）。
 2) 启动 Provider：
 ```shell
-./gradlew :simplepoint-examples:simplepoint-amqprpc-examples:simplepoint-amqprpc-example-provider:bootRun
+./gradlew :simplepoint-amqprpc-example-provider:bootRun
 ```
 3) 启动 Consumer：
 ```shell
-./gradlew :simplepoint-examples:simplepoint-amqprpc-examples:simplepoint-amqprpc-example-consumer:bootRun
+./gradlew :simplepoint-amqprpc-example-consumer:bootRun
 ```
 4) 调用示例接口：
 ```shell
@@ -109,4 +109,3 @@ curl http://localhost:8080/message
 - 项目结构：`doc/architecture/project_structure_diagram.md`
 - 部署指南：`doc/deployment/`
 - 数据库/权限/API：`doc/database/`、`doc/resource/`、`doc/api/`
-

@@ -1,6 +1,16 @@
 import {contextPath} from "@/services";
 
 export default {
+  'platform.accounts': {
+    baseUrl: `${contextPath}/platform/accounts`,
+    i18nNamespaces: ['platform-accounts', 'table', 'common'],
+    name: 'platform.accounts',
+  },
+  'platform.account-audit': {
+    baseUrl: `${contextPath}/platform/accounts/audit`,
+    i18nNamespaces: ['platform-accounts', 'table', 'common'],
+    name: 'platform.account-audit',
+  },
   'oidc-clients': {
     baseUrl: `${contextPath}/oidc/clients`,
     i18nNamespaces: ['clients'],
@@ -23,7 +33,7 @@ export default {
   },
   'rbac-users':{
     baseUrl: `${contextPath}/users`,
-    i18nNamespaces: ['users','roles'],
+    i18nNamespaces: ['users','roles', 'platform-accounts'],
     name: 'users'
   },
   'rbac-access-center': {

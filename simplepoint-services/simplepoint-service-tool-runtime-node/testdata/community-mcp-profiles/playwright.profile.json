@@ -1,0 +1,59 @@
+{
+  "descriptorName": "io.github.microsoft/playwright-mcp",
+  "descriptorVersion": "sha256-3d871c22ea2d4cca",
+  "artifact": {
+    "source": "UPSTREAM_ORIGINAL",
+    "type": "OCI",
+    "reference": "mcr.microsoft.com/playwright/mcp@sha256:3d871c22ea2d4cca0966e2cfb1860e1cb03eb7353725a3d6cffd133296fb04eb"
+  },
+  "transport": {"type": "STDIO", "containerPort": null, "path": null},
+  "process": {
+    "entrypoint": [],
+    "command": [],
+    "arguments": ["--isolated", "--output-dir=/output"],
+    "workingDirectory": "/home/node",
+    "userMode": "IMAGE_DEFAULT"
+  },
+  "configuration": [],
+  "secrets": [],
+  "storage": [
+    {
+      "name": "shared-memory",
+      "type": "TMPFS",
+      "storageReference": null,
+      "targetPath": "/dev/shm",
+      "readOnly": false,
+      "sizeBytes": 268435456
+    },
+    {
+      "name": "browser-config",
+      "type": "TMPFS",
+      "storageReference": null,
+      "targetPath": "/home/node/.config",
+      "readOnly": false,
+      "sizeBytes": 16777216
+    },
+    {
+      "name": "browser-cache",
+      "type": "TMPFS",
+      "storageReference": null,
+      "targetPath": "/home/node/.cache",
+      "readOnly": false,
+      "sizeBytes": 67108864
+    },
+    {
+      "name": "browser-output",
+      "type": "EPHEMERAL",
+      "storageReference": "community-e2e-playwright-output",
+      "targetPath": "/output",
+      "readOnly": false,
+      "sizeBytes": 134217728
+    }
+  ],
+  "network": {
+    "mode": "INTERNAL_SERVICE",
+    "allowlist": ["site.mcp-e2e.local:80"]
+  },
+  "session": {"mode": "DEDICATED", "maxSessions": 1},
+  "sandbox": {"profile": "BROWSER", "limits": {"sharedMemoryBytes": 268435456}}
+}

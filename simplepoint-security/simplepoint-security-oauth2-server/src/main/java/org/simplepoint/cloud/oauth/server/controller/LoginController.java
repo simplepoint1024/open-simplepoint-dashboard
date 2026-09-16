@@ -33,8 +33,15 @@ public class LoginController {
    * @return the name of the login view
    */
   @GetMapping("/login")
-  public String login(final Model model) {
+  public String login(
+      final Model model,
+      @RequestParam(name = "gateway", defaultValue = "false") final boolean gateway
+  ) {
+    String prefix = gateway ? "/authorization" : "";
     model.addAttribute("identityProviders", providerService.enabledProviders());
+    model.addAttribute("loginAction", prefix + "/login");
+    model.addAttribute("providerAuthorizationPrefix", prefix + "/oauth2/authorization/");
+    model.addAttribute("registerUrl", prefix + "/register" + (gateway ? "?gateway=true" : ""));
     return "login";
   }
 

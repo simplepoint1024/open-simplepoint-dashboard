@@ -1,6 +1,4 @@
 {
-  "ai.common.disabled": "已禁用",
-  "ai.common.enabled": "已启用",
   "ai.knowledge-bases.button.documents": "文档管理",
   "ai.knowledge-bases.button.reindex": "重建",
   "ai.knowledge-bases.button.retrieve": "检索测试",
@@ -13,9 +11,16 @@
   "ai.knowledge-bases.documents.upload": "上传文档",
   "ai.knowledge-bases.entity.title": "AI 知识库",
   "ai.knowledge-bases.error.index": "文档索引失败",
+  "ai.knowledge-bases.error.addText": "文本文档新增失败，请检查内容后重试",
+  "ai.knowledge-bases.error.deleteDocument": "文档删除失败，请刷新后重试",
+  "ai.knowledge-bases.error.loadDocuments": "文档列表加载失败",
   "ai.knowledge-bases.error.loadModels": "可用 Embedding 模型加载失败",
+  "ai.knowledge-bases.error.reindex": "重新索引失败，请刷新后重试",
+  "ai.knowledge-bases.error.retrieve": "知识检索失败，请检查查询条件后重试",
+  "ai.knowledge-bases.error.upload": "文档上传失败，请检查文件后重试",
   "ai.knowledge-bases.mode.HYBRID": "混合检索",
   "ai.knowledge-bases.mode.KEYWORD": "关键词检索",
+  "ai.knowledge-bases.mode.UNKNOWN": "未知检索模式",
   "ai.knowledge-bases.mode.VECTOR": "向量检索",
   "ai.knowledge-bases.progress.reindex": "正在提交重新索引任务...",
   "ai.knowledge-bases.retrieve.content": "命中内容",
@@ -55,6 +60,10 @@
   "ai.knowledge-documents.status.PROCESSING": "处理中",
   "ai.knowledge-documents.status.READY": "就绪",
   "ai.knowledge-documents.status.REINDEXING": "重建中（旧索引可用）",
+  "ai.knowledge-documents.status.UNKNOWN": "状态未知",
+  "ai.knowledge-documents.source.TEXT": "文本录入",
+  "ai.knowledge-documents.source.UNKNOWN": "来源未知",
+  "ai.knowledge-documents.source.UPLOAD": "文件上传",
   "ai.knowledge-documents.status.REINDEX_FAILED": "重建失败（旧索引可用）",
   "ai.knowledge-documents.title.chunkCount": "分块数",
   "ai.knowledge-documents.title.errorMessage": "失败原因",
@@ -66,5 +75,7 @@
   "ai.knowledge-documents.title.processedAt": "处理时间",
   "ai.knowledge-documents.title.sourceType": "来源",
   "ai.knowledge-documents.title.storageObjectId": "存储对象 ID",
-  "ai.knowledge-documents.title.status": "状态"
+  "ai.knowledge-documents.title.status": "状态",
+  "ai.knowledge-documents.error.indexFailed": "文档索引失败，请检查文档内容和嵌入模型配置后重试",
+  "ai.knowledge-documents.error.unknown": "文档处理失败，请检查配置后重试"
 }

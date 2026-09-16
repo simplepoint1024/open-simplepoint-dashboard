@@ -111,7 +111,7 @@ target "postgres" {
 
 target "bootstrap" {
   inherits   = ["_oci"]
-  dockerfile = "docker/swarm/bootstrap/Dockerfile"
+  dockerfile = "docker/bootstrap/Dockerfile"
   tags       = [SIMPLEPOINT_BOOTSTRAP_IMAGE]
 }
 

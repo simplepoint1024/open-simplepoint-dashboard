@@ -3,10 +3,12 @@ package org.simplepoint.plugin.ai.catalog.api.service;
 import org.simplepoint.plugin.ai.catalog.api.entity.AiCatalogSyncState;
 import org.simplepoint.plugin.ai.catalog.api.model.AiCatalogImportRequest;
 import org.simplepoint.plugin.ai.catalog.api.model.AiCatalogPage;
+import org.simplepoint.plugin.ai.catalog.api.model.AiCatalogRuntimeImportRequest;
 import org.simplepoint.plugin.ai.catalog.api.model.AiCatalogSyncResult;
 import org.simplepoint.plugin.ai.catalog.api.model.CatalogPackageKind;
 import org.simplepoint.plugin.ai.catalog.api.model.CatalogSource;
 import org.simplepoint.plugin.ai.mcp.api.entity.AiMcpServerDefinition;
+import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpProfileImportResult;
 
 /**
  * Internal extension market and official MCP Registry facade.
@@ -40,5 +42,11 @@ public interface AiCatalogService {
   AiMcpServerDefinition importOfficialMcpServer(
       String entryId,
       AiCatalogImportRequest request
+  );
+
+  /** Imports one official package as an editable Runtime Profile draft. */
+  RuntimeMcpProfileImportResult importOfficialMcpPackage(
+      String entryId,
+      AiCatalogRuntimeImportRequest request
   );
 }

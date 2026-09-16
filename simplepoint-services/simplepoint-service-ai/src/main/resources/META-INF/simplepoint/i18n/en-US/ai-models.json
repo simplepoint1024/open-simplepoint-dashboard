@@ -1,9 +1,10 @@
 {
-  "ai.common.disabled": "Disabled",
-  "ai.common.enabled": "Enabled",
   "ai.models.entity.title": "AI Model",
+  "ai.models.error.operationFailed": "Model operation failed. Please try again later",
+  "ai.models.error.operationUnavailable": "This model operation is currently unavailable. Refresh and try again",
+  "ai.models.error.requestInvalid": "The model configuration is invalid. Check it and try again",
   "ai.models.page.available": "Available",
-  "ai.models.page.error.loadProviders": "Failed to load providers",
+  "ai.models.page.error.loadProviders": "Failed to load model access entries",
   "ai.models.page.unavailable": "Unavailable",
   "ai.models.title.available": "Available",
   "ai.models.title.billingEnabled": "Billing enabled",
@@ -17,8 +18,8 @@
   "ai.models.title.modelId": "Model ID",
   "ai.models.title.modelType": "Model type",
   "ai.models.title.ownedBy": "Owned by",
-  "ai.models.title.providerId": "Provider",
-  "ai.models.title.providerName": "Provider name",
+  "ai.models.title.providerId": "Model access",
+  "ai.models.title.providerName": "Access name",
   "ai.models.title.requestPrice": "Price per request",
   "ai.models.title.releasedAt": "Released at",
   "ai.models.title.scopeType": "Ownership scope",
@@ -29,6 +30,7 @@
   "ai.models.description.cachedInputTokenPrice": "Price per million cached input tokens. Blank uses the regular input price.",
   "ai.models.description.requestPrice": "Fixed price per successful invocation, added to token charges.",
   "ai.models.description.tokenPrice": "Price per 1,000,000 tokens with up to 8 decimal places.",
+  "ai.models.description.discoveryPricing": "Pricing is populated when the discovery API returns it. Manual edits are preserved by later synchronizations.",
   "ai.models.type.AUDIO": "Audio",
   "ai.models.type.EMBEDDING": "Embedding",
   "ai.models.type.IMAGE": "Image",
@@ -37,6 +39,5 @@
   "ai.models.type.MULTIMODAL": "Multimodal",
   "ai.models.type.OTHER": "Other",
   "ai.models.type.RERANK": "Rerank",
-  "ai.scope.SYSTEM": "System shared",
-  "ai.scope.TENANT": "Tenant private"
+  "ai.models.type.UNKNOWN": "Unknown model type"
 }

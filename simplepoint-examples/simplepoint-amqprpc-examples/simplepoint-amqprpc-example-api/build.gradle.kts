@@ -4,5 +4,5 @@ subprojects {
 
 dependencies {
     api(project(":simplepoint-remoting:simplepoint-remoting-core"))
-    api(project(":simplepoint-data:simplepoint-data-amqp:simplepoint-data-amqp-rpc"))
+    api(project(":simplepoint-data-amqp-rpc"))
 }

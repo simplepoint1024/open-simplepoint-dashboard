@@ -26,6 +26,28 @@ pnpm install --frozen-lockfile
 
 ## Daily commands
 
+### Workspace-scoped query caches
+
+`useData` and `usePage` from `@simplepoint/shared/api/methods` automatically
+partition query keys by the active tenant, role and authorization context.
+Their fetch callbacks receive the TanStack Query context; pass `signal` to
+`get(url, params, {signal})` so switching workspaces also aborts HTTP requests.
+
+For direct `useQuery` / `useQueries` calls on workspace data, read
+`useQueryScope()` and build options with `scopedQueryOptions(scope, key, fetchFn)`
+from `@simplepoint/shared/api/queryScope`. Use `scopedQueryKey(scope, key)` for
+`setQueryData` and `invalidateQueries` as well. Async save callbacks must capture
+the originating scope, not look up the currently selected scope after awaiting.
+
+The host cancels and removes previous-scope queries on scope changes, while
+unscoped session queries remain intact. Route views are remounted on scope
+changes to discard local state copied from old query results. This does not
+clear browser storage or change backend authorization rules.
+
+Run the regression suite with `pnpm test:query-scope`.
+
+### Common commands
+
 ```bash
 pnpm typecheck
 pnpm build

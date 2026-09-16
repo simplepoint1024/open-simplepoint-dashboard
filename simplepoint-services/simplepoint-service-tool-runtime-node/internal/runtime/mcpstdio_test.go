@@ -1,8 +1,41 @@
 package runtime
 
 import (
+	"strings"
 	"testing"
 )
+
+func TestValidateMCPMessageEnforcesVersionEnvelopeAndSize(t *testing.T) {
+	valid := []string{
+		`{"jsonrpc":"2.0","id":1,"method":"tools/list"}`,
+		`{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":1}}`,
+		`{"jsonrpc":"2.0","id":1,"result":null}`,
+		`{"jsonrpc":"2.0","id":1,"error":{"code":-32603,"message":"failed"}}`,
+	}
+	for _, message := range valid {
+		if _, err := validateMCPMessage([]byte(message), 1024); err != nil {
+			t.Fatalf("expected valid MCP message %s: %v", message, err)
+		}
+	}
+	invalid := []string{
+		`{"id":1,"method":"tools/list"}`,
+		`{"jsonrpc":"1.0","id":1,"method":"tools/list"}`,
+		`{"jsonrpc":"2.0","id":1}`,
+		`{"jsonrpc":"2.0","id":1,"method":"tools/list","result":{}}`,
+		`{"jsonrpc":"2.0","id":1,"result":{}} {"jsonrpc":"2.0","id":2,"result":{}}`,
+	}
+	for _, message := range invalid {
+		if _, err := validateMCPMessage([]byte(message), 1024); err == nil {
+			t.Fatalf("expected invalid MCP message %s to be rejected", message)
+		}
+	}
+	if _, err := validateMCPMessage(
+		[]byte(`{"jsonrpc":"2.0","id":1,"method":"`+strings.Repeat("x", 128)+`"}`),
+		64,
+	); err == nil {
+		t.Fatal("expected oversized MCP message to be rejected")
+	}
+}
 
 func TestMCPSessionTakeoverRequiresDisconnectedEventStream(t *testing.T) {
 	session := testMCPSession()

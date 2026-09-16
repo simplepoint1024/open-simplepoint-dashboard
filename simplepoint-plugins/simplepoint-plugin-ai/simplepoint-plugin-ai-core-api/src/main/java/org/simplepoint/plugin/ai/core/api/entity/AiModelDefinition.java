@@ -153,6 +153,11 @@ public class AiModelDefinition extends BaseEntityImpl<String> {
   @Schema(hidden = true)
   private Boolean typeAutoDetected;
 
+  @JsonIgnore
+  @Schema(hidden = true)
+  @Column(name = "pricing_auto_detected")
+  private Boolean pricingAutoDetected;
+
   @Schema(title = "i18n:ai.models.title.ownedBy", accessMode = Schema.AccessMode.READ_ONLY,
       maxLength = 256)
   @Column(length = 256)

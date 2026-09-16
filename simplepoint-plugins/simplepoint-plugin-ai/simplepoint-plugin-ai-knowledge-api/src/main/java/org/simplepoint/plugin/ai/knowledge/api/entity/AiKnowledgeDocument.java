@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.ai.knowledge.api.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,6 +19,7 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.knowledge.api.model.AiKnowledgeDocumentSourceType;
 import org.simplepoint.plugin.ai.knowledge.api.model.AiKnowledgeDocumentStatus;
+import org.simplepoint.plugin.ai.knowledge.api.model.AiKnowledgeErrorCodeSerializer;
 import org.springframework.core.annotation.Order;
 
 /**
@@ -125,6 +127,7 @@ public class AiKnowledgeDocument extends BaseEntityImpl<String> {
   private Instant processedAt;
 
   @Column(name = "error_message", length = 2048)
+  @JsonSerialize(using = AiKnowledgeErrorCodeSerializer.class)
   @Schema(title = "i18n:ai.knowledge-documents.title.errorMessage",
       accessMode = Schema.AccessMode.READ_ONLY)
   private String errorMessage;

@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.ai.runtime.api.service;
 
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeImageObservation;
+import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpProbeReport;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeWorkloadDispatchRequest;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeWorkloadObservation;
 
@@ -13,6 +14,14 @@ public interface AiRuntimeNodeOperations {
    * Pulls and verifies one content-addressed image without creating a workload.
    */
   RuntimeImageObservation prepare(String advertiseUrl, String image);
+
+  /**
+   * Starts a disposable workload and verifies its MCP protocol capabilities.
+   */
+  RuntimeMcpProbeReport probe(
+      String advertiseUrl,
+      RuntimeWorkloadDispatchRequest request
+  );
 
   /**
    * Creates or idempotently observes one fenced workload.

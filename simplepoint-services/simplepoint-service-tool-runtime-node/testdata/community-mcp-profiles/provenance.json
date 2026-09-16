@@ -1,0 +1,53 @@
+{
+  "resolvedAt": "2026-08-05T00:00:00Z",
+  "images": [
+    {
+      "id": "github",
+      "sourceTag": "ghcr.io/github/github-mcp-server:0.31.0",
+      "manifestDigest": "sha256:7b1384cdd6d025c09256af2fb6cb79bc5e87aedc957c8826b5e50d8cb82f0be3",
+      "sourceRepository": "https://github.com/github/github-mcp-server",
+      "sourceRevision": "dc3ee11f4c1c9541a2e918acfc7e20c8332c9a36",
+      "sourceKind": "UPSTREAM_ORIGINAL"
+    },
+    {
+      "id": "filesystem",
+      "sourceTag": "mcp/filesystem:1.0.2",
+      "manifestDigest": "sha256:7030b3d30ca1e662313e3e72cf60fbcd3fb16a337cfda12b59a167686eaa4dae",
+      "sourceRepository": "https://github.com/modelcontextprotocol/servers",
+      "sourceRevision": "b4ee623039a6c60053ce67269701ad9e95073306",
+      "sourceKind": "CATALOG_ORIGINAL"
+    },
+    {
+      "id": "git",
+      "sourceTag": "mcp/git:latest",
+      "manifestDigest": "sha256:ad6af958e79466a14b895891e772fdda28fdc12c06fff4a70637b66773303a2c",
+      "sourceRepository": "https://github.com/modelcontextprotocol/servers",
+      "sourceRevision": "b4ee623039a6c60053ce67269701ad9e95073306",
+      "sourceKind": "CATALOG_ORIGINAL"
+    },
+    {
+      "id": "postgresql",
+      "sourceTag": "bytebase/dbhub:0.24.0",
+      "manifestDigest": "sha256:098c16d168fc397c054396e604801e9dd9e138cd4e7aa8f865ac18dc53d3aa4e",
+      "sourceRepository": "https://github.com/bytebase/dbhub",
+      "sourceRevision": "0.24.0",
+      "sourceKind": "UPSTREAM_ORIGINAL"
+    },
+    {
+      "id": "dockerhub",
+      "sourceTag": "mcp/dockerhub:latest",
+      "manifestDigest": "sha256:76454af4edfd21571d9740113104d0d9f707220453d1c8f7c9971b21848d4248",
+      "sourceRepository": "https://github.com/docker/hub-mcp",
+      "sourceRevision": "ad806e2cab0489a296aec0f32f3d3eea807d65c2",
+      "sourceKind": "CATALOG_ORIGINAL"
+    },
+    {
+      "id": "playwright",
+      "sourceTag": "mcr.microsoft.com/playwright/mcp:latest",
+      "manifestDigest": "sha256:3d871c22ea2d4cca0966e2cfb1860e1cb03eb7353725a3d6cffd133296fb04eb",
+      "sourceRepository": "https://github.com/microsoft/playwright-mcp",
+      "sourceRevision": "image-2026-07-09",
+      "sourceKind": "UPSTREAM_ORIGINAL"
+    }
+  ]
+}

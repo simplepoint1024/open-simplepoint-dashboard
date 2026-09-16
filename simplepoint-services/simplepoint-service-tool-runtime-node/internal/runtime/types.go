@@ -13,10 +13,19 @@ const (
 	labelDeadline        = "io.simplepoint.tool-runtime.deadline"
 	labelMCPTransport    = "io.simplepoint.mcp.transport"
 	labelMCPProtocol     = "io.simplepoint.mcp.protocol-version"
+	labelMCPSessionMode  = "io.simplepoint.mcp.session-mode"
+	labelMCPMaxSessions  = "io.simplepoint.mcp.max-sessions"
+	labelMCPPort         = "io.simplepoint.mcp.container-port"
+	labelMCPPath         = "io.simplepoint.mcp.transport-path"
+	labelSandboxProfile  = "io.simplepoint.runtime.sandbox-profile"
+	labelManagedStorage  = "io.simplepoint.tool-runtime.managed-storage"
+	labelStorageInit     = "io.simplepoint.tool-runtime.storage-initializer"
 	labelOCIImageTitle   = "org.opencontainers.image.title"
 	networkNone          = "none"
 	networkBridge        = "bridge"
 	networkEgress        = "egress"
+	networkTCPEgress     = "tcp-egress"
+	networkInternal      = "internal-service"
 	defaultStopTimeout   = 10
 	minimumMemoryBytes   = 32 * 1024 * 1024
 	maximumCommandItems  = 128
@@ -27,27 +36,50 @@ const (
 
 // SecretFile is one short-lived file delivered by the trusted control plane.
 type SecretFile struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name              string `json:"name"`
+	Value             string `json:"value"`
+	TargetPath        string `json:"targetPath,omitempty"`
+	TargetEnvironment string `json:"targetEnvironment,omitempty"`
+}
+
+// StorageMount is one platform-resolved, non-host-bind workload mount.
+type StorageMount struct {
+	Type       string `json:"type"`
+	Source     string `json:"source,omitempty"`
+	TargetPath string `json:"targetPath"`
+	ReadOnly   bool   `json:"readOnly,omitempty"`
+	SizeBytes  int64  `json:"sizeBytes,omitempty"`
 }
 
 // StartRequest is the immutable workload envelope accepted from the scheduler.
 type StartRequest struct {
-	WorkloadID      string            `json:"workloadId"`
-	LeaseID         string            `json:"leaseId"`
-	FencingToken    int64             `json:"fencingToken"`
-	ExecutionID     string            `json:"executionId"`
-	TenantID        string            `json:"tenantId"`
-	Image           string            `json:"image"`
-	Command         []string          `json:"command,omitempty"`
-	Environment     map[string]string `json:"environment,omitempty"`
-	MemoryBytes     int64             `json:"memoryBytes,omitempty"`
-	NanoCPUs        int64             `json:"nanoCpus,omitempty"`
-	PidsLimit       int64             `json:"pidsLimit,omitempty"`
-	TimeoutSeconds  int64             `json:"timeoutSeconds,omitempty"`
-	NetworkMode     string            `json:"networkMode,omitempty"`
-	Secrets         []SecretFile      `json:"secrets,omitempty"`
-	EgressAllowlist []string          `json:"egressAllowlist,omitempty"`
+	WorkloadID                   string            `json:"workloadId"`
+	LeaseID                      string            `json:"leaseId"`
+	FencingToken                 int64             `json:"fencingToken"`
+	ExecutionID                  string            `json:"executionId"`
+	TenantID                     string            `json:"tenantId"`
+	Image                        string            `json:"image"`
+	Transport                    string            `json:"transport,omitempty"`
+	Entrypoint                   []string          `json:"entrypoint,omitempty"`
+	Command                      []string          `json:"command,omitempty"`
+	Arguments                    []string          `json:"arguments,omitempty"`
+	WorkingDirectory             string            `json:"workingDirectory,omitempty"`
+	Environment                  map[string]string `json:"environment,omitempty"`
+	SessionMode                  string            `json:"sessionMode,omitempty"`
+	MaxSessions                  int               `json:"maxSessions,omitempty"`
+	MemoryBytes                  int64             `json:"memoryBytes,omitempty"`
+	NanoCPUs                     int64             `json:"nanoCpus,omitempty"`
+	PidsLimit                    int64             `json:"pidsLimit,omitempty"`
+	TimeoutSeconds               int64             `json:"timeoutSeconds,omitempty"`
+	NetworkMode                  string            `json:"networkMode,omitempty"`
+	Secrets                      []SecretFile      `json:"secrets,omitempty"`
+	EgressAllowlist              []string          `json:"egressAllowlist,omitempty"`
+	Storage                      []StorageMount    `json:"storage,omitempty"`
+	ContainerPort                int               `json:"containerPort,omitempty"`
+	TransportPath                string            `json:"transportPath,omitempty"`
+	SandboxProfile               string            `json:"sandboxProfile,omitempty"`
+	ProcessUserMode              string            `json:"processUserMode,omitempty"`
+	StorageInitializationCommand []string          `json:"storageInitializationCommand,omitempty"`
 }
 
 // ImageStatus describes the content-addressed image selected for execution.

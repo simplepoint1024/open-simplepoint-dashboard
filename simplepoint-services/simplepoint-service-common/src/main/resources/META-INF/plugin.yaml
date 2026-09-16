@@ -1,0 +1,12 @@
+id: org.simplepoint.rbac.web
+name: RBAC Management REST
+version: "1.0"
+author: simplepoint
+description: RBAC core, router and tenant management endpoints hosted by Common
+dependencies:
+  - id: org.simplepoint.rbac.core.service
+  - id: org.simplepoint.rbac.router.service
+backend:
+  packageScan:
+    controller: org.simplepoint.plugin.rbac.core.rest.controller,org.simplepoint.plugin.rbac.resource.rest.endpoint,org.simplepoint.plugin.rbac.tenant.rest
+  instances: {}

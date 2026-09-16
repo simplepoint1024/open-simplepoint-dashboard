@@ -1,9 +1,11 @@
 import api from '@/api';
+import DataTable from '@simplepoint/components/DataTable';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import {get} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {
   Alert,
+  App,
   Button,
   Card,
   Col,
@@ -12,15 +14,22 @@ import {
   Space,
   Spin,
   Statistic,
-  Table,
   Tabs,
   Tag,
   Typography,
-  message,
 } from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import dayjs, {type Dayjs} from 'dayjs';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import {
+  localizeWorkbenchError,
+  resolveWorkbenchOperationError,
+} from '../workbenchErrorCodes';
+import {
+  invocationBillingStatusTag,
+  invocationOperationLabel,
+  invocationStatusTag,
+} from './labels';
 
 type CurrencySummary = {
   currency: string;
@@ -55,10 +64,9 @@ type BillingSummary = {
   models: ModelSummary[];
 };
 
-const resolveErrorMessage = (error: unknown, fallback: string) => {
-  if (error instanceof Error && error.message) return error.message;
-  if (typeof error === 'string' && error) return error;
-  return fallback;
+const billingQueryFallback = {
+  key: 'ai.billing.error.queryFailed',
+  fallback: '计费数据查询失败，请稍后重试',
 };
 
 const formatAmount = (value: string, currency: string, locale: string) => {
@@ -79,6 +87,7 @@ const formatAmount = (value: string, currency: string, locale: string) => {
 const Billing = () => {
   const config = api['ai-workbench.billing'];
   const {t, ensure, locale} = useI18n();
+  const {message} = App.useApp();
   const [activeTab, setActiveTab] = useState('summary');
   const [range, setRange] = useState<[Dayjs, Dayjs]>([
     dayjs().startOf('month'),
@@ -100,14 +109,14 @@ const Billing = () => {
       });
       setSummary(data);
     } catch (error) {
-      message.error(resolveErrorMessage(
-        error,
-        t('ai.billing.error.load', '模型计费数据加载失败'),
+      message.error(localizeWorkbenchError(
+        t,
+        resolveWorkbenchOperationError(error, billingQueryFallback),
       ));
     } finally {
       setLoading(false);
     }
-  }, [config.summaryUrl, range, t]);
+  }, [config.summaryUrl, message, range, t]);
 
   useEffect(() => {
     void load();
@@ -150,15 +159,14 @@ const Billing = () => {
   const invocationColumns = useMemo(() => ({
     status: {
       width: 120,
-      render: (value: string) => (
-        <Tag color={value === 'SUCCEEDED' ? 'green' : value === 'FAILED' ? 'red' : 'blue'}>
-          {t(`ai.invocations.status.${value}`, value || '-')}
-        </Tag>
-      ),
+      render: (value: string) => {
+        const status = invocationStatusTag(t, value);
+        return <Tag color={status.color}>{status.label}</Tag>;
+      },
     },
     operation: {
       width: 130,
-      render: (value: string) => t(`ai.invocations.operation.${value}`, value || '-'),
+      render: (value: string) => invocationOperationLabel(t, value),
     },
     modelId: {width: 260, ellipsis: true},
     durationMillis: {width: 130},
@@ -168,15 +176,8 @@ const Billing = () => {
     billingStatus: {
       width: 130,
       render: (value: string) => {
-        const color = value === 'CALCULATED' ? 'gold'
-          : value === 'UNPRICED' ? 'orange'
-            : value === 'NOT_CHARGED' ? 'default'
-              : 'blue';
-        return (
-          <Tag color={color}>
-            {t(`ai.invocations.billingStatus.${value}`, value || '-')}
-          </Tag>
-        );
+        const status = invocationBillingStatusTag(t, value);
+        return <Tag color={status.color}>{status.label}</Tag>;
       },
     },
     billingCurrency: {width: 100},
@@ -195,6 +196,7 @@ const Billing = () => {
         <Alert
           showIcon
           type="info"
+          closable
           message={t('ai.billing.notice.title', '费用按调用时价格快照计算')}
           description={t(
             'ai.billing.notice.description',
@@ -268,7 +270,7 @@ const Billing = () => {
           </Row>
         </Card>
         <Card title={t('ai.billing.table.title', '模型费用排行')}>
-          <Table<ModelSummary>
+          <DataTable<ModelSummary>
             columns={columns}
             dataSource={summary?.models ?? []}
             pagination={false}

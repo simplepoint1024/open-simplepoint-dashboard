@@ -50,7 +50,7 @@
 
 ## 第四阶段完成情况
 
-- [x] 已在共享 RabbitMQ 配置中开启 `publisher-returns`、`template.mandatory` 与保守的 `template.retry.*` 默认值，并同步到 swarm bootstrap 配置。
+- [x] 已在共享 RabbitMQ 配置中开启 `publisher-returns`、`template.mandatory` 与保守的 `template.retry.*` 默认值，并同步到容器 bootstrap 配置。
 - [x] RPC 客户端现在会将 broker 返回的 unroutable publish 转换为显式 `RemoteInvocationException`，不再退化为普通 `RuntimeException`。
 - [x] 已补 broker returned-message 场景回归测试。
 
@@ -66,7 +66,7 @@
 ## 第六阶段完成情况
 
 - [x] 不再尝试兼容遗留的 `headers` 类型 RPC exchange；运行时统一切换到新的 direct-only exchange 名称 `simplepoint.arpc.exchange.direct`。
-- [x] 共享 Consul / swarm bootstrap 配置已同步为新的 exchange 名，避免与 broker 中旧的 `simplepoint.arpc.exchange` 冲突。
+- [x] 共享 Consul / 容器 bootstrap 配置已同步为新的 exchange 名，避免与 broker 中旧的 `simplepoint.arpc.exchange` 冲突。
 - [x] 相关 RPC 测试断言已同步到新的 exchange 名称，旧 routing 兼容代码未保留。
 
 ## 第七阶段完成情况
@@ -86,8 +86,7 @@
 ## 本次优化范围
 
 - `simplepoint-data/simplepoint-data-amqp/simplepoint-data-amqp-rpc`
-- `infrastructure/consul/config/simplepoint/config/**/application.properties`
-- `docker/swarm/bootstrap/consul-config/simplepoint/config/**/application.properties`
+- `config/consul/{base,profiles/*}/simplepoint/config/**/application.properties`
 
 ## 验收关注点
 

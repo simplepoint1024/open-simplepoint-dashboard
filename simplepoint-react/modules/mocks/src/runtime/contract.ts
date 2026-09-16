@@ -1,12 +1,10 @@
 import type { HttpHandler } from 'msw';
 
 export type BackendModule =
-  | 'simplepoint-plugin-rbac-core-rest'
-  | 'simplepoint-plugin-rbac-tenant-rest'
-  | 'simplepoint-plugin-rbac-router-rest'
+  | 'simplepoint-service-common'
   | 'simplepoint-plugin-i18n-rest'
-  | 'simplepoint-plugin-auditing-logging-rest'
-  | 'simplepoint-plugin-auditing-redis-rest'
+  | 'simplepoint-plugin-auditing-logging-implementation'
+  | 'simplepoint-plugin-auditing-redis-implementation'
   | 'simplepoint-plugin-oidc-rest'
   | 'simplepoint-plugin-storage'
   | 'simplepoint-host';

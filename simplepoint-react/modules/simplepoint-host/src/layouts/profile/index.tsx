@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
+  App as AntdApp,
   Avatar,
   Button,
   Card,
@@ -11,7 +12,6 @@ import {
   Empty,
   Form,
   Input,
-  message,
   Row,
   Select,
   Skeleton,
@@ -23,6 +23,7 @@ import {
   EditOutlined,
   IdcardOutlined,
   LockOutlined,
+  LinkOutlined,
   ReloadOutlined,
   RightOutlined,
   SafetyCertificateOutlined,
@@ -33,6 +34,7 @@ import dayjs from 'dayjs';
 import {useQueryClient} from '@tanstack/react-query';
 import {OssImageUpload} from '@simplepoint/components/SForm/widgets/OssImageUpload';
 import {post, put} from '@simplepoint/shared/api/methods';
+import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@/layouts/i18n/useI18n.ts';
 import {type CurrentProfile, useCurrentProfile, useUserInfo} from '@/fetches/user.ts';
 import './index.css';
@@ -77,6 +79,7 @@ const toUpdatePayload = (values: ProfileFormValues) => ({
 });
 
 export const Profile: React.FC = () => {
+  const {message} = AntdApp.useApp();
   const {t, ensure, locale} = useI18n();
   const queryClient = useQueryClient();
   const {data, isLoading, refetch} = useCurrentProfile();
@@ -141,7 +144,7 @@ export const Profile: React.FC = () => {
       message.success(t('profile.saveSuccess', '个人资料已保存'));
     } catch (error: any) {
       if (error?.errorFields) return;
-      message.error(error?.message ?? t('profile.saveFailed', '个人资料保存失败'));
+      message.error(resolveApiErrorMessage(error, t('profile.saveFailed', '个人资料保存失败')));
     } finally {
       setSaving(false);
     }
@@ -157,6 +160,8 @@ export const Profile: React.FC = () => {
       });
       syncProfile(updated);
       message.success(t('profile.avatarSaved', '头像已更新'));
+    } catch (error: unknown) {
+      message.error(resolveApiErrorMessage(error, t('profile.avatarSaveFailed', '头像更新失败')));
     } finally {
       setAvatarSaving(false);
     }
@@ -177,7 +182,7 @@ export const Profile: React.FC = () => {
       pwdForm.resetFields();
     } catch (error: any) {
       if (error?.errorFields) return;
-      message.error(error?.message ?? t('profile.passwordChangeFailed', '密码修改失败'));
+      message.error(resolveApiErrorMessage(error, t('profile.passwordChangeFailed', '密码修改失败')));
     } finally {
       setPwdSaving(false);
     }
@@ -185,6 +190,12 @@ export const Profile: React.FC = () => {
 
   const openTwoFactorSettings = () => {
     const path = '/authorization/account/2fa?gateway=true';
+    const opened = window.open(path, '_blank', 'noopener,noreferrer');
+    if (!opened) window.location.assign(path);
+  };
+
+  const openExternalAccounts = () => {
+    const path = '/authorization/account/external-identities?gateway=true';
     const opened = window.open(path, '_blank', 'noopener,noreferrer');
     if (!opened) window.location.assign(path);
   };
@@ -285,6 +296,21 @@ export const Profile: React.FC = () => {
                 {data?.twoFactorEnabled
                   ? t('action.manageTwoFactor', '管理两步认证')
                   : t('action.enableTwoFactor', '开启两步认证')}
+              </Button>
+            </div>
+            <Divider className="profile-security-divider"/>
+            <div className="profile-security-row">
+              <div className="profile-security-icon external">
+                <LinkOutlined/>
+              </div>
+              <div className="profile-security-copy">
+                <Typography.Title level={5}>{t('profile.externalAccounts.title', '第三方账号绑定')}</Typography.Title>
+                <Typography.Paragraph>
+                  {t('profile.externalAccounts.description', '绑定 GitHub、Google 等身份提供商，用于安全快捷登录。')}
+                </Typography.Paragraph>
+              </div>
+              <Button type="link" icon={<RightOutlined/>} iconPosition="end" onClick={openExternalAccounts}>
+                {t('profile.externalAccounts.manage', '管理第三方账号')}
               </Button>
             </div>
           </Card>

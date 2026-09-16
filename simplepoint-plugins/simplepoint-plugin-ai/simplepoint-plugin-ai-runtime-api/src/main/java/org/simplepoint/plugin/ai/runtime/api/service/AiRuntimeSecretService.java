@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.runtime.api.entity.AiRuntimeSecret;
+import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpProfileSpec;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeSecretFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -58,6 +59,13 @@ public interface AiRuntimeSecretService {
    */
   List<RuntimeSecretFile> resolve(
       String referencesJson,
+      AiResourceScope scopeType,
+      String tenantId
+  );
+
+  /** Resolves Profile FILE and ENV_AT_EXEC bindings for one dispatch only. */
+  List<RuntimeSecretFile> resolveBindings(
+      List<RuntimeMcpProfileSpec.SecretBinding> bindings,
       AiResourceScope scopeType,
       String tenantId
   );

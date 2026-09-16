@@ -1,9 +1,10 @@
 {
-  "ai.common.disabled": "已禁用",
-  "ai.common.enabled": "已启用",
   "ai.models.entity.title": "AI 模型",
+  "ai.models.error.operationFailed": "模型操作失败，请稍后重试",
+  "ai.models.error.operationUnavailable": "当前模型操作暂不可用，请刷新后重试",
+  "ai.models.error.requestInvalid": "模型配置无效，请检查后重试",
   "ai.models.page.available": "可用",
-  "ai.models.page.error.loadProviders": "供应商列表加载失败",
+  "ai.models.page.error.loadProviders": "模型接入列表加载失败",
   "ai.models.page.unavailable": "不可用",
   "ai.models.title.available": "当前可用",
   "ai.models.title.billingEnabled": "启用计费",
@@ -17,8 +18,8 @@
   "ai.models.title.modelId": "模型 ID",
   "ai.models.title.modelType": "模型类型",
   "ai.models.title.ownedBy": "所有者",
-  "ai.models.title.providerId": "模型供应商",
-  "ai.models.title.providerName": "供应商名称",
+  "ai.models.title.providerId": "模型接入",
+  "ai.models.title.providerName": "接入名称",
   "ai.models.title.requestPrice": "单次请求价格",
   "ai.models.title.releasedAt": "发布时间",
   "ai.models.title.scopeType": "归属范围",
@@ -29,6 +30,7 @@
   "ai.models.description.cachedInputTokenPrice": "每百万缓存输入 Token 的价格；留空时按普通输入价格计费。",
   "ai.models.description.requestPrice": "每次成功调用的固定价格，可与 Token 价格叠加。",
   "ai.models.description.tokenPrice": "每 1,000,000 Token 的价格，最多 8 位小数。",
+  "ai.models.description.discoveryPricing": "发现接口返回价格时会自动填充；手工修改后，后续同步不会覆盖人工价格。",
   "ai.models.type.AUDIO": "音频",
   "ai.models.type.EMBEDDING": "向量嵌入",
   "ai.models.type.IMAGE": "图像",
@@ -37,6 +39,5 @@
   "ai.models.type.MULTIMODAL": "多模态",
   "ai.models.type.OTHER": "其他",
   "ai.models.type.RERANK": "重排序",
-  "ai.scope.SYSTEM": "系统共享",
-  "ai.scope.TENANT": "租户私有"
+  "ai.models.type.UNKNOWN": "未知模型类型"
 }

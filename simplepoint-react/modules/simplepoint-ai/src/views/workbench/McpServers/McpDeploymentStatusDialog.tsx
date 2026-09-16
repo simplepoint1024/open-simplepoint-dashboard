@@ -1,29 +1,31 @@
+import DataTable from '@simplepoint/components/DataTable';
 import {del, get, post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {
   Alert,
+  App,
   Button,
   Descriptions,
   Modal,
   Space,
   Steps,
-  Table,
   Tag,
   Typography,
-  message,
 } from 'antd';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {
   RuntimePool,
   RuntimeWorkload,
-} from '@/views/workbench/Runtime/types';
+} from './Runtime/types';
+import {runtimeErrorLabel, runtimeStatusLabel} from './Runtime/runtimeLabels';
 import {
   formatBytes,
   formatCpu,
   formatDateTime,
   resolveErrorMessage,
   statusColor,
-} from '@/views/workbench/Runtime/utils';
+} from './Runtime/utils';
+import {mcpServerErrorLabel} from './labels';
 
 const {Paragraph, Text} = Typography;
 
@@ -63,6 +65,7 @@ type McpDeploymentStatusDialogProps = {
   onClose: () => void;
   onEdit: (pool: RuntimePool) => void;
   onChanged: () => void;
+  onOpenCapabilities?: (serverId: string) => void;
   onDeleted: () => void;
 };
 
@@ -79,9 +82,11 @@ const McpDeploymentStatusDialog = ({
   onClose,
   onEdit,
   onChanged,
+  onOpenCapabilities,
   onDeleted,
 }: McpDeploymentStatusDialogProps) => {
   const {t} = useI18n();
+  const {message, modal} = App.useApp();
   const [currentServer, setCurrentServer] = useState(server);
   const [currentPool, setCurrentPool] = useState(pool);
   const [workloads, setWorkloads] = useState<RuntimeWorkload[]>([]);
@@ -114,7 +119,7 @@ const McpDeploymentStatusDialog = ({
     } finally {
       if (!quiet) setRefreshing(false);
     }
-  }, [open, pool.id, poolsUrl, server.id, serversUrl, t, workloadsUrl]);
+  }, [message, open, pool.id, poolsUrl, server.id, serversUrl, t, workloadsUrl]);
 
   useEffect(() => {
     if (!open) return;
@@ -155,7 +160,7 @@ const McpDeploymentStatusDialog = ({
     } finally {
       setDiscovering(false);
     }
-  }, [discovering, onChanged, refresh, server.id, serversUrl, t]);
+  }, [discovering, message, onChanged, refresh, server.id, serversUrl, t]);
 
   useEffect(() => {
     if (!open
@@ -203,7 +208,7 @@ const McpDeploymentStatusDialog = ({
     } finally {
       setOperating(false);
     }
-  }, [currentPool.id, onChanged, poolsUrl, refresh, t]);
+  }, [currentPool.id, message, onChanged, poolsUrl, refresh, t]);
 
   const remove = useCallback(async () => {
     setOperating(true);
@@ -226,7 +231,7 @@ const McpDeploymentStatusDialog = ({
     } finally {
       setOperating(false);
     }
-  }, [currentPool.id, onDeleted, poolsUrl, refresh, t]);
+  }, [currentPool.id, message, onDeleted, poolsUrl, refresh, t]);
 
   const activeWorkloads = useMemo(
     () => workloads.filter((item) => !terminalStatuses.has(item.status)),
@@ -240,9 +245,14 @@ const McpDeploymentStatusDialog = ({
   const canDelete = currentPool.status === 'DISABLED'
     && currentPool.currentReplicas === 0
     && activeWorkloads.length === 0;
+  const workloadError = activeWorkloads.find((item) => item.lastError)?.lastError;
   const errorMessage = currentPool.lastError
-    || currentServer.lastError
-    || activeWorkloads.find((item) => item.lastError)?.lastError;
+    ? runtimeErrorLabel(t, currentPool.lastError)
+    : currentServer.lastError
+      ? mcpServerErrorLabel(t, currentServer.lastError)
+      : workloadError
+        ? runtimeErrorLabel(t, workloadError)
+        : undefined;
 
   const stepStatus = (
     finished: boolean,
@@ -284,7 +294,7 @@ const McpDeploymentStatusDialog = ({
             <>
               <Button
                 loading={operating}
-                onClick={() => Modal.confirm({
+                onClick={() => modal.confirm({
                   title: t(
                     'ai.runtime.confirm.pool.redeploy',
                     '确认使用当前配置替换全部 Runtime 副本？',
@@ -297,7 +307,7 @@ const McpDeploymentStatusDialog = ({
               <Button
                 danger
                 loading={operating}
-                onClick={() => Modal.confirm({
+                onClick={() => modal.confirm({
                   title: t(
                     'ai.runtime.confirm.pool.disable',
                     '确认禁用并回收该 Pool 的全部副本？',
@@ -314,7 +324,7 @@ const McpDeploymentStatusDialog = ({
             danger
             disabled={!canDelete}
             loading={operating}
-            onClick={() => Modal.confirm({
+            onClick={() => modal.confirm({
               title: t(
                 'ai.runtime.confirm.pool.delete',
                 '确认删除该 Pool 和已结束的 Workload 记录？',
@@ -376,7 +386,7 @@ const McpDeploymentStatusDialog = ({
         items={[
           {
             key: 'server',
-            label: 'MCP Server',
+            label: t('ai.mcp-servers.entity.title', 'MCP Server'),
             children: currentServer.name || currentServer.code || currentServer.id,
           },
           {
@@ -385,7 +395,7 @@ const McpDeploymentStatusDialog = ({
             children: (
               <Space>
                 <Tag color={statusColor(currentPool.status)}>
-                  {currentPool.status}
+                  {runtimeStatusLabel(t, currentPool.status)}
                 </Tag>
                 <Text>{`${currentPool.readyReplicas}/${currentPool.currentReplicas} → ${currentPool.desiredReplicas}`}</Text>
               </Space>
@@ -414,7 +424,7 @@ const McpDeploymentStatusDialog = ({
           },
         ]}
       />
-      <Table
+      <DataTable
         rowKey="id"
         size="small"
         dataSource={workloads.slice().reverse().slice(0, 5)}
@@ -422,7 +432,7 @@ const McpDeploymentStatusDialog = ({
         style={{marginBottom: 20}}
         columns={[
           {
-            title: 'Workload',
+            title: t('ai.runtime.workload.entity', 'Workload'),
             dataIndex: 'runtimeWorkloadId',
             ellipsis: true,
             render: (value: string, item: RuntimeWorkload) => value || item.id,
@@ -437,7 +447,9 @@ const McpDeploymentStatusDialog = ({
             title: t('ai.runtime.field.status', '状态'),
             dataIndex: 'status',
             width: 110,
-            render: (value: string) => <Tag color={statusColor(value)}>{value}</Tag>,
+            render: (value: string) => (
+              <Tag color={statusColor(value)}>{runtimeStatusLabel(t, value)}</Tag>
+            ),
           },
           {
             title: t('ai.runtime.field.startedAt', '启动时间'),
@@ -459,12 +471,11 @@ const McpDeploymentStatusDialog = ({
                 ? t('ai.mcp.deployment.action.rediscover', '重新发现能力')
                 : t('ai.mcp.deployment.action.discover', '发现工具')}
             </Button>
-            {discovered && (
+            {discovered && onOpenCapabilities && (
               <Button
                 type="primary"
                 onClick={() => {
-                  onClose();
-                  window.location.hash = `/ai/workbench/tools?serverId=${encodeURIComponent(server.id)}`;
+                  onOpenCapabilities(server.id);
                 }}
               >
                 {t('ai.mcp.deployment.action.test', '打开工具测试')}
@@ -476,7 +487,7 @@ const McpDeploymentStatusDialog = ({
               <Text strong>
                 {t('ai.mcp.deployment.discoveredTools', '本次发现的工具')}
               </Text>
-              <Table
+              <DataTable
                 rowKey="name"
                 size="small"
                 dataSource={toolRows}

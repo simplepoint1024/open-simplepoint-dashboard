@@ -186,7 +186,7 @@ export default [
         type: {type: 'string', title: 'i18n:resources.title.type', description: 'i18n:resources.description.type', enum: ['GROUP', 'MODULE', 'PAGE', 'FEATURE', 'ACTION', 'API'], 'x-ui': {'x-list-visible': 'true'}},
         path: {type: ['string', 'null'], title: 'i18n:resources.title.path', description: 'i18n:resources.description.path', 'x-ui': {'x-list-visible': 'true'}},
         component: {type: ['string', 'null'], title: 'i18n:resources.title.component', description: 'i18n:resources.description.component', 'x-ui': {'x-list-visible': 'true'}},
-        routeKind: {type: ['string', 'null'], title: 'i18n:resources.title.routeKind', description: 'i18n:resources.description.routeKind', enum: ['item', 'submenu', 'group', 'divider']},
+        routeKind: {type: ['string', 'null'], title: 'i18n:resources.title.routeKind', description: 'i18n:resources.description.routeKind', enum: ['item', 'submenu', 'group', 'divider', 'hidden']},
         sort: {type: ['integer', 'null'], title: 'i18n:resources.title.sort', description: 'i18n:resources.description.sort', 'x-ui': {'x-list-visible': 'true'}},
         grantable: {type: 'boolean', title: 'i18n:resources.title.grantable', description: 'i18n:resources.description.grantable'},
         publicAccess: {type: 'boolean', title: 'i18n:resources.title.publicAccess', description: 'i18n:resources.description.publicAccess'},

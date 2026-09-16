@@ -1,9 +1,12 @@
 package org.simplepoint.plugin.ai.core.api.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.math.BigDecimal;
 import java.time.Instant;
 import org.simplepoint.plugin.ai.core.api.model.AiModelType;
+import org.simplepoint.plugin.ai.core.api.model.AiProviderMessageCode;
 import org.simplepoint.plugin.ai.core.api.model.AiProviderType;
+import org.simplepoint.plugin.ai.core.api.model.AiProviderVendor;
 
 /**
  * Value objects used by provider discovery and synchronization.
@@ -19,11 +22,10 @@ public final class AiProviderModels {
   public record ProviderConnection(
       String providerId,
       AiProviderType providerType,
+      AiProviderVendor vendor,
       String baseUrl,
+      String modelDiscoveryUrl,
       @JsonIgnore String apiKey,
-      String organizationId,
-      String projectId,
-      String apiVersion,
       boolean allowPrivateNetwork,
       int requestTimeoutSeconds
   ) {
@@ -38,8 +40,37 @@ public final class AiProviderModels {
       AiModelType modelType,
       String ownedBy,
       Instant releasedAt,
-      String metadataJson
+      String metadataJson,
+      DiscoveredPricing pricing
   ) {
+
+    /** Backward-compatible constructor for adapters without pricing metadata. */
+    public DiscoveredModel(
+        final String modelId,
+        final String displayName,
+        final AiModelType modelType,
+        final String ownedBy,
+        final Instant releasedAt,
+        final String metadataJson
+    ) {
+      this(modelId, displayName, modelType, ownedBy, releasedAt, metadataJson, null);
+    }
+  }
+
+  /** Pricing normalized to per-million-token and per-request units. */
+  public record DiscoveredPricing(
+      String currency,
+      BigDecimal inputTokenPrice,
+      BigDecimal cachedInputTokenPrice,
+      BigDecimal outputTokenPrice,
+      BigDecimal requestPrice
+  ) {
+
+    /** Returns whether at least one usable price was discovered. */
+    public boolean hasAnyPrice() {
+      return inputTokenPrice != null || cachedInputTokenPrice != null
+          || outputTokenPrice != null || requestPrice != null;
+    }
   }
 
   /**
@@ -50,7 +81,7 @@ public final class AiProviderModels {
       boolean success,
       int discoveredModelCount,
       Instant testedAt,
-      String message
+      AiProviderMessageCode messageCode
   ) {
   }
 

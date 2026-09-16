@@ -1,10 +1,14 @@
 package org.simplepoint.plugin.ai.agent.api.service;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.simplepoint.plugin.ai.agent.api.entity.AiAgentDefinition;
 import org.simplepoint.plugin.ai.agent.api.entity.AiAgentVersion;
 import org.simplepoint.plugin.ai.agent.api.model.AgentUpsertRequest;
 import org.simplepoint.plugin.ai.agent.api.model.AgentVersionCreateRequest;
+import org.simplepoint.plugin.ai.core.api.model.AiDependencyKind;
+import org.simplepoint.plugin.ai.core.api.model.AiDependencyOption;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -47,6 +51,26 @@ public interface AiAgentService {
    * Finds one immutable Agent version.
    */
   Optional<AiAgentVersion> findVersion(String agentId, String versionId);
+
+  /**
+   * Searches selectable model or Skill dependencies for one Agent.
+   */
+  Page<AiDependencyOption> findDependencyOptions(
+      String agentId,
+      AiDependencyKind kind,
+      String query,
+      int page,
+      int size
+  );
+
+  /**
+   * Resolves current and historical model or Skill dependency labels.
+   */
+  List<AiDependencyOption> resolveDependencyOptions(
+      String agentId,
+      AiDependencyKind kind,
+      Collection<String> optionIds
+  );
 
   /**
    * Creates and pins one immutable Agent version.

@@ -1,0 +1,31 @@
+{
+  "descriptorName": "io.modelcontextprotocol/filesystem",
+  "descriptorVersion": "1.0.2",
+  "artifact": {
+    "source": "CATALOG_ORIGINAL",
+    "type": "OCI",
+    "reference": "mcp/filesystem@sha256:7030b3d30ca1e662313e3e72cf60fbcd3fb16a337cfda12b59a167686eaa4dae"
+  },
+  "transport": {"type": "STDIO", "containerPort": null, "path": null},
+  "process": {
+    "entrypoint": [],
+    "command": [],
+    "arguments": ["/workspace"],
+    "workingDirectory": "/workspace"
+  },
+  "configuration": [],
+  "secrets": [],
+  "storage": [
+    {
+      "name": "workspace",
+      "type": "WORKSPACE_RW",
+      "storageReference": "community-e2e-filesystem",
+      "targetPath": "/workspace",
+      "readOnly": false,
+      "sizeBytes": null
+    }
+  ],
+  "network": {"mode": "NONE", "allowlist": []},
+  "session": {"mode": "DEDICATED", "maxSessions": 1},
+  "sandbox": {"profile": "WORKSPACE", "limits": {}}
+}

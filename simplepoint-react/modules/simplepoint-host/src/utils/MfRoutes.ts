@@ -74,9 +74,12 @@ export function flattenLeafRoutes(nodes: ResourceRouteNode[] = []): ResourceRout
     const dfs = (arr: ResourceRouteNode[]) => {
         arr.forEach((n) => {
             const children = n.children as ResourceRouteNode[] | undefined;
+            if (n.path && n.component) {
+                res.push(n);
+            }
             if (Array.isArray(children) && children.length > 0) {
                 dfs(children);
-            } else {
+            } else if (!n.path || !n.component) {
                 res.push(n);
             }
         });

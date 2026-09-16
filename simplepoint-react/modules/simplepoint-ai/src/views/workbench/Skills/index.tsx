@@ -1,8 +1,15 @@
 import api from '@/api';
+import DataTable from '@simplepoint/components/DataTable';
+import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {del, get, post, put} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {Page} from '@simplepoint/shared/types/request';
+import SchemaExecutionForm, {
+  inputSchemaFromManifest,
+  type ExecutionInput,
+} from '../components/SchemaExecutionForm';
 import {
+  App,
   Alert,
   Button,
   Card,
@@ -13,12 +20,17 @@ import {
   Modal,
   Space,
   Switch,
-  Table,
   Tag,
   Typography,
-  message,
 } from 'antd';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useNavigate} from 'react-router';
+import {
+  skillDebugExecutionStatusLabel,
+  skillDebugNodeStatusLabel,
+  skillLifecycleStatusLabel,
+  skillStepTypeLabel,
+} from './Designer/labels';
 
 const {Paragraph, Text} = Typography;
 const {TextArea} = Input;
@@ -176,18 +188,24 @@ type VersionFormValues = {
   manifest: string;
 };
 
+type SkillManagedRegistryStatus = {
+  configured: boolean;
+  registry: string;
+  repositoryPrefix: string;
+  secureTransport: boolean;
+  authenticationConfigured: boolean;
+  signatureRequired: boolean;
+  connected?: boolean | null;
+  checkedAt?: string | null;
+  message: string;
+};
+
 type ExecutionAction = 'approve' | 'reject' | 'pause';
 
 type ExecutionActionState = {
   action: ExecutionAction;
   skill: SkillDefinition;
   execution: SkillExecution;
-};
-
-const resolveErrorMessage = (error: unknown, fallback: string) => {
-  if (error instanceof Error && error.message) return error.message;
-  if (typeof error === 'string' && error) return error;
-  return fallback;
 };
 
 const defaultManifest = (code: string, version: string) => JSON.stringify({
@@ -303,6 +321,8 @@ const summarizeWorkflow = (manifest?: Record<string, unknown>) => {
 const Skills = () => {
   const config = api['ai-workbench.skills'];
   const {t, ensure, locale} = useI18n();
+  const {message, modal} = App.useApp();
+  const navigate = useNavigate();
   const [form] = Form.useForm<SkillFormValues>();
   const [versionForm] = Form.useForm<VersionFormValues>();
   const [skills, setSkills] = useState<SkillDefinition[]>([]);
@@ -314,9 +334,15 @@ const Skills = () => {
   const [skillDialogOpen, setSkillDialogOpen] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<SkillDefinition>();
   const [versionDialogOpen, setVersionDialogOpen] = useState(false);
+  const [managedRegistry, setManagedRegistry] =
+    useState<SkillManagedRegistryStatus>();
+  const [managedRegistryLoading, setManagedRegistryLoading] = useState(false);
+  const [managedRegistryChecking, setManagedRegistryChecking] = useState(false);
   const [inspectingVersion, setInspectingVersion] = useState<SkillVersion>();
   const [executionSkill, setExecutionSkill] = useState<SkillDefinition>();
-  const [executionInput, setExecutionInput] = useState('{}');
+  const [executionInputSchema, setExecutionInputSchema] =
+    useState<Record<string, unknown>>();
+  const [executionSchemaLoading, setExecutionSchemaLoading] = useState(false);
   const [executionSubmitting, setExecutionSubmitting] = useState(false);
   const [executionHistorySkill, setExecutionHistorySkill] = useState<SkillDefinition>();
   const [executionHistory, setExecutionHistory] = useState<SkillExecution[]>([]);
@@ -325,6 +351,7 @@ const Skills = () => {
   const [executionAction, setExecutionAction] = useState<ExecutionActionState>();
   const [executionActionComment, setExecutionActionComment] = useState('');
   const [executionActionSubmitting, setExecutionActionSubmitting] = useState(false);
+  const versionRequestSequence = useRef(0);
 
   useEffect(() => {
     void ensure(config.i18nNamespaces);
@@ -342,18 +369,20 @@ const Skills = () => {
         ? (page.content ?? []).find((skill) => skill.id === current.id)
         : undefined);
     } catch (error) {
-      message.error(resolveErrorMessage(
+      message.error(resolveApiErrorMessage(
         error,
         t('ai.skills.error.load', 'Skill 列表加载失败'),
       ));
     } finally {
       setLoading(false);
     }
-  }, [config.baseUrl, t]);
+  }, [config.baseUrl, message, t]);
 
   const loadVersions = useCallback(async (skill?: SkillDefinition) => {
+    const requestSequence = ++versionRequestSequence.current;
     if (!skill) {
       setVersions([]);
+      setVersionLoading(false);
       return;
     }
     setVersionLoading(true);
@@ -362,17 +391,23 @@ const Skills = () => {
         `${config.baseUrl}/${skill.id}/versions`,
         {page: 0, size: 500, sort: 'createdAt,desc'},
       );
-      setVersions(page.content ?? []);
+      if (requestSequence === versionRequestSequence.current) {
+        setVersions(page.content ?? []);
+      }
     } catch (error) {
-      setVersions([]);
-      message.error(resolveErrorMessage(
-        error,
-        t('ai.skills.error.loadVersions', 'Skill 版本加载失败'),
-      ));
+      if (requestSequence === versionRequestSequence.current) {
+        setVersions([]);
+        message.error(resolveApiErrorMessage(
+          error,
+          t('ai.skills.error.loadVersions', 'Skill 版本加载失败'),
+        ));
+      }
     } finally {
-      setVersionLoading(false);
+      if (requestSequence === versionRequestSequence.current) {
+        setVersionLoading(false);
+      }
     }
-  }, [config.baseUrl, t]);
+  }, [config.baseUrl, message, t]);
 
   useEffect(() => {
     void loadSkills();
@@ -425,7 +460,7 @@ const Skills = () => {
       setSkillDialogOpen(false);
       await loadSkills();
     } catch (error) {
-      message.error(resolveErrorMessage(
+      message.error(resolveApiErrorMessage(
         error,
         t('ai.skills.error.save', 'Skill 保存失败'),
       ));
@@ -435,7 +470,7 @@ const Skills = () => {
   };
 
   const removeSkill = (skill: SkillDefinition) => {
-    Modal.confirm({
+    modal.confirm({
       title: t('ai.skills.delete.title', '删除 Skill？'),
       content: t(
         'ai.skills.delete.description',
@@ -449,13 +484,53 @@ const Skills = () => {
           if (selectedSkill?.id === skill.id) setSelectedSkill(undefined);
           await loadSkills();
         } catch (error) {
-          message.error(resolveErrorMessage(
+          message.error(resolveApiErrorMessage(
             error,
             t('ai.skills.error.delete', 'Skill 删除失败'),
           ));
         }
       },
     });
+  };
+
+  const loadManagedRegistry = async () => {
+    setManagedRegistryLoading(true);
+    try {
+      setManagedRegistry(await get<SkillManagedRegistryStatus>(
+        config.registryUrl,
+        {},
+      ));
+    } catch (error) {
+      setManagedRegistry(undefined);
+      message.error(resolveApiErrorMessage(
+        error,
+        t('ai.skills.registry.error.load', '托管 Registry 配置加载失败'),
+      ));
+    } finally {
+      setManagedRegistryLoading(false);
+    }
+  };
+
+  const checkManagedRegistry = async () => {
+    setManagedRegistryChecking(true);
+    try {
+      const status = await post<SkillManagedRegistryStatus>(
+        `${config.registryUrl}/connectivity-check`,
+        {},
+      );
+      setManagedRegistry(status);
+      message.success(t(
+        'ai.skills.registry.message.connected',
+        '托管 Registry 连接成功',
+      ));
+    } catch (error) {
+      message.error(resolveApiErrorMessage(
+        error,
+        t('ai.skills.registry.error.connectivity', '托管 Registry 连接失败'),
+      ));
+    } finally {
+      setManagedRegistryChecking(false);
+    }
   };
 
   const openVersionCreate = () => {
@@ -468,6 +543,7 @@ const Skills = () => {
       manifest: defaultManifest(selectedSkill.code, version),
     });
     setVersionDialogOpen(true);
+    void loadManagedRegistry();
   };
 
   const saveVersion = async () => {
@@ -501,7 +577,7 @@ const Skills = () => {
       setVersionDialogOpen(false);
       await loadVersions(selectedSkill);
     } catch (error) {
-      message.error(resolveErrorMessage(
+      message.error(resolveApiErrorMessage(
         error,
         t('ai.skills.error.createVersion', 'Skill 版本创建失败'),
       ));
@@ -525,7 +601,7 @@ const Skills = () => {
         : t('ai.skills.message.deprecated', 'Skill 版本已废弃'));
       await Promise.all([loadVersions(selectedSkill), loadSkills()]);
     } catch (error) {
-      message.error(resolveErrorMessage(
+      message.error(resolveApiErrorMessage(
         error,
         t('ai.skills.error.changeStatus', '版本状态变更失败'),
       ));
@@ -541,18 +617,40 @@ const Skills = () => {
       );
       setExecutionHistory(page.content ?? []);
     } catch (error) {
-      message.error(resolveErrorMessage(
+      message.error(resolveApiErrorMessage(
         error,
         t('ai.skills.error.loadExecutions', 'Skill 执行记录加载失败'),
       ));
     } finally {
       setExecutionHistoryLoading(false);
     }
-  }, [config.baseUrl, t]);
+  }, [config.baseUrl, message, t]);
 
-  const openExecution = (skill: SkillDefinition) => {
+  const openExecution = async (skill: SkillDefinition) => {
+    if (!skill.activeVersionId) {
+      message.warning(t(
+        'ai.skills.execution.noActiveVersion',
+        '请先发布并激活一个 Skill 版本',
+      ));
+      return;
+    }
     setExecutionSkill(skill);
-    setExecutionInput('{}');
+    setExecutionInputSchema(undefined);
+    setExecutionSchemaLoading(true);
+    try {
+      const version = await get<SkillVersion>(
+        `${config.baseUrl}/${skill.id}/versions/${skill.activeVersionId}`,
+      );
+      setExecutionInputSchema(inputSchemaFromManifest(version.manifest));
+    } catch (error) {
+      setExecutionSkill(undefined);
+      message.error(resolveApiErrorMessage(
+        error,
+        t('ai.skills.error.loadExecutionSchema', 'Skill 输入 Schema 加载失败'),
+      ));
+    } finally {
+      setExecutionSchemaLoading(false);
+    }
   };
 
   const openExecutionHistory = (skill: SkillDefinition) => {
@@ -625,7 +723,7 @@ const Skills = () => {
         void watchExecution(skill, updated, ['RUNNING']);
       }
     } catch (error) {
-      message.error(resolveErrorMessage(
+      message.error(resolveApiErrorMessage(
         error,
         t('ai.skills.error.controlExecution', '执行状态变更失败'),
       ));
@@ -649,31 +747,24 @@ const Skills = () => {
         void watchExecution(skill, updated, ['PENDING', 'RUNNING']);
       }
     } catch (error) {
-      message.error(resolveErrorMessage(
+      message.error(resolveApiErrorMessage(
         error,
         t('ai.skills.error.controlExecution', '执行状态变更失败'),
       ));
     }
   };
 
-  const runSkill = async () => {
+  const runSkill = async (input: ExecutionInput) => {
     if (!executionSkill) return;
-    let input: Record<string, unknown>;
-    try {
-      const decoded: unknown = JSON.parse(executionInput);
-      if (!decoded || Array.isArray(decoded) || typeof decoded !== 'object') {
-        throw new Error('not object');
-      }
-      input = decoded as Record<string, unknown>;
-    } catch {
-      message.error(t('ai.skills.execution.inputInvalid', '执行输入必须是 JSON 对象'));
-      return;
-    }
     setExecutionSubmitting(true);
     try {
       let execution = await post<SkillExecution>(
         `${config.baseUrl}/${executionSkill.id}/executions`,
-        {idempotencyKey: crypto.randomUUID(), input},
+        {
+          idempotencyKey: globalThis.crypto?.randomUUID?.()
+            ?? `${Date.now()}-${Math.random()}`,
+          input,
+        },
       );
       setExecutionDetails(execution);
       setExecutionSkill(undefined);
@@ -688,7 +779,7 @@ const Skills = () => {
           ? t('ai.skills.execution.failed', 'Skill 执行失败')
           : t('ai.skills.execution.submitted', 'Skill 已提交执行'));
     } catch (error) {
-      message.error(resolveErrorMessage(
+      message.error(resolveApiErrorMessage(
         error,
         t('ai.skills.error.execute', 'Skill 执行提交失败'),
       ));
@@ -719,7 +810,11 @@ const Skills = () => {
       dataIndex: 'scopeType',
       width: 100,
       render: (value: SkillDefinition['scopeType']) => (
-        <Tag color={value === 'TENANT' ? 'blue' : 'purple'}>{value}</Tag>
+        <Tag color={value === 'TENANT' ? 'blue' : 'purple'}>
+          {value === 'TENANT'
+            ? t('ai.skills.scope.tenant', '租户私有')
+            : t('ai.skills.scope.system', '系统共享')}
+        </Tag>
       ),
     },
     {
@@ -727,18 +822,20 @@ const Skills = () => {
       dataIndex: 'status',
       width: 100,
       render: (value: SkillDefinition['status']) => (
-        <Tag color={skillStatusColor(value)}>{value}</Tag>
+        <Tag color={skillStatusColor(value)}>
+          {skillLifecycleStatusLabel(t, value)}
+        </Tag>
       ),
     },
     {
       title: t('ai.skills.column.action', '操作'),
       key: 'action',
-      width: 360,
+      width: 440,
       fixed: 'right' as const,
       render: (_: unknown, skill: SkillDefinition) => (
         <Space size={4}>
           {skill.status === 'ACTIVE' && (
-            <Button type="link" onClick={() => openExecution(skill)}>
+            <Button type="link" onClick={() => void openExecution(skill)}>
               {t('ai.skills.action.execute', '执行')}
             </Button>
           )}
@@ -747,6 +844,12 @@ const Skills = () => {
           </Button>
           <Button type="link" onClick={() => setSelectedSkill(skill)}>
             {t('ai.skills.action.versions', '版本')}
+          </Button>
+          <Button
+            type="link"
+            onClick={() => navigate(`/ai/workbench/skill-designer?skillId=${encodeURIComponent(skill.id)}`)}
+          >
+            {t('ai.skills.action.designer', '可视化设计')}
           </Button>
           <Button type="link" onClick={() => openEdit(skill)}>
             {t('ai.skills.action.edit', '编辑')}
@@ -757,7 +860,7 @@ const Skills = () => {
         </Space>
       ),
     },
-  ], [t]);
+  ], [navigate, t]);
 
   const executionColumns = useMemo(() => [
     {
@@ -771,7 +874,9 @@ const Skills = () => {
       dataIndex: 'status',
       width: 110,
       render: (value: SkillExecution['status']) => (
-        <Tag color={executionStatusColor(value)}>{value}</Tag>
+        <Tag color={executionStatusColor(value)}>
+          {skillDebugExecutionStatusLabel(t, value)}
+        </Tag>
       ),
     },
     {
@@ -870,7 +975,7 @@ const Skills = () => {
           prompt: 'purple',
           resource: 'cyan',
         }[value]}>
-          {value.toUpperCase()}
+          {skillStepTypeLabel(t, value)}
         </Tag>
       ),
     },
@@ -882,7 +987,7 @@ const Skills = () => {
         <Text code>
           {step?.capabilityAlias ? `${step.capabilityAlias} → ` : ''}
           {value ?? '-'}
-          {step?.capabilityTemplate ? ' (template)' : ''}
+          {step?.capabilityTemplate ? t('ai.skills.capability.templateSuffix', '（模板）') : ''}
         </Text>
       ),
     },
@@ -898,7 +1003,7 @@ const Skills = () => {
             : value === 'SKIPPED'
               ? 'default'
               : 'blue'}>
-          {value}
+          {skillDebugNodeStatusLabel(t, value)}
         </Tag>
       ),
     },
@@ -957,17 +1062,28 @@ const Skills = () => {
       dataIndex: 'status',
       width: 110,
       render: (value: SkillVersion['status']) => (
-        <Tag color={versionStatusColor(value)}>{value}</Tag>
+        <Tag color={versionStatusColor(value)}>
+          {skillLifecycleStatusLabel(t, value)}
+        </Tag>
       ),
     },
     {
       title: t('ai.skills.column.action', '操作'),
       key: 'action',
-      width: 210,
+      width: 270,
       render: (_: unknown, version: SkillVersion) => (
         <Space size={2}>
           <Button type="link" onClick={() => setInspectingVersion(version)}>
             {t('ai.skills.action.inspect', '查看')}
+          </Button>
+          <Button
+            type="link"
+            disabled={!selectedSkill}
+            onClick={() => selectedSkill && navigate(
+              `/ai/workbench/skill-designer?skillId=${encodeURIComponent(selectedSkill.id)}&versionId=${encodeURIComponent(version.id)}`,
+            )}
+          >
+            {t('ai.skills.action.visualize', '设计图')}
           </Button>
           {version.status === 'DRAFT' && (
             <Button type="link" onClick={() => void changeVersionStatus(version, 'publish')}>
@@ -982,7 +1098,7 @@ const Skills = () => {
         </Space>
       ),
     },
-  ], [selectedSkill, t]);
+  ], [navigate, selectedSkill, t]);
 
   const executionDetailsSkill = executionDetails
     ? skills.find((skill) => skill.id === executionDetails.skillId)
@@ -1003,6 +1119,7 @@ const Skills = () => {
       <Alert
         showIcon
         type="info"
+        closable
         message={t('ai.skills.notice.title', '声明式 Skill Registry')}
         description={t(
           'ai.skills.notice.description',
@@ -1024,7 +1141,7 @@ const Skills = () => {
           </Space>
         )}
       >
-        <Table
+        <DataTable
           rowKey="id"
           loading={loading}
           dataSource={skills}
@@ -1089,7 +1206,7 @@ const Skills = () => {
         )}
         onClose={() => setSelectedSkill(undefined)}
       >
-        <Table
+        <DataTable
           rowKey="id"
           size="small"
           loading={versionLoading}
@@ -1108,6 +1225,47 @@ const Skills = () => {
         onOk={() => void saveVersion()}
         onCancel={() => setVersionDialogOpen(false)}
       >
+        <Alert
+          showIcon
+          type={managedRegistry?.configured ? 'info' : 'warning'}
+          style={{marginBottom: 16}}
+          message={managedRegistry?.configured
+            ? t('ai.skills.registry.configured', '托管 Registry 已配置')
+            : t('ai.skills.registry.notConfigured', '托管 Registry 尚未配置')}
+          description={managedRegistryLoading
+            ? t('ai.skills.registry.loading', '正在读取服务端发布配置…')
+            : managedRegistry?.configured
+              ? t(
+                'ai.skills.registry.summary',
+                '{registry}/{prefix} · {transport} · {authentication} · {signature}',
+                {
+                  registry: managedRegistry.registry,
+                  prefix: managedRegistry.repositoryPrefix,
+                  transport: managedRegistry.secureTransport ? 'TLS' : 'HTTP',
+                  authentication: managedRegistry.authenticationConfigured
+                    ? t('ai.skills.registry.auth.configured', '服务端凭据已配置')
+                    : t('ai.skills.registry.auth.anonymous', '匿名访问'),
+                  signature: managedRegistry.signatureRequired
+                    ? t('ai.skills.registry.signature.required', '要求签名')
+                    : t('ai.skills.registry.signature.optional', '签名可选'),
+                },
+              )
+              : t(
+                'ai.skills.registry.notConfiguredDescription',
+                '可继续使用下方外部 OCI 导入；设计器一键发布需由平台管理员配置托管 Registry。',
+              )}
+          action={managedRegistry?.configured ? (
+            <Button
+              size="small"
+              loading={managedRegistryChecking}
+              onClick={() => void checkManagedRegistry()}
+            >
+              {managedRegistry?.connected
+                ? t('ai.skills.registry.recheck', '重新检查')
+                : t('ai.skills.registry.check', '检查连接')}
+            </Button>
+          ) : undefined}
+        />
         <Alert
           showIcon
           type="warning"
@@ -1165,11 +1323,26 @@ const Skills = () => {
       >
         {inspectingVersion && (
           <>
+            <Space style={{marginBottom: 16}}>
+              <Button
+                type="primary"
+                disabled={!selectedSkill}
+                onClick={() => {
+                  if (!selectedSkill) return;
+                  setInspectingVersion(undefined);
+                  navigate(
+                    `/ai/workbench/skill-designer?skillId=${encodeURIComponent(selectedSkill.id)}&versionId=${encodeURIComponent(inspectingVersion.id)}`,
+                  );
+                }}
+              >
+                {t('ai.skills.action.visualize', '查看只读设计图')}
+              </Button>
+            </Space>
             <Descriptions bordered size="small" column={1}>
-              <Descriptions.Item label="Artifact">
+              <Descriptions.Item label={t('ai.skills.column.artifact', 'OCI 制品')}>
                 <Text copyable>{inspectingVersion.artifactReference}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label="Digest">
+              <Descriptions.Item label={t('ai.skills.field.artifactDigest', 'OCI Manifest Digest')}>
                 <Text copyable>{inspectingVersion.artifactDigest}</Text>
               </Descriptions.Item>
               <Descriptions.Item label={t('ai.skills.details.configDigest', 'Config Digest')}>
@@ -1191,7 +1364,7 @@ const Skills = () => {
               <Descriptions.Item label={t('ai.skills.details.verifiedAt', '校验时间')}>
                 {inspectingVersion.artifactVerifiedAt}
               </Descriptions.Item>
-              <Descriptions.Item label="Content Hash">
+              <Descriptions.Item label={t('ai.skills.details.contentHash', '内容 Hash')}>
                 <Text copyable>{inspectingVersion.contentHash}</Text>
               </Descriptions.Item>
               <Descriptions.Item label={t('ai.skills.details.executionBudget', '执行预算')}>
@@ -1275,7 +1448,7 @@ const Skills = () => {
                       {inspectingVersion.resourceBindings?.length
                         ? inspectingVersion.resourceBindings.map((binding) => (
                           <Tag key={binding.id} color="cyan">
-                            {`${binding.resourceAlias} → ${binding.resourceSelector}${binding.resourceTemplate ? ' (template)' : ''} · ${binding.mcpServerId}@${binding.capabilitySnapshotId}`}
+                            {`${binding.resourceAlias} → ${binding.resourceSelector}${binding.resourceTemplate ? t('ai.skills.capability.templateSuffix', '（模板）') : ''} · ${binding.mcpServerId}@${binding.capabilitySnapshotId}`}
                           </Tag>
                         ))
                         : <Text type="secondary">-</Text>}
@@ -1305,25 +1478,27 @@ const Skills = () => {
       <Modal
         open={Boolean(executionSkill)}
         title={`${t('ai.skills.execution.run', '执行 Skill')} · ${executionSkill?.name ?? ''}`}
-        confirmLoading={executionSubmitting}
-        onOk={() => void runSkill()}
+        width={720}
+        footer={null}
         onCancel={() => setExecutionSkill(undefined)}
+        destroyOnHidden
       >
         <Alert
           showIcon
           type="info"
+          closable
           style={{marginBottom: 16}}
           message={t(
             'ai.skills.execution.notice',
             '输入会按已发布版本的 Schema 校验；所有节点只调用版本固定的 MCP Snapshot 及 Tool、Prompt、Resource。',
           )}
         />
-        <TextArea
-          rows={12}
-          spellCheck={false}
-          value={executionInput}
-          onChange={(event) => setExecutionInput(event.target.value)}
-          style={{fontFamily: 'monospace'}}
+        <SchemaExecutionForm
+          schema={executionInputSchema}
+          loading={executionSchemaLoading}
+          submitting={executionSubmitting}
+          submitText={t('ai.skills.action.execute', '执行 Skill')}
+          onSubmit={runSkill}
         />
       </Modal>
 
@@ -1338,7 +1513,7 @@ const Skills = () => {
         )}
         onClose={() => setExecutionHistorySkill(undefined)}
       >
-        <Table
+        <DataTable
           rowKey="id"
           size="small"
           loading={executionHistoryLoading}
@@ -1411,7 +1586,7 @@ const Skills = () => {
             <Descriptions bordered size="small" column={2}>
               <Descriptions.Item label={t('ai.skills.column.status', '状态')}>
                 <Tag color={executionStatusColor(executionDetails.status)}>
-                  {executionDetails.status}
+                  {skillDebugExecutionStatusLabel(t, executionDetails.status)}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label={t('ai.skills.execution.attempts', '执行次数')}>
@@ -1474,7 +1649,7 @@ const Skills = () => {
                 {executionDetails.errorMessage ?? '-'}
               </Descriptions.Item>
             </Descriptions>
-            <Table
+            <DataTable
               rowKey="id"
               size="small"
               style={{marginTop: 16}}

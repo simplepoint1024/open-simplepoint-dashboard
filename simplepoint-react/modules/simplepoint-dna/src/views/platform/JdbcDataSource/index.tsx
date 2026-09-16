@@ -4,7 +4,7 @@ import SimpleTable from '@simplepoint/components/SimpleTable';
 import {get, post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {Page} from '@simplepoint/shared/types/request';
-import {Alert, Modal, Tag, Typography, message} from 'antd';
+import {Alert, App as AntApp, Tag, Typography} from 'antd';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {formatDateTime, resolveErrorMessage} from '../shared';
 
@@ -52,6 +52,7 @@ const resolveDriverLabel = (driver: JdbcDriverOption, disabledSuffix: string) =>
 
 const App = () => {
   const {t, ensure, locale} = useI18n();
+  const {message, modal} = AntApp.useApp();
   const [tableKey, setTableKey] = useState(0);
   const [driverOptions, setDriverOptions] = useState<JdbcDriverOption[]>([]);
   const [driversLoaded, setDriversLoaded] = useState(false);
@@ -75,7 +76,7 @@ const App = () => {
       setDriversLoaded(true);
       message.error(resolveErrorMessage(error, t('dna.dataSources.page.error.loadDrivers', '驱动列表加载失败')));
     });
-  }, [loadDrivers, t]);
+  }, [loadDrivers, message, t]);
 
   const formSchemaTransform = useCallback((schema: any) => {
     const nextSchema = structuredClone(schema ?? {});
@@ -134,7 +135,7 @@ const App = () => {
       const result = await post<JdbcDataSourceConnectionResult>(`${baseConfig.baseUrl}/${dataSource.id}/connect`, {});
       hide();
       message.success(t('dna.dataSources.page.success.connect', '数据源连接成功'));
-      Modal.success({
+      modal.success({
         title: t('dna.dataSources.page.modal.connectSuccess.title', '连接测试成功'),
         content: (
           <div style={{marginTop: 16}}>
@@ -170,7 +171,7 @@ const App = () => {
       hide();
       message.error(resolveErrorMessage(error, t('dna.dataSources.page.error.connect', '数据源连接失败')));
     }
-  }, [refreshTable, t]);
+  }, [message, modal, refreshTable, t]);
 
   const customButtonEvents: Record<string, (selectedRowKeys: React.Key[], selectedRows: JdbcDataSourceRow[],
     props: TableButtonProps) => void> = {

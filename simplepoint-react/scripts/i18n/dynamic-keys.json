@@ -1,0 +1,606 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "file": "libs/components/Table/index.tsx",
+      "expression": "key",
+      "expectedOccurrences": 3,
+      "mode": "runtime",
+      "reason": "Schema metadata and table button definitions provide explicit i18n keys at runtime."
+    },
+    {
+      "file": "libs/components/Table/index.tsx",
+      "expression": "`table.button.${button.key}`",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Table button keys are extensible through backend schema and micro-application configuration."
+    },
+    {
+      "file": "libs/components/Table/index.tsx",
+      "expression": "`table.button.${button.key}.title`",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Optional table button titles are extensible and always retain their configured fallback."
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Agents/index.tsx",
+      "expression": "`ai.agents.message.${action}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.agents.message.approve",
+        "ai.agents.message.reject",
+        "ai.agents.message.pause",
+        "ai.agents.message.resume",
+        "ai.agents.message.cancel"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Catalog/index.tsx",
+      "expression": "notice.key",
+      "expectedOccurrences": 2,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.catalog.error.syncDescriptor",
+        "ai.catalog.error.syncUnknown",
+        "ai.catalog.warning.syncLockBusy",
+        "ai.catalog.warning.syncPageBudget"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Catalog/index.tsx",
+      "expression": "descriptor.key",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.catalog.error.import",
+        "ai.catalog.error.operationFailed",
+        "ai.catalog.error.operationUnavailable",
+        "ai.catalog.error.requestInvalid"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Catalog/index.tsx",
+      "expression": "status.key",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.catalog.itemStatus.active",
+        "ai.catalog.itemStatus.deleted",
+        "ai.catalog.itemStatus.disabled",
+        "ai.catalog.itemStatus.draft",
+        "ai.catalog.itemStatus.error",
+        "ai.catalog.itemStatus.ready",
+        "ai.catalog.itemStatus.unknown"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Catalog/index.tsx",
+      "expression": "syncNotice.key",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.catalog.error.syncDescriptor",
+        "ai.catalog.error.syncUnknown",
+        "ai.catalog.warning.syncLockBusy",
+        "ai.catalog.warning.syncPageBudget"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Catalog/index.tsx",
+      "expression": "syncStatus.key",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.catalog.status.failed",
+        "ai.catalog.status.never",
+        "ai.catalog.status.partial",
+        "ai.catalog.status.running",
+        "ai.catalog.status.succeeded",
+        "ai.catalog.status.unknown"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Catalog/index.tsx",
+      "expression": "syncMode.key",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.catalog.mode.full",
+        "ai.catalog.mode.incremental",
+        "ai.catalog.mode.unknown"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Providers/index.tsx",
+      "expression": "descriptor.key",
+      "expectedOccurrences": 7,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.common.notTested",
+        "ai.providers.error.disabled",
+        "ai.providers.error.idRequired",
+        "ai.providers.error.notFound",
+        "ai.providers.error.operationUnavailable",
+        "ai.providers.error.requestInvalid",
+        "ai.providers.message.connectionTestFailed",
+        "ai.providers.message.connectionTestSucceeded",
+        "ai.providers.message.modelSyncFailed",
+        "ai.providers.message.modelSyncSucceeded",
+        "ai.providers.message.unknown",
+        "ai.providers.page.error.discover",
+        "ai.providers.page.error.operation",
+        "ai.providers.page.error.sync",
+        "ai.providers.page.error.test",
+        "ai.providers.status.connectionSucceeded",
+        "ai.providers.status.failed",
+        "ai.providers.status.synchronized",
+        "ai.providers.status.unknown"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/McpServers/index.tsx",
+      "expression": "browserResult.key",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.mcp.oauth.error.accessDenied",
+        "ai.mcp.oauth.error.complete",
+        "ai.mcp.oauth.error.expired",
+        "ai.mcp.oauth.success.complete"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/McpServers/index.tsx",
+      "expression": "callbackNotice.key",
+      "expectedOccurrences": 2,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.mcp.oauth.error.accessDenied",
+        "ai.mcp.oauth.error.complete",
+        "ai.mcp.oauth.error.expired",
+        "ai.mcp.oauth.success.complete"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Skills/Designer/SkillDesignerTestCases.tsx",
+      "expression": "`ai.skills.designer.tests.error.outputSchema.${schemaError.code}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.skills.designer.tests.error.outputSchema.additional",
+        "ai.skills.designer.tests.error.outputSchema.const",
+        "ai.skills.designer.tests.error.outputSchema.enum",
+        "ai.skills.designer.tests.error.outputSchema.maxItems",
+        "ai.skills.designer.tests.error.outputSchema.maxLength",
+        "ai.skills.designer.tests.error.outputSchema.maximum",
+        "ai.skills.designer.tests.error.outputSchema.minItems",
+        "ai.skills.designer.tests.error.outputSchema.minLength",
+        "ai.skills.designer.tests.error.outputSchema.minimum",
+        "ai.skills.designer.tests.error.outputSchema.required",
+        "ai.skills.designer.tests.error.outputSchema.type"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Skills/Designer/index.tsx",
+      "expression": "localized[0]",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.skills.designer.tests.assertion.result.passed",
+        "ai.skills.designer.tests.assertion.result.pathMissing",
+        "ai.skills.designer.tests.assertion.result.pathExists",
+        "ai.skills.designer.tests.assertion.result.notEqual",
+        "ai.skills.designer.tests.assertion.result.equalExcluded",
+        "ai.skills.designer.tests.assertion.result.notContains",
+        "ai.skills.designer.tests.assertion.result.matchesString",
+        "ai.skills.designer.tests.assertion.result.regexUnsafe",
+        "ai.skills.designer.tests.assertion.result.notMatches"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Workflows/index.tsx",
+      "expression": "`ai.workflows.execution.${action}.title`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.workflows.execution.cancel.title",
+        "ai.workflows.execution.pause.title",
+        "ai.workflows.execution.resume.title"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Workflows/index.tsx",
+      "expression": "`ai.workflows.execution.${action}.description`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.workflows.execution.cancel.description",
+        "ai.workflows.execution.resume.description"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Workflows/index.tsx",
+      "expression": "`ai.workflows.message.${action}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.workflows.message.cancel",
+        "ai.workflows.message.pause",
+        "ai.workflows.message.resume"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Workflows/index.tsx",
+      "expression": "`ai.workflows.designer.node.${value.toLowerCase()}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.workflows.designer.node.agent",
+        "ai.workflows.designer.node.condition",
+        "ai.workflows.designer.node.end",
+        "ai.workflows.designer.node.human",
+        "ai.workflows.designer.node.parallel",
+        "ai.workflows.designer.node.skill",
+        "ai.workflows.designer.node.wait"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Workflows/index.tsx",
+      "expression": "`ai.workflows.event.${event.type}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.workflows.event.COMPENSATION_FAILED",
+        "ai.workflows.event.COMPENSATION_STARTED",
+        "ai.workflows.event.COMPENSATION_SUCCEEDED",
+        "ai.workflows.event.EXECUTION_CANCELLED",
+        "ai.workflows.event.EXECUTION_CREATED",
+        "ai.workflows.event.EXECUTION_FAILED",
+        "ai.workflows.event.EXECUTION_PAUSED",
+        "ai.workflows.event.EXECUTION_PAUSE_REQUESTED",
+        "ai.workflows.event.EXECUTION_RESUMED",
+        "ai.workflows.event.EXECUTION_STARTED",
+        "ai.workflows.event.EXECUTION_SUCCEEDED",
+        "ai.workflows.event.HUMAN_TASK_CANCELLED",
+        "ai.workflows.event.HUMAN_TASK_COMPLETED",
+        "ai.workflows.event.HUMAN_TASK_CREATED",
+        "ai.workflows.event.HUMAN_TASK_TIMED_OUT",
+        "ai.workflows.event.NODE_CANCELLED",
+        "ai.workflows.event.NODE_FAILED",
+        "ai.workflows.event.NODE_SKIPPED",
+        "ai.workflows.event.NODE_STARTED",
+        "ai.workflows.event.NODE_SUCCEEDED",
+        "ai.workflows.event.NODE_WAITING"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/platform/ObjectStorage/index.tsx",
+      "expression": "`storage.provider.type.${value}`",
+      "expectedOccurrences": 2,
+      "mode": "finite",
+      "resolvedKeys": [
+        "storage.provider.type.ALIYUN_OSS",
+        "storage.provider.type.CEPH",
+        "storage.provider.type.MINIO",
+        "storage.provider.type.QINIU_KODO",
+        "storage.provider.type.S3",
+        "storage.provider.type.TENCENT_COS"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/AccessCenter/index.tsx",
+      "expression": "key",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Resource labels may carry an i18n key supplied by the backend access-center tree."
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/AccessCenter/index.tsx",
+      "expression": "`accessCenter.resource.type.${type}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "accessCenter.resource.type.ACTION",
+        "accessCenter.resource.type.API",
+        "accessCenter.resource.type.FEATURE",
+        "accessCenter.resource.type.GROUP",
+        "accessCenter.resource.type.MODULE",
+        "accessCenter.resource.type.PAGE"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/FieldScope/config/entries/index.tsx",
+      "expression": "o.labelKey",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "field-scopes.title.entry.access.EDITABLE",
+        "field-scopes.title.entry.access.VISIBLE",
+        "field-scopes.title.entry.access.MASKED",
+        "field-scopes.title.entry.access.HIDDEN"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Resource/components/ResourceTreeTransfer.tsx",
+      "expression": "key",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Resource tree labels may carry an i18n key supplied by backend resource metadata."
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Resource/components/ResourceTreeTransfer.tsx",
+      "expression": "`resources.type.${resource.type}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "resources.type.ACTION",
+        "resources.type.API",
+        "resources.type.FEATURE",
+        "resources.type.GROUP",
+        "resources.type.MODULE",
+        "resources.type.PAGE"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Resource/index.tsx",
+      "expression": "cfg.labelKey",
+      "expectedOccurrences": 2,
+      "mode": "finite",
+      "resolvedKeys": [
+        "resources.type.GROUP",
+        "resources.type.MODULE",
+        "resources.type.PAGE",
+        "resources.type.FEATURE",
+        "resources.type.ACTION",
+        "resources.type.API",
+        "resources.routeKind.item",
+        "resources.routeKind.submenu",
+        "resources.routeKind.group",
+        "resources.routeKind.divider",
+        "resources.routeKind.hidden"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Resource/index.tsx",
+      "expression": "config.labelKey",
+      "expectedOccurrences": 5,
+      "mode": "finite",
+      "resolvedKeys": [
+        "resources.type.GROUP",
+        "resources.type.MODULE",
+        "resources.type.PAGE",
+        "resources.type.FEATURE",
+        "resources.type.ACTION",
+        "resources.type.API",
+        "resources.routeKind.item",
+        "resources.routeKind.submenu",
+        "resources.routeKind.group",
+        "resources.routeKind.divider",
+        "resources.routeKind.hidden",
+        "resources.scope.SYSTEM",
+        "resources.scope.PLATFORM",
+        "resources.scope.TENANT",
+        "resources.scope.PERSONAL"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Role/config/resource/index.tsx",
+      "expression": "key",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Role resource labels may carry an i18n key supplied by backend resource metadata."
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Role/config/resource/index.tsx",
+      "expression": "`resources.type.${node.type}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "resources.type.ACTION",
+        "resources.type.API",
+        "resources.type.FEATURE",
+        "resources.type.GROUP",
+        "resources.type.MODULE",
+        "resources.type.PAGE"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-dna/src/views/platform/JdbcDialect/index.tsx",
+      "expression": "`dna.dialects.page.sourceType.${value}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "dna.dialects.page.sourceType.CLASSPATH",
+        "dna.dialects.page.sourceType.UPLOAD",
+        "dna.dialects.page.sourceType.URL"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-dna/src/views/platform/JdbcMetadata/index.tsx",
+      "expression": "`dna.metadata.page.nodeType.${type}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "dna.metadata.page.nodeType.CATALOG",
+        "dna.metadata.page.nodeType.COLUMN",
+        "dna.metadata.page.nodeType.DATA_SOURCE",
+        "dna.metadata.page.nodeType.DATABASE",
+        "dna.metadata.page.nodeType.ROOT",
+        "dna.metadata.page.nodeType.SCHEMA",
+        "dna.metadata.page.nodeType.TABLE",
+        "dna.metadata.page.nodeType.VIEW"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-dna/src/views/platform/JdbcMetadata/index.tsx",
+      "expression": "`dna.metadata.page.constraintType.${type}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "dna.metadata.page.constraintType.CHECK",
+        "dna.metadata.page.constraintType.FOREIGN_KEY",
+        "dna.metadata.page.constraintType.PRIMARY_KEY",
+        "dna.metadata.page.constraintType.UNIQUE"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-dna/src/views/platform/JdbcMetadata/index.tsx",
+      "expression": "`dna.metadata.page.option.namespace.${type}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "dna.metadata.page.option.namespace.CATALOG",
+        "dna.metadata.page.option.namespace.DATABASE",
+        "dna.metadata.page.option.namespace.SCHEMA"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-dna/src/views/platform/SqlConsole/index.tsx",
+      "expression": "`dna.federation.sqlConsole.page.nodeType.${type}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "dna.federation.sqlConsole.page.nodeType.CATALOG",
+        "dna.federation.sqlConsole.page.nodeType.COLUMN",
+        "dna.federation.sqlConsole.page.nodeType.DATABASE",
+        "dna.federation.sqlConsole.page.nodeType.DATA_SOURCE",
+        "dna.federation.sqlConsole.page.nodeType.ROOT",
+        "dna.federation.sqlConsole.page.nodeType.SCHEMA",
+        "dna.federation.sqlConsole.page.nodeType.TABLE",
+        "dna.federation.sqlConsole.page.nodeType.VIEW"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/components/TitleSync.tsx",
+      "expression": "keyOrText",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Page title keys are authored by backend route and menu configuration."
+    },
+    {
+      "file": "modules/simplepoint-host/src/i18n/Text.tsx",
+      "expression": "k",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "The generic I18nText component receives its translation key through component props."
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/index.tsx",
+      "expression": "n.title || ''",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Navigation labels are translated from backend-authored route title keys."
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/index.tsx",
+      "expression": "menu.title || ''",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Breadcrumb labels are translated from backend-authored menu title keys."
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/menu-search-modal.tsx",
+      "expression": "m.title || ''",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Menu search labels are translated from backend-authored menu title keys."
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/menu-search-modal.tsx",
+      "expression": "item.title || ''",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Menu result labels are translated from backend-authored menu title keys."
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "expression": "k",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "The top-bar text adapter receives a translation key through component props."
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "expression": "getGreetingKeyByTime()",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "greeting.early",
+        "greeting.morning",
+        "greeting.afternoon",
+        "greeting.evening"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "expression": "`notifications.category.${item.category}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "notifications.category.ANNOUNCEMENT",
+        "notifications.category.MAINTENANCE",
+        "notifications.category.SECURITY",
+        "notifications.category.SYSTEM"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "expression": "`notifications.priority.${item.priority}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "notifications.priority.HIGH",
+        "notifications.priority.LOW",
+        "notifications.priority.NORMAL",
+        "notifications.priority.URGENT"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/settings/index.tsx",
+      "expression": "`settings.${themeMode}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": ["settings.dark", "settings.light", "settings.system"]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/settings/index.tsx",
+      "expression": "`settings.${resolvedTheme}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": ["settings.dark", "settings.light"]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/workbenchErrorCodes.ts",
+      "expression": "descriptor.key",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "ai.api-keys.error.operationFailed",
+        "ai.api-keys.error.operationUnavailable",
+        "ai.api-keys.error.requestInvalid",
+        "ai.api-keys.rotate.failed",
+        "ai.billing.error.queryFailed",
+        "ai.billing.error.rangeInvalid",
+        "ai.error.operationConflict",
+        "ai.error.operationFailed",
+        "ai.error.operationRejected",
+        "ai.error.requestInvalid",
+        "ai.error.runtimeNodeFenced",
+        "ai.error.runtimeNodeNotRegistered",
+        "ai.model-debug.error.busy",
+        "ai.model-debug.error.failed",
+        "ai.model-debug.error.generate",
+        "ai.model-debug.error.generationFailed",
+        "ai.model-debug.error.incomplete",
+        "ai.model-debug.error.operationUnavailable",
+        "ai.model-debug.error.providerFailed",
+        "ai.model-debug.error.requestInvalid",
+        "ai.model-debug.error.streamUnavailable",
+        "ai.models.error.operationFailed",
+        "ai.models.error.operationUnavailable",
+        "ai.models.error.requestInvalid"
+      ]
+    }
+  ]
+}

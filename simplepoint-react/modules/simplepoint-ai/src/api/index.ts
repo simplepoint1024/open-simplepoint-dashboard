@@ -1,20 +1,16 @@
 import {contextPath} from '@/services';
 
 export default {
-  'ai-workbench.workspace': {
-    i18nNamespaces: ['ai-workspace'],
-    name: 'ai-workbench-workspace',
-  },
   'ai-workbench.providers': {
     baseUrl: `${contextPath}/providers`,
-    i18nNamespaces: ['ai-providers'],
+    i18nNamespaces: ['ai-common', 'ai-providers', 'ai-models'],
     name: 'ai-workbench-providers',
   },
   'ai-workbench.models': {
     baseUrl: `${contextPath}/models`,
     debugUrl: (modelDefinitionId: string) =>
       `${contextPath}/models/${modelDefinitionId}/debug/stream`,
-    i18nNamespaces: ['ai-models', 'ai-model-debug'],
+    i18nNamespaces: ['ai-common', 'ai-models', 'ai-model-debug'],
     name: 'ai-workbench-models',
   },
   'ai-workbench.api-keys': {
@@ -31,14 +27,8 @@ export default {
   },
   'ai-workbench.knowledge-bases': {
     baseUrl: `${contextPath}/knowledge-bases`,
-    i18nNamespaces: ['ai-knowledge-bases'],
+    i18nNamespaces: ['ai-common', 'ai-knowledge-bases'],
     name: 'ai-workbench-knowledge-bases',
-  },
-  'ai-workbench.mcp-gateway': {
-    baseUrl: `${contextPath}/mcp/gateway`,
-    statusUrl: `${contextPath}/mcp/gateway/status`,
-    i18nNamespaces: ['ai-mcp'],
-    name: 'ai-workbench-mcp-gateway',
   },
   'ai-workbench.catalog': {
     baseUrl: `${contextPath}/catalog`,
@@ -49,49 +39,33 @@ export default {
   },
   'ai-workbench.mcp-servers': {
     baseUrl: `${contextPath}/mcp/servers`,
+    gatewayStatusUrl: `${contextPath}/mcp/gateway/status`,
+    publicationsUrl: `${contextPath}/mcp/publications`,
+    nodesUrl: `${contextPath}/runtime/nodes`,
     poolsUrl: `${contextPath}/runtime/pools`,
     workloadsUrl: `${contextPath}/runtime/workloads`,
     secretsUrl: `${contextPath}/runtime/secrets`,
-    i18nNamespaces: ['ai-mcp', 'ai-runtime'],
+    i18nNamespaces: ['ai-common', 'ai-mcp', 'ai-runtime'],
     name: 'ai-workbench-mcp-servers',
-  },
-  'ai-workbench.mcp-publications': {
-    baseUrl: `${contextPath}/mcp/publications`,
-    serversUrl: `${contextPath}/mcp/servers`,
-    i18nNamespaces: ['ai-mcp'],
-    name: 'ai-workbench-mcp-publications',
-  },
-  'ai-workbench.tools': {
-    serversUrl: `${contextPath}/mcp/servers`,
-    i18nNamespaces: ['ai-mcp'],
-    name: 'ai-workbench-tools',
   },
   'ai-workbench.skills': {
     baseUrl: `${contextPath}/skills`,
-    i18nNamespaces: ['ai-skills'],
+    registryUrl: `${contextPath}/skills/managed-registry`,
+    i18nNamespaces: ['ai-common', 'ai-skills'],
     name: 'ai-workbench-skills',
   },
   'ai-workbench.agents': {
     baseUrl: `${contextPath}/agents`,
     modelsUrl: `${contextPath}/models`,
     skillsUrl: `${contextPath}/skills`,
-    i18nNamespaces: ['ai-agents'],
+    i18nNamespaces: ['ai-common', 'ai-agents', 'ai-models'],
     name: 'ai-workbench-agents',
   },
   'ai-workbench.workflows': {
     baseUrl: `${contextPath}/workflows`,
     agentsUrl: `${contextPath}/agents`,
     skillsUrl: `${contextPath}/skills`,
-    i18nNamespaces: ['ai-workflows'],
+    i18nNamespaces: ['ai-common', 'ai-workflows'],
     name: 'ai-workbench-workflows',
-  },
-  'ai-workbench.runtime': {
-    nodesUrl: `${contextPath}/runtime/nodes`,
-    poolsUrl: `${contextPath}/runtime/pools`,
-    workloadsUrl: `${contextPath}/runtime/workloads`,
-    secretsUrl: `${contextPath}/runtime/secrets`,
-    serversUrl: `${contextPath}/mcp/servers`,
-    i18nNamespaces: ['ai-runtime'],
-    name: 'ai-workbench-runtime',
   },
 };

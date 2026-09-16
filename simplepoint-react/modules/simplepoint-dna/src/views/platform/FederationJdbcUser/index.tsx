@@ -1,4 +1,4 @@
-import {Button, Drawer, Space, Table, Tag, message} from 'antd';
+import {App as AntApp, Button, Drawer, Space, Table, Tag} from 'antd';
 import type {ColumnsType, TablePaginationConfig} from 'antd/es/table';
 import {useEffect, useMemo, useState} from 'react';
 import {usePage} from '@simplepoint/shared/api/methods';
@@ -29,6 +29,7 @@ const resolveUserDisplayName = (user: UserOption) => {
 
 const App = () => {
   const {t, ensure, locale, messages} = useI18n();
+  const {message} = AntApp.useApp();
   const [pageState, setPageState] = useState({current: 1, pageSize: 10});
   const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -50,7 +51,7 @@ const App = () => {
     if (error) {
       message.error(resolveErrorMessage(error, t('dna.federation.jdbcUsers.page.error.loadUsers', '系统用户列表加载失败')));
     }
-  }, [error, t]);
+  }, [error, message, t]);
 
   const columns: ColumnsType<UserOption> = useMemo(() => [
     {

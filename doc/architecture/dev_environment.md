@@ -37,7 +37,7 @@ cd open-simplepoint-dashboard
 ```
 3) 选择模块运行示例（如 AMQP RPC Provider）：
 ```shell
-./gradlew :simplepoint-examples:simplepoint-amqprpc-examples:simplepoint-amqprpc-example-provider:bootRun
+./gradlew :simplepoint-amqprpc-example-provider:bootRun
 ```
 4) 需要本地中间件时，可使用 Docker Compose：
 ```shell
@@ -68,4 +68,3 @@ docker compose up -d
 - Docker：`docker/`
 
 如需新增依赖，请在对应模块的 `build.gradle.kts` 中声明，并同步更新 `buildSrc/libs.versions.toml`（如使用版本库）。
-

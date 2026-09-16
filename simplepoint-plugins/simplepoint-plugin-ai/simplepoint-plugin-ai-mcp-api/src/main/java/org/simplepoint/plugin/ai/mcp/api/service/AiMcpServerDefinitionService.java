@@ -3,6 +3,8 @@ package org.simplepoint.plugin.ai.mcp.api.service;
 import java.util.List;
 import java.util.Optional;
 import org.simplepoint.api.base.BaseService;
+import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
+import org.simplepoint.plugin.ai.mcp.api.entity.AiMcpProviderConnection;
 import org.simplepoint.plugin.ai.mcp.api.entity.AiMcpServerDefinition;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayDiscoveryResult;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpGatewayPromptGetResult;
@@ -55,6 +57,24 @@ public interface AiMcpServerDefinitionService
   McpCapabilitySnapshotDetails getSnapshot(String id, String snapshotId);
 
   /**
+   * Returns one immutable capability snapshot for durable background work.
+   * The caller supplies its persisted owner scope because no request
+   * authorization context exists on worker threads.
+   *
+   * @param id server identifier
+   * @param snapshotId capability snapshot identifier
+   * @param invocationScope scope that owns the background work
+   * @param invocationTenantId tenant id that owns the background work
+   * @return decoded immutable snapshot
+   */
+  McpCapabilitySnapshotDetails getSnapshotForScope(
+      String id,
+      String snapshotId,
+      AiResourceScope invocationScope,
+      String invocationTenantId
+  );
+
+  /**
    * Lists tools from a server's active immutable snapshot.
    *
    * @param id server identifier
@@ -105,4 +125,10 @@ public interface AiMcpServerDefinitionService
    * Completes a one-time OAuth authorization transaction.
    */
   AiMcpServerDefinition completeOauthAuthorization(McpOauthCallbackCommand command);
+
+  /** Returns the current user's provider connection without token material. */
+  Optional<AiMcpProviderConnection> currentProviderConnection(String id);
+
+  /** Deletes token material for the current user's provider connection. */
+  AiMcpProviderConnection disconnectProvider(String id);
 }

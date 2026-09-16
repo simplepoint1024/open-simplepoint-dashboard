@@ -1,7 +1,7 @@
 import api from '@/api';
 import {get} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {Badge, Button, Card, Col, Row, Spin, Statistic, Typography, message} from 'antd';
+import {App as AntApp, Badge, Button, Card, Col, Row, Spin, Statistic, Typography} from 'antd';
 import {useCallback, useEffect, useState} from 'react';
 import {resolveErrorMessage} from '../shared';
 
@@ -19,6 +19,7 @@ type HealthItem = {
 
 const App = () => {
   const {ensure, locale, t} = useI18n();
+  const {message} = AntApp.useApp();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<HealthItem[]>([]);
 
@@ -36,7 +37,7 @@ const App = () => {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [message, t]);
 
   useEffect(() => {
     void loadHealth();

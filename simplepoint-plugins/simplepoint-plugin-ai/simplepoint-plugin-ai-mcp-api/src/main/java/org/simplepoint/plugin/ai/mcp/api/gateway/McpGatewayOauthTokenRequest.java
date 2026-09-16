@@ -12,7 +12,7 @@ package org.simplepoint.plugin.ai.mcp.api.gateway;
  * @param codeVerifier PKCE verifier for an authorization-code exchange
  * @param redirectUri exact redirect URI used in the authorization request
  * @param refreshToken refresh token for a refresh exchange
- * @param resource RFC 8707 target resource
+ * @param resource optional RFC 8707 target resource
  * @param scopes scopes requested during refresh
  * @param allowPrivateNetwork whether private destinations may be accessed
  */

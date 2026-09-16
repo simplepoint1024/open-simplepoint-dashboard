@@ -4,4 +4,6 @@ dependencies {
     api(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-core-api"))
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation(libs.swagger.annotations)
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

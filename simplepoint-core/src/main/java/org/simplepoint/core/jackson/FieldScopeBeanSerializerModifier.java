@@ -29,13 +29,17 @@ public class FieldScopeBeanSerializerModifier extends BeanSerializerModifier {
                                                     BeanDescription beanDesc,
                                                     List<BeanPropertyWriter> beanProperties) {
     // Only apply field-scope enforcement to application-owned types
-    if (!beanDesc.getBeanClass().getPackageName().startsWith("org.simplepoint")) {
+    if (!beanDesc.getBeanClass().getPackageName().startsWith("org.simplepoint.")
+        && !beanDesc.getBeanClass().isAnnotationPresent(org.simplepoint.core.annotation.PermissionResource.class)) {
       return beanProperties;
     }
-    String simpleClassName = beanDesc.getBeanClass().getSimpleName();
     List<BeanPropertyWriter> wrapped = new ArrayList<>(beanProperties.size());
     for (BeanPropertyWriter writer : beanProperties) {
-      wrapped.add(new FieldScopeBeanPropertyWriter(writer, simpleClassName, writer.getName()));
+      String logicalName = beanDesc.findProperties().stream()
+          .filter(property -> property.getName().equals(writer.getName()))
+          .map(com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition::getInternalName)
+          .findFirst().orElse(writer.getName());
+      wrapped.add(new FieldScopeBeanPropertyWriter(writer, beanDesc.getBeanClass(), logicalName));
     }
     return wrapped;
   }

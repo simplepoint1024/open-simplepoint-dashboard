@@ -401,6 +401,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   private Boolean credentialsNonExpired;
 
   @Schema(
+      hidden = true, accessMode = Schema.AccessMode.READ_ONLY,
       title = "i18n:users.title.superAdmin",
       description = "i18n:users.description.superAdmin",
       extensions = {
@@ -409,6 +410,10 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
           })
       })
   private Boolean superAdmin;
+
+  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
+  @Column(name = "authorization_version", nullable = false)
+  private Long authorizationVersion = 0L;
 
   /**
    * Indicates whether two-factor authentication (TOTP) is enabled for this user.
@@ -524,6 +529,18 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   public String getUsername() {
     return getId();
   }
+
+  @Override
+  public boolean isEnabled() { return !Boolean.FALSE.equals(enabled); }
+
+  @Override
+  public boolean isAccountNonLocked() { return !Boolean.FALSE.equals(accountNonLocked); }
+
+  @Override
+  public boolean isAccountNonExpired() { return !Boolean.FALSE.equals(accountNonExpired); }
+
+  @Override
+  public boolean isCredentialsNonExpired() { return !Boolean.FALSE.equals(credentialsNonExpired); }
 
   @Override
   public Boolean superAdmin() {

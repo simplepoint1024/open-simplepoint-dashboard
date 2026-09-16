@@ -4,7 +4,7 @@ import handlers from './handlers';
 const contract = defineResource({
   id: 'rbac.core.data-scopes',
   scope: 'common',
-  backendModule: 'simplepoint-plugin-rbac-core-rest',
+  backendModule: 'simplepoint-service-common',
   backendController: 'DataScopeController',
   contextPath: '/common',
   paths: ['/data-scopes'],

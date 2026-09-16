@@ -1,15 +1,31 @@
 import api from '@/api';
-import RuntimePoolEditorDialog from '@/views/workbench/Runtime/RuntimePoolEditorDialog';
-import type {RuntimePool, RuntimeServer} from '@/views/workbench/Runtime/types';
 import type {TableButtonProps} from '@simplepoint/components/Table';
 import SimpleTable from '@simplepoint/components/SimpleTable';
+import DataTable from '@simplepoint/components/DataTable';
+import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {get, post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {Page} from '@simplepoint/shared/types/request';
-import {Modal, Table, Tag, Typography, message} from 'antd';
+import {Alert, App, Button, Space, Spin, Tabs, Tag, Typography} from 'antd';
 import type {Key} from 'react';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useLocation, useNavigate} from 'react-router';
+import {resourceScopeLabel} from '../modelLabels';
+import {localizeWorkbenchOperationError} from '../workbenchErrorCodes';
+import McpCapabilities from './Capabilities';
 import McpDeploymentStatusDialog from './McpDeploymentStatusDialog';
+import McpGatewayStatusCard from './McpGatewayStatusCard';
+import McpPublications from './Publications';
+import Runtime from './Runtime/McpRuntime';
+import RuntimePoolEditorDialog from './Runtime/RuntimePoolEditorDialog';
+import type {RuntimePool, RuntimeServer} from './Runtime/types';
+import {
+  mcpAuthenticationLabel,
+  mcpOauthResultNotice,
+  mcpServerErrorLabel,
+  mcpServerStatusLabel,
+  mcpTransportLabel,
+} from './labels';
 
 const {Text} = Typography;
 
@@ -54,26 +70,101 @@ type DeploymentView = {
   autoDiscover: boolean;
 };
 
-const resolveErrorMessage = (error: unknown, fallback: string) => {
-  if (error instanceof Error && error.message) return error.message;
-  if (typeof error === 'string' && error) return error;
-  return fallback;
+type McpWorkbenchPermissions = {
+  viewServers: boolean;
+  viewGateway: boolean;
+  viewCapabilities: boolean;
+  viewPublications: boolean;
+  viewRuntime: boolean;
+  viewNodes: boolean;
+  managePools: boolean;
+  manageWorkloads: boolean;
+  manageSecrets: boolean;
 };
 
 const McpServers = () => {
   const config = api['ai-workbench.mcp-servers'];
   const {t, ensure, locale} = useI18n();
+  const {message, modal} = App.useApp();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [tableKey, setTableKey] = useState(0);
   const [deployingServer, setDeployingServer] = useState<McpServerRow>();
   const [deployingPool, setDeployingPool] = useState<RuntimePool>();
   const [deploymentView, setDeploymentView] = useState<DeploymentView>();
+  const [activeSection, setActiveSection] = useState('servers');
+  const [capabilityServerId, setCapabilityServerId] = useState<string>();
+  const [permissions, setPermissions] = useState<McpWorkbenchPermissions>();
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [permissionsError, setPermissionsError] = useState<string>();
+
+  const tableErrorMessageResolver = useCallback((error: unknown) => (
+    localizeWorkbenchOperationError(t, error, {
+      key: 'ai.error.operationFailed',
+      fallback: 'MCP Server 操作失败，请稍后重试',
+    })
+  ), [t]);
 
   useEffect(() => {
     void ensure(config.i18nNamespaces);
   }, [config.i18nNamespaces, ensure, locale]);
 
+  const loadPermissions = useCallback(async () => {
+    setPermissionsLoading(true);
+    setPermissionsError(undefined);
+    try {
+      const next = await get<McpWorkbenchPermissions>(
+        `${config.baseUrl}/workbench-permissions`,
+      );
+      setPermissions(next);
+      setActiveSection((current) => {
+        if (current === 'servers' && next.viewServers) return current;
+        if (current === 'capabilities' && next.viewCapabilities) return current;
+        if (current === 'publications' && next.viewPublications) return current;
+        if (current === 'runtime' && next.viewRuntime) return current;
+        if (next.viewServers) return 'servers';
+        if (next.viewCapabilities) return 'capabilities';
+        if (next.viewPublications) return 'publications';
+        if (next.viewRuntime) return 'runtime';
+        return current;
+      });
+    } catch (error) {
+      setPermissions(undefined);
+      setPermissionsError(resolveApiErrorMessage(
+        error,
+        t('ai.mcp.center.error.permissions', 'MCP 中心权限加载失败'),
+      ));
+    } finally {
+      setPermissionsLoading(false);
+    }
+  }, [config.baseUrl, t]);
+
   useEffect(() => {
-    const parameters = new URLSearchParams(window.location.search);
+    void loadPermissions();
+  }, [loadPermissions]);
+
+  const clearOauthQuery = useCallback(() => {
+    navigate({pathname: location.pathname, search: '', hash: location.hash}, {
+      replace: true,
+    });
+  }, [location.hash, location.pathname, navigate]);
+
+  useEffect(() => {
+    const parameters = new URLSearchParams(location.search);
+    const browserResult = mcpOauthResultNotice(
+      parameters.get('mcpOauthResult'),
+    );
+    if (browserResult) {
+      const content = t(browserResult.key, browserResult.fallback);
+      if (browserResult.type === 'success') {
+        message.success(content);
+      } else {
+        message.error(content);
+      }
+      setTableKey((value) => value + 1);
+      clearOauthQuery();
+      return;
+    }
     const state = parameters.get('state');
     const code = parameters.get('code');
     const error = parameters.get('error');
@@ -91,20 +182,29 @@ const McpServers = () => {
           errorDescription: parameters.get('error_description'),
         });
         hide();
-        message.success(t('ai.mcp.oauth.success.complete', 'MCP OAuth 授权已完成'));
+        const callbackNotice = mcpOauthResultNotice(error
+          ? error === 'access_denied'
+            ? 'AI_MCP_OAUTH_ACCESS_DENIED'
+            : 'AI_MCP_OAUTH_AUTHORIZATION_FAILED'
+          : 'SUCCESS');
+        if (callbackNotice?.type === 'success') {
+          message.success(t(callbackNotice.key, callbackNotice.fallback));
+        } else if (callbackNotice) {
+          message.error(t(callbackNotice.key, callbackNotice.fallback));
+        }
         setTableKey((value) => value + 1);
       } catch (callbackError) {
         hide();
-        message.error(resolveErrorMessage(
+        message.error(resolveApiErrorMessage(
           callbackError,
           t('ai.mcp.oauth.error.complete', 'MCP OAuth 授权失败'),
         ));
       } finally {
-        window.history.replaceState({}, document.title, window.location.pathname);
+        clearOauthQuery();
       }
     };
     void complete();
-  }, [config.baseUrl, t]);
+  }, [clearOauthQuery, config.baseUrl, location.search, message, t]);
 
   const discover = useCallback(async (rows: McpServerRow[]) => {
     const server = rows?.[0];
@@ -117,7 +217,7 @@ const McpServers = () => {
       const result = await post<DiscoveryResult>(`${config.baseUrl}/${server.id}/discover`, {});
       hide();
       setTableKey((value) => value + 1);
-      Modal.success({
+      modal.success({
         width: 780,
         title: t('ai.mcp.servers.discover.title', 'MCP 能力发现完成'),
         content: (
@@ -125,7 +225,7 @@ const McpServers = () => {
             <Text type="secondary">
               {`${result.serverName || '-'} ${result.serverVersion || ''} · ${result.protocolVersion || '-'}`}
             </Text>
-            <Table
+            <DataTable
               style={{marginTop: 16}}
               size="small"
               rowKey="name"
@@ -143,12 +243,12 @@ const McpServers = () => {
     } catch (error) {
       hide();
       setTableKey((value) => value + 1);
-      message.error(resolveErrorMessage(
+      message.error(resolveApiErrorMessage(
         error,
         t('ai.mcp.servers.error.discover', 'MCP 能力发现失败'),
       ));
     }
-  }, [config.baseUrl, t]);
+  }, [config.baseUrl, message, modal, t]);
 
   const authorize = useCallback(async (rows: McpServerRow[]) => {
     const server = rows?.[0];
@@ -176,12 +276,12 @@ const McpServers = () => {
       window.location.assign(result.authorizationUrl);
     } catch (error) {
       hide();
-      message.error(resolveErrorMessage(
+      message.error(resolveApiErrorMessage(
         error,
         t('ai.mcp.oauth.error.start', '无法发起 MCP OAuth 授权'),
       ));
     }
-  }, [config.baseUrl, t]);
+  }, [config.baseUrl, message, t]);
 
   const deploy = useCallback(async (rows: McpServerRow[]) => {
     const server = rows?.[0];
@@ -217,12 +317,12 @@ const McpServers = () => {
       }
     } catch (error) {
       hide();
-      message.error(resolveErrorMessage(
+      message.error(resolveApiErrorMessage(
         error,
         t('ai.runtime.error.pools.load', 'Runtime Pool 加载失败'),
       ));
     }
-  }, [config.poolsUrl, t]);
+  }, [config.poolsUrl, message, t]);
 
   const formSchemaTransform = useCallback((schema: any) => {
     const nextSchema = structuredClone(schema ?? {});
@@ -276,7 +376,7 @@ const McpServers = () => {
     if (properties.oauthRedirectUri) {
       properties.oauthRedirectUri.description = t(
         'ai.mcp.oauth.redirectUri.description',
-        '必须精确指向当前工作台 MCP Servers 页面。',
+        '必须精确指向当前工作台 MCP 中心页面。',
       );
     }
     delete properties.scopeType;
@@ -300,11 +400,14 @@ const McpServers = () => {
       width: 110,
       render: (value: string) => (
         <Tag color={value === 'TENANT' ? 'blue' : 'purple'}>
-          {t(`ai.scope.${value}`, value || '-')}
+          {resourceScopeLabel(t, value)}
         </Tag>
       ),
     },
-    transportType: {width: 160},
+    transportType: {
+      width: 160,
+      render: (value: string) => mcpTransportLabel(t, value),
+    },
     deploymentType: {
       width: 150,
       render: (value: string) => (
@@ -316,7 +419,10 @@ const McpServers = () => {
       ),
     },
     endpointUrl: {width: 320, ellipsis: true},
-    authenticationType: {width: 140},
+    authenticationType: {
+      width: 140,
+      render: (value: string) => mcpAuthenticationLabel(t, value),
+    },
     status: {
       width: 110,
       render: (value: string) => {
@@ -324,7 +430,7 @@ const McpServers = () => {
           : value === 'ERROR' ? 'red'
             : value === 'DRAFT' ? 'blue'
               : 'default';
-        return <Tag color={color}>{value || '-'}</Tag>;
+        return <Tag color={color}>{mcpServerStatusLabel(t, value)}</Tag>;
       },
     },
     enabled: {
@@ -339,7 +445,7 @@ const McpServers = () => {
       width: 260,
       ellipsis: true,
       render: (value: string) => value
-        ? <Text type="danger">{value}</Text>
+        ? <Text type="danger">{mcpServerErrorLabel(t, value)}</Text>
         : '-',
     },
   }), [t]);
@@ -349,20 +455,114 @@ const McpServers = () => {
     selectedRows: McpServerRow[],
     props: TableButtonProps,
   ) => void> = {
+    capabilities: (_keys, rows) => {
+      const server = rows[0];
+      if (!server?.id) {
+        message.warning(t('ai.mcp.servers.warning.select', '请选择一个 MCP Server'));
+        return;
+      }
+      if (server.status !== 'READY' || server.enabled === false) {
+        message.info(t(
+          'ai.mcp.tools.warning.notReady',
+          '请先启用 Server 并完成能力发现，再浏览和调试 MCP 能力。',
+        ));
+        return;
+      }
+      setCapabilityServerId(server.id);
+      setActiveSection('capabilities');
+    },
     discover: (_keys, rows) => void discover(rows),
     authorize: (_keys, rows) => void authorize(rows),
     deploy: (_keys, rows) => void deploy(rows),
   };
 
   return (
-    <>
-      <SimpleTable
-        key={tableKey}
-        {...config}
-        customButtonEvents={customButtonEvents}
-        formSchemaTransform={formSchemaTransform}
-        columnOverrides={columnOverrides}
+    <div style={{height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column'}}>
+      <Space direction="vertical" size={12} style={{display: 'flex', marginBottom: 12}}>
+        <Alert
+          showIcon
+          type="info"
+          closable
+          message={t('ai.mcp.center.title', 'MCP 中心')}
+          description={t(
+            'ai.mcp.center.description',
+            '统一管理 MCP Server 的连接、认证、能力发现、托管部署和运行状态。',
+          )}
+        />
+        {permissions?.viewGateway && (
+          <McpGatewayStatusCard statusUrl={config.gatewayStatusUrl}/>
+        )}
+      </Space>
+      {permissionsError ? (
+        <Alert
+          showIcon
+          type="error"
+          message={t('ai.mcp.center.error.permissions', 'MCP 中心权限加载失败')}
+          description={permissionsError}
+          action={(
+            <Button size="small" onClick={() => void loadPermissions()}>
+              {t('ai.mcp.action.retry', '重试')}
+            </Button>
+          )}
+        />
+      ) : (
+      <Spin spinning={permissionsLoading} style={{flex: 1, minHeight: 0}}>
+      <Tabs
+        activeKey={activeSection}
+        onChange={setActiveSection}
+        style={{flex: 1, minHeight: 0}}
+        styles={{
+          body: {minHeight: 0, overflow: 'hidden'},
+          content: {height: '100%'},
+        }}
+        items={[
+          permissions?.viewServers ? {
+            key: 'servers',
+            label: t('ai.mcp.center.tab.servers', 'Servers'),
+            children: (
+              <div style={{height: '100%', minHeight: 0}}>
+                <SimpleTable
+                  key={tableKey}
+                  {...config}
+                  customButtonEvents={customButtonEvents}
+                  errorMessageResolver={tableErrorMessageResolver}
+                  formSchemaTransform={formSchemaTransform}
+                  columnOverrides={columnOverrides}
+                />
+              </div>
+            ),
+          } : null,
+          permissions?.viewCapabilities ? {
+            key: 'capabilities',
+            label: t('ai.mcp.center.tab.capabilities', '能力与调试'),
+            children: (
+              <div style={{height: '100%', overflow: 'auto'}}>
+                <McpCapabilities initialServerId={capabilityServerId}/>
+              </div>
+            ),
+          } : null,
+          permissions?.viewPublications ? {
+            key: 'publications',
+            label: t('ai.mcp.center.tab.publications', '对外发布'),
+            children: (
+              <div style={{height: '100%', minHeight: 0}}>
+                <McpPublications/>
+              </div>
+            ),
+          } : null,
+          permissions?.viewRuntime ? {
+            key: 'runtime',
+            label: t('ai.mcp.center.tab.runtime', '运行与安全'),
+            children: (
+              <div style={{height: '100%', minHeight: 0}}>
+                <Runtime permissions={permissions}/>
+              </div>
+            ),
+          } : null,
+        ].filter((item): item is NonNullable<typeof item> => item !== null)}
       />
+      </Spin>
+      )}
       <RuntimePoolEditorDialog
         open={Boolean(deployingServer)}
         pool={deployingPool}
@@ -400,13 +600,18 @@ const McpServers = () => {
             setDeploymentView(undefined);
           }}
           onChanged={() => setTableKey((value) => value + 1)}
+          onOpenCapabilities={permissions?.viewCapabilities ? (serverId) => {
+            setDeploymentView(undefined);
+            setCapabilityServerId(serverId);
+            setActiveSection('capabilities');
+          } : undefined}
           onDeleted={() => {
             setDeploymentView(undefined);
             setTableKey((value) => value + 1);
           }}
         />
       )}
-    </>
+    </div>
   );
 };
 

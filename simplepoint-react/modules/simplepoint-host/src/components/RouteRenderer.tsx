@@ -10,6 +10,11 @@ import {NotFound} from '@/views/errors/NotFound';
 import {OrgTenantRequired} from '@/views/errors/OrgTenantRequired';
 import {Dashboard} from '@/views/dashboard';
 import {TenantHome} from '@/layouts/tenant';
+import {
+    AI_WORKBENCH_ROOT_PATH,
+    LEGACY_AI_WORKSPACE_PATH,
+    resolveLegacyAiWorkspaceTarget,
+} from './legacyAiWorkspace';
 
 export interface RouteItem {
     key: string;
@@ -40,10 +45,22 @@ export function renderRoutes(
     tenantType?: 'PLATFORM' | 'PERSONAL' | 'ORGANIZATION',
     remoteRegistryKey?: string,
 ) {
+    const legacyAiWorkspaceTarget = resolveLegacyAiWorkspaceTarget(leafRoutes);
+
     // 1. 静态路由（结构统一）
     const staticRoutes: RouteItem[] = [
         {key: 'root', path: '/', element: <Navigate to="/dashboard" replace/>},
         {key: 'dashboard', path: '/dashboard', element: <Dashboard/>},
+        {
+            key: 'ai-workbench-index',
+            path: AI_WORKBENCH_ROOT_PATH,
+            element: <Navigate to={legacyAiWorkspaceTarget} replace/>,
+        },
+        {
+            key: 'legacy-ai-workspace',
+            path: LEGACY_AI_WORKSPACE_PATH,
+            element: <Navigate to={legacyAiWorkspaceTarget} replace/>,
+        },
         {key: 'profile', path: '/profile', element: <Profile/>},
         {key: 'tenant', path: '/tenant', element: <TenantHome/>},
         {key: 'settings', path: '/settings', element: <Settings/>},
@@ -52,7 +69,11 @@ export function renderRoutes(
 
     // 2. 动态路由（转换成统一结构）
     const dynamicRoutes: RouteItem[] = leafRoutes
-        .filter((route): route is LeafRoute & { path: string } => !!route.path)
+        .filter((route): route is LeafRoute & { path: string } => (
+            !!route.path
+            && route.path !== AI_WORKBENCH_ROOT_PATH
+            && route.path !== LEGACY_AI_WORKSPACE_PATH
+        ))
         .map((route, idx: number) => {
             const { uuid, path, component, requireOrgTenant } = route;
             const key = uuid || path || String(idx);

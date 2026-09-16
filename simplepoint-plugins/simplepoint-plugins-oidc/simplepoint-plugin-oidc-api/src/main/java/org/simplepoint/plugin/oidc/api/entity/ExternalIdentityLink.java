@@ -18,7 +18,9 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 @Table(name = "simpoint_ac_external_identity_link",
     uniqueConstraints = {
         @UniqueConstraint(name = "uk_external_identity_subject",
-            columnNames = {"provider_id", "external_subject"})
+            columnNames = {"provider_id", "external_subject"}),
+        @UniqueConstraint(name = "uk_external_identity_provider_user",
+            columnNames = {"provider_id", "user_id"})
     },
     indexes = {
         @Index(name = "idx_external_identity_user", columnList = "user_id"),

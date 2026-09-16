@@ -496,9 +496,9 @@
         },
         {
           "code": "users.view",
-          "name": "用户管理",
-          "label": "用户管理",
-          "title": "menu.system.user",
+          "name": "租户成员",
+          "label": "租户成员",
+          "title": "platform-accounts.memberTitle",
           "type": "PAGE",
           "path": "/workspace/users",
           "component": "common/system/User",
@@ -511,45 +511,6 @@
           "grantable": true,
           "disabled": false,
           "children": [
-            {
-              "code": "users.create",
-              "name": "User Create",
-              "label": "User Create",
-              "alias": "i18n:table.button.create",
-              "type": "ACTION",
-              "description": "允许创建用户",
-              "sort": 101,
-              "grantable": true,
-              "publicAccess": false,
-              "requireOrgTenant": true,
-              "disabled": false
-            },
-            {
-              "code": "users.edit",
-              "name": "User Edit",
-              "label": "User Edit",
-              "alias": "i18n:table.button.edit",
-              "type": "ACTION",
-              "description": "允许编辑用户",
-              "sort": 102,
-              "grantable": true,
-              "publicAccess": false,
-              "requireOrgTenant": true,
-              "disabled": false
-            },
-            {
-              "code": "users.delete",
-              "name": "User Delete",
-              "label": "User Delete",
-              "alias": "i18n:table.button.delete",
-              "type": "ACTION",
-              "description": "允许删除用户",
-              "sort": 103,
-              "grantable": true,
-              "publicAccess": false,
-              "requireOrgTenant": true,
-              "disabled": false
-            },
             {
               "code": "users.config.role",
               "name": "User Role Grant",
@@ -1621,101 +1582,92 @@
           "scopeTypes": [
             "PLATFORM"
           ]
+        },
+        {
+          "code": "platform.accounts.view",
+          "name": "平台账号管理",
+          "label": "平台账号管理",
+          "title": "platform-accounts.menu.accounts",
+          "type": "PAGE",
+          "path": "/platform/accounts",
+          "component": "common/platform/Account",
+          "icon": "UserOutlined",
+          "routeKind": "item",
+          "sort": 10,
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "grantable": false,
+          "disabled": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "children": [
+            {
+              "code": "platform.accounts.create",
+              "name": "create",
+              "label": "create",
+              "type": "ACTION",
+              "sort": 1,
+              "publicAccess": false,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM"
+              ]
+            },
+            {
+              "code": "platform.accounts.edit",
+              "name": "edit",
+              "label": "edit",
+              "type": "ACTION",
+              "sort": 2,
+              "publicAccess": false,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM"
+              ]
+            },
+            {
+              "code": "platform.identity.manage",
+              "name": "平台身份授权",
+              "label": "平台身份授权",
+              "type": "ACTION",
+              "sort": 3,
+              "publicAccess": false,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "platform.audit.view",
+          "name": "平台账号审计",
+          "label": "平台账号审计",
+          "title": "platform-accounts.menu.audit",
+          "type": "PAGE",
+          "path": "/platform/account-audit",
+          "component": "common/platform/AccountAudit",
+          "icon": "AuditOutlined",
+          "routeKind": "item",
+          "sort": 20,
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "grantable": false,
+          "disabled": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ]
         }
       ],
       "scopeTypes": [
         "PLATFORM"
-      ]
-    },
-    {
-      "code": "support.view",
-      "name": "支持与帮助",
-      "label": "支持与帮助",
-      "title": "menu.support",
-      "type": "MODULE",
-      "path": "/support",
-      "icon": "QuestionCircleOutlined",
-      "routeKind": "submenu",
-      "description": "menu.support",
-      "sort": 100,
-      "publicAccess": false,
-      "requireOrgTenant": false,
-      "grantable": false,
-      "disabled": false,
-      "children": [
-        {
-          "code": "antdesign.view",
-          "name": "AntDesign 官网",
-          "label": "AntDesign 官网",
-          "title": "menu.antdesign",
-          "type": "PAGE",
-          "path": "/support/antdesign",
-          "component": "external:https://ant.design",
-          "icon": "AntDesignOutlined",
-          "routeKind": "item",
-          "description": "menu.antdesign",
-          "sort": 0,
-          "publicAccess": false,
-          "requireOrgTenant": false,
-          "grantable": true,
-          "disabled": false
-        },
-        {
-          "code": "modulefederation.view",
-          "name": "Module Federation 官网",
-          "label": "Module Federation 官网",
-          "title": "menu.modulefederation",
-          "type": "PAGE",
-          "path": "/support/module-federation",
-          "component": "external:https://module-federation.github.io",
-          "icon": "AppstoreOutlined",
-          "routeKind": "item",
-          "description": "menu.modulefederation",
-          "sort": 10,
-          "publicAccess": false,
-          "requireOrgTenant": false,
-          "grantable": true,
-          "disabled": false
-        },
-        {
-          "code": "githubspm.view",
-          "name": "GitHub 项目地址(后端)",
-          "label": "GitHub 项目地址(后端)",
-          "title": "menu.githubspm",
-          "type": "PAGE",
-          "path": "/support/githubspm",
-          "component": "iframe:https://github.com/simplepoint1024/open-simplepoint-dashboard",
-          "icon": "GithubOutlined",
-          "routeKind": "item",
-          "description": "menu.githubspm",
-          "sort": 20,
-          "publicAccess": false,
-          "requireOrgTenant": false,
-          "grantable": true,
-          "disabled": false
-        },
-        {
-          "code": "githubspr.view",
-          "name": "GitHub 项目地址(前端)",
-          "label": "GitHub 项目地址(前端)",
-          "title": "menu.githubspr",
-          "type": "PAGE",
-          "path": "/support/githubspr",
-          "component": "iframe:https://github.com/simplepoint1024/simplepoint-react",
-          "icon": "GithubOutlined",
-          "routeKind": "item",
-          "description": "menu.githubspr",
-          "sort": 30,
-          "publicAccess": false,
-          "requireOrgTenant": false,
-          "grantable": true,
-          "disabled": false
-        }
-      ],
-      "scopeTypes": [
-        "PLATFORM",
-        "TENANT",
-        "PERSONAL"
       ]
     }
   ]

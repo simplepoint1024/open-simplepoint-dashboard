@@ -52,7 +52,7 @@ const buildNavigationFromFlat = (
   parent: string | number | undefined = undefined,
 ): MenuItemType[] => {
   return routes
-    .filter((route) => route.parentId === parent)
+    .filter((route) => route.parentId === parent && route.routeKind !== 'hidden')
     .map((route) => {
       const children = buildNavigationFromFlat(routes, navigate, route.id);
       return toMenuItem(route, navigate, children.length > 0 ? children : undefined);
@@ -66,9 +66,11 @@ const buildNavigationFromTree = (
   nodes: RouteInfo[],
   navigate: (path: string) => void,
 ): MenuItemType[] => {
-  return (nodes || []).map((route) => {
+  return (nodes || []).filter(route => route.routeKind !== 'hidden').map((route) => {
     const raw = route.children;
-    const builtChildren = Array.isArray(raw) && raw.length > 0 ? buildNavigationFromTree(raw, navigate) : undefined;
+    const builtChildren = Array.isArray(raw) && raw.length > 0
+      ? buildNavigationFromTree(raw, navigate)
+      : undefined;
     return toMenuItem(route, navigate, builtChildren);
   });
 };

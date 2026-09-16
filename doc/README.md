@@ -44,7 +44,6 @@ doc/
 │   └── approval_workflow.md    # 审批流程设计
 ├── deployment/           # 部署文档
 │   ├── docker_deployment.md    # Docker 部署说明
-│   ├── docker_swarm_deployment.md # Docker Swarm 部署说明
 │   ├── k8s_deployment.md       # Kubernetes 部署说明
 │   └── ci_cd_pipeline.md       # CI/CD 流程说明
 ├── config/               # 配置文档
@@ -67,6 +66,13 @@ doc/
 ---
 
 ## 📐 各目录用途
+
+AI 用户与运维指南：
+
+- [Skill 可视化设计、调试与发布](ai/skill_designer.md)
+- [Agent 工作台使用与运维](ai/agent_workbench.md)
+- [Workflow 可视化设计与运行](ai/workflow_designer.md)
+- [模型兼容 API](ai/model_api.md)
 
 ### **architecture/**
 存放系统整体架构相关文档，包括：
@@ -172,7 +178,6 @@ doc/
 ### **deployment/**
 部署相关文档，包括：
 - Docker 部署
-- Docker Swarm 部署
 - Kubernetes 部署
 - CI/CD 流程
 - 环境变量说明

@@ -9,6 +9,13 @@
   "ai.model-debug.cancelled": "生成已停止",
   "ai.model-debug.failed": "本轮调用失败",
   "ai.model-debug.unavailable": "仅可调试已启用且可用的语言或多模态模型",
+  "ai.model-debug.error.busy": "当前调试请求较多，请稍后重试",
+  "ai.model-debug.error.failed": "模型调试失败，请稍后重试",
   "ai.model-debug.error.generate": "模型调用失败",
-  "ai.model-debug.error.incomplete": "模型响应未正常完成"
+  "ai.model-debug.error.generationFailed": "模型生成失败，请稍后重试",
+  "ai.model-debug.error.incomplete": "模型响应未正常完成",
+  "ai.model-debug.error.operationUnavailable": "当前模型暂不可调试，请刷新后重试",
+  "ai.model-debug.error.providerFailed": "模型接入调用失败，请稍后重试",
+  "ai.model-debug.error.requestInvalid": "调试请求无效，请检查对话内容后重试",
+  "ai.model-debug.error.streamUnavailable": "流式响应正文不可用"
 }

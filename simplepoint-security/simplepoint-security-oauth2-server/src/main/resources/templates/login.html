@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="https://www.thymeleaf.org">
+<html lang="en" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>登录 · SimplePoint</title>
+    <title th:text="#{login.title} + ' · SimplePoint'">Sign in · SimplePoint</title>
     <style>
         :root {
             color-scheme: light;
@@ -278,42 +278,50 @@
         <div class="brand-mark">S·P</div>
         <div>
             <strong>SimplePoint</strong>
-            <span>统一身份与访问管理</span>
+            <span th:text="#{login.brandSubtitle}">Identity and access management</span>
         </div>
     </div>
 
-    <h1>欢迎回来</h1>
-    <p class="subtitle">使用平台账号或组织配置的身份提供商安全登录。</p>
+    <h1 th:text="#{login.heading}">Welcome back</h1>
+    <p class="subtitle" th:text="#{login.subtitle}">Sign in with your platform account or an identity provider.</p>
 
-    <div th:if="${param.error}" class="alert alert-error" role="alert">
-        登录失败，请检查账号凭据或外部账号绑定状态。
+    <div th:if="${param.error != null}" class="alert alert-error" role="alert" th:switch="${param.error[0]}">
+        <span th:case="'invalid_credentials'" th:text="#{login.error.invalid_credentials}">Invalid credentials.</span>
+        <span th:case="'access_denied'" th:text="#{login.error.access_denied}">Authorization was cancelled.</span>
+        <span th:case="'external_account_not_linked'" th:text="#{login.error.external_account_not_linked}">Account not connected.</span>
+        <span th:case="'authorization_request_not_found'" th:text="#{login.error.oauth}">OAuth request expired.</span>
+        <span th:case="'invalid_token_response'" th:text="#{login.error.oauth}">OAuth token exchange failed.</span>
+        <span th:case="'*'" th:text="#{login.error.authentication_failed}">Authentication failed.</span>
     </div>
     <div th:if="${param.logout}" class="alert alert-success" role="status">
-        您已安全退出登录。
+        <span th:text="#{login.loggedOut}">You have signed out safely.</span>
     </div>
     <div th:if="${param.registered}" class="alert alert-success" role="status">
-        注册成功，请使用新账号登录。
+        <span th:text="#{login.registered}">Registration completed. Sign in with the new account.</span>
+    </div>
+    <div th:if="${param.externalCancelled}" class="alert alert-success" role="status">
+        <span th:text="#{login.externalCancelled}">External account connection was cancelled.</span>
     </div>
 
-    <form method="post" th:action="@{/login}">
-        <label for="username">邮箱或手机号</label>
+    <form method="post" th:action="${loginAction}">
+        <label for="username" th:text="#{login.username}">Email or phone number</label>
         <input id="username" type="text" name="username"
                autocomplete="username" required autofocus>
 
-        <label for="password">密码</label>
+        <label for="password" th:text="#{login.password}">Password</label>
         <input id="password" type="password" name="password"
                autocomplete="current-password" required>
 
-        <button type="submit">使用平台账号登录</button>
+        <button type="submit" th:text="#{login.submit}">Sign in with platform account</button>
     </form>
 
     <th:block th:if="${identityProviders != null and !identityProviders.isEmpty()}">
-        <div class="divider">其他登录方式</div>
-        <div class="providers" aria-label="外部身份提供商">
+        <div class="divider" th:text="#{login.otherMethods}">Other sign-in methods</div>
+        <div class="providers" th:attr="aria-label=#{login.identityProviders}">
             <a th:each="provider : ${identityProviders}"
                class="provider"
                th:classappend="${#strings.toLowerCase(provider.preset().name())}"
-               th:href="@{'/oauth2/authorization/' + ${provider.registrationId()}}">
+               th:href="${providerAuthorizationPrefix + provider.registrationId()}">
                 <span class="provider-mark"
                       th:text="${#strings.substring(provider.displayName(), 0, 1)}">ID</span>
                 <span class="provider-name" th:text="${provider.displayName()}">Provider</span>
@@ -321,8 +329,8 @@
         </div>
     </th:block>
 
-    <p class="security-note">外部身份登录采用 OAuth 2.0 / OpenID Connect 标准，平台不会获取您的外部密码。</p>
-    <div class="register">还没有平台账号？ <a th:href="@{/register}">立即注册</a></div>
+    <p class="security-note" th:text="#{login.securityNote}">External sign-in uses OAuth 2.0 or OpenID Connect. SimplePoint never receives the external password.</p>
+    <div class="register"><span th:text="#{login.noAccount}">No platform account?</span> <a th:href="${registerUrl}" th:text="#{login.register}">Create one</a></div>
 </main>
 </body>
 </html>

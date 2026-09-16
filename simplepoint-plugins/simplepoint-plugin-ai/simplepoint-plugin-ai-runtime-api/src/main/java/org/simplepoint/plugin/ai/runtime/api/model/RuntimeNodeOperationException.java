@@ -19,6 +19,18 @@ public class RuntimeNodeOperationException extends RuntimeException {
   }
 
   /**
+   * Creates one sanitized node operation failure while retaining its local cause.
+   */
+  public RuntimeNodeOperationException(
+      final String message,
+      final int statusCode,
+      final Throwable cause
+  ) {
+    super(message, cause);
+    this.statusCode = statusCode;
+  }
+
+  /**
    * Returns the private API HTTP status, or zero for a transport failure.
    */
   public int getStatusCode() {

@@ -4,8 +4,13 @@ import type {TableButtonProps} from '@simplepoint/components/Table';
 import {get} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {Page} from '@simplepoint/shared/types/request';
-import {Tag, message} from 'antd';
+import {App, Tag} from 'antd';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import {modelTypeLabel, resourceScopeLabel} from '../modelLabels';
+import {
+  localizeWorkbenchError,
+  resolveWorkbenchOperationError,
+} from '../workbenchErrorCodes';
 import ModelDebugDialog, {type DebugModel} from './ModelDebugDialog';
 
 type ProviderOption = {
@@ -29,16 +34,16 @@ type ModelRow = {
 
 const modelTypes = ['LLM', 'EMBEDDING', 'RERANK', 'IMAGE', 'AUDIO', 'MODERATION', 'MULTIMODAL', 'OTHER'];
 
-const resolveErrorMessage = (error: unknown, fallback: string) => {
-  if (error instanceof Error && error.message) return error.message;
-  if (typeof error === 'string' && error) return error;
-  return fallback;
+const modelOperationFallback = {
+  key: 'ai.models.error.operationFailed',
+  fallback: '模型操作失败，请稍后重试',
 };
 
 const Models = () => {
   const baseConfig = api['ai-workbench.models'];
   const providerBaseConfig = api['ai-workbench.providers'];
   const {t, ensure, locale} = useI18n();
+  const {message} = App.useApp();
   const [providers, setProviders] = useState<ProviderOption[]>([]);
   const [debugModel, setDebugModel] = useState<DebugModel>();
 
@@ -49,11 +54,11 @@ const Models = () => {
   useEffect(() => {
     void get<Page<ProviderOption>>(providerBaseConfig.baseUrl, {page: 0, size: 500})
       .then((page) => setProviders(page.content ?? []))
-      .catch((error) => message.error(resolveErrorMessage(
-        error,
-        t('ai.models.page.error.loadProviders', '供应商列表加载失败'),
+      .catch(() => message.error(t(
+        'ai.models.page.error.loadProviders',
+        '模型接入列表加载失败',
       )));
-  }, [t]);
+  }, [message, providerBaseConfig.baseUrl, t]);
 
   const formSchemaTransform = useCallback((schema: any) => {
     const nextSchema = structuredClone(schema ?? {});
@@ -67,7 +72,7 @@ const Models = () => {
     if (properties.modelType) {
       properties.modelType.oneOf = modelTypes.map((value) => ({
         const: value,
-        title: t(`ai.models.type.${value}`, value),
+        title: modelTypeLabel(t, value),
       }));
     }
     if (properties.billingEnabled) {
@@ -91,7 +96,7 @@ const Models = () => {
       width: 110,
       render: (value: string) => (
         <Tag color={value === 'TENANT' ? 'blue' : 'purple'}>
-          {t(`ai.scope.${value}`, value || '-')}
+          {resourceScopeLabel(t, value)}
         </Tag>
       ),
     },
@@ -102,7 +107,9 @@ const Models = () => {
     modelId: {width: 280, ellipsis: true},
     modelType: {
       width: 140,
-      render: (value: string) => <Tag color="blue">{t(`ai.models.type.${value}`, value || '-')}</Tag>,
+      render: (value: string) => (
+        <Tag color="blue">{modelTypeLabel(t, value)}</Tag>
+      ),
     },
     enabled: {
       width: 100,
@@ -152,7 +159,14 @@ const Models = () => {
       }
       setDebugModel(model);
     },
-  }), [t]);
+  }), [message, t]);
+
+  const errorMessageResolver = useCallback((error: unknown) => (
+    localizeWorkbenchError(
+      t,
+      resolveWorkbenchOperationError(error, modelOperationFallback),
+    )
+  ), [t]);
 
   return (
     <>
@@ -161,6 +175,7 @@ const Models = () => {
         formSchemaTransform={formSchemaTransform}
         columnOverrides={columnOverrides}
         customButtonEvents={customButtonEvents}
+        errorMessageResolver={errorMessageResolver}
       />
       <ModelDebugDialog
         model={debugModel}

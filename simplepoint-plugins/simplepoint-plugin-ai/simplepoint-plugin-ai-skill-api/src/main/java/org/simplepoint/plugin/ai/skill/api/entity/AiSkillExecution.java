@@ -18,7 +18,10 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
+import org.simplepoint.plugin.ai.skill.api.model.SkillDebugMode;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionSource;
 import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionStatus;
+import org.simplepoint.plugin.ai.skill.api.model.SkillTestAssertionResult;
 
 /**
  * Durable, scope-owned execution of one immutable Skill version.
@@ -39,6 +42,10 @@ import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionStatus;
         @Index(
             name = "idx_simpoint_ai_skill_execution_status",
             columnList = "status, lease_expires_at"
+        ),
+        @Index(
+            name = "idx_simpoint_ai_skill_execution_test_run",
+            columnList = "test_run_id, test_run_order"
         )
     }
 )
@@ -50,8 +57,48 @@ public class AiSkillExecution extends BaseEntityImpl<String> {
   @Column(name = "skill_id", length = 64, nullable = false)
   private String skillId;
 
-  @Column(name = "skill_version_id", length = 64, nullable = false)
+  @Column(name = "skill_version_id", length = 64)
   private String skillVersionId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "source_type", length = 16, nullable = false)
+  private SkillExecutionSource sourceType;
+
+  @Column(name = "draft_id", length = 64)
+  private String draftId;
+
+  @Column(name = "draft_revision")
+  private Long draftRevision;
+
+  @Column(name = "draft_content_hash", length = 64)
+  private String draftContentHash;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "debug_mode", length = 16)
+  private SkillDebugMode debugMode;
+
+  @Column(name = "test_case_id", length = 64)
+  private String testCaseId;
+
+  @Column(name = "mock_config_hash", length = 64)
+  private String mockConfigHash;
+
+  @JsonIgnore
+  @Column(name = "mock_config_json", columnDefinition = "TEXT")
+  private String mockConfigJson;
+
+  @Column(name = "assertions_passed")
+  private Boolean assertionsPassed;
+
+  @JsonIgnore
+  @Column(name = "assertion_results_json", columnDefinition = "TEXT")
+  private String assertionResultsJson;
+
+  @Column(name = "test_run_id", length = 64)
+  private String testRunId;
+
+  @Column(name = "test_run_order")
+  private Integer testRunOrder;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "scope_type", length = 16, nullable = false)
@@ -147,6 +194,26 @@ public class AiSkillExecution extends BaseEntityImpl<String> {
   @Column(name = "resumed_by", length = 64)
   private String resumedBy;
 
+  @Column(name = "cancel_requested", nullable = false)
+  private Boolean cancelRequested = false;
+
+  @Column(name = "cancel_requested_at")
+  private Instant cancelRequestedAt;
+
+  @Column(name = "cancel_requested_by", length = 64)
+  private String cancelRequestedBy;
+
+  @Column(name = "cancel_reason", length = 1024)
+  private String cancelReason;
+
+  @JsonIgnore
+  @Column(name = "breakpoint_step_ids_json", columnDefinition = "TEXT")
+  private String breakpointStepIdsJson;
+
+  @JsonIgnore
+  @Column(name = "breakpoint_bypassed_step_id", length = 64)
+  private String breakpointBypassedStepId;
+
   @JsonIgnore
   @Column(name = "inactive_since")
   private Instant inactiveSince;
@@ -203,6 +270,14 @@ public class AiSkillExecution extends BaseEntityImpl<String> {
   @Transient
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)
   private Object output;
+
+  @Transient
+  @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+  private List<SkillTestAssertionResult> assertionResults;
+
+  @Transient
+  @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+  private List<String> breakpointStepIds;
 
   @Transient
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)

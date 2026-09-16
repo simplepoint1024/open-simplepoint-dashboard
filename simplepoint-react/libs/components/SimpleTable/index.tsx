@@ -1,10 +1,12 @@
 import {emptyPage} from "@simplepoint/shared/types/request"
 import Table from '../Table';
+import TreeTable from '../TreeTable';
 import SForm from '../SForm';
 import {Alert, Button, Drawer, Empty, Skeleton, Spin} from 'antd';
 import {createIcon} from '@simplepoint/shared/types/icon';
 import type {SimpleTableProps} from './types';
 import {useSimpleTableController} from './useSimpleTableController';
+import {useEffect, useRef, useState} from 'react';
 
 const App = (props: SimpleTableProps<any>) => {
   const controller = useSimpleTableController(props);
@@ -14,6 +16,21 @@ const App = (props: SimpleTableProps<any>) => {
   const { data: pageData, filters, buttons } = controller.table;
   const { open: drawerOpen, editingRecord, setOpen: setDrawerOpen } = controller.drawer;
   const { defaultEvents, handleFormSubmit, retryPage } = controller.actions;
+  const drawerWasOpenRef = useRef(false);
+  const [formDraft, setFormDraft] = useState<any>(() => (
+    editingRecord ?? props.initialValues ?? {}
+  ));
+
+  // RJSF treats formData as controlled state. Recreating an empty object while a
+  // request is in flight makes it discard the user's input when server-side
+  // validation fails. Start a fresh draft only when a new drawer session opens;
+  // loading/error rerenders then keep the same draft intact.
+  useEffect(() => {
+    if (drawerOpen && !drawerWasOpenRef.current) {
+      setFormDraft(editingRecord ?? props.initialValues ?? {});
+    }
+    drawerWasOpenRef.current = drawerOpen;
+  }, [drawerOpen, editingRecord, props.initialValues]);
   const buttonEvents = {
     ...defaultEvents,
     ...(props.customButtonEvents ?? {}),
@@ -73,32 +90,33 @@ const App = (props: SimpleTableProps<any>) => {
               {renderPageError()}
             </div>
           ) : null}
-          <Table<any>
-            refresh={controller.table.refresh}
-            pageable={
-              pageData ?? emptyPage
-            }
-            schema={schemaData?.schema ?? []}
-            columnOverrides={props.columnOverrides}
-            filters={filters}
-            sorter={controller.table.sorter}
-            onChange={controller.table.onChange}
-            onFilterChange={controller.table.onFilterChange}
-            storageKey={`${props.baseUrl}:${props.name}`}
-            onButtonEvents={buttonEvents}
-            isButtonDisabled={props.isButtonDisabled}
-            onRowDoubleClick={editButton && buttonEvents[editButton.key]
-              ? (record, key) => {
-                if (props.isButtonDisabled?.(editButton, [key], [record])) {
-                  return;
+          {(() => {
+            const tableProps = {
+              refresh: controller.table.refresh,
+              pageable: pageData ?? emptyPage,
+              schema: schemaData?.schema ?? [],
+              columnOverrides: props.columnOverrides,
+              filters,
+              sorter: controller.table.sorter,
+              onChange: controller.table.onChange,
+              onFilterChange: controller.table.onFilterChange,
+              storageKey: `${props.baseUrl}:${props.name}`,
+              onButtonEvents: buttonEvents,
+              isButtonDisabled: props.isButtonDisabled,
+              onRowDoubleClick: editButton && buttonEvents[editButton.key]
+                ? (record: any, key: React.Key) => {
+                  if (props.isButtonDisabled?.(editButton, [key], [record])) return;
+                  buttonEvents[editButton.key]([key], [record], editButton);
                 }
-                buttonEvents[editButton.key]([key], [record], editButton);
-              }
-              : undefined}
-            buttons={buttons}
-            loading={tableLoading || submitLoading}
-            refreshDisabled={controller.table.refreshDisabled}
-          />
+                : undefined,
+              buttons,
+              loading: tableLoading || submitLoading,
+              refreshDisabled: controller.table.refreshDisabled,
+            };
+            return props.tree
+              ? <TreeTable<any> {...tableProps} {...props.tree} />
+              : <Table<any> {...tableProps} />;
+          })()}
         </div>
       )}
 
@@ -134,7 +152,8 @@ const App = (props: SimpleTableProps<any>) => {
           <SForm
             schema={formSchema ?? schemaData.schema}
             uiSchema={props.formUiSchema}
-            formData={editingRecord ?? props.initialValues ?? {}}
+            formData={formDraft}
+            onChange={(event) => setFormDraft(event.formData ?? {})}
             onSubmit={handleFormSubmit}
             submitLoading={submitLoading}
           />

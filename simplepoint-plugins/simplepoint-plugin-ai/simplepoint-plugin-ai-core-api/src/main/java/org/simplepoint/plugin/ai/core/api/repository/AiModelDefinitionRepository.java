@@ -1,9 +1,12 @@
 package org.simplepoint.plugin.ai.core.api.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.plugin.ai.core.api.entity.AiModelDefinition;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Repository contract for AI model definitions.
@@ -17,6 +20,9 @@ public interface AiModelDefinitionRepository extends BaseRepository<AiModelDefin
    * @return model
    */
   Optional<AiModelDefinition> findActiveById(String id);
+
+  /** Finds all requested non-deleted models in one round trip. */
+  List<AiModelDefinition> findAllActiveByIdIn(Collection<String> ids);
 
   /**
    * Finds an active model by provider and remote model identifier.
@@ -49,4 +55,23 @@ public interface AiModelDefinitionRepository extends BaseRepository<AiModelDefin
    * @return visible models
    */
   List<AiModelDefinition> findAllAvailableForTenant(String tenantId);
+
+  /**
+   * Searches selectable model labels for one dependency owner.
+   */
+  Page<AiDependencyOptionView> searchDependencyOptions(
+      boolean tenantOwner,
+      String ownerTenantId,
+      String searchPattern,
+      Pageable pageable
+  );
+
+  /**
+   * Resolves visible current or historical model labels by model id.
+   */
+  List<AiDependencyResolutionView> resolveDependencyOptions(
+      boolean tenantOwner,
+      String ownerTenantId,
+      Collection<String> resourceIds
+  );
 }

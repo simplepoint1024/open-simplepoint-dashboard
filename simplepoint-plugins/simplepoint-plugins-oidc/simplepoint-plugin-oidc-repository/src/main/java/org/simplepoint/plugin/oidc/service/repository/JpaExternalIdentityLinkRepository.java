@@ -1,5 +1,6 @@
 package org.simplepoint.plugin.oidc.service.repository;
 
+import java.util.List;
 import java.util.Optional;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.oidc.api.entity.ExternalIdentityLink;
@@ -24,6 +25,26 @@ public interface JpaExternalIdentityLinkRepository
       @Param("providerId") String providerId,
       @Param("externalSubject") String externalSubject
   );
+
+  @Override
+  @Query("""
+      select l from ExternalIdentityLink l
+      where l.providerId = :providerId
+        and l.userId = :userId
+        and l.deletedAt is null
+      """)
+  Optional<ExternalIdentityLink> findActiveByProviderAndUserId(
+      @Param("providerId") String providerId,
+      @Param("userId") String userId
+  );
+
+  @Override
+  @Query("""
+      select l from ExternalIdentityLink l
+      where l.userId = :userId and l.deletedAt is null
+      order by l.createdAt asc
+      """)
+  List<ExternalIdentityLink> findAllActiveByUserId(@Param("userId") String userId);
 
   @Override
   @Query("""

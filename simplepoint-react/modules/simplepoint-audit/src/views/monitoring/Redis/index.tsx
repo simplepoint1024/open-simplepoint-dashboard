@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  App as AntApp,
   Button,
   Card,
   Descriptions,
@@ -15,7 +16,6 @@ import {
   Table,
   Tag,
   Typography,
-  message,
 } from "antd";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
 import { get, post, put } from "@simplepoint/shared/api/methods";
@@ -83,6 +83,7 @@ const typeColorMap: Record<RedisEntryType, string> = {
 
 const App = () => {
   const { ensure, locale, t } = useI18n();
+  const { message } = AntApp.useApp();
   const [form] = Form.useForm<RedisEditorValues>();
   const persistent = Form.useWatch("persistent", form) ?? true;
 
@@ -209,7 +210,7 @@ const App = () => {
       });
       setEditorOpen(true);
     },
-    [form, loadDetail, t]
+    [form, loadDetail, message, t]
   );
 
   const openDetailModal = useCallback(
@@ -249,7 +250,7 @@ const App = () => {
     } finally {
       setSaving(false);
     }
-  }, [closeEditor, editorMode, form, refreshCurrentPage, t]);
+  }, [closeEditor, editorMode, form, message, refreshCurrentPage, t]);
 
   const handleDelete = useCallback(
     async (keys: string[]) => {
@@ -266,7 +267,7 @@ const App = () => {
         : pageData.page.number + 1;
       await loadEntries(nextPageNumber, pageData.page.size || 10);
     },
-    [loadEntries, pageData.content.length, pageData.page.number, pageData.page.size, t]
+    [loadEntries, message, pageData.content.length, pageData.page.number, pageData.page.size, t]
   );
 
   const columns = useMemo<ColumnsType<RedisEntrySummary>>(
@@ -375,6 +376,7 @@ const App = () => {
         <Alert
           showIcon
           type="info"
+          closable
           message={t("monitoring.redis.noticeTitle", "Redis 管理")}
           description={t(
             "monitoring.redis.noticeDesc",

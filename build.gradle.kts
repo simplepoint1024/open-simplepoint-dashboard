@@ -1,4 +1,7 @@
-import org.gradle.api.tasks.Exec
+import com.github.gradle.node.pnpm.task.PnpmTask
+import org.gradle.api.JavaVersion
+import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     java
@@ -6,23 +9,26 @@ plugins {
     idea
     checkstyle
     jacoco
+    id("com.github.node-gradle.node") version "7.1.0"
     id("org.springframework.boot") version libs.versions.spring.boot.get() apply false
     id("io.spring.dependency-management") version libs.versions.spring.dependency.management.get()
     kotlin("jvm") version libs.versions.kotlin.get() apply false
 }
 
 val frontendRootDir = layout.projectDirectory.dir("simplepoint-react").asFile
-val frontendPnpmCommand = if (System.getProperty("os.name").lowercase().contains("windows")) {
-    "pnpm.cmd"
-} else {
-    "pnpm"
+
+node {
+    download.set(true)
+    version.set("24.19.0")
+    pnpmVersion.set("11.15.1")
+    nodeProjectDir.set(layout.projectDirectory.dir("simplepoint-react"))
 }
 
-val installFrontendDependencies by tasks.registering(Exec::class) {
+val installFrontendDependencies by tasks.registering(PnpmTask::class) {
     group = "build"
-    description = "Installs frontend workspace dependencies for Gradle-driven frontend builds."
-    workingDir = frontendRootDir
-    commandLine(frontendPnpmCommand, "install", "--frozen-lockfile")
+    description = "Installs frontend dependencies with Gradle-managed Node.js and pnpm."
+    workingDir.set(frontendRootDir)
+    args.set(listOf("install", "--frozen-lockfile"))
 
     inputs.files(
         frontendRootDir.resolve("package.json"),
@@ -32,7 +38,34 @@ val installFrontendDependencies by tasks.registering(Exec::class) {
     outputs.file(frontendRootDir.resolve("node_modules/.modules.yaml"))
 }
 
-allprojects {
+fun registerFrontendBuildTask(taskName: String, scriptName: String, moduleName: String) {
+    tasks.register<PnpmTask>(taskName) {
+        group = "build"
+        description = "Builds the SimplePoint $moduleName frontend with the managed toolchain."
+        dependsOn(installFrontendDependencies)
+        workingDir.set(frontendRootDir)
+        args.set(listOf("run", scriptName))
+
+        inputs.files(fileTree(frontendRootDir) {
+            include("package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml")
+            include("libs/**", "modules/$moduleName/**")
+            exclude("**/node_modules/**", "**/dist/**")
+        })
+        outputs.dir(frontendRootDir.resolve("modules/$moduleName/dist"))
+    }
+}
+
+registerFrontendBuildTask("buildCommonFrontend", "build:common", "simplepoint-common")
+registerFrontendBuildTask("buildHostFrontend", "build:host", "simplepoint-host")
+registerFrontendBuildTask("buildAuditFrontend", "build:audit", "simplepoint-audit")
+registerFrontendBuildTask("buildDnaFrontend", "build:dna", "simplepoint-dna")
+registerFrontendBuildTask("buildAiFrontend", "build:ai", "simplepoint-ai")
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+}
+
+configure(allprojects.filter { it == rootProject || it.buildFile.isFile }) {
     apply(plugin = "checkstyle")
     checkstyle {
         toolVersion = "10.23.0"
@@ -43,11 +76,22 @@ allprojects {
 }
 
 subprojects {
+    if (!buildFile.isFile) {
+        // Organizational nodes must not create Java source sets, tests or empty JARs.
+        apply(plugin = "base")
+        return@subprojects
+    }
     val hasKotlinSources = file("src/main/kotlin").exists() || file("src/test/kotlin").exists()
 
     apply(plugin = "java-library")
+    apply(from = rootProject.file("gradle/project-conventions.gradle.kts"))
     apply(plugin = "idea")
     apply(plugin = "jacoco")
+    extensions.configure<JavaPluginExtension> {
+        toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
     if (hasKotlinSources) {
         apply(plugin = "org.jetbrains.kotlin.jvm")
     }
@@ -74,6 +118,7 @@ subprojects {
 
         testImplementation(enforcedPlatform("org.junit:junit-bom:${rootProject.libs.versions.junit.get()}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
         testCompileOnly("org.projectlombok:lombok:${rootProject.libs.versions.lombok.get()}")
         testAnnotationProcessor("org.projectlombok:lombok:${rootProject.libs.versions.lombok.get()}")
 
@@ -98,6 +143,8 @@ subprojects {
     }
 }
 
+apply(from = rootProject.file("gradle/module-boundaries.gradle.kts"))
+
 tasks.register<JacocoReport>("jacocoAggregatedReport") {
     group = "verification"
     description = "Aggregated JaCoCo coverage report for all subprojects"
@@ -107,17 +154,18 @@ tasks.register<JacocoReport>("jacocoAggregatedReport") {
     }
     dependsOn(reportTasks)
 
-    val execFiles = subprojects.map { sub ->
+    val javaProjects = subprojects.filter { it.plugins.hasPlugin("java") }
+    val execFiles = javaProjects.map { sub ->
         sub.fileTree(sub.buildDir) { include("jacoco/*.exec") }
     }
     executionData.setFrom(execFiles)
 
-    val srcDirs = subprojects.flatMap { sub ->
+    val srcDirs = javaProjects.flatMap { sub ->
         listOf(sub.file("src/main/java"), sub.file("src/main/kotlin")).filter { it.exists() }
     }
     sourceDirectories.setFrom(files(srcDirs))
 
-    val classDirs = subprojects.map { sub ->
+    val classDirs = javaProjects.map { sub ->
         sub.fileTree(sub.buildDir) {
             include("classes/java/main/**", "classes/kotlin/main/**")
         }

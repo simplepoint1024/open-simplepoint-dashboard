@@ -22,6 +22,7 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.simplepoint.plugin.ai.core.api.model.AiProviderType;
+import org.simplepoint.plugin.ai.core.api.model.AiProviderVendor;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.springframework.core.annotation.Order;
 
@@ -131,13 +132,20 @@ public class AiProviderDefinition extends BaseEntityImpl<String> {
   @Column(length = 128, nullable = false)
   private String code;
 
+  @JsonIgnore
+  @Schema(hidden = true)
+  @Enumerated(EnumType.STRING)
+  @Column(length = 32, nullable = false)
+  private AiProviderType providerType;
+
   @Order(4)
-  @Schema(title = "i18n:ai.providers.title.providerType",
+  @Schema(title = "i18n:ai.providers.title.vendor",
+      requiredMode = Schema.RequiredMode.REQUIRED,
       extensions = @Extension(name = "x-ui", properties =
           @ExtensionProperty(name = "x-list-visible", value = "true")))
   @Enumerated(EnumType.STRING)
   @Column(length = 32, nullable = false)
-  private AiProviderType providerType;
+  private AiProviderVendor vendor;
 
   @Order(5)
   @Schema(title = "i18n:ai.providers.title.baseUrl", maxLength = 2048,
@@ -146,12 +154,20 @@ public class AiProviderDefinition extends BaseEntityImpl<String> {
   @Column(length = 2048, nullable = false)
   private String baseUrl;
 
+  @Order(6)
+  @Schema(title = "i18n:ai.providers.title.modelDiscoveryUrl", maxLength = 2048,
+      description = "i18n:ai.providers.description.modelDiscoveryUrl",
+      extensions = @Extension(name = "x-ui", properties =
+          @ExtensionProperty(name = "x-list-visible", value = "true")))
+  @Column(name = "model_discovery_url", length = 2048)
+  private String modelDiscoveryUrl;
+
   @JsonIgnore
   @Schema(hidden = true)
   @Column(length = 4096)
   private String credentialCiphertext;
 
-  @Order(6)
+  @Order(7)
   @Transient
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   @Schema(title = "i18n:ai.providers.title.apiKey", accessMode = Schema.AccessMode.WRITE_ONLY,
@@ -163,40 +179,25 @@ public class AiProviderDefinition extends BaseEntityImpl<String> {
   @Schema(title = "i18n:ai.providers.title.hasApiKey", accessMode = Schema.AccessMode.READ_ONLY)
   private boolean hasApiKey;
 
-  @Order(7)
-  @Schema(title = "i18n:ai.providers.title.organizationId", maxLength = 256)
-  @Column(length = 256)
-  private String organizationId;
-
   @Order(8)
-  @Schema(title = "i18n:ai.providers.title.projectId", maxLength = 256)
-  @Column(length = 256)
-  private String projectId;
-
-  @Order(9)
-  @Schema(title = "i18n:ai.providers.title.apiVersion", maxLength = 64)
-  @Column(length = 64)
-  private String apiVersion;
-
-  @Order(10)
   @Schema(title = "i18n:ai.providers.title.allowPrivateNetwork",
       description = "i18n:ai.providers.description.allowPrivateNetwork")
   @Column(name = "allow_private_network")
   private Boolean allowPrivateNetwork;
 
-  @Order(11)
+  @Order(9)
   @Schema(title = "i18n:ai.providers.title.enabled",
       extensions = @Extension(name = "x-ui", properties =
           @ExtensionProperty(name = "x-list-visible", value = "true")))
   private Boolean enabled;
 
-  @Order(12)
+  @Order(10)
   @Schema(title = "i18n:ai.providers.title.autoSyncEnabled",
       extensions = @Extension(name = "x-ui", properties =
           @ExtensionProperty(name = "x-list-visible", value = "true")))
   private Boolean autoSyncEnabled;
 
-  @Order(13)
+  @Order(11)
   @Schema(title = "i18n:ai.providers.title.description", maxLength = 512)
   @Column(length = 512)
   private String description;

@@ -1,6 +1,69 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { redirectToLogout } from './session';
+import { redirectToLogin, redirectToLogout } from './session.ts';
+
+test('redirectToLogin navigates immediately without waiting for slow browser cache cleanup', async () => {
+  const originalWindow = globalThis.window;
+  const originalLocalStorage = globalThis.localStorage;
+  const originalSessionStorage = globalThis.sessionStorage;
+  const originalCaches = globalThis.caches;
+  const originalNavigator = globalThis.navigator;
+  const originalIndexedDb = globalThis.indexedDB;
+  let assignedPath = '';
+
+  try {
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        dispatchEvent() {},
+        location: {
+          assign(path: string) {
+            assignedPath = path;
+          },
+          href: '',
+        },
+      },
+    });
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: {clear() {}},
+    });
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      configurable: true,
+      value: {clear() {}},
+    });
+    Object.defineProperty(globalThis, 'caches', {
+      configurable: true,
+      value: {keys: () => new Promise(() => {})},
+    });
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {},
+    });
+    Object.defineProperty(globalThis, 'indexedDB', {
+      configurable: true,
+      value: undefined,
+    });
+
+    const redirect = redirectToLogin();
+
+    assert.equal(assignedPath, '/login');
+    await redirect;
+  } finally {
+    Object.defineProperty(globalThis, 'window', {configurable: true, value: originalWindow});
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: originalLocalStorage,
+    });
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      configurable: true,
+      value: originalSessionStorage,
+    });
+    Object.defineProperty(globalThis, 'caches', {configurable: true, value: originalCaches});
+    Object.defineProperty(globalThis, 'navigator', {configurable: true, value: originalNavigator});
+    Object.defineProperty(globalThis, 'indexedDB', {configurable: true, value: originalIndexedDb});
+  }
+});
 
 test('redirectToLogout submits a top-level POST logout form', async () => {
   const originalWindow = globalThis.window;

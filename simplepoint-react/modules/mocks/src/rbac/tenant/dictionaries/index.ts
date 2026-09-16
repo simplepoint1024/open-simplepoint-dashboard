@@ -4,7 +4,7 @@ import handlers from './handlers';
 const contract = defineResource({
   id: 'rbac.tenant.dictionaries',
   scope: 'common',
-  backendModule: 'simplepoint-plugin-rbac-tenant-rest',
+  backendModule: 'simplepoint-service-common',
   backendController: 'DictionaryController, DictionaryItemController',
   contextPath: '/common',
   paths: ['/dictionaries', '/dictionary-items', '/platform/dictionaries', '/platform/dictionary-items'],

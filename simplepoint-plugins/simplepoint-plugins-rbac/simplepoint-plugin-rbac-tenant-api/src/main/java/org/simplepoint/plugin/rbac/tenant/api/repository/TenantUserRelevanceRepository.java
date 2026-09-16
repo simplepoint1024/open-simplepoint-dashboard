@@ -13,6 +13,8 @@ import org.springframework.data.domain.Pageable;
  */
 public interface TenantUserRelevanceRepository {
 
+  java.util.Optional<TenantUserRelevance> findByTenantIdAndUserIdAndDeletedAtIsNull(String tenantId, String userId);
+
   /**
    * Save All.
    */

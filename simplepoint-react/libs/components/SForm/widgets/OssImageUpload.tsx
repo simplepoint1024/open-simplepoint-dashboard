@@ -1,5 +1,5 @@
 import {DeleteOutlined, EyeOutlined, LoadingOutlined, UploadOutlined, UserOutlined} from '@ant-design/icons';
-import {Avatar, Button, Image, Space, Upload, message} from 'antd';
+import {App, Avatar, Button, Image, Space, Upload} from 'antd';
 import type {UploadFile} from 'antd';
 import {useMemo, useState} from 'react';
 import {request} from '@simplepoint/shared/api/client';
@@ -35,6 +35,7 @@ export const OssImageUpload = ({
   shape = 'square',
 }: OssImageUploadProps) => {
   const {t} = useI18n();
+  const {message} = App.useApp();
   const [uploading, setUploading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const blocked = disabled || readOnly || uploading;

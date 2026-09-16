@@ -7,7 +7,7 @@
 | 项目 | 状态 |
 | --- | --- |
 | 最后更新 | 2026-07-31 |
-| 当前阶段 | Phase 0 至 Phase 5 规划内开发已完成；严格双主机 Swarm drain 作为目标部署环境验收项保留 |
+| 当前阶段 | Phase 0 至 Phase 5 规划内开发已完成；严格双主机 Runtime Worker 故障切换作为目标部署环境验收项保留 |
 | 设计文档 | [AI 工作台 MCP、Skill、Agent 平台设计](doc/design/ai_mcp_agent_skill_platform.md) |
 | 代码实施 | 已新增 MCP、Runtime、Skill、Agent、Workflow、扩展目录六层模块，独立 Gateway/Tool/Agent/Workflow Runtime 和对应工作台页面 |
 | 数据库变更 | 已新增 MCP/Task、Runtime、加密 Secret、Skill、Agent、Workflow、扩展目录及完整执行、事件、Trace、人工任务和补偿状态 |
@@ -27,7 +27,7 @@
 - [x] 新增 Tool、Skill 不修改平台代码。
 - [x] `tool-runtime` 继续保持独立进程。
 - [x] 第三方代码不进入平台主服务、Gateway 或 Agent Runtime 进程。
-- [x] 不依赖 Kubernetes，使用 Docker Swarm、OCI Runtime 和平台节点调度。
+- [x] 编排层保持可替换，使用 OCI Runtime 和平台节点调度。
 - [x] 页面根据当前平台/租户上下文自动确定作用域。
 - [x] OAuth 使用 MCP 规范要求的 OAuth 2.1、Protected Resource Metadata 和 Resource Indicator。
 - [x] MCP Tasks 仅作为实验性兼容能力，内部工作流使用平台持久化状态机。
@@ -164,7 +164,7 @@ Publication 已完成真实协议验收；更多第三方 Server 品牌兼容矩
   同时保留高级 JSON 模式。
 - [x] 新增 `verify_managed_mcp_e2e.sh`，自动验证注册、Pool 就绪、能力发现、工具调用、
   Workload 替换、重新调用和安全清理。
-- [ ] 在至少两个专用 Runtime Worker 的真实 Swarm 环境执行多主机故障验收。
+- [ ] 在至少两个专用 Runtime Worker 的真实容器环境执行多主机故障验收。
 
 ### Phase 3：Skill
 
@@ -235,8 +235,7 @@ Publication 已完成真实协议验收；更多第三方 Server 品牌兼容矩
 
 后续工作不再是缺失的产品开发项，而是目标生产环境认证和持续演进：
 
-1. 在至少两个专用 Runtime Worker 的目标 Swarm 环境以严格模式运行
-   `verify_phase2_runtime_failover.sh`，完成真实节点 drain 与跨主机重分配认证；
+1. 在至少两个专用 Runtime Worker 的目标容器环境完成真实节点下线与跨主机重分配认证；
 2. 按支持策略持续扩充第三方 MCP Server 兼容矩阵、容量压测和告警阈值；
 3. 在正式 Registry、Cosign 身份和生产域名上执行发布演练。
 
@@ -275,10 +274,10 @@ Publication 已完成真实协议验收；更多第三方 Server 品牌兼容矩
 - 2026-07-28：两个 Gateway 容器在 Consul 以独立实例注册；真实会话故障注入确认
   旧会话返回 502、亲和目录清理且重新初始化切换到存活副本。
 - 2026-07-28：独立 Go Tool Runtime 完成镜像校验、容器生命周期和强制沙箱私有 API，
-  Go 测试、镜像内测试、Compose/Swarm 配置与本地节点健康/鉴权检查通过。
+  Go 测试、镜像内测试、Compose 配置与本地节点健康/鉴权检查通过。
 - 2026-07-28：AI Runtime `api/repository/service/rest` 四层模块完成 Node、Workload、
   Lease 模型及节点注册、容量心跳、失联离线与 generation fencing；相关 Gradle
-  `check`、Go 控制面客户端测试、Compose/Swarm 配置均通过。
+  `check`、Go 控制面客户端测试、Compose 配置均通过。
 - 2026-07-28：真实容器完成节点 generation 1 注册、重建后 generation 2 接管、
   旧进程心跳 409 fencing、强制终止后超时 `OFFLINE`、再次恢复为 generation 3
   `READY` 的故障验收；AI 与 Tool Runtime 均恢复 healthy。
@@ -304,10 +303,10 @@ Publication 已完成真实协议验收；更多第三方 Server 品牌兼容矩
   容器确认非 root、只读根文件系统、无网络、全部 Capability 删除并应用 CPU/内存/PID
   限额，测试 Workload、Lease、容器和镜像已清理。
 - 2026-07-28：Runtime 四层与 AI 服务定向 Gradle `check`（112 tasks）、Go
-  `config/controlplane/httpapi/runtime/tlsidentity` 测试、Compose/Swarm/Shell 和
+  `config/controlplane/httpapi/runtime/tlsidentity` 测试、Compose/Shell 和
   `git diff --check` 通过；13 个常驻服务运行，12 个健康检查全部 healthy。
 - 2026-07-28：根项目 `./gradlew test`（385 tasks）、MCP/OAuth/Host 定向
-  Gradle `check`、前端 `pnpm typecheck`、Compose/Swarm/Shell/JSON 和
+  Gradle `check`、前端 `pnpm typecheck`、Compose/Shell/JSON 和
   `git diff --check` 全部通过；12 个常驻容器全部 healthy。
 - 2026-07-28：完成平台/租户 Runtime Secret Broker；密文只写保存，调度时经节点
   mTLS 传输，真实 Workload 中以 `0400` 文件和只读 volume subpath 挂载，停止删除后
@@ -321,9 +320,9 @@ Publication 已完成真实协议验收；更多第三方 Server 品牌兼容矩
   Runtime 对本地不存在的 digest 镜像在拉取前返回供应链准入失败，验证后镜像仍不存在。
 - 2026-07-28：平台镜像发布入口支持 `--push --sign`，对 Registry 返回的不可变
   digest 发布 Cosign 签名和签名 SPDX attestation；Compose 开发环境准入默认关闭，
-  Swarm 生产基线默认 fail-closed 开启。
+  生产基线默认 fail-closed 开启。
 - 2026-07-28：根项目 `./gradlew test`（399 tasks）、Runtime/Egress/Verifier 全部
-  Go 测试、前端 `pnpm typecheck`、Compose/Swarm/Shell/JSON 和 `git diff --check`
+  Go 测试、前端 `pnpm typecheck`、Compose/Shell/JSON 和 `git diff --check`
   通过；本地 15 个常驻容器运行且全部已有健康检查为 healthy，节点 generation 12，
   无测试 Workload 容器残留。
 - 2026-07-28：Gradle 前端依赖任务改用 pnpm `.modules.yaml` 作为输出状态，不再递归
@@ -338,12 +337,12 @@ Publication 已完成真实协议验收；更多第三方 Server 品牌兼容矩
   Lease 均已清理，Runtime 恢复只允许 `docker.io`。
 - 2026-07-28：根项目 `./gradlew test`（399 tasks）、Runtime 四层与 AI 服务
   Gradle `check`（112 tasks）、Runtime Go 全量测试、前端 `pnpm typecheck`、
-  Compose/Swarm 配置及 `git diff --check` 通过；AI/Runtime 镜像与容器 ID 对齐，
+  Compose 配置及 `git diff --check` 通过；AI/Runtime 镜像与容器 ID 对齐，
   本地 15 个常驻容器运行且所有已有健康检查均为 healthy，节点 generation 15。
 - 2026-07-29：Runtime 新增环境级 seccomp/AppArmor 策略。自定义 seccomp JSON
   在启动时完成规范化、摘要和 Docker 能力检查，生产配置在策略不可用时 fail-closed；
   Runtime 节点向控制面上报实际强制状态、策略摘要和 AppArmor Profile。Compose
-  开发机因宿主内核未启用 AppArmor，仅关闭该项且保持 seccomp 强制；Swarm 基线同时
+  开发机因宿主内核未启用 AppArmor，仅关闭该项且保持 seccomp 强制；生产基线同时
   要求两项策略，并提供幂等宿主安装脚本。
 - 2026-07-29：完成 `MANAGED_OCI + STDIO` MCP Server 注册模型、Runtime Pool
   scale-to-zero 激活、READY Workload 动态端点解析以及 Gateway 专用
@@ -372,11 +371,11 @@ Publication 已完成真实协议验收；更多第三方 Server 品牌兼容矩
   故障副本，且不会自动重放不确定的 Tool 调用。
 - 2026-07-29：新增多主机验收脚本，验证原始 Session ID 不落 Redis 键、会话亲和、
   多 Workload/多节点分布，并可在显式授权后 drain 专用 Runtime Worker、验证 fence
-  重分配和自动恢复。当前本机 Swarm 未启用且没有第二个 Worker，因此只完成脚本静态
+  重分配和自动恢复。当前本机没有第二个 Worker，因此只完成脚本静态
   校验与本地自动化测试，真实多主机故障注入仍待目标环境执行。
 - 2026-07-29：Phase 2 最终回归通过根项目 `./gradlew test`（399 tasks）、
   Runtime/MCP/AI 定向 Gradle `check`、前端 `pnpm typecheck` 与 i18n 同步校验、
-  Compose/Swarm/Shell 和 `git diff --check`。修复 Rspack 2.1.4 构建器异常后，
+  Compose/Shell 和 `git diff --check`。修复 Rspack 2.1.4 构建器异常后，
   所有微前端和 AI OCI 镜像成功构建；本地 AI 容器运行最新镜像并为 healthy，
   `http://192.168.145.130:8080/ai/mf/mf-manifest.json` 返回 200。
 - 2026-07-29：补齐已实现 Runtime/MCP 能力的工作台查询面。新增 Pool、Workload、

@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.skill.api.entity.AiSkillExecution;
+import org.simplepoint.plugin.ai.skill.api.model.SkillExecutionSource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -35,10 +36,45 @@ public interface AiSkillExecutionRepository
       String idempotencyKeyHash
   );
 
+  /** Finds a prior idempotent execution for one immutable Draft Revision. */
+  Optional<AiSkillExecution> findActiveDraftByIdempotency(
+      String skillId,
+      String draftId,
+      long draftRevision,
+      AiResourceScope scopeType,
+      String tenantId,
+      String idempotencyKeyHash
+  );
+
   /**
    * Pages one Skill's executions in the selected ownership scope.
    */
   Page<AiSkillExecution> findAllActiveBySkillAndScope(
+      String skillId,
+      AiResourceScope scopeType,
+      String tenantId,
+      Pageable pageable
+  );
+
+  /** Pages one Skill's executions for an exact source. */
+  Page<AiSkillExecution> findAllActiveBySkillScopeAndSource(
+      String skillId,
+      AiResourceScope scopeType,
+      String tenantId,
+      SkillExecutionSource sourceType,
+      Pageable pageable
+  );
+
+  /** Finds ordered executions belonging to one durable Mock test run. */
+  List<AiSkillExecution> findAllActiveByTestRun(
+      String skillId,
+      AiResourceScope scopeType,
+      String tenantId,
+      String testRunId
+  );
+
+  /** Pages distinct durable Mock test Run IDs newest first. */
+  Page<String> findAllActiveTestRunIdsBySkillAndScope(
       String skillId,
       AiResourceScope scopeType,
       String tenantId,

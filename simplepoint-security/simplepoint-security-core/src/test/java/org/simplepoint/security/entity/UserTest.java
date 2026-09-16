@@ -37,6 +37,19 @@ class UserTest {
   }
 
   @Test
+  void springSecurityAccountChecksRespectPersistedFlags() {
+    User user = new User();
+    user.setEnabled(false);
+    user.setAccountNonLocked(false);
+    user.setAccountNonExpired(false);
+    user.setCredentialsNonExpired(false);
+    assertThat(user.isEnabled()).isFalse();
+    assertThat(user.isAccountNonLocked()).isFalse();
+    assertThat(user.isAccountNonExpired()).isFalse();
+    assertThat(user.isCredentialsNonExpired()).isFalse();
+  }
+
+  @Test
   void getUsername_returnsId() {
     User user = new User();
     user.setId("user-001");

@@ -80,7 +80,7 @@
   "host.dashboard.feature.infra.consul": "Consul 配置中心",
   "host.dashboard.feature.infra.redis": "Redis WebSession / 缓存",
   "host.dashboard.feature.infra.amqp": "AMQP RPC 服务间调用",
-  "host.dashboard.feature.infra.docker": "Docker Swarm 编排",
+  "host.dashboard.feature.infra.docker": "Docker Compose 编排",
   "host.dashboard.feature.observability.actuator": "Spring Actuator",
   "host.dashboard.feature.observability.audit": "操作审计日志",
   "host.dashboard.feature.observability.coverage": "JaCoCo 单元测试覆盖率",

@@ -34,6 +34,12 @@ public class AiMcpOauthAuthorization extends BaseEntityImpl<String> {
   @Column(name = "server_id", length = 64, nullable = false)
   private String serverId;
 
+  @Column(name = "connection_id", length = 64)
+  private String connectionId;
+
+  @Column(name = "user_id", length = 64)
+  private String userId;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "scope_type", length = 16, nullable = false)
   private AiResourceScope scopeType;

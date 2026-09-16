@@ -1,5 +1,7 @@
 package org.simplepoint.plugin.ai.skill.api.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
@@ -17,6 +19,9 @@ public interface AiSkillDefinitionRepository
    * Finds a non-deleted Skill by identifier.
    */
   Optional<AiSkillDefinition> findActiveById(String id);
+
+  /** Finds all requested non-deleted Skills in one round trip. */
+  List<AiSkillDefinition> findAllActiveByIdIn(Collection<String> ids);
 
   /**
    * Finds and locks a non-deleted Skill by identifier.

@@ -1,0 +1,32 @@
+{
+  "descriptorName": "io.github.github/github-mcp-server",
+  "descriptorVersion": "0.31.0",
+  "artifact": {
+    "source": "UPSTREAM_ORIGINAL",
+    "type": "OCI",
+    "reference": "ghcr.io/github/github-mcp-server@sha256:7b1384cdd6d025c09256af2fb6cb79bc5e87aedc957c8826b5e50d8cb82f0be3"
+  },
+  "transport": {"type": "STDIO", "containerPort": null, "path": null},
+  "process": {
+    "entrypoint": [],
+    "command": [],
+    "arguments": ["stdio"],
+    "workingDirectory": "/server"
+  },
+  "configuration": [
+    {"name": "read-only", "targetEnvironment": "GITHUB_READ_ONLY", "value": "1"},
+    {"name": "lockdown", "targetEnvironment": "GITHUB_LOCKDOWN_MODE", "value": "1"}
+  ],
+  "secrets": [
+    {
+      "name": "github-oauth-token",
+      "secretReference": "provider://github/access-token",
+      "target": "ENV_AT_EXEC",
+      "targetName": "GITHUB_PERSONAL_ACCESS_TOKEN"
+    }
+  ],
+  "storage": [],
+  "network": {"mode": "HTTP_EGRESS", "allowlist": ["api.github.com:443"]},
+  "session": {"mode": "DEDICATED", "maxSessions": 1},
+  "sandbox": {"profile": "STRICT", "limits": {}}
+}

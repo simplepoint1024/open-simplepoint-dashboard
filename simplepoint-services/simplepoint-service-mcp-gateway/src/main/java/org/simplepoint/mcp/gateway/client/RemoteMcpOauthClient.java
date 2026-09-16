@@ -59,10 +59,14 @@ public class RemoteMcpOauthClient {
     this.properties = properties;
     this.objectMapper = objectMapper;
     this.clientMetadataDocument = clientMetadataDocument;
-    this.httpClient = HttpClient.newBuilder()
+    HttpClient.Builder builder = HttpClient.newBuilder()
         .connectTimeout(positive(properties.getConnectTimeout(), Duration.ofSeconds(10)))
-        .followRedirects(HttpClient.Redirect.NEVER)
-        .build();
+        .followRedirects(HttpClient.Redirect.NEVER);
+    McpOauthProxySelector.create(
+        properties.getOauthProxyUrl(),
+        properties.getOauthNoProxy()
+    ).ifPresent(builder::proxy);
+    this.httpClient = builder.build();
   }
 
   /**
@@ -222,7 +226,10 @@ public class RemoteMcpOauthClient {
         form.put("scope", request.scopes().trim());
       }
     }
-    form.put("resource", required(request.resource(), "OAuth target resource is missing"));
+    String resource = normalized(request.resource(), null);
+    if (resource != null) {
+      form.put("resource", resource);
+    }
     String authorization = null;
     if ("client_secret_post".equals(authMethod)) {
       form.put("client_secret", required(

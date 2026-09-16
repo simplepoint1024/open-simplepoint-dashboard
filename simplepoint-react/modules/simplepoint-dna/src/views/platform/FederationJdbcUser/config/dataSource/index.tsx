@@ -1,6 +1,6 @@
 import {useData, usePage} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {Button, Card, Checkbox, Empty, Input, Space, Table, Tag, Tooltip, message} from 'antd';
+import {App as AntApp, Button, Card, Checkbox, Empty, Input, Space, Table, Tag, Tooltip} from 'antd';
 import type {ColumnsType, TablePaginationConfig} from 'antd/es/table';
 import {
   CheckCircleOutlined,
@@ -40,6 +40,7 @@ const OPERATION_COLORS: Record<OperationType, string> = {
 
 const App = ({userId}: JdbcUserDataSourceConfigProps) => {
   const {t} = useI18n();
+  const {message} = AntApp.useApp();
   const [leftPage, setLeftPage] = useState({current: 1, pageSize: 8});
   const [leftSearch, setLeftSearch] = useState('');
   const [leftKeyword, setLeftKeyword] = useState('');
@@ -144,7 +145,7 @@ const App = ({userId}: JdbcUserDataSourceConfigProps) => {
         return next;
       });
     }
-  }, [authorizedSet, authorizing, refetchAuthorized, refetchItems, userId, t]);
+  }, [authorizedSet, authorizing, message, refetchAuthorized, refetchItems, userId, t]);
 
   const handleUnauthorize = useCallback(async (itemId: string) => {
     if (!userId) return;
@@ -163,7 +164,7 @@ const App = ({userId}: JdbcUserDataSourceConfigProps) => {
       setGrants(prevGrants);
       message.error(resolveErrorMessage(error, t('dna.federation.jdbcUsers.page.error.unauthorized', '取消数据源授权失败')));
     }
-  }, [userId, targetKeys, authorizedItems, grants, refetchAuthorized, refetchItems, t]);
+  }, [userId, targetKeys, authorizedItems, grants, message, refetchAuthorized, refetchItems, t]);
 
   const handlePermissionChange = useCallback((grant: JdbcUserGrant, operation: OperationType, checked: boolean) => {
     const current = new Set(grant.operationPermissions ?? []);
@@ -179,7 +180,7 @@ const App = ({userId}: JdbcUserDataSourceConfigProps) => {
       setGrants((g) => g.map((gr) => gr.id === grant.id ? {...gr, operationPermissions: prev} : gr));
       message.error(resolveErrorMessage(error, t('dna.federation.jdbcUsers.page.error.updatePermissions', '操作权限更新失败')));
     });
-  }, [t]);
+  }, [message, t]);
 
   if (!userId) {
     return (

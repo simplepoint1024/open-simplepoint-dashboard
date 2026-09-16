@@ -10,6 +10,10 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.LinkedHashSet;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.RequestContextHolder;
 import org.simplepoint.security.context.AuthorizationContextResolver;
@@ -22,17 +26,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 /**
  * AuthorizationContextFilter 是一个 Servlet 过滤器，用于从 HTTP 请求中提取授权上下文信息，并将其注入到 Spring 的 RequestAttributes 中.
  *
- * <p>注意：这个 Filter 必须在 Spring Security 的 JWT 认证发生之前执行，否则 JwtGrantedAuthoritiesConverter
- * 拿不到 AuthorizationContext。</p>
+ * <p>Runs after bearer-token authentication and before authorization. Cached policy is
+ * bound to the verified JWT subject and the current committed tenant version.</p>
  */
 public class AuthorizationContextFilter extends OncePerRequestFilter {
 
   private static final String HEADER_CONTEXT_ID = "X-Context-Id";
   private static final String HEADER_TENANT_ID = "X-Tenant-Id";
   private static final String HEADER_ROLE_ID = "X-Role-Id";
-  private static final String HEADER_USER_ID = "X-User-Id";
-  private static final String HEADER_SCOPE_TYPE = "X-Scope-Type";
-  private static final String HEADER_ACTOR_ROLE = "X-Actor-Role";
   private static final Set<String> CONTEXT_EXCLUDED_EXACT_PATHS = Set.of(
       "/error"
   );
@@ -46,13 +47,6 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
       "/css/",
       "/js/",
       "/images/"
-  );
-  private static final Set<String> CACHED_CONTEXT_PROTECTED_HEADERS = Set.of(
-      HEADER_TENANT_ID,
-      HEADER_ROLE_ID,
-      HEADER_USER_ID,
-      HEADER_SCOPE_TYPE,
-      HEADER_ACTOR_ROLE
   );
 
   private final AuthorizationContextResolver authorizationContextResolver;
@@ -113,20 +107,20 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
       String roleId = request.getHeader(HEADER_ROLE_ID);
       if (StringUtils.hasText(authorization)) {
         Map<String, String> headers = collectHeaders(request, contextId, tenantId, roleId);
-        AuthorizationContext ctx = authorizationContextResolver.load(contextId);
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (!(authentication instanceof JwtAuthenticationToken jwt) || !jwt.isAuthenticated()) {
+          throw new org.springframework.security.authentication.BadCredentialsException("Bearer token is not authenticated");
+        }
+        AuthorizationContext ctx = authorizationContextResolver.resolveAuthenticated(jwt.getToken().getSubject(), headers);
         if (ctx == null) {
-          ctx = authorizationContextResolver.resolve(headers);
-        } else {
-          if (hasProtectedHeaderMismatch(ctx, HEADER_TENANT_ID, tenantId)
-              || hasProtectedHeaderMismatch(ctx, HEADER_ROLE_ID, roleId)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Authorization context mismatch");
-            return;
-          }
-          ctx.mergeAttributes(filterCachedContextHeaders(headers));
+          throw new AccessDeniedException("Authorization context is required");
         }
-        if (ctx != null) {
-          RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, ctx);
-        }
+        RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, ctx);
+        Set<GrantedAuthority> authorities = new LinkedHashSet<>(jwt.getAuthorities());
+        authorities.addAll(ctx.asAuthorities());
+        JwtAuthenticationToken scoped = new JwtAuthenticationToken(jwt.getToken(), authorities, jwt.getName());
+        scoped.setDetails(jwt.getDetails());
+        SecurityContextHolder.getContext().setAuthentication(scoped);
       }
 
       filterChain.doFilter(request, response);
@@ -165,25 +159,6 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
     return headers;
   }
 
-  private boolean hasProtectedHeaderMismatch(AuthorizationContext context, String headerName, String requestedValue) {
-    String requested = normalize(requestedValue);
-    if (!StringUtils.hasText(requested)) {
-      return false;
-    }
-    String cached = normalize(context.getAttribute(headerName));
-    return StringUtils.hasText(cached) && !requested.equals(cached);
-  }
-
-  private Map<String, String> filterCachedContextHeaders(Map<String, String> headers) {
-    Map<String, String> safeHeaders = new HashMap<>();
-    headers.forEach((key, value) -> {
-      if (key != null && !CACHED_CONTEXT_PROTECTED_HEADERS.contains(normalizeHeaderName(key))) {
-        safeHeaders.put(key, value);
-      }
-    });
-    return safeHeaders;
-  }
-
   private String requestPath(HttpServletRequest request) {
     String servletPath = request.getServletPath();
     if (StringUtils.hasText(servletPath)) {
@@ -197,30 +172,4 @@ public class AuthorizationContextFilter extends OncePerRequestFilter {
     return requestUri;
   }
 
-  private String normalize(String value) {
-    if (value == null) {
-      return null;
-    }
-    String trimmed = value.trim();
-    return trimmed.isEmpty() ? null : trimmed;
-  }
-
-  private String normalizeHeaderName(String headerName) {
-    if (HEADER_TENANT_ID.equalsIgnoreCase(headerName)) {
-      return HEADER_TENANT_ID;
-    }
-    if (HEADER_ROLE_ID.equalsIgnoreCase(headerName)) {
-      return HEADER_ROLE_ID;
-    }
-    if (HEADER_USER_ID.equalsIgnoreCase(headerName)) {
-      return HEADER_USER_ID;
-    }
-    if (HEADER_SCOPE_TYPE.equalsIgnoreCase(headerName)) {
-      return HEADER_SCOPE_TYPE;
-    }
-    if (HEADER_ACTOR_ROLE.equalsIgnoreCase(headerName)) {
-      return HEADER_ACTOR_ROLE;
-    }
-    return headerName;
-  }
 }

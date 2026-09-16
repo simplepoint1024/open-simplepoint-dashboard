@@ -134,5 +134,6 @@
   "dna.metadata.page.table.constraints.reference": "引用目标",
   "dna.metadata.page.table.constraints.checkExpression": "CHECK 表达式",
   "dna.metadata.page.table.constraints.actions": "操作",
-  "dna.metadata.page.table.constraints.drop": "删除"
+  "dna.metadata.page.table.constraints.drop": "删除",
+  "dna.metadata.page.nodeType.DATA_SOURCE": "数据源"
 }
