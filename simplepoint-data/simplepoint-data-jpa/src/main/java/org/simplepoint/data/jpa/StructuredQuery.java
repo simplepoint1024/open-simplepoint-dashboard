@@ -81,14 +81,18 @@ public final class StructuredQuery {
     // subqueries.
     var scope = DataScopeContext.get();
     if (scope == null && context != null && !Boolean.TRUE.equals(context.getIsAdministrator())) {
+      var resourceScope = context.activeDataScope();
       scope =
           new org.simplepoint.core.datascopeannotation.DataScopeCondition(
-              context.getDataScopeType() == null ? "NONE" : context.getDataScopeType(),
+              resourceScope == null
+                  ? (context.getDataScopeType() == null ? "NONE" : context.getDataScopeType())
+                  : resourceScope.type(),
               relation.departmentField(),
               relation.ownerField(),
               context.getUserId(),
-              context.getDeptIds(),
-              Boolean.TRUE.equals(context.getDataScopeIncludeSelf()));
+              resourceScope == null ? context.getDeptIds() : resourceScope.departmentIds(),
+              resourceScope == null ? Boolean.TRUE.equals(context.getDataScopeIncludeSelf())
+                  : resourceScope.includeSelf());
     }
     if (scope == null) {
       if (context == null || !Boolean.TRUE.equals(context.getIsAdministrator())) {

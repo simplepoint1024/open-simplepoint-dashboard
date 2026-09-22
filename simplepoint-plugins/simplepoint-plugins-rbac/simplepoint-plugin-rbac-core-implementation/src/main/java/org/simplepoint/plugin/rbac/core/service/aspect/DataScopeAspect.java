@@ -14,6 +14,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
+import org.simplepoint.core.ResourceDataScope;
 import org.simplepoint.core.datascopeannotation.DataScopeCondition;
 import org.simplepoint.core.datascopeannotation.DataScopeContext;
 import org.simplepoint.core.datascopeannotation.DataScopeFilter;
@@ -45,15 +46,17 @@ public class DataScopeAspect {
       ctx = new AuthorizationContext();
     }
 
-    String scopeType = ctx.getDataScopeType();
+    ResourceDataScope resourceScope = ctx.activeDataScope();
+    String scopeType = resourceScope == null ? ctx.getDataScopeType() : resourceScope.type();
     if (Boolean.TRUE.equals(ctx.getIsAdministrator())) {
       scopeType = "ALL";
     } else if (scopeType == null || scopeType.isBlank()) {
       scopeType = "DENY";
     }
     String userId = ctx.getUserId();
-    Set<String> deptIds = ctx.getDeptIds();
-    boolean includeSelf = Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf());
+    Set<String> deptIds = resourceScope == null ? ctx.getDeptIds() : resourceScope.departmentIds();
+    boolean includeSelf = resourceScope == null ? Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf())
+        : resourceScope.includeSelf();
 
     DataScopeCondition condition = new DataScopeCondition(
         scopeType,

@@ -64,6 +64,10 @@ public class AuthorizationContext implements Serializable {
    */
   private Map<String, String> fieldPermissions;
 
+  /** Effective policies keyed by server-declared page resource code. */
+  private Map<String, ResourceDataScope> resourceDataScopes;
+  private Map<String, Map<String, String>> resourceFieldPermissions;
+
   /**
    * Sets the context ID if it has not been set before.
    *
@@ -291,6 +295,36 @@ public class AuthorizationContext implements Serializable {
     if (this.fieldPermissions == null) {
       this.fieldPermissions = fieldPermissions == null ? Collections.emptyMap() : fieldPermissions;
     }
+  }
+
+  public void setResourceDataScopes(Map<String, ResourceDataScope> resourceDataScopes) {
+    if (this.resourceDataScopes == null) {
+      this.resourceDataScopes = resourceDataScopes == null ? Map.of() : Map.copyOf(resourceDataScopes);
+    }
+  }
+
+  public void setResourceFieldPermissions(Map<String, Map<String, String>> resourceFieldPermissions) {
+    if (this.resourceFieldPermissions == null) {
+      if (resourceFieldPermissions == null) {
+        this.resourceFieldPermissions = Map.of();
+      } else {
+        Map<String, Map<String, String>> copied = new HashMap<>();
+        resourceFieldPermissions.forEach((code, entries) -> copied.put(code, Map.copyOf(entries)));
+        this.resourceFieldPermissions = Map.copyOf(copied);
+      }
+    }
+  }
+
+  /** Resource-specific policy takes precedence over the legacy role-wide policy. */
+  public ResourceDataScope activeDataScope() {
+    String code = ResourcePolicyContext.get();
+    return code == null || resourceDataScopes == null ? null : resourceDataScopes.get(code);
+  }
+
+  /** Returns null when a page has no explicit field policy. */
+  public Map<String, String> activeFieldPermissions() {
+    String code = ResourcePolicyContext.get();
+    return code == null || resourceFieldPermissions == null ? null : resourceFieldPermissions.get(code);
   }
 
   /**

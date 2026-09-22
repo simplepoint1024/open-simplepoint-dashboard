@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.RequestContextHolder;
+import org.simplepoint.core.ResourcePolicyContext;
 import org.simplepoint.security.entity.ResourceScopeType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -26,13 +27,14 @@ class ResourceScopeHandlerInterceptorTest {
   private final ClasspathResourceScopeRegistry registry = new ClasspathResourceScopeRegistry(Map.of(
       "system.read", Set.of(ResourceScopeType.SYSTEM),
       "tenant.read", Set.of(ResourceScopeType.TENANT)
-  ));
+  ), Map.of("tenant.read", "tenant.page.view"));
   private final ResourceScopeHandlerInterceptor interceptor =
       new ResourceScopeHandlerInterceptor(registry);
 
   @AfterEach
   void clearRequestContext() {
     org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+    ResourcePolicyContext.clear();
   }
 
   @Test
@@ -58,6 +60,9 @@ class ResourceScopeHandlerInterceptorTest {
     bindContext(AuthorizationScopeType.TENANT, false);
 
     assertThat(interceptor.preHandle(request, response, handler("mixed"))).isTrue();
+    assertThat(ResourcePolicyContext.get()).isEqualTo("tenant.page.view");
+    interceptor.afterCompletion(request, response, handler("mixed"), null);
+    assertThat(ResourcePolicyContext.get()).isNull();
   }
 
   @Test

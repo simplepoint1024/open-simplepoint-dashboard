@@ -28,6 +28,7 @@
 .role-resource-detail-heading .ant-typography {margin-bottom: 2px;}
 .role-resource-settings {display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px;}
 .role-resource-setting {flex: 1 1 220px; min-width: min(100%, 220px); min-height: 140px; padding: 14px; border: 1px solid var(--ant-color-border-secondary); border-radius: 8px; overflow-wrap: anywhere;}
+.role-resource-policy-select {width: 100%; margin-top: 12px;}
 .role-resource-child-row {display: flex; align-items: center; gap: 7px; min-height: 36px; padding-block: 4px; border-radius: 6px;}
 .role-resource-child-row:hover {background: var(--ant-color-fill-tertiary);}
 .role-resource-children {margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ant-color-border-secondary); max-height: 300px; overflow: auto;}

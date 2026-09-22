@@ -31,6 +31,7 @@ import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.api.security.service.JsonSchemaDetailsService;
 import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.ResourcePolicyContext;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -761,6 +762,25 @@ class BaseServiceImplTest {
     service.create(entity);
 
     assertThat(entity.getCreatedBy()).isNull();
+  }
+
+  @Test
+  void create_clearsFieldsProtectedByTheActivePagePolicy() {
+    AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setDataScopeType("ALL");
+    ctx.setResourceFieldPermissions(Map.of("test.page", Map.of("StubEntity#createdBy", "VISIBLE")));
+    service.injectedContext = ctx;
+    StubEntity entity = new StubEntity();
+    entity.setCreatedBy("client-user");
+    when(repository.save(entity)).thenReturn(entity);
+    when(detailsProviderService.getDialects(ModifyDataAuditingService.class)).thenReturn(Set.of());
+    ResourcePolicyContext.set("test.page");
+    try {
+      service.create(entity);
+      assertThat(entity.getCreatedBy()).isNull();
+    } finally {
+      ResourcePolicyContext.clear();
+    }
   }
 
   @Test

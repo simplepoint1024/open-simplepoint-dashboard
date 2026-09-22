@@ -9,15 +9,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
+import org.simplepoint.core.ResourcePolicyContext;
 import org.simplepoint.security.ResourceScopePolicy;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.AsyncHandlerInterceptor;
 
 /** Enforces the resource boundary declared by controller authority expressions. */
-public class ResourceScopeHandlerInterceptor implements HandlerInterceptor {
+public class ResourceScopeHandlerInterceptor implements AsyncHandlerInterceptor {
 
   private static final Pattern AUTHORITY_FUNCTION = Pattern.compile(
       "has(?:Any)?Authority\\s*\\(([^)]*)\\)"
@@ -37,6 +38,7 @@ public class ResourceScopeHandlerInterceptor implements HandlerInterceptor {
       final HttpServletResponse response,
       final Object handler
   ) {
+    ResourcePolicyContext.clear();
     if (!(handler instanceof HandlerMethod handlerMethod)) {
       return true;
     }
@@ -65,6 +67,7 @@ public class ResourceScopeHandlerInterceptor implements HandlerInterceptor {
       }
       knownAuthority = true;
       if (ResourceScopePolicy.isAccessible(scopes.get(), context)) {
+        selectPage(declaredAuthorities, context);
         return true;
       }
     }
@@ -73,9 +76,35 @@ public class ResourceScopeHandlerInterceptor implements HandlerInterceptor {
     }
     Collection<String> contextResources = context.getResources();
     if (contextResources != null && contextResources.stream().anyMatch(declaredAuthorities::contains)) {
+      selectPage(declaredAuthorities, context);
       return true;
     }
     throw new AccessDeniedException("资源未声明或不属于当前工作空间");
+  }
+
+  private void selectPage(Set<String> authorities, AuthorizationContext context) {
+    Set<String> pages = new LinkedHashSet<>();
+    authorities.forEach(authority -> registry.findPage(authority).ifPresent(pages::add));
+    if (pages.size() == 1) {
+      ResourcePolicyContext.set(pages.iterator().next());
+    } else if (pages.size() > 1 && ((context.getResourceDataScopes() != null
+        && !context.getResourceDataScopes().isEmpty())
+        || (context.getResourceFieldPermissions() != null
+        && !context.getResourceFieldPermissions().isEmpty()))) {
+      throw new AccessDeniedException("接口对应多个页面资源，无法确定数据与字段规则");
+    }
+  }
+
+  @Override
+  public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
+      Object handler, Exception ex) {
+    ResourcePolicyContext.clear();
+  }
+
+  @Override
+  public void afterConcurrentHandlingStarted(HttpServletRequest request, HttpServletResponse response,
+      Object handler) {
+    ResourcePolicyContext.clear();
   }
 
   static Set<String> extractAuthorities(final String expression) {

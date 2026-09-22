@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.core.datascopeannotation.DataScopeCondition;
 import org.simplepoint.core.query.QueryCapabilities;
 import org.simplepoint.plugin.rbac.tenant.api.constants.TenantDictionaryCodes;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
@@ -39,6 +40,7 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
   private final OrganizationRepository organizationRepository;
   private final DictionaryItemRepository dictionaryItemRepository;
   private final OrganizationSelectionQuery selectionQuery;
+  private final OrganizationScopedReadQuery scopedReadQuery;
   private final org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService authorizationVersions;
 
   /**
@@ -53,25 +55,49 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
       DetailsProviderService detailsProviderService,
       DictionaryItemRepository dictionaryItemRepository,
       org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService authorizationVersions,
-      OrganizationSelectionQuery selectionQuery
+      OrganizationSelectionQuery selectionQuery,
+      OrganizationScopedReadQuery scopedReadQuery
   ) {
     super(repository, detailsProviderService);
     this.organizationRepository = repository;
     this.dictionaryItemRepository = dictionaryItemRepository;
     this.authorizationVersions = authorizationVersions;
     this.selectionQuery = selectionQuery;
+    this.scopedReadQuery = scopedReadQuery;
   }
 
   @Override
   protected boolean isDataScopeApplicable() {
-    return false;
+    var context = getAuthorizationContext();
+    return context != null && context.activeDataScope() != null;
+  }
+
+  @Override
+  protected String dataScopeDeptField() {
+    return "id";
+  }
+
+  @Override
+  protected void assertCreateAccessible(Organization entity) {
+    DataScopeCondition scope = organizationScope();
+    // A new organization has no id yet. SELF can own it; fixed organization sets
+    // cannot contain the new id and must not silently create an invisible row.
+    if (scope == null || scope.isAllData() || scope.isSelf() || scope.isIncludeSelf()) return;
+    if ("DEPT_AND_BELOW".equals(scope.getScopeType()) && entity.getParentId() != null
+        && scope.getDeptIds().contains(entity.getParentId())) return;
+    throw new org.springframework.security.access.AccessDeniedException(
+        "当前数据范围不允许创建新组织，请使用全部或仅本人范围");
+  }
+
+  private DataScopeCondition organizationScope() {
+    return isDataScopeApplicable() ? buildDefaultDataScopeCondition() : null;
   }
 
   @Override
   @Transactional(readOnly = true)
   public Page<org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelectionRow> selection(
       org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelection draft, Pageable pageable) {
-    return selectionQuery.list(selectionTenant(), draft, pageable);
+    return selectionQuery.list(selectionTenant(), draft, pageable, organizationScope());
   }
 
   @Override
@@ -104,6 +130,9 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
     if (tenantId == null) {
       return Page.empty(pageable);
     }
+    if (!QueryCapabilities.readable(Organization.class, "id")) {
+      throw new org.springframework.security.access.AccessDeniedException("当前字段权限不允许展示组织标识");
+    }
     String parent = trimToNull(parentId);
     if (pageable.isPaged() && pageable.getSort().isUnsorted()) {
       var defaults = List.of("sort", "name", "code").stream()
@@ -111,9 +140,12 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
           .map(Sort.Order::asc).toList();
       pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(defaults));
     }
-    Page<Organization> page = super.limitScoped(filters,
-        Map.of("tenantId", "equals:" + tenantId,
-            "parentId", parent == null ? "is:null" : "equals:" + parent), pageable);
+    DataScopeCondition scope = organizationScope();
+    Page<Organization> page = scope == null || scope.isAllData()
+        ? super.limitScoped(filters,
+            Map.of("tenantId", "equals:" + tenantId,
+                "parentId", parent == null ? "is:null" : "equals:" + parent), pageable)
+        : scopedReadQuery.tree(tenantId, parent, filters, pageable, scope);
     var options = optionPage(page.getContent(), tenantId, page.getNumber(), page.getSize(), page.hasNext());
     return new org.springframework.data.domain.PageImpl<>(options.content(), pageable, page.getTotalElements());
   }
@@ -134,11 +166,17 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
     if (tenantId == null) {
       return new OrganizationOptionPage(List.of(), pageNumber, pageSize, false);
     }
+    if (!QueryCapabilities.readable(Organization.class, "id")) {
+      throw new org.springframework.security.access.AccessDeniedException("当前字段权限不允许展示组织标识");
+    }
 
     String normalizedExcludeId = trimToNull(excludeId);
+    DataScopeCondition scope = organizationScope();
     Set<String> selectedIds = parseIds(ids);
     if (!selectedIds.isEmpty()) {
-      List<Organization> selected = organizationRepository.findAllByIdsAndTenantId(selectedIds, tenantId)
+      List<Organization> selected = (scope == null || scope.isAllData()
+          ? organizationRepository.findAllByIdsAndTenantId(selectedIds, tenantId)
+          : super.findAllByIds(selectedIds))
           .stream()
           .filter(organization -> !Objects.equals(organization.getId(), normalizedExcludeId))
           .sorted(organizationComparator())
@@ -149,7 +187,13 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
     Pageable optionPageable = PageRequest.of(pageNumber, pageSize);
     String normalizedKeyword = trimToNull(keyword);
     Slice<Organization> organizations;
-    if (normalizedKeyword != null) {
+    boolean protectedSearch = normalizedKeyword != null
+        && (!QueryCapabilities.readable(Organization.class, "name")
+            || !QueryCapabilities.readable(Organization.class, "code"));
+    if ((scope != null && !scope.isAllData()) || protectedSearch) {
+      organizations = scopedReadQuery.options(tenantId, normalizedKeyword, trimToNull(parentId),
+          normalizedExcludeId, flat, optionPageable, scope);
+    } else if (normalizedKeyword != null) {
       String foldedKeyword = normalizedKeyword.substring(0, Math.min(normalizedKeyword.length(), 128))
           .toLowerCase(Locale.ROOT);
       organizations = organizationRepository.searchOptions(
@@ -264,9 +308,12 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
         .map(Organization::getId)
         .filter(Objects::nonNull)
         .collect(Collectors.toCollection(LinkedHashSet::new));
+    DataScopeCondition scope = organizationScope();
     Set<String> parentIds = organizationIds.isEmpty()
         ? Set.of()
-        : new HashSet<>(organizationRepository.findParentIdsWithChildren(organizationIds, tenantId));
+        : scope == null || scope.isAllData()
+            ? new HashSet<>(organizationRepository.findParentIdsWithChildren(organizationIds, tenantId))
+            : scopedReadQuery.visibleParentsWithChildren(tenantId, organizationIds, scope);
     List<OrganizationOptionVo> content = organizations.stream()
         .map(organization -> new OrganizationOptionVo(
             organization.getId(),
@@ -340,6 +387,9 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
     }
     Organization parent = organizationRepository.findByIdAndTenantId(normalizedParentId, tenantId)
         .orElseThrow(() -> new IllegalArgumentException("上级组织不存在"));
+    if (isDataScopeApplicable() && super.findById(normalizedParentId).isEmpty()) {
+      throw new org.springframework.security.access.AccessDeniedException("上级组织不在当前数据范围内");
+    }
     String cursor = trimToNull(parent.getParentId());
     Set<String> visited = new LinkedHashSet<>();
     visited.add(parent.getId());

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.RequestContextHolder;
+import org.simplepoint.core.ResourcePolicyContext;
 import org.simplepoint.core.annotation.PermissionResource;
 
 class FieldPermissionPolicyTest {
@@ -57,6 +58,20 @@ class FieldPermissionPolicyTest {
   @AfterEach
   void cleanup() {
     RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+    ResourcePolicyContext.clear();
+  }
+
+  @Test
+  void pagePolicyOverridesLegacyFieldsOnlyForItsServerSelectedPage() {
+    AuthorizationContext context = new AuthorizationContext();
+    context.setFieldPermissions(Map.of("Person#phone", "VISIBLE"));
+    context.setResourceFieldPermissions(Map.of("people.view", Map.of("Person#phone", "HIDDEN")));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    assertThat(FieldPermissionPolicy.access(Person.class, "phone")).isEqualTo("VISIBLE");
+    ResourcePolicyContext.set("people.view");
+    assertThat(FieldPermissionPolicy.access(Person.class, "phone")).isEqualTo("HIDDEN");
+    ResourcePolicyContext.clear();
+    assertThat(FieldPermissionPolicy.access(Person.class, "phone")).isEqualTo("VISIBLE");
   }
 
   @Test

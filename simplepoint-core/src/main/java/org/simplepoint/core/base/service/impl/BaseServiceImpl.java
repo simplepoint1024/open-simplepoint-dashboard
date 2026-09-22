@@ -36,6 +36,7 @@ import org.simplepoint.api.base.audit.ModifyDataAuditingService;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
+import org.simplepoint.core.ResourceDataScope;
 import org.simplepoint.core.datascopeannotation.DataScopeCondition;
 import org.simplepoint.core.datascopeannotation.DataScopeContext;
 import org.simplepoint.core.datascopeannotation.DataScopeFilter;
@@ -297,7 +298,7 @@ public class BaseServiceImpl
     entity.setUpdatedBy(userId);
   }
 
-  private void assertCreateAccessible(T entity) {
+  protected void assertCreateAccessible(T entity) {
     if (isDataScopeRestricted()) {
       assertAccessible(entity);
     }
@@ -650,7 +651,8 @@ public class BaseServiceImpl
     if (ctx == null) {
       return Set.of();
     }
-    Map<String, String> fieldPerms = ctx.getFieldPermissions();
+    Map<String, String> fieldPerms = ctx.activeFieldPermissions();
+    if (fieldPerms == null) fieldPerms = ctx.getFieldPermissions();
     if (fieldPerms == null || fieldPerms.isEmpty()) {
       return Set.of();
     }
@@ -680,7 +682,8 @@ public class BaseServiceImpl
     if (ctx == null) {
       return;
     }
-    Map<String, String> fieldPerms = ctx.getFieldPermissions();
+    Map<String, String> fieldPerms = ctx.activeFieldPermissions();
+    if (fieldPerms == null) fieldPerms = ctx.getFieldPermissions();
     if (fieldPerms == null || fieldPerms.isEmpty()) {
       return;
     }
@@ -740,12 +743,14 @@ public class BaseServiceImpl
     }
   }
 
-  private DataScopeCondition buildDefaultDataScopeCondition() {
+  protected final DataScopeCondition buildDefaultDataScopeCondition() {
     AuthorizationContext ctx = getAuthorizationContext();
     if (ctx != null && Boolean.TRUE.equals(ctx.getIsAdministrator())) {
       return null;
     }
-    String scopeType = ctx == null ? null : ctx.getDataScopeType();
+    ResourceDataScope resourceScope = ctx == null ? null : ctx.activeDataScope();
+    String scopeType = resourceScope == null ? (ctx == null ? null : ctx.getDataScopeType())
+        : resourceScope.type();
     if (DATA_SCOPE_ALL.equals(scopeType)) {
       return null;
     }
@@ -754,8 +759,10 @@ public class BaseServiceImpl
         dataScopeDeptField(),
         dataScopeOwnerField(),
         ctx == null ? null : ctx.getUserId(),
-        ctx == null ? Set.of() : ctx.getDeptIds(),
-        ctx != null && Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf())
+        resourceScope == null ? (ctx == null ? Set.of() : ctx.getDeptIds())
+            : resourceScope.departmentIds(),
+        resourceScope == null ? ctx != null && Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf())
+            : resourceScope.includeSelf()
     );
   }
 
@@ -787,7 +794,8 @@ public class BaseServiceImpl
     if (ctx == null) {
       return false;
     }
-    String scopeType = ctx.getDataScopeType();
+    ResourceDataScope resourceScope = ctx.activeDataScope();
+    String scopeType = resourceScope == null ? ctx.getDataScopeType() : resourceScope.type();
     if (DATA_SCOPE_ALL.equals(scopeType)) {
       return true;
     }
@@ -801,9 +809,10 @@ public class BaseServiceImpl
       }
       case DATA_SCOPE_DEPT, DATA_SCOPE_DEPT_AND_BELOW, DATA_SCOPE_CUSTOM -> {
         Object dept = readFieldValue(entity, dataScopeDeptField());
-        Set<String> deptIds = ctx.getDeptIds();
+        Set<String> deptIds = resourceScope == null ? ctx.getDeptIds() : resourceScope.departmentIds();
         boolean deptAllowed = dept != null && deptIds != null && deptIds.contains(dept.toString());
-        boolean selfAllowed = Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf())
+        boolean selfAllowed = (resourceScope == null ? Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf())
+            : resourceScope.includeSelf())
             && isOwnedByCurrentUser(entity, ctx);
         yield deptAllowed || selfAllowed;
       }

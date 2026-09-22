@@ -3,7 +3,7 @@ import api from '@/api';
 
 const {baseUrl} = api['rbac-role-resource-configuration'];
 
-/** Resource-scoped policy slots are reserved; supported=false never grants access. */
+/** A supported page slot and the rule currently attached to this role grant. */
 export interface ResourcePolicySlot {
   supported: boolean;
   policyId: string | null;
@@ -32,6 +32,19 @@ export interface RoleResourceChange {
   resourceCode: string;
   revision: string;
   granted: boolean;
+  dataPermission?: {policyId: string | null};
+  fieldPermission?: {policyId: string | null};
+}
+
+export interface ResourcePolicyOption {id: string; name: string; detail?: string}
+
+export async function fetchResourcePolicyOptions(roleId: string, resourceCode: string,
+  kind: 'data' | 'field', keyword = '', signal?: AbortSignal) {
+  const {normalizePage} = await import('@simplepoint/shared/types/request');
+  const raw = await get<import('@simplepoint/shared/types/request').RawPage<ResourcePolicyOption>>(
+    `${baseUrl}/roles/${encodeURIComponent(roleId)}/policy-options`,
+    {resourceCode, kind, keyword, page: 0, size: 50}, {signal});
+  return normalizePage(raw, 50);
 }
 
 export async function fetchRoleResources(roleId: string, params: {

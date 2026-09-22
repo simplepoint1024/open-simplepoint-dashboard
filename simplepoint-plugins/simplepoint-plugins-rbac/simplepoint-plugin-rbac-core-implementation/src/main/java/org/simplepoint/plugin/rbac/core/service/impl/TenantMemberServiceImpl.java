@@ -2,11 +2,18 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import org.simplepoint.core.*;
+import org.simplepoint.core.datascopeannotation.DataScopeCondition;
+import org.simplepoint.data.jpa.DataScopePredicates;
 import org.simplepoint.plugin.rbac.core.api.pojo.command.TenantMemberCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.TenantMemberView;
 import org.simplepoint.plugin.rbac.core.api.service.TenantMemberService;
@@ -22,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class TenantMemberServiceImpl implements TenantMemberService {
+  private static final int ORGANIZATION_SUBTREE_BATCH = 500;
+  private static final int MAX_ORGANIZATION_SUBTREE = 100_000;
   private final EntityManager em;
   private final ResourceAuthorizationVersionService versions;
   public TenantMemberServiceImpl(EntityManager em, ResourceAuthorizationVersionService versions) {
@@ -124,6 +133,10 @@ public class TenantMemberServiceImpl implements TenantMemberService {
       String access = org.simplepoint.core.jackson.FieldPermissionPolicy.access(TenantMemberView.class, field);
       return org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(access) || "MASKED".equals(access);
     })) throw new AccessDeniedException("当前字段权限不允许搜索成员信息");
+    DataScopeCondition dataScope = organizationScope();
+    if (dataScope != null && !dataScope.isAllData()) {
+      return scopedMemberPage(tenantId, orgId, search, page, subtree, dataScope);
+    }
     String scope = subtree ? " and m.org_id in (select id from subtree)"
         : " and (m.org_id is null or m.org_id <> :org)";
     var data = em.createNativeQuery((subtree ? SUBTREE : "") + """
@@ -147,10 +160,93 @@ public class TenantMemberServiceImpl implements TenantMemberService {
     return new PageImpl<>(rows, page, count.longValue());
   }
 
+  private Page<TenantMemberView> scopedMemberPage(String tenantId, String orgId, String search,
+      Pageable page, boolean subtree, DataScopeCondition scope) {
+    Set<String> subtreeIds = subtree ? organizationSubtree(tenantId, orgId) : Set.of();
+    var input = org.simplepoint.data.jpa.ProjectionQuery.prepare(TenantMemberView.class, java.util.Map.of(), page);
+    var cb = em.getCriteriaBuilder();
+    var data = cb.createQuery(TenantMemberView.class);
+    var result = memberQuery(data, tenantId, input);
+    data.where(cb.and(data.getRestriction(), memberPageScope(data, result, tenantId, orgId,
+        search, subtree, subtreeIds, scope)));
+    var fields = result.fields();
+    data.select(cb.construct(TenantMemberView.class, fields.get("userId"), fields.get("name"),
+        fields.get("email"), fields.get("orgId"), fields.get("orgName"), fields.get("enabled"),
+        fields.get("userType"), result.member().get("revision")))
+        .orderBy(cb.asc(cb.lower(fields.get("name").as(String.class))),
+            cb.asc(result.member().get("userId")));
+    var rows = em.createQuery(data).setFirstResult((int) page.getOffset())
+        .setMaxResults(page.getPageSize()).getResultList();
+    var count = cb.createQuery(Long.class);
+    var counted = memberQuery(count, tenantId, input);
+    count.select(cb.count(counted.member())).where(cb.and(count.getRestriction(),
+        memberPageScope(count, counted, tenantId, orgId, search, subtree, subtreeIds, scope)));
+    return new PageImpl<>(rows, page, em.createQuery(count).getSingleResult());
+  }
+
+  private Predicate memberPageScope(CriteriaQuery<?> query, MemberQuery result, String tenantId,
+      String orgId, String search, boolean subtree, Set<String> subtreeIds, DataScopeCondition scope) {
+    var cb = em.getCriteriaBuilder();
+    var member = result.member();
+    var predicates = new ArrayList<Predicate>();
+    predicates.add(subtree ? member.get("orgId").in(subtreeIds)
+        : cb.or(cb.isNull(member.get("orgId")), cb.notEqual(member.get("orgId"), orgId)));
+    var visibleOrg = query.subquery(Integer.class);
+    var org = visibleOrg.from(Organization.class);
+    var authorized = DataScopePredicates.compile(scope, org, cb, em.getMetamodel());
+    visibleOrg.select(cb.literal(1)).where(cb.equal(org.get("id"), member.get("orgId")),
+        cb.equal(org.get("tenantId"), tenantId), cb.isNull(org.get("deletedAt")),
+        authorized == null ? cb.conjunction() : authorized);
+    predicates.add(cb.exists(visibleOrg));
+    if (!search.isEmpty()) {
+      String pattern = "%" + search.replace("\\", "\\\\").replace("%", "\\%")
+          .replace("_", "\\_") + "%";
+      predicates.add(cb.or(cb.like(cb.lower(result.fields().get("name").as(String.class)), pattern, '\\'),
+          cb.like(cb.lower(result.fields().get("email").as(String.class)), pattern, '\\'),
+          cb.like(cb.lower(result.fields().get("userId").as(String.class)), pattern, '\\')));
+    }
+    return cb.and(predicates.toArray(Predicate[]::new));
+  }
+
+  private Set<String> organizationSubtree(String tenantId, String rootId) {
+    Set<String> visited = new LinkedHashSet<>();
+    Set<String> frontier = Set.of(rootId);
+    while (!frontier.isEmpty()) {
+      var next = new LinkedHashSet<String>();
+      var values = new ArrayList<>(frontier);
+      for (int offset = 0; offset < values.size(); offset += ORGANIZATION_SUBTREE_BATCH) {
+        var batch = values.subList(offset, Math.min(values.size(), offset + ORGANIZATION_SUBTREE_BATCH));
+        next.addAll(em.createQuery("select o.id from Organization o where o.tenantId=:tenant"
+            + " and o.deletedAt is null and o.parentId in :parents", String.class)
+            .setParameter("tenant", tenantId).setParameter("parents", batch).getResultList());
+      }
+      visited.addAll(frontier);
+      next.removeAll(visited);
+      if (visited.size() + next.size() > MAX_ORGANIZATION_SUBTREE)
+        throw new IllegalArgumentException("组织子树超出单次查询上限");
+      frontier = next;
+    }
+    return visited;
+  }
+
+  private DataScopeCondition organizationScope() {
+    var context = AuthorizationContextHolder.getContext();
+    var rule = context == null ? null : context.activeDataScope();
+    if (rule == null || Boolean.TRUE.equals(context.getIsAdministrator())) return null;
+    return new DataScopeCondition(rule.type(), "id", "createdBy", context.getUserId(),
+        rule.departmentIds(), rule.includeSelf());
+  }
+
   private void requireOrganization(String tenantId, String orgId) {
     if (orgId == null || orgId.isBlank()) throw new IllegalArgumentException("请选择组织");
-    var count = em.createQuery("select count(o) from Organization o where o.id=:org and o.tenantId=:tenant and o.deletedAt is null", Long.class)
-        .setParameter("org", orgId).setParameter("tenant", tenantId).getSingleResult();
+    var cb = em.getCriteriaBuilder();
+    var query = cb.createQuery(Long.class);
+    var org = query.from(Organization.class);
+    var authorized = DataScopePredicates.compile(organizationScope(), org, cb, em.getMetamodel());
+    query.select(cb.count(org)).where(cb.equal(org.get("id"), orgId),
+        cb.equal(org.get("tenantId"), tenantId), cb.isNull(org.get("deletedAt")),
+        authorized == null ? cb.conjunction() : authorized);
+    var count = em.createQuery(query).getSingleResult();
     if (count != 1) throw new AccessDeniedException("组织不存在或不属于当前租户");
   }
 

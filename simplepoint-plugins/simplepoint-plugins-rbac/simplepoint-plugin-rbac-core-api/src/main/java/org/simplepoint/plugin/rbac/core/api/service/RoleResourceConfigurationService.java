@@ -9,8 +9,13 @@ import org.springframework.data.domain.Pageable;
 
 /** Bounded resource editing, independent of the currently loaded page. */
 public interface RoleResourceConfigurationService {
-  /** Reserved resource-scoped extension; unsupported slots never imply an effective grant. */
+  /** A supported page slot and its current rule, if configured. */
   record PolicySlot(boolean supported, String policyId) {}
+
+  /** Null update means unchanged; an update with null ID clears the rule. */
+  record PolicyUpdate(String policyId) {}
+
+  record PolicyOption(String id, String name, String detail) {}
 
   /** Minimal resource projection. Revision covers the resource and this role's explicit grants. */
   record Row(
@@ -29,7 +34,12 @@ public interface RoleResourceConfigurationService {
       String revision, PolicySlot dataPermission, PolicySlot fieldPermission) {}
 
   /** Explicit changes only: an omitted resource is never revoked. */
-  record Change(String resourceId, String resourceCode, String revision, Boolean granted) {}
+  record Change(String resourceId, String resourceCode, String revision, Boolean granted,
+      PolicyUpdate dataPermission, PolicyUpdate fieldPermission) {
+    public Change(String resourceId, String resourceCode, String revision, Boolean granted) {
+      this(resourceId, resourceCode, revision, granted, null, null);
+    }
+  }
 
   /** One atomic, bounded save. */
   record Patch(List<Change> changes) {}
@@ -43,6 +53,9 @@ public interface RoleResourceConfigurationService {
   /** Searches accessible resources in SQL; rootsOnly and parentId each load one tree level. */
   Page<Row> list(String roleId, String keyword, String state, String type, String parentId,
       boolean rootsOnly, boolean navigationOnly, Pageable page);
+
+  /** Paged tenant-owned policies that can be attached to the selected page. */
+  Page<PolicyOption> policies(String roleId, String resourceCode, String kind, String keyword, Pageable page);
 
   /** Checks resource revisions under the role lock before applying any changes. */
   void save(String roleId, Patch patch);

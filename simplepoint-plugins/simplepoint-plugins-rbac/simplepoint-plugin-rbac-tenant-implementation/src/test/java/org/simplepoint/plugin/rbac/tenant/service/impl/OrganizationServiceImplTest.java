@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -23,6 +24,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
+import org.simplepoint.core.ResourceDataScope;
+import org.simplepoint.core.ResourcePolicyContext;
 import org.simplepoint.plugin.rbac.tenant.api.constants.TenantDictionaryCodes;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
 import org.simplepoint.plugin.rbac.tenant.api.repository.DictionaryItemRepository;
@@ -36,6 +39,11 @@ import org.springframework.data.domain.SliceImpl;
 
 @ExtendWith(MockitoExtension.class)
 class OrganizationServiceImplTest {
+
+  @AfterEach
+  void clearPagePolicy() {
+    ResourcePolicyContext.clear();
+  }
 
   @Mock
   OrganizationRepository repository;
@@ -219,6 +227,61 @@ class OrganizationServiceImplTest {
 
       assertThat(saved.getTenantId()).isEqualTo("t1");
       assertThat(saved.getEnabled()).isTrue();
+      verify(repository).save(any());
+    }
+  }
+
+  @Test
+  void pageDataRuleRejectsOutOfScopeDetailDeleteAndInvisibleCreate() {
+    AuthorizationContext context = ctxWithTenant("t1");
+    context.setUserId("reader");
+    context.setResourceDataScopes(Map.of("organizations.view",
+        new ResourceDataScope("CUSTOM", Set.of("visible"), false)));
+    ResourcePolicyContext.set("organizations.view");
+    Organization hidden = org("hidden", "Hidden", "HIDDEN", "group");
+    hidden.setTenantId("t1");
+    try (MockedStatic<AuthorizationContextHolder> mocked = mockStatic(AuthorizationContextHolder.class)) {
+      mocked.when(AuthorizationContextHolder::getContext).thenReturn(context);
+      when(repository.findById("hidden")).thenReturn(Optional.of(hidden));
+      assertThat(service.findById("hidden")).isEmpty();
+      when(repository.findAllByIdsAndTenantId(Set.of("hidden"), "t1")).thenReturn(List.of(hidden));
+      when(repository.findAllByIds(Set.of("hidden"))).thenReturn(List.of(hidden));
+      assertThatThrownBy(() -> service.removeByIds(Set.of("hidden")))
+          .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+      verify(repository, never()).deleteByIds(any());
+
+      when(dictionaryItemRepository.options(TenantDictionaryCodes.ORGANIZATION_TYPE))
+          .thenReturn(List.of(new DictionaryOptionVo("group", "集团")));
+      Organization incoming = org(null, "New", "NEW", "group");
+      assertThatThrownBy(() -> service.create(incoming))
+          .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+      verify(repository, never()).save(any());
+    }
+  }
+
+  @Test
+  void descendantRuleCanCreateChildUnderVisibleParent() {
+    AuthorizationContext context = ctxWithTenant("t1");
+    context.setUserId("reader");
+    context.setResourceDataScopes(Map.of("organizations.view",
+        new ResourceDataScope("DEPT_AND_BELOW", Set.of("parent1"), false)));
+    ResourcePolicyContext.set("organizations.view");
+    Organization parent = org("parent1", "Parent", "PARENT", "group");
+    parent.setTenantId("t1");
+    try (MockedStatic<AuthorizationContextHolder> mocked = mockStatic(AuthorizationContextHolder.class)) {
+      mocked.when(AuthorizationContextHolder::getContext).thenReturn(context);
+      when(dictionaryItemRepository.options(TenantDictionaryCodes.ORGANIZATION_TYPE))
+          .thenReturn(List.of(new DictionaryOptionVo("group", "集团")));
+      when(repository.findByIdAndTenantId("parent1", "t1")).thenReturn(Optional.of(parent));
+      when(repository.findById("parent1")).thenReturn(Optional.of(parent));
+      when(detailsProviderService.getDialects(any())).thenReturn(Collections.emptySet());
+      when(repository.save(any())).thenAnswer(call -> call.getArgument(0));
+      Organization child = org(null, "Child", "CHILD", "group");
+      child.setParentId("parent1");
+
+      Organization saved = service.create(child);
+
+      assertThat(saved.getCreatedBy()).isEqualTo("reader");
       verify(repository).save(any());
     }
   }

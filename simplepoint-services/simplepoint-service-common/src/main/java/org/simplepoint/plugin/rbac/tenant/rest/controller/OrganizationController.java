@@ -93,7 +93,7 @@ public class OrganizationController extends BaseController<OrganizationService, 
   @GetMapping("/options")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('organizations.view')")
   @Operation(summary = "查询组织选择项", description = "按层级或关键词分页查询轻量组织选择项，不执行全量统计")
-  public Response<OrganizationOptionPage> options(
+  public Response<Map<String, Object>> options(
       @RequestParam(value = "keyword", required = false) String keyword,
       @RequestParam(value = "parentId", required = false) String parentId,
       @RequestParam(value = "ids", required = false) String ids,
@@ -101,7 +101,9 @@ public class OrganizationController extends BaseController<OrganizationService, 
       @RequestParam(value = "flat", defaultValue = "false") boolean flat,
       Pageable pageable
   ) {
-    return ok(service.options(keyword, parentId, ids, excludeId, flat, pageable));
+    OrganizationOptionPage page = service.options(keyword, parentId, ids, excludeId, flat, pageable);
+    return ok(Map.of("content", page.content().stream().map(OrganizationOptionVo::project).toList(),
+        "number", page.number(), "size", page.size(), "hasNext", page.hasNext()));
   }
 
   /**

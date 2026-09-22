@@ -31,6 +31,8 @@ import org.simplepoint.core.AuthorizationActorRole;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.RequestContextHolder;
+import org.simplepoint.core.ResourceDataScope;
+import org.simplepoint.core.ResourcePolicyContext;
 import org.simplepoint.core.handler.GlobalExceptionHandler;
 import org.simplepoint.data.json.schema.configuration.JsonSchemaAutoConfiguration;
 import org.simplepoint.plugin.rbac.core.rest.controller.TenantMemberController;
@@ -113,9 +115,38 @@ class TenantMemberQueryHttpTest {
 
   @AfterEach
   void cleanup() {
+    ResourcePolicyContext.clear();
     RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
     if (em != null) {if (em.getTransaction().isActive()) em.getTransaction().rollback(); em.close();}
     if (factory != null) factory.close();
+  }
+
+  @Test
+  void organizationPageRuleFiltersMemberPageCountAndCandidateRowsThroughCriteria() throws Exception {
+    var child = new Organization(); child.setCode("child"); child.setName("Child");
+    child.setTenantId(tenant.getId()); child.setParentId(organization.getId());
+    child.setEnabled(true); em.persist(child);
+    var sibling = new Organization(); sibling.setCode("sibling"); sibling.setName("Sibling");
+    sibling.setTenantId(tenant.getId()); sibling.setEnabled(true); em.persist(sibling);
+    member("ChildScoped", tenant.getId(), child.getId(), true, false, false);
+    member("SiblingScoped", tenant.getId(), sibling.getId(), true, false, false);
+    em.flush(); em.clear();
+    context.setResources(Set.of("users.view", "organizations.view"));
+    context.setResourceDataScopes(Map.of("organizations.view",
+        new ResourceDataScope("CUSTOM", Set.of(organization.getId()), false)));
+    ResourcePolicyContext.set("organizations.view");
+
+    mvc.perform(get("/tenant-members/by-organization").param("orgId", organization.getId())
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
+        .andExpect(jsonPath("$.content[0].name").value("Alpha"));
+    mvc.perform(get("/tenant-members/organization-candidates").param("orgId", organization.getId())
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(0));
+    var error = assertThrows(jakarta.servlet.ServletException.class,
+        () -> mvc.perform(get("/tenant-members/by-organization").param("orgId", sibling.getId())
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)));
+    assertInstanceOf(AccessDeniedException.class, error.getCause());
   }
 
   @Test

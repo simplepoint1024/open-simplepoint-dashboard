@@ -20,10 +20,12 @@ public class ClasspathResourceScopeRegistry {
   private static final String RESOURCE_PATTERN = "classpath*:META-INF/simplepoint/resources/*.json";
 
   private final Map<String, Set<ResourceScopeType>> scopesByCode;
+  private final Map<String, String> pageByCode;
 
   /** Creates and validates a catalog from every resource manifest on the service classpath. */
   public ClasspathResourceScopeRegistry(final ObjectMapper objectMapper) throws IOException {
     Map<String, Set<ResourceScopeType>> scopes = new LinkedHashMap<>();
+    Map<String, String> pages = new LinkedHashMap<>();
     var resolver = new PathMatchingResourcePatternResolver();
     for (Resource resource : resolver.getResources(RESOURCE_PATTERN)) {
       try (var input = resource.getInputStream()) {
@@ -33,19 +35,26 @@ public class ClasspathResourceScopeRegistry {
           continue;
         }
         for (JsonNode root : roots) {
-          collect(root, Set.of(), scopes, resource.getDescription());
+          collect(root, Set.of(), null, scopes, pages, resource.getDescription());
         }
       }
     }
     this.scopesByCode = Collections.unmodifiableMap(scopes);
+    this.pageByCode = Collections.unmodifiableMap(pages);
   }
 
   ClasspathResourceScopeRegistry(final Map<String, Set<ResourceScopeType>> scopesByCode) {
+    this(scopesByCode, Map.of());
+  }
+
+  ClasspathResourceScopeRegistry(final Map<String, Set<ResourceScopeType>> scopesByCode,
+      final Map<String, String> pageByCode) {
     Map<String, Set<ResourceScopeType>> scopes = new LinkedHashMap<>();
     scopesByCode.forEach((code, values) ->
         scopes.put(code, ResourceScopePolicy.effectiveScopes(values))
     );
     this.scopesByCode = Collections.unmodifiableMap(scopes);
+    this.pageByCode = Map.copyOf(pageByCode);
   }
 
   /** Returns the declared effective scopes for an authority code. */
@@ -56,6 +65,11 @@ public class ClasspathResourceScopeRegistry {
     return Optional.ofNullable(scopesByCode.get(resourceCode));
   }
 
+  /** Resolves an action or API authority to its closest PAGE ancestor. */
+  public Optional<String> findPage(final String resourceCode) {
+    return Optional.ofNullable(pageByCode.get(resourceCode));
+  }
+
   /** Returns an immutable snapshot, primarily for diagnostics and tests. */
   public Map<String, Set<ResourceScopeType>> snapshot() {
     return scopesByCode;
@@ -64,7 +78,9 @@ public class ClasspathResourceScopeRegistry {
   private void collect(
       final JsonNode node,
       final Set<ResourceScopeType> parentScopes,
+      final String parentPage,
       final Map<String, Set<ResourceScopeType>> target,
+      final Map<String, String> pages,
       final String source
   ) {
     Set<ResourceScopeType> declared = readScopes(node);
@@ -77,17 +93,24 @@ public class ClasspathResourceScopeRegistry {
     }
 
     String code = node.path("code").asText(null);
+    String page = "PAGE".equals(node.path("type").asText()) ? code : parentPage;
     if (code != null && !code.isBlank()) {
       Set<ResourceScopeType> previous = target.putIfAbsent(code, effective);
       if (previous != null && !previous.equals(effective)) {
         throw new IllegalStateException("Conflicting resource scopes for " + code + " in " + source);
+      }
+      if (page != null) {
+        String existingPage = pages.putIfAbsent(code, page);
+        if (existingPage != null && !existingPage.equals(page)) {
+          throw new IllegalStateException("Conflicting page resource for " + code + " in " + source);
+        }
       }
     }
 
     JsonNode children = node.path("children");
     if (children.isArray()) {
       for (JsonNode child : children) {
-        collect(child, effective, target, source);
+        collect(child, effective, page, target, pages, source);
       }
     }
   }

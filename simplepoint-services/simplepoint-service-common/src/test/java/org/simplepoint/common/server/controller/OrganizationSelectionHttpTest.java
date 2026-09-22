@@ -17,6 +17,7 @@ import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.api.security.service.JsonSchemaDetailsService;
 import org.simplepoint.core.*;
+import org.simplepoint.core.datascopeannotation.DataScopeCondition;
 import org.simplepoint.core.handler.GlobalExceptionHandler;
 import org.simplepoint.data.json.schema.configuration.JsonSchemaAutoConfiguration;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
@@ -25,6 +26,8 @@ import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersi
 import org.simplepoint.plugin.rbac.tenant.rest.controller.OrganizationController;
 import org.simplepoint.plugin.rbac.tenant.service.impl.OrganizationServiceImpl;
 import org.simplepoint.plugin.rbac.tenant.service.impl.OrganizationSelectionQuery;
+import org.simplepoint.plugin.rbac.tenant.service.impl.OrganizationScopedReadQuery;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.web.servlet.MockMvc;
@@ -68,7 +71,8 @@ class OrganizationSelectionHttpTest {
     queryProxy.addAdvice(new org.springframework.dao.support.PersistenceExceptionTranslationInterceptor(
         new org.springframework.orm.jpa.vendor.HibernateJpaDialect()));
     var service = new OrganizationServiceImpl(mock(OrganizationRepository.class), details, null,
-        mock(ResourceAuthorizationVersionService.class), (OrganizationSelectionQuery) queryProxy.getProxy());
+        mock(ResourceAuthorizationVersionService.class), (OrganizationSelectionQuery) queryProxy.getProxy(),
+        new OrganizationScopedReadQuery(em));
     mvc = MockMvcBuilders.standaloneSetup(new OrganizationController(service)).setControllerAdvice(new GlobalExceptionHandler())
         .setMessageConverters(new org.springframework.http.converter.json.JacksonJsonHttpMessageConverter())
         .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver()).build();
@@ -91,9 +95,61 @@ class OrganizationSelectionHttpTest {
 
   @AfterEach
   void cleanup() {
+    ResourcePolicyContext.clear();
     RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
     if (em != null) {if (em.getTransaction().isActive()) em.getTransaction().rollback(); em.close();}
     if (factory != null) factory.close();
+  }
+
+  @Test
+  void pageDataRuleScopesSelectionTreePickerAndCountsWithOneOrmPredicate() throws Exception {
+    rows.get(1).setParentId(rows.get(0).getId());
+    rows.get(2).setParentId(rows.get(1).getId());
+    em.flush();
+    var ids = Set.of(rows.get(1).getId(), rows.get(2).getId());
+    var scope = new DataScopeCondition("CUSTOM", "id", "createdBy", "reader", ids);
+    var scoped = new OrganizationScopedReadQuery(em);
+    var roots = scoped.tree("tenant-a", null, Map.of(), PageRequest.of(0, 20), scope);
+    assertEquals(1, roots.getTotalElements());
+    assertEquals(rows.get(1).getId(), roots.getContent().getFirst().getId());
+    var children = scoped.tree("tenant-a", rows.get(1).getId(), Map.of(),
+        PageRequest.of(0, 20), scope);
+    assertEquals(1, children.getTotalElements());
+    assertEquals(rows.get(2).getId(), children.getContent().getFirst().getId());
+    assertEquals(Set.of(rows.get(1).getId()),
+        scoped.visibleParentsWithChildren("tenant-a", ids, scope));
+    var picker = scoped.options("tenant-a", null, null, null, false,
+        PageRequest.of(0, 20), scope);
+    assertEquals(List.of(rows.get(1).getId()),
+        picker.getContent().stream().map(Organization::getId).toList());
+    assertEquals(List.of(rows.get(2).getId()),
+        scoped.options("tenant-a", null, rows.get(1).getId(), null, false,
+            PageRequest.of(0, 20), scope).getContent().stream().map(Organization::getId).toList());
+
+    context.setResourceDataScopes(Map.of("organizations.view",
+        new ResourceDataScope("CUSTOM", ids, false)));
+    ResourcePolicyContext.set("organizations.view");
+    mvc.perform(query(false, List.of(), Map.of())).andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(2));
+    mvc.perform(query(true, List.of(rows.get(0).getId(), rows.get(1).getId()), Map.of()))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.content[0].id").value(rows.get(1).getId()));
+    mvc.perform(get("/platform/organizations/tree").param("size", "20")
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.content[0].id").value(rows.get(1).getId()))
+        .andExpect(jsonPath("$.content[0].hasChildren").value(true));
+    mvc.perform(get("/platform/organizations/options").param("size", "20")
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].id").value(rows.get(1).getId()));
+    context.setResourceFieldPermissions(Map.of("organizations.view", Map.of(
+        Organization.class.getName() + "#description", "HIDDEN",
+        Organization.class.getName() + "#name", "MASKED")));
+    mvc.perform(get("/platform/organizations/options").param("size", "20")
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].name").value("***"))
+        .andExpect(jsonPath("$.content[0].description").doesNotExist());
   }
 
   @Test

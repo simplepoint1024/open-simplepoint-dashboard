@@ -15,6 +15,7 @@ import org.simplepoint.core.AuthorizationActorRole;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationResourceNamespaces;
 import org.simplepoint.core.AuthorizationScopeType;
+import org.simplepoint.core.ResourceDataScope;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.plugin.rbac.core.api.repository.DataScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.FieldScopeRepository;
@@ -36,6 +37,7 @@ import org.simplepoint.security.entity.DataScopeType;
 import org.simplepoint.security.entity.FieldAccessType;
 import org.simplepoint.security.entity.FieldScope;
 import org.simplepoint.security.entity.RoleResourceGrant;
+import org.simplepoint.security.entity.RoleScopeBinding;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.service.ResourceService;
 import org.springframework.beans.factory.ObjectProvider;
@@ -271,6 +273,7 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
       User scopeUser = new User();
       scopeUser.setOrgId(userOrgId);
       resolveDataAndFieldScope(roleIds, userId, resolvedTenantId, scopeUser, authorizationContext);
+      resolveResourcePolicies(roleIds, resolvedTenantId, scopeUser, authorizationContext);
     }
     if (authorizationContext.getDataScopeType() == null) {
       authorizationContext.setDataScopeType(administrator ? DataScopeType.ALL.name() : DataScopeType.SELF.name());
@@ -513,6 +516,109 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
         }
       }
     }
+  }
+
+  /** Resolve page-specific policies independently of legacy role-wide bindings. */
+  private void resolveResourcePolicies(List<String> roleIds, String tenantId, User user,
+      AuthorizationContext context) {
+    var grantRepository = roleResourceGrantRepositoryProvider.getIfAvailable();
+    if (grantRepository == null || tenantId == null) return;
+    Map<String, RoleScopeBinding> bindings = new HashMap<>();
+    var bindingRepository = roleScopeBindingRepositoryProvider.getIfAvailable();
+    if (bindingRepository != null) {
+      bindingRepository.findByTenantIdAndRoleIdIn(tenantId, roleIds)
+          .forEach(binding -> bindings.put(binding.getRoleId(), binding));
+    }
+    Map<String, List<RoleResourceGrant>> byResource = grantRepository.findByRoleIdIn(roleIds).stream()
+        .filter(grant -> Objects.equals(tenantId, grant.getTenantId()) && grant.getDeletedAt() == null)
+        .filter(grant -> grant.getResourceCode() != null && !grant.getResourceCode().isBlank())
+        .filter(grant -> context.getResources().contains(grant.getResourceCode()))
+        .collect(Collectors.groupingBy(RoleResourceGrant::getResourceCode));
+    Map<String, ResourceDataScope> data = new HashMap<>();
+    Map<String, Map<String, String>> fields = new HashMap<>();
+    for (var resource : byResource.entrySet()) {
+      List<RoleResourceGrant> grants = resource.getValue();
+      if (grants.stream().anyMatch(grant -> grant.getDataScopeId() != null)) {
+        data.put(resource.getKey(), resolveResourceDataScope(grants, bindings, tenantId, user));
+      }
+      if (grants.stream().anyMatch(grant -> grant.getFieldScopeId() != null)) {
+        fields.put(resource.getKey(), resolveResourceFieldScope(grants, bindings, tenantId));
+      }
+    }
+    context.setResourceDataScopes(data);
+    context.setResourceFieldPermissions(fields);
+  }
+
+  private ResourceDataScope resolveResourceDataScope(List<RoleResourceGrant> grants,
+      Map<String, RoleScopeBinding> bindings, String tenantId, User user) {
+    var repository = dataScopeRepositoryProvider.getIfAvailable();
+    if (repository == null) throw new AccessDeniedException("无法加载页面数据权限");
+    Set<String> departments = new HashSet<>();
+    boolean includeSelf = false;
+    boolean descendantsOnly = true;
+    for (RoleResourceGrant grant : grants) {
+      RoleScopeBinding binding = bindings.get(grant.getRoleId());
+      String id = grant.getDataScopeId() != null ? grant.getDataScopeId()
+          : binding == null ? null : binding.getDataScopeId();
+      if (id == null) {
+        includeSelf = true;
+        descendantsOnly = false;
+        continue;
+      }
+      DataScope policy = repository.findByIdAndTenantIdAndDeletedAtIsNull(id, tenantId)
+          .orElseThrow(() -> new AccessDeniedException("页面数据范围不存在或已失效"));
+      DataScopeType type = policy.getType();
+      if (type == null) throw new AccessDeniedException("页面数据范围类型无效");
+      if (type == DataScopeType.ALL) return new ResourceDataScope("ALL", Set.of(), false);
+      if (type == DataScopeType.SELF) {
+        includeSelf = true;
+        descendantsOnly = false;
+      } else if (type == DataScopeType.CUSTOM) {
+        descendantsOnly = false;
+        departments.addAll(policy.getCustomDeptIds());
+      } else {
+        if (type != DataScopeType.DEPT_AND_BELOW) descendantsOnly = false;
+        departments.addAll(resolveDeptIds(type, tenantId, user));
+      }
+    }
+    if (!departments.isEmpty()) return new ResourceDataScope(
+        descendantsOnly ? "DEPT_AND_BELOW" : "CUSTOM", departments, includeSelf);
+    return new ResourceDataScope(includeSelf ? "SELF" : "DENY", Set.of(), false);
+  }
+
+  private Map<String, String> resolveResourceFieldScope(List<RoleResourceGrant> grants,
+      Map<String, RoleScopeBinding> bindings, String tenantId) {
+    var repository = fieldScopeRepositoryProvider.getIfAvailable();
+    if (repository == null) throw new AccessDeniedException("无法加载页面字段权限");
+    Map<String, String> effective = null;
+    for (RoleResourceGrant grant : grants) {
+      RoleScopeBinding binding = bindings.get(grant.getRoleId());
+      String id = grant.getFieldScopeId() != null ? grant.getFieldScopeId()
+          : binding == null ? null : binding.getFieldScopeId();
+      if (id == null) return Map.of(); // An unrestricted granted role can read every field.
+      FieldScope scope = repository.findByIdAndTenantIdAndDeletedAtIsNull(id, tenantId)
+          .orElseThrow(() -> new AccessDeniedException("页面字段范围不存在或已失效"));
+      Map<String, String> current = new HashMap<>();
+      scope.getEntries().forEach(entry -> {
+        if (!Objects.equals(tenantId, entry.getTenantId()) || entry.getAccess() == null
+            || entry.getResource() == null || entry.getField() == null) {
+          throw new AccessDeniedException("页面字段范围规则无效");
+        }
+        current.put(entry.getResource() + "#" + entry.getField(), entry.getAccess().name());
+      });
+      if (effective == null) effective = current;
+      else {
+        effective.keySet().retainAll(current.keySet());
+        for (var rule : current.entrySet()) {
+          String key = rule.getKey();
+          String access = rule.getValue();
+          String previous = effective.get(key);
+          if (previous != null && FieldAccessType.valueOf(access).getPermissiveLevel()
+              > FieldAccessType.valueOf(previous).getPermissiveLevel()) effective.put(key, access);
+        }
+      }
+    }
+    return effective == null ? Map.of() : effective;
   }
 
   /**

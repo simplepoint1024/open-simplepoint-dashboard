@@ -31,13 +31,18 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceKey;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
+import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.security.entity.DataScope;
+import org.simplepoint.security.entity.FieldScope;
 import org.simplepoint.security.ResourceScopePolicy;
 import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.ResourceScopeType;
 import org.simplepoint.security.entity.ResourceType;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RoleResourceGrant;
+import org.simplepoint.security.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -57,6 +62,7 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
   private final EntityManager em;
   private final RoleService roles;
   private final RoleRepository repository;
+  private final ResourceAuthorizationVersionService authorizationVersions;
   private TenantResourceCatalog tenantResourceCatalog;
 
   @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -66,10 +72,12 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
 
   /** Creates the bounded resource editor. */
   public RoleResourceConfigurationServiceImpl(
-      EntityManager em, RoleService roles, RoleRepository repository) {
+      EntityManager em, RoleService roles, RoleRepository repository,
+      ResourceAuthorizationVersionService authorizationVersions) {
     this.em = em;
     this.roles = roles;
     this.repository = repository;
+    this.authorizationVersions = authorizationVersions;
   }
 
   @Override
@@ -118,6 +126,68 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
         search, state, resourceType, parentId, rootsOnly, navigationOnly));
     return new PageImpl<>(rows(resources, tenant, roleId), page,
         em.createQuery(count).getSingleResult());
+  }
+
+  @Override
+  public Page<PolicyOption> policies(String roleId, String resourceCode, String kind,
+      String keyword, Pageable page) {
+    String tenant = requireRole(roleId);
+    boolean data = "data".equals(kind);
+    if ((!data && !"field".equals(kind)) || page == null || page.isUnpaged()
+        || page.getPageSize() < 1 || page.getPageSize() > 50 || page.getSort().isSorted()
+        || page.getOffset() > Integer.MAX_VALUE) {
+      throw badRequest("不支持的规则类型或分页参数");
+    }
+    if (data ? !DATA_POLICY_PAGES.contains(resourceCode) : !FIELD_POLICY_MODELS.containsKey(resourceCode)) {
+      throw badRequest("当前页面尚未接入此类权限规则");
+    }
+    String search = keyword == null ? "" : keyword.trim();
+    if (search.length() > 100) throw badRequest("规则搜索词过长");
+    String pattern = "%" + search.replace("!", "!!").replace("%", "!%")
+        .replace("_", "!_").toLowerCase(java.util.Locale.ROOT) + "%";
+    if (data) {
+      var cb = em.getCriteriaBuilder();
+      var query = cb.createQuery(DataScope.class);
+      var root = query.from(DataScope.class);
+      query.select(root).where(cb.equal(root.get("tenantId"), tenant), cb.isNull(root.get("deletedAt")),
+          cb.like(cb.lower(root.get("name")), pattern, '!'))
+          .orderBy(cb.asc(root.get("name")), cb.asc(root.get("id")));
+      var count = cb.createQuery(Long.class);
+      var counted = count.from(DataScope.class);
+      count.select(cb.count(counted)).where(cb.equal(counted.get("tenantId"), tenant),
+          cb.isNull(counted.get("deletedAt")), cb.like(cb.lower(counted.get("name")), pattern, '!'));
+      List<PolicyOption> values = em.createQuery(query).setFirstResult((int) page.getOffset())
+          .setMaxResults(page.getPageSize()).getResultList().stream()
+          .map(scope -> new PolicyOption(scope.getId(), scope.getName(), scope.getType().name()))
+          .toList();
+      return new PageImpl<>(values, page, em.createQuery(count).getSingleResult());
+    }
+    String model = FIELD_POLICY_MODELS.get(resourceCode);
+    var cb = em.getCriteriaBuilder();
+    var query = cb.createQuery(FieldScope.class);
+    var root = query.from(FieldScope.class);
+    query.select(root).where(cb.equal(root.get("tenantId"), tenant), cb.isNull(root.get("deletedAt")),
+        cb.like(cb.lower(root.get("name")), pattern, '!'), fieldEntryExists(cb, query, root, tenant, model))
+        .orderBy(cb.asc(root.get("name")), cb.asc(root.get("id")));
+    var count = cb.createQuery(Long.class);
+    var counted = count.from(FieldScope.class);
+    count.select(cb.count(counted)).where(cb.equal(counted.get("tenantId"), tenant),
+        cb.isNull(counted.get("deletedAt")), cb.like(cb.lower(counted.get("name")), pattern, '!'),
+        fieldEntryExists(cb, count, counted, tenant, model));
+    List<PolicyOption> values = em.createQuery(query).setFirstResult((int) page.getOffset())
+        .setMaxResults(page.getPageSize()).getResultList().stream()
+        .map(scope -> new PolicyOption(scope.getId(), scope.getName(), null)).toList();
+    return new PageImpl<>(values, page, em.createQuery(count).getSingleResult());
+  }
+
+  private Predicate fieldEntryExists(CriteriaBuilder cb, CommonAbstractCriteria query,
+      Root<FieldScope> scope, String tenant, String model) {
+    var sub = query.subquery(Integer.class);
+    var entry = sub.from(org.simplepoint.security.entity.FieldScopeEntry.class);
+    sub.select(cb.literal(1)).where(cb.equal(entry.get("fieldScopeId"), scope.get("id")),
+        cb.equal(entry.get("tenantId"), tenant), cb.equal(entry.get("resource"), model),
+        cb.isNull(entry.get("deletedAt")));
+    return cb.exists(sub);
   }
 
   @Override
@@ -172,6 +242,7 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
       }
     }
     applyChanges(tenant, roleId, added, removed);
+    applyPolicyChanges(tenant, roleId, patch.changes(), current);
   }
 
   @Override
@@ -326,7 +397,7 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
           digest(resource.getId() + "|" + resource.getCode() + "|" + resource.getUpdatedAt()
               + "|" + assigned.stream().map(g -> g.getId() + ":" + g.getUpdatedAt())
                   .sorted().collect(Collectors.joining("|"))),
-          new PolicySlot(false, null), new PolicySlot(false, null));
+          policySlot(resource.getCode(), assigned, true), policySlot(resource.getCode(), assigned, false));
     }).toList();
   }
 
@@ -366,6 +437,7 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
       if (row.granted() != change.granted()) (change.granted() ? added : removed).add(row.code());
     }
     applyChanges(tenant, roleId, added, removed);
+    applyPolicyChanges(tenant, roleId, patch.changes(), current);
   }
 
   private record CustomSubtree(List<TenantResource> resources, Set<String> grantedCodes,
@@ -694,9 +766,84 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
           resource.getParentId(), resource.getIcon(), parentIds.contains(resource.getId()),
           navigationParentIds.contains(resource.getId()),
           resource.getDescription(), Boolean.TRUE.equals(resource.getGrantable()),
-          !assigned.isEmpty(), revision(resource, assigned), new PolicySlot(false, null),
-          new PolicySlot(false, null));
+          !assigned.isEmpty(), revision(resource, assigned),
+          policySlot(resource.getCode(), assigned, true),
+          policySlot(resource.getCode(), assigned, false));
     }).toList();
+  }
+
+  // Each enabled page must cover its list, count, picker, detail and mutation paths.
+  private static final Set<String> DATA_POLICY_PAGES = Set.of("organizations.view");
+  private static final Map<String, String> FIELD_POLICY_MODELS = Map.of(
+      "users.view", User.class.getName(),
+      "organizations.view", Organization.class.getName());
+
+  private static PolicySlot policySlot(String code, List<RoleResourceGrant> grants, boolean data) {
+    boolean supported = (data ? DATA_POLICY_PAGES.contains(code) : FIELD_POLICY_MODELS.containsKey(code))
+        && grants.size() <= 1;
+    String id = grants.size() == 1
+        ? (data ? grants.getFirst().getDataScopeId() : grants.getFirst().getFieldScopeId()) : null;
+    return new PolicySlot(supported, id);
+  }
+
+  private void applyPolicyChanges(String tenant, String roleId, List<Change> changes,
+      Map<String, Row> current) {
+    boolean updated = false;
+    for (Change change : changes) {
+      if (change.dataPermission() == null && change.fieldPermission() == null) continue;
+      Row row = current.get(change.resourceId());
+      if (!change.granted() || row == null) {
+        throw badRequest("只能为已授权的页面配置权限规则");
+      }
+      if (change.dataPermission() != null && !row.dataPermission().supported()) {
+        throw badRequest("当前页面尚未接入数据权限 ORM 执行链路");
+      }
+      if (change.fieldPermission() != null && !row.fieldPermission().supported()) {
+        throw badRequest("当前页面尚未接入字段权限执行链路");
+      }
+      String dataId = change.dataPermission() == null ? null : trimToNull(change.dataPermission().policyId());
+      String fieldId = change.fieldPermission() == null ? null : trimToNull(change.fieldPermission().policyId());
+      if (dataId != null) {
+        DataScope policy = em.find(DataScope.class, dataId);
+        if (policy == null || policy.getDeletedAt() != null || !tenant.equals(policy.getTenantId())) {
+          throw new AccessDeniedException("数据范围不存在或不属于当前租户");
+        }
+      }
+      if (fieldId != null) {
+        FieldScope policy = em.find(FieldScope.class, fieldId);
+        if (policy == null || policy.getDeletedAt() != null || !tenant.equals(policy.getTenantId())) {
+          throw new AccessDeniedException("字段范围不存在或不属于当前租户");
+        }
+        String model = FIELD_POLICY_MODELS.get(row.code());
+        if (model == null || policy.getEntries().stream().noneMatch(entry ->
+            model.equals(entry.getResource()) && tenant.equals(entry.getTenantId())
+                && entry.getAccess() != null)) {
+          throw badRequest("所选字段规则没有当前页面的有效字段条目");
+        }
+      }
+      List<RoleResourceGrant> grants = em.createQuery("select g from RoleResourceGrant g"
+          + " where g.tenantId = :tenant and g.roleId = :role and g.resourceCode = :code"
+          + " and g.deletedAt is null", RoleResourceGrant.class)
+          .setParameter("tenant", tenant).setParameter("role", roleId)
+          .setParameter("code", row.code()).getResultList();
+      if (grants.size() != 1) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT,
+            "页面授权记录发生变化或存在重复项，请刷新后重试");
+      }
+      RoleResourceGrant grant = grants.getFirst();
+      if (change.dataPermission() != null) grant.setDataScopeId(dataId);
+      if (change.fieldPermission() != null) grant.setFieldScopeId(fieldId);
+      updated = true;
+    }
+    if (updated) {
+      em.flush();
+      authorizationVersions.refreshTenant(tenant);
+    }
+  }
+
+  private static String trimToNull(String value) {
+    if (value == null || value.isBlank()) return null;
+    return value.trim();
   }
 
   private static String revision(Resource resource, List<RoleResourceGrant> grants) {

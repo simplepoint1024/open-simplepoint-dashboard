@@ -20,6 +20,7 @@ import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.plugin.rbac.core.rest.controller.RoleResourceConfigurationController;
 import org.simplepoint.plugin.rbac.core.service.impl.RoleResourceConfigurationServiceImpl;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.*;
 import org.simplepoint.security.entity.*;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +38,7 @@ class RoleResourceConfigurationHttpTest {
   Session em;
   RoleService roles;
   RoleRepository repository;
+  ResourceAuthorizationVersionService authorizationVersions;
   RoleResourceConfigurationServiceImpl service;
   Role role;
   Role foreign;
@@ -53,6 +55,8 @@ class RoleResourceConfigurationHttpTest {
     factory = new MetadataSources(registry).addAnnotatedClass(Role.class)
         .addAnnotatedClass(RoleScopeBinding.class).addAnnotatedClass(Resource.class)
         .addAnnotatedClass(ResourceAncestor.class).addAnnotatedClass(RoleResourceGrant.class)
+        .addAnnotatedClass(DataScope.class).addAnnotatedClass(FieldScope.class)
+        .addAnnotatedClass(FieldScopeEntry.class)
         .addAnnotatedClass(TenantPackageRelevance.class)
         .addAnnotatedClass(PackageApplicationRelevance.class)
         .addAnnotatedClass(ApplicationResourceRelevance.class)
@@ -99,7 +103,8 @@ class RoleResourceConfigurationHttpTest {
           .setParameter("role", role.getId()).setParameter("codes", call.getArgument(1)).executeUpdate();
       return null;
     }).when(roles).unauthorized(anyString(), anySet());
-    service = new RoleResourceConfigurationServiceImpl(em, roles, repository);
+    authorizationVersions = mock(ResourceAuthorizationVersionService.class);
+    service = new RoleResourceConfigurationServiceImpl(em, roles, repository, authorizationVersions);
     mvc = MockMvcBuilders.standaloneSetup(new RoleResourceConfigurationController(service))
         .setMessageConverters(new JacksonJsonHttpMessageConverter(
             tools.jackson.databind.json.JsonMapper.builder().addModule(new FieldScopeJackson3Module()).build()))
@@ -126,6 +131,98 @@ class RoleResourceConfigurationHttpTest {
     if (em != null) {if (em.getTransaction().isActive()) em.getTransaction().rollback(); em.close();}
     if (factory != null) factory.close();
     RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+  }
+
+  @Test
+  void dataAssetsAreNotAdvertisedBeforeTenantPageCoverageExists() {
+    Resource page = new Resource();
+    page.setCode("dna.data-assets.view"); page.setName("Data assets");
+    page.setType(ResourceType.PAGE); page.setGrantable(true); page.setDisabled(false);
+    page.setPublicAccess(true); page.setScopeTypes(EnumSet.of(ResourceScopeType.TENANT));
+    em.persist(page);
+    DataScope allowed = new DataScope(); allowed.setTenantId("tenant-a");
+    allowed.setName("Only my assets"); allowed.setType(DataScopeType.SELF); em.persist(allowed);
+    em.flush(); em.clear();
+
+    Row row = list("dna.data-assets", "all").stream().filter(item -> item.code().equals(page.getCode()))
+        .findFirst().orElseThrow();
+    assertFalse(row.dataPermission().supported());
+    assertNull(row.dataPermission().policyId());
+    assertThrows(ResponseStatusException.class, () -> service.save(role.getId(), new Patch(List.of(
+        new Change(row.id(), row.code(), row.revision(), true,
+            new PolicyUpdate(allowed.getId()), null)))));
+  }
+
+  @Test
+  void organizationDataRuleCanBeListedBoundAndClearedOnlyWithinTenant() {
+    Resource page = new Resource();
+    page.setCode("organizations.view"); page.setName("Organizations");
+    page.setType(ResourceType.PAGE); page.setGrantable(true); page.setDisabled(false);
+    page.setPublicAccess(true); page.setScopeTypes(EnumSet.of(ResourceScopeType.TENANT));
+    em.persist(page);
+    RoleResourceGrant grant = grant(page, "tenant-a");
+    DataScope allowed = new DataScope(); allowed.setTenantId("tenant-a");
+    allowed.setName("Own organization"); allowed.setType(DataScopeType.DEPT); em.persist(allowed);
+    DataScope foreignScope = new DataScope(); foreignScope.setTenantId("tenant-b");
+    foreignScope.setName("Foreign organization"); foreignScope.setType(DataScopeType.ALL);
+    em.persist(foreignScope);
+    em.flush(); em.clear();
+
+    var options = service.policies(role.getId(), "organizations.view", "data", "",
+        PageRequest.of(0, 10));
+    assertEquals(1, options.getTotalElements());
+    assertEquals(allowed.getId(), options.getContent().getFirst().id());
+    Row row = list("organizations.view", "all").stream()
+        .filter(item -> item.code().equals("organizations.view")).findFirst().orElseThrow();
+    assertTrue(row.dataPermission().supported());
+    assertThrows(AccessDeniedException.class, () -> service.save(role.getId(), new Patch(List.of(
+        new Change(row.id(), row.code(), row.revision(), true,
+            new PolicyUpdate(foreignScope.getId()), null)))));
+    service.save(role.getId(), new Patch(List.of(new Change(row.id(), row.code(), row.revision(),
+        true, new PolicyUpdate(allowed.getId()), null))));
+    em.flush(); em.clear();
+    assertEquals(allowed.getId(), em.find(RoleResourceGrant.class, grant.getId()).getDataScopeId());
+    Row assigned = list("organizations.view", "all").stream()
+        .filter(item -> item.code().equals("organizations.view")).findFirst().orElseThrow();
+    service.save(role.getId(), new Patch(List.of(new Change(assigned.id(), assigned.code(),
+        assigned.revision(), true, new PolicyUpdate(null), null))));
+    em.flush(); em.clear();
+    assertNull(em.find(RoleResourceGrant.class, grant.getId()).getDataScopeId());
+  }
+
+  @Test
+  void fieldPolicyOptionsAndAssignmentStayWithinThePageModel() {
+    Resource page = new Resource();
+    page.setCode("users.view"); page.setName("Members");
+    page.setType(ResourceType.PAGE); page.setGrantable(true); page.setDisabled(false);
+    page.setPublicAccess(true); page.setScopeTypes(EnumSet.of(ResourceScopeType.TENANT));
+    em.persist(page);
+    RoleResourceGrant grant = grant(page, "tenant-a");
+    FieldScope allowed = new FieldScope(); allowed.setTenantId("tenant-a");
+    allowed.setName("Hide email"); em.persist(allowed);
+    FieldScopeEntry entry = new FieldScopeEntry(); entry.setTenantId("tenant-a");
+    entry.setFieldScopeId(allowed.getId()); entry.setResource(User.class.getName());
+    entry.setField("email"); entry.setAccess(FieldAccessType.HIDDEN); em.persist(entry);
+    FieldScope unrelated = new FieldScope(); unrelated.setTenantId("tenant-a");
+    unrelated.setName("Other model"); em.persist(unrelated);
+    FieldScopeEntry unrelatedEntry = new FieldScopeEntry(); unrelatedEntry.setTenantId("tenant-a");
+    unrelatedEntry.setFieldScopeId(unrelated.getId()); unrelatedEntry.setResource(Organization.class.getName());
+    unrelatedEntry.setField("name"); unrelatedEntry.setAccess(FieldAccessType.HIDDEN); em.persist(unrelatedEntry);
+    em.flush(); em.clear();
+
+    var options = service.policies(role.getId(), "users.view", "field", "", PageRequest.of(0, 10));
+    assertEquals(1, options.getTotalElements());
+    assertEquals(allowed.getId(), options.getContent().getFirst().id());
+    Row row = list("users.view", "all").stream().filter(item -> item.code().equals("users.view"))
+        .findFirst().orElseThrow();
+    assertTrue(row.fieldPermission().supported());
+    assertThrows(ResponseStatusException.class, () -> service.save(role.getId(), new Patch(List.of(
+        new Change(row.id(), row.code(), row.revision(), true, null,
+            new PolicyUpdate(unrelated.getId()))))));
+    service.save(role.getId(), new Patch(List.of(new Change(row.id(), row.code(), row.revision(), true,
+        null, new PolicyUpdate(allowed.getId())))));
+    em.flush(); em.clear();
+    assertEquals(allowed.getId(), em.find(RoleResourceGrant.class, grant.getId()).getFieldScopeId());
   }
 
   @Test

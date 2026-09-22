@@ -51,6 +51,17 @@ public class RoleResourceConfigurationController {
         rootsOnly, navigationOnly, pageable));
   }
 
+  @GetMapping("/policy-options")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.resource')")
+  public Response<Page<RoleResourceConfigurationService.PolicyOption>> policies(
+      @PathVariable("roleId") String roleId,
+      @RequestParam("resourceCode") String resourceCode,
+      @RequestParam("kind") String kind,
+      @RequestParam(name = "keyword", defaultValue = "") String keyword,
+      Pageable pageable) {
+    return Response.okay(service.policies(roleId, resourceCode, kind, keyword, pageable));
+  }
+
   /** Atomically applies explicit resource changes without replacing off-page grants. */
   @PutMapping("/resource-changes")
   @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)

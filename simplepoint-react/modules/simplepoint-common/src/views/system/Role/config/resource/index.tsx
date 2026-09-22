@@ -8,9 +8,9 @@ import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {usePageRetention} from '@simplepoint/shared/page/hooks';
 import {createIcon} from '@simplepoint/shared/types/icon';
-import {fetchRoleResources, fetchRoleResourceSubtreeRows, saveRoleResourceChanges} from '@/api/system/role-resource-configuration';
+import {fetchResourcePolicyOptions, fetchRoleResources, fetchRoleResourceSubtreeRows, saveRoleResourceChanges} from '@/api/system/role-resource-configuration';
 import type {RoleResourceRow} from '@/api/system/role-resource-configuration';
-import {displayedGrant, MAX_RESOURCE_CHANGES, resourceChanges, setResourceGrant} from './resourceDraft';
+import {displayedGrant, displayedPolicy, MAX_RESOURCE_CHANGES, resourceChanges, setResourceGrant, setResourcePolicy} from './resourceDraft';
 import type {ResourceDraft} from './resourceDraft';
 import './index.css';
 
@@ -94,6 +94,8 @@ function ResourceEditor({roleId, onStateChange, onSaved}: RoleResourceConfigProp
   const [previewPage, setPreviewPage] = useState(1);
   const [expandedChildren, setExpandedChildren] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState<ResourceDraft>({});
+  const [dataPolicySearch, setDataPolicySearch] = useState('');
+  const [fieldPolicySearch, setFieldPolicySearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>();
   const [revision, setRevision] = useState(0);
@@ -107,6 +109,12 @@ function ResourceEditor({roleId, onStateChange, onSaved}: RoleResourceConfigProp
     ({signal}) => fetchRoleResources(roleId, {keyword, state: state === 'pending' ? 'all' : state,
       page: page - 1, size: 20}, signal), {enabled: !treeMode && state !== 'pending'});
   const selectedRow = selected && (draft[selected.id]?.baseline ?? selected);
+  const dataOptions = useData(['resourceDataPolicies', roleId, selectedRow?.code, dataPolicySearch, revision],
+    ({signal}) => fetchResourcePolicyOptions(roleId, selectedRow!.code, 'data', dataPolicySearch, signal),
+    {enabled: !!selectedRow?.dataPermission.supported});
+  const fieldOptions = useData(['resourceFieldPolicies', roleId, selectedRow?.code, fieldPolicySearch, revision],
+    ({signal}) => fetchResourcePolicyOptions(roleId, selectedRow!.code, 'field', fieldPolicySearch, signal),
+    {enabled: !!selectedRow?.fieldPermission.supported});
   const selectedSubtree = selectedRow?.hasChildren ? directoryRows[selectedRow.id] : undefined;
   const grantableSubtree = selectedSubtree?.filter(row => row.grantable);
   const selectedSubtreeGranted = grantableSubtree?.filter(row => displayedGrant(draft, row)).length ?? 0;
@@ -139,6 +147,7 @@ function ResourceEditor({roleId, onStateChange, onSaved}: RoleResourceConfigProp
   };
   const choose = (row: RoleResourceRow) => {
     setSelected(row); setExpandedChildren(new Set()); setDirectoryError(undefined);
+    setDataPolicySearch(''); setFieldPolicySearch('');
     if (row.hasChildren && !directoryRows[row.id]) {
       setDirectoryLoading(row.id);
       void fetchRoleResourceSubtreeRows(roleId, row.id).then(rows => {
@@ -311,10 +320,43 @@ function ResourceEditor({roleId, onStateChange, onSaved}: RoleResourceConfigProp
               {selectedSubtree && renderChildBranch(subtreeChildren.get(selectedRow.id) ?? [])}
             </div>}
           </section>
-          <section className="role-resource-setting role-resource-reserved"><span className="role-resource-section-title">{t('roles.resourceConfig.dataScope', '数据权限')} <Tag>{t('roles.resourceConfig.reserved', '预留')}</Tag></span>
-            <Typography.Text type="secondary">{t('roles.resourceConfig.dataReservedDetail', '后续在此选择适用于当前资源的数据规则。当前入口不会改变数据访问范围。')}</Typography.Text></section>
-          <section className="role-resource-setting role-resource-reserved"><span className="role-resource-section-title">{t('roles.resourceConfig.fieldScope', '字段权限')} <Tag>{t('roles.resourceConfig.reserved', '预留')}</Tag></span>
-            <Typography.Text type="secondary">{t('roles.resourceConfig.fieldReservedDetail', '后续在此配置当前资源的字段可见性与可编辑性。当前入口不会改变字段访问范围。')}</Typography.Text></section>
+          <section className="role-resource-setting"><span className="role-resource-section-title">{t('roles.resourceConfig.dataScope', '数据权限')}</span>
+            {selectedRow.dataPermission.supported ? <>
+              <Typography.Text type="secondary">{t('roles.resourceConfig.dataRuleHint', '选择已创建的数据范围规则；不选择则沿用角色默认范围。')}</Typography.Text>
+              <Select className="role-resource-policy-select" showSearch allowClear filterOption={false}
+                aria-label={t('roles.resourceConfig.dataScope', '数据权限')}
+                disabled={saving || !displayedGrant(draft, selectedRow)} loading={dataOptions.isFetching}
+                placeholder={t('roles.resourceConfig.chooseDataRule', '选择数据范围规则')}
+                value={displayedPolicy(draft, selectedRow, 'data') ?? undefined}
+                onSearch={setDataPolicySearch} onChange={value => setDraft(previous =>
+                  setResourcePolicy(previous, selectedRow, 'data', value ?? null))}
+                options={[...(dataOptions.data?.content ?? []).map(item => ({value: item.id,
+                  label: `${item.name} · ${item.detail ?? ''}`})),
+                  ...(displayedPolicy(draft, selectedRow, 'data') && !(dataOptions.data?.content ?? [])
+                    .some(item => item.id === displayedPolicy(draft, selectedRow, 'data'))
+                    ? [{value: displayedPolicy(draft, selectedRow, 'data')!,
+                      label: displayedPolicy(draft, selectedRow, 'data')!}] : [])]}/>
+              {dataOptions.isError && <Alert type="error" title={t('roles.resourceConfig.policyLoadFailed', '规则加载失败')} showIcon/>}
+            </> : <Typography.Text type="secondary">{t('roles.resourceConfig.dataUnsupported', '此页面尚未接入 ORM 数据范围过滤。')}</Typography.Text>}
+          </section>
+          <section className="role-resource-setting"><span className="role-resource-section-title">{t('roles.resourceConfig.fieldScope', '字段权限')}</span>
+            {selectedRow.fieldPermission.supported ? <>
+              <Typography.Text type="secondary">{t('roles.resourceConfig.fieldRuleHint', '选择已创建的字段规则；不选择则沿用角色默认规则。')}</Typography.Text>
+              <Select className="role-resource-policy-select" showSearch allowClear filterOption={false}
+                aria-label={t('roles.resourceConfig.fieldScope', '字段权限')}
+                disabled={saving || !displayedGrant(draft, selectedRow)} loading={fieldOptions.isFetching}
+                placeholder={t('roles.resourceConfig.chooseFieldRule', '选择字段范围规则')}
+                value={displayedPolicy(draft, selectedRow, 'field') ?? undefined}
+                onSearch={setFieldPolicySearch} onChange={value => setDraft(previous =>
+                  setResourcePolicy(previous, selectedRow, 'field', value ?? null))}
+                options={[...(fieldOptions.data?.content ?? []).map(item => ({value: item.id, label: item.name})),
+                  ...(displayedPolicy(draft, selectedRow, 'field') && !(fieldOptions.data?.content ?? [])
+                    .some(item => item.id === displayedPolicy(draft, selectedRow, 'field'))
+                    ? [{value: displayedPolicy(draft, selectedRow, 'field')!,
+                      label: displayedPolicy(draft, selectedRow, 'field')!}] : [])]}/>
+              {fieldOptions.isError && <Alert type="error" title={t('roles.resourceConfig.policyLoadFailed', '规则加载失败')} showIcon/>}
+            </> : <Typography.Text type="secondary">{t('roles.resourceConfig.fieldUnsupported', '此页面尚未接入字段权限执行链路。')}</Typography.Text>}
+          </section>
           </div>
         </> : <Empty description={t('roles.resourceConfig.selectTreeResource', '从左侧选择资源，在右侧配置授权及权限范围')}/>}
       </aside>
@@ -346,6 +388,8 @@ function ResourceEditor({roleId, onStateChange, onSaved}: RoleResourceConfigProp
             <span className="role-resource-icon">{resourceIcon(row)}</span><strong>{displayName(row)}</strong>
             <Tag className="role-resource-code-tag">{row.code}</Tag>
             {draft[row.id]?.granted && <Tag color="green">{t('roles.resourceConfig.previewNew', '本次新增')}</Tag>}
+            {displayedPolicy(draft, row, 'data') && <Tag color="blue">{t('roles.resourceConfig.dataScope', '数据权限')}: {displayedPolicy(draft, row, 'data')}</Tag>}
+            {displayedPolicy(draft, row, 'field') && <Tag color="purple">{t('roles.resourceConfig.fieldScope', '字段权限')}: {displayedPolicy(draft, row, 'field')}</Tag>}
           </div>)}</div>}
       {previewRows.length > 50 && <Pagination className="role-resource-preview-pagination" current={previewPage}
         pageSize={50} total={previewRows.length} showSizeChanger={false} onChange={setPreviewPage}/>}

@@ -29,12 +29,14 @@ public final class FieldPermissionPolicy {
   /** Resolves canonical and legacy policies without weakening either restriction. */
   public static String access(
       org.simplepoint.core.AuthorizationContext context, Class<?> type, String field) {
-    if (context == null || context.getFieldPermissions() == null) {
+    if (context == null) {
       return null;
     }
     Class<?> resource = resourceType(type);
     field = logicalField(resource, field);
-    Map<String, String> permissions = context.getFieldPermissions();
+    Map<String, String> permissions = context.activeFieldPermissions();
+    if (permissions == null) permissions = context.getFieldPermissions();
+    if (permissions == null) return null;
     String canonical = permissions.get(resource.getName() + "#" + field);
     String legacy = permissions.get(resource.getSimpleName() + "#" + field);
     // An existing restrictive legacy policy must not be weakened by a second alias.

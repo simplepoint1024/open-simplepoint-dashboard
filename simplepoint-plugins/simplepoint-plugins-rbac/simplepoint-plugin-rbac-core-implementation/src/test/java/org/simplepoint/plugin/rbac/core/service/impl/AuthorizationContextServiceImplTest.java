@@ -38,7 +38,11 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceR
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.security.entity.DataScope;
 import org.simplepoint.security.entity.DataScopeType;
+import org.simplepoint.security.entity.FieldAccessType;
+import org.simplepoint.security.entity.FieldScope;
+import org.simplepoint.security.entity.FieldScopeEntry;
 import org.simplepoint.security.entity.RoleResourceGrant;
+import org.simplepoint.security.entity.RoleScopeBinding;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.service.ResourceService;
 import org.springframework.beans.factory.ObjectProvider;
@@ -319,6 +323,144 @@ class AuthorizationContextServiceImplTest {
     assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_OWNER);
     assertThat(ctx.getVersion()).isEqualTo(7L);
     verify(tenantPackageRepo).findResourceCodesByTenantId("tenant1");
+  }
+
+  @Test
+  void platformAdministratorInOrganizationReceivesItsWorkspacePackagePages() {
+    User user = new User();
+    user.setSuperAdmin(true);
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    tenant.setOwnerId("admin");
+    tenant.setTenantType(TenantType.ORGANIZATION);
+    TenantRepository tenants = mock(TenantRepository.class);
+    TenantPackageRelevanceRepository packages = mock(TenantPackageRelevanceRepository.class);
+    ResourceService resources = mock(ResourceService.class);
+    when(usersService.findByIdForAuthorization("admin")).thenReturn(Optional.of(user));
+    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenants);
+    when(tenants.findById("tenant1")).thenReturn(Optional.of(tenant));
+    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(packages);
+    when(packages.findResourceCodesByTenantId("tenant1"))
+        .thenReturn(Set.of("workspace.settings.view", "workspace.resources.view"));
+    when(resourceServiceProvider.getIfAvailable()).thenReturn(resources);
+    allowAllScopes(resources);
+
+    AuthorizationContext context = service.calculate("tenant1", "admin", null, null);
+
+    assertThat(context.getScopeType()).isEqualTo(AuthorizationScopeType.TENANT);
+    assertThat(context.getResources()).contains("workspace.settings.view", "workspace.resources.view");
+    assertThat(context.getAttribute("X-Tenant-Id")).isEqualTo("tenant1");
+  }
+
+  @Test
+  void pagePoliciesResolveOnlyForEffectiveTenantResources() {
+    User user = new User();
+    Tenant tenant = new Tenant();
+    tenant.setOwnerId("u1"); tenant.setTenantType(TenantType.ORGANIZATION);
+    TenantRepository tenants = mock(TenantRepository.class);
+    ResourceService resources = mock(ResourceService.class);
+    RoleResourceGrantRepository grants = mock(RoleResourceGrantRepository.class);
+    DataScopeRepository dataScopes = mock(DataScopeRepository.class);
+    FieldScopeRepository fieldScopes = mock(FieldScopeRepository.class);
+    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
+    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenants);
+    when(tenants.findById("tenant1")).thenReturn(Optional.of(tenant));
+    when(tenants.hasUser("tenant1", "u1")).thenReturn(true);
+    when(usersService.loadRolesByUserId("tenant1", "u1"))
+        .thenReturn(List.of(new RoleGrantedAuthority("role1", "ROLE_USER")));
+    when(usersService.loadResourcesInRoleIds(List.of("role1"))).thenReturn(Set.of("users.view"));
+    when(resourceServiceProvider.getIfAvailable()).thenReturn(resources);
+    allowAllScopes(resources);
+    when(roleResourceGrantRepositoryProvider.getIfAvailable()).thenReturn(grants);
+    var bindings = mock(org.simplepoint.plugin.rbac.core.api.repository.RoleScopeBindingRepository.class);
+    RoleScopeBinding binding = new RoleScopeBinding();
+    binding.setTenantId("tenant1"); binding.setRoleId("role1");
+    when(roleScopeBindingRepositoryProvider.getIfAvailable()).thenReturn(bindings);
+    when(bindings.findByTenantIdAndRoleIdIn("tenant1", List.of("role1")))
+        .thenReturn(List.of(binding));
+    RoleResourceGrant pageGrant = new RoleResourceGrant();
+    pageGrant.setTenantId("tenant1"); pageGrant.setRoleId("role1");
+    pageGrant.setResourceCode("users.view"); pageGrant.setDataScopeId("data1");
+    pageGrant.setFieldScopeId("field1");
+    RoleResourceGrant obsolete = new RoleResourceGrant();
+    obsolete.setTenantId("tenant1"); obsolete.setRoleId("role1");
+    obsolete.setResourceCode("obsolete.view"); obsolete.setDataScopeId("missing");
+    when(grants.findByRoleIdIn(List.of("role1"))).thenReturn(List.of(pageGrant, obsolete));
+    DataScope data = new DataScope(); data.setTenantId("tenant1"); data.setType(DataScopeType.SELF);
+    when(dataScopeRepositoryProvider.getIfAvailable()).thenReturn(dataScopes);
+    when(dataScopes.findByIdAndTenantIdAndDeletedAtIsNull("data1", "tenant1"))
+        .thenReturn(Optional.of(data));
+    FieldScope field = new FieldScope(); field.setTenantId("tenant1");
+    FieldScopeEntry entry = new FieldScopeEntry(); entry.setTenantId("tenant1");
+    entry.setResource(User.class.getName()); entry.setField("email");
+    entry.setAccess(FieldAccessType.HIDDEN); field.setEntries(List.of(entry));
+    when(fieldScopeRepositoryProvider.getIfAvailable()).thenReturn(fieldScopes);
+    when(fieldScopes.findByIdAndTenantIdAndDeletedAtIsNull("field1", "tenant1"))
+        .thenReturn(Optional.of(field));
+
+    AuthorizationContext context = service.calculate("tenant1", "u1", null, null);
+
+    assertThat(context.getResourceDataScopes()).containsKey("users.view")
+        .doesNotContainKey("obsolete.view");
+    assertThat(context.getResourceDataScopes().get("users.view").type()).isEqualTo("SELF");
+    assertThat(context.getResourceFieldPermissions().get("users.view"))
+        .containsEntry(User.class.getName() + "#email", "HIDDEN");
+  }
+
+  @Test
+  void organizationPageDescendantScopeUsesCurrentTenantMembership() {
+    User user = new User();
+    user.setSuperAdmin(false);
+    user.setOrgId("global-org");
+    Tenant tenant = new Tenant();
+    tenant.setOwnerId("owner");
+    tenant.setTenantType(TenantType.ORGANIZATION);
+    TenantRepository tenants = mock(TenantRepository.class);
+    ResourceService resources = mock(ResourceService.class);
+    RoleResourceGrantRepository grants = mock(RoleResourceGrantRepository.class);
+    DataScopeRepository scopes = mock(DataScopeRepository.class);
+    OrganizationRepository organizations = mock(OrganizationRepository.class);
+    var memberships = mock(org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository.class);
+    var membership = new org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance();
+    membership.setTenantId("tenant1"); membership.setUserId("u1"); membership.setOrgId("org1");
+    var own = new org.simplepoint.plugin.rbac.tenant.api.entity.Organization();
+    own.setId("org1"); own.setTenantId("tenant1"); own.setEnabled(true);
+    var rule = new DataScope(); rule.setTenantId("tenant1");
+    rule.setType(DataScopeType.DEPT_AND_BELOW);
+    var grant = new RoleResourceGrant(); grant.setTenantId("tenant1");
+    grant.setRoleId("role1"); grant.setResourceCode("organizations.view");
+    grant.setDataScopeId("scope1");
+    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
+    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenants);
+    when(tenants.findById("tenant1")).thenReturn(Optional.of(tenant));
+    when(tenants.hasUser("tenant1", "u1")).thenReturn(true);
+    when(tenantMembershipProvider.getIfAvailable()).thenReturn(memberships);
+    when(memberships.findByTenantIdAndUserIdAndDeletedAtIsNull("tenant1", "u1"))
+        .thenReturn(Optional.of(membership));
+    when(usersService.loadRolesByUserId("tenant1", "u1"))
+        .thenReturn(List.of(new RoleGrantedAuthority("role1", "ROLE_USER")));
+    when(usersService.loadResourcesInRoleIds(List.of("role1")))
+        .thenReturn(Set.of("organizations.view"));
+    when(resourceServiceProvider.getIfAvailable()).thenReturn(resources);
+    allowAllScopes(resources);
+    when(roleResourceGrantRepositoryProvider.getIfAvailable()).thenReturn(grants);
+    when(grants.findByRoleIdIn(List.of("role1"))).thenReturn(List.of(grant));
+    when(dataScopeRepositoryProvider.getIfAvailable()).thenReturn(scopes);
+    when(scopes.findByIdAndTenantIdAndDeletedAtIsNull("scope1", "tenant1"))
+        .thenReturn(Optional.of(rule));
+    when(organizationRepositoryProvider.getIfAvailable()).thenReturn(organizations);
+    when(organizations.findByIdAndTenantId("org1", "tenant1")).thenReturn(Optional.of(own));
+    when(organizations.findIdsByParentIds(anyCollection(), eq("tenant1")))
+        .thenAnswer(call -> ((java.util.Collection<?>) call.getArgument(0)).contains("org1")
+            ? List.of("child") : List.of());
+
+    AuthorizationContext context = service.calculate("tenant1", "u1", null, null);
+
+    assertThat(context.getAttribute("X-Org-Dept-Id")).isEqualTo("org1");
+    assertThat(context.getResourceDataScopes().get("organizations.view").type())
+        .isEqualTo("DEPT_AND_BELOW");
+    assertThat(context.getResourceDataScopes().get("organizations.view").departmentIds())
+        .containsExactlyInAnyOrder("org1", "child");
   }
 
   @Test

@@ -6,8 +6,6 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.metamodel.Attribute;
-import jakarta.persistence.metamodel.EntityType;
-import jakarta.persistence.metamodel.Metamodel;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +28,7 @@ import org.simplepoint.core.query.InvalidQueryException;
 import org.simplepoint.core.query.QueryCapabilities;
 import org.simplepoint.core.query.QueryDocument;
 import org.simplepoint.data.jpa.AttributeMatchers;
+import org.simplepoint.data.jpa.DataScopePredicates;
 import org.simplepoint.data.jpa.StructuredQuery;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.springframework.data.domain.Example;
@@ -282,63 +281,14 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
       List<Predicate> predicates = new ArrayList<>(Arrays.asList(
           getPredicates(attributes, root, query, criteriaBuilder, EscapeCharacter.DEFAULT)));
       if (scope != null) {
-        Predicate dataScopePredicate = buildDataScopePredicate(scope, root, criteriaBuilder);
+        Predicate dataScopePredicate = DataScopePredicates.compile(scope, root, criteriaBuilder,
+            entityManager.getMetamodel());
         if (dataScopePredicate != null) {
           predicates.add(dataScopePredicate);
         }
       }
       return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     };
-  }
-
-  private <S extends T> Predicate buildDataScopePredicate(DataScopeCondition scope, Root<S> root,
-                                                           CriteriaBuilder cb) {
-    String scopeType = scope.getScopeType();
-    if (scopeType == null || "ALL".equals(scopeType)) {
-      return null;
-    }
-    Metamodel metamodel = this.entityManager.getMetamodel();
-    EntityType<T> entityType = metamodel.entity(getDomainClass());
-    Set<String> attrs = entityType.getAttributes().stream()
-        .map(Attribute::getName).collect(Collectors.toSet());
-    switch (scopeType) {
-      case "SELF":
-        {
-        Predicate selfPredicate = buildSelfPredicate(scope, root, cb, attrs);
-        return selfPredicate == null ? cb.disjunction() : selfPredicate;
-        }
-      case "DEPT":
-      case "DEPT_AND_BELOW":
-      case "CUSTOM":
-        {
-        String deptField = scope.getDeptField();
-        Set<String> deptIds = scope.getDeptIds();
-        List<Predicate> scopePredicates = new ArrayList<>();
-        if (deptField != null && deptIds != null && !deptIds.isEmpty() && attrs.contains(deptField)) {
-          scopePredicates.add(root.get(deptField).in(deptIds));
-        }
-        if (scope.isIncludeSelf()) {
-          Predicate selfPredicate = buildSelfPredicate(scope, root, cb, attrs);
-          if (selfPredicate != null) {
-            scopePredicates.add(selfPredicate);
-          }
-        }
-        return scopePredicates.isEmpty() ? cb.disjunction()
-            : cb.or(scopePredicates.toArray(new Predicate[0]));
-        }
-      default:
-        return cb.disjunction();
-    }
-  }
-
-  private <S extends T> Predicate buildSelfPredicate(DataScopeCondition scope, Root<S> root, CriteriaBuilder cb,
-                                                     Set<String> attrs) {
-    String ownerField = scope.getOwnerField();
-    String userId = scope.getUserId();
-    if (ownerField != null && userId != null && attrs.contains(ownerField)) {
-      return cb.equal(root.get(ownerField), userId);
-    }
-    return null;
   }
 
   @Override
@@ -348,7 +298,8 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
     Example<T> typedExample = Example.of((T) example);
     Specification<T> specification = (root, query, cb) -> {
       Predicate examplePredicate = QueryByExamplePredicateBuilder.getPredicate(root, cb, typedExample);
-      Predicate dataScopePredicate = scope == null ? null : buildDataScopePredicate(scope, root, cb);
+      Predicate dataScopePredicate = scope == null ? null : DataScopePredicates.compile(scope, root, cb,
+          entityManager.getMetamodel());
       List<Predicate> predicates = new ArrayList<>();
       predicates.add(cb.isNull(root.get("deletedAt")));
       if (examplePredicate != null) {

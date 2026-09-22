@@ -26,12 +26,14 @@ public class TenantMemberController {
     return Response.okay(service.list(filters, page).map(TenantMemberView::project));
   }
   @GetMapping("/by-organization")
+  @PreAuthorize("hasAuthority('organizations.view')")
   public Response<Page<java.util.Map<String, Object>>> byOrganization(
       @RequestParam("orgId") String orgId,
       @RequestParam(name = "keyword", defaultValue = "") String keyword, Pageable page) {
     return Response.okay(service.organizationMembers(orgId, keyword, page).map(TenantMemberView::project));
   }
   @GetMapping("/organization-candidates")
+  @PreAuthorize("hasAuthority('organizations.view')")
   public Response<Page<java.util.Map<String, Object>>> organizationCandidates(
       @RequestParam("orgId") String orgId,
       @RequestParam(name = "keyword", defaultValue = "") String keyword, Pageable page) {
