@@ -63,8 +63,11 @@ function getRoleStorageKey(tenantId?: TenantId): string {
 
 export function getStoredRoleId(tenantId?: TenantId): RoleId | undefined {
   const normalizedTenantId = tenantId?.trim();
-  const tenantRole = normalizedTenantId ? readLS(getRoleStorageKey(normalizedTenantId)) : undefined;
-  return (tenantRole || readLS(KEY_ROLE)) as RoleId | undefined;
+  // A global legacy role may belong to a different workspace. Never send it as
+  // the role for a newly selected tenant before that tenant's roles load.
+  return (normalizedTenantId
+    ? readLS(getRoleStorageKey(normalizedTenantId))
+    : readLS(KEY_ROLE)) as RoleId | undefined;
 }
 
 export function setStoredRoleId(roleId: RoleId | undefined, tenantId?: TenantId) {

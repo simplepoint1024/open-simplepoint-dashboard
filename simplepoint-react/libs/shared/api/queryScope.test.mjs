@@ -2,12 +2,20 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {setImmediate} from 'node:timers/promises';
 import {isCancelledError, InfiniteQueryObserver, QueryClient, QueryObserver} from '@tanstack/react-query';
-import {setStoredContextId, setStoredRoleId, setStoredTenantId} from './contextId.ts';
+import {getStoredRoleId, setStoredContextId, setStoredRoleId, setStoredTenantId} from './contextId.ts';
 import {bindQueryScope, getQueryScopeSnapshot, scopedPagePlaceholder, scopedQueryKey, scopedQueryOptions, subscribeQueryScope} from './queryScope.ts';
 
 const scopeA = ['tenant-a', 'role-a', 'context-a'];
 const scopeB = ['tenant-b', 'role-b', 'context-b'];
 const resourceKey = ['managed-mcp-servers'];
+
+test('a role selected in one workspace is never reused in another workspace', t => {
+  setup(t);
+  assert.equal(getStoredRoleId('tenant-a'), 'role-a');
+  setStoredTenantId('tenant-b');
+  assert.equal(getStoredRoleId('tenant-b'), undefined);
+  assert.equal(getStoredRoleId('tenant-a'), 'role-a');
+});
 
 test('infinite pages preserve page parameters and reject old authorization scopes', async t => {
   const {client, activate} = setup(t);
