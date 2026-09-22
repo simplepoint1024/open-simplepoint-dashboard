@@ -66,7 +66,7 @@ public class FieldScopeController extends BaseController<FieldScopeService, Fiel
 
   @PutMapping("/configuration")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('field-scope.edit')")
-  public Response<FieldScope> updateConfigured(@RequestParam String id,
+  public Response<FieldScope> updateConfigured(@RequestParam("id") String id,
       @RequestBody FieldScopeService.Configuration configuration) {
     return ok(service.updateConfigured(id, configuration));
   }
