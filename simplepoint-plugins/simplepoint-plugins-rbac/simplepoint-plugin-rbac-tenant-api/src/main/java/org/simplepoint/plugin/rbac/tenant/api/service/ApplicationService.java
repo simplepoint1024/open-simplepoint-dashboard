@@ -12,6 +12,11 @@ import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationResourcesRelev
  */
 public interface ApplicationService extends BaseService<Application, String> {
 
+  /** Pages either assigned or available candidates after checking access to the parent. */
+  org.springframework.data.domain.Page<Application> assignmentItems(
+      String parent, boolean selected, java.util.Map<String, String> filters,
+      org.springframework.data.domain.Pageable pageable);
+
   /**
    * Loads resource codes assigned to the application.
    */

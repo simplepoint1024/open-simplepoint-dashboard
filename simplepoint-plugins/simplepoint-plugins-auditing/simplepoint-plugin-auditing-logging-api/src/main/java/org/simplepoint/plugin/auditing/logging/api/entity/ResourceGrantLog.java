@@ -40,6 +40,20 @@ import org.springframework.core.annotation.Order;
     @Index(name = "idx_resource_grant_log_operator_id", columnList = "operator_id")
 })
 @EqualsAndHashCode(callSuper = true)
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("changedAt"),
+    @org.simplepoint.core.query.QueryField("changeType"),
+    @org.simplepoint.core.query.QueryField("action"),
+    @org.simplepoint.core.query.QueryField("subjectType"),
+    @org.simplepoint.core.query.QueryField("subjectId"),
+    @org.simplepoint.core.query.QueryField("subjectLabel"),
+    @org.simplepoint.core.query.QueryField("targetType"),
+    @org.simplepoint.core.query.QueryField("targetSummary"),
+    @org.simplepoint.core.query.QueryField("targetCount"),
+    @org.simplepoint.core.query.QueryField("operatorId"),
+    @org.simplepoint.core.query.QueryField("tenantId"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class ResourceGrantLog extends BaseEntityImpl<String> {
 
   @Order(1)

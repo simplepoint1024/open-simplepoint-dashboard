@@ -3,7 +3,6 @@ package org.simplepoint.plugin.rbac.tenant.service.impl;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +56,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
   private final UsersService usersService;
   private final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider;
+  private final TenantUserCandidateQuery userCandidateQuery;
 
   /**
    * Tenant Service Impl.
@@ -68,7 +68,8 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       TenantUserRelevanceRepository tenantUserRelevanceRepository,
       ResourceAuthorizationVersionService resourceAuthorizationVersionService,
       UsersService usersService,
-      ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider
+      ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider,
+      TenantUserCandidateQuery userCandidateQuery
   ) {
     super(repository, detailsProviderService);
     this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
@@ -76,6 +77,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.usersService = usersService;
     this.builtInTenantProvisionerProvider = builtInTenantProvisionerProvider;
+    this.userCandidateQuery = userCandidateQuery;
   }
 
   @Override
@@ -92,12 +94,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
         .map(NamedTenantVo::tenantId)
         .filter(id -> id != null && !id.isBlank())
         .collect(Collectors.toCollection(LinkedHashSet::new));
-    if (tenantIds.isEmpty()) {
-      return Page.empty(pageable);
-    }
-    Map<String, String> scopedAttributes = new HashMap<>(attributes == null ? Map.of() : attributes);
-    scopedAttributes.put("id", "in:" + String.join(",", tenantIds));
-    return decorateTenantOwners(super.limit(scopedAttributes, pageable));
+    return decorateTenantOwners(super.limitInScope(attributes, "id", tenantIds, pageable));
   }
 
   @Override
@@ -270,11 +267,21 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
 
   @Override
   public Page<UserRelevanceVo> userItems(String tenantId, String keyword, Pageable pageable) {
-    requireTenantMemberManager(tenantId);
     String normalizedKeyword = normalizeKeyword(keyword);
-    return normalizedKeyword == null
-        ? tenantUserRelevanceRepository.items(pageable)
-        : tenantUserRelevanceRepository.searchItems(normalizedKeyword, pageable);
+    return userItems(tenantId, null, normalizedKeyword == null ? Map.of() : Map.of("keyword", normalizedKeyword), pageable);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Page<UserRelevanceVo> userItems(String tenantId, Boolean selected, Map<String, String> filters, Pageable pageable) {
+    Tenant tenant = requireTenantMemberManager(tenantId);
+    return userCandidateQuery.list(tenant, selected, filters, pageable);
+  }
+
+  @Override
+  public Map<String, Object> userItemsSchema(String tenantId) {
+    requireTenantMemberManager(tenantId);
+    return getTableSchemaProvider().schema(UserRelevanceVo.class, getAuthorizationContext());
   }
 
   private String normalizeKeyword(String keyword) {
@@ -334,20 +341,31 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Collection<TenantUserRelevance> authorizeUsers(TenantUsersRelevanceDto dto) {
-    Tenant tenant = requireTenantMemberManager(dto.getTenantId());
+    final Tenant tenant = requireTenantMemberManager(dto.getTenantId());
     Set<String> userIds = normalizeCodes(dto.getUserIds());
+    if (userIds.size() > 100) {
+      throw new IllegalArgumentException("每次最多配置100个成员");
+    }
     if (userIds.isEmpty()) {
       return List.of();
     }
     validateUsersExist(userIds);
 
-    LinkedHashSet<String> existingUserIds = new LinkedHashSet<>(tenantUserRelevanceRepository.authorized(tenant.getId()));
+    Map<String, TenantUserRelevance> existing = tenantUserRelevanceRepository
+        .findAllByTenantIdAndUserIdIn(tenant.getId(), userIds).stream()
+        .collect(Collectors.toMap(TenantUserRelevance::getUserId, relation -> relation));
     LinkedHashSet<TenantUserRelevance> relations = new LinkedHashSet<>();
     for (String userId : userIds) {
-      if (!existingUserIds.add(userId)) {
+      TenantUserRelevance relevance = existing.get(userId);
+      if (relevance != null && relevance.getDeletedAt() == null) {
         continue;
       }
-      TenantUserRelevance relevance = new TenantUserRelevance();
+      if (relevance == null) {
+        relevance = new TenantUserRelevance();
+      }
+      relevance.setDeletedAt(null);
+      relevance.setOrgId(null);
+      relevance.setEnabled(true);
       relevance.setTenantId(tenant.getId());
       relevance.setUserId(userId);
       relations.add(relevance);
@@ -367,6 +385,9 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   public void unauthorizedUsers(String tenantId, Set<String> userIds) {
     Tenant tenant = requireTenantMemberManager(tenantId);
     Set<String> normalizedUserIds = normalizeCodes(userIds);
+    if (normalizedUserIds.size() > 100) {
+      throw new IllegalArgumentException("每次最多配置100个成员");
+    }
     if (normalizedUserIds.isEmpty()) {
       return;
     }
@@ -465,6 +486,13 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       throw new AccessDeniedException("个人空间不支持组织成员管理");
     }
     AuthorizationContext context = getAuthorizationContext();
+    if (!isAdministrator(authentication) && !Boolean.TRUE.equals(context == null ? null : context.getIsAdministrator())
+        && context != null && context.getScopeType() != null
+        && (context.getScopeType() == org.simplepoint.core.AuthorizationScopeType.PERSONAL
+        || (context.getScopeType() == org.simplepoint.core.AuthorizationScopeType.TENANT
+        && !Objects.equals(tenant.getId(), context.getAttribute("X-Tenant-Id"))))) {
+      throw new AccessDeniedException("不能跨授权上下文配置租户成员");
+    }
     if (AuthorizationScopeGuards.isTenantManager(context, tenant.getOwnerId())
         || isAdministrator(authentication)
         || isTenantAdmin(authentication)

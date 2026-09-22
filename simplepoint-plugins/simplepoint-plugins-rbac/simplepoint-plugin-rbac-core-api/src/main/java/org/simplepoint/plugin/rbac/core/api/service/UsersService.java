@@ -127,6 +127,13 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
      */
   Page<RoleRelevanceVo> roleCandidates(Pageable pageable);
 
+  /** Queries a member's assignment side with authorized scalar filters and SQL pagination. */
+  Page<RoleRelevanceVo> roleCandidates(String userId, Boolean selected,
+      java.util.Map<String, String> filters, Pageable pageable);
+
+  /** Returns the same member-scoped field contract used by the candidate query. */
+  Object roleCandidatesSchema(String userId);
+
   /**
    * Searches the global user directory for a remote picker. Empty and overly
    * short keywords intentionally return no rows so a form never loads the full

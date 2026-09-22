@@ -16,6 +16,9 @@ import org.springframework.data.domain.Pageable;
  */
 public interface RoleRepository extends BaseRepository<Role, String> {
 
+  /** Serializes grant mutations without locking unrelated roles. */
+  Optional<Role> lockForAuthorization(String tenantId, String roleId);
+
   /**
    * Finds a role by its tenant scope and authority.
    *

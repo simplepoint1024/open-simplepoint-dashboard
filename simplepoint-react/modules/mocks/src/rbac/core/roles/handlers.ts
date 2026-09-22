@@ -5,10 +5,6 @@ const authorizedResourcesByRole = new Map<string, string[]>([
   ['1', ['dashboard.view', 'roles.view', 'roles.config.resource']],
   ['2', ['dashboard.view']],
 ]);
-const scopeAssignmentsByRole = new Map<string, { dataScopeId: string | null; fieldScopeId: string | null }>([
-  ['1', { dataScopeId: 'ds-all', fieldScopeId: null }],
-  ['2', { dataScopeId: 'ds-self', fieldScopeId: 'fs-user-sensitive' }],
-]);
 
 export default [
   http.get(`${base}/schema`, () => {
@@ -188,22 +184,14 @@ export default [
     const payload = await request.json() as {
       roleId?: string | null;
       resourceCodes?: string[];
-      dataScopeId?: string | null;
-      fieldScopeId?: string | null;
     };
     const roleId = payload.roleId ?? '';
     const current = new Set(authorizedResourcesByRole.get(roleId) ?? []);
     (payload.resourceCodes ?? []).forEach((authority) => current.add(authority));
     authorizedResourcesByRole.set(roleId, Array.from(current));
-    scopeAssignmentsByRole.set(roleId, {
-      dataScopeId: payload.dataScopeId ?? scopeAssignmentsByRole.get(roleId)?.dataScopeId ?? null,
-      fieldScopeId: payload.fieldScopeId ?? scopeAssignmentsByRole.get(roleId)?.fieldScopeId ?? null,
-    });
     return HttpResponse.json(Array.from(current).map((resourceCodes) => ({
       roleId,
       resourceCodes,
-      dataScopeId: scopeAssignmentsByRole.get(roleId)?.dataScopeId ?? null,
-      fieldScopeId: scopeAssignmentsByRole.get(roleId)?.fieldScopeId ?? null,
     })));
   }),
   http.post(`${base}/unauthorized`, async ({request}) => {
@@ -214,24 +202,6 @@ export default [
       roleId,
       (authorizedResourcesByRole.get(roleId) ?? []).filter((authority) => !removing.has(authority)),
     );
-    return HttpResponse.json({});
-  }),
-  http.get(`${base}/scope-assignment`, ({request}) => {
-    const roleId = new URL(request.url).searchParams.get('roleId') ?? '';
-    const assignment = scopeAssignmentsByRole.get(roleId) ?? { dataScopeId: null, fieldScopeId: null };
-    return HttpResponse.json({ roleId, ...assignment });
-  }),
-  http.put(`${base}/scope-assignment`, async ({request}) => {
-    const payload = await request.json() as {
-      roleId?: string;
-      dataScopeId?: string | null;
-      fieldScopeId?: string | null;
-    };
-    const roleId = payload.roleId ?? '';
-    scopeAssignmentsByRole.set(roleId, {
-      dataScopeId: payload.dataScopeId ?? null,
-      fieldScopeId: payload.fieldScopeId ?? null,
-    });
     return HttpResponse.json({});
   }),
 ];

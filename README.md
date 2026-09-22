@@ -205,7 +205,7 @@ cp config/dev.env.example .simplepoint/dev.env
 `./dev init` 会创建数据库、幂等写入并校验 Consul 配置，不依赖 Terraform 或 Consul
 CLI；`./dev up` 会按顺序启动、等待健康检查并管理 PID 和日志。
 
-包含 AI、MCP、Skill、Agent 与 Workflow Runtime 的组合：
+包含 AI 工作台、MCP Gateway 与工具运行能力的组合：
 
 ```bash
 ./dev doctor ai

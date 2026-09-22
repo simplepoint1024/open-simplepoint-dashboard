@@ -13,11 +13,35 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("isAuthenticated()")
 public class TenantMemberController {
   private final TenantMemberService service;
-  public TenantMemberController(TenantMemberService service) { this.service = service; }
+  private final org.simplepoint.core.schema.AnnotatedTableSchemaProvider schemas;
+  public TenantMemberController(TenantMemberService service,
+      org.simplepoint.api.security.service.DetailsProviderService details) {
+    this.service = service;
+    this.schemas = new org.simplepoint.core.schema.AnnotatedTableSchemaProvider(details);
+  }
   @GetMapping("/capabilities")
   public Response<java.util.Map<String, Boolean>> capabilities() { return Response.okay(service.capabilities()); }
   @GetMapping
-  public Response<Page<TenantMemberView>> list(Pageable page) { return Response.okay(service.list(page)); }
+  public Response<Page<java.util.Map<String, Object>>> list(@RequestParam java.util.Map<String, String> filters, Pageable page) {
+    return Response.okay(service.list(filters, page).map(TenantMemberView::project));
+  }
+  @GetMapping("/by-organization")
+  public Response<Page<java.util.Map<String, Object>>> byOrganization(
+      @RequestParam("orgId") String orgId,
+      @RequestParam(name = "keyword", defaultValue = "") String keyword, Pageable page) {
+    return Response.okay(service.organizationMembers(orgId, keyword, page).map(TenantMemberView::project));
+  }
+  @GetMapping("/organization-candidates")
+  public Response<Page<java.util.Map<String, Object>>> organizationCandidates(
+      @RequestParam("orgId") String orgId,
+      @RequestParam(name = "keyword", defaultValue = "") String keyword, Pageable page) {
+    return Response.okay(service.organizationCandidates(orgId, keyword, page).map(TenantMemberView::project));
+  }
+  @GetMapping("/schema")
+  public Response<java.util.Map<String, Object>> schema() {
+    service.capabilities();
+    return Response.okay(schemas.schema(TenantMemberView.class, org.simplepoint.core.AuthorizationContextHolder.getContext()));
+  }
   @PostMapping
   public Response<Void> add(@RequestBody TenantMemberCommand command) { service.add(command); return Response.okay(null); }
   @PutMapping("/{userId}")

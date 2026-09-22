@@ -4,10 +4,12 @@ import 'antd/dist/reset.css';
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {HashRouter, Routes} from 'react-router';
-import {App as AntApp, Button, ConfigProvider, Modal, Result, Table as AntTable, theme} from 'antd';
-import {QuestionCircleOutlined} from '@ant-design/icons';
+import {App as AntApp, Button, ConfigProvider, Modal, Result, theme} from 'antd';
+import AntTable from '@simplepoint/components/DataTable';
+import {QuestionCircleOutlined} from '@simplepoint/shared/types/icon';
 
 import NavigateBar from '@/layouts/navigation-bar';
+import {NotificationProvider} from '@/notifications/NotificationProvider';
 
 import {useI18n} from '@/layouts/i18n/useI18n';
 import {isHttpError} from '@simplepoint/shared/api/client';
@@ -278,11 +280,13 @@ const App: React.FC = () => {
                                 />
                             </div>
                         ) : (
-                            <NavigateBar data={res?.routes}>
+                            <NotificationProvider key={JSON.stringify(queryScope)} enabled={routesEnabled}>
+                            <NavigateBar data={res?.routes} remoteRegistryKey={remoteRegistryKey}>
                                 <Routes key={JSON.stringify(queryScope)}>
                                     {routesEnabled && remotesReady ? renderRoutes(leafRoutes, refreshKeyMap, t, currentTenantType, remoteRegistryKey) : null}
                                 </Routes>
                             </NavigateBar>
+                            </NotificationProvider>
                         )}
                     </HashRouter>
                     <Modal
@@ -293,6 +297,8 @@ const App: React.FC = () => {
                         width={400}
                     >
                         <AntTable
+                            storageKey="host.shortcuts"
+                            query={{mode: 'local', scope: 'complete', fields: {key: {type: 'string'}, desc: {type: 'string'}}}}
                             dataSource={shortcuts}
                             pagination={false}
                             size="small"

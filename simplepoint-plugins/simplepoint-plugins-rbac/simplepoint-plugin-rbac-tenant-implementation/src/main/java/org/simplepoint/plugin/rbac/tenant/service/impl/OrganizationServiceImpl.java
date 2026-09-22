@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.core.query.QueryCapabilities;
 import org.simplepoint.plugin.rbac.tenant.api.constants.TenantDictionaryCodes;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
 import org.simplepoint.plugin.rbac.tenant.api.repository.DictionaryItemRepository;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +38,7 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
 
   private final OrganizationRepository organizationRepository;
   private final DictionaryItemRepository dictionaryItemRepository;
+  private final OrganizationSelectionQuery selectionQuery;
   private final org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService authorizationVersions;
 
   /**
@@ -49,12 +52,14 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
       OrganizationRepository repository,
       DetailsProviderService detailsProviderService,
       DictionaryItemRepository dictionaryItemRepository,
-      org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService authorizationVersions
+      org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService authorizationVersions,
+      OrganizationSelectionQuery selectionQuery
   ) {
     super(repository, detailsProviderService);
     this.organizationRepository = repository;
     this.dictionaryItemRepository = dictionaryItemRepository;
     this.authorizationVersions = authorizationVersions;
+    this.selectionQuery = selectionQuery;
   }
 
   @Override
@@ -63,11 +68,54 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public Page<org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelectionRow> selection(
+      org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelection draft, Pageable pageable) {
+    return selectionQuery.list(selectionTenant(), draft, pageable);
+  }
+
+  @Override
+  public Object selectionSchema() {
+    selectionTenant();
+    return getTableSchemaProvider().schema(org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelectionRow.class,
+        getAuthorizationContext());
+  }
+
+  private String selectionTenant() {
+    String tenantId = currentTenantId(false);
+    if (tenantId == null) {
+      throw new org.springframework.security.access.AccessDeniedException("组织选择需要当前租户");
+    }
+    return tenantId;
+  }
+
+  @Override
   public <S extends Organization> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
     if (currentTenantId(false) == null) {
       return Page.empty(pageable);
     }
     return super.limit(attributes, pageable);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Page<OrganizationOptionVo> tree(String parentId, Map<String, String> filters, Pageable pageable) {
+    String tenantId = currentTenantId(false);
+    if (tenantId == null) {
+      return Page.empty(pageable);
+    }
+    String parent = trimToNull(parentId);
+    if (pageable.isPaged() && pageable.getSort().isUnsorted()) {
+      var defaults = List.of("sort", "name", "code").stream()
+          .filter(field -> QueryCapabilities.readable(Organization.class, field))
+          .map(Sort.Order::asc).toList();
+      pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(defaults));
+    }
+    Page<Organization> page = super.limitScoped(filters,
+        Map.of("tenantId", "equals:" + tenantId,
+            "parentId", parent == null ? "is:null" : "equals:" + parent), pageable);
+    var options = optionPage(page.getContent(), tenantId, page.getNumber(), page.getSize(), page.hasNext());
+    return new org.springframework.data.domain.PageImpl<>(options.content(), pageable, page.getTotalElements());
   }
 
   @Override
@@ -151,6 +199,12 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  public List<Organization> create(Collection<Organization> entities) {
+    return entities.stream().map(this::create).toList();
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
   public <S extends Organization> Organization modifyById(S entity) {
     String tenantId = currentTenantId(true);
     Organization current = organizationRepository.findByIdAndTenantId(requireId(entity.getId()), tenantId)
@@ -165,12 +219,6 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
     Organization result = super.modifyById(entity);
     authorizationVersions.refreshTenant(tenantId);
     return result;
-  }
-
-  @Override
-  @Transactional(rollbackFor = Exception.class)
-  public List<Organization> create(Collection<Organization> entities) {
-    return entities.stream().map(this::create).toList();
   }
 
   @Override

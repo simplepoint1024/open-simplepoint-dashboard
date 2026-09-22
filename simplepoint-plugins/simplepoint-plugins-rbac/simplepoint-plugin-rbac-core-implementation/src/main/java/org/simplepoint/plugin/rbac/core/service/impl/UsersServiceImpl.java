@@ -81,6 +81,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
   private final ResourceGrantLogRemoteService resourceGrantLogRemoteService;
   private final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider;
+  private final UserRoleCandidateQuery roleCandidateQuery;
 
   /**
      * Optional password encoder for encrypting user passwords.
@@ -106,7 +107,8 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
       final RoleRepository roleRepository,
       final ResourceAuthorizationVersionService resourceAuthorizationVersionService,
       final ResourceGrantLogRemoteService resourceGrantLogRemoteService,
-      final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider
+      final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider,
+      final UserRoleCandidateQuery roleCandidateQuery
   ) {
     super(usersRepository, detailsProviderService);
     this.passwordEncoder = passwordEncoder;
@@ -117,6 +119,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.resourceGrantLogRemoteService = resourceGrantLogRemoteService;
     this.builtInTenantProvisionerProvider = builtInTenantProvisionerProvider;
+    this.roleCandidateQuery = roleCandidateQuery;
   }
 
   @Override
@@ -278,6 +281,12 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     return created;
   }
 
+  @Override
+  @Transactional
+  public List<User> create(Collection<User> entities) {
+    return entities.stream().map(this::create).toList();
+  }
+
   private void ensurePersonalTenantExists(User user) {
     if (tenantRepository == null || tenantUserRelevanceRepository == null) {
       return;
@@ -390,13 +399,19 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   public void removeByIds(Collection<String> ids) {
     requireTenantOwnerOrAdministratorIfTenantScoped();
     String tenantId = currentTenantId();
-    if (tenantId == null || tenantId.isBlank()) throw new AccessDeniedException("成员操作需要明确租户");
+    if (tenantId == null || tenantId.isBlank()) {
+      throw new AccessDeniedException("成员操作需要明确租户");
+    }
     validateUsersBelongToCurrentTenant(ids);
     var tenant = tenantRepository.findById(tenantId).orElseThrow();
-    if (ids.contains(tenant.getOwnerId())) throw new AccessDeniedException("不能移除租户所有者，请先转移所有权");
+    if (ids.contains(tenant.getOwnerId())) {
+      throw new AccessDeniedException("不能移除租户所有者，请先转移所有权");
+    }
     for (String userId : ids) {
       var roleIds = new HashSet<>(getRepository().authorized(tenantId, userId));
-      if (!roleIds.isEmpty()) userRoleRelevanceRepository.unauthorized(tenantId, userId, roleIds);
+      if (!roleIds.isEmpty()) {
+        userRoleRelevanceRepository.unauthorized(tenantId, userId, roleIds);
+      }
     }
     tenantUserRelevanceRepository.unauthorized(tenantId, new HashSet<>(ids));
     refreshCurrentTenantAuthorizationVersion();
@@ -404,15 +419,13 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
 
   @Override
   @Transactional
-  public void removeById(String id) { removeByIds(List.of(id)); }
+  public void removeById(String id) {
+    removeByIds(List.of(id));
+  }
 
   @Override
-  public void removeAll() { throw new AccessDeniedException("不支持全局删除账号"); }
-
-  @Override
-  @Transactional
-  public List<User> create(Collection<User> entities) {
-    return entities.stream().map(this::create).toList();
+  public void removeAll() {
+    throw new AccessDeniedException("不支持全局删除账号");
   }
 
 
@@ -428,18 +441,28 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     requireTenantOwnerOrAdministratorIfTenantScoped();
     validateUserBelongsToCurrentTenant(dto.getUserId());
     Set<String> roleIds = dto.getRoleIds() == null ? Set.of() : dto.getRoleIds();
+    validateRoleBatch(roleIds);
     if (roleIds.isEmpty()) {
       return List.of();
     }
     validateRolesBelongToCurrentTenant(roleIds);
     String tenantScope = resolveCurrentTenantScope();
+    var existing = userRoleRelevanceRepository.findAllByTenantIdAndUserIdAndRoleIdIn(tenantScope, dto.getUserId(), roleIds);
     Set<UserRoleRelevance> authorities = new HashSet<>(roleIds.size());
     for (String roleId : roleIds) {
-      UserRoleRelevance relevance = new UserRoleRelevance();
+      if (existing.stream().anyMatch(item -> roleId.equals(item.getRoleId()) && item.getDeletedAt() == null)) {
+        continue;
+      }
+      UserRoleRelevance relevance = existing.stream().filter(item -> roleId.equals(item.getRoleId()))
+          .findFirst().orElseGet(UserRoleRelevance::new);
+      relevance.setDeletedAt(null);
       relevance.setUserId(dto.getUserId());
       relevance.setRoleId(roleId);
       relevance.setTenantId(tenantScope);
       authorities.add(relevance);
+    }
+    if (authorities.isEmpty()) {
+      return List.of();
     }
     Collection<UserRoleRelevance> saved = userRoleRelevanceRepository.saveAll(authorities);
     refreshCurrentTenantAuthorizationVersion();
@@ -451,7 +474,9 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   @Transactional(rollbackFor = Exception.class)
   public void unauthorized(UserRoleRelevanceDto dto) {
     requireTenantOwnerOrAdministratorIfTenantScoped();
+    validateUserBelongsToCurrentTenant(dto.getUserId());
     Set<String> roleIds = dto.getRoleIds() == null ? Set.of() : dto.getRoleIds();
+    validateRoleBatch(roleIds);
     if (roleIds.isEmpty()) {
       return;
     }
@@ -465,6 +490,35 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   public Page<RoleRelevanceVo> roleCandidates(Pageable pageable) {
     requireTenantOwnerOrAdministratorIfTenantScoped();
     return roleRepository.roleSelectItems(resolveCurrentTenantScope(), pageable);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Page<RoleRelevanceVo> roleCandidates(String userId, Boolean selected, Map<String, String> filters, Pageable pageable) {
+    requireRoleAssignmentMember(userId);
+    return roleCandidateQuery.list(resolveCurrentTenantScope(), userId, selected, filters, pageable);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Object roleCandidatesSchema(String userId) {
+    requireRoleAssignmentMember(userId);
+    return getTableSchemaProvider().schema(RoleRelevanceVo.class, getAuthorizationContext());
+  }
+
+  private void requireRoleAssignmentMember(String userId) {
+    var context = getAuthorizationContext();
+    if (context == null || context.getScopeType() == org.simplepoint.core.AuthorizationScopeType.PERSONAL) {
+      throw new AccessDeniedException("个人空间不支持租户角色分配");
+    }
+    requireTenantOwnerOrAdministratorIfTenantScoped();
+    roleCandidateQuery.requireMember(resolveCurrentTenantScope(), userId);
+  }
+
+  private void validateRoleBatch(Set<String> roleIds) {
+    if (roleIds.size() > 100 || roleIds.stream().anyMatch(id -> id == null || id.isBlank())) {
+      throw new IllegalArgumentException("每次只能分配或移除最多 100 个有效角色");
+    }
   }
 
   @Override
@@ -503,6 +557,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     String tenantId = resolveCurrentTenantScope();
     Set<String> currentTenantRoleIds = roleRepository.findAllByIds(roleIds).stream()
         .filter(Objects::nonNull)
+        .filter(role -> role.getDeletedAt() == null)
         .filter(role -> Objects.equals(role.getTenantId(), tenantId))
         .map(Role::getId)
         .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
@@ -522,9 +577,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     if (tenantId == null || tenantId.isBlank()) {
       return;
     }
-    if (!currentTenantUserIds(tenantId).contains(userId)) {
-      throw new IllegalArgumentException("用户不存在或不属于当前租户");
-    }
+    roleCandidateQuery.requireMember(tenantId, userId);
   }
 
   private void validateUsersBelongToCurrentTenant(Collection<String> userIds) {

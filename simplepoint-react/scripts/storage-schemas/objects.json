@@ -1,0 +1,337 @@
+{
+  "buttons": [],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "providerCode": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.object.providerCode",
+        "description": "i18n:storage.object.providerCode.desc",
+        "x-order": 0
+      },
+      "providerType": {
+        "type": "string",
+        "enum": [
+          "MINIO",
+          "S3",
+          "ALIYUN_OSS",
+          "TENCENT_COS",
+          "QINIU_KODO",
+          "CEPH"
+        ],
+        "title": "i18n:storage.object.providerType",
+        "description": "i18n:storage.object.providerType.desc",
+        "x-order": 1
+      },
+      "bucket": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.object.bucket",
+        "description": "i18n:storage.object.bucket.desc",
+        "x-order": 2
+      },
+      "objectKey": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.object.objectKey",
+        "description": "i18n:storage.object.objectKey.desc",
+        "x-order": 3
+      },
+      "originalFileName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.object.fileName",
+        "description": "i18n:storage.object.fileName.desc",
+        "x-order": 4
+      },
+      "contentType": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.object.contentType",
+        "description": "i18n:storage.object.contentType.desc",
+        "x-order": 5
+      },
+      "contentLength": {
+        "type": "integer",
+        "title": "i18n:storage.object.contentLength",
+        "description": "i18n:storage.object.contentLength.desc",
+        "x-order": 6
+      },
+      "eTag": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.object.eTag",
+        "description": "i18n:storage.object.eTag.desc",
+        "x-order": 7
+      },
+      "accessUrl": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.object.accessUrl",
+        "description": "i18n:storage.object.accessUrl.desc",
+        "x-order": 8
+      },
+      "sourceServiceName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.object.sourceService",
+        "description": "i18n:storage.object.sourceService.desc",
+        "x-order": 9
+      }
+    },
+    "x-query": {
+      "version": 1,
+      "relations": [],
+      "fields": {
+        "providerCode": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "providerType": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "ObjectStoragePlatformType"
+        },
+        "bucket": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "objectKey": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "originalFileName": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "contentType": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "contentLength": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Long"
+        },
+        "eTag": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "accessUrl": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "sourceServiceName": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "createdAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "updatedAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        }
+      },
+      "maxSort": 3,
+      "maxDepth": 4,
+      "maxNodes": 32,
+      "maxPageSize": 200
+    }
+  }
+}

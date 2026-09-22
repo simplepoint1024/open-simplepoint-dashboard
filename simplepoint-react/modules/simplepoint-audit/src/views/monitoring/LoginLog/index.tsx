@@ -28,6 +28,7 @@ const App = () => {
         <div>
             <SimpleTable
                 {...baseConfig}
+                allowTabEviction
                 columnOverrides={{
                     status: {
                         render: (val: string) => (

@@ -305,8 +305,15 @@ public class ResourceServiceImpl
     Collection<String> childIds = resourceAncestorRepository.findChildIdsByAncestorIds(rootIds);
     List<Resource> treeResources = new ArrayList<>(findAllByIds(childIds));
     treeResources.addAll(roots.getContent());
+    List<ResourceNode> tree = buildResourceTree(treeResources, new HashSet<>(), false, Map.of());
+    // Navigation trees use natural menu order; this paginated management list must retain SQL order.
+    Map<String, Integer> rootOrder = new HashMap<>();
+    for (int index = 0; index < rootIds.size(); index++) {
+      rootOrder.put(rootIds.get(index), index);
+    }
+    tree.sort(Comparator.comparingInt(node -> rootOrder.getOrDefault(node.getId(), Integer.MAX_VALUE)));
     return new PageImpl<>(
-        buildResourceTree(treeResources, new HashSet<>(), false, Map.of()),
+        tree,
         pageable,
         roots.getTotalElements()
     );

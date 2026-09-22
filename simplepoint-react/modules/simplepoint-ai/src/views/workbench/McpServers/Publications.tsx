@@ -244,6 +244,10 @@ const McpPublications = () => {
     identityTitle: string,
   ) => (
     <DataTable
+      storageKey={`ai.mcp.publication-capabilities.${identity}`}
+      query={{mode: 'local', scope: 'result', fields: {
+        [identity]: {type: 'string'}, title: {type: 'string'}, description: {type: 'string'},
+      }}}
       size="small"
       rowKey={(row) => row[identity] || row.name || JSON.stringify(row)}
       dataSource={rows}

@@ -12,9 +12,12 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import org.simplepoint.plugin.ai.core.api.exception.AiOpenAiRequestException;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.ContentBlock;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.ContentType;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.EventType;
@@ -44,7 +47,8 @@ public class OpenAiResponsesProtocol {
   public GenerationRequest fromRequest(final JsonNode body, final String modelDefinitionId) {
     requireObject(body, "请求体必须是 JSON 对象");
     validateStatelessOptions(body);
-    List<ToolDefinition> tools = tools(body.get("tools"));
+    List<ToolDefinition> tools = new ArrayList<>(tools(body.get("tools")));
+    List<Message> messages = input(body.get("input"), tools);
     String toolChoice = toolChoice(body.get("tool_choice"));
     if ("none".equals(toolChoice)) {
       tools = List.of();
@@ -52,11 +56,11 @@ public class OpenAiResponsesProtocol {
     return new GenerationRequest(
         modelDefinitionId,
         optionalText(body, "instructions"),
-        input(body.get("input")),
+        messages,
         optionalInteger(body, "max_output_tokens"),
         optionalDouble(body, "temperature"),
         optionalDouble(body, "top_p"),
-        tools,
+        List.copyOf(tools),
         responseFormat(body.path("text").get("format"))
     );
   }
@@ -99,7 +103,8 @@ public class OpenAiResponsesProtocol {
       case TOOL_CALL_STARTED -> toolStartedEvents(
           state, generationEvent.toolCallId(), generationEvent.toolName());
       case TOOL_ARGUMENTS_DELTA -> toolDeltaEvents(
-          state, generationEvent.toolCallId(), generationEvent.argumentsDelta());
+          state, generationEvent.toolCallId(), generationEvent.toolName(),
+          generationEvent.argumentsDelta());
       case COMPLETED -> completedEvents(state, generationEvent.result());
       case ERROR -> streamFailureEvent(stream);
       case USAGE -> List.of();
@@ -191,20 +196,26 @@ public class OpenAiResponsesProtocol {
     tool.started = true;
     ObjectNode added = event(state, "response.output_item.added");
     added.put("output_index", tool.outputIndex);
-    added.set("item", functionItem(tool, "in_progress"));
+    added.set("item", toolItem(state, tool, "in_progress"));
     return List.of(new StreamEvent("response.output_item.added", added));
   }
 
   private List<StreamEvent> toolDeltaEvents(
       final ResponseState state,
       final String toolCallId,
+      final String toolName,
       final String delta
   ) {
     final List<StreamEvent> events = new ArrayList<>(
-        toolStartedEvents(state, toolCallId, null));
-    ToolState tool = state.tool(toolCallId, null);
+        toolStartedEvents(state, toolCallId, toolName));
+    ToolState tool = state.tool(toolCallId, toolName);
     String value = safe(delta);
     tool.arguments.append(value);
+    if (state.isCustomTool(tool.name)) {
+      // Custom tool input is delivered whole in output_item.done; streaming
+      // partial JSON arguments as raw input would corrupt the payload.
+      return List.copyOf(events);
+    }
     ObjectNode payload = event(state, "response.function_call_arguments.delta");
     payload.put("item_id", tool.itemId());
     payload.put("output_index", tool.outputIndex);
@@ -306,14 +317,27 @@ public class OpenAiResponsesProtocol {
       final ToolState tool,
       final List<StreamEvent> events
   ) {
-    ObjectNode argumentsDone = event(state, "response.function_call_arguments.done");
-    argumentsDone.put("item_id", tool.itemId());
-    argumentsDone.put("output_index", tool.outputIndex);
-    argumentsDone.put("arguments", tool.arguments.toString());
-    events.add(new StreamEvent("response.function_call_arguments.done", argumentsDone));
+    if (state.isCustomTool(tool.name)) {
+      ObjectNode inputDelta = event(state, "response.custom_tool_call_input.delta");
+      inputDelta.put("item_id", tool.itemId());
+      inputDelta.put("output_index", tool.outputIndex);
+      inputDelta.put("delta", customToolInput(tool.arguments.toString()));
+      events.add(new StreamEvent("response.custom_tool_call_input.delta", inputDelta));
+      ObjectNode inputDone = event(state, "response.custom_tool_call_input.done");
+      inputDone.put("item_id", tool.itemId());
+      inputDone.put("output_index", tool.outputIndex);
+      inputDone.put("input", customToolInput(tool.arguments.toString()));
+      events.add(new StreamEvent("response.custom_tool_call_input.done", inputDone));
+    } else {
+      ObjectNode argumentsDone = event(state, "response.function_call_arguments.done");
+      argumentsDone.put("item_id", tool.itemId());
+      argumentsDone.put("output_index", tool.outputIndex);
+      argumentsDone.put("arguments", tool.arguments.toString());
+      events.add(new StreamEvent("response.function_call_arguments.done", argumentsDone));
+    }
     ObjectNode itemDone = event(state, "response.output_item.done");
     itemDone.put("output_index", tool.outputIndex);
-    itemDone.set("item", functionItem(tool, "completed"));
+    itemDone.set("item", toolItem(state, tool, "completed"));
     events.add(new StreamEvent("response.output_item.done", itemDone));
   }
 
@@ -435,6 +459,56 @@ public class OpenAiResponsesProtocol {
     return item;
   }
 
+  private ObjectNode toolItem(
+      final ResponseState state,
+      final ToolState tool,
+      final String status
+  ) {
+    return state.isCustomTool(tool.name)
+        ? customToolItem(tool, status)
+        : functionItem(tool, status);
+  }
+
+  private ObjectNode customToolItem(final ToolState tool, final String status) {
+    ObjectNode item = mapper.createObjectNode();
+    item.put("id", tool.itemId());
+    item.put("type", "custom_tool_call");
+    item.put("status", status);
+    item.put("call_id", tool.callId);
+    item.put("name", safe(tool.name));
+    item.put("input", customToolInput(tool.arguments.toString()));
+    return item;
+  }
+
+  /**
+   * Unwraps custom tool arguments back to raw input text: accepts the gateway's
+   * own {"input": ...} shape, other single-string properties (code/source),
+   * a bare JSON string, or passes non-JSON text through unchanged.
+   */
+  private String customToolInput(final String argumentsJson) {
+    String raw = safe(argumentsJson).trim();
+    if (raw.isEmpty()) {
+      return "";
+    }
+    try {
+      JsonNode parsed = mapper.readTree(raw);
+      if (parsed.isTextual()) {
+        return parsed.asText();
+      }
+      if (parsed.isObject()) {
+        for (String field : new String[] {"input", "code", "source"}) {
+          JsonNode value = parsed.get(field);
+          if (value != null && value.isTextual()) {
+            return value.asText();
+          }
+        }
+      }
+    } catch (JsonProcessingException ignored) {
+      // Non-JSON arguments are passed through as raw input text.
+    }
+    return raw;
+  }
+
   private ObjectNode outputTextPart(final String text) {
     ObjectNode part = mapper.createObjectNode();
     part.put("type", "output_text");
@@ -511,7 +585,7 @@ public class OpenAiResponsesProtocol {
     return event;
   }
 
-  private List<Message> input(final JsonNode input) {
+  private List<Message> input(final JsonNode input, final List<ToolDefinition> tools) {
     if (input == null || input.isNull() || input.isMissingNode()) {
       throw new IllegalArgumentException("input 不能为空");
     }
@@ -526,6 +600,7 @@ public class OpenAiResponsesProtocol {
       String type = item.path("type").asText("message");
       switch (type) {
         case "message" -> messages.add(inputMessage(item));
+        case "additional_tools" -> additionalTools(item, tools);
         case "function_call" -> messages.add(new Message(
             MessageRole.ASSISTANT,
             List.of(block(
@@ -533,7 +608,20 @@ public class OpenAiResponsesProtocol {
                 requireText(item, "call_id"), requireText(item, "name"),
                 requiredJsonString(item, "arguments")))
         ));
+        case "custom_tool_call" -> messages.add(new Message(
+            MessageRole.ASSISTANT,
+            List.of(block(
+                ContentType.TOOL_CALL, null, null,
+                requireText(item, "call_id"), requireText(item, "name"),
+                customToolCallArguments(item.get("input"))))
+        ));
         case "function_call_output" -> messages.add(new Message(
+            MessageRole.TOOL,
+            List.of(block(
+                ContentType.TOOL_RESULT, textContent(item.get("output")), null,
+                requireText(item, "call_id"), null, null))
+        ));
+        case "custom_tool_call_output" -> messages.add(new Message(
             MessageRole.TOOL,
             List.of(block(
                 ContentType.TOOL_RESULT, textContent(item.get("output")), null,
@@ -555,6 +643,11 @@ public class OpenAiResponsesProtocol {
     };
     JsonNode content = item.get("content");
     if (content != null && content.isTextual()) {
+      // Blank string content carries no text; treat it like absent content so
+      // assistant tool-call turns (content: "") stay valid Responses requests.
+      if (normalize(content.asText()) == null) {
+        return new Message(messageRole, List.of());
+      }
       return new Message(messageRole, List.of(block(
           ContentType.TEXT, content.asText(), null, null, null, null)));
     }
@@ -564,8 +657,12 @@ public class OpenAiResponsesProtocol {
       requireObject(part, "input message.content 中的元素必须是对象");
       String type = requireText(part, "type");
       switch (type) {
-        case "input_text", "output_text", "text" -> blocks.add(block(
-            ContentType.TEXT, requireText(part, "text"), null, null, null, null));
+        case "input_text", "output_text", "text" -> {
+          String text = optionalText(part, "text");
+          if (text != null) {
+            blocks.add(block(ContentType.TEXT, text, null, null, null, null));
+          }
+        }
         case "input_image", "image_url" -> blocks.add(inputImage(part));
         case "refusal" -> blocks.add(block(
             ContentType.REFUSAL, requireText(part, "refusal"), null, null, null, null));
@@ -590,22 +687,91 @@ public class OpenAiResponsesProtocol {
     if (tools == null || tools.isNull() || tools.isMissingNode()) {
       return List.of();
     }
-    requireArray(tools, "tools 必须是数组");
     List<ToolDefinition> definitions = new ArrayList<>();
-    for (JsonNode tool : tools) {
-      requireObject(tool, "tools 中的元素必须是对象");
-      String type = requireText(tool, "type");
-      if (!"function".equals(type)) {
-        throw new IllegalArgumentException("当前网关仅支持 function 工具，不支持: " + type);
-      }
-      definitions.add(new ToolDefinition(
-          requireText(tool, "name"),
-          optionalText(tool, "description"),
-          jsonObject(tool.get("parameters"), "tools.parameters"),
-          tool.has("strict") ? tool.path("strict").asBoolean() : null
-      ));
-    }
+    collectTools(tools, "tools", definitions);
     return List.copyOf(definitions);
+  }
+
+  /** Flattens a Codex-style additional_tools input item into the request tool list. */
+  private void additionalTools(final JsonNode item, final List<ToolDefinition> tools) {
+    collectTools(item.get("tools"), "additional_tools.tools", tools);
+  }
+
+  private void collectTools(
+      final JsonNode nested,
+      final String field,
+      final List<ToolDefinition> tools
+  ) {
+    if (nested == null || nested.isNull() || nested.isMissingNode()) {
+      return;
+    }
+    requireArray(nested, field + " 必须是数组");
+    for (JsonNode tool : nested) {
+      requireObject(tool, field + " 中的元素必须是对象");
+      String type = requireText(tool, "type");
+      switch (type) {
+        case "namespace" -> throw nativeRequired("tools.namespace");
+        case "function" -> tools.add(functionTool(tool));
+        case "custom" -> tools.add(customTool(tool));
+        case "web_search", "web_search_preview", "local_shell", "computer_use_preview",
+             "code_interpreter", "file_search", "image_generation", "mcp" -> {
+          throw nativeRequired("tools." + type);
+        }
+        default -> throw new IllegalArgumentException(
+            "当前网关仅支持 function/custom 工具，不支持: " + type);
+      }
+    }
+  }
+
+  private ToolDefinition functionTool(final JsonNode tool) {
+    return new ToolDefinition(
+        requireText(tool, "name"),
+        optionalText(tool, "description"),
+        jsonObject(tool.get("parameters"), "tools.parameters"),
+        tool.has("strict") ? tool.path("strict").asBoolean() : null
+    );
+  }
+
+  /**
+   * Maps a Responses custom tool (raw text input, e.g. Codex's exec orchestration tool)
+   * onto the neutral function-tool contract using a single string input property.
+   */
+  private ToolDefinition customTool(final JsonNode tool) {
+    if (tool.hasNonNull("format") && !"text".equals(tool.path("format").path("type").asText())) {
+      throw nativeRequired("tools.format");
+    }
+    return new ToolDefinition(
+        requireText(tool, "name"),
+        optionalText(tool, "description"),
+        customToolInputSchema(),
+        false
+    );
+  }
+
+  private String customToolInputSchema() {
+    ObjectNode schema = mapper.createObjectNode();
+    schema.put("type", "object");
+    ObjectNode input = schema.putObject("properties").putObject("input");
+    input.put("type", "string");
+    input.put("description", "Raw tool input text (e.g. JavaScript source code)");
+    schema.putArray("required").add("input");
+    schema.put("additionalProperties", false);
+    try {
+      return mapper.writeValueAsString(schema);
+    } catch (JsonProcessingException ex) {
+      throw new IllegalArgumentException("custom 工具 schema 序列化失败", ex);
+    }
+  }
+
+  /** Wraps a custom_tool_call input value as function-call arguments for the history. */
+  private String customToolCallArguments(final JsonNode input) {
+    ObjectNode arguments = mapper.createObjectNode();
+    arguments.put("input", input == null ? "" : input.asText(""));
+    try {
+      return mapper.writeValueAsString(arguments);
+    } catch (JsonProcessingException ex) {
+      throw new IllegalArgumentException("custom_tool_call.input 序列化失败", ex);
+    }
   }
 
   private ResponseFormat responseFormat(final JsonNode format) {
@@ -643,9 +809,29 @@ public class OpenAiResponsesProtocol {
     return value;
   }
 
+  private static AiOpenAiRequestException nativeRequired(final String param) {
+    return new AiOpenAiRequestException(400, "unsupported_parameter", param,
+        param + " requires a provider configured with the OpenAI Responses protocol");
+  }
+
   private void validateStatelessOptions(final JsonNode body) {
     validateOptionalBoolean(body, "stream");
     validateOptionalBoolean(body, "store");
+    if (body.path("store").asBoolean(false)) {
+      throw nativeRequired("store");
+    }
+    if (body.has("parallel_tool_calls") && !body.path("parallel_tool_calls").asBoolean(true)) {
+      throw nativeRequired("parallel_tool_calls");
+    }
+    for (String field : List.of("reasoning", "include", "context_management", "service_tier",
+        "prompt_cache_key", "prompt_cache_retention", "stream_options")) {
+      if (body.hasNonNull(field)) {
+        throw nativeRequired(field);
+      }
+    }
+    if (body.path("text").hasNonNull("verbosity")) {
+      throw nativeRequired("text.verbosity");
+    }
     rejectPresent(body, "previous_response_id", "当前网关不保存响应正文，暂不支持 previous_response_id");
     rejectPresent(body, "conversation", "当前网关暂不支持 conversation");
     rejectPresent(body, "prompt", "当前网关暂不支持托管 prompt");
@@ -662,9 +848,6 @@ public class OpenAiResponsesProtocol {
         && !parallelToolCalls.isBoolean()) {
       throw new IllegalArgumentException("parallel_tool_calls 必须是布尔值");
     }
-    if (parallelToolCalls != null && !parallelToolCalls.asBoolean()) {
-      throw new IllegalArgumentException("当前网关暂不支持关闭 parallel_tool_calls");
-    }
     String truncation = body.path("truncation").asText("disabled");
     if (!"disabled".equals(truncation)) {
       throw new IllegalArgumentException("当前网关的 truncation 仅支持 disabled");
@@ -672,22 +855,15 @@ public class OpenAiResponsesProtocol {
     JsonNode text = body.get("text");
     if (text != null && !text.isNull()) {
       requireObject(text, "text 必须是对象");
-      rejectPresent(text, "verbosity", "当前网关暂不支持 text.verbosity");
     }
     rejectPresent(body, "top_logprobs", "当前网关暂不支持 top_logprobs");
     JsonNode reasoning = body.get("reasoning");
     if (reasoning != null && !reasoning.isNull()) {
       requireObject(reasoning, "reasoning 必须是对象");
-      if (!reasoning.isEmpty()) {
-        throw new IllegalArgumentException("当前网关暂不支持 reasoning 参数");
-      }
     }
     JsonNode include = body.get("include");
     if (include != null && !include.isNull()) {
       requireArray(include, "include 必须是数组");
-      if (!include.isEmpty()) {
-        throw new IllegalArgumentException("当前网关暂不支持 include 参数");
-      }
     }
   }
 
@@ -920,6 +1096,7 @@ public class OpenAiResponsesProtocol {
     private final StringBuilder text = new StringBuilder();
     private final StringBuilder refusal = new StringBuilder();
     private final Map<String, ToolState> tools = new LinkedHashMap<>();
+    private final Set<String> customToolNames = new LinkedHashSet<>();
     private String invocationId = "pending";
     private int nextSequence;
     private int nextOutputIndex;
@@ -939,6 +1116,11 @@ public class OpenAiResponsesProtocol {
       this.requestedModel = requestedModel;
       this.request = request;
       this.createdAt = createdAt;
+      collectCustomToolNames(request, customToolNames);
+    }
+
+    private boolean isCustomTool(final String name) {
+      return normalize(name) != null && customToolNames.contains(name);
     }
 
     private void captureInvocation(final String value) {
@@ -1013,11 +1195,48 @@ public class OpenAiResponsesProtocol {
         items.add(new IndexedItem(messageIndex, messageItem(this, "completed")));
       }
       tools.values().forEach(tool -> items.add(new IndexedItem(
-          tool.outputIndex, functionItem(tool, "completed"))));
+          tool.outputIndex, toolItem(this, tool, "completed"))));
       return items.stream()
           .sorted(Comparator.comparingInt(IndexedItem::index))
           .map(IndexedItem::item)
           .toList();
+    }
+  }
+
+  private static void collectCustomToolNames(final JsonNode request, final Set<String> names) {
+    if (request == null) {
+      return;
+    }
+    collectCustomToolNamesFrom(request.get("tools"), names);
+    JsonNode input = request.get("input");
+    if (input == null || !input.isArray()) {
+      return;
+    }
+    for (JsonNode item : input) {
+      if (item != null && item.isObject()
+          && "additional_tools".equals(item.path("type").asText(null))) {
+        collectCustomToolNamesFrom(item.get("tools"), names);
+      }
+    }
+  }
+
+  private static void collectCustomToolNamesFrom(final JsonNode tools, final Set<String> names) {
+    if (tools == null || !tools.isArray()) {
+      return;
+    }
+    for (JsonNode tool : tools) {
+      if (tool == null || !tool.isObject()) {
+        continue;
+      }
+      String type = tool.path("type").asText("");
+      if ("namespace".equals(type)) {
+        collectCustomToolNamesFrom(tool.get("tools"), names);
+      } else if ("custom".equals(type)) {
+        String name = normalize(tool.path("name").asText(null));
+        if (name != null) {
+          names.add(name);
+        }
+      }
     }
   }
 

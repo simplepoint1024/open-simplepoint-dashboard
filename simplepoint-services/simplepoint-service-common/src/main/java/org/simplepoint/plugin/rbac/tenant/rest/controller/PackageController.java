@@ -89,8 +89,22 @@ public class PackageController extends BaseController<PackageService, Package, S
   @GetMapping("/items")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.config.package') or hasAuthority('packages.config.application')")
   @Operation(summary = "获取套餐候选列表", description = "获取用于租户套餐配置的套餐候选列表")
-  public Response<Page<Package>> items(Pageable pageable) {
-    return ok(service.limit(Map.of(), pageable));
+  public Response<Page<Package>> items(
+      @RequestParam Map<String, String> attributes,
+      @RequestParam(value = "selected", defaultValue = "false") boolean selected,
+      Pageable pageable) {
+    Map<String, String> filters = new java.util.LinkedHashMap<>(attributes);
+    String parent = filters.remove("tenantId");
+    filters.remove("selected");
+    return ok(parent == null ? service.limit(filters, pageable)
+        : service.assignmentItems(parent, selected, filters, pageable));
+  }
+
+  /** Returns the same query contract for callers with assignment rather than catalog-view authority. */
+  @GetMapping("/items/schema")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('tenants.config.package') or hasAuthority('packages.config.application')")
+  public Response<Map<String, Object>> itemSchema() {
+    return ok(service.schema());
   }
 
   /**

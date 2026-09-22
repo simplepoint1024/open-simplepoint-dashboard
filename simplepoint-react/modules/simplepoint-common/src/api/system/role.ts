@@ -1,4 +1,4 @@
-import {get, post, put} from "@simplepoint/shared/api/methods";
+import {get, post} from "@simplepoint/shared/api/methods";
 import {Page} from "@simplepoint/shared/types/request"
 import api from "@/api";
 
@@ -9,6 +9,7 @@ const {baseUrl} = api['rbac-roles']
  */
 export interface RoleRelevantVo {
   name: string;
+  authority?: string;
   description: string;
   id: string;
 }
@@ -21,20 +22,6 @@ export interface RoleResourceGrantDto {
   resourceCodes?: string[];
   dataScopeId?: string | null;
   fieldScopeId?: string | null;
-}
-
-/**
- * 角色数据/字段权限分配 VO
- */
-export interface RoleScopeAssignmentVo {
-  roleId: string;
-  dataScopeId?: string | null;
-  fieldScopeId?: string | null;
-  revision?: number | null;
-  legacyConflict?: boolean;
-  confirmLegacyReplacement?: boolean;
-  legacyDataScopeIds?: string[];
-  legacyFieldScopeIds?: string[];
 }
 
 /**
@@ -66,18 +53,4 @@ export async function fetchUnauthorized(data: RoleResourceGrantDto) {
  */
 export async function fetchAuthorize(data: RoleResourceGrantDto) {
   return await post<RoleResourceGrantDto>(`${baseUrl}/authorize`, data);
-}
-
-/**
- * 查询角色的数据权限和字段权限分配
- */
-export async function fetchScopeAssignment(roleId: string) {
-  return await get<RoleScopeAssignmentVo>(`${baseUrl}/scope-assignment?roleId=${encodeURIComponent(roleId)}`);
-}
-
-/**
- * 更新角色的数据权限和字段权限分配
- */
-export async function updateScopeAssignment(vo: RoleScopeAssignmentVo) {
-  return await put<void>(`${baseUrl}/scope-assignment`, vo);
 }

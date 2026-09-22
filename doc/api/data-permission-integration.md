@@ -110,7 +110,7 @@ Example assignment:
 
 For an unbound role, revision is null. After every successful write, read the new revision before another edit. A stale revision rejects the write. A role with zero resource grants can still save a scope binding. Null data scope explicitly restores SELF; null field scope removes field restrictions.
 
-Existing grants are a compatibility fallback only when no independent binding exists. All legacy combinations are preserved on read; conflicting combinations require explicit confirmation before replacement. An independently saved empty binding suppresses legacy fallback. Resource-only saves can use `updateScope: false` on the access-center API; full access-center saves must include the scope revision.
+Existing grants are a compatibility fallback only when no independent binding exists. All legacy combinations are preserved on read; conflicting combinations require explicit confirmation before replacement. An independently saved empty binding suppresses legacy fallback. Legacy scope bindings remain separate from role resource changes. The removed access-center API no longer accepts scope saves; use the role resource configuration endpoint for resource grants.
 
 Role binding writes require the current tenant owner or administrator. Supplied policy IDs must belong to the tenant and not be deleted. Unknown/duplicate fields are rejected before mutating entries; existing rows are reused to avoid unique-key collisions.
 

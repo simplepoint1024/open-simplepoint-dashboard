@@ -225,7 +225,7 @@ connection failures release the assignment before failover, and every terminal,
 lost, or lease-expired workload atomically removes all fenced Redis assignments
 it still owns. A failed Tool request is never replayed automatically.
 
-## Subject-owned OAuth and Agent/Workflow calls
+## Subject-owned OAuth and MCP calls
 
 Managed OAuth credentials are stored as user-owned Provider Connections, not
 as global fields on an MCP Server or Runtime Pool. Authorization Code + PKCE
@@ -239,19 +239,9 @@ response. Refresh increments the credential version and replaces the managed
 workload. Disconnect clears local token material and also replaces the
 workload/session so a stale process cannot continue using it.
 
-Managed tools reach Agents and Workflows through the same publication path:
-
-```text
-Runtime Profile revision -> MCP capability snapshot -> published Skill
-  -> capability token -> Agent/Workflow execution -> invocation ledger
-```
-
-The Skill pins the server, capability snapshot, and tool name. A Tool is
-treated as effectful unless its MCP annotations explicitly declare it read-only;
-effectful bindings require the Skill execution-approval policy. Execution
-propagates tenant, user, execution, and session context to workload selection.
-The ledger records both capability snapshot and active Runtime revision while
-keeping credentials and sensitive output out of audit payloads.
+Managed tools are dispatched through authorized MCP operations and publications.
+The invocation ledger records the capability snapshot and active Runtime revision;
+credentials and sensitive output stay outside audit payloads.
 
 ## Managed MCP end-to-end verification
 
@@ -290,114 +280,39 @@ also prove that the recorded upstream tags have not moved:
 ./scripts/shell/verify_community_mcp_provenance.sh --remote
 ```
 
-The optional Compose overlay supplies only acceptance infrastructure: a
-read-only PostgreSQL target, an isolated browser test site, and a local OCI
-registry for generated SimplePoint Skill manifests. The six MCP images still
-come directly from their community publishers/catalog and are never rebuilt:
+The optional Compose overlay supplies a read-only PostgreSQL target and an isolated
+browser test site. Community MCP images are pulled from their reviewed publishers;
+they are not rebuilt. Start the acceptance infrastructure with:
 
 ```bash
-docker compose \
-  -f docker-compose.yml \
-  -f docker/compose.community-mcp-e2e.yml \
+docker compose -f docker-compose.yml -f docker/compose.community-mcp-e2e.yml \
   -f docker/compose.community-mcp-host-e2e.yml \
-  up -d mcp-e2e-postgres mcp-e2e-site registry tool-runtime ai \
-       agent-runtime workflow-runtime
+  up -d mcp-e2e-postgres mcp-e2e-site tool-runtime ai
 ```
 
-The host overlay is needed only when AI and the gateway run directly on the
-development host; it points the containerized Runtime Node at the host control
-plane and keeps all mounts repository-relative.
-
-When the AI service itself runs on the development host, publish and verify the
-temporary Skill through the registry's host port:
+Use the host overlay only when AI and Gateway run on the development host.
+Run each service against dedicated test resources with an authenticated session:
 
 ```bash
-MCP_E2E_REGISTRY_REFERENCE=127.0.0.1:5001/simplepoint/community-mcp-e2e \
 MCP_COMMUNITY_E2E_SERVICE=filesystem \
 MCP_E2E_COOKIE_FILE=/path/to/cookies.txt \
 ./scripts/shell/verify_community_mcp_e2e.sh
 ```
 
-Keep the default `registry:5000/...` reference when AI runs inside the Compose
-network. The local `dev.env` allowlist admits only the host form, while the
-Compose service admits only the internal form; neither mode broadens the
-production registry policy.
+Supported services are github, filesystem, git, postgresql, dockerhub and playwright.
+The runner imports a Profile, publishes an immutable revision, creates a Pool, waits
+for READY, discovers and calls a Tool, verifies snapshot/revision ledger linkage,
+and reclaims resources even after failure. PostgreSQL must reject writes; Playwright
+must retain a browser session across navigation, click and DOM checks.
 
-Run one service per CI matrix job with an authenticated platform session:
+GitHub additionally requires MCP_E2E_GITHUB_CLIENT_ID, MCP_E2E_GITHUB_CLIENT_SECRET,
+MCP_E2E_GITHUB_REDIRECT_URI and MCP_E2E_GITHUB_WAIT_FOR_OAUTH=true. Complete the printed
+one-time Authorization Code + PKCE URL as the same platform user; do not substitute
+a PAT. The callback is /ai/workbench/mcp-servers/oauth/callback at the actual host
+origin. Keep the browser origin consistent: cookies do not cross localhost and
+127.0.0.1. Never commit credentials or cookie files.
 
-```bash
-for service in filesystem git postgresql dockerhub playwright; do
-  MCP_COMMUNITY_E2E_SERVICE="${service}" \
-  MCP_E2E_AUTHORIZATION="Bearer ${CI_ACCESS_TOKEN}" \
-  MCP_E2E_AGENT_MODEL_ID="${CI_MODEL_ID}" \
-  MCP_E2E_REQUIRE_AGENT=true \
-  ./scripts/shell/verify_community_mcp_e2e.sh
-done
-```
-
-Each job imports the Profile, publishes an immutable revision, runs protocol
-admission, binds a Pool, waits for READY, performs a direct Tool call, executes
-an MCP-backed Skill, invokes that Skill from an Agent Workflow, executes an
-Agent through a configured model, and checks the invocation ledger
-for both capability snapshot and Runtime revision IDs. Effectful or unannotated
-tools exercise approval: Filesystem writes a bounded workspace file and Git
-checks out a pre-seeded acceptance branch; both operations are idempotent so
-Skill, Workflow, and Agent paths can use the same immutable binding. PostgreSQL
-must return the probe row and reject an INSERT, while Playwright must navigate,
-click the test button, and observe the changed DOM in the same browser session.
-Pool shutdown and workload/secret cleanup run even on failure.
-`MCP_E2E_REQUIRE_AGENT=false` may skip the model-dependent Agent step only for
-local diagnosis; such a run is not eligible for `LIVE_E2E` status.
-For a deterministic orchestration-only local gate, set
-`MCP_E2E_USE_MODEL_STUB=true`; this validates Agent tool selection/routing but
-does not claim external model-quality coverage.
-
-GitHub is a separate interactive OAuth gate; no PAT is accepted as a substitute
-for the platform Authorization Code + PKCE connection:
-
-```bash
-MCP_COMMUNITY_E2E_SERVICE=github \
-MCP_E2E_GITHUB_CLIENT_ID="${GITHUB_OAUTH_CLIENT_ID}" \
-MCP_E2E_GITHUB_CLIENT_SECRET="${GITHUB_OAUTH_CLIENT_SECRET}" \
-MCP_E2E_GITHUB_REDIRECT_URI="http://127.0.0.1:8080/ai/workbench/mcp-servers/oauth/callback" \
-MCP_E2E_GITHUB_WAIT_FOR_OAUTH=true \
-MCP_E2E_AUTHORIZATION="Bearer ${CI_ACCESS_TOKEN}" \
-MCP_E2E_AGENT_MODEL_ID="${CI_MODEL_ID}" \
-MCP_E2E_REQUIRE_AGENT=true \
-./scripts/shell/verify_community_mcp_e2e.sh
-```
-
-Open the printed one-time URL as the same platform user. The runner then checks
-that this subject's Provider Connection dispatches the dedicated GitHub
-workload; unit and service integration tests enforce rejection when a different
-subject attempts to resolve it. Set `MCP_E2E_KEEP_RESOURCES=true` only while
-diagnosing a failed gate.
-
-To install the six verified servers as stable development resources instead of
-creating time-stamped acceptance resources, use persistent mode. It uses the
-codes `community-<service>-mcp`, keeps the published Profile/revision and Pool,
-discovers an initial capability snapshot, and configures the Pool for
-scale-to-zero when idle. Re-running the same command is idempotent:
-
-```bash
-for service in filesystem git postgresql dockerhub playwright; do
-  MCP_COMMUNITY_E2E_SERVICE="${service}" \
-  MCP_E2E_COOKIE_FILE=/path/to/cookies.txt \
-  MCP_E2E_PERSIST_RESOURCES=true \
-  ./scripts/shell/verify_community_mcp_e2e.sh
-done
-```
-
-Run GitHub separately with the OAuth variables shown above. Set
-`MCP_E2E_VERIFY_PERSISTENT_CHAIN=true` and `MCP_E2E_AGENT_MODEL_ID` only when a
-stable MCP-backed Skill, Workflow, and Agent should also be created and
-executed. Persistent PostgreSQL and Playwright retain the acceptance overlay's
-read-only database and isolated browser-site boundaries; publish a new reviewed
-Profile revision before pointing them at another database or network target.
-
-The local OAuth App callback must use the dedicated browser callback endpoint
-shown above and `127.0.0.1`, matching the host OIDC client and the documented
-local UI origin. Browser cookies do not cross between `localhost` and
-`127.0.0.1`; mixing them redirects the GitHub callback to the platform login
-page. The authenticated GET callback completes the exchange server-side and
-returns to the host entry page, so it does not depend on a front-end deep link.
+MCP_E2E_PERSIST_RESOURCES=true keeps stable community-<service>-mcp registrations.
+MCP_E2E_VERIFY_PERSISTENT_INVOCATION=true explicitly performs a direct tool call on
+an existing registration. MCP_E2E_KEEP_RESOURCES=true is for deliberate diagnosis
+only. Review profiles before changing any database, network or storage target.

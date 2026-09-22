@@ -12,9 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Redis entry detail payload.
- */
+/** Redis entry detail payload. */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,4 +24,7 @@ public class RedisEntryDetail {
   private Long size;
   private Boolean editable;
   private String value;
+  private Boolean sampled;
+  private Boolean truncated;
+  private String valueEncoding;
 }

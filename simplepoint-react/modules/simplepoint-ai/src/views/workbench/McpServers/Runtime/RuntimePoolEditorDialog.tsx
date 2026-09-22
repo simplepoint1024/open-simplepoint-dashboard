@@ -1,6 +1,7 @@
-import {get, post} from '@simplepoint/shared/api/methods';
+import {post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import type {Page} from '@simplepoint/shared/types/request';
+import EntitySelect from '@simplepoint/components/EntitySelect';
+import {managedServerFilters, enabledSecretFilters} from './runtimeQueries';
 import {
   Alert,
   App,
@@ -12,19 +13,19 @@ import {
   Row,
   Select,
 } from 'antd';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useState} from 'react';
 import type {
   RuntimePool,
   RuntimePoolFormValues,
-  RuntimeSecret,
   RuntimeServer,
 } from './types';
 import {resolveErrorMessage, splitHosts} from './utils';
+import {canEditPool} from './rowPolicy';
 
 type RuntimePoolEditorDialogProps = {
   open: boolean;
   pool?: RuntimePool;
-  servers: RuntimeServer[];
+  serversUrl: string;
   fixedServer?: RuntimeServer;
   poolsUrl: string;
   secretsUrl: string;
@@ -38,7 +39,7 @@ const NANO_CPU = 1_000_000_000;
 const RuntimePoolEditorDialog = ({
   open,
   pool,
-  servers,
+  serversUrl,
   fixedServer,
   poolsUrl,
   secretsUrl,
@@ -48,28 +49,9 @@ const RuntimePoolEditorDialog = ({
   const {t} = useI18n();
   const {message} = App.useApp();
   const [form] = Form.useForm<RuntimePoolFormValues>();
-  const [secrets, setSecrets] = useState<RuntimeSecret[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const networkMode = Form.useWatch('networkMode', form);
 
-  const availableServers = useMemo(() => {
-    if (fixedServer) return [fixedServer];
-    return servers.filter((server) => (
-      server.deploymentType === 'MANAGED_OCI' && server.enabled !== false
-    ));
-  }, [fixedServer, servers]);
-
-  useEffect(() => {
-    if (!open) return;
-    void get<Page<RuntimeSecret>>(secretsUrl, {page: 0, size: 500})
-      .then((page) => setSecrets(
-        (page.content ?? []).filter((secret) => secret.enabled !== false),
-      ))
-      .catch((error) => message.error(resolveErrorMessage(
-        error,
-        t('ai.runtime.error.secrets.load', 'Runtime Secret 加载失败'),
-      )));
-  }, [message, open, secretsUrl, t]);
 
   useEffect(() => {
     if (!open) return;
@@ -98,6 +80,7 @@ const RuntimePoolEditorDialog = ({
   }, [fixedServer, form, open, pool]);
 
   const submit = async () => {
+    if (pool && !canEditPool(pool)) return;
     let values: RuntimePoolFormValues;
     try {
       values = await form.validateFields();
@@ -164,6 +147,7 @@ const RuntimePoolEditorDialog = ({
       width={920}
       okText={t('ai.runtime.action.saveDeploy', '保存并部署')}
       confirmLoading={submitting}
+      okButtonProps={{disabled: !!pool && !canEditPool(pool)}}
       destroyOnHidden
       onCancel={onCancel}
       onOk={() => void submit()}
@@ -207,13 +191,9 @@ const RuntimePoolEditorDialog = ({
               label={t('ai.runtime.field.server', 'MCP Server')}
               rules={[{required: true}]}
             >
-              <Select
-                disabled={Boolean(fixedServer)}
-                options={availableServers.map((server) => ({
-                  value: server.id,
-                  label: server.name || server.code || server.id,
-                }))}
-              />
+              {fixedServer ? <Select disabled options={[{value: fixedServer.id, label: fixedServer.name || fixedServer.code || fixedServer.id}]}/> :
+                <EntitySelect endpoint={serversUrl} filters={managedServerFilters}/>}
+
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
@@ -334,14 +314,7 @@ const RuntimePoolEditorDialog = ({
               name="secretIds"
               label={t('ai.runtime.field.secrets', 'Runtime Secrets')}
             >
-              <Select
-                mode="multiple"
-                allowClear
-                options={secrets.map((secret) => ({
-                  value: secret.id,
-                  label: `${secret.name} (${secret.code})`,
-                }))}
-              />
+              <EntitySelect endpoint={secretsUrl} filters={enabledSecretFilters} multiple maxCount={16}/>
             </Form.Item>
           </Col>
           {networkMode === 'egress' && (

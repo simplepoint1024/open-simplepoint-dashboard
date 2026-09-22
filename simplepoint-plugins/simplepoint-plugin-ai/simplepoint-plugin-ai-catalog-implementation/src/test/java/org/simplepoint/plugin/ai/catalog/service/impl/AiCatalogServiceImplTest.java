@@ -26,7 +26,6 @@ import org.simplepoint.plugin.ai.mcp.api.service.AiMcpServerDefinitionService;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpProfileImportRequest;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpProfileSpec;
 import org.simplepoint.plugin.ai.runtime.api.service.AiRuntimeMcpProfileService;
-import org.simplepoint.plugin.ai.skill.api.service.AiSkillService;
 
 class AiCatalogServiceImplTest {
 
@@ -81,7 +80,6 @@ class AiCatalogServiceImplTest {
         entries,
         mock(AiCatalogSyncStateRepository.class),
         mock(AiMcpServerDefinitionService.class),
-        mock(AiSkillService.class),
         mock(AiScopeAccessPolicy.class),
         new AiCatalogProperties(),
         mock(OfficialMcpRegistrySync.class),

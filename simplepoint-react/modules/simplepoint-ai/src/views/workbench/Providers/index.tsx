@@ -148,6 +148,13 @@ const Providers = () => {
         title: t('ai.providers.page.modal.discover.title', '接入可用模型'),
         content: (
           <DataTable<DiscoveredModel>
+            storageKey="ai.providers.discovered-models"
+            query={{mode: 'local', scope: 'result', contextKey: provider.id, fields: {
+              modelId: {type: 'string'}, modelType: {type: 'string'}, ownedBy: {type: 'string'},
+              currency: {type: 'string', path: ['pricing', 'currency'], columnKey: 'pricing.currency'},
+              inputTokenPrice: {type: 'number', path: ['pricing', 'inputTokenPrice'], columnKey: 'pricing.inputTokenPrice'},
+              outputTokenPrice: {type: 'number', path: ['pricing', 'outputTokenPrice'], columnKey: 'pricing.outputTokenPrice'},
+            }}}
             style={{marginTop: 16}}
             size="small"
             rowKey="modelId"

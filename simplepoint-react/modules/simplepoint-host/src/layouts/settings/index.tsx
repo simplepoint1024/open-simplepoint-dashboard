@@ -25,7 +25,7 @@ import {
     SkinOutlined,
     SunOutlined,
     UserOutlined
-} from "@ant-design/icons";
+} from "@simplepoint/shared/types/icon";
 import {useI18n} from "@/layouts/i18n/useI18n";
 import "./index.css";
 

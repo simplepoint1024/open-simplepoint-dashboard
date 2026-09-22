@@ -12,6 +12,7 @@ import {
 } from '@simplepoint/shared/api/feedbackBridge';
 import {isMachineErrorCode, selectApiErrorMessage} from './errorMessage';
 import {redirectToLogin} from './session';
+import {createRequestSignal} from './requestSignal';
 import {
   classifySessionProbeResponse,
   isAuthenticationRedirectResponse,
@@ -40,8 +41,6 @@ type ParsedBody = {
   text?: string;
   parseError?: unknown;
 };
-
-const DEFAULT_TIMEOUT_MS = 0;
 
 // 自定义错误类型，方便上层捕获和处理。
 export class HttpError extends Error {
@@ -227,6 +226,9 @@ function isGenericHttpReason(value: string) {
     'not found',
     'method not allowed',
     'conflict',
+    'payload too large',
+    'content too large',
+    'request entity too large',
     'unprocessable entity',
     'too many requests',
     'internal server error',
@@ -304,6 +306,7 @@ function statusFallback(status: number) {
   if (status === 403) return t('error.forbidden', '无使用权限');
   if (status === 404) return t('error.404', '页面不存在');
   if (status === 409) return t('error.conflict', '数据已被修改，请刷新后重试');
+  if (status === 413) return t('error.payloadTooLarge', '文件超过服务端上传大小限制，请缩小文件后重试');
   if (status === 422) return t('error.validation', '提交的数据不合法');
   if (status === 429) return t('error.tooManyRequests', '请求过于频繁，请稍后再试');
   if (status >= 500) return t('error.server', '服务暂时不可用');
@@ -360,6 +363,9 @@ async function notifyError(error: HttpError) {
 }
 
 async function handleError(error: HttpError, options: RequestOptions) {
+  // Abort is expected when a component unmounts, query scope changes, or an
+  // SSE connection reconnects. It is control flow, not an actionable API error.
+  if (error.kind === 'abort') return;
   if (error.status === 401 && options.handleUnauthorized !== false) {
     await handleUnauthorized(error);
   }
@@ -461,47 +467,6 @@ function createContextError(method: string, url: string) {
     url,
     t('error.tenantContextRequired', '请选择租户后再操作')
   );
-}
-
-function createRequestSignal(externalSignal: AbortSignal | undefined, timeoutMs: number | undefined) {
-  const effectiveTimeout = timeoutMs === undefined ? DEFAULT_TIMEOUT_MS : timeoutMs;
-  if (!externalSignal && (!effectiveTimeout || effectiveTimeout <= 0)) {
-    return {signal: undefined, cleanup: () => {}, isTimeout: () => false};
-  }
-
-  const controller = new AbortController();
-  let timedOut = false;
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
-  const abort = (reason?: unknown) => {
-    if (!controller.signal.aborted) {
-      controller.abort(reason);
-    }
-  };
-
-  const onExternalAbort = () => abort((externalSignal as any)?.reason);
-
-  if (externalSignal) {
-    if (externalSignal.aborted) {
-      onExternalAbort();
-    } else {
-      externalSignal.addEventListener('abort', onExternalAbort, {once: true});
-    }
-  }
-
-  if (effectiveTimeout && effectiveTimeout > 0) {
-    timeoutId = setTimeout(() => {
-      timedOut = true;
-      abort(new Error('Request timeout'));
-    }, effectiveTimeout);
-  }
-
-  const cleanup = () => {
-    if (timeoutId) clearTimeout(timeoutId);
-    if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
-  };
-
-  return {signal: controller.signal, cleanup, isTimeout: () => timedOut};
 }
 
 async function sendRequest(

@@ -60,6 +60,15 @@ import org.springframework.core.annotation.Order;
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "区域对象", description = "用于管理系统中的区域")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("nameEnglish"),
+    @org.simplepoint.core.query.QueryField("nameNative"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("countryCode"),
+    @org.simplepoint.core.query.QueryField("level"),
+    @org.simplepoint.core.query.QueryField("postalCode"),
+    @org.simplepoint.core.query.QueryField("parentId")
+})
 public class Region extends BaseEntityImpl<String> {
 
   /**

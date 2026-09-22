@@ -22,11 +22,10 @@ export default defineConfig({
       plugins: [
         pluginModuleFederation({
           name: 'dna',
-          manifest: {
-            disableAssetsAnalyze: true,
-          },
+          manifest: true,
+          shareStrategy: 'loaded-first',
           exposes: require('./module.exposes').default,
-          shared: require('@simplepoint/shared/types/module.shared').default,
+          shared: require('@simplepoint/shared/types/module.remote-shared').default,
         }),
       ],
     },

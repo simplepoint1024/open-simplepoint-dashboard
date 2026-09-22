@@ -11,7 +11,7 @@ const App = ({applicationCode}: ApplicationResourceConfigProps) => {
   const {ensure, locale} = useI18n();
 
   useEffect(() => {
-    void ensure(['resources', 'applications', 'table', 'common', 'access-center']);
+    void ensure(['resources', 'applications', 'table', 'common']);
   }, [ensure, locale]);
 
   const fetchAssignedCodes = useCallback(

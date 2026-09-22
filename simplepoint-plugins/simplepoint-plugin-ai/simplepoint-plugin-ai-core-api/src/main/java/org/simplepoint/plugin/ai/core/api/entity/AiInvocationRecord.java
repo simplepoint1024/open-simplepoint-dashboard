@@ -43,6 +43,38 @@ import org.springframework.core.annotation.Order;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @Schema(title = "i18n:ai.invocations.entity.title")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("scopeType"),
+    @org.simplepoint.core.query.QueryField("userId"),
+    @org.simplepoint.core.query.QueryField("providerDefinitionId"),
+    @org.simplepoint.core.query.QueryField("modelDefinitionId"),
+    @org.simplepoint.core.query.QueryField("modelId"),
+    @org.simplepoint.core.query.QueryField("providerType"),
+    @org.simplepoint.core.query.QueryField("operation"),
+    @org.simplepoint.core.query.QueryField("stream"),
+    @org.simplepoint.core.query.QueryField("status"),
+    @org.simplepoint.core.query.QueryField("providerRequestId"),
+    @org.simplepoint.core.query.QueryField("startedAt"),
+    @org.simplepoint.core.query.QueryField("completedAt"),
+    @org.simplepoint.core.query.QueryField("durationMillis"),
+    @org.simplepoint.core.query.QueryField("inputTokens"),
+    @org.simplepoint.core.query.QueryField("outputTokens"),
+    @org.simplepoint.core.query.QueryField("totalTokens"),
+    @org.simplepoint.core.query.QueryField("cachedInputTokens"),
+    @org.simplepoint.core.query.QueryField("billingStatus"),
+    @org.simplepoint.core.query.QueryField("billingCurrency"),
+    @org.simplepoint.core.query.QueryField("inputUnitPrice"),
+    @org.simplepoint.core.query.QueryField("cachedInputUnitPrice"),
+    @org.simplepoint.core.query.QueryField("outputUnitPrice"),
+    @org.simplepoint.core.query.QueryField("requestUnitPrice"),
+    @org.simplepoint.core.query.QueryField("inputCost"),
+    @org.simplepoint.core.query.QueryField("cachedInputCost"),
+    @org.simplepoint.core.query.QueryField("outputCost"),
+    @org.simplepoint.core.query.QueryField("requestCost"),
+    @org.simplepoint.core.query.QueryField("totalCost"),
+    @org.simplepoint.core.query.QueryField("errorCode"),
+    @org.simplepoint.core.query.QueryField("errorMessage")
+})
 public class AiInvocationRecord extends BaseEntityImpl<String> {
 
   @Version

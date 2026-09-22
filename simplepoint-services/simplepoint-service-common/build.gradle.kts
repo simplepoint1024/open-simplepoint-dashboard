@@ -13,6 +13,17 @@ val frontendRoot = rootProject.file("simplepoint-react")
 val frontendCommonDir = frontendRoot.resolve("modules/simplepoint-common")
 val frontendCommonDistDir = frontendCommonDir.resolve("dist")
 
+tasks.named<ProcessResources>("processTestResources") {
+    from(listOf(frontendRoot.resolve("scripts/member-schema.fixture.json"), frontendRoot.resolve("scripts/user-assignment-schema.fixture.json"),
+        frontendRoot.resolve("scripts/role-assignment-schema.fixture.json"),
+        frontendRoot.resolve("scripts/organization-selection-schema.fixture.json"))) {
+        into("query-contracts")
+    }
+    from(frontendRoot.resolve("scripts/common-main-schemas")) {
+        into("query-contracts/common-main")
+    }
+}
+
 configure<SourceSetContainer> {
     named("main") {
         resources.exclude("static/**")
@@ -82,6 +93,9 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-implementation"))
 
     // 系统通知、用户收件箱与主动推送
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-personal:simplepoint-plugin-personal-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-personal:simplepoint-plugin-personal-implementation"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-personal:simplepoint-plugin-personal-rest"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-repository"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-service"))
@@ -96,4 +110,6 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.security:spring-security-oauth2-authorization-server")
+    testRuntimeOnly("com.h2database:h2")
 }

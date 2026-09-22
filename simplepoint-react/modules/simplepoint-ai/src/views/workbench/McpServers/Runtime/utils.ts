@@ -18,7 +18,7 @@ export const formatBytes = (value?: number) => {
 };
 
 export const formatCpu = (nanoCpus?: number) => {
-  if (nanoCpus === undefined || nanoCpus === null) return '-';
+  if (nanoCpus === undefined || nanoCpus === null || !Number.isFinite(nanoCpus)) return '-';
   return `${(nanoCpus / 1_000_000_000).toFixed(2)} CPU`;
 };
 

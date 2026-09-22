@@ -48,24 +48,4 @@ export default {
     i18nNamespaces: ['ai-common', 'ai-mcp', 'ai-runtime'],
     name: 'ai-workbench-mcp-servers',
   },
-  'ai-workbench.skills': {
-    baseUrl: `${contextPath}/skills`,
-    registryUrl: `${contextPath}/skills/managed-registry`,
-    i18nNamespaces: ['ai-common', 'ai-skills'],
-    name: 'ai-workbench-skills',
-  },
-  'ai-workbench.agents': {
-    baseUrl: `${contextPath}/agents`,
-    modelsUrl: `${contextPath}/models`,
-    skillsUrl: `${contextPath}/skills`,
-    i18nNamespaces: ['ai-common', 'ai-agents', 'ai-models'],
-    name: 'ai-workbench-agents',
-  },
-  'ai-workbench.workflows': {
-    baseUrl: `${contextPath}/workflows`,
-    agentsUrl: `${contextPath}/agents`,
-    skillsUrl: `${contextPath}/skills`,
-    i18nNamespaces: ['ai-common', 'ai-workflows'],
-    name: 'ai-workbench-workflows',
-  },
 };

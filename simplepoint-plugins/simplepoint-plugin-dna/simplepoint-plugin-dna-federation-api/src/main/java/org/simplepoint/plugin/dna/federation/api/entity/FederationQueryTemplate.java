@@ -62,6 +62,16 @@ import org.springframework.core.annotation.Order;
 })
 @Tag(name = "查询模板", description = "用于管理可复用的 SQL 查询模板")
 @Schema(title = "i18n:dna.federation.queryTemplates.entity.title", description = "i18n:dna.federation.queryTemplates.entity.description")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("catalogId"),
+    @org.simplepoint.core.query.QueryField("sql"),
+    @org.simplepoint.core.query.QueryField("tags"),
+    @org.simplepoint.core.query.QueryField("isPublic"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class FederationQueryTemplate extends BaseEntityImpl<String> {
 
   @Order(0)

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.simplepoint.plugin.dna.federation.service.support.BaseServiceSchemaTestSupport.stubBaseServiceSchema;
 
@@ -15,7 +16,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.simplepoint.plugin.dna.federation.service.support.AuthorizedCrudExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.RequestContextHolder;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
 import org.simplepoint.plugin.dna.federation.api.entity.DataAsset;
@@ -23,8 +26,9 @@ import org.simplepoint.plugin.dna.federation.api.repository.DataAssetRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, AuthorizedCrudExtension.class})
 class DataAssetServiceImplTest {
 
   @Mock
@@ -142,6 +146,18 @@ class DataAssetServiceImplTest {
   }
 
   // ---- create ----
+
+  @Test
+  void createStillRejectsMissingAuthorization() {
+    RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+    DataAsset asset = validAsset();
+    when(repository.findActiveByCode("ASSET_001")).thenReturn(Optional.empty());
+    when(dataSourceService.findActiveById("catalog-1"))
+        .thenReturn(Optional.of(enabledDs("catalog-1", "MySQL", "mysql")));
+
+    assertThrows(AccessDeniedException.class, () -> service().create(asset));
+    verify(repository, never()).save(any(DataAsset.class));
+  }
 
   @Test
   void createSavesValidAsset() {

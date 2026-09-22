@@ -103,6 +103,22 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Schema(title = "i18n:ai.providers.entity.title")
+@org.simplepoint.core.query.TableQuery(value = {
+    @org.simplepoint.core.query.QueryField("scopeType"),
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("vendor"),
+    @org.simplepoint.core.query.QueryField("baseUrl"),
+    @org.simplepoint.core.query.QueryField("modelDiscoveryUrl"),
+    @org.simplepoint.core.query.QueryField("allowPrivateNetwork"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("autoSyncEnabled"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("lastStatus"),
+    @org.simplepoint.core.query.QueryField("lastMessage"),
+    @org.simplepoint.core.query.QueryField("lastTestedAt"),
+    @org.simplepoint.core.query.QueryField("lastSyncedAt")
+}, maxPageSize = 500)
 public class AiProviderDefinition extends BaseEntityImpl<String> {
 
   @Order(0)

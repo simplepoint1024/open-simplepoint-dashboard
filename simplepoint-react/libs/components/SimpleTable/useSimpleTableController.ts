@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {QueryFunctionContext} from '@tanstack/react-query';
 import type { IChangeEvent } from '@rjsf/core';
 import { App } from 'antd';
@@ -10,6 +10,12 @@ import { getStoredContextId, getStoredRoleId, getStoredTenantId } from '@simplep
 import type { TableButtonProps } from '../Table';
 import type { SimpleTableAfterSubmitContext, SimpleTableBeforeSubmitContext, SimpleTableProps, SimpleTableRefreshTargets, SimpleTableSubmitAction } from './types';
 import {resolveSimpleTableOperationError} from './errorMessage';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import {scopedPagePlaceholder} from '@simplepoint/shared/api/queryScope';
+import type {Page} from '@simplepoint/shared/types/request';
+import {usePageRetention} from '@simplepoint/shared/page/hooks';
+import {transportFilters} from '../Table/query';
+import {resolveSimpleTableLoadError} from './errorMessage';
 
 const nsLoadedCache = new Set<string>();
 
@@ -19,21 +25,26 @@ export type SimpleTableController<T> = {
     bootLoading: boolean;
     tableLoading: boolean;
     submitLoading: boolean;
+    submitError?: string;
     drawerSchemaLoading: boolean;
     hasSchemaError: boolean;
     hasPageError: boolean;
     showPageWarning: boolean;
+    pageErrorMessage: string;
   };
   schema: {
     data: any;
     formSchema: any;
     error: unknown;
+    dictionariesError: unknown;
+    retryDictionaries: () => Promise<unknown>;
     retry: () => Promise<unknown>;
   };
   table: {
     data: any;
     filters: Record<string, string>;
-    sorter: string | undefined;
+    sorter: string | string[] | undefined;
+    onQueryChange: (filters: Record<string, string>, sort?: string | string[]) => void;
     buttons: TableButtonProps[];
     onChange: (pagination: any, _tableFilters: any, sorter?: any) => void;
     onFilterChange: (filters: Record<string, string>) => void;
@@ -54,19 +65,24 @@ export type SimpleTableController<T> = {
 };
 
 export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): SimpleTableController<T> {
+  const scope = useQueryScope();
   const { t, ensure, locale, ready } = useI18n();
   const {message, modal} = App.useApp();
   const [i18nReady, setI18nReady] = useState(false);
   const [page, setPage] = useState<number>(1);
   const [size, setSize] = useState<number>(20);
   const [filters, setFilters] = useState<Record<string, string>>(props.initialFilters ?? {});
-  const [sort, setSort] = useState<string | undefined>(undefined);
+  const [sort, setSort] = useState<string | string[] | undefined>(undefined);
   const [tenantId, setTenantId] = useState<string>(() => getStoredTenantId() ?? '');
   const [roleId, setRoleId] = useState<string>(() => getStoredRoleId(getStoredTenantId()) ?? '');
   const [contextId, setContextId] = useState<string>(() => getStoredContextId(getStoredTenantId(), getStoredRoleId(getStoredTenantId())) ?? '');
   const [innerDrawerOpen, setInnerDrawerOpen] = useState(false);
   const [innerEditing, setInnerEditing] = useState<any | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string>();
+  useEffect(() => {setSubmitError(undefined);}, [props.drawerOpen]);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const submissionLock = useRef(false);
 
   const submitRefreshTargets = useMemo<Required<SimpleTableRefreshTargets>>(
     () => ({
@@ -108,12 +124,13 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     };
   }, [props.i18nNamespaces, ensure, locale]);
 
-  const { data: schemaData, isLoading: schemaLoading, error: schemaError, refetch: refetchSchema } = useSchema(
-    props.baseUrl,
-    { enabled: i18nReady }
-  );
+  const { data: schemaData, isLoading: schemaLoading, error: schemaError, refetch: refetchSchema,
+    dictionariesLoading, dictionariesError, retryDictionaries } = useSchema(props.baseUrl, {staleTime: props.schemaStaleTime});
 
   const drawerOpen = props.drawerOpen ?? innerDrawerOpen;
+  // Custom routes remain protected unless their owner explicitly opts in.
+  usePageRetention(props.allowTabEviction === true && !drawerOpen && !submitLoading && !confirmingDelete,
+    drawerOpen || submitLoading || confirmingDelete);
   const setDrawerOpen = (open: boolean) => {
     props.onDrawerOpenChange?.(open);
     if (props.drawerOpen === undefined) setInnerDrawerOpen(open);
@@ -127,17 +144,22 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
 
   const fetchPage = ({signal}: QueryFunctionContext) =>
     props.loadPage
-      ? props.loadPage({page: page - 1, size, filters, sort, signal})
+      ? props.loadPage({page: page - 1, size, filters: transportFilters(filters), sort, signal})
       : get<import('@simplepoint/shared/types/request').Page<any>>(props.baseUrl, {
           page: page - 1,
           size,
-          ...filters,
+          ...transportFilters(filters),
           ...(sort ? {sort} : {}),
         }, {signal});
 
-  const { data: pageData, isLoading: pageLoading, error: pageError, refetch: refetchPage } = usePage(
-    [props.name, tenantId, roleId, contextId, page, size, filters, sort],
-    fetchPage
+  const { data: pageData, isLoading: pageLoading, isFetching: pageFetching, error: pageError, refetch: refetchPage } = usePage(
+    [props.baseUrl, props.name, props.queryContext ?? '', tenantId, roleId, contextId, page, size, filters, sort],
+    fetchPage,
+    {
+      placeholderData: scopedPagePlaceholder<Page<any>>(scope, [props.baseUrl, props.name, props.queryContext ?? '']),
+      retry: (count, error) => !(isHttpError(error) && error.status >= 400 && error.status < 500)
+        && !(isHttpError(error) && error.status === 500) && count < 1,
+    }
   );
 
   useEffect(() => {
@@ -191,8 +213,8 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   }, [tenantId, roleId, contextId]);
 
   const bootLoading = !ready || !i18nReady || (schemaLoading && !schemaData) || (!pageData && pageLoading && !pageError);
-  const tableLoading = !bootLoading && pageLoading;
-  const drawerSchemaLoading = drawerOpen && schemaLoading && !schemaData;
+  const tableLoading = !bootLoading && pageFetching;
+  const drawerSchemaLoading = drawerOpen && ((schemaLoading && !schemaData) || dictionariesLoading);
   const hasSchemaError = !bootLoading && !!schemaError;
   const hasPageError = !bootLoading && !schemaError && !!pageError && !pageData;
   const showPageWarning = !bootLoading && !schemaError && !!pageError && !!pageData;
@@ -211,21 +233,20 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     await Promise.allSettled(tasks);
   };
 
-  const handleTableChange = (pagination: any, _tableFilters: any, sorter: any) => {
-    setPage(pagination?.current ?? 1);
+  const handleTableChange = (pagination: any, _tableFilters: any, sorter: any, extra?: {action?: string}) => {
+    setPage(extra?.action === 'sort' || pagination?.pageSize !== size ? 1 : pagination?.current ?? 1);
     setSize(pagination?.pageSize ?? size);
-    // AntD sorter: { field: string | string[], order: 'ascend'|'descend'|undefined }
-    const field = Array.isArray(sorter?.field)
-      ? (sorter.field as string[]).join('.')
-      : (sorter?.field as string | undefined);
-    const dir = sorter?.order === 'ascend' ? 'asc' : sorter?.order === 'descend' ? 'desc' : undefined;
-    setSort(field && dir ? `${field},${dir}` : undefined);
+    const list = (Array.isArray(sorter) ? sorter : [sorter]).filter(s => s?.field && s?.order);
+    if (list.length > 3) {message.warning(t('table.query.maxSort', '最多支持三个排序字段')); return;}
+    const sorts = list.map(s => `${Array.isArray(s.field) ? s.field.join('.') : s.field},${s.order === 'ascend' ? 'asc' : 'desc'}`);
+    setSort(sorts.length > 1 ? sorts : sorts[0]);
   };
 
-  const handleFilterChange = (nextFilters: Record<string, string>) => {
+  const handleFilterChange = useCallback((nextFilters: Record<string, string>) => {
     setFilters(nextFilters);
     setPage(1);
-  };
+  }, []);
+  const refreshPage = useCallback(() => {void refetchPage();}, [refetchPage]);
 
   const handleAdd = () => {
     setEditingRecord(null);
@@ -238,10 +259,14 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   };
 
   const handleDelete = (keys: React.Key[]) => {
+    setConfirmingDelete(true);
     modal.confirm({
+      afterClose: () => setConfirmingDelete(false),
       title: t('table.confirmDeleteTitle', '确认删除'),
       content: t('table.confirmDeleteContent', '确定要删除选中的 {count} 条数据吗？', { count: keys.length }),
       onOk: async () => {
+        if (submissionLock.current) return;
+        submissionLock.current = true;
         setSubmitLoading(true);
         try {
           await del(props.baseUrl, keys as any);
@@ -259,6 +284,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
           );
           message.error(t('table.deleteFail', '删除失败: {msg}', {msg: detail}));
         } finally {
+          submissionLock.current = false;
           setSubmitLoading(false);
         }
       },
@@ -266,6 +292,9 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   };
 
   const handleFormSubmit = async ({ formData }: IChangeEvent) => {
+    setSubmitError(undefined);
+    if (submissionLock.current) return;
+    submissionLock.current = true;
     setSubmitLoading(true);
     try {
       const action: SimpleTableSubmitAction = editingRecord ? 'edit' : 'add';
@@ -318,8 +347,10 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
         props.errorMessageResolver,
         () => resolveApiErrorMessage(e, ''),
       );
+      setSubmitError(detail);
       message.error(t('table.actionFail', '操作失败: {msg}', {msg: detail}));
     } finally {
+      submissionLock.current = false;
       setSubmitLoading(false);
     }
   };
@@ -349,25 +380,30 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
       bootLoading,
       tableLoading,
       submitLoading,
+      submitError,
       drawerSchemaLoading,
       hasSchemaError,
       hasPageError,
       showPageWarning,
+      pageErrorMessage: resolveSimpleTableLoadError(pageError, t('table.pageLoadFail', '列表数据加载失败，请稍后重试。')),
     },
     schema: {
       data: schemaData,
       formSchema,
       error: schemaError,
+      dictionariesError,
+      retryDictionaries,
       retry: refetchSchema,
     },
     table: {
       data: pageData,
       filters,
       sorter: sort,
+      onQueryChange: (nextFilters, nextSort) => {setFilters(nextFilters); setSort(nextSort); setPage(1);},
       buttons: mergedButtons,
       onChange: handleTableChange,
       onFilterChange: handleFilterChange,
-      refresh: () => void refetchPage(),
+      refresh: refreshPage,
       refreshDisabled: submitLoading,
     },
     drawer: {

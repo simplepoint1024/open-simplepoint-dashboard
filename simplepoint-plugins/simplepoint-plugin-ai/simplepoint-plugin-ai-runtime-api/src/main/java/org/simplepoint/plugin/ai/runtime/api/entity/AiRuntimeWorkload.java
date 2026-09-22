@@ -17,39 +17,50 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.query.QueryField;
+import org.simplepoint.core.query.TableQuery;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.runtime.api.model.AiRuntimeErrorCodeSerializer;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeWorkloadStatus;
 
-/**
- * Durable desired and observed state of one OCI MCP workload.
- */
+/** Durable desired and observed state of one OCI MCP workload. */
 @Data
 @Entity
 @Table(
     name = "simpoint_ai_runtime_workloads",
     indexes = {
-        @Index(
-            name = "idx_simpoint_ai_runtime_workload_scope",
-            columnList = "scope_type, tenant_id"
-        ),
-        @Index(
-            name = "idx_simpoint_ai_runtime_workload_status",
-            columnList = "status"
-        ),
-        @Index(
-            name = "idx_simpoint_ai_runtime_workload_node",
-            columnList = "assigned_node_id"
-        ),
-        @Index(
-            name = "idx_simpoint_ai_runtime_workload_pool",
-            columnList = "pool_id, status"
-        )
-    }
-)
+      @Index(name = "idx_simpoint_ai_runtime_workload_scope", columnList = "scope_type, tenant_id"),
+      @Index(name = "idx_simpoint_ai_runtime_workload_status", columnList = "status"),
+      @Index(name = "idx_simpoint_ai_runtime_workload_node", columnList = "assigned_node_id"),
+      @Index(name = "idx_simpoint_ai_runtime_workload_pool", columnList = "pool_id, status")
+    })
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @Schema(hidden = true)
+@TableQuery(
+    value = {
+      @QueryField("id"),
+      @QueryField("executionId"),
+      @QueryField("serverId"),
+      @QueryField("poolId"),
+      @QueryField("status"),
+      @QueryField("imageReference"),
+      @QueryField("imageDigest"),
+      @QueryField("requestedMemoryBytes"),
+      @QueryField("requestedNanoCpus"),
+      @QueryField("requestedPidsLimit"),
+      @QueryField("timeoutSeconds"),
+      @QueryField("networkMode"),
+      @QueryField("assignedNodeId"),
+      @QueryField("runtimeWorkloadId"),
+      @QueryField("containerId"),
+      @QueryField("deadlineAt"),
+      @QueryField("startedAt"),
+      @QueryField("finishedAt"),
+      @QueryField("lastObservedAt"),
+      @QueryField("createdAt")
+    },
+    maxPageSize = 100)
 public class AiRuntimeWorkload extends BaseEntityImpl<String> {
 
   @Enumerated(EnumType.STRING)
@@ -103,19 +114,11 @@ public class AiRuntimeWorkload extends BaseEntityImpl<String> {
   private String networkMode;
 
   @JsonIgnore
-  @Column(
-      name = "egress_allowlist_json",
-      columnDefinition = "TEXT DEFAULT '[]'",
-      nullable = false
-  )
+  @Column(name = "egress_allowlist_json", columnDefinition = "TEXT DEFAULT '[]'", nullable = false)
   private String egressAllowlistJson;
 
   @JsonIgnore
-  @Column(
-      name = "secret_references_json",
-      columnDefinition = "TEXT DEFAULT '[]'",
-      nullable = false
-  )
+  @Column(name = "secret_references_json", columnDefinition = "TEXT DEFAULT '[]'", nullable = false)
   private String secretReferencesJson;
 
   @Transient

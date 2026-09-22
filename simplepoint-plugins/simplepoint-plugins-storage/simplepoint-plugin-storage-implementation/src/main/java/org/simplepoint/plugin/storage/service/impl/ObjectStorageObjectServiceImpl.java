@@ -332,14 +332,12 @@ public class ObjectStorageObjectServiceImpl
     if (attributes != null) {
       normalized.putAll(attributes);
     }
-    normalized.put("deletedAt", "is:null");
     String tenantId = requireCurrentTenantId();
-    normalized.put("tenantId", tenantId);
     String fileName = normalized.get("originalFileName");
-    if (fileName != null && !fileName.isBlank() && !fileName.contains(":")) {
+    if (fileName != null && !fileName.isBlank() && !fileName.startsWith("{") && !fileName.contains(":")) {
       normalized.put("originalFileName", "like:" + fileName.trim());
     }
-    return super.limit(normalized, pageable);
+    return super.limitScoped(normalized, Map.of("tenantId", tenantId), pageable);
   }
 
   private void enforceQuota(final String tenantId, final long newBytes) {

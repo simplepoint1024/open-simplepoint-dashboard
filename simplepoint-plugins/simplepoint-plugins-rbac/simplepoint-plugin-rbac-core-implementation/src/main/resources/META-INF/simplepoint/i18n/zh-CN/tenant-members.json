@@ -1,0 +1,19 @@
+{
+  "tenant-members.panel": "组织用户",
+  "tenant-members.selectOrganization": "请从左侧选择组织，查看本级及下级用户",
+  "tenant-members.descendantsHint": "显示当前组织及所有下级组织的用户",
+  "tenant-members.addTenantUser": "添加租户用户",
+  "tenant-members.search": "搜索姓名、邮箱或用户 ID",
+  "tenant-members.loadFailed": "组织用户加载失败",
+  "tenant-members.candidatesFailed": "可添加用户加载失败",
+  "tenant-members.transferHint": "仅搜索当前租户已有用户；若用户属于其他组织，保存后会转移到所选组织。",
+  "tenant-members.name": "用户",
+  "tenant-members.organization": "所属组织",
+  "tenant-members.userType": "用户类型",
+  "tenant-members.userType.INTERNAL": "内部",
+  "tenant-members.userType.EXTERNAL": "外部",
+  "tenant-members.userType.REFERENCE": "引用",
+  "tenant-members.assigned": "用户已加入所选组织",
+  "tenant-members.saveFailed": "保存失败，请刷新后重试",
+  "tenant-members.typeSaved": "用户类型已更新"
+}

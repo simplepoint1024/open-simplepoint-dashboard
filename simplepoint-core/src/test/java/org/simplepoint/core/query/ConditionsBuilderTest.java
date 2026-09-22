@@ -167,14 +167,14 @@ class ConditionsBuilderTest {
   void isNull_storesIsNullCondition() {
     Sample sample = new Sample(null, "ok", true);
     Map<String, String> cond = ConditionsBuilder.of(sample).isNull(Sample::getName).build();
-    assertThat(cond).containsEntry("name", "is:null:null");
+    assertThat(cond).containsEntry("name", "is:null");
   }
 
   @Test
   void isNotNull_storesIsNotNullCondition() {
     Sample sample = new Sample("X", "ok", true);
     Map<String, String> cond = ConditionsBuilder.of(sample).isNotNull(Sample::getName).build();
-    assertThat(cond).containsEntry("name", "is:not:null:X");
+    assertThat(cond).containsEntry("name", "is:not:null");
   }
 
   // -------- greaterThan --------

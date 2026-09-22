@@ -33,29 +33,3 @@ func TestVerifiedRuntimeNodeRequiresVerifiedExactPrefix(t *testing.T) {
 		t.Fatal("expected a different identity prefix to be rejected")
 	}
 }
-
-func TestVerifiedIdentityRequiresExactVerifiedURI(t *testing.T) {
-	identity, err := url.Parse(
-		"spiffe://open-simplepoint/ai-control-plane",
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	state := &tls.ConnectionState{
-		VerifiedChains: [][]*x509.Certificate{{
-			{URIs: []*url.URL{identity}},
-		}},
-	}
-	if !VerifiedIdentity(
-		state,
-		"spiffe://open-simplepoint/ai-control-plane",
-	) {
-		t.Fatal("expected exact AI identity to be accepted")
-	}
-	if VerifiedIdentity(
-		state,
-		"spiffe://open-simplepoint/ai-control-planes",
-	) {
-		t.Fatal("expected a different AI identity to be rejected")
-	}
-}

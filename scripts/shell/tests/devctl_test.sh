@@ -116,7 +116,7 @@ find "${TEST_DIR}/state/backups" -type f \
   -path '*/simplepoint/config/host-dev/application.properties' | grep -q .
 run_dev config verify >/dev/null
 
-required=(authorization common host ai mcp-gateway agent-runtime workflow-runtime)
+required=(authorization common host ai mcp-gateway)
 for service in "${required[@]}"; do
   [[ -f "${TEST_DIR}/config/profiles/dev/simplepoint/config/${service}-dev/application.properties" ]] \
     || { echo "missing dev Consul overlay for ${service}" >&2; exit 1; }

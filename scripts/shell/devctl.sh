@@ -15,12 +15,12 @@ DEV_PROFILE="dev"
 
 declare -A SERVICE_PORTS=(
   [authorization]=9000 [common]=7000 [host]=8080 [auditing]=6000 [dna]=2777
-  [ai]=2888 [mcp-gateway]=2890 [agent-runtime]=2894 [workflow-runtime]=2895
+  [ai]=2888 [mcp-gateway]=2890
 )
 
 CORE_SERVICES=(authorization common host)
-AI_SERVICES=(authorization common ai mcp-gateway agent-runtime workflow-runtime host)
-FULL_SERVICES=(authorization common auditing dna ai mcp-gateway agent-runtime workflow-runtime host)
+AI_SERVICES=(authorization common ai mcp-gateway host)
+FULL_SERVICES=(authorization common auditing dna ai mcp-gateway host)
 
 say() { printf '%s\n' "$*"; }
 ok() { printf '  [OK] %s\n' "$*"; }

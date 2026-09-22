@@ -1,7 +1,6 @@
 package org.simplepoint.plugin.rbac.tenant.service.impl;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -78,12 +77,24 @@ public class ApplicationServiceImpl
       return super.limit(attributes, pageable);
     }
     Set<String> applicationCodes = tenantPackageRelevanceRepository.findApplicationCodesByTenantId(resolveTenantScope());
-    if (applicationCodes.isEmpty()) {
-      return Page.empty(pageable);
+    return super.limitInScope(attributes, "code", applicationCodes, pageable);
+  }
+
+  @Override
+  public Page<Application> assignmentItems(String parent, boolean selected, Map<String, String> filters, Pageable pageable) {
+    String packageCode = requireCode(parent, "套餐编码不能为空");
+    var memberships = new java.util.ArrayList<org.simplepoint.api.base.QueryMembership>();
+    if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
+      String tenantId = resolveTenantScope();
+      if (!tenantPackageRelevanceRepository.authorized(tenantId).contains(packageCode)) {
+        throw new org.springframework.security.access.AccessDeniedException("套餐不属于当前租户");
+      }
+      memberships.add(new org.simplepoint.api.base.QueryMembership("code",
+          tenantPackageRelevanceRepository.findApplicationCodesByTenantId(tenantId).stream().toList(), true));
     }
-    Map<String, String> scopedAttributes = new HashMap<>(attributes == null ? Map.of() : attributes);
-    scopedAttributes.put("code", "in:" + String.join(",", applicationCodes));
-    return super.limit(scopedAttributes, pageable);
+    memberships.add(new org.simplepoint.api.base.QueryMembership("code",
+        packageApplicationRelevanceRepository.authorized(packageCode).stream().toList(), selected));
+    return super.limitMemberships(filters, memberships, pageable);
   }
 
   @Override

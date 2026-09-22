@@ -62,6 +62,14 @@ import org.springframework.core.annotation.Order;
 })
 @Tag(name = "逻辑视图", description = "用于管理联邦查询逻辑视图")
 @Schema(title = "i18n:dna.federation.views.entity.title", description = "i18n:dna.federation.views.entity.description")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("schemaId"),
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("definitionSql"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class FederationView extends BaseEntityImpl<String> {
 
   @Order(0)

@@ -1,0 +1,131 @@
+{
+  "buttons": [],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "authority": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:roles.title.authority",
+        "description": ""
+      },
+      "description": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:roles.title.description",
+        "description": ""
+      },
+      "id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:roles.title.id",
+        "description": ""
+      },
+      "name": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:roles.title.roleName",
+        "description": ""
+      }
+    },
+    "x-query": {
+      "version": 1,
+      "relations": [],
+      "fields": {
+        "id": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "name": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "authority": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "description": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        }
+      },
+      "maxSort": 3,
+      "maxDepth": 4,
+      "maxNodes": 32,
+      "maxPageSize": 200
+    }
+  }
+}

@@ -1,8 +1,8 @@
 import DataTable from '@simplepoint/components/DataTable';
+import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
 import {request} from '@simplepoint/shared/api/client';
-import {get, post} from '@simplepoint/shared/api/methods';
+import {post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import type {Page} from '@simplepoint/shared/types/request';
 import {
   Alert,
   App,
@@ -16,13 +16,14 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import type {RuntimeSecret} from './types';
 import {formatDateTime, resolveErrorMessage} from './utils';
 
 const {Text} = Typography;
 
 type RuntimeSecretsProps = {
+  active?: boolean;
   secretsUrl: string;
   canManage: boolean;
 };
@@ -39,38 +40,18 @@ type RotateSecretValues = {
   value: string;
 };
 
-const RuntimeSecrets = ({secretsUrl, canManage}: RuntimeSecretsProps) => {
+const RuntimeSecrets = ({active = true, secretsUrl, canManage}: RuntimeSecretsProps) => {
   const {t} = useI18n();
   const {message, modal} = App.useApp();
   const [createForm] = Form.useForm<CreateSecretValues>();
   const [rotateForm] = Form.useForm<RotateSecretValues>();
-  const [rows, setRows] = useState<RuntimeSecret[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string>();
+  const list = useRemoteList<RuntimeSecret>(secretsUrl, active);
+  const load = list.refresh;
+  const loadError = list.error ? resolveErrorMessage(list.error, t('table.loadFail', '加载失败')) : undefined;
   const [createOpen, setCreateOpen] = useState(false);
   const [rotatingSecret, setRotatingSecret] = useState<RuntimeSecret>();
   const [submitting, setSubmitting] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setLoadError(undefined);
-    try {
-      const page = await get<Page<RuntimeSecret>>(secretsUrl, {page: 0, size: 500});
-      setRows(page.content ?? []);
-    } catch (error) {
-      setRows([]);
-      setLoadError(resolveErrorMessage(
-        error,
-        t('ai.runtime.error.secrets.load', 'Runtime Secret 加载失败'),
-      ));
-    } finally {
-      setLoading(false);
-    }
-  }, [secretsUrl, t]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   const createSecret = useCallback(async () => {
     let values: CreateSecretValues;
@@ -219,13 +200,10 @@ const RuntimeSecrets = ({secretsUrl, canManage}: RuntimeSecretsProps) => {
 
   return (
     <>
-      <Card
+      <Card className="runtime-list-secrets"
         title={t('ai.runtime.secret.title', 'Runtime Secrets')}
         extra={(
           <Space>
-            <Button onClick={() => void load()}>
-              {t('ai.runtime.action.refresh', '刷新')}
-            </Button>
             {canManage && (
               <Button type="primary" onClick={() => {
                 createForm.resetFields();
@@ -246,9 +224,8 @@ const RuntimeSecrets = ({secretsUrl, canManage}: RuntimeSecretsProps) => {
             message={t('ai.runtime.error.secrets.load', 'Runtime Secret 加载失败')}
             description={loadError}
             action={(
-              <Button size="small" onClick={() => void load()}>
-                {t('ai.mcp.action.retry', '重试')}
-              </Button>
+              <Space><Button size="small" onClick={list.retry}>{t('table.retry', '重试')}</Button>
+                <Button size="small" onClick={list.reset}>{t('table.query.reset', '重置筛选与排序')}</Button></Space>
             )}
           />
         )}
@@ -261,12 +238,10 @@ const RuntimeSecrets = ({secretsUrl, canManage}: RuntimeSecretsProps) => {
             'Secret 明文只在创建或轮换时提交，之后不会通过查询接口返回。',
           )}
         />
-        <DataTable
-          rowKey="id"
-          loading={loading}
-          columns={columns}
-          dataSource={rows}
-          pagination={{pageSize: 20, hideOnSinglePage: true}}
+        <DataTable<RuntimeSecret>
+          {...list.tableProps}
+          query={list.tableProps.query}
+          columns={list.columns(columns)}
         />
       </Card>
       <Modal

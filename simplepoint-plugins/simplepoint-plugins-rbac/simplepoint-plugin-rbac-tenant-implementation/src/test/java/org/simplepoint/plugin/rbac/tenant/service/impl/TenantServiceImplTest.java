@@ -66,6 +66,9 @@ class TenantServiceImplTest {
   @Mock
   UsersService usersService;
 
+  @Mock
+  TenantUserCandidateQuery userCandidateQuery;
+
   @InjectMocks
   TenantServiceImpl service;
 
@@ -355,13 +358,13 @@ class TenantServiceImplTest {
     tenant.setOwnerId("owner1");
     Pageable pageable = Pageable.ofSize(10);
     when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(tenantUserRelevanceRepository.items(pageable)).thenReturn(new PageImpl<>(List.of()));
+    when(userCandidateQuery.list(tenant, null, java.util.Map.of(), pageable)).thenReturn(new PageImpl<>(List.of()));
 
     var result = service.userItems("tenant1", pageable);
 
     assertThat(result).isNotNull();
     verify(repository).findById("tenant1");
-    verify(tenantUserRelevanceRepository).items(pageable);
+    verify(userCandidateQuery).list(tenant, null, java.util.Map.of(), pageable);
     verify(tenantUserRelevanceRepository, never()).items("tenant1", pageable);
   }
 
@@ -373,14 +376,14 @@ class TenantServiceImplTest {
     tenant.setOwnerId("owner1");
     Pageable pageable = Pageable.ofSize(20);
     when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(tenantUserRelevanceRepository.searchItems("alice", pageable))
+    when(userCandidateQuery.list(tenant, null, java.util.Map.of("keyword", "alice"), pageable))
         .thenReturn(new PageImpl<>(List.of()));
 
     var result = service.userItems("tenant1", "alice", pageable);
 
     assertThat(result).isNotNull();
     verify(repository).findById("tenant1");
-    verify(tenantUserRelevanceRepository).searchItems("alice", pageable);
+    verify(userCandidateQuery).list(tenant, null, java.util.Map.of("keyword", "alice"), pageable);
     verify(tenantUserRelevanceRepository, never()).items(pageable);
   }
 
@@ -563,7 +566,7 @@ class TenantServiceImplTest {
     tenant.setId("tenant1");
     tenant.setOwnerId("admin");
     when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(tenantUserRelevanceRepository.authorized("tenant1")).thenReturn(List.of());
+    when(tenantUserRelevanceRepository.findAllByTenantIdAndUserIdIn("tenant1", Set.of("user2"))).thenReturn(List.of());
     when(tenantUserRelevanceRepository.existingUserIds(Set.of("user2"))).thenReturn(Set.of("user2"));
 
     TenantUserRelevance rel = new TenantUserRelevance();
@@ -586,7 +589,10 @@ class TenantServiceImplTest {
     tenant.setId("tenant1");
     tenant.setOwnerId("admin");
     when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(tenantUserRelevanceRepository.authorized("tenant1")).thenReturn(List.of("user2"));
+    var currentMember = new TenantUserRelevance();
+    currentMember.setUserId("user2");
+    when(tenantUserRelevanceRepository.findAllByTenantIdAndUserIdIn("tenant1", Set.of("user2")))
+        .thenReturn(List.of(currentMember));
     when(tenantUserRelevanceRepository.existingUserIds(Set.of("user2"))).thenReturn(Set.of("user2"));
 
     Collection<TenantUserRelevance> result = service.authorizeUsers(dto);

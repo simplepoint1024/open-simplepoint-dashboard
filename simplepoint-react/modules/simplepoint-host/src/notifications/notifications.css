@@ -1,0 +1,11 @@
+.sp-notification-list { list-style: none; padding: 0; margin: 0; }
+.sp-notification-list li + li { border-top: 1px solid color-mix(in srgb, currentColor 9%, transparent); }
+.sp-notification-item { appearance: none; width: 100%; padding: 16px 0; border: 0; text-align: start; background: transparent; color: inherit; cursor: pointer; border-radius: 6px; }
+.sp-notification-item:hover, .sp-notification-item:focus-visible { background: color-mix(in srgb, #1677ff 6%, transparent); }
+.sp-notification-title { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.sp-notification-title strong { flex: 1; min-width: 100px; font-weight: 500; }
+.sp-notification-item.is-unread strong { font-weight: 650; }
+.sp-notification-title .ant-tag { margin: 0; font-size: 10px; }
+.sp-notification-item p { opacity: .72; font-size: 13px; line-height: 1.7; margin: 6px 0; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sp-notification-item time { opacity: .5; font-size: 11px; }
+.sp-notification-detail { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 60vh; overflow: auto; }

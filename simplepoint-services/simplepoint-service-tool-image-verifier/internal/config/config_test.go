@@ -66,7 +66,6 @@ func validConfig() Config {
 		TLSCAFile:                  "/run/pki/ca.crt",
 		TLSIdentity:                "spiffe://open-simplepoint/tool-image-verifier",
 		ExpectedNodeIdentityPrefix: "spiffe://open-simplepoint/runtime-node/",
-		ExpectedAIIdentity:         "spiffe://open-simplepoint/ai-control-plane",
 		SignatureMode:              "keyless",
 		CertificateIdentityRegexp:  "^https://github.com/example/repository/.github/workflows/.+$",
 		CertificateOIDCIssuer:      "https://token.actions.githubusercontent.com",

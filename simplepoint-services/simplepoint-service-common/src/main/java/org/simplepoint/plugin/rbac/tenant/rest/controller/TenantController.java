@@ -178,12 +178,23 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
   @GetMapping("/users/items")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "获取租户成员候选项", description = "分页返回可配置到指定租户的全局用户候选列表")
-  public Response<Page<UserRelevanceVo>> userItems(
+  public Response<Page<Map<String, Object>>> userItems(
       @RequestParam("tenantId") String tenantId,
-      @RequestParam(name = "keyword", required = false) String keyword,
+      @RequestParam(name = "selected", required = false) Boolean selected,
+      @RequestParam Map<String, String> attributes,
       Pageable pageable
   ) {
-    return ok(service.userItems(tenantId, keyword, pageable));
+    var filters = new java.util.LinkedHashMap<>(attributes);
+    filters.remove("tenantId");
+    filters.remove("selected");
+    return ok(service.userItems(tenantId, selected, filters, pageable).map(UserRelevanceVo::project));
+  }
+
+  /** Returns only the candidate fields available to this tenant's manager. */
+  @GetMapping("/users/items/schema")
+  @PreAuthorize("isAuthenticated()")
+  public Response<Map<String, Object>> userItemsSchema(@RequestParam("tenantId") String tenantId) {
+    return ok(service.userItemsSchema(tenantId));
   }
 
   /**
@@ -203,7 +214,12 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "邀请用户加入租户", description = "向指定租户添加成员用户")
   public Response<Collection<TenantUserRelevance>> authorizeUsers(@RequestBody TenantUsersRelevanceDto dto) {
-    return ok(service.authorizeUsers(dto));
+    try {
+      return ok(service.authorizeUsers(dto));
+    } catch (IllegalArgumentException error) {
+      throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+          "成员配置参数无效，请检查账号及每次100人的限制", error);
+    }
   }
 
   /**
@@ -213,7 +229,12 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "移出租户成员", description = "从指定租户中移除成员用户")
   public Response<Void> unauthorizedUsers(@RequestBody TenantUsersRelevanceDto dto) {
-    service.unauthorizedUsers(dto.getTenantId(), dto.getUserIds());
+    try {
+      service.unauthorizedUsers(dto.getTenantId(), dto.getUserIds());
+    } catch (IllegalArgumentException error) {
+      throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+          "成员配置参数无效，所有者不可移除且每次最多100人", error);
+    }
     return Response.okay();
   }
 

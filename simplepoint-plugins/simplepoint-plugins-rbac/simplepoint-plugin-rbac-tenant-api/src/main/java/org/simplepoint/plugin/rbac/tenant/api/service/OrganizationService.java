@@ -1,14 +1,27 @@
 package org.simplepoint.plugin.rbac.tenant.api.service;
 
+import java.util.Map;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
 import org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationOptionPage;
+import org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationOptionVo;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 /**
  * Service for tenant-scoped organization management.
  */
 public interface OrganizationService extends BaseService<Organization, String> {
+
+  /** Reads a bounded draft selection side without changing organization or permission data. */
+  Page<org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelectionRow> selection(
+      org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelection draft, Pageable pageable);
+
+  /** Returns the current tenant's authorized draft-selection contract. */
+  Object selectionSchema();
+
+  /** Returns a counted hierarchy page with server-owned parent scope and batched child flags. */
+  Page<OrganizationOptionVo> tree(String parentId, Map<String, String> filters, Pageable pageable);
 
   /**
    * Loads one lightweight page for a lazy organization selector.

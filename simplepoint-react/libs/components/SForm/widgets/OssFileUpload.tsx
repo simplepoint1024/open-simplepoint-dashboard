@@ -1,7 +1,7 @@
-import {DeleteOutlined, DownloadOutlined, LoadingOutlined, UploadOutlined} from '@ant-design/icons';
-import {App, Button, Space, Upload} from 'antd';
+import {DeleteOutlined, DownloadOutlined, LoadingOutlined, UploadOutlined} from '@simplepoint/shared/types/icon';
+import {App, Button, Space, Typography, Upload} from 'antd';
 import {useState} from 'react';
-import {request} from '@simplepoint/shared/api/client';
+import {request, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 
 type StoredObject = {
@@ -11,7 +11,7 @@ type StoredObject = {
 
 export type OssFileUploadProps = {
   value?: string | null;
-  onChange: (value?: string) => void;
+  onChange: (value?: string) => void | Promise<void>;
   disabled?: boolean;
   readOnly?: boolean;
   directory?: string;
@@ -35,11 +35,19 @@ const OssFileUpload = ({
   const {message} = App.useApp();
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string>();
+  const [uploadError, setUploadError] = useState<string>();
   const blocked = disabled || readOnly || uploading;
 
+  const reportError = (error: unknown) => {
+    const text = resolveApiErrorMessage(error, t('form.file.uploadFailed', '文件上传或保存失败，请重试'));
+    setUploadError(text);
+    message.error(text);
+  };
+
   const uploadFile = async (file: File) => {
+    setUploadError(undefined);
     if (file.size > maxSizeMb * 1024 * 1024) {
-      message.error(t('form.file.sizeError', '文件大小不能超过 {size} MB', {size: maxSizeMb}));
+      reportError(new Error(t('form.file.sizeError', '文件大小不能超过 {size} MB', {size: maxSizeMb})));
       return;
     }
     const formData = new FormData();
@@ -55,9 +63,11 @@ const OssFileUpload = ({
       if (!stored?.id) {
         throw new Error(t('form.file.invalidResponse', '文件上传响应无效'));
       }
+      await onChange(`/common/object-storage/objects/${encodeURIComponent(stored.id)}/content`);
       setFileName(stored.originalFileName || file.name);
-      onChange(`/common/object-storage/objects/${encodeURIComponent(stored.id)}/content`);
       message.success(t('form.file.uploaded', '文件上传成功'));
+    } catch (error) {
+      reportError(error);
     } finally {
       setUploading(false);
     }
@@ -70,7 +80,7 @@ const OssFileUpload = ({
         showUploadList={false}
         disabled={blocked}
         beforeUpload={(file) => {
-          void uploadFile(file as File).catch(() => undefined);
+          void uploadFile(file as File);
           return Upload.LIST_IGNORE;
         }}
       >
@@ -98,14 +108,23 @@ const OssFileUpload = ({
           danger
           icon={<DeleteOutlined/>}
           disabled={disabled || uploading}
-          onClick={() => {
-            setFileName(undefined);
-            onChange(undefined);
+          onClick={async () => {
+            setUploadError(undefined);
+            setUploading(true);
+            try {
+              await onChange(undefined);
+              setFileName(undefined);
+            } catch (error) {
+              reportError(error);
+            } finally {
+              setUploading(false);
+            }
           }}
         >
           {t('action.remove', '移除')}
         </Button>
       ) : null}
+      {uploadError ? <Typography.Text type="danger" role="alert">{uploadError}</Typography.Text> : null}
     </Space>
   );
 };

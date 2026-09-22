@@ -1,0 +1,476 @@
+{
+  "buttons": [
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "notifications.create",
+      "variant": "outlined",
+      "icon": "PlusCircleOutlined",
+      "argumentMaxSize": 1,
+      "sort": 0,
+      "type": "primary",
+      "title": "i18n:table.button.create",
+      "danger": false,
+      "argumentMinSize": 0,
+      "key": "add"
+    },
+    {
+      "path": "[default]",
+      "color": "orange",
+      "authority": "notifications.edit",
+      "variant": "outlined",
+      "icon": "EditOutlined",
+      "argumentMaxSize": 1,
+      "sort": 1,
+      "type": "primary",
+      "title": "i18n:table.button.edit",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "edit"
+    },
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "notifications.publish",
+      "variant": "outlined",
+      "icon": "SendOutlined",
+      "argumentMaxSize": 1,
+      "sort": 2,
+      "type": "primary",
+      "title": "i18n:notifications.button.publish",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "publish"
+    },
+    {
+      "path": "[default]",
+      "color": "orange",
+      "authority": "notifications.revoke",
+      "variant": "outlined",
+      "icon": "StopOutlined",
+      "argumentMaxSize": 1,
+      "sort": 3,
+      "type": "primary",
+      "title": "i18n:notifications.button.revoke",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "revoke"
+    },
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "notifications.duplicate",
+      "variant": "outlined",
+      "icon": "CopyOutlined",
+      "argumentMaxSize": 1,
+      "sort": 4,
+      "type": "primary",
+      "title": "i18n:notifications.button.duplicate",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "duplicate"
+    },
+    {
+      "path": "[default]",
+      "color": "danger",
+      "authority": "notifications.delete",
+      "variant": "outlined",
+      "icon": "MinusCircleOutlined",
+      "argumentMaxSize": 10,
+      "sort": 5,
+      "type": "primary",
+      "title": "i18n:table.button.delete",
+      "danger": true,
+      "argumentMinSize": 1,
+      "key": "delete"
+    }
+  ],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:notifications.title.title",
+        "description": "",
+        "minLength": 1,
+        "maxLength": 200,
+        "x-order": 0,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "content": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:notifications.title.content",
+        "description": "",
+        "minLength": 1,
+        "maxLength": 8000,
+        "x-order": 1,
+        "x-ui": {
+          "widget": "textarea"
+        }
+      },
+      "category": {
+        "type": "string",
+        "enum": [
+          "ANNOUNCEMENT",
+          "SYSTEM",
+          "MAINTENANCE",
+          "SECURITY"
+        ],
+        "title": "i18n:notifications.title.category",
+        "description": "",
+        "x-order": 2,
+        "x-ui": {
+          "x-list-visible": "true",
+          "dictCode": "notification.category",
+          "widget": "select"
+        },
+        "x-dictionary-code": "notification.category"
+      },
+      "priority": {
+        "type": "string",
+        "enum": [
+          "LOW",
+          "NORMAL",
+          "HIGH",
+          "URGENT"
+        ],
+        "title": "i18n:notifications.title.priority",
+        "description": "",
+        "x-order": 3,
+        "x-ui": {
+          "x-list-visible": "true",
+          "dictCode": "notification.priority",
+          "widget": "select"
+        },
+        "x-dictionary-code": "notification.priority"
+      },
+      "audienceType": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "PLATFORM",
+          "TENANT",
+          "USER"
+        ],
+        "title": "i18n:notifications.title.audienceType",
+        "description": "",
+        "x-order": 4,
+        "x-ui": {
+          "x-list-visible": "true",
+          "dictCode": "notification.audience-type",
+          "widget": "select"
+        },
+        "x-dictionary-code": "notification.audience-type"
+      },
+      "audienceId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:notifications.title.audienceId",
+        "description": "",
+        "maxLength": 64,
+        "x-order": 5
+      },
+      "linkUrl": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:notifications.title.linkUrl",
+        "description": "",
+        "maxLength": 1024,
+        "x-order": 6
+      },
+      "publishAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time",
+        "title": "i18n:notifications.title.publishAt",
+        "description": "",
+        "readOnly": true,
+        "x-order": 7,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "expireAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time",
+        "title": "i18n:notifications.title.expireAt",
+        "description": "",
+        "x-order": 8
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "DRAFT",
+          "PUBLISHED",
+          "REVOKED"
+        ],
+        "title": "i18n:notifications.title.status",
+        "description": "",
+        "readOnly": true,
+        "x-order": 9,
+        "x-ui": {
+          "x-list-visible": "true",
+          "dictCode": "notification.status",
+          "widget": "select"
+        },
+        "x-dictionary-code": "notification.status"
+      },
+      "publishedAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time",
+        "title": "i18n:notifications.title.publishedAt",
+        "description": "",
+        "readOnly": true
+      }
+    },
+    "x-query": {
+      "version": 1,
+      "relations": [],
+      "fields": {
+        "title": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "content": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "category": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "NotificationCategory"
+        },
+        "priority": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "NotificationPriority"
+        },
+        "audienceType": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "NotificationAudienceType"
+        },
+        "audienceId": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "linkUrl": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "publishAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "expireAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "status": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "NotificationStatus"
+        },
+        "publishedAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "createdAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "updatedAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        }
+      },
+      "maxSort": 3,
+      "maxDepth": 4,
+      "maxNodes": 32,
+      "maxPageSize": 200
+    }
+  }
+}

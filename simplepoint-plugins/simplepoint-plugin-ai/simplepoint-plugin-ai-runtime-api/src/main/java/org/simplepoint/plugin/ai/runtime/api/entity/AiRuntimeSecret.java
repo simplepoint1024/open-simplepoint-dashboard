@@ -15,29 +15,33 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.query.QueryField;
+import org.simplepoint.core.query.TableQuery;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 
-/**
- * Encrypted platform or tenant secret available to OCI workloads by reference.
- */
+/** Encrypted platform or tenant secret available to OCI workloads by reference. */
 @Data
 @Entity
 @Table(
     name = "simpoint_ai_runtime_secrets",
     indexes = {
-        @Index(
-            name = "idx_simpoint_ai_runtime_secret_scope",
-            columnList = "scope_type, tenant_id"
-        ),
-        @Index(
-            name = "idx_simpoint_ai_runtime_secret_enabled",
-            columnList = "enabled"
-        )
-    }
-)
+      @Index(name = "idx_simpoint_ai_runtime_secret_scope", columnList = "scope_type, tenant_id"),
+      @Index(name = "idx_simpoint_ai_runtime_secret_enabled", columnList = "enabled")
+    })
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @Schema(title = "AI Runtime Secret")
+@TableQuery(
+    value = {
+      @QueryField("id"),
+      @QueryField("code"),
+      @QueryField("name"),
+      @QueryField("description"),
+      @QueryField("enabled"),
+      @QueryField("rotatedAt"),
+      @QueryField("createdAt")
+    },
+    maxPageSize = 100)
 public class AiRuntimeSecret extends BaseEntityImpl<String> {
 
   @Enumerated(EnumType.STRING)

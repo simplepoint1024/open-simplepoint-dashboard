@@ -16,6 +16,7 @@ import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.GenerationResult
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.MessageRole;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.ResponseFormatType;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.TokenUsage;
+import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.ToolDefinition;
 
 class OpenAiResponsesProtocolTest {
 
@@ -165,6 +166,185 @@ class OpenAiResponsesProtocolTest {
     });
   }
 
+  @Test
+  void rejectsLossyCodexOptionsOnTranslatedProviders() throws Exception {
+    var body = objectMapper.readTree("""
+        {
+          "model": "public-model",
+          "input": [
+            {"type": "additional_tools", "id": "at_1", "role": "developer",
+             "tools": [
+               {"type": "namespace", "name": "functions", "description": "",
+                "tools": [
+                  {"type": "custom", "name": "exec", "description": "Run JavaScript code",
+                   "format": {"type": "text"}},
+                  {"type": "function", "name": "wait", "description": "Wait",
+                   "strict": false, "parameters": {"type": "object"}}
+                ]},
+               {"type": "namespace", "name": "collaboration", "description": "",
+                "tools": [
+                  {"type": "function", "name": "spawn_agent", "description": "Spawn",
+                   "strict": false, "parameters": {"type": "object"}}
+                ]}
+             ]},
+            {"type": "message", "role": "developer",
+             "content": [{"type": "input_text", "text": "Be brief"}]},
+            {"type": "message", "role": "user", "content": "hi"}
+          ],
+          "tool_choice": "auto",
+          "parallel_tool_calls": false,
+          "reasoning": {"effort": "high", "context": "all_turns"},
+          "store": false,
+          "stream": true,
+          "include": ["reasoning.encrypted_content"],
+          "text": {"verbosity": "low"}
+        }
+        """);
+
+    assertThatThrownBy(() -> protocol.fromRequest(body, "definition-1"))
+        .isInstanceOf(org.simplepoint.plugin.ai.core.api.exception.AiOpenAiRequestException.class)
+        .hasMessageContaining("OpenAI Responses");
+  }
+
+  @Test
+  void mapsCustomToolCallHistoryRoundTrip() throws Exception {
+    var body = objectMapper.readTree("""
+        {
+          "model": "public-model",
+          "input": [
+            {"type": "message", "role": "user", "content": "run it"},
+            {"type": "custom_tool_call", "call_id": "call_1", "name": "exec",
+             "input": "text('hello')"},
+            {"type": "custom_tool_call_output", "call_id": "call_1",
+             "output": [{"type": "input_text", "text": "hello"}]}
+          ]
+        }
+        """);
+
+    var request = protocol.fromRequest(body, "definition-1");
+
+    assertThat(request.messages()).extracting(message -> message.role())
+        .containsExactly(MessageRole.USER, MessageRole.ASSISTANT, MessageRole.TOOL);
+    assertThat(request.messages().get(1).content().getFirst().type())
+        .isEqualTo(ContentType.TOOL_CALL);
+    assertThat(request.messages().get(1).content().getFirst().argumentsJson())
+        .isEqualTo("{\"input\":\"text('hello')\"}");
+    assertThat(request.messages().get(2).content().getFirst().type())
+        .isEqualTo(ContentType.TOOL_RESULT);
+    assertThat(request.messages().get(2).content().getFirst().text()).isEqualTo("hello");
+  }
+
+  @Test
+  void emitsCustomToolCallItemsForCustomTools() throws Exception {
+    var request = objectMapper.readTree("""
+        {
+          "model": "public-model",
+          "input": [
+            {"type": "additional_tools", "tools": [
+              {"type": "namespace", "name": "functions", "tools": [
+                {"type": "custom", "name": "exec", "description": "Run JS"}
+              ]}
+            ]},
+            {"type": "message", "role": "user", "content": "hi"}
+          ],
+          "stream": true
+        }
+        """);
+    var state = protocol.newStreamState("public-model", request);
+    List<OpenAiResponsesProtocol.StreamEvent> events = new ArrayList<>();
+
+    events.addAll(protocol.streamEvents(state, generationEvent(EventType.STARTED, null, null)));
+    events.addAll(protocol.streamEvents(state, toolEvent("call-1", "exec", "text('hel")));
+    events.addAll(protocol.streamEvents(state, toolEvent("call-1", "exec", "lo')")));
+    events.addAll(protocol.streamEvents(state, generationEvent(
+        EventType.COMPLETED, null, customToolResult())));
+
+    assertThat(events).extracting(OpenAiResponsesProtocol.StreamEvent::name)
+        .contains(
+            "response.output_item.added",
+            "response.custom_tool_call_input.delta",
+            "response.output_item.done",
+            "response.completed");
+    assertThat(events).extracting(OpenAiResponsesProtocol.StreamEvent::name)
+        .doesNotContain("response.function_call_arguments.delta",
+            "response.function_call_arguments.done");
+    var completed = events.getLast().data().path("response");
+    var toolItem = completed.path("output").get(0);
+    assertThat(toolItem.path("type").asText()).isEqualTo("custom_tool_call");
+    assertThat(toolItem.path("name").asText()).isEqualTo("exec");
+    assertThat(toolItem.path("input").asText()).isEqualTo("text('hello')");
+  }
+
+  @Test
+  void rejectsNamespaceRequestsThatNeedNativeResponses() throws Exception {
+    var body = objectMapper.readTree("""
+        {
+          "model": "public-model",
+          "input": [
+            {"type": "message", "role": "user", "content": "hi"}
+          ],
+          "tools": [
+            {"type": "namespace", "name": "functions", "description": "",
+             "tools": [
+               {"type": "custom", "name": "exec", "description": "Run JavaScript code"},
+               {"type": "function", "name": "wait", "description": "Wait",
+                "strict": false, "parameters": {"type": "object"}}
+             ]}
+          ],
+          "reasoning": {"effort": "high"},
+          "include": ["reasoning.encrypted_content"],
+          "stream": true
+        }
+        """);
+
+    assertThatThrownBy(() -> protocol.fromRequest(body, "definition-1"))
+        .isInstanceOf(org.simplepoint.plugin.ai.core.api.exception.AiOpenAiRequestException.class)
+        .hasMessageContaining("OpenAI Responses");
+  }
+
+  @Test
+  void rejectsHostedToolsInsteadOfSilentlyDroppingThem() throws Exception {
+    var body = objectMapper.readTree("""
+        {
+          "model": "public-model",
+          "input": [{"type": "message", "role": "user", "content": "hi"}],
+          "tools": [
+            {"type": "web_search"},
+            {"type": "namespace", "name": "functions", "tools": [
+              {"type": "custom", "name": "exec", "description": "Run JS"},
+              {"type": "web_search_preview"}
+            ]}
+          ]
+        }
+        """);
+
+    assertThatThrownBy(() -> protocol.fromRequest(body, "definition-1"))
+        .isInstanceOf(org.simplepoint.plugin.ai.core.api.exception.AiOpenAiRequestException.class)
+        .hasMessageContaining("OpenAI Responses");
+  }
+
+  @Test
+  void skipsBlankTextPartsInInputMessages() throws Exception {
+    var body = objectMapper.readTree("""
+        {
+          "model": "public-model",
+          "input": [
+            {"type": "message", "role": "user", "content": [
+              {"type": "input_text", "text": ""},
+              {"type": "input_text", "text": "real text"}
+            ]}
+          ]
+        }
+        """);
+
+    var request = protocol.fromRequest(body, "definition-1");
+
+    assertThat(request.messages().getFirst().content()).extracting(ContentBlock::type)
+        .containsExactly(ContentType.TEXT);
+    assertThat(request.messages().getFirst().content().getFirst().text())
+        .isEqualTo("real text");
+  }
+
   private GenerationEvent generationEvent(
       final EventType type,
       final String text,
@@ -173,6 +353,32 @@ class OpenAiResponsesProtocolTest {
     return new GenerationEvent(
         "inv-1", 1, type, text, null, null, null,
         result == null ? null : result.usage(), result, null, null
+    );
+  }
+
+  private GenerationEvent toolEvent(
+      final String toolCallId,
+      final String toolName,
+      final String argumentsDelta
+  ) {
+    return new GenerationEvent(
+        "inv-1", 1, EventType.TOOL_ARGUMENTS_DELTA, null, toolCallId, toolName,
+        argumentsDelta, null, null, null, null
+    );
+  }
+
+  private GenerationResult customToolResult() {
+    return new GenerationResult(
+        "inv-1",
+        "definition-1",
+        "provider-model",
+        "provider-request-1",
+        List.of(new ContentBlock(ContentType.TOOL_CALL, null, null, null,
+            "call-1", "exec", "{\"input\":\"text('hello')\"}")),
+        "completed",
+        new TokenUsage(10, 5, 15, 2),
+        12,
+        Instant.parse("2026-01-01T00:00:00Z")
     );
   }
 

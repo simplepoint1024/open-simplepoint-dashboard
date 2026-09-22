@@ -11,75 +11,61 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/simplepoint1024/open-simplepoint-dashboard/tool-image-verifier/internal/admission"
 	"github.com/simplepoint1024/open-simplepoint-dashboard/tool-image-verifier/internal/config"
 )
 
-const artifactReference = "registry.example.com/skills/example@sha256:" +
+const imageReference = "registry.example.com/tools/example@sha256:" +
 	"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
 type fakeVerifier struct {
-	artifactCalls int
+	imageCalls int
 }
 
 func (f *fakeVerifier) Verify(
 	_ context.Context,
 	image string,
 ) admission.Result {
-	return admission.Result{Image: image}
+	f.imageCalls++
+	return admission.Result{Image: image, Admitted: true}
 }
 
-func (f *fakeVerifier) VerifyArtifact(
-	_ context.Context,
-	artifact string,
-) admission.ArtifactResult {
-	f.artifactCalls++
-	return admission.ArtifactResult{
-		Artifact:          artifact,
-		Admitted:          true,
-		SignatureVerified: true,
-		PolicyHash:        "sha256:policy",
-		CheckedAt:         time.Now(),
-	}
-}
-
-func TestArtifactAdmissionRequiresExactAIIdentity(t *testing.T) {
+func TestImageAdmissionRequiresRuntimeIdentity(t *testing.T) {
 	cfg := config.Config{
-		MTLSEnabled:        true,
-		MaxRequestBytes:    16 * 1024,
-		ExpectedAIIdentity: "spiffe://open-simplepoint/ai-control-plane",
+		MTLSEnabled:                true,
+		MaxRequestBytes:            16 * 1024,
+		ExpectedNodeIdentityPrefix: "spiffe://open-simplepoint/runtime-node/",
 	}
 	verifier := &fakeVerifier{}
 	handler := New(cfg, verifier, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
-	accepted := artifactRequest(t, cfg.ExpectedAIIdentity)
+	accepted := imageRequest(t, cfg.ExpectedNodeIdentityPrefix+"node-a")
 	acceptedResponse := httptest.NewRecorder()
 	handler.ServeHTTP(acceptedResponse, accepted)
-	if acceptedResponse.Code != http.StatusOK || verifier.artifactCalls != 1 {
+	if acceptedResponse.Code != http.StatusOK || verifier.imageCalls != 1 {
 		t.Fatalf(
-			"expected AI Artifact admission, got %d",
+			"expected Runtime image admission, got %d",
 			acceptedResponse.Code,
 		)
 	}
 
-	rejected := artifactRequest(
+	rejected := imageRequest(
 		t,
-		"spiffe://open-simplepoint/runtime-node/node-a",
+		"spiffe://open-simplepoint/ai-control-plane",
 	)
 	rejectedResponse := httptest.NewRecorder()
 	handler.ServeHTTP(rejectedResponse, rejected)
 	if rejectedResponse.Code != http.StatusUnauthorized ||
-		verifier.artifactCalls != 1 {
+		verifier.imageCalls != 1 {
 		t.Fatalf(
-			"expected runtime identity rejection, got %d",
+			"expected control-plane identity rejection, got %d",
 			rejectedResponse.Code,
 		)
 	}
 }
 
-func artifactRequest(t *testing.T, identity string) *http.Request {
+func imageRequest(t *testing.T, identity string) *http.Request {
 	t.Helper()
 	uri, err := url.Parse(identity)
 	if err != nil {
@@ -87,8 +73,8 @@ func artifactRequest(t *testing.T, identity string) *http.Request {
 	}
 	request := httptest.NewRequest(
 		http.MethodPost,
-		"/internal/v1/artifacts/verify",
-		strings.NewReader(`{"artifact":"`+artifactReference+`"}`),
+		"/internal/v1/images/verify",
+		strings.NewReader(`{"image":"`+imageReference+`"}`),
 	)
 	request.TLS = &tls.ConnectionState{
 		VerifiedChains: [][]*x509.Certificate{{
@@ -96,4 +82,14 @@ func artifactRequest(t *testing.T, identity string) *http.Request {
 		}},
 	}
 	return request
+}
+
+func TestRetiredArtifactEndpointIsNotServed(t *testing.T) {
+	verifier := &fakeVerifier{}
+	handler := New(config.Config{}, verifier, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/internal/v1/artifacts/verify", nil))
+	if response.Code != http.StatusNotFound || verifier.imageCalls != 0 {
+		t.Fatalf("retired endpoint must return 404 without verification: %d", response.Code)
+	}
 }

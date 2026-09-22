@@ -4,13 +4,19 @@ import {
   InboxOutlined,
   ReloadOutlined,
   SettingOutlined,
-} from '@ant-design/icons';
-import {Button, Space, Table as AntTable, Tooltip} from 'antd';
+} from '@simplepoint/shared/types/icon';
+import {Alert, Button, Space, Table as AntTable, Tooltip, Typography} from 'antd';
 import type {TableProps as AntTableProps} from 'antd';
 import type {ColumnType, ColumnsType} from 'antd/es/table';
+import type {Key} from 'react';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import ColumnSettings from '../Table/ColumnSettings';
+import {isRowSelectionClick} from '../Table/rowClickSelection';
+import {pageSizeOptions} from '../Table/pagination';
+import {useTableQuery, type DataTableQuery} from './useTableQuery';
+export type {DataTableQuery} from './useTableQuery';
+export type {LocalField, LocalFields, QuerySchema, TableQueryState} from './localQuery';
 import {
   type ColumnFixed,
   type ColumnSetting,
@@ -30,6 +36,10 @@ export type DataTableProps<T> = AntTableProps<T> & {
   /** Optional refresh action rendered in the unified table toolbar. */
   refresh?: () => void;
   toolbarExtra?: React.ReactNode;
+  /** scroll.y includes the platform toolbar in height-constrained result panes. */
+  includeToolbarInScroll?: boolean;
+  /** Query ownership is explicit: a server page is never filtered locally. */
+  query?: DataTableQuery;
 };
 export type {ColumnsType} from 'antd/es/table';
 
@@ -108,14 +118,21 @@ const DataTable = <T extends object = Record<string, unknown>>(
     sticky = true,
     storageKey,
     toolbarExtra,
+    includeToolbarInScroll = false,
     scroll,
     loading,
+    query,
+    dataSource = [],
+    onChange,
     ...rest
   } = props;
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [toolbarHeight, setToolbarHeight] = useState(42);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [localSelectedKeys, setLocalSelectedKeys] = useState<Key[]>([]);
 
   const configuredColumns = useMemo<ConfiguredColumn<T>[]>(() => (
     (sourceColumns as ColumnType<T>[]).map((column, index) => {
@@ -232,26 +249,74 @@ const DataTable = <T extends object = Record<string, unknown>>(
     </div>
   ), [t]);
 
+  const queryController = useTableQuery(query, columns, dataSource, preferenceKey, sourceColumns);
+  const sourceSelection = props.rowSelection;
+  const selectedKeys = sourceSelection?.selectedRowKeys ?? localSelectedKeys;
+  const keyOfRecord = useCallback((record: T): Key => {
+    if (typeof props.rowKey === 'function') return props.rowKey(record);
+    return (record as Record<string, unknown>)[String(props.rowKey ?? 'key')] as Key;
+  }, [props.rowKey]);
+  const rowByKey = useMemo(() => new Map(queryController.data.map(record => [keyOfRecord(record), record])),
+    [keyOfRecord, queryController.data]);
+  const toggleRow = useCallback((record: T) => {
+    if (sourceSelection?.getCheckboxProps?.(record).disabled) return;
+    const key = keyOfRecord(record);
+    const next = selectedKeys.includes(key)
+      ? selectedKeys.filter(selected => selected !== key)
+      : sourceSelection?.type === 'radio' ? [key] : [...selectedKeys, key];
+    setLocalSelectedKeys(next);
+    sourceSelection?.onChange?.(next, next.map(selected => rowByKey.get(selected))
+      .filter((row): row is T => !!row), {type: 'single'});
+  }, [keyOfRecord, rowByKey, selectedKeys, sourceSelection]);
+  const incompleteSnapshot = query?.mode === 'local' && pagination && typeof pagination === 'object'
+    && (pagination.total ?? 0) > dataSource.length;
+
   const normalizedPagination = useMemo(() => {
     if (pagination === false) return false;
     const configured = pagination && typeof pagination === 'object' ? pagination : {};
+    const pageSize = queryController.size ?? configured.pageSize ?? configured.defaultPageSize ?? 10;
     return {
       showTotal: (total: number) => t('table.total', '共 {total} 条', {total}),
       ...configured,
+      pageSizeOptions: pageSizeOptions(query?.mode === 'remote' ? query.schema['x-query'].maxPageSize : undefined,
+        configured.pageSizeOptions),
+      ...(query?.mode === 'local' ? {pageSize, total: queryController.data.length,
+        current: Math.min(queryController.page, Math.max(1, Math.ceil(queryController.data.length / pageSize)))} : {}),
       showSizeChanger: displaySettings.showSizeChanger,
       showQuickJumper: displaySettings.showQuickJumper,
     };
-  }, [displaySettings.showQuickJumper, displaySettings.showSizeChanger, pagination, t]);
+  }, [displaySettings.showQuickJumper, displaySettings.showSizeChanger, pagination, t,
+    query, queryController.size, queryController.data.length, queryController.page]);
 
   const hasFixedColumns = columnSettings.some(item => item.visible && item.fixed);
-  const showToolbar = settings || Boolean(refresh) || Boolean(toolbarExtra);
+  const showToolbar = settings || Boolean(refresh) || Boolean(toolbarExtra) || Boolean(queryController.tools);
+  useEffect(() => {
+    const toolbar = toolbarRef.current;
+    if (!includeToolbarInScroll || !toolbar || typeof ResizeObserver === 'undefined') return;
+    const measure = () => setToolbarHeight(toolbar.getBoundingClientRect().height
+      + (parseFloat(getComputedStyle(toolbar).marginBottom) || 0));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(toolbar);
+    return () => observer.disconnect();
+  }, [includeToolbarInScroll, showToolbar]);
+  const effectiveScroll = {
+    ...scroll,
+    ...(hasFixedColumns ? {x: scroll?.x ?? 'max-content'} : {}),
+    ...(includeToolbarInScroll && showToolbar && typeof scroll?.y === 'number'
+      ? {y: Math.max(40, scroll.y - toolbarHeight)} : {}),
+  };
 
   return (
-    <div ref={rootRef} className="sp-data-table-root">
+    <div ref={rootRef} className="sp-data-table-root" data-query-mode={query?.mode}>
       {showToolbar && (
-        <div className="sp-data-table-toolbar">
-          <div className="sp-data-table-toolbar-extra">{toolbarExtra}</div>
-          <Space size={4}>
+        <div ref={toolbarRef} className="sp-data-table-toolbar">
+          <div className="sp-data-table-toolbar-extra">
+            {toolbarExtra}
+            {queryController.scopeHint && <Typography.Text type="secondary" style={{fontSize: 12}}>{queryController.scopeHint}</Typography.Text>}
+          </div>
+          <Space size={4} wrap>
+            {queryController.tools}
             {refresh && (
               <Tooltip title={t('table.refresh', '刷新')}>
                 <Button
@@ -289,6 +354,10 @@ const DataTable = <T extends object = Record<string, unknown>>(
           </Space>
         </div>
       )}
+      {(queryController.error || incompleteSnapshot) && <Alert type="error" showIcon
+        title={t('table.loadFail', '加载失败')}
+        description={incompleteSnapshot ? t('table.query.incompleteSnapshot', '此数据不是完整结果集，请使用服务端查询。') : queryController.error}
+        action={<Button onClick={queryController.reset}>{t('table.query.reset', '重置筛选与排序')}</Button>} />}
       <AntTable<T>
         {...rest}
         bordered={displaySettings.bordered}
@@ -300,11 +369,28 @@ const DataTable = <T extends object = Record<string, unknown>>(
           !displaySettings.rowHover && 'sp-table-no-hover',
           className,
         ].filter(Boolean).join(' ')}
-        columns={columns}
+        columns={queryController.columns}
+        dataSource={incompleteSnapshot ? [] : queryController.data}
+        rowSelection={{...sourceSelection, selectedRowKeys: selectedKeys,
+          onChange: (keys, rows, info) => {
+            setLocalSelectedKeys(keys);
+            sourceSelection?.onChange?.(keys, rows, info);
+          }}}
+        onRow={(record, index) => {
+          const configured = props.onRow?.(record, index);
+          return {...configured, onClick: event => {
+            configured?.onClick?.(event);
+            if (isRowSelectionClick(event)) toggleRow(record);
+          }};
+        }}
+        onChange={(page, filters, sorter, extra) => {
+          if (query) queryController.onChange(page, filters, sorter, extra);
+          if (!query || extra.action === 'paginate') onChange?.(page, filters, sorter, extra);
+        }}
         loading={loading}
         locale={{...locale, emptyText: locale?.emptyText ?? emptyText}}
         pagination={normalizedPagination}
-        scroll={hasFixedColumns ? {...scroll, x: scroll?.x ?? 'max-content'} : scroll}
+        scroll={effectiveScroll}
         size={displaySettings.size}
         sticky={displaySettings.stickyHeader ? sticky : false}
       />
@@ -327,4 +413,8 @@ const DataTable = <T extends object = Record<string, unknown>>(
   );
 };
 
-export default DataTable;
+export default Object.assign(DataTable, {
+  SELECTION_ALL: AntTable.SELECTION_ALL,
+  SELECTION_INVERT: AntTable.SELECTION_INVERT,
+  SELECTION_NONE: AntTable.SELECTION_NONE,
+});

@@ -1,30 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  App as AntdApp,
-  Alert,
-  Button,
-  Descriptions,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Popconfirm,
-  Select,
-  Space,
-  Switch,
-  Table,
-  Tabs,
-  Tag,
-  Typography,
-  Upload,
-} from 'antd';
-import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
+import {App as AntdApp, Alert, Button, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Switch, Tabs, Tag, Typography, Upload} from 'antd';
+import Table from '@simplepoint/components/DataTable';
+import type { ColumnsType } from 'antd/es/table';
+import {useStorageList} from './useStorageList';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { DeleteOutlined, DownloadOutlined, EyeOutlined, InboxOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownloadOutlined, EyeOutlined, InboxOutlined, PlusOutlined } from '@simplepoint/shared/types/icon';
 import { get, post, put } from '@simplepoint/shared/api/methods';
-import { request } from '@simplepoint/shared/api/client';
-import type { Page } from '@simplepoint/shared/types/request';
+import { request, resolveApiErrorMessage } from '@simplepoint/shared/api/client';
+import EntitySelect from '@simplepoint/components/EntitySelect';
 import { useI18n } from '@simplepoint/shared/hooks/useI18n';
+import {useActionFeedback} from '@simplepoint/shared/hooks/useActionFeedback';
 import api from '@/api';
 
 const { Paragraph, Text } = Typography;
@@ -88,16 +74,6 @@ type StorageQuota = {
   description?: string | null;
 };
 
-type TenantSummary = {
-  id: string;
-  name: string;
-};
-
-type ObjectFilterState = {
-  providerCode?: string;
-  originalFileName: string;
-};
-
 type UploadFormValues = {
   directory?: string;
   file: UploadFile[];
@@ -116,16 +92,6 @@ type QuotaFormValues = {
   description?: string;
 };
 
-const emptyPage = <T,>(): Page<T> => ({
-  content: [],
-  page: {
-    size: 10,
-    totalElements: 0,
-    totalPages: 0,
-    number: 0,
-  },
-});
-
 const normalizeUploadEvent = (event: { fileList?: UploadFile[] } | UploadFile[]) => {
   if (Array.isArray(event)) {
     return event;
@@ -139,6 +105,7 @@ const formatBytes = (bytes?: number | null) => {
   if (bytes == null) {
     return '--';
   }
+  if (typeof bytes !== 'number' || !Number.isFinite(bytes)) return String(bytes);
   if (bytes === 0) {
     return '0 B';
   }
@@ -161,7 +128,13 @@ const formatDateTime = (value?: string | null) => {
 };
 
 const App = () => {
+  const scope = useQueryScope();
+  return <StoragePage key={JSON.stringify(scope)}/>;
+};
+
+const StoragePage = () => {
   const {message} = AntdApp.useApp();
+  const runAction = useActionFeedback();
   const { ensure, locale, t } = useI18n();
   const storageSection = useMemo<StorageSection>(() => {
     const path = typeof window === 'undefined' ? '' : window.location.hash;
@@ -174,15 +147,13 @@ const App = () => {
   const [providerForm] = Form.useForm<ProviderFormValues>();
 
   const [providers, setProviders] = useState<ProviderDefinition[]>([]);
-  const [providerConfigsPage, setProviderConfigsPage] = useState<Page<ProviderConfig>>(emptyPage());
-  const [tenantOptions, setTenantOptions] = useState<TenantSummary[]>([]);
-  const [objectFilters, setObjectFilters] = useState<ObjectFilterState>({ originalFileName: '' });
-  const [quotaTenantFilter, setQuotaTenantFilter] = useState('');
-  const [objectsPage, setObjectsPage] = useState<Page<StorageObject>>(emptyPage());
-  const [quotasPage, setQuotasPage] = useState<Page<StorageQuota>>(emptyPage());
-  const [objectsLoading, setObjectsLoading] = useState(false);
-  const [quotasLoading, setQuotasLoading] = useState(false);
-  const [providerConfigsLoading, setProviderConfigsLoading] = useState(false);
+  const providerList = useStorageList<ProviderConfig>(`${baseConfig.baseUrl}/provider-configs`, storageSection === 'providers');
+  const objectList = useStorageList<StorageObject>(`${baseConfig.baseUrl}/objects`, storageSection === 'objects');
+  const quotaList = useStorageList<StorageQuota>(`${baseConfig.baseUrl}/quotas`, storageSection === 'quotas');
+  const providerConfigsPage = providerList.page;
+  const loadProviderConfigs = providerList.refresh;
+  const refreshObjects = objectList.refresh;
+  const refreshQuotas = quotaList.refresh;
   const [uploading, setUploading] = useState(false);
   const [quotaSaving, setQuotaSaving] = useState(false);
   const [providerSaving, setProviderSaving] = useState(false);
@@ -195,101 +166,24 @@ const App = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [selectedObject, setSelectedObject] = useState<StorageObject | null>(null);
+  const reportLoadError = useCallback((error: unknown) => {
+    message.error(resolveApiErrorMessage(error, t('error.requestFailed', '请求失败')));
+  }, [message, t]);
 
   useEffect(() => {
     void ensure(baseConfig.i18nNamespaces);
   }, [ensure, locale]);
 
   const loadProviders = useCallback(async () => {
-    const data = await get<ProviderDefinition[]>(`${baseConfig.baseUrl}/providers`);
-    setProviders(data);
-  }, []);
-
-  const loadProviderConfigs = useCallback(async (pageNumber: number, pageSize: number) => {
-    setProviderConfigsLoading(true);
     try {
-      const data = await get<Page<ProviderConfig>>(`${baseConfig.baseUrl}/provider-configs`, {
-        page: Math.max(pageNumber - 1, 0),
-        size: pageSize,
-      });
-      setProviderConfigsPage(data);
-    } finally {
-      setProviderConfigsLoading(false);
-    }
-  }, []);
-
-  const loadTenants = useCallback(async () => {
-    const data = await get<Page<TenantSummary>>(tenantsConfig.baseUrl, { page: 0, size: 200 });
-    setTenantOptions(data.content ?? []);
-  }, []);
-
-  const buildObjectParams = useCallback(
-    (pageNumber: number, pageSize: number) => {
-      const params: Record<string, string | number> = {
-        page: Math.max(pageNumber - 1, 0),
-        size: pageSize,
-      };
-      if (objectFilters.providerCode) {
-        params.providerCode = objectFilters.providerCode;
-      }
-      if (objectFilters.originalFileName.trim()) {
-        params.originalFileName = objectFilters.originalFileName.trim();
-      }
-      return params;
-    },
-    [objectFilters]
-  );
-
-  const buildQuotaParams = useCallback((pageNumber: number, pageSize: number) => {
-    const params: Record<string, string | number> = {
-      page: Math.max(pageNumber - 1, 0),
-      size: pageSize,
-    };
-    if (quotaTenantFilter.trim()) {
-      params.tenantId = quotaTenantFilter.trim();
-    }
-    return params;
-  }, [quotaTenantFilter]);
-
-  const loadObjects = useCallback(async (pageNumber: number, pageSize: number) => {
-    setObjectsLoading(true);
-    try {
-      const data = await get<Page<StorageObject>>(`${baseConfig.baseUrl}/objects`, buildObjectParams(pageNumber, pageSize));
-      setObjectsPage(data);
-    } finally {
-      setObjectsLoading(false);
-    }
-  }, [buildObjectParams]);
-
-  const loadQuotas = useCallback(async (pageNumber: number, pageSize: number) => {
-    setQuotasLoading(true);
-    try {
-      const data = await get<Page<StorageQuota>>(`${baseConfig.baseUrl}/quotas`, buildQuotaParams(pageNumber, pageSize));
-      setQuotasPage(data);
-    } finally {
-      setQuotasLoading(false);
-    }
-  }, [buildQuotaParams]);
+      const data = await get<ProviderDefinition[]>(`${baseConfig.baseUrl}/providers`);
+      setProviders(data);
+    } catch (error) { reportLoadError(error); }
+  }, [reportLoadError]);
 
   useEffect(() => {
-    if (storageSection === 'providers') {
-      void Promise.all([loadProviders(), loadProviderConfigs(1, 10)]);
-      return;
-    }
-    if (storageSection === 'quotas') {
-      void Promise.all([loadTenants(), loadQuotas(1, 10)]);
-      return;
-    }
-    void Promise.all([loadProviders(), loadObjects(1, 10)]);
-  }, [loadObjects, loadProviderConfigs, loadProviders, loadQuotas, loadTenants, storageSection]);
-
-  const refreshObjects = useCallback(async () => {
-    await loadObjects(objectsPage.page.number + 1, objectsPage.page.size || 10);
-  }, [loadObjects, objectsPage.page.number, objectsPage.page.size]);
-
-  const refreshQuotas = useCallback(async () => {
-    await loadQuotas(quotasPage.page.number + 1, quotasPage.page.size || 10);
-  }, [loadQuotas, quotasPage.page.number, quotasPage.page.size]);
+    if (storageSection === 'objects') void loadProviders();
+  }, [loadProviders, storageSection]);
 
   const openUploadModal = useCallback(() => {
     uploadForm.setFieldsValue({
@@ -337,13 +231,13 @@ const App = () => {
   const openQuotaCreateModal = useCallback(() => {
     setQuotaMode('create');
     quotaForm.setFieldsValue({
-      tenantId: tenantOptions[0]?.id,
+      tenantId: undefined,
       quotaMb: null,
       enabled: true,
       description: '',
     });
     setQuotaModalOpen(true);
-  }, [quotaForm, tenantOptions]);
+  }, [quotaForm]);
 
   const openQuotaEditModal = useCallback((record: StorageQuota) => {
     setQuotaMode('edit');
@@ -370,7 +264,8 @@ const App = () => {
   }, []);
 
   const handleUpload = useCallback(async () => {
-    const values = await uploadForm.validateFields();
+    const values = await uploadForm.validateFields().catch(() => undefined);
+    if (!values) return; // Form renders field validation errors inline.
     const targetFile = values.file?.[0]?.originFileObj as File | undefined;
     if (!targetFile) {
       message.warning(t('form.required', '这是必填项'));
@@ -383,21 +278,24 @@ const App = () => {
     }
     setUploading(true);
     try {
-      await request<StorageObject>(`${uploadConfig.baseUrl}/upload`, {
+      const stored = await request<StorageObject>(`${uploadConfig.baseUrl}/upload`, {
         method: 'POST',
         body: formData,
       });
+      if (!stored?.id) throw new Error(t('form.file.invalidResponse', '文件上传响应无效'));
       message.success(t('table.addSuccess', '新增成功'));
       setUploadModalOpen(false);
       uploadForm.resetFields();
       await refreshObjects();
       await refreshQuotas();
+    } catch (error) {
+      message.error(resolveApiErrorMessage(error, t('form.file.uploadFailed', '文件上传或保存失败，请重试')));
     } finally {
       setUploading(false);
     }
   }, [message, refreshObjects, refreshQuotas, t, uploadForm]);
 
-  const handleSaveProvider = useCallback(async () => {
+  const handleSaveProvider = useCallback(() => runAction('provider.save', async () => {
     const values = await providerForm.validateFields();
     const payload = {
       ...values,
@@ -421,49 +319,44 @@ const App = () => {
       }
       setProviderModalOpen(false);
       providerForm.resetFields();
-      await Promise.all([
-        loadProviderConfigs(1, providerConfigsPage.page.size || 10),
-        loadProviders(),
-      ]);
+      await loadProviderConfigs();
     } finally {
       setProviderSaving(false);
     }
-  }, [baseConfig.baseUrl, loadProviderConfigs, loadProviders, message, providerConfigsPage.page.size, providerForm, providerMode, t]);
+  }), [runAction, baseConfig.baseUrl, loadProviderConfigs, message, providerForm, providerMode, t]);
 
-  const handleDeleteProvider = useCallback(async (record: ProviderConfig) => {
+  const handleDeleteProvider = useCallback((record: ProviderConfig) => runAction(`provider.delete:${record.id}`, async () => {
     await request<string[]>(`${baseConfig.baseUrl}/provider-configs?ids=${encodeURIComponent(record.id)}`, {
       method: 'DELETE',
     });
     message.success(t('table.deleteSuccess', '删除成功'));
-    await Promise.all([
-      loadProviderConfigs(1, providerConfigsPage.page.size || 10),
-      loadProviders(),
-    ]);
-  }, [baseConfig.baseUrl, loadProviderConfigs, loadProviders, message, providerConfigsPage.page.size, t]);
+    await loadProviderConfigs();
+  }), [runAction, baseConfig.baseUrl, loadProviderConfigs, message, t]);
 
-  const handleTestProvider = useCallback(async (record: ProviderConfig) => {
+  const handleTestProvider = useCallback((record: ProviderConfig) => runAction('provider.test', async () => {
     setProviderTestingId(record.id);
     try {
-      await post<{ success: boolean; message: string }>(
+      const result = await post<{ success: boolean; message: string }>(
         `${baseConfig.baseUrl}/provider-configs/${record.id}/test`,
         {}
       );
+      if (!result.success) throw new Error(result.message || t('error.operationFailed', '操作失败，请重试'));
       message.success(t('storage.provider.testSuccess', '连接成功，Bucket 可访问'));
     } finally {
       setProviderTestingId(null);
     }
-  }, [baseConfig.baseUrl, message, t]);
+  }), [runAction, baseConfig.baseUrl, message, t]);
 
-  const handleDeleteObject = useCallback(async (record: StorageObject) => {
+  const handleDeleteObject = useCallback((record: StorageObject) => runAction(`object.delete:${record.id}`, async () => {
     await request<string[]>(`${baseConfig.baseUrl}/objects?ids=${encodeURIComponent(record.id)}`, {
       method: 'DELETE',
     });
     message.success(t('table.deleteSuccess', '删除成功'));
     await refreshObjects();
     await refreshQuotas();
-  }, [baseConfig.baseUrl, message, refreshObjects, refreshQuotas, t]);
+  }), [runAction, baseConfig.baseUrl, message, refreshObjects, refreshQuotas, t]);
 
-  const handleSaveQuota = useCallback(async () => {
+  const handleSaveQuota = useCallback(() => runAction('quota.save', async () => {
     const values = await quotaForm.validateFields();
     const payload = {
       id: values.id,
@@ -487,15 +380,15 @@ const App = () => {
     } finally {
       setQuotaSaving(false);
     }
-  }, [baseConfig.baseUrl, message, quotaForm, quotaMode, refreshQuotas, t]);
+  }), [runAction, baseConfig.baseUrl, message, quotaForm, quotaMode, refreshQuotas, t]);
 
-  const handleDeleteQuota = useCallback(async (record: StorageQuota) => {
+  const handleDeleteQuota = useCallback((record: StorageQuota) => runAction(`quota.delete:${record.id}`, async () => {
     await request<string[]>(`${baseConfig.baseUrl}/quotas?ids=${encodeURIComponent(record.id)}`, {
       method: 'DELETE',
     });
     message.success(t('table.deleteSuccess', '删除成功'));
     await refreshQuotas();
-  }, [baseConfig.baseUrl, message, refreshQuotas, t]);
+  }), [runAction, baseConfig.baseUrl, message, refreshQuotas, t]);
 
   const objectColumns = useMemo<ColumnsType<StorageObject>>(() => [
     {
@@ -574,7 +467,7 @@ const App = () => {
           <Popconfirm
             title={t('table.confirmDeleteTitle', '确认删除')}
             description={t('table.confirmDeleteContent', '确定要删除选中的 {count} 条数据吗？', { count: 1 })}
-            onConfirm={() => void handleDeleteObject(record)}
+            onConfirm={() => handleDeleteObject(record)}
           >
             <Button danger type="link" icon={<DeleteOutlined />}>
               {t('table.button.delete', '删除')}
@@ -588,13 +481,13 @@ const App = () => {
   const quotaColumns = useMemo<ColumnsType<StorageQuota>>(() => [
     {
       title: t('storage.quota.tenantId', '租户'),
-      dataIndex: 'tenantId',
-      key: 'tenantId',
+      dataIndex: 'tenantName',
+      key: 'tenantName',
       width: 200,
       render: (value: string, record) => (
         <Space direction="vertical" size={0}>
-          <Text strong>{record.tenantName || value}</Text>
-          <Text type="secondary">{value}</Text>
+          <Text strong>{value || record.tenantId}</Text>
+          <Text type="secondary">{record.tenantId}</Text>
         </Space>
       ),
     },
@@ -617,14 +510,14 @@ const App = () => {
       dataIndex: 'remainingBytes',
       key: 'remainingBytes',
       width: 140,
-      render: (value, record: StorageQuota) => record.quotaBytes == null ? t('storage.unlimited', '不限额') : formatBytes(value),
+      render: (value, record: StorageQuota) => record.quotaBytes === null && value === null ? t('storage.unlimited', '不限额') : formatBytes(value),
     },
     {
       title: t('storage.enabled', '启用'),
       dataIndex: 'enabled',
       key: 'enabled',
       width: 100,
-      render: (value?: boolean | null) => value === false
+      render: (value?: boolean | null) => typeof value !== 'boolean' ? String(value ?? '--') : value === false
         ? <Tag color="default">{t('storage.disabled', '停用')}</Tag>
         : <Tag color="success">{t('storage.enabled', '启用')}</Tag>,
     },
@@ -646,7 +539,7 @@ const App = () => {
           <Popconfirm
             title={t('table.confirmDeleteTitle', '确认删除')}
             description={t('table.confirmDeleteContent', '确定要删除选中的 {count} 条数据吗？', { count: 1 })}
-            onConfirm={() => void handleDeleteQuota(record)}
+            onConfirm={() => handleDeleteQuota(record)}
           >
             <Button danger type="link">
               {t('table.button.delete', '删除')}
@@ -667,7 +560,7 @@ const App = () => {
         <Space direction="vertical" size={0}>
           <Space>
             <Text strong>{value}</Text>
-            {record.defaultProvider ? <Tag color="blue">{t('storage.provider.default', '系统默认')}</Tag> : null}
+            {record.defaultProvider === true ? <Tag color="blue">{t('storage.provider.default', '系统默认')}</Tag> : null}
           </Space>
           <Text type="secondary">{record.code}</Text>
         </Space>
@@ -704,7 +597,7 @@ const App = () => {
       dataIndex: 'secretConfigured',
       key: 'secretConfigured',
       width: 100,
-      render: (value?: boolean | null) => value
+      render: (value?: boolean | null) => typeof value !== 'boolean' ? String(value ?? '--') : value
         ? <Tag color="success">{t('storage.provider.configured', '已配置')}</Tag>
         : <Tag color="error">{t('storage.provider.notConfigured', '未配置')}</Tag>,
     },
@@ -713,7 +606,7 @@ const App = () => {
       dataIndex: 'enabled',
       key: 'enabled',
       width: 90,
-      render: (value: boolean) => value
+      render: (value: boolean) => typeof value !== 'boolean' ? String(value ?? '--') : value
         ? <Tag color="success">{t('storage.enabled', '启用')}</Tag>
         : <Tag>{t('storage.disabled', '停用')}</Tag>,
     },
@@ -736,7 +629,7 @@ const App = () => {
           <Popconfirm
             title={t('table.confirmDeleteTitle', '确认删除')}
             description={t('storage.provider.deleteConfirm', '已被文件引用的配置不能删除，确认继续吗？')}
-            onConfirm={() => void handleDeleteProvider(record)}
+            onConfirm={() => handleDeleteProvider(record)}
           >
             <Button danger type="link">{t('table.button.delete', '删除')}</Button>
           </Popconfirm>
@@ -746,7 +639,7 @@ const App = () => {
   ], [handleDeleteProvider, handleTestProvider, openProviderEditModal, providerTestingId, t]);
 
   return (
-    <div>
+    <div style={{height: '100%', overflow: 'auto', minHeight: 0}}>
       <Tabs
         activeKey={storageSection}
         items={[
@@ -772,28 +665,11 @@ const App = () => {
                   >
                     {t('storage.provider.add', '新增 OSS 配置')}
                   </Button>
-                  <Button onClick={() => void loadProviderConfigs(
-                    providerConfigsPage.page.number + 1,
-                    providerConfigsPage.page.size || 10
-                  )}>
-                    {t('action.refresh', '刷新')}
-                  </Button>
                 </Space>
-                <Table<ProviderConfig>
-                  rowKey="id"
-                  loading={providerConfigsLoading}
-                  columns={providerColumns}
-                  dataSource={providerConfigsPage.content}
-                  pagination={{
-                    current: providerConfigsPage.page.number + 1,
-                    pageSize: providerConfigsPage.page.size || 10,
-                    total: providerConfigsPage.page.totalElements || 0,
-                    showSizeChanger: true,
-                  }}
-                  onChange={(pagination: TablePaginationConfig) => {
-                    void loadProviderConfigs(pagination.current || 1, pagination.pageSize || 10);
-                  }}
-                />
+                {providerList.error && <Alert type="error" showIcon title={t('table.loadFail', '加载失败')}
+                  action={<Space><Button onClick={providerList.retry}>{t('table.retry', '重试')}</Button>
+                    <Button onClick={providerList.reset}>{t('table.query.reset', '重置筛选与排序')}</Button></Space>}/>}
+                <Table<ProviderConfig> {...providerList.tableProps} columns={providerList.columns(providerColumns)} scroll={{x: 'max-content', y: 400}} />
               </Space>
             ),
           },
@@ -810,48 +686,14 @@ const App = () => {
                   />
                 ) : null}
                 <Space wrap>
-                  <Select
-                    allowClear
-                    style={{ width: 220 }}
-                    placeholder={t('storage.providers', '提供方')}
-                    value={objectFilters.providerCode}
-                    options={providers.map((provider) => ({
-                      label: `${provider.name} (${provider.code})`,
-                      value: provider.code,
-                    }))}
-                    onChange={(value) => setObjectFilters((current) => ({ ...current, providerCode: value }))}
-                  />
-                  <Input
-                    allowClear
-                    style={{ width: 260 }}
-                    placeholder={t('storage.fileName', '文件名')}
-                    value={objectFilters.originalFileName}
-                    onChange={(event) => setObjectFilters((current) => ({ ...current, originalFileName: event.target.value }))}
-                    onPressEnter={() => void loadObjects(1, objectsPage.page.size || 10)}
-                  />
-                  <Button type="primary" onClick={() => void loadObjects(1, objectsPage.page.size || 10)}>
-                    {t('action.search', '查询')}
-                  </Button>
-                  <Button onClick={() => void refreshObjects()}>{t('action.refresh', '刷新')}</Button>
                   <Button type="primary" icon={<PlusOutlined />} disabled={providers.length === 0} onClick={openUploadModal}>
                     {t('storage.upload', '上传对象')}
                   </Button>
                 </Space>
-                <Table<StorageObject>
-                  rowKey="id"
-                  loading={objectsLoading}
-                  columns={objectColumns}
-                  dataSource={objectsPage.content}
-                  pagination={{
-                    current: objectsPage.page.number + 1,
-                    pageSize: objectsPage.page.size || 10,
-                    total: objectsPage.page.totalElements || 0,
-                    showSizeChanger: true,
-                  }}
-                  onChange={(pagination: TablePaginationConfig) => {
-                    void loadObjects(pagination.current || 1, pagination.pageSize || 10);
-                  }}
-                />
+                {objectList.error && <Alert type="error" showIcon title={t('table.loadFail', '加载失败')}
+                  action={<Space><Button onClick={objectList.retry}>{t('table.retry', '重试')}</Button>
+                    <Button onClick={objectList.reset}>{t('table.query.reset', '重置筛选与排序')}</Button></Space>}/>}
+                <Table<StorageObject> {...objectList.tableProps} columns={objectList.columns(objectColumns)} scroll={{x: 'max-content', y: 400}} />
               </Space>
             ),
           },
@@ -867,37 +709,14 @@ const App = () => {
                   message={t('storage.quota.tip', '未配置配额或配额为空时表示租户对象存储不限额。')}
                 />
                 <Space wrap>
-                  <Input
-                    allowClear
-                    style={{ width: 260 }}
-                    placeholder={t('storage.quota.tenantId', '租户ID')}
-                    value={quotaTenantFilter}
-                    onChange={(event) => setQuotaTenantFilter(event.target.value)}
-                    onPressEnter={() => void loadQuotas(1, quotasPage.page.size || 10)}
-                  />
-                  <Button type="primary" onClick={() => void loadQuotas(1, quotasPage.page.size || 10)}>
-                    {t('action.search', '查询')}
-                  </Button>
-                  <Button onClick={() => void refreshQuotas()}>{t('action.refresh', '刷新')}</Button>
                   <Button type="primary" icon={<PlusOutlined />} onClick={openQuotaCreateModal}>
                     {t('storage.quota.add', '新增配额')}
                   </Button>
                 </Space>
-                <Table<StorageQuota>
-                  rowKey="id"
-                  loading={quotasLoading}
-                  columns={quotaColumns}
-                  dataSource={quotasPage.content}
-                  pagination={{
-                    current: quotasPage.page.number + 1,
-                    pageSize: quotasPage.page.size || 10,
-                    total: quotasPage.page.totalElements || 0,
-                    showSizeChanger: true,
-                  }}
-                  onChange={(pagination: TablePaginationConfig) => {
-                    void loadQuotas(pagination.current || 1, pagination.pageSize || 10);
-                  }}
-                />
+                {quotaList.error && <Alert type="error" showIcon title={t('table.loadFail', '加载失败')}
+                  action={<Space><Button onClick={quotaList.retry}>{t('table.retry', '重试')}</Button>
+                    <Button onClick={quotaList.reset}>{t('table.query.reset', '重置筛选与排序')}</Button></Space>}/>}
+                <Table<StorageQuota> {...quotaList.tableProps} columns={quotaList.columns(quotaColumns)} scroll={{x: 'max-content', y: 400}} />
               </Space>
             ),
           },
@@ -1088,14 +907,7 @@ const App = () => {
             label={t('storage.quota.tenantId', '租户ID')}
             rules={[{ required: true, message: t('form.required', '这是必填项') }]}
           >
-            <Select
-              showSearch
-              optionFilterProp="label"
-              options={tenantOptions.map((tenant) => ({
-                label: `${tenant.name} (${tenant.id})`,
-                value: tenant.id,
-              }))}
-            />
+            <EntitySelect endpoint={tenantsConfig.baseUrl} allowClear={false}/>
           </Form.Item>
           <Form.Item name="quotaMb" label={t('storage.quota.limitMb', '配额（MB，留空表示不限额）')}>
             <InputNumber style={{ width: '100%' }} min={0} precision={2} />

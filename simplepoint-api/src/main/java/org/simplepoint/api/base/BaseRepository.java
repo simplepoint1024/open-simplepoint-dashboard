@@ -101,7 +101,7 @@ public interface BaseRepository<T extends BaseEntity<I>, I extends Serializable>
    * @param attributes args.
    * @return data
    */
-  List<T> findAll(Map<String, String> attributes);
+  List<T> findAll(Map<String, String> attributes) throws IllegalArgumentException;
 
   /**
    * Page.
@@ -111,7 +111,52 @@ public interface BaseRepository<T extends BaseEntity<I>, I extends Serializable>
    * @param <S>        entity
    * @return page
    */
-  <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable);
+  <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable) throws IllegalArgumentException;
+
+  /**
+   * Queries user filters inside additional server-owned scalar restrictions.
+   * Implementations must AND the two maps, never merge or let user OR clauses replace scope.
+   *
+   * @param attributes user-controlled filters
+   * @param required server-created restrictions, never copied from request parameters
+   * @param pageable user pagination and ordering
+   * @param <S> entity type
+   * @return scoped page with identically scoped count
+   */
+  default <S extends T> Page<S> limitScoped(
+      Map<String, String> attributes, Map<String, String> required, Pageable pageable) {
+    throw new UnsupportedOperationException("Scoped query is not implemented by this repository");
+  }
+
+  /**
+   * Intersects a public query with a server-owned set of allowed string identifiers.
+   * Values are literals, not comma-separated filter expressions. Empty sets deny all rows.
+   *
+   * @param attributes public conditions
+   * @param field server-selected scalar string member
+   * @param allowedValues identifiers derived from authorization, never from request parameters
+   * @param pageable pagination and sort
+   * @param <S> entity type
+   * @return matching authorized rows and count
+   */
+  default <S extends T> Page<S> limitInScope(
+      Map<String, String> attributes, String field, Collection<String> allowedValues, Pageable pageable) {
+    throw new UnsupportedOperationException("Set-scoped query is not implemented by this repository");
+  }
+
+  /**
+   * Applies all server-owned membership restrictions outside the user's filter tree.
+   *
+   * @param attributes public filters
+   * @param memberships independent authorization and assignment restrictions
+   * @param pageable pagination and sort
+   * @param <S> entity type
+   * @return rows and count within the intersection of all restrictions
+   */
+  default <S extends T> Page<S> limitMemberships(
+      Map<String, String> attributes, java.util.List<QueryMembership> memberships, Pageable pageable) {
+    throw new UnsupportedOperationException("Membership query is not implemented by this repository");
+  }
 
   /**
    * select data is exists.

@@ -62,6 +62,18 @@ import org.springframework.core.annotation.Order;
 })
 @Tag(name = "数据资产", description = "用于管理逻辑数据资产")
 @Schema(title = "i18n:dna.dataAssets.entity.title", description = "i18n:dna.dataAssets.entity.description")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("catalogId"),
+    @org.simplepoint.core.query.QueryField("schemaPattern"),
+    @org.simplepoint.core.query.QueryField("tablePattern"),
+    @org.simplepoint.core.query.QueryField("assetType"),
+    @org.simplepoint.core.query.QueryField("owner"),
+    @org.simplepoint.core.query.QueryField("tags"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class DataAsset extends BaseEntityImpl<String> {
 
   @Order(0)

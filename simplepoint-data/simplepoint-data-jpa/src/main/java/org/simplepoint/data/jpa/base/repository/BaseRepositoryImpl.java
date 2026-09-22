@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
 import org.simplepoint.core.AuthorizationContext;
@@ -26,9 +25,12 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.simplepoint.core.datascopeannotation.DataScopeCondition;
 import org.simplepoint.core.datascopeannotation.DataScopeContext;
-import org.simplepoint.core.utils.StringUtil;
-import org.simplepoint.data.jpa.AttributeMatcher;
+import org.simplepoint.core.query.FilterCondition;
+import org.simplepoint.core.query.InvalidQueryException;
+import org.simplepoint.core.query.QueryCapabilities;
+import org.simplepoint.core.query.QueryDocument;
 import org.simplepoint.data.jpa.AttributeMatchers;
+import org.simplepoint.data.jpa.StructuredQuery;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -134,18 +136,131 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
   }
 
   @Override
-  public List<T> findAll(Map<String, String> attributes) {
+  public List<T> findAll(Map<String, String> attributes) throws IllegalArgumentException {
     return this.limit(attributes, Pageable.unpaged()).getContent();
   }
 
   @Override
+  public <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable)
+      throws IllegalArgumentException {
+    return limitScoped(attributes, Map.of(), pageable);
+  }
+
+  @Override
+  public <S extends T> Page<S> limitScoped(
+      Map<String, String> attributes, Map<String, String> required, Pageable pageable) {
+    // Snapshot server restrictions before constructing both the result and count specifications.
+    Map<String, String> mandatory = Map.copyOf(required);
+    mandatory.forEach((field, value) -> {
+      if (Set.of("page", "size", "sort", QueryDocument.PARAMETER).contains(field)
+          || value.startsWith("{")) {
+        throw new IllegalArgumentException("Server restrictions must be scalar conditions");
+      }
+    });
+    Specification<S> restriction = mandatory.isEmpty() ? null : (root, query, cb) ->
+        cb.and(getPredicates(mandatory, root, query, cb, EscapeCharacter.DEFAULT, true));
+    return limitWithRestriction(attributes, pageable, restriction);
+  }
+
+  @Override
+  public <S extends T> Page<S> limitInScope(
+      Map<String, String> attributes, String field, Collection<String> allowedValues, Pageable pageable) {
+    return limitMemberships(attributes, List.of(new org.simplepoint.api.base.QueryMembership(
+        field, new ArrayList<>(allowedValues), true)), pageable);
+  }
+
+  @Override
+  public <S extends T> Page<S> limitMemberships(
+      Map<String, String> attributes, List<org.simplepoint.api.base.QueryMembership> memberships, Pageable pageable) {
+    var restrictions = List.copyOf(memberships);
+    restrictions.forEach(restriction -> validateMembershipField(restriction.field()));
+    return limitWithRestriction(attributes, pageable, (root, query, cb) -> cb.and(
+        restrictions.stream().map(restriction -> {
+          if (restriction.values().isEmpty()) {
+            return restriction.included() ? cb.disjunction() : cb.conjunction();
+          }
+          var membership = root.get(restriction.field()).in(restriction.values());
+          return restriction.included() ? membership : cb.not(membership);
+        }).toArray(Predicate[]::new)));
+  }
+
+  private void validateMembershipField(String field) {
+    var member = entityManager.getMetamodel().entity(getDomainClass()).getAttribute(field);
+    // Hibernate may expose the erased Serializable type for a generic BaseEntity<I>.id.
+    Class<?> scalarType = member.getJavaMember() instanceof java.lang.reflect.Field javaField
+        ? org.springframework.core.ResolvableType.forField(javaField, getDomainClass()).resolve()
+        : member.getJavaType();
+    if (member.isAssociation() || member.isCollection() || scalarType != String.class) {
+      throw new IllegalArgumentException("Authorization scope requires a scalar string field");
+    }
+  }
+
   @SuppressWarnings("unchecked")
-  public <S extends T> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
-    Specification<S> spec = this.readSpecification(attributes);
+  private <S extends T> Page<S> limitWithRestriction(
+      Map<String, String> attributes, Pageable pageable, Specification<S> restriction) {
+    QueryDocument.validateBudget(attributes);
+    var sort = pageable.getSort();
+    if (sort.stream().count() > 3) {
+      throw new InvalidQueryException("最多支持三个排序字段");
+    }
+    for (var order : sort) {
+      if (!order.getProperty().matches("[A-Za-z][A-Za-z0-9_]*")
+          || !QueryCapabilities.readable(getDomainClass(), order.getProperty())) {
+        throw new InvalidQueryException("不支持的排序字段");
+      }
+      if (QueryCapabilities.declaration(getDomainClass()) != null) {
+        QueryCapabilities.require(getDomainClass(), order.getProperty(), null, true);
+      } else {
+        if (entityManager.getMetamodel().entity(getDomainClass()).getAttributes().stream()
+            .noneMatch(attribute -> attribute.getName().equals(order.getProperty()))) {
+          throw new InvalidQueryException("不支持的排序字段");
+        }
+        var attribute =
+            entityManager.getMetamodel().entity(getDomainClass()).getAttribute(order.getProperty());
+        if (attribute.isAssociation() || attribute.isCollection()) {
+          throw new InvalidQueryException("不支持关联排序");
+        }
+      }
+    }
+    // A unique tie-breaker prevents row drift when equal sort values cross page boundaries.
+    if (sort.getOrderFor("id") == null) {
+      sort = sort.and(org.springframework.data.domain.Sort.by("id"));
+    }
+    if (pageable.isPaged()) {
+      if ((QueryCapabilities.declaration(getDomainClass()) != null
+              && pageable.getPageSize()
+                  > QueryCapabilities.declaration(getDomainClass()).maxPageSize())
+          || pageable.getOffset() > Integer.MAX_VALUE) {
+        throw new InvalidQueryException("分页范围超限");
+      }
+      pageable =
+          org.springframework.data.domain.PageRequest.of(
+              pageable.getPageNumber(), pageable.getPageSize(), sort);
+    } else {
+      pageable = Pageable.unpaged(sort);
+    }
+    Specification<S> visible = this.readSpecification(attributes);
+    Specification<S> spec = restriction == null ? visible : visible.and(restriction);
     Class<S> domainClass = (Class<S>) super.getDomainClass();
-    var typedQuery = this.getQuery(spec, domainClass, pageable);
-    return (pageable.isUnpaged() ? new PageImpl<>(typedQuery.getResultList()) :
-        this.readPage(typedQuery, domainClass, pageable, spec));
+    var stableSort = sort;
+    Specification<S> orderedSpec =
+        (root, query, cb) -> {
+          var predicate = spec.toPredicate(root, query, cb);
+          var orders = new ArrayList<jakarta.persistence.criteria.Order>();
+          stableSort.forEach(
+              order -> {
+                var path = org.simplepoint.data.jpa.QueryExpressions.scalar(cb, root.get(order.getProperty()));
+                orders.add(cb.asc(cb.selectCase().when(cb.isNull(path), 1).otherwise(0)));
+                orders.add(order.isAscending() ? cb.asc(path) : cb.desc(path));
+              });
+          query.orderBy(orders);
+          return predicate;
+        };
+    var typedQuery =
+        this.getQuery(orderedSpec, domainClass, org.springframework.data.domain.Sort.unsorted());
+    return (pageable.isUnpaged()
+        ? new PageImpl<>(typedQuery.getResultList())
+        : this.readPage(typedQuery, domainClass, pageable, spec));
   }
 
   @Override
@@ -247,38 +362,79 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
     return super.count(specification);
   }
 
-  @SneakyThrows
   private <S extends T> Predicate[] getPredicates(
-      Map<String, String> attributes,
-      Root<S> root,
-      CriteriaQuery<?> query,
-      CriteriaBuilder criteriaBuilder,
-      EscapeCharacter character
-  ) {
-    Metamodel metamodel = this.entityManager.getMetamodel();
-    EntityType<T> entityType = metamodel.entity(getDomainClass());
-    Set<String> entityAttribute = entityType.getAttributes().stream().map(Attribute::getName).collect(Collectors.toSet());
+      Map<String, String> attributes, Root<S> root, CriteriaQuery<?> query,
+      CriteriaBuilder criteriaBuilder, EscapeCharacter character) {
+    return getPredicates(attributes, root, query, criteriaBuilder, character, false);
+  }
+
+  private <S extends T> Predicate[] getPredicates(
+      Map<String, String> attributes, Root<S> root, CriteriaQuery<?> query,
+      CriteriaBuilder criteriaBuilder, EscapeCharacter character, boolean serverOwned) {
     List<Predicate> predicates = new ArrayList<>();
-    if (attributes != null && !attributes.isEmpty()) {
-      attributes.forEach((name, value) -> {
-        try {
-          if (value != null & entityAttribute.contains(name)) {
-            if (value.contains(":")) {
-              String[] strings = StringUtil.splitLast(value, ":");
-              AttributeMatcher attributeMatcher = AttributeMatchers.getAttributeMatcher(strings[0]);
-              if (attributeMatcher != null) {
-                attributeMatcher.match(name, strings[1], root, query, criteriaBuilder, character,
-                    predicates);
-              }
-            } else {
-              AttributeMatchers.equals()
-                  .match(name, value, root, query, criteriaBuilder, character, predicates);
-            }
-          }
-        } catch (Exception e) {
-          log.warn(e.getMessage());
+    if (attributes == null || attributes.isEmpty()) {
+      return new Predicate[0];
+    }
+    if (attributes.size() > 35) {
+      throw new InvalidQueryException("筛选条件数量超限");
+    }
+    Set<String> operators = AttributeMatchers.operators();
+    var entity = entityManager.getMetamodel().entity(getDomainClass());
+    Set<String> fields =
+        entity.getAttributes().stream().map(Attribute::getName).collect(Collectors.toSet());
+    for (var entry : attributes.entrySet()) {
+      String name = entry.getKey();
+      if (name == null) {
+        throw new InvalidQueryException("筛选字段不能为空");
+      }
+      if (QueryDocument.PARAMETER.equals(name)) {
+        predicates.add(
+            StructuredQuery.compile(
+                criteriaBuilder, query, root, QueryDocument.parse(entry.getValue()).where()));
+        continue;
+      }
+      // Spring MVC passes these transport parameters alongside filters, even when an entity
+      // has a same-named member (Resource.sort). Such members use the structured $query document.
+      if (Set.of("page", "size", "sort").contains(name)) {
+        continue;
+      }
+      if (!fields.contains(name)) {
+        throw new InvalidQueryException("不支持的筛选字段");
+      }
+      if (entry.getValue() != null && entry.getValue().startsWith("{")) {
+        var node = QueryDocument.parse(entry.getValue()).where();
+        if (!name.equals(node.field()) || !node.children().isEmpty()) {
+          throw new InvalidQueryException("无效的列筛选");
         }
-      });
+        predicates.add(StructuredQuery.compile(criteriaBuilder, query, root, node));
+        continue;
+      }
+      var attribute = entity.getAttribute(name);
+      if (attribute.isCollection() || attribute.isAssociation()) {
+        throw new InvalidQueryException("关联和集合字段须使用专用查询");
+      }
+      var condition = FilterCondition.parse(entry.getValue(), operators);
+      // deletedAt is injected/overwritten by BaseService and cannot be weakened by the caller.
+      if (!serverOwned && !name.equals("deletedAt")) {
+        if (!QueryCapabilities.readable(getDomainClass(), name)) {
+          throw new InvalidQueryException("此字段未开放查询");
+        }
+      }
+      var matcher = AttributeMatchers.getAttributeMatcher(condition.operator());
+      if (matcher == null) {
+        throw new InvalidQueryException("不支持的筛选操作符");
+      }
+      try {
+        int before = predicates.size();
+        matcher.match(name, condition.value(), root, query, criteriaBuilder, character, predicates);
+        if (predicates.size() == before) {
+          throw new InvalidQueryException("筛选操作未生成有效条件");
+        }
+      } catch (InvalidQueryException error) {
+        throw error;
+      } catch (Exception error) {
+        throw new InvalidQueryException("筛选条件与字段类型不匹配");
+      }
     }
     return predicates.toArray(new Predicate[0]);
   }

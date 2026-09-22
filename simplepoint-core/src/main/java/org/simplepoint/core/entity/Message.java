@@ -63,6 +63,14 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Schema(name = "I18n键值对象", description = "用于表示系统中的国际化键值项")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("locale"),
+    @org.simplepoint.core.query.QueryField("namespace"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("message"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("global")
+})
 public class Message extends BaseEntityImpl<String> {
 
   @Order(2)

@@ -1,0 +1,13 @@
+.sp-personal {box-sizing:border-box;height:100%;min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 0 12px;scrollbar-gutter:stable;display:flex;flex-direction:column;}
+.sp-personal > .ant-tabs .ant-tabs-nav {margin-bottom:8px;}
+.sp-personal > :not(.sp-personal-table) {flex-shrink:0;}
+.sp-personal-table {flex:1;min-height:300px;}
+.sp-personal .ant-alert {margin-bottom:12px;}
+.sp-personal-title {text-align:left;white-space:normal;height:auto;}
+.sp-personal-description {white-space:pre-wrap;overflow-wrap:anywhere;margin:16px 0;}
+.sp-personal-detail-meta {display:flex;flex-wrap:wrap;gap:12px;margin:16px 0;}
+.sp-personal-due-over {color:var(--ant-color-error, #cf1322);}
+.sp-personal-checklist {display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.sp-personal-history {margin-top:24px;border-top:1px solid var(--ant-color-border-secondary, #ddd);padding-top:16px;}
+.sp-personal-history-entry {padding:12px 0;border-bottom:1px solid var(--ant-color-border-secondary, #eee);}
+@media(max-width:680px) {.sp-personal {padding:0 0 8px;}}

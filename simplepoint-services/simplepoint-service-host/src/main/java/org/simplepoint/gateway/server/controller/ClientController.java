@@ -19,6 +19,7 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -36,6 +37,26 @@ import reactor.core.publisher.Mono;
 @Controller
 @Tag(name = "OAuth2.1客户端", description = "OAuth2.1 客户端信息获取相关接口")
 public class ClientController {
+
+  private final ReactiveClientRegistrationRepository clientRegistrations;
+
+  public ClientController(ReactiveClientRegistrationRepository clientRegistrations) {
+    this.clientRegistrations = clientRegistrations;
+  }
+
+  /** Browser account settings live on the issuer origin, where its login cookie is scoped. */
+  @GetMapping("/account/security-links")
+  public Mono<ResponseEntity<Map<String, String>>> securityLinks() {
+    return clientRegistrations.findByRegistrationId("simplepoint-client")
+        .map(registration -> {
+          URI authorization = URI.create(registration.getProviderDetails().getAuthorizationUri());
+          String origin = authorization.getScheme() + "://" + authorization.getAuthority();
+          return ResponseEntity.ok(Map.of(
+              "twoFactor", origin + "/account/2fa",
+              "externalIdentities", origin + "/account/external-identities"));
+        })
+        .defaultIfEmpty(ResponseEntity.notFound().build());
+  }
 
   /**
    * Ignore Chrome DevTools / other browser probes under .well-known/appspecific.

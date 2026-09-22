@@ -600,6 +600,10 @@ const McpCapabilities = ({initialServerId}: McpCapabilitiesProps = {}) => {
                   rowKey="name"
                   loading={loading}
                   columns={columns}
+                  storageKey="ai.mcp.capabilities.tools"
+                  query={{mode: 'local', scope: 'result', contextKey: serverId, fields: {
+                    name: {type: 'string'}, title: {type: 'string'}, description: {type: 'string'},
+                  }}}
                   dataSource={tools}
                   pagination={{pageSize: 20, hideOnSinglePage: true}}
                 />
@@ -611,6 +615,10 @@ const McpCapabilities = ({initialServerId}: McpCapabilitiesProps = {}) => {
               children: (
                 <DataTable
                   rowKey="uri"
+                  storageKey="ai.mcp.capabilities.resources"
+                  query={{mode: 'local', scope: 'result', contextKey: serverId, fields: {
+                    uri: {type: 'string'}, name: {type: 'string'}, description: {type: 'string'}, mimeType: {type: 'string'},
+                  }}}
                   loading={loading}
                   columns={resourceColumns}
                   dataSource={resources}
@@ -624,6 +632,10 @@ const McpCapabilities = ({initialServerId}: McpCapabilitiesProps = {}) => {
               children: (
                 <DataTable
                   rowKey="uriTemplate"
+                  storageKey="ai.mcp.capabilities.templates"
+                  query={{mode: 'local', scope: 'result', contextKey: serverId, fields: {
+                    uriTemplate: {type: 'string'}, name: {type: 'string'}, description: {type: 'string'}, mimeType: {type: 'string'},
+                  }}}
                   loading={loading}
                   dataSource={resourceTemplates}
                   pagination={{pageSize: 20, hideOnSinglePage: true}}
@@ -648,6 +660,10 @@ const McpCapabilities = ({initialServerId}: McpCapabilitiesProps = {}) => {
                   rowKey="name"
                   loading={loading}
                   columns={promptColumns}
+                  storageKey="ai.mcp.capabilities.prompts"
+                  query={{mode: 'local', scope: 'result', contextKey: serverId, fields: {
+                    name: {type: 'string'}, title: {type: 'string'}, description: {type: 'string'},
+                  }}}
                   dataSource={prompts}
                   pagination={{pageSize: 20, hideOnSinglePage: true}}
                 />
@@ -660,6 +676,7 @@ const McpCapabilities = ({initialServerId}: McpCapabilitiesProps = {}) => {
                 <DataTable
                   rowKey="id"
                   loading={loading || snapshotLoading}
+                  storageKey="ai.mcp.capabilities.snapshots"
                   dataSource={snapshots}
                   pagination={{pageSize: 10, hideOnSinglePage: true}}
                   columns={[
@@ -878,6 +895,10 @@ const McpCapabilities = ({initialServerId}: McpCapabilitiesProps = {}) => {
             <DataTable
               size="small"
               rowKey="type"
+              storageKey="ai.mcp.capabilities.diff"
+              query={{mode: 'local', scope: 'complete', contextKey: snapshotComparison.current.id, fields: {
+                type: {type: 'string'},
+              }}}
               dataSource={snapshotDiff}
               pagination={false}
               columns={[

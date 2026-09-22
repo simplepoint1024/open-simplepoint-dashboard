@@ -26,7 +26,7 @@ import {
 const {Link, Text} = Typography;
 
 type CatalogSource = 'INTERNAL' | 'OFFICIAL_MCP';
-type CatalogKind = 'MCP_SERVER' | 'SKILL';
+type CatalogKind = 'MCP_SERVER';
 
 type CatalogItem = {
   id: string;
@@ -221,9 +221,9 @@ const Catalog = () => {
       title: t('ai.catalog.column.kind', '类型'),
       dataIndex: 'kind',
       width: 120,
-      render: (value: CatalogKind) => (
-        <Tag color={value === 'SKILL' ? 'purple' : 'cyan'}>
-          {value === 'SKILL' ? 'Skill' : 'MCP Server'}
+      render: () => (
+        <Tag color="cyan">
+          MCP Server
         </Tag>
       ),
     },
@@ -348,7 +348,6 @@ const Catalog = () => {
             style={{width: 160}}
             options={[
               {value: 'MCP_SERVER', label: 'MCP Server'},
-              {value: 'SKILL', label: 'Skill'},
             ]}
           />
           <Button onClick={() => void load(0, data.size)}>

@@ -1,7 +1,6 @@
 import DataTable from '@simplepoint/components/DataTable';
-import {get} from '@simplepoint/shared/api/methods';
+import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import type {Page} from '@simplepoint/shared/types/request';
 import {
   Alert,
   Button,
@@ -13,7 +12,7 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useMemo, useState} from 'react';
 import type {RuntimeNode} from './types';
 import {runtimeErrorLabel, runtimeStatusLabel} from './runtimeLabels';
 import {
@@ -27,40 +26,16 @@ import {
 const {Paragraph, Text} = Typography;
 
 type RuntimeNodesProps = {
+  active?: boolean;
   nodesUrl: string;
 };
 
-const RuntimeNodes = ({nodesUrl}: RuntimeNodesProps) => {
+const RuntimeNodes = ({active = true, nodesUrl}: RuntimeNodesProps) => {
   const {t} = useI18n();
-  const [rows, setRows] = useState<RuntimeNode[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string>();
+  const list = useRemoteList<RuntimeNode>(nodesUrl, active);
+  const loadError = list.error ? resolveErrorMessage(list.error, t('table.loadFail', '加载失败')) : undefined;
   const [detail, setDetail] = useState<RuntimeNode>();
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setLoadError(undefined);
-    try {
-      const page = await get<Page<RuntimeNode>>(nodesUrl, {page: 0, size: 500});
-      setRows(page.content ?? []);
-    } catch (error) {
-      const errorMessage = resolveErrorMessage(
-        error,
-        t(
-          'ai.runtime.error.nodes.load',
-          'Runtime Node 加载失败；节点信息仅平台管理员可查看。',
-        ),
-      );
-      setRows([]);
-      setLoadError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [nodesUrl, t]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   const columns = useMemo(() => [
     {
@@ -171,9 +146,8 @@ const RuntimeNodes = ({nodesUrl}: RuntimeNodesProps) => {
 
   return (
     <>
-      <Card
+      <Card className="runtime-list-nodes"
         title={t('ai.runtime.node.title', 'Runtime Nodes')}
-        extra={<Button onClick={() => void load()}>{t('ai.runtime.action.refresh', '刷新')}</Button>}
       >
         <Alert
           showIcon
@@ -196,19 +170,16 @@ const RuntimeNodes = ({nodesUrl}: RuntimeNodesProps) => {
             )}
             description={loadError}
             action={(
-              <Button size="small" onClick={() => void load()}>
-                {t('ai.mcp.action.retry', '重试')}
-              </Button>
+              <Space><Button size="small" onClick={list.retry}>{t('table.retry', '重试')}</Button>
+                <Button size="small" onClick={list.reset}>{t('table.query.reset', '重置筛选与排序')}</Button></Space>
             )}
           />
         )}
-        <DataTable
-          rowKey="nodeId"
-          loading={loading}
-          columns={columns}
-          dataSource={rows}
+        <DataTable<RuntimeNode>
+          {...list.tableProps}
+          query={list.tableProps.query}
+          columns={list.columns(columns)}
           scroll={{x: 1800}}
-          pagination={{pageSize: 20, hideOnSinglePage: true}}
         />
       </Card>
       <Modal

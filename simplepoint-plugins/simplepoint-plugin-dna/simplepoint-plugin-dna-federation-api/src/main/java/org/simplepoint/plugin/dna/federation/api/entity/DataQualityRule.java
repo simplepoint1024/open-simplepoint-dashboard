@@ -63,6 +63,22 @@ import org.springframework.core.annotation.Order;
 })
 @Tag(name = "数据质量规则", description = "用于管理数据质量检查规则")
 @Schema(title = "i18n:dna.dataQuality.entity.title", description = "i18n:dna.dataQuality.entity.description")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("catalogId"),
+    @org.simplepoint.core.query.QueryField("ruleType"),
+    @org.simplepoint.core.query.QueryField("targetTable"),
+    @org.simplepoint.core.query.QueryField("targetColumn"),
+    @org.simplepoint.core.query.QueryField("checkSql"),
+    @org.simplepoint.core.query.QueryField("expectedValue"),
+    @org.simplepoint.core.query.QueryField("severity"),
+    @org.simplepoint.core.query.QueryField("lastRunStatus"),
+    @org.simplepoint.core.query.QueryField("lastRunMessage"),
+    @org.simplepoint.core.query.QueryField("lastRunAt"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class DataQualityRule extends BaseEntityImpl<String> {
 
   @Order(0)

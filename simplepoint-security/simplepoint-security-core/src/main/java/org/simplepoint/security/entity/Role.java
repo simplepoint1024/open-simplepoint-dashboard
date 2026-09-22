@@ -23,98 +23,131 @@ import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 
 /**
- * Represents the Role entity in the RBAC (Role-Based Access Control) system.
- * This entity is mapped to the `rbac_roles` table and defines attributes such as
- * role name, authority, description, and priority to manage access control in the system.
+ * Represents the Role entity in the RBAC (Role-Based Access Control) system. This entity is mapped
+ * to the `rbac_roles` table and defines attributes such as role name, authority, description, and
+ * priority to manage access control in the system.
  */
 @Data
 @Entity
-@Table(name = "simpoint_ac_roles")
+@Table(
+    name = "simpoint_ac_roles",
+    indexes =
+        @jakarta.persistence.Index(
+            name = "idx_role_tenant_catalog",
+            columnList = "tenant_id,deleted_at,role_name,id"))
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
-    @ButtonDeclaration(
-        title = PublicButtonKeys.ADD_TITLE,
-        key = PublicButtonKeys.ADD_KEY,
-        icon = Icons.PLUS_CIRCLE,
-        sort = 0,
-        argumentMaxSize = 1,
-        argumentMinSize = 0,
-        authority = "roles.create"
-    ),
-    @ButtonDeclaration(
-        title = PublicButtonKeys.EDIT_TITLE,
-        key = PublicButtonKeys.EDIT_KEY,
-        color = "orange",
-        icon = Icons.EDIT,
-        sort = 1,
-        argumentMinSize = 1,
-        argumentMaxSize = 1,
-        authority = "roles.edit"
-    ),
-    @ButtonDeclaration(
-        title = PublicButtonKeys.DELETE_TITLE,
-        key = PublicButtonKeys.DELETE_KEY,
-        color = "danger",
-        icon = Icons.MINUS_CIRCLE,
-        sort = 2,
-        argumentMinSize = 1,
-        argumentMaxSize = 10,
-        danger = true,
-        authority = "roles.delete"
-    ),
-    @ButtonDeclaration(
-        title = "i18n:roles.config.resource",
-        key = "config.resource",
-        color = "orange",
-        icon = Icons.SAFETY_OUTLINED,
-        sort = 3,
-        argumentMinSize = 1,
-        argumentMaxSize = 1,
-        authority = "roles.config.resource"
-    )
+  @ButtonDeclaration(
+      title = PublicButtonKeys.ADD_TITLE,
+      key = PublicButtonKeys.ADD_KEY,
+      icon = Icons.PLUS_CIRCLE,
+      sort = 0,
+      argumentMaxSize = 1,
+      argumentMinSize = 0,
+      authority = "roles.create"),
+  @ButtonDeclaration(
+      title = PublicButtonKeys.EDIT_TITLE,
+      key = PublicButtonKeys.EDIT_KEY,
+      color = "orange",
+      icon = Icons.EDIT,
+      sort = 1,
+      argumentMinSize = 1,
+      argumentMaxSize = 1,
+      authority = "roles.edit"),
+  @ButtonDeclaration(
+      title = PublicButtonKeys.DELETE_TITLE,
+      key = PublicButtonKeys.DELETE_KEY,
+      color = "danger",
+      icon = Icons.MINUS_CIRCLE,
+      sort = 2,
+      argumentMinSize = 1,
+      argumentMaxSize = 10,
+      danger = true,
+      authority = "roles.delete"),
+  @ButtonDeclaration(
+      title = "i18n:roles.config.resource",
+      key = "config.resource",
+      color = "orange",
+      icon = Icons.SAFETY_OUTLINED,
+      sort = 3,
+      argumentMinSize = 1,
+      argumentMaxSize = 1,
+      authority = "roles.config.resource")
 })
 @Schema(title = "角色对象", description = "用于定义系统中的角色及其资源授权")
+@org.simplepoint.core.query.TableQuery({
+  @org.simplepoint.core.query.QueryField("roleName"),
+  @org.simplepoint.core.query.QueryField("authority"),
+  @org.simplepoint.core.query.QueryField("description"),
+  @org.simplepoint.core.query.QueryField("priority"),
+  @org.simplepoint.core.query.QueryField("createdAt"),
+  @org.simplepoint.core.query.QueryField("updatedAt")
+})
 public class Role extends TenantBaseEntityImpl<String> implements BaseRole {
 
   /**
-   * The name of the role.
-   * This field defines the name identifier for the role within the RBAC system.
+   * The name of the role. This field defines the name identifier for the role within the RBAC
+   * system.
    */
-  @Schema(title = "i18n:roles.title.roleName", description = "i18n:roles.description.roleName", maxLength = 50, minLength = 1, extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
+  @Schema(
+      title = "i18n:roles.title.roleName",
+      description = "i18n:roles.description.roleName",
+      maxLength = 50,
+      minLength = 1,
+      extensions = {
+        @Extension(
+            name = "x-ui",
+            properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+            })
       })
-  })
+  @jakarta.persistence.Column(name = "role_name")
   private String roleName;
 
-  /**
-   * The authority associated with the role.
-   * This field specifies the role authority identifier.
-   */
-  @Schema(title = "i18n:roles.title.authority", description = "i18n:roles.description.authority", maxLength = 100, minLength = 1, extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
-      })})
+  /** The authority associated with the role. This field specifies the role authority identifier. */
+  @Schema(
+      title = "i18n:roles.title.authority",
+      description = "i18n:roles.description.authority",
+      maxLength = 100,
+      minLength = 1,
+      extensions = {
+        @Extension(
+            name = "x-ui",
+            properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+            })
+      })
   private String authority;
 
   /**
-   * A brief description of the role.
-   * Provides additional context or details about the role's purpose and usage.
+   * A brief description of the role. Provides additional context or details about the role's
+   * purpose and usage.
    */
-  @Schema(title = "i18n:roles.title.description", description = "i18n:roles.description.description", maxLength = 200, extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true")
-      })})
+  @Schema(
+      title = "i18n:roles.title.description",
+      description = "i18n:roles.description.description",
+      maxLength = 200,
+      extensions = {
+        @Extension(
+            name = "x-ui",
+            properties = {@ExtensionProperty(name = "x-list-visible", value = "true")})
+      })
   private String description;
 
   /**
-   * The priority level of the role.
-   * Defines the order or importance of the role in the system.
+   * The priority level of the role. Defines the order or importance of the role in the system.
    * Roles with higher priority levels may override roles with lower levels.
    */
-  @Schema(title = "i18n:roles.title.priority", description = "i18n:roles.description.priority", example = "1", extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
-      })})
+  @Schema(
+      title = "i18n:roles.title.priority",
+      description = "i18n:roles.description.priority",
+      example = "1",
+      extensions = {
+        @Extension(
+            name = "x-ui",
+            properties = {
+              @ExtensionProperty(name = "x-list-visible", value = "true"),
+            })
+      })
   private Integer priority;
 }

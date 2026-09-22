@@ -4,6 +4,7 @@ import {Page} from "../types/request"
 import type {QueryFunctionContext} from '@tanstack/react-query';
 import {scopedQueryOptions} from './queryScope';
 import {useQueryScope} from '../hooks/useQueryScope';
+import {usePageActive} from '../page/hooks';
 
 /**
  * GET 请求封装
@@ -52,10 +53,12 @@ export function usePage<T>(
     options?: Omit<UseQueryOptions<Page<T>, Error, Page<T>, readonly unknown[]>, 'queryKey' | 'queryFn'>
 ) {
     const scope = useQueryScope();
+    const active = usePageActive();
     const queryKey = typeof key === 'string' ? [key] : key;
     return useQuery<Page<T>, Error, Page<T>, readonly unknown[]>({
-        ...scopedQueryOptions(scope, queryKey, fetchFn),
+        ...scopedQueryOptions<Page<T>>(scope, queryKey, fetchFn),
         ...options,
+        enabled: query => active && (typeof options?.enabled === 'function' ? options.enabled(query) : options?.enabled !== false),
     });
 }
 
@@ -68,9 +71,11 @@ export function useData<T>(
     options?: Omit<UseQueryOptions<T, Error, T, readonly unknown[]>, 'queryKey' | 'queryFn'>
 ) {
     const scope = useQueryScope();
+    const active = usePageActive();
     const queryKey = typeof key === 'string' ? [key] : key;
     return useQuery<T, Error, T, readonly unknown[]>({
-        ...scopedQueryOptions(scope, queryKey, fetchFn),
+        ...scopedQueryOptions<T>(scope, queryKey, fetchFn),
         ...options,
+        enabled: query => active && (typeof options?.enabled === 'function' ? options.enabled(query) : options?.enabled !== false),
     });
 }

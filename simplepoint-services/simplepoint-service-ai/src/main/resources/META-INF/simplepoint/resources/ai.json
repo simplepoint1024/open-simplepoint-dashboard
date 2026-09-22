@@ -15,7 +15,10 @@
       "publicAccess": false,
       "grantable": true,
       "disabled": false,
-      "scopeTypes": ["SYSTEM", "TENANT"],
+      "scopeTypes": [
+        "SYSTEM",
+        "TENANT"
+      ],
       "children": [
         {
           "code": "ai.workbench.api-keys.view",
@@ -31,7 +34,10 @@
           "publicAccess": false,
           "grantable": true,
           "disabled": false,
-          "scopeTypes": ["SYSTEM", "TENANT"],
+          "scopeTypes": [
+            "SYSTEM",
+            "TENANT"
+          ],
           "children": [
             {
               "code": "ai.workbench.api-keys.create",
@@ -93,7 +99,10 @@
           "publicAccess": false,
           "grantable": true,
           "disabled": false,
-          "scopeTypes": ["SYSTEM", "TENANT"],
+          "scopeTypes": [
+            "SYSTEM",
+            "TENANT"
+          ],
           "children": [
             {
               "code": "ai.workbench.providers.create",
@@ -177,7 +186,10 @@
           "publicAccess": false,
           "grantable": true,
           "disabled": false,
-          "scopeTypes": ["SYSTEM", "TENANT"],
+          "scopeTypes": [
+            "SYSTEM",
+            "TENANT"
+          ],
           "children": [
             {
               "code": "ai.workbench.models.create",
@@ -239,7 +251,10 @@
           "publicAccess": false,
           "grantable": true,
           "disabled": false,
-          "scopeTypes": ["SYSTEM", "TENANT"],
+          "scopeTypes": [
+            "SYSTEM",
+            "TENANT"
+          ],
           "children": [
             {
               "code": "ai.workbench.knowledge-bases.create",
@@ -312,7 +327,10 @@
           "publicAccess": false,
           "grantable": true,
           "disabled": false,
-          "scopeTypes": ["SYSTEM", "TENANT"],
+          "scopeTypes": [
+            "SYSTEM",
+            "TENANT"
+          ],
           "children": [
             {
               "code": "ai.workbench.catalog.sync",
@@ -324,7 +342,9 @@
               "publicAccess": false,
               "grantable": true,
               "disabled": false,
-              "scopeTypes": ["SYSTEM"]
+              "scopeTypes": [
+                "SYSTEM"
+              ]
             },
             {
               "code": "ai.workbench.catalog.import",
@@ -336,7 +356,10 @@
               "publicAccess": false,
               "grantable": true,
               "disabled": false,
-              "scopeTypes": ["SYSTEM", "TENANT"]
+              "scopeTypes": [
+                "SYSTEM",
+                "TENANT"
+              ]
             }
           ]
         },
@@ -354,7 +377,10 @@
           "publicAccess": false,
           "grantable": true,
           "disabled": false,
-          "scopeTypes": ["SYSTEM", "TENANT"],
+          "scopeTypes": [
+            "SYSTEM",
+            "TENANT"
+          ],
           "children": [
             {
               "code": "ai.workbench.mcp-gateway.view",
@@ -559,384 +585,6 @@
           ]
         },
         {
-          "code": "ai.workbench.skills.view",
-          "name": "技能",
-          "label": "技能",
-          "title": "menu.ai.skills",
-          "type": "PAGE",
-          "path": "/ai/workbench/skills",
-          "component": "ai/workbench/Skills",
-          "icon": "ExperimentOutlined",
-          "routeKind": "item",
-          "sort": 56,
-          "publicAccess": false,
-          "grantable": true,
-          "disabled": false,
-          "scopeTypes": ["SYSTEM", "TENANT"],
-          "children": [
-            {
-              "code": "ai.workbench.skills.create",
-              "name": "新增 Skill",
-              "label": "新增 Skill",
-              "alias": "i18n:table.button.create",
-              "type": "ACTION",
-              "sort": 101,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.skills.edit",
-              "name": "修改 Skill",
-              "label": "修改 Skill",
-              "alias": "i18n:table.button.edit",
-              "type": "ACTION",
-              "sort": 102,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.skills.delete",
-              "name": "删除 Skill",
-              "label": "删除 Skill",
-              "alias": "i18n:table.button.delete",
-              "type": "ACTION",
-              "sort": 103,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.skills.versions.manage",
-              "name": "管理 Skill 版本",
-              "label": "管理 Skill 版本",
-              "alias": "i18n:ai.skills.action.version.manage",
-              "type": "ACTION",
-              "sort": 104,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.skills.publish",
-              "name": "发布 Skill 版本",
-              "label": "发布 Skill 版本",
-              "alias": "i18n:ai.skills.action.publish",
-              "type": "ACTION",
-              "sort": 105,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.skills.execute",
-              "name": "执行 Skill",
-              "label": "执行 Skill",
-              "alias": "i18n:ai.skills.action.execute",
-              "type": "ACTION",
-              "sort": 106,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.skills.approve",
-              "name": "审批 Skill 执行",
-              "label": "审批 Skill 执行",
-              "alias": "i18n:ai.skills.action.approve",
-              "type": "ACTION",
-              "sort": 107,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.skills.control",
-              "name": "控制 Skill 执行",
-              "label": "控制 Skill 执行",
-              "alias": "i18n:ai.skills.action.pause",
-              "type": "ACTION",
-              "sort": 108,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.skills.drafts.view",
-              "name": "查看 Skill 草稿",
-              "label": "查看 Skill 草稿",
-              "alias": "i18n:ai.skills.action.drafts.view",
-              "type": "ACTION",
-              "sort": 109,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.skills.drafts.manage",
-              "name": "管理 Skill 草稿",
-              "label": "管理 Skill 草稿",
-              "alias": "i18n:ai.skills.action.drafts.manage",
-              "type": "ACTION",
-              "sort": 110,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.skills.debug",
-              "name": "调试 Skill 草稿",
-              "label": "调试 Skill 草稿",
-              "alias": "i18n:ai.skills.action.debug",
-              "type": "ACTION",
-              "sort": 111,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            }
-          ]
-        },
-        {
-          "code": "ai.workbench.skill-designer.view",
-          "name": "Skill Designer",
-          "label": "Skill Designer",
-          "title": "menu.ai.skillDesigner",
-          "type": "PAGE",
-          "path": "/ai/workbench/skill-designer",
-          "component": "ai/workbench/Skills/Designer",
-          "icon": "ApartmentOutlined",
-          "routeKind": "hidden",
-          "sort": 565,
-          "publicAccess": false,
-          "grantable": true,
-          "disabled": false,
-          "scopeTypes": ["SYSTEM", "TENANT"]
-        },
-        {
-          "code": "ai.workbench.agents.view",
-          "name": "Agent",
-          "label": "Agent",
-          "title": "menu.ai.agents",
-          "type": "PAGE",
-          "path": "/ai/workbench/agents",
-          "component": "ai/workbench/Agents",
-          "icon": "DeploymentUnitOutlined",
-          "routeKind": "item",
-          "sort": 57,
-          "publicAccess": false,
-          "grantable": true,
-          "disabled": false,
-          "scopeTypes": ["SYSTEM", "TENANT"],
-          "children": [
-            {
-              "code": "ai.workbench.agents.create",
-              "name": "新增 Agent",
-              "label": "新增 Agent",
-              "alias": "i18n:table.button.create",
-              "type": "ACTION",
-              "sort": 101,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.agents.edit",
-              "name": "修改 Agent",
-              "label": "修改 Agent",
-              "alias": "i18n:table.button.edit",
-              "type": "ACTION",
-              "sort": 102,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.agents.delete",
-              "name": "删除 Agent",
-              "label": "删除 Agent",
-              "alias": "i18n:table.button.delete",
-              "type": "ACTION",
-              "sort": 103,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.agents.versions.manage",
-              "name": "管理 Agent 版本",
-              "label": "管理 Agent 版本",
-              "alias": "i18n:ai.agents.action.version.manage",
-              "type": "ACTION",
-              "sort": 104,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.agents.publish",
-              "name": "发布 Agent 版本",
-              "label": "发布 Agent 版本",
-              "alias": "i18n:ai.agents.action.publish",
-              "type": "ACTION",
-              "sort": 105,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.agents.execute",
-              "name": "执行 Agent",
-              "label": "执行 Agent",
-              "alias": "i18n:ai.agents.action.execute",
-              "type": "ACTION",
-              "sort": 106,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.agents.approve",
-              "name": "审批 Agent 执行",
-              "label": "审批 Agent 执行",
-              "alias": "i18n:ai.agents.action.approve",
-              "type": "ACTION",
-              "sort": 107,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.agents.control",
-              "name": "控制 Agent 执行",
-              "label": "控制 Agent 执行",
-              "alias": "i18n:ai.agents.action.pause",
-              "type": "ACTION",
-              "sort": 108,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.agents.memory.manage",
-              "name": "管理 Agent 长期记忆",
-              "label": "管理 Agent 长期记忆",
-              "alias": "i18n:ai.agents.action.memory",
-              "type": "ACTION",
-              "sort": 109,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.agents.intervene",
-              "name": "人工介入 Agent 执行",
-              "label": "人工介入 Agent 执行",
-              "alias": "i18n:ai.agents.action.intervene",
-              "type": "ACTION",
-              "sort": 110,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            }
-          ]
-        },
-        {
-          "code": "ai.workbench.workflows.view",
-          "name": "Agent Workflow",
-          "label": "Agent Workflow",
-          "title": "menu.ai.workflows",
-          "type": "PAGE",
-          "path": "/ai/workbench/workflows",
-          "component": "ai/workbench/Workflows",
-          "icon": "BranchesOutlined",
-          "routeKind": "item",
-          "sort": 58,
-          "publicAccess": false,
-          "grantable": true,
-          "disabled": false,
-          "scopeTypes": ["SYSTEM", "TENANT"],
-          "children": [
-            {
-              "code": "ai.workbench.workflows.create",
-              "name": "新增 Workflow",
-              "label": "新增 Workflow",
-              "alias": "i18n:table.button.create",
-              "type": "ACTION",
-              "sort": 101,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.workflows.edit",
-              "name": "修改 Workflow",
-              "label": "修改 Workflow",
-              "alias": "i18n:table.button.edit",
-              "type": "ACTION",
-              "sort": 102,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.workflows.delete",
-              "name": "删除 Workflow",
-              "label": "删除 Workflow",
-              "alias": "i18n:table.button.delete",
-              "type": "ACTION",
-              "sort": 103,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.workflows.versions.manage",
-              "name": "管理 Workflow 版本",
-              "label": "管理 Workflow 版本",
-              "alias": "i18n:ai.workflows.action.version.manage",
-              "type": "ACTION",
-              "sort": 104,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.workflows.publish",
-              "name": "发布 Workflow 版本",
-              "label": "发布 Workflow 版本",
-              "alias": "i18n:ai.workflows.action.publish",
-              "type": "ACTION",
-              "sort": 105,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.workflows.execute",
-              "name": "执行 Workflow",
-              "label": "执行 Workflow",
-              "alias": "i18n:ai.workflows.action.execute",
-              "type": "ACTION",
-              "sort": 106,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
-            {
-              "code": "ai.workbench.workflows.intervene",
-              "name": "干预 Workflow",
-              "label": "干预 Workflow",
-              "alias": "i18n:ai.workflows.action.intervene",
-              "type": "ACTION",
-              "sort": 107,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            }
-          ]
-        },
-        {
           "code": "ai.workbench.billing.view",
           "name": "账单",
           "label": "账单",
@@ -950,7 +598,10 @@
           "publicAccess": false,
           "grantable": true,
           "disabled": false,
-          "scopeTypes": ["SYSTEM", "TENANT"]
+          "scopeTypes": [
+            "SYSTEM",
+            "TENANT"
+          ]
         }
       ]
     }

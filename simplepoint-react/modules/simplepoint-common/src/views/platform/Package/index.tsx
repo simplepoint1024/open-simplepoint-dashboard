@@ -4,12 +4,15 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {App as AntdApp, Drawer} from 'antd';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import ApplicationConfig from './config/application';
+import {usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
 
 const baseConfig = api['platform.packages'];
 
 const App = () => {
+  const selected = usePageSelected();
   const {message} = AntdApp.useApp();
   const [openApplicationConfig, setOpenApplicationConfig] = useState(false);
+  usePageRetention(!openApplicationConfig, openApplicationConfig);
   const [packageCode, setPackageCode] = useState<string>('');
   const [drawerHeight, setDrawerHeight] = useState<number>(480);
   const {t, ensure, locale} = useI18n();
@@ -60,10 +63,10 @@ const App = () => {
 
   return (
     <div>
-      <SimpleTable {...baseConfig} customButtonEvents={customButtonEvents}/>
+      <SimpleTable {...baseConfig} allowTabEviction={!openApplicationConfig} customButtonEvents={customButtonEvents}/>
       <Drawer
         title={t('packages.button.config.application', '配置应用')}
-        open={openApplicationConfig}
+        open={openApplicationConfig && selected}
         onClose={() => {
           setOpenApplicationConfig(false);
           setPackageCode('');
@@ -71,7 +74,7 @@ const App = () => {
         placement="bottom"
         maskClosable={false}
         height={drawerHeight}
-        destroyOnHidden
+        destroyOnHidden={!openApplicationConfig}
         styles={{body: {position: 'relative', paddingTop: 12}}}
       >
         <div

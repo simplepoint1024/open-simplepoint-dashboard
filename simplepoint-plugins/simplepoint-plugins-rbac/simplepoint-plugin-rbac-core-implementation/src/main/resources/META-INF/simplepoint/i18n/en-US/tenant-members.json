@@ -1,0 +1,19 @@
+{
+  "tenant-members.panel": "Organization users",
+  "tenant-members.selectOrganization": "Select an organization to view its users and descendants",
+  "tenant-members.descendantsHint": "Users in this organization and all descendants",
+  "tenant-members.addTenantUser": "Add tenant user",
+  "tenant-members.search": "Search name, email or user ID",
+  "tenant-members.loadFailed": "Failed to load organization users",
+  "tenant-members.candidatesFailed": "Failed to load available users",
+  "tenant-members.transferHint": "Search existing tenant users. Saving a user from another organization moves them here.",
+  "tenant-members.name": "User",
+  "tenant-members.organization": "Organization",
+  "tenant-members.userType": "User type",
+  "tenant-members.userType.INTERNAL": "Internal",
+  "tenant-members.userType.EXTERNAL": "External",
+  "tenant-members.userType.REFERENCE": "Reference",
+  "tenant-members.assigned": "User added to organization",
+  "tenant-members.saveFailed": "Save failed. Refresh and retry.",
+  "tenant-members.typeSaved": "User type updated"
+}

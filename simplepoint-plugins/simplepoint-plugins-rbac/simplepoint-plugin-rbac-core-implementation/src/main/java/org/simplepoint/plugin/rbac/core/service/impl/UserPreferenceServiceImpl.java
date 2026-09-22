@@ -39,7 +39,10 @@ public class UserPreferenceServiceImpl implements UserPreferenceService {
   }
 
   @Override
+  @Transactional(readOnly = true)
   public Optional<String> getPreference(String preferenceKey) {
+    // PostgreSQL-backed @Lob values must be materialized inside a transaction.
+    // Keep both the repository read and value extraction within this boundary.
     return repository
         .findByUserIdAndPreferenceKey(currentUserId(), preferenceKey)
         .map(UserPreference::getPreferenceValue);

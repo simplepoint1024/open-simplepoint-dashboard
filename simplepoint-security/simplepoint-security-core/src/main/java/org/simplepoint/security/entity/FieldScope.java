@@ -76,6 +76,13 @@ import org.simplepoint.core.constants.PublicButtonKeys;
     )
 })
 @Schema(title = "字段范围", description = "定义列级字段访问权限策略")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("id"),
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("createdAt"),
+    @org.simplepoint.core.query.QueryField("updatedAt")
+})
 public class FieldScope extends TenantBaseEntityImpl<String> {
 
   @Schema(title = "i18n:field-scopes.title.name", description = "i18n:field-scopes.description.name")
@@ -88,5 +95,6 @@ public class FieldScope extends TenantBaseEntityImpl<String> {
 
   @Schema(title = "i18n:field-scopes.title.entries", description = "i18n:field-scopes.description.entries")
   @OneToMany(mappedBy = "fieldScopeId", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+  @org.hibernate.annotations.BatchSize(size = 100)
   private List<FieldScopeEntry> entries = new ArrayList<>();
 }

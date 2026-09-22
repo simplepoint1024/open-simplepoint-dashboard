@@ -1,4 +1,6 @@
 import {http, HttpResponse} from 'msw';
+import selectionSchema from '../../../../../../scripts/organization-selection-schema.fixture.json';
+import {compileLocalQuery, type LocalFields} from '../../../../../../libs/components/DataTable/localQuery';
 
 const base = '/common/platform/organizations';
 const organizationTypes = new Set(['group', 'unit', 'department', 'team']);
@@ -198,6 +200,31 @@ const validateDelete = (tenantId: string, ids: string[]) => {
 };
 
 export default [
+  http.get(`${base}/selection/schema`, ({request}) => requireTenantId(request)
+    ? HttpResponse.json(selectionSchema) : HttpResponse.json({message: '请先选择租户'}, {status: 403})),
+  http.post(`${base}/selection`, async ({request}) => {
+    const tenantId = requireTenantId(request);
+    if (!tenantId) return HttpResponse.json({message: '请先选择租户'}, {status: 403});
+    const draft = await request.json() as {ids: string[]; selected: boolean; filters?: Record<string, string>};
+    const params = new URL(request.url).searchParams;
+    const page = Number(params.get('page') ?? 0), size = Number(params.get('size') ?? 20);
+    if (!Array.isArray(draft.ids) || draft.ids.length > 2000 || draft.ids.some(id => typeof id !== 'string' || !id.trim() || id.length > 128)
+      || !Number.isInteger(page) || page < 0 || !Number.isInteger(size) || size < 1 || size > 200) {
+      return HttpResponse.json({code: 'INVALID_QUERY', message: '组织草稿或分页范围超限'}, {status: 400});
+    }
+    try {
+      const fields: LocalFields = {id: {type: 'string'}, name: {type: 'string'}, code: {type: 'string'}, type: {type: 'string'},
+        description: {type: 'string'}, enabled: {type: 'boolean'}};
+      const query = compileLocalQuery(fields, {filters: draft.filters ?? {}, sort: params.getAll('sort')});
+      const selected = new Set(draft.ids);
+      const rows = organizations.filter(row => row.tenantId === tenantId && selected.has(row.id) === draft.selected && query.matches(row))
+        .sort(query.compare).map(({id, name, code, type, description, enabled}) => ({id, name, code, type, description, enabled}));
+      return HttpResponse.json({content: rows.slice(page * size, (page + 1) * size),
+        page: {number: page, size, totalElements: rows.length, totalPages: Math.ceil(rows.length / size)}});
+    } catch {
+      return HttpResponse.json({code: 'INVALID_QUERY', message: '组织筛选条件无效'}, {status: 400});
+    }
+  }),
   http.get(`${base}/schema`, ({request}) => {
     const tenantId = requireTenantId(request);
     return HttpResponse.json(buildSchema(tenantId));

@@ -52,6 +52,32 @@ import org.springframework.core.annotation.Order;
         icon = Icons.MINUS_CIRCLE, color = "danger", danger = true, sort = 3,
         argumentMinSize = 1, argumentMaxSize = 10, authority = "identityProviders.delete")
 })
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("registrationId"),
+    @org.simplepoint.core.query.QueryField("displayName"),
+    @org.simplepoint.core.query.QueryField("preset"),
+    @org.simplepoint.core.query.QueryField("protocol"),
+    @org.simplepoint.core.query.QueryField("issuerUri"),
+    @org.simplepoint.core.query.QueryField("authorizationUri"),
+    @org.simplepoint.core.query.QueryField("tokenUri"),
+    @org.simplepoint.core.query.QueryField("userInfoUri"),
+    @org.simplepoint.core.query.QueryField("jwkSetUri"),
+    @org.simplepoint.core.query.QueryField("clientId"),
+    @org.simplepoint.core.query.QueryField("clientAuthenticationMethod"),
+    @org.simplepoint.core.query.QueryField("scopes"),
+    @org.simplepoint.core.query.QueryField("userNameAttribute"),
+    @org.simplepoint.core.query.QueryField("subjectClaim"),
+    @org.simplepoint.core.query.QueryField("emailClaim"),
+    @org.simplepoint.core.query.QueryField("emailVerifiedClaim"),
+    @org.simplepoint.core.query.QueryField("matchStrategy"),
+    @org.simplepoint.core.query.QueryField("requireVerifiedEmail"),
+    @org.simplepoint.core.query.QueryField("allowPrivateNetwork"),
+    @org.simplepoint.core.query.QueryField("sortOrder"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("createdAt"),
+    @org.simplepoint.core.query.QueryField("updatedAt")
+})
 public class ExternalIdentityProvider extends BaseEntityImpl<String> {
 
   @Order(0)

@@ -1,4 +1,6 @@
 import {http, HttpResponse} from 'msw';
+import roleAssignmentSchema from '../../../../../../scripts/role-assignment-schema.fixture.json';
+import {compileLocalQuery, type LocalFields} from '../../../../../../libs/components/DataTable/localQuery';
 
 // ─── 用户 mock 数据生成 ───────────────────────────────────────────────────────
 
@@ -95,9 +97,15 @@ const ALL_USERS: MockUser[] = (() => {
 })();
 
 const ROLE_CANDIDATES = [
-    {id: '1', name: '超级管理员', description: '拥有系统内所有权限'},
-    {id: '2', name: '用户', description: '普通用户'},
+    {id: '1', name: '超级管理员', authority: 'ROLE_Administrator', description: '拥有系统内所有权限'},
+    {id: '2', name: '用户', authority: 'ROLE_User', description: '普通用户'},
 ];
+const roleAssignments = new Map<string, Set<string>>();
+const roleFields: LocalFields = {id: {type: 'string'}, name: {type: 'string'}, authority: {type: 'string'}, description: {type: 'string'}};
+function memberRoles(userId: string) {
+    if (!roleAssignments.has(userId)) roleAssignments.set(userId, new Set(['1']));
+    return roleAssignments.get(userId)!;
+}
 
 const USER_PICKER_ITEMS = [
     {id: 'admin', name: '平台管理员', email: 'admin@example.com', phoneNumber: '13800000001', picture: null},
@@ -388,16 +396,42 @@ export default [
             page: {size, number: page, totalElements, totalPages},
         });
     }),
+    http.get('/common/users/role-candidates/schema', ({request}) => {
+        if (!new URL(request.url).searchParams.get('userId')) return HttpResponse.json({message: '请选择成员'}, {status: 400});
+        return HttpResponse.json(roleAssignmentSchema);
+    }),
     http.get('/common/users/role-candidates', ({request}) => {
-        return HttpResponse.json(buildPage(request, ROLE_CANDIDATES, (role, keyword) =>
-            role.name.toLowerCase().includes(keyword) ||
-            role.description.toLowerCase().includes(keyword) ||
-            role.id.includes(keyword)
-        ));
+        const params = new URL(request.url).searchParams;
+        const userId = params.get('userId');
+        const page = Number(params.get('page') ?? 0), size = Number(params.get('size') ?? 20);
+        if (!userId || !Number.isInteger(page) || page < 0 || !Number.isInteger(size) || size < 1 || size > 200) {
+            return HttpResponse.json({code: 'INVALID_QUERY', message: '查询或分页范围超限'}, {status: 400});
+        }
+        const filters: Record<string, string> = {};
+        params.forEach((value, key) => {if (!['userId', 'selected', 'page', 'size', 'sort', 'keyword'].includes(key)) filters[key] = value;});
+        try {
+            const query = compileLocalQuery(roleFields, {filters, sort: params.getAll('sort')});
+            const keyword = (params.get('keyword') ?? '').toLowerCase();
+            const selected = params.get('selected');
+            const rows = ROLE_CANDIDATES.filter(role => (selected === null || memberRoles(userId).has(role.id) === (selected === 'true'))
+                && query.matches(role) && Object.values(role).some(value => value.toLowerCase().includes(keyword))).sort(query.compare);
+            return HttpResponse.json({content: rows.slice(page * size, (page + 1) * size),
+                page: {number: page, size, totalElements: rows.length, totalPages: Math.ceil(rows.length / size)}});
+        } catch {
+            return HttpResponse.json({code: 'INVALID_QUERY', message: '筛选条件无效'}, {status: 400});
+        }
     }),
-    http.get('/common/users/authorized', () => {
-        return HttpResponse.json(["1"])
-    }),
+    ...(['authorize', 'unauthorized'] as const).map(action => http.post(`/common/users/${action}`, async ({request}) => {
+        const body = await request.json() as {userId?: string; roleIds?: string[]};
+        if (!body.userId || !Array.isArray(body.roleIds) || body.roleIds.length > 100
+            || body.roleIds.some(id => !ROLE_CANDIDATES.some(role => role.id === id))) {
+            return HttpResponse.json({message: '角色分配参数无效'}, {status: 400});
+        }
+        const assigned = memberRoles(body.userId);
+        body.roleIds.forEach(id => {if (action === 'authorize') assigned.add(id); else assigned.delete(id);});
+        return HttpResponse.json([]);
+    })),
+    http.get('/common/users/authorized', ({request}) => HttpResponse.json([...memberRoles(new URL(request.url).searchParams.get('userId') ?? '')])),
     http.post('/common/users/change-password', async ({ request }) => {
         const body = await request.json() as any;
         if (!body?.currentPassword || !body?.newPassword || !body?.confirmPassword) {

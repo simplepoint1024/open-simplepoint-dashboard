@@ -1,0 +1,44 @@
+.sp-loading-boundary {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+.sp-loading-placeholder { height: 100%; min-height: 120px; }
+.sp-loading-boundary:not(.sp-loading-local) > :not(.sp-loading-progress):not(.sp-loading-hint) {
+  height: 100%;
+  min-height: 0;
+}
+.sp-loading-local { height: auto; min-height: 240px; }
+.sp-loading-progress {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+  background: var(--ant-color-primary-bg, #e6f4ff);
+}
+.sp-loading-progress::after {
+  content: '';
+  display: block;
+  width: 35%;
+  height: 100%;
+  background: var(--ant-color-primary, #1677ff);
+  animation: sp-loading-progress 1.4s ease-in-out infinite;
+}
+.sp-loading-hint {
+  position: absolute;
+  inset: 48px 0 auto;
+  text-align: center;
+  color: var(--ant-color-text-secondary, var(--nb-text, #666));
+  font-size: 13px;
+  pointer-events: none;
+}
+@keyframes sp-loading-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(386%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-loading-progress::after { animation: none; width: 100%; opacity: 0.5; }
+}

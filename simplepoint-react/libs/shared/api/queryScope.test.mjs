@@ -1,13 +1,52 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {setImmediate} from 'node:timers/promises';
-import {isCancelledError, QueryClient, QueryObserver} from '@tanstack/react-query';
+import {isCancelledError, InfiniteQueryObserver, QueryClient, QueryObserver} from '@tanstack/react-query';
 import {setStoredContextId, setStoredRoleId, setStoredTenantId} from './contextId.ts';
-import {bindQueryScope, getQueryScopeSnapshot, scopedQueryKey, scopedQueryOptions, subscribeQueryScope} from './queryScope.ts';
+import {bindQueryScope, getQueryScopeSnapshot, scopedPagePlaceholder, scopedQueryKey, scopedQueryOptions, subscribeQueryScope} from './queryScope.ts';
 
 const scopeA = ['tenant-a', 'role-a', 'context-a'];
 const scopeB = ['tenant-b', 'role-b', 'context-b'];
-const resourceKey = ['skill-designer-mcp-servers'];
+const resourceKey = ['managed-mcp-servers'];
+
+test('infinite pages preserve page parameters and reject old authorization scopes', async t => {
+  const {client, activate} = setup(t);
+  t.after(bindQueryScope(client));
+  const requested = [];
+  const options = {
+    ...scopedQueryOptions(scopeA, ['entity-select', '/policies'], async ({pageParam, signal}) => {
+      assert.equal(signal.aborted, false);
+      requested.push(pageParam);
+      return pageParam;
+    }),
+    initialPageParam: 2,
+    getNextPageParam: last => last + 1,
+    enabled: false,
+  };
+  const observer = new InfiniteQueryObserver(client, options);
+  t.after(observer.subscribe(() => {}));
+  await observer.refetch();
+  const result = await observer.fetchNextPage();
+  assert.deepEqual(result.data.pages, [2, 3]);
+  assert.deepEqual(result.data.pageParams, [2, 3]);
+  activate(scopeB);
+  await assert.rejects(client.fetchInfiniteQuery(options), isCancelledError);
+  assert.deepEqual(requested, [2, 3], 'stale authorization is rejected before the transport');
+});
+
+test('page placeholders only reuse the same resource and authorization scope', t => {
+  const {activate} = setup(t);
+  const resource = ['/api/users', 'users'];
+  const data = {content: [{id: 'old'}]};
+  const previous = {queryKey: scopedQueryKey(scopeA, [...resource, 1])};
+  assert.equal(scopedPagePlaceholder(scopeA, resource)(data, previous), data);
+  assert.equal(scopedPagePlaceholder(scopeA, ['/api/roles', 'roles'])(data, previous), undefined);
+  for (const next of [scopeB, ['tenant-a', 'role-b', 'context-a'], ['tenant-a', 'role-a', 'context-b']]) {
+    activate(next);
+    assert.equal(scopedPagePlaceholder(next, resource)(data, previous), undefined);
+    assert.equal(scopedPagePlaceholder(scopeA, resource)(data, previous), undefined);
+  }
+});
 
 function setup(t) {
   const descriptors = new Map(['window', 'localStorage'].map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
@@ -46,7 +85,7 @@ for (const [dimension, next] of [
 ]) {
   test(`cache separates ${dimension}, even for infinitely fresh data and identical resource IDs`, async (t) => {
     const {client, activate} = setup(t);
-    const key = ['skill-designer-mcp-snapshot', 'same-server', 'same-snapshot'];
+    const key = ['managed-mcp-snapshot', 'same-server', 'same-snapshot'];
     await client.fetchQuery({...scopedQueryOptions(scopeA, key, async () => 'A'), staleTime: Infinity});
     activate(next);
     assert.equal(client.getQueryData(scopedQueryKey(next, key)), undefined);
@@ -131,7 +170,7 @@ test('observer changing keys never exposes previous-scope data', async (t) => {
 
 test('writes and invalidation use the captured scope, not another workspace', async (t) => {
   const {client, activate} = setup(t);
-  const key = ['ai-skill-designer-draft', 'same-skill'];
+  const key = ['ai-runtime-profile-draft', 'same-profile'];
   client.setQueryData(scopedQueryKey(scopeA, key), 'A');
   activate(scopeB);
   client.setQueryData(scopedQueryKey(scopeB, key), 'B');

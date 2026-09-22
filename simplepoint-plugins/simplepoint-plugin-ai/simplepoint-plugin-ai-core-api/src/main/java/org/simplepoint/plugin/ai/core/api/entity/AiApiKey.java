@@ -49,6 +49,17 @@ import org.springframework.core.annotation.Order;
         authority = "ai.workbench.api-keys.delete")
 })
 @Schema(title = "i18n:ai.api-keys.entity.title")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("scopeType"),
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("keyPrefix"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("rateLimitPerMinute"),
+    @org.simplepoint.core.query.QueryField("expiresAt"),
+    @org.simplepoint.core.query.QueryField("lastUsedAt"),
+    @org.simplepoint.core.query.QueryField("usageCount"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class AiApiKey extends BaseEntityImpl<String> {
 
   @Order(0)

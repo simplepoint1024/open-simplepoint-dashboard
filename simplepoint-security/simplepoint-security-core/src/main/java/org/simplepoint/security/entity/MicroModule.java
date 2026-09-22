@@ -64,6 +64,14 @@ import org.springframework.core.annotation.Order;
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(title = "微模块对象", description = "用于加载微前端远程模块")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("displayName"),
+    @org.simplepoint.core.query.QueryField("serviceName"),
+    @org.simplepoint.core.query.QueryField("entry"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("createdAt"),
+    @org.simplepoint.core.query.QueryField("updatedAt")
+})
 public class MicroModule extends BaseEntityImpl<String> {
 
   @Order(0)

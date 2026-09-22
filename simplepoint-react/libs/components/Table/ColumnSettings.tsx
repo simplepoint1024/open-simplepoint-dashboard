@@ -17,7 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import {CSS} from '@dnd-kit/utilities';
 import {Alert, Button, Checkbox, Divider, Drawer, InputNumber, Segmented, Select, Switch, Tag} from 'antd';
-import {HolderOutlined} from '@ant-design/icons';
+import {HolderOutlined} from '@simplepoint/shared/types/icon';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {ColumnFixed, ColumnSetting, TableDisplaySettings} from './settings';
 import {DEFAULT_FIXED_COLUMN_WIDTH, normalizeColumnSettings} from './settings';

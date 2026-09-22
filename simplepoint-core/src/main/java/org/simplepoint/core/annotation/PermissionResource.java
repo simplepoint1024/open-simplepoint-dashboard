@@ -11,5 +11,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface PermissionResource {
+  /** Entity whose field permissions govern this projection. */
   Class<?> value();
 }

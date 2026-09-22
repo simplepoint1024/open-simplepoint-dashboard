@@ -1,6 +1,9 @@
 import { http, HttpResponse } from "msw";
+import {createRedisSnapshotFixture, redisSchema} from './queryFixture';
 
 const base = "/auditing/redis/entries";
+const maxValueBytes = 262144;
+const exceedsValueLimit = (value: unknown) => new TextEncoder().encode(String(value)).length > maxValueBytes;
 
 type RedisEntryType = "STRING" | "HASH" | "LIST" | "SET" | "ZSET" | "STREAM" | "UNKNOWN";
 
@@ -65,8 +68,6 @@ let redisEntries: RedisEntryRecord[] = [
   },
 ];
 
-const defaultPageSize = 10;
-
 const serializeValue = (record: RedisEntryRecord) => {
   if (record.type === "STRING") {
     return typeof record.value === "string" ? record.value : JSON.stringify(record.value, null, 2);
@@ -84,14 +85,9 @@ const serializeValue = (record: RedisEntryRecord) => {
   );
 };
 
-const previewValue = (record: RedisEntryRecord) => {
-  const value = serializeValue(record);
-  return value.length > 200 ? `${value.slice(0, 200)}...` : value;
-};
-
 const resolveSize = (record: RedisEntryRecord) => {
   if (record.type === "STRING") {
-    return serializeValue(record).length;
+    return new TextEncoder().encode(serializeValue(record)).length;
   }
   return Array.isArray(record.value) ? record.value.length : Object.keys(record.value).length;
 };
@@ -102,8 +98,8 @@ const buildSummary = (record: RedisEntryRecord) => ({
   ttlSeconds: record.persistent ? null : record.ttlSeconds,
   persistent: record.persistent,
   size: resolveSize(record),
-  valuePreview: previewValue(record),
   editable: record.type === "STRING",
+  observedAt: new Date().toISOString(),
 });
 
 const buildDetail = (record: RedisEntryRecord) => ({
@@ -114,40 +110,21 @@ const buildDetail = (record: RedisEntryRecord) => ({
   size: resolveSize(record),
   editable: record.type === "STRING",
   value: serializeValue(record),
+  valueEncoding: record.type === 'STRING' ? 'UTF-8' : 'json',
+  sampled: false,
+  truncated: false,
 });
 
-const buildPage = <T,>(content: T[], pageNumber: number, pageSize: number, totalElements: number) => ({
-  content,
-  page: {
-    size: pageSize,
-    number: pageNumber,
-    totalElements,
-    totalPages: totalElements === 0 ? 0 : Math.ceil(totalElements / pageSize),
-  },
-});
-
-const toPattern = (value: string) => {
-  const escaped = value.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
-  return new RegExp(`^${escaped}$`, "i");
-};
+const snapshots = createRedisSnapshotFixture(() => redisEntries.map(buildSummary));
 
 export default [
-  http.get(base, ({ request }) => {
-    const url = new URL(request.url);
-    const pageNumber = Number(url.searchParams.get("page") ?? "0");
-    const pageSize = Number(url.searchParams.get("size") ?? `${defaultPageSize}`);
-    const pattern = url.searchParams.get("pattern")?.trim() ?? "";
-    const type = url.searchParams.get("type")?.trim().toUpperCase() ?? "";
-    const matcher = pattern ? toPattern(pattern) : null;
-
-    const filtered = redisEntries
-      .filter((record) => (!matcher || matcher.test(record.key)) && (!type || record.type === type))
-      .sort((left, right) => left.key.localeCompare(right.key))
-      .map(buildSummary);
-
-    const fromIndex = Math.max(pageNumber, 0) * Math.max(pageSize, 1);
-    const toIndex = fromIndex + Math.max(pageSize, 1);
-    return HttpResponse.json(buildPage(filtered.slice(fromIndex, toIndex), pageNumber, pageSize, filtered.length));
+  http.get(`${base}/query/schema`, () => HttpResponse.json(redisSchema)),
+  http.get(`${base}/query`, ({request}) => {
+    try {
+      return HttpResponse.json(snapshots.query(new URL(request.url).searchParams));
+    } catch {
+      return HttpResponse.json({code: 'INVALID_QUERY', message: '筛选条件无效'}, {status: 400});
+    }
   }),
   http.get(`${base}/detail`, ({ request }) => {
     const key = new URL(request.url).searchParams.get("key") ?? "";
@@ -159,7 +136,7 @@ export default [
   }),
   http.post(base, async ({ request }) => {
     const payload = await request.json() as Record<string, unknown>;
-    const key = String(payload.key ?? "").trim();
+    const key = String(payload.key ?? "");
     if (!key) {
       return new HttpResponse("Redis key must not be blank", { status: 400 });
     }
@@ -168,6 +145,9 @@ export default [
     }
     if (payload.value === undefined || payload.value === null) {
       return new HttpResponse("Redis value must not be null", { status: 400 });
+    }
+    if (exceedsValueLimit(payload.value)) {
+      return new HttpResponse("Redis value exceeds the editing limit of 262144 UTF-8 bytes", {status: 400});
     }
     const persistent = payload.persistent === true;
     const ttlSeconds = persistent ? null : Number(payload.ttlSeconds ?? 0);
@@ -182,11 +162,12 @@ export default [
       value: String(payload.value),
     };
     redisEntries = [record, ...redisEntries];
+    snapshots.invalidate();
     return HttpResponse.json(buildDetail(record));
   }),
   http.put(base, async ({ request }) => {
     const payload = await request.json() as Record<string, unknown>;
-    const key = String(payload.key ?? "").trim();
+    const key = String(payload.key ?? "");
     const current = redisEntries.find((entry) => entry.key === key);
     if (!current) {
       return new HttpResponse(`Redis key does not exist: ${key}`, { status: 404 });
@@ -200,6 +181,9 @@ export default [
     if (payload.value === undefined || payload.value === null) {
       return new HttpResponse("Redis value must not be null", { status: 400 });
     }
+    if (exceedsValueLimit(payload.value)) {
+      return new HttpResponse("Redis value exceeds the editing limit of 262144 UTF-8 bytes", {status: 400});
+    }
     const persistent = payload.persistent === true;
     const ttlSeconds = persistent ? null : Number(payload.ttlSeconds ?? 0);
     if (ttlSeconds !== null && (!Number.isFinite(ttlSeconds) || ttlSeconds <= 0)) {
@@ -212,15 +196,17 @@ export default [
       value: String(payload.value),
     };
     redisEntries = redisEntries.map((entry) => (entry.key === key ? nextRecord : entry));
+    snapshots.invalidate();
     return HttpResponse.json(buildDetail(nextRecord));
   }),
   http.delete(base, ({ request }) => {
-    const keys = new URL(request.url).searchParams.getAll("keys").map((key) => key.trim()).filter(Boolean);
-    if (keys.length === 0) {
+    const keys = new URL(request.url).searchParams.getAll("keys");
+    if (keys.length === 0 || keys.some(key => key.length === 0)) {
       return new HttpResponse("At least one redis key is required", { status: 400 });
     }
     const keySet = new Set(keys);
     redisEntries = redisEntries.filter((entry) => !keySet.has(entry.key));
+    snapshots.invalidate();
     return HttpResponse.json(keys);
   }),
 ];

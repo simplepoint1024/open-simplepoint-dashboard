@@ -102,6 +102,27 @@ public class ObjectStorageAdminController {
     );
   }
 
+  /** Query and field-permission contract for global provider configuration. */
+  @GetMapping("/provider-configs/schema")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.providers.view')")
+  public Response<?> providerSchema() {
+    return Response.okay(providerConfigService.schema());
+  }
+
+  /** Query and field-permission contract for current-tenant objects. */
+  @GetMapping("/objects/schema")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.objects.view')")
+  public Response<?> objectSchema() {
+    return Response.okay(objectService.schema());
+  }
+
+  /** Includes SQL-derived usage, remaining capacity and tenant-name query capabilities. */
+  @GetMapping("/quotas/schema")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('storage.quotas.view')")
+  public Response<?> quotaSchema() {
+    return Response.okay(quotaService.schema());
+  }
+
   /**
    * @ Post Mapping.
    */

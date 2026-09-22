@@ -1,7 +1,7 @@
 import type {ItemType} from "antd/es/menu/interface";
-import {App as AntdApp, Avatar, Badge, Button, Drawer, Dropdown, List, MenuProps, Tooltip, Popconfirm, Tag} from "antd";
-import {ApartmentOutlined, BellOutlined, CreditCardOutlined, DeleteOutlined, DesktopOutlined, DownOutlined, EditOutlined, FontSizeOutlined, FullscreenExitOutlined, FullscreenOutlined, GithubOutlined, GlobalOutlined, HomeOutlined, LogoutOutlined, MoonOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SearchOutlined, SettingOutlined, SunOutlined, UserOutlined} from "@ant-design/icons";
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {App as AntdApp, Avatar, Button, Dropdown, MenuProps, Tooltip, Popconfirm, Tag} from "antd";
+import {ApartmentOutlined, CreditCardOutlined, DeleteOutlined, DesktopOutlined, DownOutlined, EditOutlined, FontSizeOutlined, FullscreenExitOutlined, FullscreenOutlined, GithubOutlined, GlobalOutlined, HomeOutlined, LogoutOutlined, MoonOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SearchOutlined, SettingOutlined, SunOutlined, UserOutlined} from "@simplepoint/shared/types/icon";
+import React, {useEffect, useRef, useState} from 'react';
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import { useUserInfo } from '@/fetches/user';
 import { useCurrentRoles, useCurrentTenants, type CurrentRole, type CurrentTenant } from '@/fetches/tenants';
@@ -10,9 +10,8 @@ import { getRoleId, setRoleId } from '@/store/role';
 import { setContextId } from '@/store/contextId';
 import { ensureContextId } from '@simplepoint/shared/api/contextId';
 import { clearClientCaches, redirectToLogout } from '@simplepoint/shared/api/session';
-import {get, put} from '@simplepoint/shared/api/methods';
-import type {Page} from '@simplepoint/shared/types/request';
-import {useNavigate} from 'react-router';
+import {NotificationButton} from './NotificationButton';
+import {useNavigationGuard} from './NavigationGuard';
 
 // 为主题切换提供短暂的全局颜色过渡动画
 function startThemeTransition(duration = 240) {
@@ -115,6 +114,7 @@ function roleDisplayName(
  * 顶部栏上下文区：工作空间切换。
  */
 export const TenantSwitcherTop: React.FC = () => {
+  const confirmWorkspaceChange = useNavigationGuard();
   const {message} = AntdApp.useApp();
   const { t } = useI18n();
   const { data, isFetching, refetch } = useCurrentTenants();
@@ -165,6 +165,7 @@ export const TenantSwitcherTop: React.FC = () => {
     onClick: async (info: any) => {
       const nextId = String(info?.key || '');
       if (!nextId || nextId === tenantId) return;
+      if (!await confirmWorkspaceChange()) return;
       const nextTenant = (data || []).find((x) => x.tenantId === nextId);
       const nextType = tenantTypeLabel(t, nextTenant);
       const nextName = tenantDisplayName(t, nextTenant);
@@ -219,6 +220,7 @@ export const TenantSwitcherTop: React.FC = () => {
  * 顶部栏上下文区：跟随当前工作空间的角色切换。
  */
 export const RoleSwitcherTop: React.FC = () => {
+  const confirmWorkspaceChange = useNavigationGuard();
   const {message} = AntdApp.useApp();
   const { t } = useI18n();
   const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
@@ -300,6 +302,7 @@ export const RoleSwitcherTop: React.FC = () => {
       if (!tenantId) return;
       const nextRoleId = info?.key === '__all__' ? undefined : String(info?.key || '');
       if ((nextRoleId ?? '') === (roleId ?? '')) return;
+      if (!await confirmWorkspaceChange()) return;
 
       setRoleId(nextRoleId, tenantId);
       setRoleIdState(nextRoleId);
@@ -650,321 +653,6 @@ export const HeaderSearchBar: React.FC<{ onOpen: () => void }> = ({ onOpen }) =>
   );
 };
 
-type InboxNotification = {
-  id: string;
-  title: string;
-  content: string;
-  category: 'ANNOUNCEMENT' | 'SYSTEM' | 'MAINTENANCE' | 'SECURITY';
-  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
-  linkUrl?: string;
-  publishAt: string;
-  expireAt?: string;
-  read: boolean;
-  readAt?: string;
-};
-
-type NotificationPushEvent = {
-  type?: 'PUBLISHED' | 'REVOKED' | 'USER_STATE_CHANGED';
-  notificationId?: string;
-  occurredAt?: string;
-};
-
-const NOTIFICATION_BASE_URL = '/common/notifications';
-
-const waitForReconnect = (delay: number, signal: AbortSignal) => new Promise<void>((resolve) => {
-  if (signal.aborted) {
-    resolve();
-    return;
-  }
-  const onAbort = () => {
-    window.clearTimeout(timeoutId);
-    resolve();
-  };
-  const timeoutId = window.setTimeout(() => {
-    signal.removeEventListener('abort', onAbort);
-    resolve();
-  }, delay);
-  signal.addEventListener('abort', onAbort, {once: true});
-});
-
-const consumeNotificationStream = async (
-  signal: AbortSignal,
-  onNotification: (event: NotificationPushEvent) => void,
-) => {
-  let reconnectDelay = 1_000;
-  while (!signal.aborted) {
-    try {
-      const tenantId = getTenantId()?.trim();
-      const roleId = getRoleId(tenantId)?.trim();
-      const contextId = await ensureContextId(tenantId, {roleId, signal});
-      const headers = new Headers({Accept: 'text/event-stream'});
-      if (tenantId) headers.set('X-Tenant-Id', tenantId);
-      if (roleId) headers.set('X-Role-Id', roleId);
-      if (contextId) headers.set('X-Context-Id', contextId);
-      const response = await get<Response>(`${NOTIFICATION_BASE_URL}/stream`, undefined, {
-        responseType: 'response',
-        cache: 'no-store',
-        headers,
-        signal,
-      });
-      if (!response.ok || !response.body) {
-        throw new Error(`Notification stream failed: ${response.status}`);
-      }
-      reconnectDelay = 1_000;
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      while (!signal.aborted) {
-        const result = await reader.read();
-        if (result.done) break;
-        buffer = (buffer + decoder.decode(result.value, {stream: true}))
-          .replace(/\r\n/g, '\n');
-        let boundary = buffer.indexOf('\n\n');
-        while (boundary >= 0) {
-          const frame = buffer.slice(0, boundary);
-          buffer = buffer.slice(boundary + 2);
-          let eventName = 'message';
-          const dataLines: string[] = [];
-          frame.split('\n').forEach((line) => {
-            if (line.startsWith('event:')) eventName = line.slice(6).trim();
-            if (line.startsWith('data:')) dataLines.push(line.slice(5).trim());
-          });
-          if (eventName === 'notification') {
-            try {
-              onNotification(JSON.parse(dataLines.join('\n')) as NotificationPushEvent);
-            } catch {
-              onNotification({});
-            }
-          }
-          boundary = buffer.indexOf('\n\n');
-        }
-      }
-    } catch {
-      if (signal.aborted) return;
-    }
-    await waitForReconnect(reconnectDelay, signal);
-    reconnectDelay = Math.min(30_000, reconnectDelay * 2);
-  }
-};
-
-const notificationTagColor = (category: InboxNotification['category']) => {
-  if (category === 'SECURITY') return 'red';
-  if (category === 'MAINTENANCE') return 'orange';
-  if (category === 'ANNOUNCEMENT') return 'blue';
-  return 'default';
-};
-
-const NotificationButton: React.FC = () => {
-  const {message} = AntdApp.useApp();
-  const {t, ensure, locale} = useI18n();
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const openRef = useRef(false);
-  const [loading, setLoading] = useState(false);
-  const [notifications, setNotifications] = useState<InboxNotification[]>([]);
-  const [unread, setUnread] = useState(0);
-  const [contextRevision, setContextRevision] = useState(0);
-
-  useEffect(() => {
-    openRef.current = open;
-  }, [open]);
-
-  useEffect(() => {
-    void ensure(['common', 'notifications']);
-  }, [ensure, locale]);
-
-  const loadUnread = useCallback(async () => {
-    try {
-      const result = await get<{count?: number}>(`${NOTIFICATION_BASE_URL}/unread-count`);
-      setUnread(Math.max(0, Number(result?.count ?? 0)));
-    } catch {
-      // The stream and the periodic reconciliation will retry without noisy global prompts.
-    }
-  }, []);
-
-  const loadInbox = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await get<Page<InboxNotification>>(
-        `${NOTIFICATION_BASE_URL}/inbox`,
-        {page: 0, size: 30},
-      );
-      setNotifications(result?.content ?? []);
-    } catch {
-      // Keep the last durable snapshot visible when a transient request fails.
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadUnread();
-    const timer = window.setInterval(() => {
-      void loadUnread();
-      if (openRef.current) void loadInbox();
-    }, 60_000);
-    return () => window.clearInterval(timer);
-  }, [loadInbox, loadUnread, contextRevision]);
-
-  useEffect(() => {
-    const handleContextChange = () => {
-      setNotifications([]);
-      setUnread(0);
-      setContextRevision((current) => current + 1);
-    };
-    window.addEventListener('sp-set-tenant', handleContextChange);
-    window.addEventListener('sp-set-role', handleContextChange);
-    window.addEventListener('sp-set-context-id', handleContextChange);
-    return () => {
-      window.removeEventListener('sp-set-tenant', handleContextChange);
-      window.removeEventListener('sp-set-role', handleContextChange);
-      window.removeEventListener('sp-set-context-id', handleContextChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    void consumeNotificationStream(controller.signal, (event) => {
-      void loadUnread();
-      if (openRef.current) void loadInbox();
-      if (event.type === 'PUBLISHED' && document.visibilityState === 'visible') {
-        message.info(t('nav.notification.received', '收到一条新通知'));
-      }
-    });
-    return () => controller.abort();
-  }, [contextRevision, loadInbox, loadUnread, message, t]);
-
-  const openNotificationCenter = () => {
-    setOpen(true);
-    void loadInbox();
-    void loadUnread();
-  };
-
-  const markAllRead = async () => {
-    setNotifications((items) => items.map((item) => ({...item, read: true})));
-    setUnread(0);
-    try {
-      await put(`${NOTIFICATION_BASE_URL}/read-all`, {});
-    } catch {
-      void loadInbox();
-      void loadUnread();
-    }
-  };
-
-  const selectNotification = async (item: InboxNotification) => {
-    if (!item.read) {
-      setNotifications((items) => items.map((current) =>
-        current.id === item.id ? {...current, read: true} : current
-      ));
-      setUnread((count) => Math.max(0, count - 1));
-      try {
-        await put(`${NOTIFICATION_BASE_URL}/${encodeURIComponent(item.id)}/read`, {});
-      } catch {
-        void loadInbox();
-        void loadUnread();
-        return;
-      }
-    }
-    if (item.linkUrl) {
-      setOpen(false);
-      if (/^https:\/\//i.test(item.linkUrl)) {
-        window.open(item.linkUrl, '_blank', 'noopener,noreferrer');
-      } else {
-        navigate(item.linkUrl);
-      }
-    }
-  };
-
-  const displayTime = (value?: string) => {
-    if (!value) return '-';
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '-' : new Intl.DateTimeFormat(locale, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(date);
-  };
-
-  return (
-    <>
-      <Tooltip title={t('nav.notifications', '通知')}>
-        <Badge count={unread} overflowCount={99} size="small" offset={[-2, 2]}>
-          <Button type="text" icon={<BellOutlined />} onClick={openNotificationCenter} />
-        </Badge>
-      </Tooltip>
-      <Drawer
-        title={
-          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-            <span>{t('nav.notifications','通知中心')}</span>
-            {unread > 0 && (
-              <Button type="link" size="small" onClick={() => void markAllRead()}>
-                {t('nav.markAllRead','全部已读')}
-              </Button>
-            )}
-          </div>
-        }
-        open={open}
-        onClose={() => setOpen(false)}
-        width={400}
-        styles={{body: {padding: 0}}}
-      >
-        <List
-          loading={loading}
-          dataSource={notifications}
-          rowKey="id"
-          locale={{emptyText: t('nav.notification.empty', '暂无通知')}}
-          renderItem={item => (
-            <List.Item
-              style={{
-                padding: '12px 16px',
-                background: item.read ? 'transparent' : 'rgba(22,119,255,0.04)',
-                borderLeft: item.read ? '3px solid transparent' : '3px solid #1677ff',
-                cursor: 'pointer',
-              }}
-              onClick={() => void selectNotification(item)}
-            >
-              <List.Item.Meta
-                title={(
-                  <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
-                    <Tag color={notificationTagColor(item.category)} style={{marginInlineEnd: 0}}>
-                      {t(`notifications.category.${item.category}`, item.category)}
-                    </Tag>
-                    <span style={{fontSize: 13, fontWeight: item.read ? 400 : 600}}>
-                      {item.title}
-                    </span>
-                    {(item.priority === 'HIGH' || item.priority === 'URGENT') && (
-                      <Tag color={item.priority === 'URGENT' ? 'red' : 'orange'} style={{marginInlineEnd: 0}}>
-                        {t(`notifications.priority.${item.priority}`, item.priority)}
-                      </Tag>
-                    )}
-                  </div>
-                )}
-                description={
-                  <div>
-                    <div style={{
-                      fontSize: 12,
-                      color: 'rgba(0,0,0,0.65)',
-                      whiteSpace: 'pre-wrap',
-                      overflowWrap: 'anywhere',
-                      display: '-webkit-box',
-                      WebkitBoxOrient: 'vertical',
-                      WebkitLineClamp: 3,
-                      overflow: 'hidden',
-                    }}>
-                      {item.content}
-                    </div>
-                    <div style={{fontSize: 11, color: 'rgba(0,0,0,0.35)', marginTop: 4}}>
-                      {displayTime(item.publishAt)}
-                    </div>
-                  </div>
-                }
-              />
-            </List.Item>
-          )}
-        />
-      </Drawer>
-    </>
-  );
-};
 
 const ShortcutsButton: React.FC = () => {
   const {t} = useI18n();

@@ -102,8 +102,22 @@ public class ApplicationController extends BaseController<ApplicationService, Ap
   @GetMapping("/items")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('packages.config.application') or hasAuthority('applications.config.resource')")
   @Operation(summary = "获取应用候选列表", description = "获取用于套餐应用配置的应用候选列表")
-  public Response<Page<Application>> items(Pageable pageable) {
-    return ok(service.limit(Map.of(), pageable));
+  public Response<Page<Application>> items(
+      @RequestParam Map<String, String> attributes,
+      @RequestParam(value = "selected", defaultValue = "false") boolean selected,
+      Pageable pageable) {
+    Map<String, String> filters = new java.util.LinkedHashMap<>(attributes);
+    String parent = filters.remove("packageCode");
+    filters.remove("selected");
+    return ok(parent == null ? service.limit(filters, pageable)
+        : service.assignmentItems(parent, selected, filters, pageable));
+  }
+
+  /** Returns the same query contract for callers with assignment rather than catalog-view authority. */
+  @GetMapping("/items/schema")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('packages.config.application') or hasAuthority('applications.config.resource')")
+  public Response<Map<String, Object>> itemSchema() {
+    return ok(service.schema());
   }
 
   /**

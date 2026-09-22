@@ -193,7 +193,7 @@ public class ProviderNeutralGenerationService implements AiGenerationService {
       throw new IllegalArgumentException("生成消息不能为空");
     }
     List<Message> messages = request.messages() == null ? List.of() : request.messages();
-    int maxMessages = positive(properties.getGenerationMaxMessages(), 200);
+    int maxMessages = positive(properties.getGenerationMaxMessages(), 1000);
     if (messages.size() > maxMessages) {
       throw new IllegalArgumentException("单次生成最多支持 " + maxMessages + " 条消息");
     }

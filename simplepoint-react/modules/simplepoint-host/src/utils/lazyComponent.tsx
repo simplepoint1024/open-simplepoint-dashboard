@@ -1,10 +1,16 @@
 import React from 'react';
-import {Button, Result} from 'antd';
+import {Button, Popconfirm, Result, Space} from 'antd';
 import { loadRemote } from '@module-federation/runtime';
+import {preloadRemoteComponentAssets} from './mfPreload';
+import {createPrefetchScheduler, permitsSpeculation} from './prefetchScheduler';
+
+type LazyModule = {default: React.ComponentType<any>};
 
 // 简单缓存，避免重复创建 React.lazy
 const lazyCache = new Map<string, React.LazyExoticComponent<React.ComponentType<any>>>();
+const moduleCache = new Map<string, Promise<LazyModule>>();
 const LAZY_CACHE_MAX = 50;
+const prefetchScheduler = createPrefetchScheduler();
 
 const specAliases: Record<string, string> = {
   'common/organization/tenant': 'common/platform/Tenant',
@@ -22,12 +28,73 @@ function cacheKey(spec: string, remoteRegistryKey?: string) {
 }
 
 function invalidateLazyComponent(spec: string, remoteRegistryKey?: string) {
-  lazyCache.delete(cacheKey(spec, remoteRegistryKey));
+  const key = cacheKey(spec, remoteRegistryKey);
+  lazyCache.delete(key);
+  moduleCache.delete(key);
 }
 
 function retryRouteLoad(spec: string, remoteRegistryKey?: string) {
   invalidateLazyComponent(spec, remoteRegistryKey);
   window.dispatchEvent(new CustomEvent('sp-refresh-route'));
+}
+
+async function loadComponentModule(spec: string, remoteRegistryKey?: string): Promise<LazyModule> {
+  const key = cacheKey(spec, remoteRegistryKey);
+  const cached = moduleCache.get(key);
+  if (cached) return cached;
+
+  const request = (async () => {
+    const candidates = getSpecCandidates(spec);
+    let lastError: unknown;
+    for (const candidate of candidates) {
+      try {
+        if (candidate.startsWith('./')) {
+          throw new Error(`Unregistered local lazy component: ${candidate}`);
+        }
+        // Asset metadata allows the expose chunk and remote entry to start in
+        // parallel instead of waiting for loadRemote's sequential discovery.
+        void preloadRemoteComponentAssets(candidate).catch(() => {
+          // Optional link preloads can time out even after the module is ready.
+          // Only loadRemote determines whether navigation succeeds.
+        });
+        const loaded = await loadRemote<LazyModule>(candidate);
+        if (!loaded?.default) throw new Error(`Remote component has no default export: ${candidate}`);
+        return loaded;
+      } catch (error) {
+        lastError = error;
+        console.warn(`[Mf] Failed to load remote component: ${candidate}`, error);
+      }
+    }
+    throw lastError ?? new Error(`Unable to load remote component: ${spec}`);
+  })();
+
+  if (moduleCache.size >= LAZY_CACHE_MAX) {
+    const firstKey = moduleCache.keys().next().value as string | undefined;
+    if (firstKey) moduleCache.delete(firstKey);
+  }
+  moduleCache.set(key, request);
+  void request.catch(() => {
+    if (moduleCache.get(key) === request) moduleCache.delete(key);
+  });
+  return request;
+}
+
+/** Start loading a remote page while the user is hovering its menu item. */
+export function prefetchLazyComponent(spec?: string, remoteRegistryKey?: string, immediate = false) {
+  if (!spec || spec.startsWith('external:') || spec.startsWith('iframe:')) return;
+  const connection = (navigator as Navigator & {connection?: {saveData?: boolean; effectiveType?: string}}).connection;
+  if (!permitsSpeculation(connection)) return;
+  const key = cacheKey(spec, remoteRegistryKey);
+  if (immediate) {
+    prefetchScheduler.cancel(key);
+    void loadComponentModule(spec, remoteRegistryKey).catch(() => {});
+  } else {
+    prefetchScheduler.schedule(key, () => loadComponentModule(spec, remoteRegistryKey));
+  }
+}
+
+export function cancelPrefetchLazyComponent(spec?: string, remoteRegistryKey?: string) {
+  if (spec) prefetchScheduler.cancel(cacheKey(spec, remoteRegistryKey));
 }
 
 export function getLazyComponent(
@@ -43,9 +110,17 @@ export function getLazyComponent(
         subTitle={t('error.remoteLoadFailSub', '远程模块可能正在升级或网络暂不可用。')}
         extra={
           spec ? (
-            <Button type="primary" onClick={() => retryRouteLoad(spec, remoteRegistryKey)}>
-              {t('error.reload', '重新加载')}
-            </Button>
+            <Space>
+              <Button type="primary" onClick={() => retryRouteLoad(spec, remoteRegistryKey)}>
+                {t('error.reload', '重新加载')}
+              </Button>
+              <Popconfirm
+                title={t('error.refreshPageConfirm', '刷新会丢失未保存的内容，确定继续吗？')}
+                onConfirm={() => window.location.reload()}
+              >
+                <Button>{t('error.refreshPage', '刷新页面获取最新版本')}</Button>
+              </Popconfirm>
+            </Space>
           ) : undefined
         }
       />
@@ -57,22 +132,12 @@ export function getLazyComponent(
   if (cached) return cached;
   const s = spec as string; // 保证后续为非空字符串
   const comp = React.lazy(async () => {
-    const candidates = getSpecCandidates(s);
-    for (const candidate of candidates) {
-      try {
-        if (candidate.startsWith("./")) {
-          // @ts-ignore
-          return await import(`${candidate}`) as { default: React.ComponentType<any> };
-        }
-        return await loadRemote(`${candidate}`) as { default: React.ComponentType<any> };
-      } catch (error) {
-        console.warn(`[Mf] Failed to load remote component: ${candidate}`, error);
-        if (candidate === candidates[candidates.length - 1]) {
-          return fallback as any;
-        }
-      }
+    prefetchScheduler.cancel(key);
+    try {
+      return await loadComponentModule(s, remoteRegistryKey);
+    } catch {
+      return fallback;
     }
-    return fallback as any;
   });
   if (lazyCache.size >= LAZY_CACHE_MAX) {
     const firstKey = lazyCache.keys().next().value as string | undefined;

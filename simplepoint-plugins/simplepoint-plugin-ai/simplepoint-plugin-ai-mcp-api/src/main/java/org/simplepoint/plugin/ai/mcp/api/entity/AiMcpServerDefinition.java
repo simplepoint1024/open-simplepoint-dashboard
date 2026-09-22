@@ -116,6 +116,33 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Schema(title = "i18n:ai.mcp-servers.entity.title")
+@org.simplepoint.core.query.TableQuery(value = {
+    @org.simplepoint.core.query.QueryField("id"),
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("deploymentType"),
+    @org.simplepoint.core.query.QueryField("transportType"),
+    @org.simplepoint.core.query.QueryField("endpointUrl"),
+    @org.simplepoint.core.query.QueryField("authenticationType"),
+    @org.simplepoint.core.query.QueryField("oauthClientId"),
+    @org.simplepoint.core.query.QueryField("oauthRedirectUri"),
+    @org.simplepoint.core.query.QueryField("oauthScopes"),
+    @org.simplepoint.core.query.QueryField("oauthTokenEndpointAuthMethod"),
+    @org.simplepoint.core.query.QueryField("oauthStatus"),
+    @org.simplepoint.core.query.QueryField("oauthAuthorizationEndpoint"),
+    @org.simplepoint.core.query.QueryField("oauthTokenEndpoint"),
+    @org.simplepoint.core.query.QueryField("oauthAccessTokenExpiresAt"),
+    @org.simplepoint.core.query.QueryField("oauthAuthorizedAt"),
+    @org.simplepoint.core.query.QueryField("allowPrivateNetwork"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("status"),
+    @org.simplepoint.core.query.QueryField("protocolVersion"),
+    @org.simplepoint.core.query.QueryField("remoteServerName"),
+    @org.simplepoint.core.query.QueryField("remoteServerVersion"),
+    @org.simplepoint.core.query.QueryField("lastDiscoveredAt"),
+    @org.simplepoint.core.query.QueryField("lastError"),
+    @org.simplepoint.core.query.QueryField("description")
+}, maxPageSize = 500)
 public class AiMcpServerDefinition extends BaseEntityImpl<String> {
 
   @Order(0)

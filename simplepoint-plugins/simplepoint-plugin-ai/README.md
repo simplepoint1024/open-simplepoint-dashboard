@@ -22,11 +22,5 @@ simplepoint-plugin-ai/
 
 `ai-knowledge` 是与 `ai-core` 同级的独立插件族，负责知识库配置、文档解析、分块、Embedding 调用编排，以及 PostgreSQL 全文/pg_trgm/pgvector 候选召回和 RRF 混合检索。它只通过 `ai-core-api` 使用模型能力，供应商调用细节仍由 core 封装。
 
-后续能力继续按同样方式扩展，例如：
-
-```text
-simplepoint-plugin-ai-tool-*
-simplepoint-plugin-ai-skill-*
-```
-
-领域插件只能依赖 `ai-core-api` 或确有需要的 core 实现层，`ai-core` 不反向依赖知识库、工具或技能模块。
+MCP、Runtime 和 Catalog 分别维护协议接入、工具运行和扩展目录，均与 core、knowledge 同级。
+领域插件按需依赖 core；core 不反向依赖这些领域。

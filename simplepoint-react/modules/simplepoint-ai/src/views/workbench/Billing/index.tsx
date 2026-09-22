@@ -271,6 +271,9 @@ const Billing = () => {
         </Card>
         <Card title={t('ai.billing.table.title', '模型费用排行')}>
           <DataTable<ModelSummary>
+            storageKey="ai.billing.model-summary"
+            query={{mode: 'local', scope: 'complete', fields: {modelId: {type: 'string'}, currency: {type: 'string'},
+              invocationCount: {type: 'integer'}, inputTokens: {type: 'integer'}, outputTokens: {type: 'integer'}, totalCost: {type: 'number'}}}}
             columns={columns}
             dataSource={summary?.models ?? []}
             pagination={false}

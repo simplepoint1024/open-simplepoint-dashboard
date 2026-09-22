@@ -152,6 +152,24 @@ class RolesServiceImplTest {
   }
 
   @Test
+  void overviewManagementScopeRequiresOwnerAndRechecksRevocation() {
+    var context = new AuthorizationContext();
+    context.setUserId("user1");
+    context.setAttributes(Map.of("X-Tenant-Id", "tenant1"));
+    context.setIsAdministrator(false);
+    authorizationContextHolder.when(AuthorizationContextHolder::getContext).thenReturn(context);
+    var tenant = new org.simplepoint.plugin.rbac.tenant.api.entity.Tenant();
+    tenant.setId("tenant1"); tenant.setOwnerId("user1");
+    when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
+    assertThat(service.requireManagementTenant()).isEqualTo("tenant1");
+    tenant.setOwnerId("another-owner");
+    assertThatThrownBy(() -> service.requireManagementTenant())
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    authorizationContextHolder.when(AuthorizationContextHolder::getContext).thenReturn(tenantAdminContext());
+    assertThat(service.requireManagementTenant()).isEqualTo("tenant1");
+  }
+
+  @Test
   void authorized_roleExists_delegatesToRepository() {
     when(roleRepository.findById("r1")).thenReturn(Optional.of(roleWithTenant("r1")));
     when(roleRepository.authorized("tenant1", "r1")).thenReturn(List.of("resources.view"));

@@ -74,6 +74,15 @@ import org.springframework.core.annotation.Order;
 @AllArgsConstructor
 @Tag(name = "套餐包对象", description = "用于管理租户下的套餐包")
 @Schema(title = "套餐包对象", description = "用于管理租户下的套餐包")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("price"),
+    @org.simplepoint.core.query.QueryField("durationDays"),
+    @org.simplepoint.core.query.QueryField("sort"),
+    @org.simplepoint.core.query.QueryField("enabled")
+})
 public class Package extends BaseEntityImpl<String> {
 
   /**

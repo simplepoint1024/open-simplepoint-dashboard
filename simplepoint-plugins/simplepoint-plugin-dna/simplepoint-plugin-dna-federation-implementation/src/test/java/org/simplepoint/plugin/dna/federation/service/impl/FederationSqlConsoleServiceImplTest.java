@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -70,7 +71,7 @@ class FederationSqlConsoleServiceImplTest {
         analysis
     );
     when(policyRepository.findAllActiveByCatalogId("ds-1")).thenReturn(List.of(policy));
-    when(catalogAssembler.assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty())))
+    when(catalogAssembler.assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty()), anyMap()))
         .thenReturn(assembly);
     when(queryEngine.explain(any(), any())).thenReturn(analysis);
     when(queryEngine.execute(any(), any(), any())).thenReturn(queryResult);
@@ -87,7 +88,7 @@ class FederationSqlConsoleServiceImplTest {
     assertEquals("ds1", response.catalogCode());
     assertTrue(response.dataSources().isEmpty());
     verify(dataSourceService, never()).listEnabledDefinitions();
-    verify(catalogAssembler).assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty()));
+    verify(catalogAssembler).assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty()), anyMap());
   }
 
   @Test
@@ -111,7 +112,7 @@ class FederationSqlConsoleServiceImplTest {
         analysis
     );
     when(policyRepository.findAllActiveByCatalogId("ds-1")).thenReturn(List.of(policy));
-    when(catalogAssembler.assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty())))
+    when(catalogAssembler.assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty()), anyMap()))
         .thenReturn(assembly);
     when(queryEngine.explain(any(), any())).thenReturn(analysis);
     when(queryEngine.execute(any(), any(), any())).thenReturn(queryResult);
@@ -154,7 +155,7 @@ class FederationSqlConsoleServiceImplTest {
         );
     CalciteQueryAnalysis analysis = new CalciteQueryAnalysis("EnumerableValues(tuples=[[{ 1 }]])", List.of(), false);
     when(policyRepository.findAllActiveByCatalogId("ds-1")).thenReturn(List.of(policy));
-    when(catalogAssembler.assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty())))
+    when(catalogAssembler.assemble(eq("ds1"), argThat((List<JdbcDataSourceDefinition> definitions) -> definitions.isEmpty()), anyMap()))
         .thenReturn(assembly);
     when(queryEngine.explain(any(), any())).thenReturn(analysis);
     FederationSqlConsoleServiceImpl service = service();
@@ -201,7 +202,7 @@ class FederationSqlConsoleServiceImplTest {
     when(catalogAssembler.assemble(eq("ds1"), argThat(definitions ->
         definitions.size() == 2
             && definitions.stream().map(JdbcDataSourceDefinition::getCode).toList().containsAll(List.of("ds1", "ds2"))
-    ))).thenReturn(assembly);
+    ), anyMap())).thenReturn(assembly);
     when(queryEngine.explain(any(), any())).thenReturn(analysis);
     when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
     FederationSqlConsoleServiceImpl service = service();
@@ -263,7 +264,7 @@ class FederationSqlConsoleServiceImplTest {
     when(catalogAssembler.assemble(eq("ds1"), argThat(definitions ->
         definitions.size() == 2
             && definitions.stream().map(JdbcDataSourceDefinition::getCode).toList().containsAll(List.of("ds1", "ds2"))
-    ))).thenReturn(assembly);
+    ), anyMap())).thenReturn(assembly);
     when(queryEngine.explain(any(), any())).thenReturn(analysis);
     when(queryEngine.execute(any(), any(), any())).thenReturn(queryResult);
     when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -323,7 +324,7 @@ class FederationSqlConsoleServiceImplTest {
     when(catalogAssembler.assemble(eq("pg"), argThat(definitions ->
         definitions.size() == 1
             && definitions.stream().map(JdbcDataSourceDefinition::getCode).toList().contains("pg")
-    ))).thenReturn(assembly);
+    ), anyMap())).thenReturn(assembly);
     when(queryEngine.explain(any(), any())).thenReturn(analysis);
     when(queryEngine.execute(any(), any(), any())).thenReturn(queryResult);
     when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));

@@ -14,6 +14,7 @@ import {EMPTY_QUERY_SCOPE, getQueryScopeSnapshot, subscribeQueryScope} from '@si
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {Alert, App, Form, Input, Modal, Select, Space, Switch, Tag} from 'antd';
 import {useCallback, useMemo, useState, useSyncExternalStore} from 'react';
+import {accountActionDisabled} from './accountActions';
 
 const baseConfig = api['platform.accounts'];
 
@@ -61,9 +62,9 @@ function PlatformAccountsContent({scope}: {scope: string}) {
       filterDropdown: undefined,
       render: (_value: PlatformAccount['roles'], row: PlatformAccount) => (
         <Space wrap size={[4, 4]}>
-          {row.superAdmin && <Tag color="red">{t('platform-accounts.root', '超级管理员')}</Tag>}
-          {row.roles.map(role => <Tag key={role}>{role}</Tag>)}
-          {!row.superAdmin && row.roles.length === 0 ? '-' : null}
+          {row.superAdmin === true && <Tag color="red">{t('platform-accounts.root', '超级管理员')}</Tag>}
+          {Array.isArray(row.roles) ? row.roles.map(role => <Tag key={role}>{role}</Tag>) : row.roles ?? '-'}
+          {row.superAdmin !== true && Array.isArray(row.roles) && row.roles.length === 0 ? '-' : null}
         </Space>
       ),
     },
@@ -117,7 +118,8 @@ function PlatformAccountsContent({scope}: {scope: string}) {
           {...baseConfig}
           customButtonEvents={customButtonEvents}
           columnOverrides={columnOverrides}
-          isButtonDisabled={() => !capabilities.data || !!capabilities.error}
+          isButtonDisabled={(button, _keys, rows) => !!capabilities.error
+            || accountActionDisabled(button.key, rows, capabilities.data?.permissions)}
         />
       </div>
       <Modal

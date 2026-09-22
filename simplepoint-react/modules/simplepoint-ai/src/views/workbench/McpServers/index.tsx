@@ -226,6 +226,10 @@ const McpServers = () => {
               {`${result.serverName || '-'} ${result.serverVersion || ''} · ${result.protocolVersion || '-'}`}
             </Text>
             <DataTable
+              storageKey="ai.mcp.discovery-tools"
+              query={{mode: 'local', scope: 'result', fields: {
+                name: {type: 'string'}, title: {type: 'string'}, description: {type: 'string'},
+              }}}
               style={{marginTop: 16}}
               size="small"
               rowKey="name"
@@ -303,12 +307,11 @@ const McpServers = () => {
     try {
       const page = await get<Page<RuntimePool>>(config.poolsUrl, {
         page: 0,
-        size: 500,
+        size: 1,
+        serverId: JSON.stringify({version: 1, where: {field: 'serverId', op: 'equals', value: server.id}}),
       });
       hide();
-      const pool = (page.content ?? []).find(
-        (pool) => pool.serverId === server.id,
-      );
+      const pool = page.content?.[0];
       if (pool) {
         setDeploymentView({server, pool, autoDiscover: false});
       } else {
@@ -566,7 +569,7 @@ const McpServers = () => {
       <RuntimePoolEditorDialog
         open={Boolean(deployingServer)}
         pool={deployingPool}
-        servers={deployingServer ? [deployingServer as RuntimeServer] : []}
+        serversUrl={config.baseUrl}
         fixedServer={deployingServer as RuntimeServer | undefined}
         poolsUrl={config.poolsUrl}
         secretsUrl={config.secretsUrl}

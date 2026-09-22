@@ -43,7 +43,6 @@ type Config struct {
 	TLSCAFile                  string
 	TLSIdentity                string
 	ExpectedNodeIdentityPrefix string
-	ExpectedAIIdentity         string
 	SignatureMode              string
 	CosignPublicKeyFile        string
 	CertificateIdentityRegexp  string
@@ -76,7 +75,6 @@ func Load() (Config, error) {
 		TLSCAFile:                  strings.TrimSpace(os.Getenv("SIMPLEPOINT_TOOL_IMAGE_VERIFIER_TLS_CA_FILE")),
 		TLSIdentity:                env("SIMPLEPOINT_TOOL_IMAGE_VERIFIER_TLS_IDENTITY", "spiffe://open-simplepoint/tool-image-verifier"),
 		ExpectedNodeIdentityPrefix: env("SIMPLEPOINT_TOOL_IMAGE_VERIFIER_NODE_IDENTITY_PREFIX", "spiffe://open-simplepoint/runtime-node/"),
-		ExpectedAIIdentity:         env("SIMPLEPOINT_TOOL_IMAGE_VERIFIER_AI_IDENTITY", "spiffe://open-simplepoint/ai-control-plane"),
 		SignatureMode:              strings.ToLower(env("SIMPLEPOINT_TOOL_IMAGE_VERIFIER_SIGNATURE_MODE", "keyless")),
 		CosignPublicKeyFile:        strings.TrimSpace(os.Getenv("SIMPLEPOINT_TOOL_IMAGE_VERIFIER_COSIGN_PUBLIC_KEY_FILE")),
 		CertificateIdentityRegexp:  strings.TrimSpace(os.Getenv("SIMPLEPOINT_TOOL_IMAGE_VERIFIER_CERTIFICATE_IDENTITY_REGEXP")),
@@ -121,8 +119,7 @@ func (c Config) Validate() error {
 		!safePath(c.TLSCAFile)):
 		return errors.New("image verifier TLS files are required")
 	case c.MTLSEnabled && (!validSPIFFE(c.TLSIdentity) ||
-		!validSPIFFEPrefix(c.ExpectedNodeIdentityPrefix) ||
-		!validSPIFFE(c.ExpectedAIIdentity)):
+		!validSPIFFEPrefix(c.ExpectedNodeIdentityPrefix)):
 		return errors.New("image verifier TLS identities are invalid")
 	case c.SignatureMode != "key" && c.SignatureMode != "keyless":
 		return errors.New("image verifier signature mode must be key or keyless")

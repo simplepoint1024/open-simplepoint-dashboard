@@ -62,6 +62,17 @@ import org.springframework.core.annotation.Order;
 })
 @Tag(name = "查询策略", description = "用于管理联邦查询策略")
 @Schema(title = "i18n:dna.federation.queryPolicies.entity.title", description = "i18n:dna.federation.queryPolicies.entity.description")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("catalogId"),
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("allowSqlConsole"),
+    @org.simplepoint.core.query.QueryField("allowCrossSourceJoin"),
+    @org.simplepoint.core.query.QueryField("maxRows"),
+    @org.simplepoint.core.query.QueryField("timeoutMs"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class FederationQueryPolicy extends BaseEntityImpl<String> {
 
   @Order(0)

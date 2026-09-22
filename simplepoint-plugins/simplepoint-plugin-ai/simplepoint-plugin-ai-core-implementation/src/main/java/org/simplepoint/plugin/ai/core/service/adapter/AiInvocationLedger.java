@@ -90,6 +90,11 @@ final class AiInvocationLedger {
     }
   }
 
+  AiInvocationRecord find(final String invocationId) {
+    return invocationId == null ? null : repository.findById(invocationId)
+        .filter(record -> record.getStatus() == AiInvocationStatus.RUNNING).orElse(null);
+  }
+
   void success(final AiInvocationRecord record, final GenerationResult result) {
     if (record == null || result == null) {
       return;

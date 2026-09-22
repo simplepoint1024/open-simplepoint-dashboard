@@ -1,3 +1,42 @@
+.dna-sql-workbench {
+  --sql-font: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  height: 100%; min-height: 0; min-width: 0;
+  color: var(--sql-text); background: var(--sql-bg);
+  border: 1px solid var(--sql-border); overflow: hidden;
+}
+.dna-sql-explorer, .dna-sql-main, .dna-sql-output {
+  display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; overflow: hidden;
+}
+.dna-sql-explorer { background: var(--sql-panel); }
+.dna-sql-toolwindow-title, .dna-sql-file-tab, .dna-sql-statusbar, .dna-sql-object-path {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 10px; flex: 0 0 auto; border-bottom: 1px solid var(--sql-border);
+}
+.dna-sql-toolwindow-title { font-weight: 600; font-size: 12px; }
+.dna-sql-explorer > .ant-input-group-wrapper { padding: 8px; }
+.dna-sql-tree { flex: 1; overflow: auto; padding: 4px; min-height: 0; }
+.dna-sql-tree .ant-tree { background: transparent; font-size: 12px; }
+.dna-sql-tree .ant-tag { font-size: 10px; padding-inline: 3px; margin: 0; line-height: 16px; }
+.dna-sql-tree .ant-tree-node-content-wrapper { white-space: nowrap; }
+.dna-sql-tree .ant-tree-treenode.filter-node .ant-tree-title { text-decoration: underline; }
+.dna-sql-object-path { font-size: 11px; border-top: 1px solid var(--sql-border); border-bottom: 0; }
+.dna-sql-file-tab { background: var(--sql-panel); font-family: var(--sql-font); font-size: 12px; }
+.dna-sql-file-tab > span:first-child { border-bottom: 2px solid #3574f0; padding: 4px 12px; }
+.dna-sql-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 4px 6px; border-bottom: 1px solid var(--sql-border); }
+.dna-sql-toolbar .dna-sql-run:not(:disabled) { color: #37965b; }
+.dna-sql-source-select { width: 240px; min-width: 120px; flex: 1; max-width: 340px; }
+.dna-sql-toolbar .ant-input-number { width: 90px; }
+.dna-sql-options { width: min(380px, 75vw); display: grid; gap: 12px; }
+.dna-sql-options label { display: grid; gap: 4px; }
+.dna-sql-editor-split { flex: 1; min-height: 0; }
+.dna-sql-editor { height: 100%; overflow: hidden; }
+.dna-sql-output { padding: 0 8px 4px; }
+.dna-sql-output .ant-alert { flex: 0 0 auto; margin: 6px 0; max-height: 45%; overflow: auto; }
+.dna-sql-output pre { white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--sql-font); margin: 0; }
+.dna-sql-progress { display: flex; gap: 8px; padding: 8px; }
+.dna-sql-statusbar { border-top: 1px solid var(--sql-border); border-bottom: 0; background: var(--sql-panel); font-size: 11px; color: var(--sql-muted); }
+.dna-sql-console-result-table { font-family: var(--sql-font); font-size: 12px; }
+
 .dna-sql-console-tabs {
   display: flex;
   flex: 1 1 auto;

@@ -6,7 +6,6 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.RoleResourceGrantDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
-import org.simplepoint.plugin.rbac.core.api.pojo.vo.AccessCenterResourceNodeVo;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 
 class RbacCoreDtosAndVosTest {
@@ -27,20 +26,6 @@ class RbacCoreDtosAndVosTest {
     dto.setRoleIds(Set.of("role1", "role2"));
     assertThat(dto.getUserId()).isEqualTo("user1");
     assertThat(dto.getRoleIds()).containsExactlyInAnyOrder("role1", "role2");
-  }
-
-  @Test
-  void accessCenterResourceNodeVo_setterGetter() {
-    AccessCenterResourceNodeVo vo = new AccessCenterResourceNodeVo();
-    vo.setId("res1");
-    vo.setCode("users.view");
-    vo.setResourceCode("users.view");
-    vo.setGrantable(true);
-    vo.getResourceCodes().add("users.view");
-    assertThat(vo.getId()).isEqualTo("res1");
-    assertThat(vo.getCode()).isEqualTo("users.view");
-    assertThat(vo.getResourceCodes()).containsExactly("users.view");
-    assertThat(vo.isGrantable()).isTrue();
   }
 
   @Test

@@ -2,6 +2,7 @@ import api from '@/api';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {get} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {Alert, Button, Spin, Tabs} from 'antd';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import RuntimeNodes from './RuntimeNodes';
@@ -72,6 +73,7 @@ const Runtime = ({permissions: providedPermissions}: RuntimeProps = {}) => {
       children: (
         <div style={{height: '100%', overflow: 'auto'}}>
           <RuntimePools
+            active={activeTab === 'pools'}
             poolsUrl={config.poolsUrl}
             secretsUrl={config.secretsUrl}
             serversUrl={config.baseUrl}
@@ -86,6 +88,7 @@ const Runtime = ({permissions: providedPermissions}: RuntimeProps = {}) => {
       children: (
         <div style={{height: '100%', overflow: 'auto'}}>
           <RuntimeWorkloads
+            active={activeTab === 'workloads'}
             workloadsUrl={config.workloadsUrl}
             secretsUrl={config.secretsUrl}
             serversUrl={config.baseUrl}
@@ -99,7 +102,7 @@ const Runtime = ({permissions: providedPermissions}: RuntimeProps = {}) => {
       label: t('ai.runtime.tab.nodes', 'Nodes（平台）'),
       children: (
         <div style={{height: '100%', overflow: 'auto'}}>
-          <RuntimeNodes nodesUrl={config.nodesUrl}/>
+          <RuntimeNodes active={activeTab === 'nodes'} nodesUrl={config.nodesUrl}/>
         </div>
       ),
     } : null,
@@ -109,6 +112,7 @@ const Runtime = ({permissions: providedPermissions}: RuntimeProps = {}) => {
       children: (
         <div style={{height: '100%', overflow: 'auto'}}>
           <RuntimeSecrets
+            active={activeTab === 'secrets'}
             secretsUrl={config.secretsUrl}
             canManage={Boolean(permissions?.manageSecrets)}
           />
@@ -116,6 +120,7 @@ const Runtime = ({permissions: providedPermissions}: RuntimeProps = {}) => {
       ),
     } : null,
   ].filter((item): item is NonNullable<typeof item> => item !== null), [
+    activeTab,
     canViewPools,
     canViewSecrets,
     canViewWorkloads,
@@ -186,4 +191,7 @@ const Runtime = ({permissions: providedPermissions}: RuntimeProps = {}) => {
   );
 };
 
-export default Runtime;
+export default function ScopedRuntime(props: RuntimeProps) {
+  const scope = useQueryScope();
+  return <Runtime key={JSON.stringify(scope)} {...props}/>;
+}

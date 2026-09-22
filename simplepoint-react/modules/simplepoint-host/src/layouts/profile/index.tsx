@@ -3,12 +3,10 @@ import {
   App as AntdApp,
   Avatar,
   Button,
-  Card,
   Col,
   DatePicker,
   Descriptions,
   Divider,
-  Drawer,
   Empty,
   Form,
   Input,
@@ -20,7 +18,7 @@ import {
   Typography,
 } from 'antd';
 import {
-  EditOutlined,
+  ApartmentOutlined,
   IdcardOutlined,
   LockOutlined,
   LinkOutlined,
@@ -29,14 +27,16 @@ import {
   SafetyCertificateOutlined,
   SaveOutlined,
   UserOutlined,
-} from '@ant-design/icons';
+} from '@simplepoint/shared/types/icon';
 import dayjs from 'dayjs';
 import {useQueryClient} from '@tanstack/react-query';
 import {OssImageUpload} from '@simplepoint/components/SForm/widgets/OssImageUpload';
 import {post, put} from '@simplepoint/shared/api/methods';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
+import {usePageRetention} from '@simplepoint/shared/page/hooks';
 import {useI18n} from '@/layouts/i18n/useI18n.ts';
 import {type CurrentProfile, useCurrentProfile, useUserInfo} from '@/fetches/user.ts';
+import {ProfileAccessSection, ProfileOrganizationSection} from './ProfileSections.tsx';
 import './index.css';
 
 type ProfileFormValues = {
@@ -84,15 +84,29 @@ export const Profile: React.FC = () => {
   const queryClient = useQueryClient();
   const {data, isLoading, refetch} = useCurrentProfile();
   const {data: userInfo, refetch: refetchUserInfo} = useUserInfo();
-  const [detailOpen, setDetailOpen] = useState(false);
+  const [section, setSection] = useState<'about' | 'access' | 'organization' | 'security'>('about');
+  const [detailDirty, setDetailDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [avatarSaving, setAvatarSaving] = useState(false);
+  const [securityLinks, setSecurityLinks] = useState<{twoFactor: string; externalIdentities: string} | null>(null);
   const [detailForm] = Form.useForm<ProfileFormValues>();
-  const detailPicture = Form.useWatch('picture', detailForm);
 
   useEffect(() => {
-    void ensure(['profile']);
+    void ensure(['profile', 'resources']);
   }, [ensure, locale]);
+
+  useEffect(() => {
+    if (section !== 'security') return;
+    const controller = new AbortController();
+    void fetch('/account/security-links', {credentials: 'same-origin', signal: controller.signal})
+      .then(response => {
+        if (!response.ok) throw new Error('security links unavailable');
+        return response.json() as Promise<{twoFactor: string; externalIdentities: string}>;
+      })
+      .then(setSecurityLinks)
+      .catch(error => {if (error.name !== 'AbortError') setSecurityLinks(null);});
+    return () => controller.abort();
+  }, [section]);
 
   const syncProfile = useCallback((updated: CurrentProfile) => {
     queryClient.setQueryData(['current-profile'], updated);
@@ -105,10 +119,10 @@ export const Profile: React.FC = () => {
   }, [queryClient]);
 
   useEffect(() => {
-    if (detailOpen && data) {
+    if (data && !detailDirty) {
       detailForm.setFieldsValue(toFormValues(data));
     }
-  }, [data, detailForm, detailOpen]);
+  }, [data, detailForm, detailDirty]);
 
   useEffect(() => {
     const handleFocus = () => {
@@ -140,7 +154,7 @@ export const Profile: React.FC = () => {
       setSaving(true);
       const updated = await put<CurrentProfile>('/common/users/me', toUpdatePayload(values));
       syncProfile(updated);
-      setDetailOpen(false);
+      setDetailDirty(false);
       message.success(t('profile.saveSuccess', '个人资料已保存'));
     } catch (error: any) {
       if (error?.errorFields) return;
@@ -159,15 +173,14 @@ export const Profile: React.FC = () => {
         picture: picture || null,
       });
       syncProfile(updated);
-      message.success(t('profile.avatarSaved', '头像已更新'));
-    } catch (error: unknown) {
-      message.error(resolveApiErrorMessage(error, t('profile.avatarSaveFailed', '头像更新失败')));
+      detailForm.setFieldValue('picture', updated.picture || undefined);
     } finally {
       setAvatarSaving(false);
     }
   };
 
   const [pwdSaving, setPwdSaving] = useState(false);
+  usePageRetention(false, detailDirty || saving || avatarSaving || pwdSaving);
   const [pwdForm] = Form.useForm();
   const onChangePassword = async () => {
     try {
@@ -188,203 +201,63 @@ export const Profile: React.FC = () => {
     }
   };
 
-  const openTwoFactorSettings = () => {
-    const path = '/authorization/account/2fa?gateway=true';
-    const opened = window.open(path, '_blank', 'noopener,noreferrer');
-    if (!opened) window.location.assign(path);
-  };
-
-  const openExternalAccounts = () => {
-    const path = '/authorization/account/external-identities?gateway=true';
-    const opened = window.open(path, '_blank', 'noopener,noreferrer');
-    if (!opened) window.location.assign(path);
-  };
-
   const formatDate = (value?: string | null) => value ? dayjs(value).format('YYYY-MM-DD HH:mm') : '-';
 
   return (
     <div className="profile-page">
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={8}>
-          <Card className="profile-card profile-identity-card">
-            {isLoading ? <Skeleton avatar active paragraph={{rows: 3}}/> : data ? (
-              <div className="avatar-card">
-                <div className="profile-avatar-ring">
-                  <Avatar
-                    size={88}
-                    src={data.picture || undefined}
-                    icon={!data.picture ? <UserOutlined/> : undefined}
-                    alt={displayName}
-                  />
-                </div>
-                <Typography.Title className="profile-name" level={4}>{displayName}</Typography.Title>
-                <Typography.Paragraph className="profile-sub">
-                  {data.email || t('profile.noEmail', '未绑定邮箱')}
-                </Typography.Paragraph>
-                <OssImageUpload
-                  value={data.picture}
-                  onChange={(picture) => void saveAvatar(picture)}
-                  disabled={avatarSaving}
-                  directory="avatars/users"
-                  sourceServiceName="rbac-avatar"
-                  shape="circle"
-                  maxSizeMb={5}
-                />
-              </div>
-            ) : <Empty/>}
-          </Card>
-        </Col>
-
-        <Col xs={24} lg={16}>
-          <Card
-            className="profile-card"
-            title={<span><IdcardOutlined/> {t('profile.basic', '基本信息')}</span>}
-            extra={data ? (
-              <Space>
-                <Button icon={<ReloadOutlined/>} onClick={() => void refetch()}>
-                  {t('action.refresh', '刷新')}
-                </Button>
-                <Button type="primary" icon={<EditOutlined/>} onClick={() => setDetailOpen(true)}>
-                  {t('profile.editDetails', '编辑详细资料')}
-                </Button>
-              </Space>
-            ) : undefined}
-          >
-            {isLoading ? <Skeleton active paragraph={{rows: 7}}/> : !data ? <Empty/> : (
-              <Descriptions column={{xs: 1, sm: 2}} size="middle" className="profile-descriptions">
-                <Descriptions.Item label={t('field.nickname', '昵称')}>{data.nickname || '-'}</Descriptions.Item>
-                <Descriptions.Item label={t('field.fullName', '姓名')}>
-                  {[data.familyName, data.middleName, data.givenName].filter(Boolean).join(' ') || data.name || '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label={t('field.email', '邮箱')}>{data.email || '-'}</Descriptions.Item>
-                <Descriptions.Item label={t('field.phone', '手机号')}>{data.phoneNumber || '-'}</Descriptions.Item>
-                <Descriptions.Item label={t('field.roles', '角色')} span={2}>
-                  {roles.length ? roles.map((role) => <Tag key={role} color="blue">{role}</Tag>) : '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label={t('field.profile', '个人简介')} span={2}>
-                  {data.profile || '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label={t('field.joinedAt', '加入时间')}>{formatDate(data.createdAt)}</Descriptions.Item>
-                <Descriptions.Item label={t('field.updatedAt', '最近更新')}>{formatDate(data.updatedAt)}</Descriptions.Item>
-              </Descriptions>
-            )}
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={{span: 16, offset: 8}}>
-          <Card className="profile-card profile-security-card">
-            <div className="profile-security-row">
-              <div className={`profile-security-icon ${data?.twoFactorEnabled ? 'enabled' : ''}`}>
-                <SafetyCertificateOutlined/>
-              </div>
-              <div className="profile-security-copy">
-                <Space size={8} wrap>
-                  <Typography.Title level={5}>{t('field.twoFactorEnabled', '两步认证')}</Typography.Title>
-                  <Tag color={data?.twoFactorEnabled ? 'success' : 'default'}>
-                    {data?.twoFactorEnabled
-                      ? t('profile.twoFactor.enabled', '已开启')
-                      : t('profile.twoFactor.disabled', '未开启')}
-                  </Tag>
-                </Space>
-                <Typography.Paragraph>
-                  {t('profile.twoFactor.description', '使用动态验证码为账号增加一层登录保护。')}
-                </Typography.Paragraph>
-              </div>
-              <Button type="link" icon={<RightOutlined/>} iconPosition="end" onClick={openTwoFactorSettings}>
-                {data?.twoFactorEnabled
-                  ? t('action.manageTwoFactor', '管理两步认证')
-                  : t('action.enableTwoFactor', '开启两步认证')}
-              </Button>
+      <div className="profile-shell">
+        <aside className="profile-navigation" aria-label={t('profile.nav.title', '个人资料目录')}>
+          <div className="profile-nav-identity">
+            <Avatar size={72} src={data?.picture || undefined} icon={!data?.picture ? <UserOutlined/> : undefined}/>
+            <div className="profile-nav-info"><strong>{displayName}</strong>
+              <small>{data?.email || t('profile.noEmail', '未绑定邮箱')}</small>
+              <div className="profile-nav-avatar-actions"><OssImageUpload value={data?.picture}
+                onChange={saveAvatar} disabled={avatarSaving || !data}
+                directory="avatars/users" sourceServiceName="rbac-avatar" shape="circle" maxSizeMb={5}
+                replaceLabel={t('profile.avatarChange', '更换头像')}/></div>
             </div>
-            <Divider className="profile-security-divider"/>
-            <div className="profile-security-row">
-              <div className="profile-security-icon external">
-                <LinkOutlined/>
-              </div>
-              <div className="profile-security-copy">
-                <Typography.Title level={5}>{t('profile.externalAccounts.title', '第三方账号绑定')}</Typography.Title>
-                <Typography.Paragraph>
-                  {t('profile.externalAccounts.description', '绑定 GitHub、Google 等身份提供商，用于安全快捷登录。')}
-                </Typography.Paragraph>
-              </div>
-              <Button type="link" icon={<RightOutlined/>} iconPosition="end" onClick={openExternalAccounts}>
-                {t('profile.externalAccounts.manage', '管理第三方账号')}
-              </Button>
+          </div>
+          <div className="profile-nav-bio">{data?.profile || t('profile.about.noBio', '还没有填写个人简介。')}</div>
+          {!!roles.length && <div className="profile-nav-roles">{roles.map(role => <Tag key={role} color="blue">{role}</Tag>)}</div>}
+          <div className="profile-nav-label">{t('profile.nav.title', '个人资料目录')}</div>
+          <nav className="profile-nav-links">
+            {([
+              ['about', <UserOutlined/>, t('profile.nav.about', '关于我')],
+              ['access', <SafetyCertificateOutlined/>, t('profile.nav.access', '资源权限')],
+              ['organization', <ApartmentOutlined/>, t('profile.nav.organization', '所在组织')],
+              ['security', <LockOutlined/>, t('profile.nav.security', '账户安全')],
+            ] as const).map(([key, icon, label]) =>
+              <button key={key} type="button" className={section === key ? 'active' : ''}
+                aria-current={section === key ? 'page' : undefined} onClick={() => setSection(key)}>
+                <span>{icon}</span>{label}<RightOutlined/>
+              </button>)}
+          </nav>
+        </aside>
+        <main className="profile-main" aria-label={t('profile.nav.title', '个人资料目录')}>
+          {section === 'about' && <section className="profile-content-section" aria-label={t('profile.nav.about', '关于我')}>
+            <div className="profile-content-group">
+              <div className="profile-group-heading"><h3><IdcardOutlined/> {t('profile.basic', '基本信息')}</h3>
+                <Button icon={<ReloadOutlined/>} onClick={() => void refetch()}>{t('action.refresh', '刷新')}</Button></div>
+              {isLoading ? <Skeleton active paragraph={{rows: 7}}/> : !data ? <Empty/> :
+                <Descriptions column={{xs: 1, sm: 2}} size="middle" className="profile-descriptions">
+                  <Descriptions.Item label={t('field.nickname', '昵称')}>{data.nickname || '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('field.fullName', '姓名')}>
+                    {[data.familyName, data.middleName, data.givenName].filter(Boolean).join(' ') || data.name || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('field.email', '邮箱')}>{data.email || '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('field.phone', '手机号')}>{data.phoneNumber || '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('field.profile', '个人简介')} span={2}>{data.profile || '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('field.joinedAt', '加入时间')}>{formatDate(data.createdAt)}</Descriptions.Item>
+                  <Descriptions.Item label={t('field.updatedAt', '最近更新')}>{formatDate(data.updatedAt)}</Descriptions.Item>
+                </Descriptions>}
             </div>
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={{span: 16, offset: 8}}>
-          <Card
-            className="profile-card"
-            title={<span><LockOutlined/> {t('profile.changePassword', '修改密码')}</span>}
-          >
-            <Form layout="vertical" form={pwdForm} className="profile-password-form">
-              <Form.Item
-                name="currentPassword"
-                label={t('field.currentPassword', '当前密码')}
-                rules={[{required: true, message: t('rule.currentPassword', '请输入当前密码')}]}
-              >
-                <Input.Password maxLength={64} autoComplete="current-password"/>
-              </Form.Item>
-              <Row gutter={12}>
-                <Col xs={24} sm={12}>
-                  <Form.Item
-                    name="newPassword"
-                    label={t('field.newPassword', '新密码')}
-                    rules={[{required: true, message: t('rule.newPassword', '请输入新密码')}, {min: 6, message: t('rule.passwordLength', '密码长度至少 6 位')}]}
-                  >
-                    <Input.Password maxLength={64} autoComplete="new-password"/>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12}>
-                  <Form.Item
-                    name="confirmPassword"
-                    label={t('field.confirmPassword', '确认新密码')}
-                    rules={[{required: true, message: t('rule.confirmPassword', '请再次输入新密码')}]}
-                  >
-                    <Input.Password maxLength={64} autoComplete="new-password"/>
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Button type="primary" icon={<LockOutlined/>} loading={pwdSaving} onClick={onChangePassword}>
-                {t('action.changePassword', '修改密码')}
-              </Button>
-            </Form>
-          </Card>
-        </Col>
-      </Row>
-
-      <Drawer
-        title={<Space><IdcardOutlined/>{t('profile.details.title', '编辑详细资料')}</Space>}
-        width={680}
-        open={detailOpen}
-        onClose={() => !saving && setDetailOpen(false)}
-        maskClosable={!saving}
-        extra={(
-          <Space>
-            <Button disabled={saving} onClick={() => setDetailOpen(false)}>{t('action.cancel', '取消')}</Button>
-            <Button type="primary" icon={<SaveOutlined/>} loading={saving} onClick={() => void saveDetails()}>
-              {t('action.save', '保存')}
-            </Button>
-          </Space>
-        )}
-      >
-        <Form layout="vertical" form={detailForm} className="profile-detail-form">
-          <Divider titlePlacement="start">{t('profile.details.identity', '身份信息')}</Divider>
-          <Form.Item label={t('users.title.picture', '头像')}>
-            <OssImageUpload
-              value={detailPicture}
-              onChange={(picture) => detailForm.setFieldValue('picture', picture)}
-              directory="avatars/users"
-              sourceServiceName="rbac-avatar"
-              shape="circle"
-            />
-          </Form.Item>
+            <Divider/>
+            <div className="profile-content-group">
+              <h3 className="profile-group-title"><IdcardOutlined/> {t('profile.details.title', '详细资料')}</h3>
+              <Form layout="vertical" form={detailForm} className="profile-detail-form"
+                onValuesChange={() => setDetailDirty(!!data && JSON.stringify(toUpdatePayload(detailForm.getFieldsValue(true)))
+                  !== JSON.stringify(toUpdatePayload(toFormValues(data))))}>
+                <Form.Item name="picture" hidden><Input/></Form.Item>
           <Row gutter={12}>
             <Col xs={24} sm={12}>
               <Form.Item
@@ -451,8 +324,61 @@ export const Profile: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
-        </Form>
-      </Drawer>
+              </Form>
+              <div className="profile-detail-actions"><Button type="primary" icon={<SaveOutlined/>}
+                disabled={!detailDirty || !data} loading={saving} onClick={() => void saveDetails()}>
+                {t('action.save', '保存')}</Button></div>
+            </div>
+          </section>}
+          {section === 'access' && <ProfileAccessSection/>}
+          {section === 'organization' && <ProfileOrganizationSection/>}
+          {section === 'security' && <section className="profile-content-section" aria-label={t('profile.nav.security', '账户安全')}>
+            <div className="profile-content-group"><h3 className="profile-group-title">{t('profile.security.methods', '登录与验证方式')}</h3>
+              <div className="profile-security-row">
+                <div className={`profile-security-icon ${data?.twoFactorEnabled ? 'enabled' : ''}`}><SafetyCertificateOutlined/></div>
+                <div className="profile-security-copy"><Space size={8} wrap>
+                  <Typography.Title level={5}>{t('field.twoFactorEnabled', '两步认证')}</Typography.Title>
+                  <Tag color={data?.twoFactorEnabled ? 'success' : 'default'}>{data?.twoFactorEnabled
+                    ? t('profile.twoFactor.enabled', '已开启') : t('profile.twoFactor.disabled', '未开启')}</Tag>
+                </Space><Typography.Paragraph>{t('profile.twoFactor.description', '使用动态验证码为账号增加一层登录保护。')}</Typography.Paragraph></div>
+                <Button type="link" icon={<RightOutlined/>} iconPosition="end" disabled={!securityLinks}
+                  href={securityLinks?.twoFactor} target="_blank" rel="noopener noreferrer">
+                  {data?.twoFactorEnabled ? t('action.manageTwoFactor', '管理两步认证') : t('action.enableTwoFactor', '开启两步认证')}
+                </Button>
+              </div>
+              <Divider className="profile-security-divider"/>
+              <div className="profile-security-row">
+                <div className="profile-security-icon external"><LinkOutlined/></div>
+                <div className="profile-security-copy"><Typography.Title level={5}>{t('profile.externalAccounts.title', '第三方账号绑定')}</Typography.Title>
+                  <Typography.Paragraph>{t('profile.externalAccounts.description', '绑定 GitHub、Google 等身份提供商，用于安全快捷登录。')}</Typography.Paragraph></div>
+                <Button type="link" icon={<RightOutlined/>} iconPosition="end" disabled={!securityLinks}
+                  href={securityLinks?.externalIdentities} target="_blank" rel="noopener noreferrer">
+                  {t('profile.externalAccounts.manage', '管理第三方账号')}</Button>
+              </div>
+            </div>
+            <Divider/>
+            <div className="profile-content-group"><h3 className="profile-group-title"><LockOutlined/> {t('profile.changePassword', '修改密码')}</h3>
+              <Form layout="vertical" form={pwdForm} className="profile-password-form">
+                <Form.Item name="currentPassword" label={t('field.currentPassword', '当前密码')}
+                  rules={[{required: true, message: t('rule.currentPassword', '请输入当前密码')}]}
+                ><Input.Password maxLength={64} autoComplete="current-password"/></Form.Item>
+                <Row gutter={12}>
+                  <Col xs={24} sm={12}><Form.Item name="newPassword" label={t('field.newPassword', '新密码')}
+                    rules={[{required: true, message: t('rule.newPassword', '请输入新密码')},
+                      {min: 6, message: t('rule.passwordLength', '密码长度至少 6 位')}]}
+                  ><Input.Password maxLength={64} autoComplete="new-password"/></Form.Item></Col>
+                  <Col xs={24} sm={12}><Form.Item name="confirmPassword" label={t('field.confirmPassword', '确认新密码')}
+                    rules={[{required: true, message: t('rule.confirmPassword', '请再次输入新密码')}]}
+                  ><Input.Password maxLength={64} autoComplete="new-password"/></Form.Item></Col>
+                </Row>
+                <Button type="primary" icon={<LockOutlined/>} loading={pwdSaving} onClick={onChangePassword}>
+                  {t('action.changePassword', '修改密码')}</Button>
+              </Form>
+            </div>
+          </section>}
+        </main>
+      </div>
+
     </div>
   );
 };

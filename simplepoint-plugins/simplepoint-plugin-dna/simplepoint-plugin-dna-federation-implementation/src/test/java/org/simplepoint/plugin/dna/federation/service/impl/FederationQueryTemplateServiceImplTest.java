@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.simplepoint.plugin.dna.federation.service.support.AuthorizedCrudExtension;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
@@ -24,7 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, AuthorizedCrudExtension.class})
 class FederationQueryTemplateServiceImplTest {
 
   @Mock

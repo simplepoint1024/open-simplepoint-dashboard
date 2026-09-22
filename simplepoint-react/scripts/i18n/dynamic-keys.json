@@ -2,38 +2,32 @@
   "version": 1,
   "rules": [
     {
+      "file": "modules/simplepoint-host/src/views/home/index.tsx",
+      "expression": "app.title || ''",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Authorized resource routes supply translated menu keys with labels as fallback."
+    },
+    {
       "file": "libs/components/Table/index.tsx",
       "expression": "key",
-      "expectedOccurrences": 3,
+      "expectedOccurrences": 1,
       "mode": "runtime",
       "reason": "Schema metadata and table button definitions provide explicit i18n keys at runtime."
     },
     {
-      "file": "libs/components/Table/index.tsx",
+      "file": "libs/components/Table/Actions.tsx",
       "expression": "`table.button.${button.key}`",
       "expectedOccurrences": 1,
       "mode": "runtime",
       "reason": "Table button keys are extensible through backend schema and micro-application configuration."
     },
     {
-      "file": "libs/components/Table/index.tsx",
+      "file": "libs/components/Table/Actions.tsx",
       "expression": "`table.button.${button.key}.title`",
       "expectedOccurrences": 1,
       "mode": "runtime",
       "reason": "Optional table button titles are extensible and always retain their configured fallback."
-    },
-    {
-      "file": "modules/simplepoint-ai/src/views/workbench/Agents/index.tsx",
-      "expression": "`ai.agents.message.${action}`",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "ai.agents.message.approve",
-        "ai.agents.message.reject",
-        "ai.agents.message.pause",
-        "ai.agents.message.resume",
-        "ai.agents.message.cancel"
-      ]
     },
     {
       "file": "modules/simplepoint-ai/src/views/workbench/Catalog/index.tsx",
@@ -163,118 +157,6 @@
       ]
     },
     {
-      "file": "modules/simplepoint-ai/src/views/workbench/Skills/Designer/SkillDesignerTestCases.tsx",
-      "expression": "`ai.skills.designer.tests.error.outputSchema.${schemaError.code}`",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "ai.skills.designer.tests.error.outputSchema.additional",
-        "ai.skills.designer.tests.error.outputSchema.const",
-        "ai.skills.designer.tests.error.outputSchema.enum",
-        "ai.skills.designer.tests.error.outputSchema.maxItems",
-        "ai.skills.designer.tests.error.outputSchema.maxLength",
-        "ai.skills.designer.tests.error.outputSchema.maximum",
-        "ai.skills.designer.tests.error.outputSchema.minItems",
-        "ai.skills.designer.tests.error.outputSchema.minLength",
-        "ai.skills.designer.tests.error.outputSchema.minimum",
-        "ai.skills.designer.tests.error.outputSchema.required",
-        "ai.skills.designer.tests.error.outputSchema.type"
-      ]
-    },
-    {
-      "file": "modules/simplepoint-ai/src/views/workbench/Skills/Designer/index.tsx",
-      "expression": "localized[0]",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "ai.skills.designer.tests.assertion.result.passed",
-        "ai.skills.designer.tests.assertion.result.pathMissing",
-        "ai.skills.designer.tests.assertion.result.pathExists",
-        "ai.skills.designer.tests.assertion.result.notEqual",
-        "ai.skills.designer.tests.assertion.result.equalExcluded",
-        "ai.skills.designer.tests.assertion.result.notContains",
-        "ai.skills.designer.tests.assertion.result.matchesString",
-        "ai.skills.designer.tests.assertion.result.regexUnsafe",
-        "ai.skills.designer.tests.assertion.result.notMatches"
-      ]
-    },
-    {
-      "file": "modules/simplepoint-ai/src/views/workbench/Workflows/index.tsx",
-      "expression": "`ai.workflows.execution.${action}.title`",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "ai.workflows.execution.cancel.title",
-        "ai.workflows.execution.pause.title",
-        "ai.workflows.execution.resume.title"
-      ]
-    },
-    {
-      "file": "modules/simplepoint-ai/src/views/workbench/Workflows/index.tsx",
-      "expression": "`ai.workflows.execution.${action}.description`",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "ai.workflows.execution.cancel.description",
-        "ai.workflows.execution.resume.description"
-      ]
-    },
-    {
-      "file": "modules/simplepoint-ai/src/views/workbench/Workflows/index.tsx",
-      "expression": "`ai.workflows.message.${action}`",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "ai.workflows.message.cancel",
-        "ai.workflows.message.pause",
-        "ai.workflows.message.resume"
-      ]
-    },
-    {
-      "file": "modules/simplepoint-ai/src/views/workbench/Workflows/index.tsx",
-      "expression": "`ai.workflows.designer.node.${value.toLowerCase()}`",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "ai.workflows.designer.node.agent",
-        "ai.workflows.designer.node.condition",
-        "ai.workflows.designer.node.end",
-        "ai.workflows.designer.node.human",
-        "ai.workflows.designer.node.parallel",
-        "ai.workflows.designer.node.skill",
-        "ai.workflows.designer.node.wait"
-      ]
-    },
-    {
-      "file": "modules/simplepoint-ai/src/views/workbench/Workflows/index.tsx",
-      "expression": "`ai.workflows.event.${event.type}`",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "ai.workflows.event.COMPENSATION_FAILED",
-        "ai.workflows.event.COMPENSATION_STARTED",
-        "ai.workflows.event.COMPENSATION_SUCCEEDED",
-        "ai.workflows.event.EXECUTION_CANCELLED",
-        "ai.workflows.event.EXECUTION_CREATED",
-        "ai.workflows.event.EXECUTION_FAILED",
-        "ai.workflows.event.EXECUTION_PAUSED",
-        "ai.workflows.event.EXECUTION_PAUSE_REQUESTED",
-        "ai.workflows.event.EXECUTION_RESUMED",
-        "ai.workflows.event.EXECUTION_STARTED",
-        "ai.workflows.event.EXECUTION_SUCCEEDED",
-        "ai.workflows.event.HUMAN_TASK_CANCELLED",
-        "ai.workflows.event.HUMAN_TASK_COMPLETED",
-        "ai.workflows.event.HUMAN_TASK_CREATED",
-        "ai.workflows.event.HUMAN_TASK_TIMED_OUT",
-        "ai.workflows.event.NODE_CANCELLED",
-        "ai.workflows.event.NODE_FAILED",
-        "ai.workflows.event.NODE_SKIPPED",
-        "ai.workflows.event.NODE_STARTED",
-        "ai.workflows.event.NODE_SUCCEEDED",
-        "ai.workflows.event.NODE_WAITING"
-      ]
-    },
-    {
       "file": "modules/simplepoint-common/src/views/platform/ObjectStorage/index.tsx",
       "expression": "`storage.provider.type.${value}`",
       "expectedOccurrences": 2,
@@ -289,27 +171,6 @@
       ]
     },
     {
-      "file": "modules/simplepoint-common/src/views/system/AccessCenter/index.tsx",
-      "expression": "key",
-      "expectedOccurrences": 1,
-      "mode": "runtime",
-      "reason": "Resource labels may carry an i18n key supplied by the backend access-center tree."
-    },
-    {
-      "file": "modules/simplepoint-common/src/views/system/AccessCenter/index.tsx",
-      "expression": "`accessCenter.resource.type.${type}`",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "accessCenter.resource.type.ACTION",
-        "accessCenter.resource.type.API",
-        "accessCenter.resource.type.FEATURE",
-        "accessCenter.resource.type.GROUP",
-        "accessCenter.resource.type.MODULE",
-        "accessCenter.resource.type.PAGE"
-      ]
-    },
-    {
       "file": "modules/simplepoint-common/src/views/system/FieldScope/config/entries/index.tsx",
       "expression": "o.labelKey",
       "expectedOccurrences": 1,
@@ -320,13 +181,6 @@
         "field-scopes.title.entry.access.MASKED",
         "field-scopes.title.entry.access.HIDDEN"
       ]
-    },
-    {
-      "file": "modules/simplepoint-common/src/views/system/Resource/components/ResourceTreeTransfer.tsx",
-      "expression": "key",
-      "expectedOccurrences": 1,
-      "mode": "runtime",
-      "reason": "Resource tree labels may carry an i18n key supplied by backend resource metadata."
     },
     {
       "file": "modules/simplepoint-common/src/views/system/Resource/components/ResourceTreeTransfer.tsx",
@@ -382,27 +236,6 @@
         "resources.scope.PLATFORM",
         "resources.scope.TENANT",
         "resources.scope.PERSONAL"
-      ]
-    },
-    {
-      "file": "modules/simplepoint-common/src/views/system/Role/config/resource/index.tsx",
-      "expression": "key",
-      "expectedOccurrences": 1,
-      "mode": "runtime",
-      "reason": "Role resource labels may carry an i18n key supplied by backend resource metadata."
-    },
-    {
-      "file": "modules/simplepoint-common/src/views/system/Role/config/resource/index.tsx",
-      "expression": "`resources.type.${node.type}`",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "resources.type.ACTION",
-        "resources.type.API",
-        "resources.type.FEATURE",
-        "resources.type.GROUP",
-        "resources.type.MODULE",
-        "resources.type.PAGE"
       ]
     },
     {
@@ -533,7 +366,7 @@
       ]
     },
     {
-      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "file": "modules/simplepoint-host/src/notifications/NotificationList.tsx",
       "expression": "`notifications.category.${item.category}`",
       "expectedOccurrences": 1,
       "mode": "finite",
@@ -545,7 +378,7 @@
       ]
     },
     {
-      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "file": "modules/simplepoint-host/src/notifications/NotificationList.tsx",
       "expression": "`notifications.priority.${item.priority}`",
       "expectedOccurrences": 1,
       "mode": "finite",
@@ -561,14 +394,21 @@
       "expression": "`settings.${themeMode}`",
       "expectedOccurrences": 1,
       "mode": "finite",
-      "resolvedKeys": ["settings.dark", "settings.light", "settings.system"]
+      "resolvedKeys": [
+        "settings.dark",
+        "settings.light",
+        "settings.system"
+      ]
     },
     {
       "file": "modules/simplepoint-host/src/layouts/settings/index.tsx",
       "expression": "`settings.${resolvedTheme}`",
       "expectedOccurrences": 1,
       "mode": "finite",
-      "resolvedKeys": ["settings.dark", "settings.light"]
+      "resolvedKeys": [
+        "settings.dark",
+        "settings.light"
+      ]
     },
     {
       "file": "modules/simplepoint-ai/src/views/workbench/workbenchErrorCodes.ts",
@@ -601,6 +441,104 @@
         "ai.models.error.operationUnavailable",
         "ai.models.error.requestInvalid"
       ]
+    },
+    {
+      "file": "libs/components/Table/ColumnFilter.tsx",
+      "expression": "`table.query.operator.${key}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "table.query.operator.like",
+        "table.query.operator.not:like",
+        "table.query.operator.equals",
+        "table.query.operator.not:equals",
+        "table.query.operator.in",
+        "table.query.operator.not:in",
+        "table.query.operator.between",
+        "table.query.operator.not:between",
+        "table.query.operator.than:greater",
+        "table.query.operator.than:less",
+        "table.query.operator.than:equal:greater",
+        "table.query.operator.than:equal:less",
+        "table.query.operator.is:null",
+        "table.query.operator.is:not:null"
+      ]
+    },
+    {
+      "file": "libs/components/Table/QueryTools.tsx",
+      "expression": "`table.query.operator.${value}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "table.query.operator.like",
+        "table.query.operator.not:like",
+        "table.query.operator.equals",
+        "table.query.operator.not:equals",
+        "table.query.operator.in",
+        "table.query.operator.not:in",
+        "table.query.operator.between",
+        "table.query.operator.not:between",
+        "table.query.operator.than:greater",
+        "table.query.operator.than:less",
+        "table.query.operator.than:equal:greater",
+        "table.query.operator.than:equal:less",
+        "table.query.operator.is:null",
+        "table.query.operator.is:not:null"
+      ]
+    },
+    {
+      "file": "libs/components/Table/QueryTools.tsx",
+      "expression": "`table.query.operator.${op}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "table.query.operator.like",
+        "table.query.operator.not:like",
+        "table.query.operator.equals",
+        "table.query.operator.not:equals",
+        "table.query.operator.in",
+        "table.query.operator.not:in",
+        "table.query.operator.between",
+        "table.query.operator.not:between",
+        "table.query.operator.than:greater",
+        "table.query.operator.than:less",
+        "table.query.operator.than:equal:greater",
+        "table.query.operator.than:equal:less",
+        "table.query.operator.is:null",
+        "table.query.operator.is:not:null"
+      ]
+    },
+    {
+      "file": "libs/shared/i18n/resourceLabel.ts",
+      "expression": "key",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Resource aliases are supplied by backend metadata and use a safe fallback."
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/platform/Organization/OrganizationMembersPanel.tsx",
+      "expression": "option.label.slice(5)",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Dictionary item labels are supplied by the registered tenant member user type dictionary."
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/platform/Organization/OrganizationMembersPanel.tsx",
+      "expression": "`tenant-members.userType.${value ?? 'INTERNAL'}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "tenant-members.userType.INTERNAL",
+        "tenant-members.userType.EXTERNAL",
+        "tenant-members.userType.REFERENCE"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/User/index.tsx",
+      "expression": "item.label.slice(5)",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Dictionary item labels are supplied by the registered tenant member user type dictionary."
     }
   ]
 }

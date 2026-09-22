@@ -25,7 +25,8 @@ class PlatformAccountBindingTest {
 
   @BeforeEach
   void setup() {
-    mvc = MockMvcBuilders.standaloneSetup(new PlatformAccountController(accounts), new TenantMemberController(members))
+    mvc = MockMvcBuilders.standaloneSetup(new PlatformAccountController(accounts), new TenantMemberController(members,
+            mock(org.simplepoint.api.security.service.DetailsProviderService.class)))
         .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver()).build();
   }
 

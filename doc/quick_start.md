@@ -22,7 +22,7 @@ cp config/dev.env.example .simplepoint/dev.env
 
 打开 `http://127.0.0.1:8080`，使用 `simplepoint@mail.com` / `123456` 登录。
 
-## 启动 AI、Skill、Agent 与工作流
+## 启动 AI 与 MCP
 
 PostgreSQL 需预先安装 pgvector；脚本会自动创建 `vector` 和 `pg_trgm` 扩展。
 
@@ -32,7 +32,7 @@ PostgreSQL 需预先安装 pgvector；脚本会自动创建 `vector` 和 `pg_trg
 ./dev up ai
 ```
 
-该组合包含 authorization、common、ai、mcp-gateway、agent-runtime、workflow-runtime
+该组合包含 authorization、common、ai、mcp-gateway
 和 host。若只调试后端接口，可用 `./dev up ai --backend-only` 跳过前端工具链。
 
 ## 日常命令

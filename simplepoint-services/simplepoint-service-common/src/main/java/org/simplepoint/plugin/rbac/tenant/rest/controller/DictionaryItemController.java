@@ -2,6 +2,7 @@ package org.simplepoint.plugin.rbac.tenant.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
@@ -43,7 +44,10 @@ public class DictionaryItemController extends BaseController<DictionaryItemServi
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dictionaries.view') or hasAuthority('dictionaries.config.item')")
   @Operation(summary = "分页查询字典项", description = "根据提供的属性和分页参数，检索字典项的分页列表")
   public Response<Page<DictionaryItem>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
-    return limit(service.limit(attributes, pageable), DictionaryItem.class);
+    var filters = new LinkedHashMap<>(attributes);
+    String parent = filters.remove("parentDictionaryCode");
+    return limit(parent == null ? service.limit(filters, pageable)
+        : service.limitInDictionary(parent, filters, pageable), DictionaryItem.class);
   }
 
   /**

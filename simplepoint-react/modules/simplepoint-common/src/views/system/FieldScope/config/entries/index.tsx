@@ -1,5 +1,5 @@
 import {App as AntdApp, Alert, Button, Form, Select, Space} from 'antd';
-import {MinusCircleOutlined, PlusOutlined} from '@ant-design/icons';
+import {MinusCircleOutlined, PlusOutlined} from '@simplepoint/shared/types/icon';
 import {useEffect, useState} from 'react';
 import {fetchFieldCatalog, replaceEntries, FieldScopeEntryDto} from '@/api/system/field-scope';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';

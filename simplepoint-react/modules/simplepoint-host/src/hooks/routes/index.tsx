@@ -1,7 +1,8 @@
-import {createIcon} from "@simplepoint/shared/types/icon.ts";
+import {createIcon} from "@simplepoint/shared/types/icon";
 import {RouteInfo, MenuItemType} from "@/store/routes";
 import type {MenuProps} from "antd";
 import I18nText from '@/i18n/Text';
+import {cancelPrefetchLazyComponent, prefetchLazyComponent} from '@/utils/lazyComponent';
 
 /**
  * Build a single menu item from a resource route node.
@@ -9,6 +10,7 @@ import I18nText from '@/i18n/Text';
 const toMenuItem = (
   route: RouteInfo,
   navigate: (path: string) => void,
+  remoteRegistryKey?: string,
   children?: MenuItemType[],
 ): MenuItemType => {
   const existsChildren = !!children && children.length > 0;
@@ -19,10 +21,22 @@ const toMenuItem = (
   const menuType = route.routeKind === 'group' || route.routeKind === 'divider'
     ? route.routeKind
     : undefined;
+  const prefetch = () => prefetchLazyComponent(component, remoteRegistryKey);
+  const cancelPrefetch = () => cancelPrefetchLazyComponent(component, remoteRegistryKey);
 
   return {
     key: route.uuid || route.path || (route.id != null ? String(route.id) : '') || keyText,
-    label: <I18nText k={route.title || ''} fallback={route.label || ''} />,
+    label: (
+      <span
+        onPointerEnter={prefetch}
+        onPointerLeave={cancelPrefetch}
+        onPointerDown={() => prefetchLazyComponent(component, remoteRegistryKey, true)}
+        onFocus={prefetch}
+        onBlur={cancelPrefetch}
+      >
+        <I18nText k={route.title || ''} fallback={route.label || ''} />
+      </span>
+    ),
     icon: route.icon ? createIcon(route.icon) : undefined,
     // Ant Design infers a collapsible SubMenu from children. Only visual groups
     // and dividers are represented through its `type` field.
@@ -49,13 +63,14 @@ const toMenuItem = (
 const buildNavigationFromFlat = (
   routes: RouteInfo[],
   navigate: (path: string) => void,
+  remoteRegistryKey?: string,
   parent: string | number | undefined = undefined,
 ): MenuItemType[] => {
   return routes
     .filter((route) => route.parentId === parent && route.routeKind !== 'hidden')
     .map((route) => {
-      const children = buildNavigationFromFlat(routes, navigate, route.id);
-      return toMenuItem(route, navigate, children.length > 0 ? children : undefined);
+      const children = buildNavigationFromFlat(routes, navigate, remoteRegistryKey, route.id);
+      return toMenuItem(route, navigate, remoteRegistryKey, children.length > 0 ? children : undefined);
     });
 };
 
@@ -65,13 +80,14 @@ const buildNavigationFromFlat = (
 const buildNavigationFromTree = (
   nodes: RouteInfo[],
   navigate: (path: string) => void,
+  remoteRegistryKey?: string,
 ): MenuItemType[] => {
   return (nodes || []).filter(route => route.routeKind !== 'hidden').map((route) => {
     const raw = route.children;
     const builtChildren = Array.isArray(raw) && raw.length > 0
-      ? buildNavigationFromTree(raw, navigate)
+      ? buildNavigationFromTree(raw, navigate, remoteRegistryKey)
       : undefined;
-    return toMenuItem(route, navigate, builtChildren);
+    return toMenuItem(route, navigate, remoteRegistryKey, builtChildren);
   });
 };
 
@@ -81,12 +97,19 @@ const buildNavigationFromTree = (
 export const buildNavigation = (
   routes: RouteInfo[],
   navigate: (path: string) => void,
+  remoteRegistryKey?: string,
 ): MenuItemType[] => {
   const isTreeData = Array.isArray(routes) && routes.some(route => Array.isArray(route.children));
-  return isTreeData ? buildNavigationFromTree(routes, navigate) : buildNavigationFromFlat(routes, navigate, undefined);
+  return isTreeData
+    ? buildNavigationFromTree(routes, navigate, remoteRegistryKey)
+    : buildNavigationFromFlat(routes, navigate, remoteRegistryKey, undefined);
 };
 
 /** 侧边菜单 */
-export const useSideNavigation = (navigate: (path: string) => void, routeData: RouteInfo[]): MenuProps => {
-  return { items: buildNavigation(routeData, navigate) };
+export const useSideNavigation = (
+  navigate: (path: string) => void,
+  routeData: RouteInfo[],
+  remoteRegistryKey?: string,
+): MenuProps => {
+  return { items: buildNavigation(routeData, navigate, remoteRegistryKey) };
 };

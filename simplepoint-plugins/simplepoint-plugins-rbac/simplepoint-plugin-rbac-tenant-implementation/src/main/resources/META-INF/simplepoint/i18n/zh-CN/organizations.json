@@ -1,4 +1,10 @@
 {
+  "organizations.selector.draftCount": "草稿选择项",
+  "organizations.selector.clearDraft": "清空草稿选择",
+  "organizations.selector.addDraft": "加入选择",
+  "organizations.selector.removeDraft": "移除选择",
+  "organizations.selector.draftLimit": "组织选择草稿最多包含 2000 项，当前内容已保留，请先调整选择",
+  "organizations.title.id": "组织 ID",
   "organizations.description.code": "组织机构在租户内的唯一业务编码",
   "organizations.description.description": "组织机构的简要说明",
   "organizations.description.enabled": "当前组织是否启用",

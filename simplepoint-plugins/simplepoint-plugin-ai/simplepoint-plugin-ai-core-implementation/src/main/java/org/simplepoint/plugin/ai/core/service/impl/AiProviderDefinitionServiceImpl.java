@@ -105,15 +105,11 @@ public class AiProviderDefinitionServiceImpl
       normalized.putAll(attributes);
     }
     ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
-    if (scope.tenantId() == null) {
-      normalized.put("tenantId", "is:null");
-    } else {
-      normalized.put("tenantId", scope.tenantId());
-    }
-    normalized.put("deletedAt", "is:null");
+    Map<String, String> required = Map.of(
+        "tenantId", scope.tenantId() == null ? "is:null" : "equals:" + scope.tenantId());
     normalizeLikeQuery(normalized, "name");
     normalizeLikeQuery(normalized, "code");
-    Page<S> page = super.limit(normalized, pageable);
+    Page<S> page = super.limitScoped(normalized, required, pageable);
     page.getContent().forEach(this::decorate);
     return page;
   }

@@ -2,6 +2,10 @@ export const AI_WORKBENCH_ROOT_PATH = '/ai/workbench';
 export const LEGACY_AI_WORKSPACE_PATH = '/ai/workbench/workspace';
 export const DASHBOARD_PATH = '/dashboard';
 
+// Compatibility only: retired bookmarks/tabs must not load removed MF exposes.
+const isRetiredAiPage = (path: string) =>
+  /^\/ai\/workbench\/(skills|skill-designer|agents|workflows)(\/|$)/.test(path);
+
 export interface AiWorkbenchRoute {
   path?: string;
   component?: string;
@@ -16,6 +20,7 @@ function isInternalWorkbenchPage(route: AiWorkbenchRoute): route is AiWorkbenchR
   return !!path
     && path.startsWith(`${AI_WORKBENCH_ROOT_PATH}/`)
     && path !== LEGACY_AI_WORKSPACE_PATH
+    && !isRetiredAiPage(path)
     && route.disabled !== true
     && route.routeKind !== 'hidden'
     && !!component
@@ -50,7 +55,7 @@ export function migrateLegacyAiWorkspacePath(
   if (!routesReady) {
     return path;
   }
-  if (path === AI_WORKBENCH_ROOT_PATH || path === LEGACY_AI_WORKSPACE_PATH) {
+  if (path === AI_WORKBENCH_ROOT_PATH || path === LEGACY_AI_WORKSPACE_PATH || isRetiredAiPage(path)) {
     return target;
   }
   return path;

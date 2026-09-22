@@ -13,7 +13,7 @@ export function TitleSync({
   useEffect(() => {
     const current = leafRoutes.find(n => n.path === location.pathname);
     const keyOrText = (current?.title || current?.label || '') as string;
-    const localizedPageTitle = keyOrText ? t(keyOrText, keyOrText) : '';
+    const localizedPageTitle = location.pathname === '/dashboard' ? t('menu.home', '首页') : keyOrText ? t(keyOrText, keyOrText) : '';
     const appTitle = t('app.title', DEFAULT_APP_TITLE);
     document.title = resolveDocumentTitle(localizedPageTitle, appTitle);
   }, [location.pathname, leafRoutes, t]);

@@ -16,6 +16,13 @@ import org.springframework.context.annotation.Primary;
 @AutoConfiguration
 public class JacksonAutoConfiguration {
 
+  /** Boot discovers Jackson 3 modules for its HTTP JsonMapper independently of Jackson 2. */
+  @Bean
+  @ConditionalOnMissingBean(FieldScopeJackson3Module.class)
+  public FieldScopeJackson3Module fieldScopeJackson3Module() {
+    return new FieldScopeJackson3Module();
+  }
+
   /**
    * Configures and provides a primary ObjectMapper bean.
    *

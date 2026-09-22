@@ -1,6 +1,7 @@
 // src/components/withBoundaryAndSuspense.tsx
 import React from 'react';
-import {Skeleton, Result} from 'antd';
+import {Button, Result} from 'antd';
+import {LoadingBoundary, LoadingPlaceholder} from '@simplepoint/components/LoadingFeedback';
 import {ErrorBoundary} from './ErrorBoundary';
 
 type TranslateFn = (key: string, fallback?: string) => string;
@@ -25,18 +26,18 @@ export const BoundaryAndSuspense: React.FC<BoundaryAndSuspenseProps> = ({
     path,
     refreshKey,
 }) => (
-    <React.Suspense
-        fallback={
-            <div style={{ padding: '24px' }}>
-                <Skeleton active paragraph={{ rows: 8}} />
-            </div>
-        }
-    >
+    <LoadingBoundary label={t('loading', '加载中...')}>
+    <React.Suspense fallback={<LoadingPlaceholder />}>
         <ErrorBoundary
             key={`eb-${path}-${refreshKey}`}
-            fallback={<Result status="error" title={t('error.componentCrashed', '页面加载失败')} subTitle={t('error.componentCrashedSub', '组件渲染异常，请刷新后重试')} />}
+            fallback={retry => (
+                <Result status="error" title={t('error.componentCrashed', '页面加载失败')}
+                    subTitle={t('error.componentRetryHint', '当前页面出现异常，可重试加载，其他标签页不受影响。')}
+                    extra={<Button onClick={retry}>{t('action.retry', '重试')}</Button>}/>
+            )}
         >
             <Component key={`comp-${path}-${refreshKey}`} />
         </ErrorBoundary>
     </React.Suspense>
+    </LoadingBoundary>
 );

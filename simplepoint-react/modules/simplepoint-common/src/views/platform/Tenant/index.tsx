@@ -2,7 +2,7 @@ import api from '@/api/index';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {App as AntdApp, Avatar, Drawer, Space} from 'antd';
-import {ApartmentOutlined, UserOutlined} from '@ant-design/icons';
+import {ApartmentOutlined, UserOutlined} from '@simplepoint/shared/types/icon';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import PackageConfig from './config/package';
 import UserConfig from './config/user';

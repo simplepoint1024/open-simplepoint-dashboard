@@ -6,6 +6,7 @@ import {request, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {del, get, post} from '@simplepoint/shared/api/methods';
 import type {Page} from '@simplepoint/shared/types/request';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {usePagePolling} from '@simplepoint/shared/page/usePagePolling';
 import {
   Alert,
   App,
@@ -23,7 +24,7 @@ import {
 } from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import type {UploadFile} from 'antd/es/upload/interface';
-import {DeleteOutlined, InboxOutlined, ReloadOutlined} from '@ant-design/icons';
+import {DeleteOutlined, InboxOutlined, ReloadOutlined} from '@simplepoint/shared/types/icon';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   knowledgeDocumentErrorLabel,
@@ -176,21 +177,12 @@ const KnowledgeBases = () => {
     [documents.content],
   );
 
-  useEffect(() => {
-    if (!documentsOpen || !selectedKnowledgeBase || !hasActiveIndexJobs) return undefined;
-    const timer = window.setInterval(() => {
-      void loadDocuments(selectedKnowledgeBase, true)
-        .then(refreshKnowledgeBases)
-        .catch(() => undefined);
-    }, 2500);
-    return () => window.clearInterval(timer);
-  }, [
-    documentsOpen,
-    hasActiveIndexJobs,
-    loadDocuments,
-    refreshKnowledgeBases,
-    selectedKnowledgeBase,
-  ]);
+  const pollDocuments = useCallback(async () => {
+    if (!selectedKnowledgeBase) return;
+    await loadDocuments(selectedKnowledgeBase, true);
+    refreshKnowledgeBases();
+  }, [loadDocuments, refreshKnowledgeBases, selectedKnowledgeBase]);
+  usePagePolling(pollDocuments, documentsOpen && !!selectedKnowledgeBase && hasActiveIndexJobs, 2500);
 
   const openDocuments = useCallback((rows: KnowledgeBaseRow[]) => {
     const knowledgeBase = rows?.[0];

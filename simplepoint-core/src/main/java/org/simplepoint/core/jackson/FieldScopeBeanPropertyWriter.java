@@ -71,8 +71,11 @@ public class FieldScopeBeanPropertyWriter extends BeanPropertyWriter {
     }
     if (ACCESS_MASKED.equals(access)) {
       Object rawValue = delegate.get(bean);
-      if (rawValue == null) gen.writeNull();
-      else gen.writeString("***");
+      if (rawValue == null) {
+        gen.writeNull();
+      } else {
+        gen.writeString("***");
+      }
       return;
     }
     delegate.serializeAsElement(bean, gen, prov);

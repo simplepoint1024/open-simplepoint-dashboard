@@ -95,28 +95,6 @@ func VerifiedRuntimeNode(
 	return "", false
 }
 
-// VerifiedIdentity reports whether the verified leaf certificate contains the
-// exact expected URI SAN.
-func VerifiedIdentity(
-	state *tls.ConnectionState,
-	expected string,
-) bool {
-	if state == nil || len(state.VerifiedChains) == 0 {
-		return false
-	}
-	for _, chain := range state.VerifiedChains {
-		if len(chain) == 0 {
-			continue
-		}
-		for _, identity := range chain[0].URIs {
-			if identity.String() == expected {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func load(
 	certificateFile string,
 	privateKeyFile string,

@@ -471,9 +471,111 @@ public class BaseServiceImpl
       safeAttributes.putAll(attributes);
     }
     safeAttributes.put("deletedAt", "is:null");
+    validatePublicFilters(safeAttributes);
     Page<S> limit = runWithDefaultDataScope(() -> repository.limit(safeAttributes, pageable));
     this.validate(limit.getContent());
     return limit;
+  }
+
+  /**
+   * Adds mandatory server scope outside the user's query tree without exposing hidden scope fields.
+   * Only subclasses constructing restrictions from authenticated context may use this method.
+   *
+   * @param attributes user-controlled filters
+   * @param required server-owned scalar conditions
+   * @param pageable pagination and ordering
+   * @param <S> entity type
+   * @return scoped records and count
+   */
+  protected <S extends T> Page<S> limitScoped(
+      Map<String, String> attributes, Map<String, String> required, Pageable pageable) {
+    Map<String, String> filters = new LinkedHashMap<>();
+    if (attributes != null) {
+      filters.putAll(attributes);
+    }
+    // Preserve the public soft-delete behavior; a caller cannot request deleted records.
+    filters.remove("deletedAt");
+    validatePublicFilters(filters);
+    Map<String, String> mandatory = new LinkedHashMap<>(required);
+    mandatory.put("deletedAt", "is:null");
+    Page<S> result = runWithDefaultDataScope(() -> repository.limitScoped(filters, mandatory, pageable));
+    validate(result.getContent());
+    return result;
+  }
+
+  /**
+   * Applies an authorization allow-list without overwriting a same-named public filter.
+   *
+   * @param attributes public conditions
+   * @param field server-selected string member
+   * @param allowedValues literal identifiers from the authorization service
+   * @param pageable pagination and sort
+   * @param <S> entity type
+   * @return authorized results and count
+   */
+  protected <S extends T> Page<S> limitInScope(
+      Map<String, String> attributes, String field, Collection<String> allowedValues, Pageable pageable) {
+    Map<String, String> filters = new LinkedHashMap<>();
+    if (attributes != null) {
+      filters.putAll(attributes);
+    }
+    filters.put("deletedAt", "is:null");
+    validatePublicFilters(filters);
+    Page<S> result = runWithDefaultDataScope(() -> repository.limitInScope(filters, field, allowedValues, pageable));
+    validate(result.getContent());
+    return result;
+  }
+
+  /**
+   * Intersects authorized candidates with an assignment set before paging/counting.
+   *
+   * @param attributes public filters
+   * @param memberships server-owned membership predicates
+   * @param pageable pagination and sort
+   * @param <S> entity type
+   * @return visible matching rows and count
+   */
+  protected <S extends T> Page<S> limitMemberships(
+      Map<String, String> attributes, List<org.simplepoint.api.base.QueryMembership> memberships, Pageable pageable) {
+    Map<String, String> filters = new LinkedHashMap<>();
+    if (attributes != null) {
+      filters.putAll(attributes);
+    }
+    filters.put("deletedAt", "is:null");
+    validatePublicFilters(filters);
+    Page<S> result = runWithDefaultDataScope(() -> repository.limitMemberships(filters, memberships, pageable));
+    validate(result.getContent());
+    return result;
+  }
+
+  private void validatePublicFilters(Map<String, String> safeAttributes) {
+    // Public list adapters opt in explicitly. Legacy services keep their domain-specific semantics.
+    if (org.simplepoint.core.query.QueryCapabilities.declaration(repository.getDomainClass())
+        != null) {
+      safeAttributes.forEach(
+          (field, value) -> {
+            if (field == null) {
+              throw new org.simplepoint.core.query.InvalidQueryException("筛选字段不能为空");
+            }
+            if (Set.of(
+                    "page",
+                    "size",
+                    "sort",
+                    "deletedAt",
+                    org.simplepoint.core.query.QueryDocument.PARAMETER)
+                .contains(field)) {
+              return;
+            }
+            if (value != null && value.startsWith("{")) {
+              return;
+            } // The structured compiler checks its own field/operator.
+            org.simplepoint.core.query.QueryCapabilities.require(
+                repository.getDomainClass(),
+                field,
+                org.simplepoint.core.query.FilterCondition.parse(value).operator(),
+                false);
+          });
+    }
   }
 
   /**
@@ -590,13 +692,16 @@ public class BaseServiceImpl
         }
         if (!org.simplepoint.core.jackson.FieldPermissionPolicy.writable(ctx, entity.getClass(), field.getName())) {
           if (field.getType().isPrimitive()) {
-            throw new AccessDeniedException("Non-writable primitive field requires an explicit server-side creation policy: " + field.getName());
+            throw new AccessDeniedException(
+                "Non-writable primitive field requires an explicit server-side creation policy: "
+                    + field.getName());
           }
           try {
             field.setAccessible(true);
             field.set(entity, null);
           } catch (IllegalAccessException | RuntimeException error) {
-            throw new AccessDeniedException("Cannot enforce field permission: " + field.getName(), error);
+            throw new AccessDeniedException(
+                "Cannot enforce field permission: " + field.getName(), error);
           }
         }
       }

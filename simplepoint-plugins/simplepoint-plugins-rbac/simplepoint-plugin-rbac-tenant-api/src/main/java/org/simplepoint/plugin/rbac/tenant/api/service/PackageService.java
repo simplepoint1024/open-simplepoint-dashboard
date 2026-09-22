@@ -12,6 +12,11 @@ import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.PackageApplicationsReleva
  */
 public interface PackageService extends BaseService<Package, String> {
 
+  /** Pages either assigned or available candidates after checking access to the parent. */
+  org.springframework.data.domain.Page<Package> assignmentItems(
+      String parent, boolean selected, java.util.Map<String, String> filters,
+      org.springframework.data.domain.Pageable pageable);
+
   /**
    * Loads application codes assigned to the package.
    *

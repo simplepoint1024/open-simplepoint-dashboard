@@ -36,10 +36,10 @@ export default {
     i18nNamespaces: ['users','roles', 'platform-accounts'],
     name: 'users'
   },
-  'rbac-access-center': {
-    baseUrl: `${contextPath}/access-center`,
-    i18nNamespaces: ['access-center', 'roles', 'resources', 'data-scopes', 'field-scopes', 'table', 'common'],
-    name: 'access-center'
+  'rbac-role-resource-configuration': {
+    baseUrl: `${contextPath}/role-resource-configuration`,
+    i18nNamespaces: ['roles', 'resources', 'table', 'common'],
+    name: 'role-resource-configuration'
   },
   'i18n-countries': {
     baseUrl: `${contextPath}/i18n/countries`,

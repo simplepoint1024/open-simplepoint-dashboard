@@ -25,6 +25,26 @@ class FieldPermissionPolicyTest {
     public String secret = "never disclose";
   }
 
+  static class JoinedView {
+    @org.simplepoint.core.annotation.PermissionFields(resource = Person.class, value = {"name", "phone"})
+    String display;
+    @org.simplepoint.core.annotation.PermissionFields(resourceName = "org.simplepoint.core.jackson.FieldPermissionPolicyTest$Person", value = "secret")
+    String protectedValue;
+  }
+
+  @Test
+  void computedProjectionsInheritTheStrictestSourcePolicy() {
+    scope();
+    assertThat(FieldPermissionPolicy.access(JoinedView.class, "display")).isEqualTo("MASKED");
+    // Named bindings use canonical or simple entity names without introducing API dependency cycles.
+    var context = new AuthorizationContext();
+    context.setFieldPermissions(Map.of(Person.class.getName() + "#secret", "HIDDEN",
+        Person.class.getName() + "#phone", "MASKED"));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    assertThat(FieldPermissionPolicy.project(JoinedView.class, Map.of("display", "sensitive", "protectedValue", "secret")))
+        .containsExactlyEntriesOf(Map.of("display", "***"));
+  }
+
   private final ObjectMapper mapper = new ObjectMapper().registerModule(new FieldScopeJacksonModule());
 
   private void scope() {

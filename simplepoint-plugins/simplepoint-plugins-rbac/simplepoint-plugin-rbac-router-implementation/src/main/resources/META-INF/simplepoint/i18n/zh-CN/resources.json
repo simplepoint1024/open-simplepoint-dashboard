@@ -64,5 +64,8 @@
   "resources.boolean.grantable": "可授权",
   "resources.boolean.notGrantable": "仅结构",
   "resources.boolean.enabled": "启用",
-  "resources.boolean.disabled": "停用"
+  "resources.boolean.disabled": "停用",
+  "resources.tree.search": "搜索资源编码、路径或名称",
+  "resources.tree.empty": "暂无资源",
+  "resources.tree.emptyResources": "暂无可授权资源"
 }

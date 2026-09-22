@@ -1,4 +1,5 @@
-import {App as AntApp, Button, Drawer, Space, Table, Tag} from 'antd';
+import {App as AntApp, Button, Drawer, Space, Tag} from 'antd';
+import Table from '@simplepoint/components/DataTable';
 import type {ColumnsType, TablePaginationConfig} from 'antd/es/table';
 import {useEffect, useMemo, useState} from 'react';
 import {usePage} from '@simplepoint/shared/api/methods';

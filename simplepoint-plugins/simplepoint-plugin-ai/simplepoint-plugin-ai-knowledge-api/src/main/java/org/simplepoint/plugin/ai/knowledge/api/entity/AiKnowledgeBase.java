@@ -89,6 +89,21 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Schema(title = "i18n:ai.knowledge-bases.entity.title")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("embeddingModelId"),
+    @org.simplepoint.core.query.QueryField("embeddingDimensions"),
+    @org.simplepoint.core.query.QueryField("chunkSize"),
+    @org.simplepoint.core.query.QueryField("chunkOverlap"),
+    @org.simplepoint.core.query.QueryField("retrievalMode"),
+    @org.simplepoint.core.query.QueryField("topK"),
+    @org.simplepoint.core.query.QueryField("scoreThreshold"),
+    @org.simplepoint.core.query.QueryField("vectorWeight"),
+    @org.simplepoint.core.query.QueryField("keywordWeight"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class AiKnowledgeBase extends BaseEntityImpl<String> {
 
   @Order(0)

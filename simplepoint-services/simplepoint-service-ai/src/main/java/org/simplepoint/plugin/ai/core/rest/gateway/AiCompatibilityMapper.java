@@ -245,6 +245,11 @@ public class AiCompatibilityMapper {
       return blocks;
     }
     if (content.isTextual()) {
+      // Blank string content carries no text; treat it like absent content so
+      // assistant tool-call turns (content: "") stay valid OpenAI requests.
+      if (normalize(content.asText()) == null) {
+        return blocks;
+      }
       blocks.add(block(ContentType.TEXT, content.asText(), null, null, null, null));
       return blocks;
     }

@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
-import { TableButtonProps } from "../../components/Table";
+import { useEffect, useMemo, useState } from 'react';
+import type { TableButtonProps } from "../../components/Table";
 import { get, useData } from "../api/methods";
-import { RJSFSchema } from "@rjsf/utils";
-import { createIcon } from "../types/icon";
+import type { RJSFSchema } from "@rjsf/utils";
+import { createIcon } from "@simplepoint/shared/types/icon";
 import type { UseQueryOptions } from "@tanstack/react-query";
 import { getStoredContextId, getStoredRoleId, getStoredTenantId, shouldUseTenantContext } from '../api/contextId';
 import { resolveClientI18nFallback } from '../i18n/fallbacks';
+import { useI18n } from './useI18n';
 
 export type TableSchemaProps = {
   schema: RJSFSchema;
@@ -29,6 +30,7 @@ const resolveI18nStr = (v: unknown): string => {
 
 const normalizeSchemaI18n = (node: any): any => {
   if (!node || typeof node !== "object") return node;
+  if (Array.isArray(node)) return node.map(normalizeSchemaI18n);
 
   ["title", "description"].forEach((k) => {
     if (typeof node[k] === "string") node[k] = resolveI18nStr(node[k]);
@@ -41,6 +43,9 @@ const normalizeSchemaI18n = (node: any): any => {
     Object.values(node.properties).forEach(normalizeSchemaI18n);
 
   if (node.items) normalizeSchemaI18n(node.items);
+  for (const key of ['oneOf', 'anyOf', 'allOf', '$defs', 'definitions']) {
+    if (node[key]) Object.values(node[key]).forEach(normalizeSchemaI18n);
+  }
   return node;
 };
 
@@ -101,7 +106,7 @@ const applyDictionaryOptions = async (schema: any, signal?: AbortSignal) => {
           : node;
         optionTarget.oneOf = options.map((option) => ({
           const: castDictionaryOptionValue(option.value, optionTarget.type),
-          title: resolveI18nStr(option.label),
+          title: option.label,
         }));
         delete optionTarget.enum;
         // RJSF only treats an array as a multi-select when uniqueItems is true.
@@ -181,7 +186,8 @@ const normalizeButtonI18n = (btn: TableButtonProps): TableButtonProps => ({
 
 export function useSchema(
   baseUrl: string,
-  options?: Omit<UseQueryOptions<TableSchemaProps, Error, TableSchemaProps, readonly unknown[]>, 'queryKey' | 'queryFn'>) {
+  options?: Omit<UseQueryOptions<TableSchemaProps, Error, TableSchemaProps, readonly unknown[]>, 'queryKey' | 'queryFn'>,
+  params?: Record<string, string>) {
   const useTenantContext = shouldUseTenantContext(baseUrl);
   const [tenantId, setTenantId] = useState(() => useTenantContext ? (getStoredTenantId() ?? "") : "");
   const [roleId, setRoleId] = useState(() => useTenantContext ? (getStoredRoleId(getStoredTenantId()) ?? "") : "");
@@ -240,22 +246,30 @@ export function useSchema(
     };
   }, [tenantId, roleId, useTenantContext]);
 
-  return useData([`${baseUrl}/schema`, useTenantContext ? tenantId : "", useTenantContext ? roleId : "", useTenantContext ? contextId : ""], async ({signal}) => {
-    const res = await get<TableSchemaProps>(`${baseUrl}/schema`, undefined, {signal});
-    if (!res) return res;
+  const {locale, messages} = useI18n();
+  const queryKey = [`${baseUrl}/schema`, useTenantContext ? tenantId : "", useTenantContext ? roleId : "", useTenantContext ? contextId : "", params];
+  // Cache server data, not translated labels or React elements. Schema fetching
+  // can start before namespace loading, and switching locale needs no refetch.
+  const query = useData(queryKey, ({signal}) =>
+    get<TableSchemaProps>(`${baseUrl}/schema`, params, {signal}), options);
+  const rawSchema = query.data?.schema;
+  // Dictionary enrichment is independently scoped/cancellable through useData.
+  // It must not keep a readable table behind the page's skeleton.
+  const dictionaries = useData([...queryKey, 'dictionaries', rawSchema], async ({signal}) => {
+    const schema = structuredClone(rawSchema);
+    return Array.isArray(schema) ? schema : applyDictionaryOptions(schema, signal);
+  }, {enabled: !!rawSchema});
+  const data = useMemo(() => query.data ? {
+    ...query.data,
+    schema: normalizeSchemaI18n(sortSchemaProperties(structuredClone(dictionaries.data ?? rawSchema))),
+    buttons: sortByOrder(query.data.buttons ?? []).map(normalizeButtonI18n),
+  } : undefined, [query.data, rawSchema, dictionaries.data, locale, messages]);
 
-    const schema = sortSchemaProperties(res.schema);
-
-    const buttons = sortByOrder(res.buttons ?? []).map(normalizeButtonI18n);
-    const normalizedSchema = normalizeSchemaI18n(schema);
-    const enhancedSchema = Array.isArray(normalizedSchema)
-      ? normalizedSchema
-      : await applyDictionaryOptions(normalizedSchema, signal);
-
-    return {
-      ...res,
-      schema: enhancedSchema,
-      buttons,
-    };
-  }, options);
+  return {
+    ...query,
+    data,
+    dictionariesLoading: !!rawSchema && dictionaries.isPending,
+    dictionariesError: dictionaries.error,
+    retryDictionaries: dictionaries.refetch,
+  };
 }

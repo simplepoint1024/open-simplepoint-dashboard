@@ -18,6 +18,7 @@
   "users.title.password": "密码",
   "users.description.password": "登录密码",
   "users.title.phoneNumber": "手机号",
+  "users.title.id": "用户标识",
   "users.description.phoneNumber": "用户的电话号码",
   "users.title.picture": "头像",
   "users.description.picture": "用户头像",

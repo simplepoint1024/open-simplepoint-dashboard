@@ -1,0 +1,258 @@
+{
+  "buttons": [
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "platform.accounts.create",
+      "variant": "outlined",
+      "icon": "PlusCircleOutlined",
+      "argumentMaxSize": 1,
+      "sort": 0,
+      "type": "primary",
+      "title": "i18n:table.button.create",
+      "danger": false,
+      "argumentMinSize": 0,
+      "key": "add"
+    },
+    {
+      "path": "[default]",
+      "color": "orange",
+      "authority": "platform.accounts.edit",
+      "variant": "outlined",
+      "icon": "EditOutlined",
+      "argumentMaxSize": 1,
+      "sort": 1,
+      "type": "primary",
+      "title": "i18n:table.button.edit",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "edit"
+    },
+    {
+      "path": "[default]",
+      "color": "danger",
+      "authority": "platform.identity.manage",
+      "variant": "outlined",
+      "icon": "SafetyOutlined",
+      "argumentMaxSize": 1,
+      "sort": 2,
+      "type": "primary",
+      "title": "i18n:platform-accounts.assign",
+      "danger": true,
+      "argumentMinSize": 1,
+      "key": "config.identity"
+    }
+  ],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:platform-accounts.id",
+        "description": "",
+        "readOnly": true,
+        "x-order": 0,
+        "x-ui": {
+          "x-list-visible": "false"
+        }
+      },
+      "name": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:platform-accounts.name",
+        "description": "",
+        "readOnly": true,
+        "x-order": 1,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "email": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:platform-accounts.email",
+        "description": "",
+        "readOnly": true,
+        "x-order": 2,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "enabled": {
+        "type": "boolean",
+        "title": "i18n:platform-accounts.enabled",
+        "description": "",
+        "readOnly": true,
+        "x-order": 3,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "superAdmin": {
+        "type": "boolean",
+        "title": "i18n:platform-accounts.root",
+        "description": "",
+        "readOnly": true,
+        "x-order": 4,
+        "x-ui": {
+          "x-list-visible": "false"
+        }
+      },
+      "roles": {
+        "title": "i18n:platform-accounts.identity",
+        "description": "",
+        "readOnly": true,
+        "x-order": 5,
+        "x-ui": {
+          "x-list-visible": "true"
+        },
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "PLATFORM_ADMIN",
+            "ACCOUNT_ADMIN",
+            "AUDITOR"
+          ],
+          "title": "i18n:platform-accounts.identity",
+          "description": "",
+          "readOnly": true,
+          "x-order": 5,
+          "x-ui": {
+            "x-list-visible": "true"
+          }
+        }
+      },
+      "revision": {
+        "type": "integer",
+        "title": "i18n:platform-accounts.revision",
+        "description": "",
+        "readOnly": true,
+        "x-order": 6,
+        "x-ui": {
+          "x-list-visible": "false"
+        }
+      }
+    },
+    "x-query": {
+      "version": 1,
+      "relations": [],
+      "fields": {
+        "name": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "email": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "enabled": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "boolean"
+        },
+        "superAdmin": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "boolean"
+        },
+        "revision": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "long"
+        },
+        "id": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        }
+      },
+      "maxSort": 3,
+      "maxDepth": 4,
+      "maxNodes": 32,
+      "maxPageSize": 50
+    }
+  }
+}

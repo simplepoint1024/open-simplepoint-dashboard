@@ -428,7 +428,7 @@ const App = () => {
   }), []);
 
   return (
-    <div>
+    <div style={{height: '100%', minHeight: 0}}>
       <SimpleTable
         {...baseConfig}
         drawerOpen={drawerOpen}

@@ -1,5 +1,5 @@
 import api from '@/api';
-import {InboxOutlined} from '@ant-design/icons';
+import {InboxOutlined} from '@simplepoint/shared/types/icon';
 import type {TableButtonProps} from '@simplepoint/components/Table';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import {request} from '@simplepoint/shared/api/client';

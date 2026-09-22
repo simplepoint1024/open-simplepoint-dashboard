@@ -119,7 +119,6 @@ public class OidcClientServiceImpl extends BaseServiceImpl<OidcClientRepository,
     dto.setClientId(client.getClientId());
     dto.setClientIdIssuedAt(client.getClientIdIssuedAt());
     dto.setClientName(client.getClientName());
-    dto.setClientSecret(client.getClientSecret());
     dto.setClientSecretExpiresAt(client.getClientSecretExpiresAt());
     dto.setClientAuthenticationMethods(toSet(client.getClientAuthenticationMethods()));
     dto.setAuthorizationGrantTypes(toSet(client.getAuthorizationGrantTypes()));

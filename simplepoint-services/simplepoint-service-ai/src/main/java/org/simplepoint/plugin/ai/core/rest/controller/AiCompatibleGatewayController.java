@@ -16,12 +16,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executor;
@@ -31,12 +33,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.plugin.ai.core.api.constants.AiPaths;
 import org.simplepoint.plugin.ai.core.api.exception.AiGatewayAccessException;
 import org.simplepoint.plugin.ai.core.api.exception.AiGatewayAccessException.FailureType;
+import org.simplepoint.plugin.ai.core.api.exception.AiOpenAiRequestException;
 import org.simplepoint.plugin.ai.core.api.exception.AiProviderRequestException;
 import org.simplepoint.plugin.ai.core.api.properties.AiProperties;
 import org.simplepoint.plugin.ai.core.api.service.AiGatewayAccessService;
 import org.simplepoint.plugin.ai.core.api.service.AiGatewayAccessService.GatewaySession;
 import org.simplepoint.plugin.ai.core.api.service.AiGenerationService;
 import org.simplepoint.plugin.ai.core.api.service.AiGenerationService.GenerationStream;
+import org.simplepoint.plugin.ai.core.api.service.AiNativeOpenAiGateway;
+import org.simplepoint.plugin.ai.core.api.service.AiNativeOpenAiGateway.Exchange;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.EventType;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.GenerationEvent;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.GenerationRequest;
@@ -52,11 +57,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /** OpenAI Chat Completions, Responses, and Anthropic Messages compatible model gateway. */
@@ -85,6 +93,8 @@ public class AiCompatibleGatewayController {
 
   private final AiProperties properties;
 
+  private final AiNativeOpenAiGateway nativeGateway;
+
   /** Creates the public compatibility gateway controller. */
   public AiCompatibleGatewayController(
       final AiGatewayAccessService accessService,
@@ -92,7 +102,8 @@ public class AiCompatibleGatewayController {
       final AiCompatibilityMapper compatibilityMapper,
       final OpenAiResponsesProtocol responsesProtocol,
       @Qualifier("aiInferenceExecutor") final Executor inferenceExecutor,
-      final AiProperties properties
+      final AiProperties properties,
+      final AiNativeOpenAiGateway nativeGateway
   ) {
     this.accessService = accessService;
     this.generationService = generationService;
@@ -100,6 +111,7 @@ public class AiCompatibleGatewayController {
     this.responsesProtocol = responsesProtocol;
     this.inferenceExecutor = inferenceExecutor;
     this.properties = properties;
+    this.nativeGateway = nativeGateway;
   }
 
   /** OpenAI-compatible model catalog. */
@@ -143,6 +155,12 @@ public class AiCompatibleGatewayController {
       GatewaySession session = authenticate(authorization, alternateKey, servletRequest);
       String requestedModel = requireModel(body);
       String modelDefinitionId = accessService.resolveModelDefinitionId(session, requestedModel);
+      Optional<Exchange> nativeResponse = accessService.withSession(session, () ->
+          nativeGateway.create(session, modelDefinitionId, "/chat/completions", payload,
+              nativeHeaders(servletRequest)));
+      if (nativeResponse.isPresent()) {
+        return nativeResponse(nativeResponse.get());
+      }
       GenerationRequest request = compatibilityMapper.fromOpenAi(body, modelDefinitionId);
       if (body.path("stream").asBoolean(false)) {
         GenerationStream stream = accessService.withSession(
@@ -171,6 +189,12 @@ public class AiCompatibleGatewayController {
       GatewaySession session = authenticate(authorization, alternateKey, servletRequest);
       String requestedModel = requireModel(body);
       String modelDefinitionId = accessService.resolveModelDefinitionId(session, requestedModel);
+      Optional<Exchange> nativeResponse = accessService.withSession(session, () ->
+          nativeGateway.create(session, modelDefinitionId, "/responses", payload,
+              nativeHeaders(servletRequest)));
+      if (nativeResponse.isPresent()) {
+        return nativeResponse(nativeResponse.get());
+      }
       GenerationRequest request = responsesProtocol.fromRequest(body, modelDefinitionId);
       if (body.path("stream").asBoolean(false)) {
         GenerationStream stream = accessService.withSession(
@@ -183,6 +207,131 @@ public class AiCompatibleGatewayController {
     } catch (RuntimeException ex) {
       return openAiError(ex);
     }
+  }
+
+  /** Native context compaction and token counting preserve encrypted history items. */
+  @PostMapping({"/responses/compact", "/responses/input_tokens"})
+  public ResponseEntity<?> responseUtility(
+      @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) final String authorization,
+      @RequestHeader(value = ANTHROPIC_API_KEY, required = false) final String alternateKey,
+      @RequestBody final String payload, final HttpServletRequest servletRequest) {
+    try {
+      GatewaySession session = authenticate(authorization, alternateKey, servletRequest);
+      String model = accessService.resolveModelDefinitionId(session, requireModel(parseBody(payload)));
+      String path = servletRequest.getRequestURI().endsWith("/compact")
+          ? "/responses/compact" : "/responses/input_tokens";
+      Exchange exchange = accessService.withSession(session, () ->
+          nativeGateway.create(session, model, path, payload, nativeHeaders(servletRequest)))
+          .orElseThrow(() -> new AiOpenAiRequestException(400, "unsupported_endpoint", null,
+              "This operation requires a provider configured with the OpenAI Responses protocol"));
+      return nativeResponse(exchange);
+    } catch (RuntimeException ex) {
+      return openAiError(ex);
+    }
+  }
+
+  /** Response IDs are routed by durable API-key ownership, never by a client-selected provider. */
+  @RequestMapping(value = "/responses/{responseId}",
+      method = {RequestMethod.GET, RequestMethod.DELETE})
+  public ResponseEntity<?> responseResource(@PathVariable("responseId") final String responseId,
+      @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) final String authorization,
+      @RequestHeader(value = ANTHROPIC_API_KEY, required = false) final String alternateKey,
+      final HttpServletRequest servletRequest) {
+    return responseOperation(responseId, "", authorization, alternateKey, servletRequest);
+  }
+
+  /** Lists the input items of an owned response. */
+  @GetMapping("/responses/{responseId}/input_items")
+  public ResponseEntity<?> responseInputItems(@PathVariable("responseId") final String responseId,
+      @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) final String authorization,
+      @RequestHeader(value = ANTHROPIC_API_KEY, required = false) final String alternateKey,
+      final HttpServletRequest servletRequest) {
+    return responseOperation(responseId, "/input_items", authorization, alternateKey, servletRequest);
+  }
+
+  /** Cancels an owned background response at its original provider. */
+  @PostMapping("/responses/{responseId}/cancel")
+  public ResponseEntity<?> cancelResponse(@PathVariable("responseId") final String responseId,
+      @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) final String authorization,
+      @RequestHeader(value = ANTHROPIC_API_KEY, required = false) final String alternateKey,
+      final HttpServletRequest servletRequest) {
+    return responseOperation(responseId, "/cancel", authorization, alternateKey, servletRequest);
+  }
+
+  private ResponseEntity<?> responseOperation(final String responseId, final String suffix,
+      final String authorization, final String alternateKey, final HttpServletRequest request) {
+    try {
+      GatewaySession session = authenticate(authorization, alternateKey, request);
+      Exchange exchange = accessService.withSession(session, () -> nativeGateway.response(
+          session, responseId, request.getMethod(), suffix, request.getQueryString(),
+          nativeHeaders(request)));
+      return nativeResponse(exchange);
+    } catch (RuntimeException ex) {
+      return openAiError(ex);
+    }
+  }
+
+  private Map<String, String> nativeHeaders(final HttpServletRequest request) {
+    Map<String, String> headers = new LinkedHashMap<>();
+    for (String name : java.util.List.of("OpenAI-Beta", "X-Client-Request-Id",
+        "Idempotency-Key", "session_id", "conversation_id", "x-codex-turn-state")) {
+      String value = request.getHeader(name);
+      if (value != null) {
+        headers.put(name, value);
+      }
+    }
+    return headers;
+  }
+
+  private ResponseEntity<?> nativeResponse(final Exchange exchange) {
+    HttpHeaders headers = new HttpHeaders();
+    exchange.headers().forEach(headers::put);
+    if (!exchange.streaming()) {
+      try (exchange) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        exchange.consume(output::writeBytes);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return ResponseEntity.status(exchange.status()).headers(headers).body(output.toByteArray());
+      }
+    }
+    headers.setContentType(EVENT_STREAM_UTF8);
+    headers.setCacheControl("no-cache");
+    headers.set("X-Accel-Buffering", "no");
+    ResponseBodyEmitter emitter = new ResponseBodyEmitter(timeout());
+    emitter.onTimeout(exchange::close);
+    emitter.onError(error -> exchange.close());
+    emitter.onCompletion(exchange::close);
+    try {
+      inferenceExecutor.execute(() -> {
+        try (exchange) {
+          exchange.consume(bytes -> {
+            try {
+              emitter.send(bytes, MediaType.APPLICATION_OCTET_STREAM);
+            } catch (IOException ex) {
+              exchange.close();
+              throw new CancellationException("Client disconnected");
+            }
+          });
+          emitter.complete();
+        } catch (CancellationException ex) {
+          emitter.complete();
+        } catch (RuntimeException ex) {
+          // Do not expose upstream credentials, bodies, or transport exceptions in SSE errors.
+          try {
+            emitter.send(("event: error\ndata: {\"type\":\"error\","
+                + "\"code\":\"upstream_stream_error\",\"message\":\"Upstream stream interrupted\"}\n\n")
+                .getBytes(StandardCharsets.UTF_8), MediaType.APPLICATION_OCTET_STREAM);
+          } catch (IOException | IllegalStateException ignored) {
+            // The client may already have disconnected.
+          }
+          emitter.complete();
+        }
+      });
+    } catch (RejectedExecutionException ex) {
+      exchange.close();
+      throw ex;
+    }
+    return ResponseEntity.status(exchange.status()).headers(headers).body(emitter);
   }
 
   /** Anthropic-compatible Messages API, including protocol-native SSE events. */
@@ -526,6 +675,15 @@ public class AiCompatibleGatewayController {
   }
 
   private ResponseEntity<String> openAiError(final RuntimeException ex) {
+    if (ex instanceof AiOpenAiRequestException error) {
+      ObjectNode body = compatibilityMapper.openAiError(
+          error.getMessage(), "invalid_request_error", error.code());
+      if (error.param() != null) {
+        ((ObjectNode) body.get("error")).put("param", error.param());
+      }
+      return ResponseEntity.status(error.status()).contentType(MediaType.APPLICATION_JSON)
+          .body(json(body));
+    }
     log.warn("OpenAI compatible gateway request failed", ex);
     ErrorStatus error = status(ex);
     return ResponseEntity.status(error.status)

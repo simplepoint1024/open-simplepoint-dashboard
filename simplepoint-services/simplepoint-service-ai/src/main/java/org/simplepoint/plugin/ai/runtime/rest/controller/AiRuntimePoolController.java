@@ -23,9 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-/**
- * Current-scope desired-state API for reusable OCI MCP runtime pools.
- */
+/** Current-scope desired-state API for reusable OCI MCP runtime pools. */
 @RestController
 @RequestMapping(AiRuntimePaths.POOLS)
 @Tag(name = "AI Runtime Pool", description = "OCI MCP 弹性副本池")
@@ -35,84 +33,60 @@ public class AiRuntimePoolController {
 
   private final AiRuntimePoolRevisionService revisionService;
 
-  /**
-   * Creates the runtime pool management controller.
-   */
+  /** Creates the runtime pool management controller. */
   public AiRuntimePoolController(
-      final AiRuntimePoolService service,
-      final AiRuntimePoolRevisionService revisionService
-  ) {
+      final AiRuntimePoolService service, final AiRuntimePoolRevisionService revisionService) {
     this.service = service;
     this.revisionService = revisionService;
   }
 
-  /**
-   * Pages runtime pools in the active platform or tenant scope.
-   */
+  /** Pages runtime pools in the active platform or tenant scope. */
   @GetMapping
   @PreAuthorize(
       "hasRole('Administrator') or hasAuthority('ai.workbench.runtime.view') "
-          + "or hasAuthority('ai.workbench.runtime.pools.manage')"
-  )
+          + "or hasAuthority('ai.workbench.runtime.pools.manage')")
   @Operation(summary = "分页查询 OCI Runtime 副本池")
-  public Response<Page<AiRuntimePool>> findAll(final Pageable pageable) {
-    return Response.limit(service.findAll(pageable), AiRuntimePool.class);
+  public Response<Page<AiRuntimePool>> findAll(
+      @org.springframework.web.bind.annotation.RequestParam
+          final java.util.Map<String, String> filters,
+      final Pageable pageable) {
+    return Response.limit(service.query(filters, pageable), AiRuntimePool.class);
   }
 
-  /**
-   * Returns one readable runtime pool.
-   */
+  /** Returns one readable runtime pool. */
   @GetMapping("/{poolId}")
   @PreAuthorize(
       "hasRole('Administrator') or hasAuthority('ai.workbench.runtime.view') "
-          + "or hasAuthority('ai.workbench.runtime.pools.manage')"
-  )
+          + "or hasAuthority('ai.workbench.runtime.pools.manage')")
   @Operation(summary = "查询 OCI Runtime 副本池")
-  public Response<AiRuntimePool> find(
-      @PathVariable("poolId") final String poolId
-  ) {
+  public Response<AiRuntimePool> find(@PathVariable("poolId") final String poolId) {
     try {
-      return service.find(poolId)
-          .map(Response::okay)
-          .orElseGet(Response::nf);
+      return service.find(poolId).map(Response::okay).orElseGet(Response::nf);
     } catch (IllegalArgumentException ex) {
       throw badRequest(ex);
     }
   }
 
-  /**
-   * Returns the current-scope pool bound to one managed MCP server.
-   */
+  /** Returns the current-scope pool bound to one managed MCP server. */
   @GetMapping("/by-server/{serverId}")
   @PreAuthorize(
       "hasRole('Administrator') or hasAuthority('ai.workbench.runtime.view') "
-          + "or hasAuthority('ai.workbench.runtime.pools.manage')"
-  )
+          + "or hasAuthority('ai.workbench.runtime.pools.manage')")
   @Operation(summary = "按 MCP Server 查询 OCI Runtime 副本池")
-  public Response<AiRuntimePool> findByServer(
-      @PathVariable("serverId") final String serverId
-  ) {
+  public Response<AiRuntimePool> findByServer(@PathVariable("serverId") final String serverId) {
     try {
-      return service.findByServer(serverId)
-          .map(Response::okay)
-          .orElseGet(Response::nf);
+      return service.findByServer(serverId).map(Response::okay).orElseGet(Response::nf);
     } catch (IllegalArgumentException ex) {
       throw badRequest(ex);
     }
   }
 
-  /**
-   * Creates or updates current-scope pool desired state.
-   */
+  /** Creates or updates current-scope pool desired state. */
   @PostMapping
   @PreAuthorize(
-      "hasRole('Administrator') or "
-          + "hasAuthority('ai.workbench.runtime.pools.manage')"
-  )
+      "hasRole('Administrator') or " + "hasAuthority('ai.workbench.runtime.pools.manage')")
   @Operation(summary = "创建或更新 OCI Runtime 副本池")
-  public Response<AiRuntimePool> upsert(
-      @RequestBody final RuntimePoolUpsertRequest request
-  ) {
+  public Response<AiRuntimePool> upsert(@RequestBody final RuntimePoolUpsertRequest request) {
     try {
       return Response.okay(service.upsert(request));
     } catch (IllegalArgumentException ex) {
@@ -120,19 +94,14 @@ public class AiRuntimePoolController {
     }
   }
 
-  /**
-   * Changes explicit desired replicas.
-   */
+  /** Changes explicit desired replicas. */
   @PostMapping("/{poolId}/scale")
   @PreAuthorize(
-      "hasRole('Administrator') or "
-          + "hasAuthority('ai.workbench.runtime.pools.manage')"
-  )
+      "hasRole('Administrator') or " + "hasAuthority('ai.workbench.runtime.pools.manage')")
   @Operation(summary = "调整 OCI Runtime 副本池目标副本")
   public Response<AiRuntimePool> scale(
       @PathVariable("poolId") final String poolId,
-      @RequestBody final RuntimePoolScaleRequest request
-  ) {
+      @RequestBody final RuntimePoolScaleRequest request) {
     try {
       return Response.okay(service.scale(poolId, request));
     } catch (IllegalArgumentException ex) {
@@ -140,18 +109,12 @@ public class AiRuntimePoolController {
     }
   }
 
-  /**
-   * Refreshes activity and restores activation capacity.
-   */
+  /** Refreshes activity and restores activation capacity. */
   @PostMapping("/{poolId}/activate")
   @PreAuthorize(
-      "hasRole('Administrator') or "
-          + "hasAuthority('ai.workbench.runtime.pools.manage')"
-  )
+      "hasRole('Administrator') or " + "hasAuthority('ai.workbench.runtime.pools.manage')")
   @Operation(summary = "激活 OCI Runtime 副本池并刷新空闲计时")
-  public Response<AiRuntimePool> activate(
-      @PathVariable("poolId") final String poolId
-  ) {
+  public Response<AiRuntimePool> activate(@PathVariable("poolId") final String poolId) {
     try {
       return Response.okay(service.activate(poolId));
     } catch (IllegalArgumentException ex) {
@@ -159,18 +122,12 @@ public class AiRuntimePoolController {
     }
   }
 
-  /**
-   * Disables a pool and requests complete replica cleanup.
-   */
+  /** Disables a pool and requests complete replica cleanup. */
   @PostMapping("/{poolId}/disable")
   @PreAuthorize(
-      "hasRole('Administrator') or "
-          + "hasAuthority('ai.workbench.runtime.pools.manage')"
-  )
+      "hasRole('Administrator') or " + "hasAuthority('ai.workbench.runtime.pools.manage')")
   @Operation(summary = "禁用 OCI Runtime 副本池并回收全部副本")
-  public Response<AiRuntimePool> disable(
-      @PathVariable("poolId") final String poolId
-  ) {
+  public Response<AiRuntimePool> disable(@PathVariable("poolId") final String poolId) {
     try {
       return Response.okay(service.disable(poolId));
     } catch (IllegalArgumentException ex) {
@@ -178,18 +135,12 @@ public class AiRuntimePoolController {
     }
   }
 
-  /**
-   * Replaces every active replica with the current immutable pool definition.
-   */
+  /** Replaces every active replica with the current immutable pool definition. */
   @PostMapping("/{poolId}/redeploy")
   @PreAuthorize(
-      "hasRole('Administrator') or "
-          + "hasAuthority('ai.workbench.runtime.pools.manage')"
-  )
+      "hasRole('Administrator') or " + "hasAuthority('ai.workbench.runtime.pools.manage')")
   @Operation(summary = "重新部署 OCI Runtime 副本池")
-  public Response<AiRuntimePool> redeploy(
-      @PathVariable("poolId") final String poolId
-  ) {
+  public Response<AiRuntimePool> redeploy(@PathVariable("poolId") final String poolId) {
     try {
       return Response.okay(service.redeploy(poolId));
     } catch (IllegalArgumentException ex) {
@@ -200,14 +151,11 @@ public class AiRuntimePoolController {
   /** Binds the Pool to one published immutable Runtime Profile revision. */
   @PostMapping("/{poolId}/revision")
   @PreAuthorize(
-      "hasRole('Administrator') or "
-          + "hasAuthority('ai.workbench.runtime.pools.manage')"
-  )
+      "hasRole('Administrator') or " + "hasAuthority('ai.workbench.runtime.pools.manage')")
   @Operation(summary = "绑定 OCI Runtime 副本池到 MCP Profile 版本")
   public Response<AiRuntimePool> bindRevision(
       @PathVariable("poolId") final String poolId,
-      @RequestBody final RuntimePoolRevisionRequest request
-  ) {
+      @RequestBody final RuntimePoolRevisionRequest request) {
     try {
       return Response.okay(revisionService.bind(poolId, request));
     } catch (IllegalArgumentException ex) {
@@ -215,18 +163,12 @@ public class AiRuntimePoolController {
     }
   }
 
-  /**
-   * Deletes a disabled pool after its workloads have been fully reclaimed.
-   */
+  /** Deletes a disabled pool after its workloads have been fully reclaimed. */
   @DeleteMapping("/{poolId}")
   @PreAuthorize(
-      "hasRole('Administrator') or "
-          + "hasAuthority('ai.workbench.runtime.pools.manage')"
-  )
+      "hasRole('Administrator') or " + "hasAuthority('ai.workbench.runtime.pools.manage')")
   @Operation(summary = "删除已回收的 OCI Runtime 副本池")
-  public Response<Void> remove(
-      @PathVariable("poolId") final String poolId
-  ) {
+  public Response<Void> remove(@PathVariable("poolId") final String poolId) {
     try {
       service.remove(poolId);
       return Response.okay();
@@ -235,13 +177,8 @@ public class AiRuntimePoolController {
     }
   }
 
-  private ResponseStatusException badRequest(
-      final IllegalArgumentException exception
-  ) {
+  private ResponseStatusException badRequest(final IllegalArgumentException exception) {
     return new ResponseStatusException(
-        HttpStatus.BAD_REQUEST,
-        "AI_RUNTIME_POOL_REQUEST_INVALID",
-        exception
-    );
+        HttpStatus.BAD_REQUEST, "AI_RUNTIME_POOL_REQUEST_INVALID", exception);
   }
 }

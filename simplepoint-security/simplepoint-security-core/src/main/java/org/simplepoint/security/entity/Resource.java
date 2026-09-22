@@ -77,6 +77,32 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Schema(name = "资源对象", description = "统一描述菜单、页面、功能、操作和接口资源")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("alias"),
+    @org.simplepoint.core.query.QueryField("title"),
+    @org.simplepoint.core.query.QueryField("label"),
+    @org.simplepoint.core.query.QueryField("type"),
+    @org.simplepoint.core.query.QueryField("parentId"),
+    @org.simplepoint.core.query.QueryField("pluginId"),
+    @org.simplepoint.core.query.QueryField("path"),
+    @org.simplepoint.core.query.QueryField("component"),
+    @org.simplepoint.core.query.QueryField("icon"),
+    @org.simplepoint.core.query.QueryField("sort"),
+    @org.simplepoint.core.query.QueryField("routeKind"),
+    @org.simplepoint.core.query.QueryField("method"),
+    @org.simplepoint.core.query.QueryField("pattern"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("publicAccess"),
+    @org.simplepoint.core.query.QueryField("requireOrgTenant"),
+    @org.simplepoint.core.query.QueryField("grantable"),
+    @org.simplepoint.core.query.QueryField("disabled"),
+    @org.simplepoint.core.query.QueryField("danger"),
+    @org.simplepoint.core.query.QueryField("createdAt"),
+    @org.simplepoint.core.query.QueryField("updatedAt"),
+    @org.simplepoint.core.query.QueryField("id")
+})
 public class Resource extends BaseEntityImpl<String> {
 
   public static final String CODE_FIELD = "code";

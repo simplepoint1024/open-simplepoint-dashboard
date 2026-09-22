@@ -70,6 +70,17 @@ import org.springframework.core.annotation.Order;
 @AllArgsConstructor
 @Tag(name = "字典项对象", description = "用于管理系统中的动态字典项")
 @Schema(title = "字典项对象", description = "用于管理系统中的动态字典项")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("dictionaryCode"),
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("i18nKey"),
+    @org.simplepoint.core.query.QueryField("value"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("sort"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("createdAt"),
+    @org.simplepoint.core.query.QueryField("updatedAt")
+})
 public class DictionaryItem extends BaseEntityImpl<String> {
 
   @Order(0)

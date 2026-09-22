@@ -59,6 +59,15 @@ import org.springframework.core.annotation.Order;
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "时区对象", description = "用于管理系统中的时区")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("nameEnglish"),
+    @org.simplepoint.core.query.QueryField("nameNative"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("utcOffset"),
+    @org.simplepoint.core.query.QueryField("countryCode"),
+    @org.simplepoint.core.query.QueryField("isDst"),
+    @org.simplepoint.core.query.QueryField("enabled")
+})
 public class TimeZone extends BaseEntityImpl<String> {
 
   /**

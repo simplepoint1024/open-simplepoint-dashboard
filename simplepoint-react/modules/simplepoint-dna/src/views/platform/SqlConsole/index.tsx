@@ -1,30 +1,13 @@
 import api from '@/api';
-import {contextPath} from '@/services';
-import {DownloadOutlined, ReloadOutlined} from '@ant-design/icons';
-import {request} from '@simplepoint/shared/api/client';
+import {DatabaseOutlined, DownloadOutlined, PlayCircleOutlined, ReloadOutlined, SettingOutlined} from '@simplepoint/shared/types/icon';
+import {usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
+import {assertConsoleResponse, filterLoadedTree, quoteSqlPath, resultCsv} from './sqlConsoleUtils';
+import {sqlQueryFields} from './sqlQueryFields';
 import {get, post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import type {Page} from '@simplepoint/shared/types/request';
-import {
-  Alert,
-  App as AntApp,
-  Button,
-  Card,
-  Col,
-  Descriptions,
-  Empty,
-  Input,
-  InputNumber,
-  Row,
-  Select,
-  Space,
-  Spin,
-  Table,
-  Tabs,
-  Tag,
-  Tree,
-  Typography,
-} from 'antd';
+import {normalizePage, type Page} from '@simplepoint/shared/types/request';
+import {Alert, App as AntApp, Button, Popover, Splitter, Descriptions, Empty, Input, InputNumber, Select, Space, Spin, Tabs, Tag, Tree, Typography, theme} from 'antd';
+import Table from '@simplepoint/components/DataTable';
 import type {TabsProps} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -44,17 +27,9 @@ import {resolveErrorMessage} from '../shared';
 
 const {Paragraph} = Typography;
 
-const catalogBaseUrl = `${contextPath}/platform/dna/federation/catalogs`;
 const dataSourceConfig = api['platform.dna-data-sources'];
 const metadataConfig = api['platform.dna-metadata'];
 const sqlConsoleConfig = api['platform.dna-federation-sql-console'];
-
-type FederationCatalogOption = {
-  id: string;
-  code?: string;
-  name?: string;
-  enabled?: boolean;
-};
 
 type JdbcDataSourceOption = {
   id: string;
@@ -122,6 +97,7 @@ type SqlConsolePayload = {
 
 type BuildSqlConsolePayloadOptions = {
   allowGlobalFlush?: boolean;
+  executionSql?: string;
 };
 
 type ResultRow = {
@@ -131,15 +107,7 @@ type ResultRow = {
 
 type ResultTabKey = 'analysis' | 'pushedSql' | 'plan' | 'result';
 
-const defaultSql = `select *
-from data_source.database.schema.table
-order by 1`;
-
-const resolveCatalogLabel = (catalog: FederationCatalogOption) => {
-  const primary = catalog.name || catalog.code || catalog.id;
-  const secondary = catalog.code && catalog.code !== primary ? ` (${catalog.code})` : '';
-  return `${primary}${secondary}`;
-};
+const defaultSql = 'SELECT 1;';
 
 const resolveDataSourceLabel = (dataSource: JdbcDataSourceOption) => {
   const primary = dataSource.name || dataSource.code || dataSource.id;
@@ -192,22 +160,6 @@ const formatPushedSql = (sql: string, type: string) => `-- ${type} Pushdown SQL\
 
 const isFlushCacheSql = (value: string) => /^\s*FLUSH\s+CACHE\s*;?\s*$/i.test(value);
 
-const resolveDownloadFileName = (contentDisposition: string | null, fallback: string) => {
-  if (!contentDisposition) {
-    return fallback;
-  }
-  const encodedMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
-  if (encodedMatch?.[1]) {
-    try {
-      return decodeURIComponent(encodedMatch[1]);
-    } catch {
-      return encodedMatch[1];
-    }
-  }
-  const quotedMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
-  return quotedMatch?.[1] || fallback;
-};
-
 const saveBlob = (blob: Blob, fileName: string) => {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
@@ -216,45 +168,7 @@ const saveBlob = (blob: Blob, fileName: string) => {
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  URL.revokeObjectURL(url);
-};
-
-const pageContainerStyle = {
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: 16,
-  height: '100%',
-  minHeight: 0,
-  overflow: 'hidden',
-};
-
-const workspaceStyle = {
-  flex: 1,
-  minHeight: 0,
-  display: 'grid',
-  gridTemplateRows: 'minmax(320px, 3fr) minmax(260px, 2fr)',
-  gap: 16,
-  overflow: 'hidden',
-};
-
-const cardStyle = {
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column' as const,
-};
-
-const cardBodyStyle = {
-  flex: 1,
-  minHeight: 0,
-  display: 'flex',
-  flexDirection: 'column' as const,
-  overflow: 'hidden',
-};
-
-const scrollAreaStyle = {
-  flex: 1,
-  minHeight: 0,
-  overflow: 'auto',
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
 const renderTextCellValue = (value: string) => (
@@ -283,83 +197,130 @@ const renderCellValue = (value: unknown) => {
 const App = () => {
   const {t, ensure, locale} = useI18n();
   const {message} = AntApp.useApp();
-  const [catalogs, setCatalogs] = useState<FederationCatalogOption[]>([]);
   const [catalogCode, setCatalogCode] = useState<string>();
   const [dataSources, setDataSources] = useState<JdbcDataSourceOption[]>([]);
   const [treeData, setTreeData] = useState<MetadataTreeNode[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
+  const [expandedKeys, setExpandedKeys] = useState<Key[]>([]);
   const [selectedTreeNode, setSelectedTreeNode] = useState<MetadataTreeNode | null>(null);
   const [treeLoading, setTreeLoading] = useState(false);
   const [sql, setSql] = useState(defaultSql);
   const [defaultSchema, setDefaultSchema] = useState('');
-  const [maxRows, setMaxRows] = useState<number | null>(null);
+  const [maxRows, setMaxRows] = useState<number | null>(200);
   const [parametersText, setParametersText] = useState('');
   const [loadingMode, setLoadingMode] = useState<'explain' | 'query' | null>(null);
   const [exportFormat, setExportFormat] = useState<'CSV' | 'JSON' | null>(null);
-  const [activeTabKey, setActiveTabKey] = useState<ResultTabKey>('analysis');
+  const [activeTabKey, setActiveTabKey] = useState<ResultTabKey>('result');
   const [explainResult, setExplainResult] = useState<SqlExplainResult | null>(null);
   const [queryResult, setQueryResult] = useState<SqlQueryResult | null>(null);
   const [updateResult, setUpdateResult] = useState<SqlUpdateResult | null>(null);
   const [executeType, setExecuteType] = useState<SqlExecuteResult['type'] | null>(null);
   const [executeMessage, setExecuteMessage] = useState<string | null>(null);
   const editorRef = useRef<SqlEditorRef>(null);
+  const busyRef = useRef(false);
+  const aliveRef = useRef(true);
+  const treeGeneration = useRef(0);
+  const [executionError, setExecutionError] = useState<string | null>(null);
+  const [treeError, setTreeError] = useState<string | null>(null);
+  const [failedTreeNode, setFailedTreeNode] = useState<MetadataTreeNode | null>(null);
+  const [retryingTree, setRetryingTree] = useState(false);
+  const pendingNodes = useRef(new Set<Key>());
+  const [treeRevision, setTreeRevision] = useState(0);
+  const [resultRevision, setResultRevision] = useState(0);
+  const [search, setSearch] = useState('');
+  const {token} = theme.useToken();
+  const selected = usePageSelected();
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const outputRef = useRef<HTMLDivElement>(null);
+  const [gridHeight, setGridHeight] = useState(160);
+  const translateRef = useRef(t);
+  translateRef.current = t;
+  useEffect(() => {
+    const element = outputRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => setGridHeight(Math.max(80, Math.floor(entry.contentRect.height - 132))));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  usePageRetention(false, sql !== defaultSql || Boolean(parametersText) || loadingMode !== null);
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => { aliveRef.current = false; treeGeneration.current++; };
+  }, []);
 
   useEffect(() => {
     void ensure([...sqlConsoleConfig.i18nNamespaces, ...dataSourceConfig.i18nNamespaces]);
   }, [ensure, locale]);
 
   const resolveNodeTypeLabel = useCallback((type: MetadataNodeType, fallback?: string | null) => {
+    const t = translateRef.current;
     return t(`dna.federation.sqlConsole.page.nodeType.${type}`, fallback || type);
-  }, [t]);
-
-  const loadCatalogs = useCallback(async () => {
-    const page = await get<Page<FederationCatalogOption>>(catalogBaseUrl, {page: 0, size: 200});
-    const enabledCatalogs = (page.content ?? []).filter((catalog) => catalog.enabled !== false);
-    setCatalogs(enabledCatalogs);
-    setCatalogCode((current) => current ?? enabledCatalogs[0]?.code);
   }, []);
 
   const loadDataSources = useCallback(async () => {
+    const t = translateRef.current;
+    const generation = ++treeGeneration.current;
     setTreeLoading(true);
+    setTreeError(null);
+    setFailedTreeNode(null);
     try {
-      const page = await get<Page<JdbcDataSourceOption>>(dataSourceConfig.baseUrl, {page: 0, size: 200});
-      const enabledDataSources = (page.content ?? []).filter((dataSource) => dataSource.enabled !== false);
-      setDataSources(enabledDataSources);
-      setTreeData(buildDataSourceTreeNodes(enabledDataSources, resolveNodeTypeLabel));
+      const items: JdbcDataSourceOption[] = [];
+      for (let pageNumber = 0; ; pageNumber++) {
+        const page = normalizePage(await get<Page<JdbcDataSourceOption>>(dataSourceConfig.baseUrl, {page: pageNumber, size: 200}), 200);
+        if (!aliveRef.current || generation !== treeGeneration.current) return;
+        items.push(...(page.content ?? []));
+        if (!page.content.length || pageNumber + 1 >= page.page.totalPages) break;
+      }
+      const enabled = items.filter(source => source.enabled !== false && Boolean(source.code));
+      setDataSources(enabled);
+      setCatalogCode(current => enabled.some(source => source.code === current) ? current : enabled[0]?.code);
+      setTreeData(buildDataSourceTreeNodes(enabled, resolveNodeTypeLabel));
+      setTreeRevision(value => value + 1);
       setSelectedKeys([]);
+      setExpandedKeys([]);
       setSelectedTreeNode(null);
     } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.federation.sqlConsole.page.error.loadDataSources', '数据源树加载失败')));
+      if (aliveRef.current && generation === treeGeneration.current) {
+        setTreeError(resolveErrorMessage(error, t('dna.federation.sqlConsole.page.error.loadDataSources', '数据源树加载失败')));
+      }
     } finally {
-      setTreeLoading(false);
+      if (aliveRef.current && generation === treeGeneration.current) setTreeLoading(false);
     }
-  }, [message, resolveNodeTypeLabel, t]);
+  }, [resolveNodeTypeLabel]);
 
-  useEffect(() => {
-    void loadCatalogs().catch((error) => {
-      message.error(resolveErrorMessage(error, t('dna.federation.sqlConsole.page.error.loadCatalogs', '数据目录列表加载失败')));
-    });
-  }, [loadCatalogs, message, t]);
-
-  useEffect(() => {
-    void loadDataSources();
-  }, [loadDataSources]);
+  useEffect(() => { void loadDataSources(); }, [loadDataSources]);
 
   const loadChildren = useCallback(async (dataSourceId: string, path: MetadataPathSegment[]) => {
     const data = await post<MetadataTreeNode[]>(`${metadataConfig.baseUrl}/${dataSourceId}/children`, {path});
-    return normalizeMetadataTreeNodes(data ?? [], resolveNodeTypeLabel, {dataSourceId});
+    assertConsoleResponse(data, translateRef.current('dna.federation.sqlConsole.page.error.loadChildren', '树节点加载失败'));
+    if (!Array.isArray(data)) throw new Error(translateRef.current('dna.federation.sqlConsole.page.error.loadChildren', '树节点加载失败'));
+    return normalizeMetadataTreeNodes(data, resolveNodeTypeLabel, {dataSourceId});
   }, [resolveNodeTypeLabel]);
 
   const handleLoadData = useCallback(async (treeNode: object) => {
     const node = treeNode as MetadataTreeNode;
-    if (node.isLeaf || node.loaded || !node.dataSourceId) {
+    if (node.isLeaf || node.loaded || !node.dataSourceId || pendingNodes.current.has(node.key)) {
       return;
     }
+    const generation = treeGeneration.current;
+    pendingNodes.current.add(node.key);
     try {
       const children = await loadChildren(node.dataSourceId, node.type === 'DATA_SOURCE' ? [] : node.path);
-      setTreeData((current) => replaceMetadataTreeChildren(current, node.key, children));
+      if (aliveRef.current && generation === treeGeneration.current) {
+        setTreeData((current) => replaceMetadataTreeChildren(current, node.key, children));
+        setTreeError(null);
+        setFailedTreeNode(null);
+        setExpandedKeys(keys => keys.includes(node.key) ? keys : [...keys, node.key]);
+      }
     } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.federation.sqlConsole.page.error.loadChildren', '树节点加载失败')));
+      if (aliveRef.current && generation === treeGeneration.current) {
+        setTreeError(resolveErrorMessage(error, t('dna.federation.sqlConsole.page.error.loadChildren', '树节点加载失败')));
+        setFailedTreeNode(node);
+        setExpandedKeys(keys => keys.filter(key => key !== node.key));
+      }
+      throw error; // Ant Tree must not mark a failed node loaded; expanding it again retries.
+    } finally {
+      pendingNodes.current.delete(node.key);
     }
   }, [loadChildren, message, t]);
 
@@ -368,11 +329,6 @@ const App = () => {
     setSelectedTreeNode(keys.length > 0 ? findMetadataTreeNodeByKey(treeData, keys[0]) : null);
   }, [treeData]);
 
-  const handleRefreshTree = useCallback(async () => {
-    await loadDataSources();
-    message.success(t('dna.federation.sqlConsole.page.success.refreshTree', '数据源树已刷新'));
-  }, [loadDataSources, message, t]);
-
   const selectedTreePath = useMemo(() => {
     if (!selectedTreeNode?.dataSourceId) {
       return null;
@@ -380,24 +336,24 @@ const App = () => {
     const dataSource = dataSources.find((item) => item.id === selectedTreeNode.dataSourceId);
     const rootCode = dataSource?.code || dataSource?.name || selectedTreeNode.dataSourceId;
     if (selectedTreeNode.type === 'DATA_SOURCE') {
-      return rootCode;
+      return quoteSqlPath([rootCode]);
     }
-    return [rootCode, ...selectedTreeNode.path.map((segment) => segment.name)].join('.');
+    return quoteSqlPath([rootCode, ...selectedTreeNode.path.map((segment) => segment.name)]);
   }, [dataSources, selectedTreeNode]);
 
   const buildSqlConsolePayload = useCallback((options?: BuildSqlConsolePayloadOptions): SqlConsolePayload | null => {
-    const normalizedSql = sql.trim();
+    const normalizedSql = (options?.executionSql ?? sql).trim();
     if (!normalizedSql) {
       message.warning(t('dna.federation.sqlConsole.page.warning.enterSql', '请输入要执行的 SQL'));
       return null;
     }
     const globalFlush = options?.allowGlobalFlush === true && isFlushCacheSql(normalizedSql);
     if (!catalogCode && !globalFlush) {
-      message.warning(t('dna.federation.sqlConsole.page.warning.selectCatalog', '请选择数据目录'));
+      message.warning(t('dna.federation.sqlConsole.page.warning.selectCatalog', '请选择数据源'));
       return null;
     }
 
-    const payload: SqlConsolePayload = {sql};
+    const payload: SqlConsolePayload = {sql: normalizedSql};
     if (catalogCode) {
       payload.catalogCode = catalogCode;
     }
@@ -436,29 +392,38 @@ const App = () => {
   }, [catalogCode, defaultSchema, maxRows, message, parametersText, sql, t]);
 
   const submit = useCallback(async (mode: 'explain' | 'query') => {
-    const payload = buildSqlConsolePayload({allowGlobalFlush: mode === 'query'});
+    if (busyRef.current) return;
+    const payload = buildSqlConsolePayload({
+      allowGlobalFlush: mode === 'query',
+      executionSql: editorRef.current?.getExecutionSql(),
+    });
     if (!payload) {
       return;
     }
+    busyRef.current = true;
     setLoadingMode(mode);
-    const hide = message.loading(
-      mode === 'explain'
-        ? t('dna.federation.sqlConsole.page.progress.explain', '正在生成执行计划...')
-        : t('dna.federation.sqlConsole.page.progress.query', '正在执行 SQL...'),
-      0,
-    );
+    setExecutionError(null);
+    setExplainResult(null);
+    setQueryResult(null);
+    setUpdateResult(null);
+    setExecuteType(null);
+    setExecuteMessage(null);
+    setResultRevision(value => value + 1);
     try {
       if (mode === 'explain') {
         const result = await post<SqlExplainResult>(`${sqlConsoleConfig.baseUrl}/explain`, payload);
+        if (!aliveRef.current) return;
+        assertConsoleResponse(result, t('dna.federation.sqlConsole.page.error.explain', '执行计划生成失败'));
         setExplainResult(result);
         setQueryResult(null);
         setUpdateResult(null);
         setExecuteType(null);
         setExecuteMessage(null);
         setActiveTabKey('analysis');
-        message.success(t('dna.federation.sqlConsole.page.success.explain', '执行计划已生成'));
       } else {
         const result = await post<SqlExecuteResult>(`${sqlConsoleConfig.baseUrl}/execute`, payload);
+        if (!aliveRef.current) return;
+        assertConsoleResponse(result, t('dna.federation.sqlConsole.page.error.query', 'SQL 执行失败'));
         setExecuteType(result.type);
         setExecuteMessage(result.message ?? null);
         if (result.type === 'QUERY' && result.queryResult) {
@@ -466,64 +431,51 @@ const App = () => {
           setQueryResult(result.queryResult);
           setUpdateResult(null);
           setActiveTabKey('result');
-          message.success(t('dna.federation.sqlConsole.page.success.query', 'SQL 执行成功'));
         } else if ((result.type === 'DML' || result.type === 'DDL') && result.updateResult) {
           setExplainResult(null);
           setQueryResult(null);
           setUpdateResult(result.updateResult);
           setActiveTabKey('result');
-          message.success(t('dna.federation.sqlConsole.page.success.update', 'SQL 已下推执行'));
         } else if (result.type === 'FLUSH_CACHE') {
           setExplainResult(null);
           setQueryResult(null);
           setUpdateResult(null);
           setActiveTabKey('result');
-          message.success(result.message || t('dna.federation.sqlConsole.page.success.flushCache', '缓存已刷新'));
         } else {
           throw new Error(t('dna.federation.sqlConsole.page.error.unsupportedExecuteResult', '不支持的执行结果类型'));
         }
       }
     } catch (error) {
-      message.error(resolveErrorMessage(
+      if (!aliveRef.current) return;
+      setExecutionError(resolveErrorMessage(
         error,
         mode === 'explain'
           ? t('dna.federation.sqlConsole.page.error.explain', '执行计划生成失败')
           : t('dna.federation.sqlConsole.page.error.query', 'SQL 执行失败'),
       ));
     } finally {
-      hide();
-      setLoadingMode(null);
+      busyRef.current = false;
+      if (aliveRef.current) setLoadingMode(null);
     }
   }, [buildSqlConsolePayload, message, t]);
 
-  const exportResults = useCallback(async (format: 'CSV' | 'JSON') => {
-    const payload = buildSqlConsolePayload();
-    if (!payload) {
-      return;
-    }
-    const exportUrl = `${sqlConsoleConfig.baseUrl}/export`;
+  const exportResults = useCallback((format: 'CSV' | 'JSON') => {
+    if (busyRef.current || !queryResult) return;
+    busyRef.current = true;
     setExportFormat(format);
-    const hide = message.loading(t('dna.federation.sqlConsole.page.progress.export', '正在导出查询结果...'), 0);
     try {
-      const response = await request<Response>(exportUrl, {
-        method: 'POST',
-        json: {...payload, format},
-        responseType: 'response',
-      });
-      const blob = await response.blob();
-      const fileName = resolveDownloadFileName(
-        response.headers.get('content-disposition'),
-        format === 'JSON' ? 'export.json' : 'export.csv',
-      );
-      saveBlob(blob, fileName);
+      const content = format === 'CSV'
+        ? resultCsv(queryResult.columns, queryResult.rows)
+        : JSON.stringify({columns: queryResult.columns, rows: queryResult.rows, truncated: queryResult.truncated}, null, 2);
+      saveBlob(new Blob([content], {type: format === 'CSV' ? 'text/csv;charset=utf-8' : 'application/json'}), `result.${format.toLowerCase()}`);
       message.success(t('dna.federation.sqlConsole.page.success.export', '查询结果已导出'));
     } catch (error) {
       message.error(resolveErrorMessage(error, t('dna.federation.sqlConsole.page.error.export', '查询结果导出失败')));
     } finally {
-      hide();
+      busyRef.current = false;
       setExportFormat(null);
     }
-  }, [buildSqlConsolePayload, message, t]);
+  }, [queryResult, message, t]);
 
   const analysisResult = queryResult ?? explainResult;
 
@@ -535,6 +487,7 @@ const App = () => {
           {title}
         </span>
       ),
+      width: 180,
       dataIndex: ['values', index],
       key: `${column.name}-${index}`,
       render: (value: unknown) => renderCellValue(value),
@@ -557,7 +510,7 @@ const App = () => {
       key: 'analysis',
       label: t('dna.federation.sqlConsole.page.tab.analysis', '执行分析'),
       children: renderScrollPane(analysisResult ? (
-        <Space direction="vertical" size={16} style={{display: 'flex'}}>
+        <Space orientation="vertical" size={16} style={{display: 'flex'}}>
           <Descriptions bordered size="small" column={2}>
             <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.catalog', '数据目录')}>{analysisResult.catalogCode}</Descriptions.Item>
             <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.policy', '查询策略')}>{analysisResult.policyCode}</Descriptions.Item>
@@ -632,10 +585,10 @@ const App = () => {
     {
       key: 'pushedSql',
       label: t('dna.federation.sqlConsole.page.tab.pushedSql', 'JDBC 下推 SQL'),
-      children: renderScrollPane(queryResult ? (
-        (queryResult.pushedSqls ?? []).length > 0 ? (
+      children: renderScrollPane(analysisResult ? (
+        (analysisResult.pushedSqls ?? []).length > 0 ? (
           <Paragraph style={{whiteSpace: 'pre-wrap', marginBottom: 0}}>
-            {formatPushedSqls(queryResult.pushedSqls ?? [])}
+            {formatPushedSqls(analysisResult.pushedSqls ?? [])}
           </Paragraph>
         ) : (
           <Empty description={t('dna.federation.sqlConsole.page.empty.noPushedSqlCollected', '本次执行未采集到 JDBC 下推 SQL')} />
@@ -663,7 +616,7 @@ const App = () => {
       key: 'result',
       label: t('dna.federation.sqlConsole.page.tab.result', '执行结果'),
       children: renderScrollPane(queryResult ? (
-        <Space className="dna-sql-console-result-content" direction="vertical" size={16} style={{display: 'flex'}}>
+        <Space className="dna-sql-console-result-content" orientation="vertical" size={4} style={{display: 'flex'}}>
           {queryResult.truncated ? (
             <Alert
               type="warning"
@@ -675,28 +628,22 @@ const App = () => {
               ).replace('{rows}', String(queryResult.returnedRows))}
             />
           ) : null}
-          <Descriptions bordered size="small" column={2}>
-            <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.returnedRows', '返回行数')}>{queryResult.returnedRows}</Descriptions.Item>
-            <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.resultStatus', '结果状态')}>
-              <Tag color={queryResult.truncated ? 'warning' : 'success'}>
-                {queryResult.truncated
-                  ? t('dna.federation.sqlConsole.page.state.truncated', '已截断')
-                  : t('dna.federation.sqlConsole.page.state.complete', '完整返回')}
-              </Tag>
-            </Descriptions.Item>
-          </Descriptions>
           <Table<ResultRow>
+            storageKey="dna.sql-console.result"
+            query={{mode: 'local', scope: 'result', fields: sqlQueryFields(queryResult.columns)}}
+            includeToolbarInScroll
+            key={resultRevision}
             className="dna-sql-console-result-table"
             size="small"
             rowKey="key"
-            scroll={{x: 'max-content', y: 260}}
-            pagination={{pageSize: 20, showSizeChanger: true, size: 'small'}}
+            scroll={{x: 'max-content', y: Math.max(80, gridHeight - (queryResult.truncated ? 100 : 0))}}
+            pagination={{defaultPageSize: 50, showSizeChanger: true, size: 'small', pageSizeOptions: [20, 50, 100, 200]}}
             columns={resultColumns}
             dataSource={resultData}
           />
         </Space>
       ) : updateResult ? (
-        <Space direction="vertical" size={16} style={{display: 'flex'}}>
+        <Space orientation="vertical" size={16} style={{display: 'flex'}}>
           <Descriptions bordered size="small" column={2}>
             <Descriptions.Item label={t('dna.federation.sqlConsole.page.field.executionType', '执行类型')}>
               <Tag color={executeType === 'DDL' ? 'purple' : 'processing'}>{executeType}</Tag>
@@ -725,178 +672,146 @@ const App = () => {
         <Empty description={t('dna.federation.sqlConsole.page.empty.resultPending', '执行 SQL 后展示结果集')} />
       )),
     },
-  ], [analysisResult, executeMessage, executeType, queryResult, renderScrollPane, resultColumns, resultData, t, updateResult]);
+  ], [analysisResult, executeMessage, executeType, queryResult, renderScrollPane, resultColumns, resultData, resultRevision, gridHeight, t, updateResult]);
+
+  const visibleTree = useMemo(() => filterLoadedTree(treeData, search), [treeData, search]);
+  const visibleExpandedKeys = useMemo(() => {
+    if (!search.trim()) return expandedKeys;
+    const keys: Key[] = [];
+    const visit = (nodes: MetadataTreeNode[]) => nodes.forEach(node => {
+      if (node.children?.length) { keys.push(node.key); visit(node.children); }
+    });
+    visit(visibleTree);
+    return keys;
+  }, [expandedKeys, search, visibleTree]);
+  const busy = loadingMode !== null || exportFormat !== null;
+  const controls = (
+    <div className="dna-sql-options">
+      <label>{t('dna.federation.sqlConsole.page.placeholder.defaultSchema', '默认 Schema')}
+        <Input value={defaultSchema} onChange={event => setDefaultSchema(event.target.value)} disabled={busy} />
+      </label>
+      <label>{t('dna.federation.sqlConsole.page.placeholder.parameters', '参数 JSON 数组，例如 [1, "Alice", null]')}
+        <Input.TextArea value={parametersText} onChange={event => setParametersText(event.target.value)}
+          autoSize={{minRows: 3, maxRows: 8}} disabled={busy} />
+      </label>
+    </div>
+  );
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={workspaceStyle}>
-        <Row gutter={16} align="stretch" style={{height: '100%', minHeight: 0}}>
-          <Col span={8} style={{height: '100%', minWidth: 0}}>
-            <Card
-              title={t('dna.federation.sqlConsole.page.card.tree', '数据源树')}
-              extra={(
-                <Button icon={<ReloadOutlined />} onClick={() => void handleRefreshTree()}>
-                  {t('dna.federation.sqlConsole.page.button.refreshTree', '刷新树')}
-                </Button>
-              )}
-              style={cardStyle}
-              bodyStyle={cardBodyStyle}
-            >
-              <div style={scrollAreaStyle}>
-                {treeLoading ? (
-                  <div style={{display: 'flex', justifyContent: 'center', paddingTop: 120}}>
-                    <Spin />
-                  </div>
-                ) : treeData.length > 0 ? (
-                  <Tree
-                    blockNode
-                    treeData={treeData}
-                    loadData={handleLoadData}
-                    selectedKeys={selectedKeys}
-                    onSelect={(keys) => handleSelectTreeNode(keys)}
-                  />
-                ) : (
-                  <Empty description={t('dna.federation.sqlConsole.page.empty.noDataSources', '当前没有可用的数据源')} />
-                )}
-              </div>
-              {selectedTreePath ? (
-                <Alert
-                  type="info"
-                  closable
-                  showIcon
-                  style={{marginTop: 12}}
-                  message={t('dna.federation.sqlConsole.page.message.selectedPath', '当前选中路径')}
-                  description={selectedTreePath}
-                />
-              ) : null}
-            </Card>
-          </Col>
-          <Col span={16} style={{height: '100%', minWidth: 0}}>
-            <Card title={t('dna.federation.sqlConsole.page.card.editor', 'SQL 编辑器')} style={cardStyle} bodyStyle={cardBodyStyle}>
-              <Space direction="vertical" size={12} style={{display: 'flex', flex: 1, minHeight: 0}}>
-                <Space.Compact style={{width: '100%'}}>
-                  <Select
-                    style={{flex: 1}}
-                    placeholder={t('dna.federation.sqlConsole.page.placeholder.selectCatalog', '请选择数据目录')}
-                    value={catalogCode}
-                    onChange={setCatalogCode}
-                    options={catalogs.map((catalog) => ({
-                      label: resolveCatalogLabel(catalog),
-                      value: catalog.code,
-                    }))}
-                  />
-                  <Input
-                    style={{width: 220}}
-                    value={defaultSchema}
-                    placeholder={t('dna.federation.sqlConsole.page.placeholder.defaultSchema', '默认 Schema')}
-                    onChange={(event) => setDefaultSchema(event.target.value)}
-                  />
-                  <InputNumber
-                    min={1}
-                    max={1000000}
-                    style={{width: 180}}
-                    value={maxRows ?? undefined}
-                    placeholder={t('dna.federation.sqlConsole.page.placeholder.maxRows', '本次行数上限')}
-                    onChange={(value) => setMaxRows(typeof value === 'number' ? value : null)}
-                  />
-                </Space.Compact>
-
-                <Input.TextArea
-                  value={parametersText}
-                  onChange={(event) => setParametersText(event.target.value)}
-                  autoSize={{minRows: 1, maxRows: 3}}
-                  placeholder={t(
-                    'dna.federation.sqlConsole.page.placeholder.parameters',
-                    '参数 JSON 数组，例如 [1, "Alice", null]',
-                  )}
-                  style={{fontFamily: 'monospace'}}
-                />
-
-                {selectedTreePath ? (
-                  <Alert
-                    type="info"
-                    closable
-                    showIcon
-                    message={t('dna.federation.sqlConsole.page.message.selectedObject', '左侧树当前选中对象')}
-                    description={selectedTreePath}
-                    action={
-                      <Button
-                        size="small"
-                        onClick={() => editorRef.current?.insertText(selectedTreePath)}
-                      >
-                        {t('dna.federation.sqlConsole.page.button.insertPath', '插入路径')}
-                      </Button>
+    <div className="dna-sql-workbench" style={{
+      '--sql-bg': token.colorBgContainer, '--sql-panel': token.colorFillAlter,
+      '--sql-border': token.colorBorderSecondary, '--sql-text': token.colorText,
+      '--sql-muted': token.colorTextSecondary,
+    } as React.CSSProperties}>
+      <Splitter>
+        <Splitter.Panel defaultSize={260} min={180} max="45%" collapsible>
+          <aside className="dna-sql-explorer">
+            <div className="dna-sql-toolwindow-title">
+              <span><DatabaseOutlined /> {t('dna.federation.sqlConsole.page.card.tree', '数据库')}</span>
+              <Button type="text" size="small" icon={<ReloadOutlined />} loading={treeLoading}
+                aria-label={t('dna.federation.sqlConsole.page.button.refreshTree', '刷新树')}
+                onClick={() => void loadDataSources()} />
+            </div>
+            <Input.Search allowClear value={search} onChange={event => setSearch(event.target.value)}
+              placeholder={t('dna.federation.sqlConsole.page.search', '搜索已加载对象')} />
+            {treeError && <Alert type="error" showIcon closable onClose={() => setTreeError(null)} title={treeError}
+              action={<Button size="small" loading={retryingTree} onClick={() => {
+                setRetryingTree(true);
+                void (failedTreeNode ? handleLoadData(failedTreeNode) : loadDataSources())
+                  .catch(() => undefined).finally(() => setRetryingTree(false));
+              }}>{t('dna.federation.sqlConsole.page.retry', '重试')}</Button>} />}
+            <div className="dna-sql-tree">
+              {treeLoading ? <Spin /> : treeData.length ? (
+                <Tree key={treeRevision} blockNode showLine={{showLeafIcon: false}}
+                  treeData={visibleTree} loadData={search.trim() ? undefined : handleLoadData} selectedKeys={selectedKeys}
+                  expandedKeys={visibleExpandedKeys} onExpand={setExpandedKeys}
+                  filterTreeNode={node => Boolean(search.trim()) && (node.rawTitle ?? '').toLowerCase().includes(search.trim().toLowerCase())}
+                  onSelect={handleSelectTreeNode}
+                  onDoubleClick={(_, node) => {
+                    const source = dataSources.find(item => item.id === node.dataSourceId);
+                    if (source?.code && node.path?.length) {
+                      editorRef.current?.insertText(quoteSqlPath([source.code, ...node.path.map(item => item.name)]));
                     }
-                  />
-                ) : null}
-
-                <div style={{flex: 1, minHeight: 0, border: '1px solid #d9d9d9', borderRadius: 6, overflow: 'hidden'}}>
-                  <SqlEditor
-                    ref={editorRef}
-                    value={sql}
-                    onChange={setSql}
-                    onExecute={() => {
-                      void submit('query');
-                    }}
-                  />
+                  }}
+                />
+              ) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={t('dna.federation.sqlConsole.page.empty.noDataSources', '当前没有可用的数据源')} />}
+            </div>
+            {selectedTreePath && <div className="dna-sql-object-path">
+              <Typography.Text ellipsis={{tooltip: selectedTreePath}}>{selectedTreePath}</Typography.Text>
+              <Button size="small" type="text" onClick={() => editorRef.current?.insertText(selectedTreePath)}>
+                {t('dna.federation.sqlConsole.page.button.insertPath', '插入路径')}
+              </Button>
+            </div>}
+          </aside>
+        </Splitter.Panel>
+        <Splitter.Panel min={360}>
+          <div className="dna-sql-main">
+            <div className="dna-sql-file-tab"><span>console.sql</span><Typography.Text type="secondary">SQL</Typography.Text></div>
+            <div className="dna-sql-toolbar">
+              <Button type="text" className="dna-sql-run" icon={<PlayCircleOutlined />}
+                loading={loadingMode === 'query'} disabled={busy || !catalogCode}
+                title={t('dna.federation.sqlConsole.page.runHint', '执行选中内容或光标所在语句（Ctrl/⌘ + Enter）')}
+                onClick={() => void submit('query')}>
+                {t('dna.federation.sqlConsole.page.button.query', '执行 SQL')}
+              </Button>
+              <Button type="text" loading={loadingMode === 'explain'} disabled={busy || !catalogCode}
+                onClick={() => void submit('explain')}>
+                {t('dna.federation.sqlConsole.page.button.explain', '查看执行计划')}
+              </Button>
+              <Select className="dna-sql-source-select" size="small" showSearch={{optionFilterProp: 'label'}}
+                aria-label={t('dna.federation.sqlConsole.page.field.dataSource', '执行数据源')}
+                placeholder={t('dna.federation.sqlConsole.page.warning.selectCatalog', '请选择数据源')}
+                value={catalogCode} loading={treeLoading} disabled={busy}
+                onChange={value => {setCatalogCode(value); setDefaultSchema('');}}
+                options={dataSources.map(source => ({label: resolveDataSourceLabel(source), value: source.code}))} />
+              <InputNumber size="small" min={1} max={1000000} precision={0} value={maxRows}
+                aria-label={t('dna.federation.sqlConsole.page.field.maxRows', '最大返回行数')}
+                title={t('dna.federation.sqlConsole.page.field.maxRows', '最大返回行数')}
+                onChange={value => setMaxRows(value)} disabled={busy} />
+              <Popover trigger="click" placement="bottomRight" content={controls} open={selected && optionsOpen} onOpenChange={setOptionsOpen}>
+                <Button type="text" icon={<SettingOutlined />}
+                  aria-label={t('dna.federation.sqlConsole.page.options', '查询参数')} />
+              </Popover>
+            </div>
+            <Splitter orientation="vertical" className="dna-sql-editor-split">
+              <Splitter.Panel defaultSize="45%" min={100}>
+                <div className="dna-sql-editor">
+                  <SqlEditor ref={editorRef} value={sql} onChange={setSql}
+                    dark={token.colorBgContainer.toLowerCase() !== '#ffffff' && token.colorBgContainer !== '#fff'}
+                    onExecute={() => void submit('query')} />
                 </div>
-
-                <Space>
-                  <Button
-                    type="default"
-                    loading={loadingMode === 'explain'}
-                    disabled={loadingMode !== null || exportFormat !== null}
-                    onClick={() => {
-                      void submit('explain');
-                    }}
-                  >
-                    {t('dna.federation.sqlConsole.page.button.explain', '查看执行计划')}
-                  </Button>
-                  <Button
-                    type="primary"
-                    loading={loadingMode === 'query'}
-                    disabled={loadingMode !== null || exportFormat !== null}
-                    onClick={() => {
-                      void submit('query');
-                    }}
-                  >
-                    {t('dna.federation.sqlConsole.page.button.query', '执行 SQL')}
-                  </Button>
-                  <Button
-                    icon={<DownloadOutlined />}
-                    loading={exportFormat === 'CSV'}
-                    disabled={loadingMode !== null || exportFormat !== null}
-                    onClick={() => {
-                      void exportResults('CSV');
-                    }}
-                  >
-                    {t('dna.federation.sqlConsole.page.button.exportCsv', '导出 CSV')}
-                  </Button>
-                  <Button
-                    icon={<DownloadOutlined />}
-                    loading={exportFormat === 'JSON'}
-                    disabled={loadingMode !== null || exportFormat !== null}
-                    onClick={() => {
-                      void exportResults('JSON');
-                    }}
-                  >
-                    {t('dna.federation.sqlConsole.page.button.exportJson', '导出 JSON')}
-                  </Button>
-                </Space>
-              </Space>
-            </Card>
-          </Col>
-        </Row>
-
-        <Card title={t('dna.federation.sqlConsole.page.card.output', '执行输出')} style={cardStyle} bodyStyle={{...cardBodyStyle, paddingTop: 8}}>
-          <Tabs
-            className="dna-sql-console-tabs"
-            activeKey={activeTabKey}
-            onChange={(key) => setActiveTabKey(key as ResultTabKey)}
-            items={resultTabs}
-          />
-        </Card>
-      </div>
+              </Splitter.Panel>
+              <Splitter.Panel min={120}>
+                <div className="dna-sql-output" ref={outputRef}>
+                  {executionError && <Alert type="error" showIcon
+                    title={t('dna.federation.sqlConsole.page.error.query', 'SQL 执行失败')}
+                    description={<pre>{executionError}</pre>} />}
+                  {loadingMode && <div role="status" className="dna-sql-progress"><Spin size="small" />
+                    {loadingMode === 'explain'
+                      ? t('dna.federation.sqlConsole.page.progress.explain', '正在生成执行计划...')
+                      : t('dna.federation.sqlConsole.page.progress.query', '正在执行 SQL...')}
+                  </div>}
+                  <Tabs className="dna-sql-console-tabs" size="small" activeKey={activeTabKey}
+                    onChange={key => setActiveTabKey(key as ResultTabKey)}
+                    items={[...resultTabs!.filter(item => item.key === 'result'), ...resultTabs!.filter(item => item.key !== 'result')]}
+                    tabBarExtraContent={<Space size={0}>
+                      <Button type="text" size="small" icon={<DownloadOutlined />} disabled={busy || !queryResult}
+                        onClick={() => exportResults('CSV')}>CSV</Button>
+                      <Button type="text" size="small" disabled={busy || !queryResult}
+                        onClick={() => exportResults('JSON')}>JSON</Button>
+                    </Space>} />
+                </div>
+              </Splitter.Panel>
+            </Splitter>
+            <div className="dna-sql-statusbar" role="status">
+              <span>{catalogCode || '—'}</span>
+              <span>{queryResult ? `${queryResult.returnedRows} rows · ${queryResult.executionTimeMs} ms`
+                : updateResult ? `${updateResult.affectedRows} rows · ${updateResult.executionTimeMs} ms` : 'Ctrl/⌘ + Enter'}</span>
+            </div>
+          </div>
+        </Splitter.Panel>
+      </Splitter>
     </div>
   );
 };

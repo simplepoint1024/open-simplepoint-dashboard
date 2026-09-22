@@ -20,6 +20,7 @@ public class OidcClientConfigurationDto implements Serializable {
 
   private String clientName;
 
+  @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
   private String clientSecret;
 
   private Instant clientSecretExpiresAt;

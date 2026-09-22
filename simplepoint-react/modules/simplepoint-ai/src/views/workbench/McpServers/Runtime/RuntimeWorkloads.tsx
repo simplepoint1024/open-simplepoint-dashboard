@@ -1,7 +1,9 @@
 import DataTable from '@simplepoint/components/DataTable';
-import {get, post} from '@simplepoint/shared/api/methods';
+import EntitySelect from '@simplepoint/components/EntitySelect';
+import {useRuntimeServerNames, managedServerFilters, enabledSecretFilters} from './runtimeQueries';
+import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
+import {post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import type {Page} from '@simplepoint/shared/types/request';
 import {
   Alert,
   App,
@@ -19,13 +21,13 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {
   runtimeErrorLabel,
   runtimeNetworkModeLabel,
   runtimeStatusLabel,
 } from './runtimeLabels';
-import type {RuntimeSecret, RuntimeServer, RuntimeWorkload} from './types';
+import type {RuntimeWorkload} from './types';
 import {
   formatBytes,
   formatCpu,
@@ -41,6 +43,7 @@ const NANO_CPU = 1_000_000_000;
 const TERMINAL_STATUSES = new Set(['SUCCEEDED', 'FAILED', 'LOST', 'CANCELLED']);
 
 type RuntimeWorkloadsProps = {
+  active?: boolean;
   workloadsUrl: string;
   secretsUrl: string;
   serversUrl: string;
@@ -62,6 +65,7 @@ type WorkloadFormValues = {
 };
 
 const RuntimeWorkloads = ({
+  active = true,
   workloadsUrl,
   secretsUrl,
   serversUrl,
@@ -71,50 +75,15 @@ const RuntimeWorkloads = ({
   const {message, modal} = App.useApp();
   const [form] = Form.useForm<WorkloadFormValues>();
   const networkMode = Form.useWatch('networkMode', form);
-  const [rows, setRows] = useState<RuntimeWorkload[]>([]);
-  const [servers, setServers] = useState<RuntimeServer[]>([]);
-  const [secrets, setSecrets] = useState<RuntimeSecret[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string>();
+  const list = useRemoteList<RuntimeWorkload>(workloadsUrl, active);
+  const load = list.refresh;
+  const loadError = list.error ? resolveErrorMessage(list.error, t('table.loadFail', '加载失败')) : undefined;
   const [submitOpen, setSubmitOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [detail, setDetail] = useState<RuntimeWorkload>();
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setLoadError(undefined);
-    try {
-      const [workloadPage, serverPage, secretPage] = await Promise.all([
-        get<Page<RuntimeWorkload>>(workloadsUrl, {page: 0, size: 500}),
-        get<Page<RuntimeServer>>(serversUrl, {page: 0, size: 500}),
-        get<Page<RuntimeSecret>>(secretsUrl, {page: 0, size: 500}),
-      ]);
-      setRows(workloadPage.content ?? []);
-      setServers(serverPage.content ?? []);
-      setSecrets((secretPage.content ?? []).filter((secret) => secret.enabled !== false));
-    } catch (error) {
-      setRows([]);
-      setServers([]);
-      setSecrets([]);
-      setLoadError(resolveErrorMessage(
-        error,
-        t('ai.runtime.error.workloads.load', 'Runtime Workload 加载失败'),
-      ));
-    } finally {
-      setLoading(false);
-    }
-  }, [secretsUrl, serversUrl, t, workloadsUrl]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const serverNames = useMemo(() => new Map(
-    servers.map((server) => [
-      server.id,
-      server.name || server.code || server.id,
-    ]),
-  ), [servers]);
+  const serverNames = useRuntimeServerNames(serversUrl, list.page.content, active);
 
   const submit = useCallback(async () => {
     let values: WorkloadFormValues;
@@ -261,13 +230,10 @@ const RuntimeWorkloads = ({
 
   return (
     <>
-      <Card
+      <Card className="runtime-list-workloads"
         title={t('ai.runtime.workload.title', 'Runtime Workloads')}
         extra={(
           <Space>
-            <Button onClick={() => void load()}>
-              {t('ai.runtime.action.refresh', '刷新')}
-            </Button>
             {canManage && (
               <Button type="primary" onClick={() => {
                 form.resetFields();
@@ -295,9 +261,8 @@ const RuntimeWorkloads = ({
             message={t('ai.runtime.error.workloads.load', 'Runtime Workload 加载失败')}
             description={loadError}
             action={(
-              <Button size="small" onClick={() => void load()}>
-                {t('ai.mcp.action.retry', '重试')}
-              </Button>
+              <Space><Button size="small" onClick={list.retry}>{t('table.retry', '重试')}</Button>
+                <Button size="small" onClick={list.reset}>{t('table.query.reset', '重置筛选与排序')}</Button></Space>
             )}
           />
         )}
@@ -311,13 +276,11 @@ const RuntimeWorkloads = ({
             '这里同时显示 Pool 自动创建的副本和手动提交的 OCI MCP 测试任务。',
           )}
         />
-        <DataTable
-          rowKey="id"
-          loading={loading}
-          columns={columns}
-          dataSource={rows}
+        <DataTable<RuntimeWorkload>
+          {...list.tableProps}
+          query={list.tableProps.query}
+          columns={list.columns(columns)}
           scroll={{x: 1800}}
-          pagination={{pageSize: 20, hideOnSinglePage: true}}
         />
       </Card>
       <Modal
@@ -350,13 +313,7 @@ const RuntimeWorkloads = ({
                 label={t('ai.runtime.field.server', 'MCP Server')}
                 rules={[{required: true}]}
               >
-                <Select options={servers
-                  .filter((server) => server.deploymentType === 'MANAGED_OCI')
-                  .map((server) => ({
-                    value: server.id,
-                    label: server.name || server.code || server.id,
-                  }))}
-                />
+                <EntitySelect endpoint={serversUrl} filters={managedServerFilters}/>
               </Form.Item>
             </Col>
             <Col span={24}>
@@ -415,13 +372,7 @@ const RuntimeWorkloads = ({
             </Col>
             <Col xs={24} md={12}>
               <Form.Item name="secretIds" label={t('ai.runtime.field.secrets', 'Runtime Secrets')}>
-                <Select
-                  mode="multiple"
-                  options={secrets.map((secret) => ({
-                    value: secret.id,
-                    label: `${secret.name} (${secret.code})`,
-                  }))}
-                />
+                <EntitySelect endpoint={secretsUrl} filters={enabledSecretFilters} multiple maxCount={16}/>
               </Form.Item>
             </Col>
             {networkMode === 'egress' && (

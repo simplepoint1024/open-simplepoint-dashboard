@@ -26,6 +26,9 @@ import org.springframework.data.domain.Pageable;
  */
 public interface RoleService extends BaseService<Role, String> {
 
+  /** Checks the existing owner/administrator boundary and returns the authorized tenant scope. */
+  String requireManagementTenant();
+
   /**
    * Retrieve a paginated list of RoleSelectDto for role selection purposes.
    *

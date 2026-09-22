@@ -10,6 +10,7 @@ import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
 import org.simplepoint.plugin.rbac.tenant.api.service.OrganizationService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationOptionPage;
+import org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationOptionVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,6 +38,21 @@ public class OrganizationController extends BaseController<OrganizationService, 
     super(service);
   }
 
+  /** Reads one draft selection side; POST carries bounded draft IDs and never changes permissions. */
+  @PostMapping("/selection")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('organizations.view')")
+  public Response<Page<Map<String, Object>>> selection(
+      @RequestBody org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelection draft, Pageable pageable) {
+    return ok(service.selection(draft, pageable).map(org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelectionRow::project));
+  }
+
+  /** Uses the same tenant and field permissions as the read-only draft query. */
+  @GetMapping("/selection/schema")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('organizations.view')")
+  public Response<Object> selectionSchema() {
+    return ok(service.selectionSchema());
+  }
+
   /**
    * @ Get Mapping.
    */
@@ -45,6 +61,30 @@ public class OrganizationController extends BaseController<OrganizationService, 
   @Operation(summary = "分页查询组织机构", description = "根据提供的属性和分页参数，检索组织机构的分页列表")
   public Response<Page<Organization>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) {
     return limit(service.limit(attributes, pageable), Organization.class);
+  }
+
+  /** Loads a counted tree level without treating a selector slice as a full page. */
+  @GetMapping("/tree")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('organizations.view')")
+  public Response<Page<Map<String, Object>>> tree(
+      @RequestParam Map<String, String> attributes, Pageable pageable) {
+    Map<String, String> filters = new java.util.LinkedHashMap<>(attributes);
+    String parent = filters.remove("treeParentId");
+    return ok(service.tree(parent, filters, pageable).map(this::projectTreeRow));
+  }
+
+  private Map<String, Object> projectTreeRow(OrganizationOptionVo row) {
+    Map<String, Object> fields = new java.util.LinkedHashMap<>();
+    fields.put("id", row.id());
+    fields.put("name", row.name());
+    fields.put("code", row.code());
+    fields.put("parentId", row.parentId());
+    fields.put("type", row.type());
+    fields.put("description", row.description());
+    fields.put("sort", row.sort());
+    fields.put("enabled", row.enabled());
+    fields.put("hasChildren", row.hasChildren());
+    return org.simplepoint.core.jackson.FieldPermissionPolicy.project(Organization.class, fields);
   }
 
   /**

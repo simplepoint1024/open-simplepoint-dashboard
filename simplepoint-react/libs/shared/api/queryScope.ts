@@ -36,14 +36,23 @@ export function scopedQueryKey(scope: QueryScope, key: QueryKey): QueryKey {
   return [SCOPE_KEY, ...scope, ...key];
 }
 
-export function scopedQueryOptions<T>(
+/** Retain a page during pagination/filtering, never across resource or auth changes. */
+export function scopedPagePlaceholder<T>(scope: QueryScope, resource: readonly string[]) {
+  const prefix = scopedQueryKey(scope, resource);
+  return (data: T | undefined, previousQuery?: {queryKey: QueryKey}): T | undefined =>
+    JSON.stringify(scope) === getQueryScopeSnapshot()
+      && previousQuery && prefix.every((value, index) => previousQuery.queryKey[index] === value)
+      ? data : undefined;
+}
+
+export function scopedQueryOptions<T, PageParam = never>(
   scope: QueryScope,
   key: QueryKey,
-  fetchFn: (context: QueryFunctionContext) => Promise<T>,
+  fetchFn: (context: QueryFunctionContext<QueryKey, NoInfer<PageParam>>) => Promise<T>,
 ) {
   return {
     queryKey: scopedQueryKey(scope, key),
-    queryFn: async (context: QueryFunctionContext): Promise<T> => {
+    queryFn: async (context: QueryFunctionContext<QueryKey, NoInfer<PageParam>>): Promise<T> => {
       // A delayed refetch must not send today's authorization headers and put
       // its response into yesterday's cache key.
       if (JSON.stringify(scope) !== getQueryScopeSnapshot() || context.signal.aborted) {

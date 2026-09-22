@@ -3,6 +3,7 @@
 .gradle
 .idea
 .kotlin
+.simplepoint
 **/Dockerfile
 docker-bake.hcl
 docker-compose.yml

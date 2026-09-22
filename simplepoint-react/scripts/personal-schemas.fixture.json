@@ -1,0 +1,665 @@
+{
+  "items" : {
+    "schema" : {
+      "$schema" : "http://json-schema.org/draft-07/schema#",
+      "type" : "object",
+      "properties" : {
+        "title" : {
+          "type" : [ "string", "null" ],
+          "title" : "i18n:personal.title",
+          "description" : "",
+          "minLength" : 1,
+          "maxLength" : 200,
+          "x-order" : 0,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          }
+        },
+        "description" : {
+          "type" : [ "string", "null" ],
+          "title" : "i18n:personal.description",
+          "description" : "",
+          "maxLength" : 8000,
+          "x-order" : 1,
+          "x-ui" : {
+            "x-list-visible" : "false",
+            "widget" : "textarea"
+          }
+        },
+        "category" : {
+          "type" : [ "string", "null" ],
+          "title" : "i18n:personal.category",
+          "description" : "",
+          "maxLength" : 60,
+          "x-order" : 2,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          }
+        },
+        "priority" : {
+          "type" : "integer",
+          "title" : "i18n:personal.priority",
+          "description" : "",
+          "default" : 1,
+          "x-order" : 3,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          },
+          "oneOf" : [ {
+            "const" : 0,
+            "title" : "i18n:personal.low"
+          }, {
+            "const" : 1,
+            "title" : "i18n:personal.normal"
+          }, {
+            "const" : 2,
+            "title" : "i18n:personal.high"
+          }, {
+            "const" : 3,
+            "title" : "i18n:personal.urgent"
+          } ]
+        },
+        "status" : {
+          "type" : [ "string", "null" ],
+          "title" : "i18n:personal.status",
+          "description" : "",
+          "readOnly" : true,
+          "x-order" : 4,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          },
+          "oneOf" : [ {
+            "const" : "TODO",
+            "title" : "i18n:personal.notStarted"
+          }, {
+            "const" : "IN_PROGRESS",
+            "title" : "i18n:personal.inProgress"
+          }, {
+            "const" : "DONE",
+            "title" : "i18n:personal.done"
+          }, {
+            "const" : "CANCELLED",
+            "title" : "i18n:personal.cancelled"
+          } ]
+        },
+        "startAt" : {
+          "type" : "string",
+          "format" : "date-time",
+          "title" : "i18n:personal.startAt",
+          "description" : "",
+          "x-order" : 5,
+          "x-ui" : {
+            "x-list-visible" : "false"
+          }
+        },
+        "dueAt" : {
+          "type" : "string",
+          "format" : "date-time",
+          "title" : "i18n:personal.dueAt",
+          "description" : "",
+          "x-order" : 6,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          }
+        },
+        "pinned" : {
+          "type" : "boolean",
+          "title" : "i18n:personal.pinned",
+          "description" : "",
+          "x-order" : 7,
+          "x-ui" : {
+            "x-list-visible" : "false"
+          }
+        },
+        "checklist" : {
+          "title" : "i18n:personal.checklist",
+          "description" : "",
+          "x-order" : 8,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          },
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "done" : {
+                "type" : "boolean",
+                "title" : "i18n:personal.completeSubtask",
+                "description" : ""
+              },
+              "title" : {
+                "type" : [ "string", "null" ],
+                "title" : "i18n:personal.subtaskTitle",
+                "description" : "",
+                "minLength" : 1,
+                "maxLength" : 200
+              }
+            },
+            "title" : "i18n:personal.checklist",
+            "description" : "",
+            "x-order" : 8,
+            "x-ui" : {
+              "x-list-visible" : "true"
+            }
+          },
+          "maxItems" : 50
+        }
+      },
+      "x-query" : {
+        "maxPageSize" : 100,
+        "maxNodes" : 32,
+        "maxDepth" : 4,
+        "maxSort" : 3,
+        "fields" : {
+          "title" : {
+            "operators" : [ "like", "not:like", "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "String"
+          },
+          "status" : {
+            "operators" : [ "like", "not:like", "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "String"
+          },
+          "priority" : {
+            "operators" : [ "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "int"
+          },
+          "category" : {
+            "operators" : [ "like", "not:like", "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "String"
+          },
+          "dueAt" : {
+            "operators" : [ "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "Instant"
+          }
+        },
+        "relations" : [ ],
+        "version" : 1
+      }
+    },
+    "buttons" : [ {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.items.add",
+      "variant" : "outlined",
+      "icon" : "PlusCircleOutlined",
+      "argumentMaxSize" : 0,
+      "sort" : 0,
+      "type" : "primary",
+      "title" : "i18n:personal.createItem",
+      "danger" : false,
+      "argumentMinSize" : 0,
+      "key" : "add"
+    }, {
+      "path" : "[default]",
+      "color" : "orange",
+      "authority" : "personal.items.edit",
+      "variant" : "outlined",
+      "icon" : "EditOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 1,
+      "type" : "primary",
+      "title" : "i18n:personal.editItem",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "edit"
+    }, {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.items.detail",
+      "variant" : "outlined",
+      "icon" : "EyeOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 2,
+      "type" : "primary",
+      "title" : "i18n:personal.itemDetails",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "view"
+    }, {
+      "path" : "[default]",
+      "color" : "danger",
+      "authority" : "personal.items.delete",
+      "variant" : "outlined",
+      "icon" : "MinusCircleOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 3,
+      "type" : "primary",
+      "title" : "i18n:personal.delete",
+      "danger" : true,
+      "argumentMinSize" : 1,
+      "key" : "delete"
+    }, {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.items.START",
+      "variant" : "outlined",
+      "icon" : "PlayCircleOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 4,
+      "type" : "primary",
+      "title" : "i18n:personal.start",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "START"
+    }, {
+      "path" : "[default]",
+      "color" : "green",
+      "authority" : "personal.items.COMPLETE",
+      "variant" : "outlined",
+      "icon" : "CheckCircleOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 5,
+      "type" : "primary",
+      "title" : "i18n:personal.complete",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "COMPLETE"
+    }, {
+      "path" : "[default]",
+      "color" : "orange",
+      "authority" : "personal.items.CANCEL",
+      "variant" : "outlined",
+      "icon" : "StopOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 6,
+      "type" : "primary",
+      "title" : "i18n:personal.cancelItem",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "CANCEL"
+    }, {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.items.REOPEN",
+      "variant" : "outlined",
+      "icon" : "RedoOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 7,
+      "type" : "primary",
+      "title" : "i18n:personal.reopen",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "REOPEN"
+    }, {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.items.ARCHIVE",
+      "variant" : "outlined",
+      "icon" : "InboxOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 8,
+      "type" : "primary",
+      "title" : "i18n:personal.archive",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "ARCHIVE"
+    }, {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.items.UNARCHIVE",
+      "variant" : "outlined",
+      "icon" : "ExportOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 9,
+      "type" : "primary",
+      "title" : "i18n:personal.unarchive",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "UNARCHIVE"
+    }, {
+      "path" : "[default]",
+      "color" : "green",
+      "authority" : "personal.items.RESTORE",
+      "variant" : "outlined",
+      "icon" : "UndoOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 10,
+      "type" : "primary",
+      "title" : "i18n:personal.restore",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "RESTORE"
+    } ]
+  },
+  "todos" : {
+    "schema" : {
+      "$schema" : "http://json-schema.org/draft-07/schema#",
+      "type" : "object",
+      "properties" : {
+        "title" : {
+          "type" : [ "string", "null" ],
+          "title" : "i18n:personal.title",
+          "description" : "",
+          "minLength" : 1,
+          "maxLength" : 200,
+          "x-order" : 0,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          }
+        },
+        "content" : {
+          "type" : [ "string", "null" ],
+          "title" : "i18n:personal.description",
+          "description" : "",
+          "maxLength" : 8000,
+          "x-order" : 1,
+          "x-ui" : {
+            "x-list-visible" : "false",
+            "widget" : "textarea"
+          }
+        },
+        "priority" : {
+          "type" : "integer",
+          "title" : "i18n:personal.priority",
+          "description" : "",
+          "default" : 1,
+          "x-order" : 2,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          },
+          "oneOf" : [ {
+            "const" : 0,
+            "title" : "i18n:personal.low"
+          }, {
+            "const" : 1,
+            "title" : "i18n:personal.normal"
+          }, {
+            "const" : 2,
+            "title" : "i18n:personal.high"
+          }, {
+            "const" : 3,
+            "title" : "i18n:personal.urgent"
+          } ]
+        },
+        "source" : {
+          "type" : [ "string", "null" ],
+          "title" : "i18n:personal.source",
+          "description" : "",
+          "readOnly" : true,
+          "x-order" : 3,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          }
+        },
+        "dueAt" : {
+          "type" : "string",
+          "format" : "date-time",
+          "title" : "i18n:personal.dueAt",
+          "description" : "",
+          "x-order" : 4,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          }
+        }
+      },
+      "x-query" : {
+        "maxPageSize" : 100,
+        "maxNodes" : 32,
+        "maxDepth" : 4,
+        "maxSort" : 3,
+        "fields" : {
+          "title" : {
+            "operators" : [ "like", "not:like", "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "String"
+          },
+          "priority" : {
+            "operators" : [ "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "int"
+          },
+          "source" : {
+            "operators" : [ "like", "not:like", "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "String"
+          },
+          "dueAt" : {
+            "operators" : [ "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "Instant"
+          }
+        },
+        "relations" : [ ],
+        "version" : 1
+      }
+    },
+    "buttons" : [ {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.todos.add",
+      "variant" : "outlined",
+      "icon" : "PlusCircleOutlined",
+      "argumentMaxSize" : 0,
+      "sort" : 0,
+      "type" : "primary",
+      "title" : "i18n:personal.createTodo",
+      "danger" : false,
+      "argumentMinSize" : 0,
+      "key" : "add"
+    }, {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.todos.detail",
+      "variant" : "outlined",
+      "icon" : "EyeOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 1,
+      "type" : "primary",
+      "title" : "i18n:personal.todoDetails",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "view"
+    }, {
+      "path" : "[default]",
+      "color" : "green",
+      "authority" : "personal.todos.COMPLETE",
+      "variant" : "outlined",
+      "icon" : "CheckCircleOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 2,
+      "type" : "primary",
+      "title" : "i18n:personal.complete",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "COMPLETE"
+    }, {
+      "path" : "[default]",
+      "color" : "orange",
+      "authority" : "personal.todos.CANCEL",
+      "variant" : "outlined",
+      "icon" : "StopOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 3,
+      "type" : "primary",
+      "title" : "i18n:personal.cancelItem",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "CANCEL"
+    }, {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.todos.REOPEN",
+      "variant" : "outlined",
+      "icon" : "RedoOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 4,
+      "type" : "primary",
+      "title" : "i18n:personal.reopen",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "REOPEN"
+    } ]
+  },
+  "messages" : {
+    "schema" : {
+      "$schema" : "http://json-schema.org/draft-07/schema#",
+      "type" : "object",
+      "properties" : {
+        "title" : {
+          "type" : [ "string", "null" ],
+          "title" : "i18n:personal.title",
+          "description" : "",
+          "x-order" : 0,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          }
+        },
+        "priority" : {
+          "type" : "integer",
+          "title" : "i18n:personal.priority",
+          "description" : "",
+          "x-order" : 1,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          },
+          "oneOf" : [ {
+            "const" : 0,
+            "title" : "i18n:personal.low"
+          }, {
+            "const" : 1,
+            "title" : "i18n:personal.normal"
+          }, {
+            "const" : 2,
+            "title" : "i18n:personal.high"
+          }, {
+            "const" : 3,
+            "title" : "i18n:personal.urgent"
+          } ]
+        },
+        "source" : {
+          "type" : [ "string", "null" ],
+          "title" : "i18n:personal.source",
+          "description" : "",
+          "x-order" : 2,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          }
+        },
+        "createdAt" : {
+          "type" : "string",
+          "format" : "date-time",
+          "title" : "i18n:personal.createdAt",
+          "description" : "",
+          "x-order" : 3,
+          "x-ui" : {
+            "x-list-visible" : "true"
+          }
+        }
+      },
+      "x-query" : {
+        "maxPageSize" : 100,
+        "maxNodes" : 32,
+        "maxDepth" : 4,
+        "maxSort" : 3,
+        "fields" : {
+          "title" : {
+            "operators" : [ "like", "not:like", "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "String"
+          },
+          "priority" : {
+            "operators" : [ "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "int"
+          },
+          "source" : {
+            "operators" : [ "like", "not:like", "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "String"
+          },
+          "createdAt" : {
+            "operators" : [ "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+            "sortable" : true,
+            "javaType" : "Instant"
+          }
+        },
+        "relations" : [ ],
+        "version" : 1
+      }
+    },
+    "buttons" : [ {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.messages.detail",
+      "variant" : "outlined",
+      "icon" : "EyeOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 0,
+      "type" : "primary",
+      "title" : "i18n:personal.messageDetails",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "view"
+    }, {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.messages.READ",
+      "variant" : "outlined",
+      "icon" : "MailOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 1,
+      "type" : "primary",
+      "title" : "i18n:personal.read",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "READ"
+    }, {
+      "path" : "[default]",
+      "color" : "orange",
+      "authority" : "personal.messages.UNREAD",
+      "variant" : "outlined",
+      "icon" : "MailOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 2,
+      "type" : "primary",
+      "title" : "i18n:personal.unread",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "UNREAD"
+    }, {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.messages.ARCHIVE",
+      "variant" : "outlined",
+      "icon" : "InboxOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 3,
+      "type" : "primary",
+      "title" : "i18n:personal.archive",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "ARCHIVE"
+    }, {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.messages.UNARCHIVE",
+      "variant" : "outlined",
+      "icon" : "ExportOutlined",
+      "argumentMaxSize" : 1,
+      "sort" : 4,
+      "type" : "primary",
+      "title" : "i18n:personal.unarchive",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "UNARCHIVE"
+    }, {
+      "path" : "[default]",
+      "color" : "green",
+      "authority" : "personal.messages.readAll",
+      "variant" : "outlined",
+      "icon" : "CheckCircleOutlined",
+      "argumentMaxSize" : 0,
+      "sort" : 5,
+      "type" : "primary",
+      "title" : "i18n:personal.readAll",
+      "danger" : false,
+      "argumentMinSize" : 0,
+      "key" : "readAll"
+    } ]
+  }
+}

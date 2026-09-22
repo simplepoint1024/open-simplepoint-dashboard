@@ -77,6 +77,34 @@ final class ProviderHttpSupport {
     }
   }
 
+  /** Opens a raw response without converting upstream HTTP failures into gateway failures. */
+  HttpResponse<InputStream> open(final HttpRequest request, final boolean allowPrivateNetwork,
+      final AiStreamCancellation cancellation) {
+    validateDestination(request.uri(), allowPrivateNetwork);
+    cancellation.throwIfCancelled();
+    var future = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream());
+    cancellation.registerRequest(future);
+    try {
+      var response = future.join();
+      cancellation.registerResponseBody(response.body());
+      cancellation.throwIfCancelled();
+      return response;
+    } catch (CompletionException ex) {
+      throw connectionException(ex.getCause());
+    } finally {
+      cancellation.releaseRequest(future);
+    }
+  }
+
+  byte[] readBody(final InputStream input) throws IOException {
+    return readLimited(input, maxResponseBytes);
+  }
+
+  void readLines(final InputStream input, final Consumer<String> consumer) throws IOException {
+    readStreamLines(new LimitedInputStream(input, maxStreamBytes),
+        maxStreamLineCharacters, consumer);
+  }
+
   void stream(
       final HttpRequest request,
       final boolean allowPrivateNetwork,

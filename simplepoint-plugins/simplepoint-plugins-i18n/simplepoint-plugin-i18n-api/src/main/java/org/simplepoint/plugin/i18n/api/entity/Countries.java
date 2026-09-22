@@ -61,6 +61,23 @@ import org.springframework.core.annotation.Order;
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "国家对象", description = "用于管理系统中的国家")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("nameEnglish"),
+    @org.simplepoint.core.query.QueryField("nameNative"),
+    @org.simplepoint.core.query.QueryField("isoCode2"),
+    @org.simplepoint.core.query.QueryField("isoCode3"),
+    @org.simplepoint.core.query.QueryField("defaultTimezone"),
+    @org.simplepoint.core.query.QueryField("numericCode"),
+    @org.simplepoint.core.query.QueryField("currencyCode"),
+    @org.simplepoint.core.query.QueryField("continent"),
+    @org.simplepoint.core.query.QueryField("subRegion"),
+    @org.simplepoint.core.query.QueryField("currencyName"),
+    @org.simplepoint.core.query.QueryField("currencySymbol"),
+    @org.simplepoint.core.query.QueryField("currencyNumeric"),
+    @org.simplepoint.core.query.QueryField("phoneCode"),
+    @org.simplepoint.core.query.QueryField("flagIcon"),
+    @org.simplepoint.core.query.QueryField("enabled")
+})
 public class Countries extends BaseEntityImpl<String> {
 
   /**

@@ -8,7 +8,8 @@ import {Profile} from '@/layouts/profile';
 import {Settings} from '@/layouts/settings';
 import {NotFound} from '@/views/errors/NotFound';
 import {OrgTenantRequired} from '@/views/errors/OrgTenantRequired';
-import {Dashboard} from '@/views/dashboard';
+import {Home} from '@/views/home';
+import type {RouteInfo} from '@/store/routes';
 import {TenantHome} from '@/layouts/tenant';
 import {
     AI_WORKBENCH_ROOT_PATH,
@@ -22,7 +23,7 @@ export interface RouteItem {
     element: JSX.Element;
 }
 
-interface LeafRoute {
+interface LeafRoute extends RouteInfo {
     uuid?: string;
     path?: string;
     component?: string;
@@ -50,7 +51,7 @@ export function renderRoutes(
     // 1. 静态路由（结构统一）
     const staticRoutes: RouteItem[] = [
         {key: 'root', path: '/', element: <Navigate to="/dashboard" replace/>},
-        {key: 'dashboard', path: '/dashboard', element: <Dashboard/>},
+        {key: 'dashboard', path: '/dashboard', element: <Home routes={leafRoutes} tenantType={tenantType} remoteRegistryKey={remoteRegistryKey}/>},
         {
             key: 'ai-workbench-index',
             path: AI_WORKBENCH_ROOT_PATH,
@@ -71,6 +72,7 @@ export function renderRoutes(
     const dynamicRoutes: RouteItem[] = leafRoutes
         .filter((route): route is LeafRoute & { path: string } => (
             !!route.path
+            && route.path !== '/dashboard'
             && route.path !== AI_WORKBENCH_ROOT_PATH
             && route.path !== LEGACY_AI_WORKSPACE_PATH
         ))

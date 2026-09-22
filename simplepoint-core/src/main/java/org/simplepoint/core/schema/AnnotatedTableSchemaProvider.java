@@ -34,15 +34,18 @@ public final class AnnotatedTableSchemaProvider {
   private final DetailsProviderService detailsProviderService;
   private final ObjectMapper mapper = new ObjectMapper();
 
+  /** Uses the platform schema generator registry. */
   public AnnotatedTableSchemaProvider(DetailsProviderService detailsProviderService) {
     this.detailsProviderService = detailsProviderService;
   }
 
+  /** Produces serialization-neutral fields and permission-filtered action declarations. */
   public Map<String, Object> schema(Class<?> modelClass, AuthorizationContext context) {
-    Map<String, Object> schema = mapper.convertValue(jsonSchema(modelClass), new TypeReference<>() { });
+    Map<String, Object> schema = mapper.convertValue(jsonSchema(modelClass), new TypeReference<>() {});
     return Map.of("schema", schema, "buttons", buttonSchemas(modelClass, context));
   }
 
+  /** Generates form metadata and the enforceable public table-query capabilities. */
   public ObjectNode jsonSchema(Class<?> modelClass) {
     if (detailsProviderService == null) {
       throw new IllegalStateException("DetailsProviderService is null");
@@ -67,9 +70,11 @@ public final class AnnotatedTableSchemaProvider {
       schema.set("properties", sorted);
     }
     FieldPermissionPolicy.applySchema(modelClass, schema);
+    org.simplepoint.core.query.QueryCapabilities.applySchema(modelClass, schema);
     return schema;
   }
 
+  /** Exposes only actions granted in the current authorization context. */
   public Set<Map<String, Object>> buttonSchemas(Class<?> modelClass, AuthorizationContext context) {
     ButtonDeclarations declarations = modelClass.getAnnotation(ButtonDeclarations.class);
     if (declarations == null || context == null) {
@@ -86,6 +91,7 @@ public final class AnnotatedTableSchemaProvider {
     return result;
   }
 
+  /** Converts a button annotation into stable transport attributes. */
   public Map<String, Object> annotationAttributes(Annotation annotation) {
     Map<String, Object> result = new HashMap<>();
     for (Method method : annotation.annotationType().getDeclaredMethods()) {

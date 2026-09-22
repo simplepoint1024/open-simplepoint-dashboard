@@ -1,7 +1,8 @@
+import {resolveResourceLabel} from '@simplepoint/shared/i18n/resourceLabel';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {Dispatch, Key, SetStateAction} from 'react';
 import {Alert, App as AntdApp, Button, Empty, Input, Pagination, Space, Spin, Tag, Tree, Typography} from 'antd';
-import {DeleteOutlined, ReloadOutlined, SearchOutlined} from '@ant-design/icons';
+import {DeleteOutlined, ReloadOutlined, SearchOutlined} from '@simplepoint/shared/types/icon';
 import type {DataNode} from 'antd/es/tree';
 import {createIcon} from '@simplepoint/shared/types/icon';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
@@ -49,16 +50,10 @@ function assignableCode(resource?: ResourceRelevantVo) {
   return resource.code;
 }
 
-function resolveI18nText(value: unknown, t?: Translate) {
-  if (typeof value !== 'string') return String(value ?? '');
-  if (!value.startsWith('i18n:')) return value;
-  const key = value.slice(5);
-  return t?.(key, key) ?? key;
-}
-
 function resourceDisplayName(resource?: Partial<ResourceRelevantVo>, t?: Translate) {
   if (!resource) return '-';
-  return resolveI18nText(resource.alias || resource.name || resource.label || resource.title || resource.code || resource.id || '-', t);
+  return resolveResourceLabel(resource.alias || resource.name || resource.label || resource.title,
+    resource.name || resource.label || resource.code || resource.id || '-', t ?? ((_key, fallback) => String(fallback ?? '-')));
 }
 
 function renderResourceIcon(resource?: Partial<ResourceRelevantVo>) {
@@ -297,7 +292,7 @@ const ResourceTreeTransfer = ({
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    void ensure(['resources', 'table', 'common', 'applications', 'access-center']);
+    void ensure(['resources', 'table', 'common', 'applications']);
   }, [ensure, locale]);
 
   useEffect(() => {
@@ -631,7 +626,7 @@ const ResourceTreeTransfer = ({
             <Input.Search
               allowClear
               prefix={<SearchOutlined />}
-              placeholder={t('accessCenter.resource.search', '搜索资源编码、路径或名称')}
+              placeholder={t('resources.tree.search', '搜索资源编码、路径或名称')}
               value={keywordInput}
               onChange={(event) => {
                 const value = event.target.value;
@@ -666,7 +661,7 @@ const ResourceTreeTransfer = ({
                 onSelect={handleSelect}
               />
             ) : (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('accessCenter.resource.empty', '暂无资源')}/>
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('resources.tree.empty', '暂无资源')}/>
             )}
           </div>
           <div style={{padding: 12, borderTop: '1px solid var(--ant-color-border-secondary)', display: 'flex', justifyContent: 'flex-end'}}>
@@ -704,7 +699,7 @@ const ResourceTreeTransfer = ({
                 onSelect={handleAssignedSelect}
               />
             ) : (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('accessCenter.resource.emptyResources', '暂无可授权资源')}/>
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('resources.tree.emptyResources', '暂无可授权资源')}/>
             )}
           </div>
           <div style={{padding: 12, borderTop: '1px solid var(--ant-color-border-secondary)', display: 'flex', justifyContent: 'flex-end'}}>

@@ -1,0 +1,409 @@
+{
+  "buttons": [
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "menu:clients:add",
+      "variant": "outlined",
+      "icon": "PlusCircleOutlined",
+      "argumentMaxSize": 1,
+      "sort": 0,
+      "type": "primary",
+      "title": "i18n:table.button.create",
+      "danger": false,
+      "argumentMinSize": 0,
+      "key": "add"
+    },
+    {
+      "path": "[default]",
+      "color": "orange",
+      "authority": "menu:clients:edit",
+      "variant": "outlined",
+      "icon": "EditOutlined",
+      "argumentMaxSize": 1,
+      "sort": 1,
+      "type": "primary",
+      "title": "i18n:table.button.edit",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "edit"
+    },
+    {
+      "path": "[default]",
+      "color": "danger",
+      "authority": "menu:clients:delete",
+      "variant": "outlined",
+      "icon": "MinusCircleOutlined",
+      "argumentMaxSize": 10,
+      "sort": 2,
+      "type": "primary",
+      "title": "i18n:table.button.delete",
+      "danger": true,
+      "argumentMinSize": 1,
+      "key": "delete"
+    }
+  ],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "clientName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:clients.title.clientName",
+        "description": "i18n:clients.description.clientName",
+        "x-order": 0,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "clientId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:clients.title.clientId",
+        "description": "i18n:clients.description.clientId",
+        "x-order": 1,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "clientSecret": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:clients.title.clientSecret",
+        "description": "i18n:clients.description.clientSecret",
+        "writeOnly": true,
+        "x-order": 2,
+        "x-ui": {
+          "widget": "password"
+        }
+      },
+      "clientSecretExpiresAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time",
+        "title": "i18n:clients.title.clientSecretExpiresAt",
+        "description": "i18n:clients.description.clientSecretExpiresAt",
+        "x-order": 3
+      },
+      "clientAuthenticationMethods": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:clients.title.clientAuthenticationMethods",
+        "description": "i18n:clients.description.clientAuthenticationMethods",
+        "x-order": 4,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "authorizationGrantTypes": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:clients.title.authorizationGrantTypes",
+        "description": "i18n:clients.description.authorizationGrantTypes",
+        "x-order": 5,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "redirectUris": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:clients.title.redirectUris",
+        "description": "i18n:clients.description.redirectUris",
+        "x-order": 6
+      },
+      "postLogoutRedirectUris": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:clients.title.postLogoutRedirectUris",
+        "description": "i18n:clients.description.postLogoutRedirectUris",
+        "x-order": 7
+      },
+      "scopes": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:clients.title.scopes",
+        "description": "i18n:clients.description.scopes",
+        "x-order": 8,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "clientIdIssuedAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time",
+        "title": "i18n:clients.title.clientIdIssuedAt",
+        "description": "i18n:clients.description.clientIdIssuedAt",
+        "x-order": 89
+      },
+      "clientSettings": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:clients.title.clientSettings",
+        "description": "i18n:clients.description.clientSettings",
+        "x-order": 90,
+        "x-ui": {
+          "widget": "textarea"
+        }
+      },
+      "tokenSettings": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:clients.title.tokenSettings",
+        "description": "i18n:clients.description.tokenSettings",
+        "x-order": 91,
+        "x-ui": {
+          "widget": "textarea"
+        }
+      }
+    },
+    "x-query": {
+      "version": 1,
+      "relations": [],
+      "fields": {
+        "clientName": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "clientId": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "clientIdIssuedAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "clientSecretExpiresAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "clientAuthenticationMethods": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "authorizationGrantTypes": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "redirectUris": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "postLogoutRedirectUris": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "scopes": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "createdAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "updatedAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        }
+      },
+      "maxSort": 3,
+      "maxDepth": 4,
+      "maxNodes": 32,
+      "maxPageSize": 200
+    }
+  }
+}

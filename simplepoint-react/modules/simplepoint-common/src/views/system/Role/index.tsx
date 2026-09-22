@@ -1,8 +1,9 @@
 import SimpleTable from "@simplepoint/components/SimpleTable";
 import api from '@/api/index';
 import React, {lazy, Suspense, useCallback, useEffect, useState} from 'react';
-import {Drawer, Spin} from "antd";
+import {App as AntdApp, Drawer, Spin} from "antd";
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {usePageSelected} from '@simplepoint/shared/page/hooks';
 
 const ResourceConfig = lazy(() => import('./config/resource'));
 
@@ -16,6 +17,9 @@ const getDefaultDrawerHeight = () => {
 };
 
 const App = () => {
+    const pageSelected = usePageSelected();
+    const {modal} = AntdApp.useApp();
+    const [editorState, setEditorState] = useState({dirty: false, saving: false});
     const [openRoleConfig, setOpenRoleConfig] = useState(false);
     const [roleId, setRoleId] = useState<string>('');
     // 支持拖拽高度
@@ -87,10 +91,15 @@ const App = () => {
             <Drawer
                 className="role-resource-drawer"
                 title={t("roles.config.resource", "资源授权")}
-                open={openRoleConfig}
-                onClose={() => {
+                open={openRoleConfig && pageSelected}
+                onClose={async () => {
+                    if (editorState.saving) return;
+                    if (editorState.dirty && !await modal.confirm({
+                        title: t('roles.resourceConfig.discardOnClose', '存在未保存修改，确定放弃并关闭？'),
+                    })) return;
                     setOpenRoleConfig(false);
                     setRoleId('');
+                    setEditorState({dirty: false, saving: false});
                 }}
                 placement={"bottom"}
                 maskClosable={false}
@@ -112,10 +121,9 @@ const App = () => {
                     }}
                     onMouseDown={startResize}
                 />
-                {/* 不使用 key 强制重建，避免闪退；组件内部通过 useEffect([roleId]) 重置状态 */}
                 {openRoleConfig && roleId ? (
                     <Suspense fallback={<div style={{display: 'flex', justifyContent: 'center', padding: 24}}><Spin/></div>}>
-                        <ResourceConfig roleId={roleId}/>
+                        <ResourceConfig roleId={roleId} onStateChange={setEditorState}/>
                     </Suspense>
                 ) : null}
             </Drawer>

@@ -4,11 +4,11 @@ import {selectApiErrorMessage} from './errorMessage.ts';
 
 test('structured error codes use the caller localized fallback', () => {
   assert.equal(selectApiErrorMessage({
-    errorCode: 'AI_SKILL_REQUEST_INVALID',
+    errorCode: 'AI_MODEL_REQUEST_INVALID',
     userMessage: '请求参数不正确',
-    fallback: 'Skill 配置无效，请检查后重试',
+    fallback: '模型配置无效，请检查后重试',
     errorMessage: 'HTTP 400 Bad Request',
-  }), 'Skill 配置无效，请检查后重试');
+  }), '模型配置无效，请检查后重试');
 });
 
 test('explicit server user messages remain available', () => {
@@ -23,8 +23,8 @@ test('explicit server user messages remain available', () => {
 
 test('machine codes in legacy message fields never become visible text', () => {
   assert.equal(selectApiErrorMessage({
-    serverMessage: 'SKILL_DRAFT_REVISION_CONFLICT',
-    errorCode: 'SKILL_DRAFT_REVISION_CONFLICT',
+    serverMessage: 'MCP_PROFILE_REVISION_CONFLICT',
+    errorCode: 'MCP_PROFILE_REVISION_CONFLICT',
     userMessage: '数据已被修改，请刷新后重试',
     fallback: 'Draft 保存失败，请刷新后重试',
     errorMessage: 'HTTP 409 Conflict',

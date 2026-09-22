@@ -47,7 +47,7 @@ class AiSpaRouteConfigTest {
   @Test
   void forwardsExplicitHtmlNavigationToHostIndex() {
     client.get()
-        .uri("/ai/workbench/skills?skillId=example")
+        .uri("/ai/workbench/models?modelId=example")
         .header(HttpHeaders.ACCEPT, "text/html,application/xhtml+xml")
         .exchange()
         .expectStatus().isOk()
@@ -60,7 +60,7 @@ class AiSpaRouteConfigTest {
   @Test
   void forwardsFetchDocumentNavigationEvenWhenAcceptDoesNotContainHtml() {
     client.get()
-        .uri("/ai/workbench/agents")
+        .uri("/ai/workbench/providers")
         .header("Sec-Fetch-Dest", "Document")
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
@@ -71,7 +71,7 @@ class AiSpaRouteConfigTest {
   @Test
   void letsJsonApiRequestFallThroughToGateway() {
     client.get()
-        .uri("/ai/workbench/skills")
+        .uri("/ai/workbench/models")
         .header(HttpHeaders.ACCEPT, "application/json, text/plain, */*")
         .exchange()
         .expectStatus().isEqualTo(HttpStatus.BAD_GATEWAY)
@@ -81,13 +81,13 @@ class AiSpaRouteConfigTest {
   @Test
   void doesNotTreatWildcardOrRejectedHtmlAsDocumentNavigation() {
     client.get()
-        .uri("/ai/workbench/workflows")
+        .uri("/ai/workbench/knowledge-bases")
         .header(HttpHeaders.ACCEPT, "text/*")
         .exchange()
         .expectStatus().isEqualTo(HttpStatus.BAD_GATEWAY);
 
     client.get()
-        .uri("/ai/workbench/workflows")
+        .uri("/ai/workbench/knowledge-bases")
         .header(HttpHeaders.ACCEPT, "text/html;q=0,application/json")
         .exchange()
         .expectStatus().isEqualTo(HttpStatus.BAD_GATEWAY);
@@ -103,7 +103,7 @@ class AiSpaRouteConfigTest {
         .expectStatus().isEqualTo(HttpStatus.BAD_GATEWAY);
 
     client.post()
-        .uri("/ai/workbench/skills")
+        .uri("/ai/workbench/models")
         .header("Sec-Fetch-Dest", "document")
         .accept(MediaType.TEXT_HTML)
         .exchange()

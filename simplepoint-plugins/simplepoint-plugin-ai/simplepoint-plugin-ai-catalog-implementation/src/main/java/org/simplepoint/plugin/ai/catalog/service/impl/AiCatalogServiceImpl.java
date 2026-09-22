@@ -44,9 +44,6 @@ import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpProfileImportReques
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpProfileImportResult;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpProfileSpec;
 import org.simplepoint.plugin.ai.runtime.api.service.AiRuntimeMcpProfileService;
-import org.simplepoint.plugin.ai.skill.api.entity.AiSkillDefinition;
-import org.simplepoint.plugin.ai.skill.api.entity.AiSkillVersion;
-import org.simplepoint.plugin.ai.skill.api.service.AiSkillService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -66,7 +63,6 @@ public class AiCatalogServiceImpl implements AiCatalogService {
 
   private final AiMcpServerDefinitionService mcpServerService;
 
-  private final AiSkillService skillService;
 
   private final AiScopeAccessPolicy scopeAccessPolicy;
 
@@ -85,7 +81,6 @@ public class AiCatalogServiceImpl implements AiCatalogService {
       final AiCatalogEntryRepository entryRepository,
       final AiCatalogSyncStateRepository stateRepository,
       final AiMcpServerDefinitionService mcpServerService,
-      final AiSkillService skillService,
       final AiScopeAccessPolicy scopeAccessPolicy,
       final AiCatalogProperties properties,
       final OfficialMcpRegistrySync registrySync,
@@ -95,7 +90,6 @@ public class AiCatalogServiceImpl implements AiCatalogService {
     this.entryRepository = entryRepository;
     this.stateRepository = stateRepository;
     this.mcpServerService = mcpServerService;
-    this.skillService = skillService;
     this.scopeAccessPolicy = scopeAccessPolicy;
     this.properties = properties;
     this.registrySync = registrySync;
@@ -122,10 +116,6 @@ public class AiCatalogServiceImpl implements AiCatalogService {
             Map.of(),
             PageRequest.of(0, INTERNAL_LIMIT)
         ).forEach(server -> internalItems.add(internalServer(server)));
-      }
-      if (kind == null || kind == CatalogPackageKind.SKILL) {
-        skillService.findAll(PageRequest.of(0, INTERNAL_LIMIT))
-            .forEach(skill -> internalItems.add(internalSkill(skill)));
       }
     }
     List<AiCatalogItem> filteredInternal = internalItems.stream()
@@ -412,29 +402,6 @@ public class AiCatalogServiceImpl implements AiCatalogService {
         null,
         false,
         server.getUpdatedAt()
-    );
-  }
-
-  private AiCatalogItem internalSkill(final AiSkillDefinition skill) {
-    AiSkillVersion activeVersion = skill.getActiveVersionId() == null
-        ? null : skillService.findVersion(skill.getId(), skill.getActiveVersionId())
-            .orElse(null);
-    return new AiCatalogItem(
-        "internal:skill:" + skill.getId(),
-        CatalogSource.INTERNAL,
-        CatalogPackageKind.SKILL,
-        null,
-        skill.getCode(),
-        activeVersion == null ? null : activeVersion.getVersion(),
-        skill.getName(),
-        skill.getDescription(),
-        skill.getStatus() == null ? null : skill.getStatus().name(),
-        skill.getScopeType(),
-        null,
-        activeVersion == null ? null : activeVersion.getArtifactReference(),
-        null,
-        false,
-        skill.getUpdatedAt()
     );
   }
 

@@ -77,6 +77,18 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Schema(title = "i18n:ai.mcp-publications.entity.title")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("upstreamServerId"),
+    @org.simplepoint.core.query.QueryField("canonicalResourceUri"),
+    @org.simplepoint.core.query.QueryField("authorizationServerUri"),
+    @org.simplepoint.core.query.QueryField("requiredScopes"),
+    @org.simplepoint.core.query.QueryField("rateLimitPerMinute"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("status"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class AiMcpPublication extends BaseEntityImpl<String> {
 
   @Order(0)

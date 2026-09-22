@@ -10,25 +10,10 @@ package org.simplepoint.plugin.auditing.redis.api.service;
 
 import java.util.Collection;
 import org.simplepoint.plugin.auditing.redis.api.model.RedisEntryDetail;
-import org.simplepoint.plugin.auditing.redis.api.model.RedisEntrySummary;
 import org.simplepoint.plugin.auditing.redis.api.model.RedisValueUpsertCommand;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
-/**
- * Service contract for Redis monitoring and key-value management.
- */
+/** Service contract for Redis monitoring and key-value management. */
 public interface RedisMonitoringService {
-
-  /**
-   * Queries Redis keys with optional pattern and type filters.
-   *
-   * @param pattern  the Redis glob pattern
-   * @param type     the Redis type filter
-   * @param pageable paging information
-   * @return paged Redis entry summaries
-   */
-  Page<RedisEntrySummary> limit(String pattern, String type, Pageable pageable);
 
   /**
    * Loads a single Redis key detail.

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -21,26 +22,21 @@ import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpProfileSpec;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeSecretFile;
 import org.simplepoint.plugin.ai.runtime.api.repository.AiRuntimeSecretRepository;
 import org.simplepoint.plugin.ai.runtime.api.service.AiRuntimeSecretService;
+import org.simplepoint.plugin.ai.runtime.service.support.AiRuntimeTableQuery;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Scope-aware encrypted secret store and short-lived Runtime broker.
- */
+/** Scope-aware encrypted secret store and short-lived Runtime broker. */
 @Service
 public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
 
-  private static final Pattern IDENTIFIER =
-      Pattern.compile("^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$");
+  private static final Pattern IDENTIFIER = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$");
 
-  private static final Pattern CODE =
-      Pattern.compile("^[a-z0-9][a-z0-9_.-]{0,63}$");
+  private static final Pattern CODE = Pattern.compile("^[a-z0-9][a-z0-9_.-]{0,63}$");
 
-  private static final TypeReference<List<String>> STRING_LIST =
-      new TypeReference<>() {
-      };
+  private static final TypeReference<List<String>> STRING_LIST = new TypeReference<>() {};
 
   private static final int MAXIMUM_SECRET_BYTES = 16 * 1024;
 
@@ -54,15 +50,12 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
 
   private final ObjectMapper objectMapper;
 
-  /**
-   * Creates the encrypted Runtime secret service.
-   */
+  /** Creates the encrypted Runtime secret service. */
   public AiRuntimeSecretServiceImpl(
       final AiRuntimeSecretRepository repository,
       final AiScopeAccessPolicy scopeAccessPolicy,
       final AiCredentialCipher credentialCipher,
-      final ObjectMapper objectMapper
-  ) {
+      final ObjectMapper objectMapper) {
     this.repository = repository;
     this.scopeAccessPolicy = scopeAccessPolicy;
     this.credentialCipher = credentialCipher;
@@ -71,13 +64,13 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
 
   @Override
   @Transactional(readOnly = true)
-  public Page<AiRuntimeSecret> findAll(final Pageable pageable) {
-    ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
-    Page<AiRuntimeSecret> result = repository.findAllActiveByScope(
-        scope.scopeType(),
-        scope.tenantId(),
-        pageable
-    );
+  public Page<AiRuntimeSecret> query(final Map<String, String> filters, final Pageable pageable) {
+    AiRuntimeTableQuery.requireIdentity(AiRuntimeSecret.class);
+    Page<AiRuntimeSecret> result =
+        repository.limitScoped(
+            filters,
+            AiRuntimeTableQuery.scope(scopeAccessPolicy.currentManagementScope()),
+            AiRuntimeTableQuery.page(AiRuntimeSecret.class, pageable));
     result.getContent().forEach(this::decorate);
     return result;
   }
@@ -87,10 +80,10 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
   public Optional<AiRuntimeSecret> find(final String id) {
     Optional<AiRuntimeSecret> result =
         repository.findActiveById(requireIdentifier(id, "Runtime secret ID"));
-    result.ifPresent(secret -> scopeAccessPolicy.assertCanReadManagedResource(
-        secret.getScopeType(),
-        secret.getTenantId()
-    ));
+    result.ifPresent(
+        secret ->
+            scopeAccessPolicy.assertCanReadManagedResource(
+                secret.getScopeType(), secret.getTenantId()));
     return result.map(this::decorate);
   }
 
@@ -102,15 +95,12 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
     }
     ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
     String code = normalizeCode(secret.getCode());
-    repository.findActiveByCodeAndScope(
-        code,
-        scope.scopeType(),
-        scope.tenantId()
-    ).ifPresent(existing -> {
-      throw new IllegalArgumentException(
-          "Runtime secret code already exists: " + code
-      );
-    });
+    repository
+        .findActiveByCodeAndScope(code, scope.scopeType(), scope.tenantId())
+        .ifPresent(
+            existing -> {
+              throw new IllegalArgumentException("Runtime secret code already exists: " + code);
+            });
     String value = requireValue(secret.getValue());
     secret.setId(null);
     secret.setScopeType(scope.scopeType());
@@ -120,8 +110,7 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
     secret.setDescription(optional(secret.getDescription(), 512));
     secret.setValueCiphertext(credentialCipher.encrypt(value));
     secret.setValue(null);
-    secret.setEnabled(secret.getEnabled() == null
-        ? Boolean.TRUE : secret.getEnabled());
+    secret.setEnabled(secret.getEnabled() == null ? Boolean.TRUE : secret.getEnabled());
     secret.setRotatedAt(Instant.now());
     return decorate(repository.save(secret));
   }
@@ -129,15 +118,11 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public AiRuntimeSecret rotate(final String id, final String value) {
-    AiRuntimeSecret secret = repository.findActiveById(
-        requireIdentifier(id, "Runtime secret ID")
-    ).orElseThrow(() -> new IllegalArgumentException(
-        "Runtime secret does not exist"
-    ));
-    scopeAccessPolicy.assertCanManageOwnedResource(
-        secret.getScopeType(),
-        secret.getTenantId()
-    );
+    AiRuntimeSecret secret =
+        repository
+            .findActiveById(requireIdentifier(id, "Runtime secret ID"))
+            .orElseThrow(() -> new IllegalArgumentException("Runtime secret does not exist"));
+    scopeAccessPolicy.assertCanManageOwnedResource(secret.getScopeType(), secret.getTenantId());
     secret.setValueCiphertext(credentialCipher.encrypt(requireValue(value)));
     secret.setRotatedAt(Instant.now());
     return decorate(repository.save(secret));
@@ -149,19 +134,14 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
     if (ids == null || ids.isEmpty()) {
       return;
     }
-    List<String> normalized = ids.stream()
-        .map(id -> requireIdentifier(id, "Runtime secret ID"))
-        .distinct()
-        .toList();
+    List<String> normalized =
+        ids.stream().map(id -> requireIdentifier(id, "Runtime secret ID")).distinct().toList();
     for (String id : normalized) {
-      AiRuntimeSecret secret = repository.findActiveById(id)
-          .orElseThrow(() -> new IllegalArgumentException(
-              "Runtime secret does not exist"
-          ));
-      scopeAccessPolicy.assertCanManageOwnedResource(
-          secret.getScopeType(),
-          secret.getTenantId()
-      );
+      AiRuntimeSecret secret =
+          repository
+              .findActiveById(id)
+              .orElseThrow(() -> new IllegalArgumentException("Runtime secret does not exist"));
+      scopeAccessPolicy.assertCanManageOwnedResource(secret.getScopeType(), secret.getTenantId());
     }
     repository.deleteByIds(normalized);
   }
@@ -169,25 +149,17 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
   @Override
   @Transactional(readOnly = true)
   public String normalizeReferences(
-      final List<String> secretIds,
-      final AiResourceScope scopeType,
-      final String tenantId
-  ) {
+      final List<String> secretIds, final AiResourceScope scopeType, final String tenantId) {
     if (secretIds == null || secretIds.isEmpty()) {
       return "[]";
     }
     if (secretIds.size() > MAXIMUM_SECRET_REFERENCES) {
-      throw new IllegalArgumentException(
-          "Runtime workload has too many secret references"
-      );
+      throw new IllegalArgumentException("Runtime workload has too many secret references");
     }
     LinkedHashSet<String> unique = new LinkedHashSet<>();
-    secretIds.forEach(id ->
-        unique.add(requireIdentifier(id, "Runtime secret ID")));
+    secretIds.forEach(id -> unique.add(requireIdentifier(id, "Runtime secret ID")));
     if (unique.size() != secretIds.size()) {
-      throw new IllegalArgumentException(
-          "Runtime secret references must be unique"
-      );
+      throw new IllegalArgumentException("Runtime secret references must be unique");
     }
     List<String> normalized = unique.stream().sorted().toList();
     for (String id : normalized) {
@@ -198,48 +170,37 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
 
   @Override
   public List<String> references(final String referencesJson) {
-    String value = referencesJson == null || referencesJson.isBlank()
-        ? "[]" : referencesJson;
+    String value = referencesJson == null || referencesJson.isBlank() ? "[]" : referencesJson;
     try {
       List<String> decoded = objectMapper.readValue(value, STRING_LIST);
       if (decoded == null || decoded.size() > MAXIMUM_SECRET_REFERENCES) {
-        throw new IllegalStateException(
-            "Runtime workload secret references are invalid"
-        );
+        throw new IllegalStateException("Runtime workload secret references are invalid");
       }
-      List<String> normalized = decoded.stream()
-          .map(id -> requireIdentifier(id, "Runtime secret ID"))
-          .distinct()
-          .sorted()
-          .toList();
+      List<String> normalized =
+          decoded.stream()
+              .map(id -> requireIdentifier(id, "Runtime secret ID"))
+              .distinct()
+              .sorted()
+              .toList();
       if (normalized.size() != decoded.size()) {
-        throw new IllegalStateException(
-            "Runtime workload secret references are invalid"
-        );
+        throw new IllegalStateException("Runtime workload secret references are invalid");
       }
       return normalized;
     } catch (JsonProcessingException | IllegalArgumentException ex) {
-      throw new IllegalStateException(
-          "Runtime workload secret references are invalid",
-          ex
-      );
+      throw new IllegalStateException("Runtime workload secret references are invalid", ex);
     }
   }
 
   @Override
   @Transactional(readOnly = true)
   public List<RuntimeSecretFile> resolve(
-      final String referencesJson,
-      final AiResourceScope scopeType,
-      final String tenantId
-  ) {
+      final String referencesJson, final AiResourceScope scopeType, final String tenantId) {
     List<RuntimeSecretFile> result = new ArrayList<>();
     for (String id : references(referencesJson)) {
       AiRuntimeSecret secret = requireUsableSecret(id, scopeType, tenantId);
-      result.add(new RuntimeSecretFile(
-          secret.getCode(),
-          credentialCipher.decrypt(secret.getValueCiphertext())
-      ));
+      result.add(
+          new RuntimeSecretFile(
+              secret.getCode(), credentialCipher.decrypt(secret.getValueCiphertext())));
     }
     return List.copyOf(result);
   }
@@ -249,15 +210,12 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
   public List<RuntimeSecretFile> resolveBindings(
       final List<RuntimeMcpProfileSpec.SecretBinding> bindings,
       final AiResourceScope scopeType,
-      final String tenantId
-  ) {
+      final String tenantId) {
     if (bindings == null || bindings.isEmpty()) {
       return List.of();
     }
     if (bindings.size() > MAXIMUM_SECRET_REFERENCES) {
-      throw new IllegalArgumentException(
-          "Runtime Profile has too many secret bindings"
-      );
+      throw new IllegalArgumentException("Runtime Profile has too many secret bindings");
     }
     List<RuntimeSecretFile> result = new ArrayList<>();
     for (int index = 0; index < bindings.size(); index++) {
@@ -265,40 +223,33 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
       if (binding.secretReference().startsWith("provider://")) {
         continue;
       }
-      AiRuntimeSecret secret = requireUsableSecret(
-          binding.secretReference(), scopeType, tenantId
-      );
-      String targetPath = binding.target()
-          == RuntimeMcpProfileSpec.SecretTarget.FILE
-          ? binding.targetName()
-          : "/run/secrets/simplepoint/.env/binding-" + index;
-      String targetEnvironment = binding.target()
-          == RuntimeMcpProfileSpec.SecretTarget.ENV_AT_EXEC
-          ? binding.targetName() : null;
-      result.add(new RuntimeSecretFile(
-          "binding-" + index,
-          credentialCipher.decrypt(secret.getValueCiphertext()),
-          targetPath,
-          targetEnvironment
-      ));
+      AiRuntimeSecret secret = requireUsableSecret(binding.secretReference(), scopeType, tenantId);
+      String targetPath =
+          binding.target() == RuntimeMcpProfileSpec.SecretTarget.FILE
+              ? binding.targetName()
+              : "/run/secrets/simplepoint/.env/binding-" + index;
+      String targetEnvironment =
+          binding.target() == RuntimeMcpProfileSpec.SecretTarget.ENV_AT_EXEC
+              ? binding.targetName()
+              : null;
+      result.add(
+          new RuntimeSecretFile(
+              "binding-" + index,
+              credentialCipher.decrypt(secret.getValueCiphertext()),
+              targetPath,
+              targetEnvironment));
     }
     return List.copyOf(result);
   }
 
   private AiRuntimeSecret requireUsableSecret(
-      final String id,
-      final AiResourceScope scopeType,
-      final String tenantId
-  ) {
-    AiRuntimeSecret secret = repository.findActiveById(id)
-        .orElseThrow(() -> new IllegalArgumentException(
-            "Runtime secret does not exist"
-        ));
-    if (secret.getScopeType() != scopeType
-        || !Objects.equals(secret.getTenantId(), tenantId)) {
-      throw new IllegalArgumentException(
-          "Runtime secret belongs to a different scope"
-      );
+      final String id, final AiResourceScope scopeType, final String tenantId) {
+    AiRuntimeSecret secret =
+        repository
+            .findActiveById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Runtime secret does not exist"));
+    if (secret.getScopeType() != scopeType || !Objects.equals(secret.getTenantId(), tenantId)) {
+      throw new IllegalArgumentException("Runtime secret belongs to a different scope");
     }
     if (!Boolean.TRUE.equals(secret.getEnabled())
         || secret.getValueCiphertext() == null
@@ -310,9 +261,7 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
 
   private AiRuntimeSecret decorate(final AiRuntimeSecret secret) {
     secret.setHasValue(
-        secret.getValueCiphertext() != null
-            && !secret.getValueCiphertext().isBlank()
-    );
+        secret.getValueCiphertext() != null && !secret.getValueCiphertext().isBlank());
     secret.setValue(null);
     return secret;
   }
@@ -321,21 +270,16 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
     try {
       return objectMapper.writeValueAsString(values);
     } catch (JsonProcessingException ex) {
-      throw new IllegalStateException(
-          "Runtime secret references cannot be encoded",
-          ex
-      );
+      throw new IllegalStateException("Runtime secret references cannot be encoded", ex);
     }
   }
 
   private String requireValue(final String value) {
     if (value == null
         || value.isEmpty()
-        || value.getBytes(StandardCharsets.UTF_8).length
-        > MAXIMUM_SECRET_BYTES) {
+        || value.getBytes(StandardCharsets.UTF_8).length > MAXIMUM_SECRET_BYTES) {
       throw new IllegalArgumentException(
-          "Runtime secret value must contain 1 to 16384 UTF-8 bytes"
-      );
+          "Runtime secret value must contain 1 to 16384 UTF-8 bytes");
     }
     return value;
   }
@@ -356,11 +300,7 @@ public class AiRuntimeSecretServiceImpl implements AiRuntimeSecretService {
     return normalized;
   }
 
-  private String required(
-      final String value,
-      final String field,
-      final int maximumLength
-  ) {
+  private String required(final String value, final String field, final int maximumLength) {
     String normalized = value == null ? "" : value.trim();
     if (normalized.isEmpty() || normalized.length() > maximumLength) {
       throw new IllegalArgumentException(field + " is invalid");

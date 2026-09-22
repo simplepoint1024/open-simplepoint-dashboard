@@ -22,14 +22,10 @@ export default defineConfig({
       plugins: [
         pluginModuleFederation({
           name: 'ai',
-          manifest: {
-            // Rspack 2.1.x can fail while Module Federation recursively converts
-            // compilation stats. The runtime only needs the remote entry and
-            // expose map, both of which are emitted without the costly analysis.
-            disableAssetsAnalyze: true,
-          },
+          manifest: true,
+          shareStrategy: 'loaded-first',
           exposes: require('./module.exposes').default,
-          shared: require('@simplepoint/shared/types/module.shared').default,
+          shared: require('@simplepoint/shared/types/module.remote-shared').default,
         }),
       ],
     },

@@ -449,11 +449,15 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 }
 
 .nb-tabs-bar {
-    min-height: 42px;
+    box-sizing: border-box;
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
     padding: 5px 10px 4px;
     background: var(--nb-bg);
     border-bottom: 1px solid var(--nb-border);
     flex-shrink: 0;
+    overflow: hidden;
 }
 
 /* Global navigation tabs: compact, neutral and consistent with Ant Design. */
@@ -615,7 +619,6 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 
 .nb-tab-panel-active {
     display: block;
-    animation: nb-fadein 0.15s ease;
 }
 
 .nb-tab-panel > * {
@@ -669,12 +672,6 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
 .nb-inner-content > * {
     height: 100%;
     min-height: 0;
-}
-
-/* Tab切换淡入动画 */
-@keyframes nb-fadein {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
 

@@ -21,7 +21,7 @@ Gradle 命令使用与目录对应的完整项目路径，例如：
 
 ```bash
 ./gradlew :simplepoint-services:simplepoint-service-host:run
-./gradlew :simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-agent-implementation:test
+./gradlew :simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-mcp-implementation:test
 ./gradlew :simplepoint-services:simplepoint-service-ai:test
 ```
 
@@ -44,7 +44,7 @@ Gradle 命令使用与目录对应的完整项目路径，例如：
 
 具体规则：
 
-- AI 的 core/catalog/knowledge/mcp/runtime/skill/agent/workflow：原 repository 与
+- AI 的 core/catalog/knowledge/mcp/runtime：原 repository 与
   service 合入同领域 implementation。原 REST 源码、配置及测试移入
   `simplepoint-services/simplepoint-service-ai/src`，Java 包名不变。
 - RBAC core、tenant：repository 与 service 合入 implementation；Router service
@@ -61,7 +61,7 @@ Gradle 命令使用与目录对应的完整项目路径，例如：
 Router 业务服务；Host 和其他服务只需要审计采集，不能因此加载审计管理接口。
 因此 Router repository 和 logging monitor 保留独立，数量与最初估算略有不同。
 
-AI 的管理接口不进入 Agent/Workflow Worker 的运行时类路径。RBAC 的管理接口
+AI 的管理接口仅由 AI 服务承载。RBAC 的管理接口
 不进入授权服务。API 模块的名称、Java 包、实体、请求地址和数据库结构均保持原状。
 
 RBAC core/router 的 service 插件 ID 保留。原两个 REST 插件描述归并为 Common

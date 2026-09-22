@@ -232,7 +232,7 @@ public class ConditionsBuilder<T> {
    * @return the updated ConditionsBuilder instance
    */
   public ConditionsBuilder<T> isNull(Property<T, ?> getter) {
-    putAttribute(getter, PREFIX_IS_NULL);
+    attributes.put(resolveFieldName(getter), PREFIX_IS_NULL);
     return this;
   }
 
@@ -243,7 +243,7 @@ public class ConditionsBuilder<T> {
    * @return the updated ConditionsBuilder instance
    */
   public ConditionsBuilder<T> isNotNull(Property<T, ?> getter) {
-    putAttribute(getter, PREFIX_IS_NOT_NULL);
+    attributes.put(resolveFieldName(getter), PREFIX_IS_NOT_NULL);
     return this;
   }
 

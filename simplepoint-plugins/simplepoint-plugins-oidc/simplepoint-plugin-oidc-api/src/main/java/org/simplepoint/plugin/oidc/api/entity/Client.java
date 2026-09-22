@@ -8,6 +8,7 @@
 
 package org.simplepoint.plugin.oidc.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -71,6 +72,19 @@ import org.springframework.core.annotation.Order;
 })
 @Table(name = "simpoint_ac_oauth2_client")
 @Tag(name = "OAuth2客户端对象", description = "用于管理系统中的OAuth2客户端")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("clientName"),
+    @org.simplepoint.core.query.QueryField("clientId"),
+    @org.simplepoint.core.query.QueryField("clientIdIssuedAt"),
+    @org.simplepoint.core.query.QueryField("clientSecretExpiresAt"),
+    @org.simplepoint.core.query.QueryField("clientAuthenticationMethods"),
+    @org.simplepoint.core.query.QueryField("authorizationGrantTypes"),
+    @org.simplepoint.core.query.QueryField("redirectUris"),
+    @org.simplepoint.core.query.QueryField("postLogoutRedirectUris"),
+    @org.simplepoint.core.query.QueryField("scopes"),
+    @org.simplepoint.core.query.QueryField("createdAt"),
+    @org.simplepoint.core.query.QueryField("updatedAt")
+})
 public class Client extends BaseEntityImpl<String> {
 
   /**
@@ -103,11 +117,13 @@ public class Client extends BaseEntityImpl<String> {
    */
   @Order(2)
   @Column(unique = true, nullable = false)
-  @Schema(title = "i18n:clients.title.clientSecret", description = "i18n:clients.description.clientSecret", extensions = {
-      @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "widget", value = "password"),
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  @Schema(title = "i18n:clients.title.clientSecret", description = "i18n:clients.description.clientSecret",
+      accessMode = Schema.AccessMode.WRITE_ONLY, extensions = {
+          @Extension(name = "x-ui", properties = {
+              @ExtensionProperty(name = "widget", value = "password"),
+          })
       })
-  })
   private String clientSecret;
 
   /**

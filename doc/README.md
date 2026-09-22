@@ -69,9 +69,9 @@ doc/
 
 AI 用户与运维指南：
 
-- [Skill 可视化设计、调试与发布](ai/skill_designer.md)
-- [Agent 工作台使用与运维](ai/agent_workbench.md)
-- [Workflow 可视化设计与运行](ai/workflow_designer.md)
+- [MCP 平台边界](design/ai_mcp_platform.md)
+- [AI 编排功能下线](release-notes/ai-orchestration-removal.md)
+
 - [模型兼容 API](ai/model_api.md)
 
 ### **architecture/**

@@ -39,6 +39,17 @@ import org.springframework.core.annotation.Order;
     @Index(name = "idx_login_log_login_at", columnList = "login_at")
 })
 @EqualsAndHashCode(callSuper = true)
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("loginAt"),
+    @org.simplepoint.core.query.QueryField("status"),
+    @org.simplepoint.core.query.QueryField("loginType"),
+    @org.simplepoint.core.query.QueryField("username"),
+    @org.simplepoint.core.query.QueryField("displayName"),
+    @org.simplepoint.core.query.QueryField("tenantId"),
+    @org.simplepoint.core.query.QueryField("clientIp"),
+    @org.simplepoint.core.query.QueryField("requestUri"),
+    @org.simplepoint.core.query.QueryField("failureReason")
+})
 public class LoginLog extends BaseEntityImpl<String> {
 
   @Order(1)

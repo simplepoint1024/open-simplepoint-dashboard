@@ -53,6 +53,9 @@ public class ObjectStorageProviderConfigServiceImpl
 
   private final List<ObjectStorageDriver> drivers;
 
+  @jakarta.persistence.PersistenceContext
+  private jakarta.persistence.EntityManager entityManager;
+
   /**
    * Creates the provider configuration service.
    */
@@ -78,6 +81,8 @@ public class ObjectStorageProviderConfigServiceImpl
   }
 
   @Override
+  @Transactional(readOnly = true)
+  @SuppressWarnings("unchecked")
   public <S extends ObjectStorageProviderConfig> Page<S> limit(
       final Map<String, String> attributes,
       final Pageable pageable
@@ -86,12 +91,9 @@ public class ObjectStorageProviderConfigServiceImpl
     if (attributes != null) {
       normalized.putAll(attributes);
     }
-    normalized.put("deletedAt", "is:null");
     normalizeLike(normalized, "name");
     normalizeLike(normalized, "code");
-    Page<S> page = super.limit(normalized, pageable);
-    page.getContent().forEach(this::decorate);
-    return page;
+    return (Page<S>) new StorageListQueries(entityManager).providers(normalized, pageable);
   }
 
   @Override
@@ -350,7 +352,7 @@ public class ObjectStorageProviderConfigServiceImpl
 
   private static void normalizeLike(final Map<String, String> attributes, final String field) {
     String value = attributes.get(field);
-    if (value != null && !value.isBlank() && !value.contains(":")) {
+    if (value != null && !value.isBlank() && !value.startsWith("{") && !value.contains(":")) {
       attributes.put(field, "like:" + value.trim());
     }
   }

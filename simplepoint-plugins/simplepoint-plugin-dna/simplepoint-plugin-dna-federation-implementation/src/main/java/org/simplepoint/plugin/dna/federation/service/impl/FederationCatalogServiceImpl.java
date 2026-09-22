@@ -11,10 +11,10 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.core.query.CollectionQuery;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
 import org.simplepoint.plugin.dna.federation.api.constants.FederationCatalogTypes;
@@ -22,7 +22,6 @@ import org.simplepoint.plugin.dna.federation.api.entity.FederationCatalog;
 import org.simplepoint.plugin.dna.federation.api.repository.FederationCatalogRepository;
 import org.simplepoint.plugin.dna.federation.api.service.FederationCatalogService;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -105,24 +104,11 @@ public class FederationCatalogServiceImpl
     if (attributes != null) {
       normalized.putAll(attributes);
     }
-    normalized.put("deletedAt", "is:null");
+    normalized.remove("deletedAt");
     normalizeLikeQuery(normalized, "name");
     normalizeLikeQuery(normalized, "code");
-    Map<String, String> persistedFilters = new LinkedHashMap<>(normalized);
-    persistedFilters.remove("catalogType");
-    persistedFilters.remove("deletedAt");
-
-    List<FederationCatalog> catalogs = new ArrayList<>();
-    repository.findAll(persistedFilters).stream()
-        .map(this::decoratePersistedCatalog)
-        .forEach(catalogs::add);
-    dataSourceService.listEnabledDefinitions().stream()
-        .map(this::toDataSourceCatalog)
-        .forEach(catalogs::add);
-
-    List<FederationCatalog> filtered = catalogs.stream()
-        .filter(catalog -> matchesCatalogFilters(catalog, normalized))
-        .sorted(Comparator.comparingInt(FederationCatalogServiceImpl::catalogTypeOrder).thenComparing(
+    var prepared = CollectionQuery.prepare(FederationCatalog.class, normalized, pageable,
+        Comparator.comparingInt(FederationCatalogServiceImpl::catalogTypeOrder).thenComparing(
             FederationCatalog::getCode,
             Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
         ).thenComparing(
@@ -131,17 +117,15 @@ public class FederationCatalogServiceImpl
         ).thenComparing(
             FederationCatalog::getId,
             Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
-        ))
-        .toList();
-    if (pageable.isUnpaged()) {
-      @SuppressWarnings("unchecked")
-      Page<S> page = (Page<S>) new PageImpl<>(filtered);
-      return page;
-    }
-    int fromIndex = (int) Math.min(pageable.getOffset(), filtered.size());
-    int toIndex = Math.min(fromIndex + pageable.getPageSize(), filtered.size());
+        ));
+    // Authorize each source before combining it. User conditions must then apply equally to both.
+    List<FederationCatalog> catalogs = new ArrayList<>();
+    super.<FederationCatalog>limit(Map.of(), Pageable.unpaged()).getContent().stream()
+        .map(this::decoratePersistedCatalog).forEach(catalogs::add);
+    dataSourceService.<JdbcDataSourceDefinition>limit(Map.of("enabled", "equals:true"), Pageable.unpaged())
+        .getContent().stream().map(this::toDataSourceCatalog).forEach(catalogs::add);
     @SuppressWarnings("unchecked")
-    Page<S> page = (Page<S>) new PageImpl<>(filtered.subList(fromIndex, toIndex), pageable, filtered.size());
+    Page<S> page = (Page<S>) prepared.page(catalogs);
     return page;
   }
 
@@ -243,51 +227,6 @@ public class FederationCatalogServiceImpl
     if (id != null && id.startsWith(DATA_SOURCE_CATALOG_ID_PREFIX)) {
       throw new IllegalArgumentException("数据源目录由系统自动生成，不支持编辑或删除");
     }
-  }
-
-  private static boolean matchesCatalogFilters(
-      final FederationCatalog catalog,
-      final Map<String, String> normalized
-  ) {
-    return matchesStringFilter(catalog.getName(), normalized.get("name"))
-        && matchesStringFilter(catalog.getCode(), normalized.get("code"))
-        && matchesStringFilter(catalog.getCatalogType(), normalized.get("catalogType"))
-        && matchesBooleanFilter(catalog.getEnabled(), normalized.get("enabled"));
-  }
-
-  private static boolean matchesStringFilter(final String actualValue, final String filterValue) {
-    String normalizedFilter = trimToNull(filterValue);
-    if (normalizedFilter == null) {
-      return true;
-    }
-    String normalizedActual = trimToNull(actualValue);
-    if (normalizedFilter.startsWith("like:")) {
-      return normalizedActual != null
-          && normalizedActual.toLowerCase(java.util.Locale.ROOT).contains(
-          normalizedFilter.substring(5).toLowerCase(java.util.Locale.ROOT)
-      );
-    }
-    if (normalizedFilter.startsWith("equals:")) {
-      normalizedFilter = trimToNull(normalizedFilter.substring(7));
-    }
-    return Objects.equals(
-        normalizedActual == null ? null : normalizedActual.toLowerCase(java.util.Locale.ROOT),
-        normalizedFilter == null ? null : normalizedFilter.toLowerCase(java.util.Locale.ROOT)
-    );
-  }
-
-  private static boolean matchesBooleanFilter(final Boolean actualValue, final String filterValue) {
-    String normalizedFilter = trimToNull(filterValue);
-    if (normalizedFilter == null) {
-      return true;
-    }
-    if (normalizedFilter.startsWith("equals:")) {
-      normalizedFilter = trimToNull(normalizedFilter.substring(7));
-    }
-    if (normalizedFilter == null) {
-      return true;
-    }
-    return Objects.equals(Boolean.valueOf(normalizedFilter), actualValue);
   }
 
   private static int catalogTypeOrder(final FederationCatalog catalog) {

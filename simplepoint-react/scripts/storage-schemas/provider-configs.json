@@ -1,0 +1,393 @@
+{
+  "buttons": [],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "accessKey": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "basePath": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.provider.basePath",
+        "description": ""
+      },
+      "bucket": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.bucket",
+        "description": ""
+      },
+      "code": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.provider.code",
+        "description": ""
+      },
+      "defaultProvider": {
+        "type": "boolean",
+        "title": "i18n:storage.provider.default",
+        "description": ""
+      },
+      "description": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.description",
+        "description": ""
+      },
+      "enabled": {
+        "type": "boolean",
+        "title": "i18n:storage.enabled",
+        "description": ""
+      },
+      "endpoint": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.provider.endpoint",
+        "description": ""
+      },
+      "name": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.provider.name",
+        "description": ""
+      },
+      "pathStyleAccess": {
+        "type": "boolean",
+        "title": "i18n:storage.provider.pathStyleAccess",
+        "description": ""
+      },
+      "publicBaseUrl": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.provider.publicBaseUrl",
+        "description": ""
+      },
+      "region": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:storage.provider.region",
+        "description": ""
+      },
+      "secretConfigured": {
+        "type": "boolean",
+        "title": "i18n:storage.provider.credential",
+        "description": "",
+        "readOnly": true
+      },
+      "secretKey": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "writeOnly": true
+      },
+      "secretKeyCiphertext": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "writeOnly": true
+      },
+      "type": {
+        "type": "string",
+        "enum": [
+          "MINIO",
+          "S3",
+          "ALIYUN_OSS",
+          "TENCENT_COS",
+          "QINIU_KODO",
+          "CEPH"
+        ],
+        "title": "i18n:storage.provider.type",
+        "description": ""
+      }
+    },
+    "x-query": {
+      "version": 1,
+      "relations": [],
+      "fields": {
+        "code": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "name": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "type": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "ObjectStoragePlatformType"
+        },
+        "endpoint": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "region": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "bucket": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "basePath": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "pathStyleAccess": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "publicBaseUrl": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "enabled": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "defaultProvider": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "description": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "secretConfigured": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "createdAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "updatedAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        }
+      },
+      "maxSort": 3,
+      "maxDepth": 4,
+      "maxNodes": 32,
+      "maxPageSize": 200
+    }
+  }
+}

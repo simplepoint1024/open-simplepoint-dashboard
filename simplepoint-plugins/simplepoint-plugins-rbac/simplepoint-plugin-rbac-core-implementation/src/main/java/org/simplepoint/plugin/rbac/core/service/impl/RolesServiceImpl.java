@@ -110,6 +110,12 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   }
 
   @Override
+  public String requireManagementTenant() {
+    requireTenantOwnerOrAdministratorIfTenantScoped();
+    return resolveCurrentTenantScope();
+  }
+
+  @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends Role> S create(S entity) {
     if (!Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())) {
@@ -177,6 +183,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     requireTenantOwnerOrAdministratorIfTenantScoped();
     validateRoleBelongsToCurrentTenant(roleId);
     String tenantId = resolveCurrentTenantScope();
+    getRepository().lockForAuthorization(tenantId, roleId);
     this.getRepository().unauthorized(tenantId, roleId, resourceCodes);
     refreshCurrentTenantAuthorizationVersion();
     recordResourceGrantChange("UNAUTHORIZE", roleId, resourceCodes);
@@ -209,6 +216,7 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       throw new IllegalArgumentException("角色资源授权参数不能为空");
     }
     validateRoleBelongsToCurrentTenant(dto.getRoleId());
+    getRepository().lockForAuthorization(resolveCurrentTenantScope(), dto.getRoleId());
     scopePolicyValidator.validate(resolveCurrentTenantScope(), dto.getDataScopeId(), dto.getFieldScopeId());
     roleScopeBindingService.validateLegacyAssignment(resolveCurrentTenantScope(), dto.getRoleId(), dto.getDataScopeId(), dto.getFieldScopeId());
     Set<String> resourceCodes = normalizeResourceCodes(dto == null ? null : dto.getResourceCodes());
@@ -400,7 +408,9 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void updateScopeAssignment(RoleScopeAssignmentVo vo) {
-    if (vo == null) throw new IllegalArgumentException("范围配置不能为空");
+    if (vo == null) {
+      throw new IllegalArgumentException("范围配置不能为空");
+    }
     requireTenantOwnerOrAdministratorIfTenantScoped();
     validateRoleBelongsToCurrentTenant(vo.getRoleId());
     String tenantId = resolveCurrentTenantScope();

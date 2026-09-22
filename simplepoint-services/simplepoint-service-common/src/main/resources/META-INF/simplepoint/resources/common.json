@@ -3,15 +3,15 @@
   "resources": [
     {
       "code": "dashboard.view",
-      "name": "Dashboard",
-      "label": "Dashboard",
-      "title": "menu.dashboard",
+      "name": "Home",
+      "label": "Home",
+      "title": "menu.home",
       "type": "PAGE",
       "path": "/dashboard",
       "component": "common/Dashboard",
-      "icon": "DashboardOutlined",
+      "icon": "HomeOutlined",
       "routeKind": "item",
-      "description": "menu.dashboard",
+      "description": "menu.home",
       "sort": 0,
       "publicAccess": true,
       "requireOrgTenant": false,
@@ -21,6 +21,497 @@
         "PLATFORM",
         "TENANT",
         "PERSONAL"
+      ]
+    },
+    {
+      "publicAccess": true,
+      "requireOrgTenant": false,
+      "grantable": false,
+      "disabled": false,
+      "scopeTypes": [
+        "PLATFORM",
+        "TENANT",
+        "PERSONAL"
+      ],
+      "code": "personal.view",
+      "name": "我的",
+      "label": "我的",
+      "title": "menu.my",
+      "type": "MODULE",
+      "path": "/my",
+      "icon": "UserOutlined",
+      "routeKind": "submenu",
+      "description": "个人工作中心",
+      "sort": 1,
+      "children": [
+        {
+          "publicAccess": true,
+          "requireOrgTenant": false,
+          "grantable": false,
+          "disabled": false,
+          "scopeTypes": [
+            "PLATFORM",
+            "TENANT",
+            "PERSONAL"
+          ],
+          "code": "personal.items.view",
+          "name": "我的事项",
+          "label": "我的事项",
+          "title": "menu.my.items",
+          "type": "PAGE",
+          "path": "/my/items",
+          "component": "common/personal/Items",
+          "icon": "ScheduleOutlined",
+          "routeKind": "item",
+          "sort": 1,
+          "description": "我的事项",
+          "children": [
+            {
+              "code": "personal.items.add",
+              "name": "新建事项",
+              "label": "新建事项",
+              "title": "personal.createItem",
+              "type": "ACTION",
+              "icon": "PlusCircleOutlined",
+              "sort": 0,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.items.edit",
+              "name": "编辑事项",
+              "label": "编辑事项",
+              "title": "personal.editItem",
+              "type": "ACTION",
+              "icon": "EditOutlined",
+              "sort": 1,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.items.detail",
+              "name": "事项详情",
+              "label": "事项详情",
+              "title": "personal.itemDetails",
+              "type": "ACTION",
+              "icon": "EyeOutlined",
+              "sort": 2,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.items.delete",
+              "name": "移至回收站",
+              "label": "移至回收站",
+              "title": "personal.delete",
+              "type": "ACTION",
+              "icon": "MinusCircleOutlined",
+              "sort": 3,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.items.START",
+              "name": "开始",
+              "label": "开始",
+              "title": "personal.start",
+              "type": "ACTION",
+              "icon": "PlayCircleOutlined",
+              "sort": 4,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.items.COMPLETE",
+              "name": "完成",
+              "label": "完成",
+              "title": "personal.complete",
+              "type": "ACTION",
+              "icon": "CheckCircleOutlined",
+              "sort": 5,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.items.CANCEL",
+              "name": "取消事项",
+              "label": "取消事项",
+              "title": "personal.cancelItem",
+              "type": "ACTION",
+              "icon": "StopOutlined",
+              "sort": 6,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.items.REOPEN",
+              "name": "重新打开",
+              "label": "重新打开",
+              "title": "personal.reopen",
+              "type": "ACTION",
+              "icon": "RedoOutlined",
+              "sort": 7,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.items.ARCHIVE",
+              "name": "归档",
+              "label": "归档",
+              "title": "personal.archive",
+              "type": "ACTION",
+              "icon": "InboxOutlined",
+              "sort": 8,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.items.UNARCHIVE",
+              "name": "移出归档",
+              "label": "移出归档",
+              "title": "personal.unarchive",
+              "type": "ACTION",
+              "icon": "ExportOutlined",
+              "sort": 9,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.items.RESTORE",
+              "name": "恢复",
+              "label": "恢复",
+              "title": "personal.restore",
+              "type": "ACTION",
+              "icon": "UndoOutlined",
+              "sort": 10,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            }
+          ]
+        },
+        {
+          "publicAccess": true,
+          "requireOrgTenant": false,
+          "grantable": false,
+          "disabled": false,
+          "scopeTypes": [
+            "PLATFORM",
+            "TENANT",
+            "PERSONAL"
+          ],
+          "code": "personal.todos.view",
+          "name": "我的待办",
+          "label": "我的待办",
+          "title": "menu.my.todos",
+          "type": "PAGE",
+          "path": "/my/todos",
+          "component": "common/personal/Todos",
+          "icon": "CheckSquareOutlined",
+          "routeKind": "item",
+          "sort": 2,
+          "description": "我的待办",
+          "children": [
+            {
+              "code": "personal.todos.add",
+              "name": "新建待办",
+              "label": "新建待办",
+              "title": "personal.createTodo",
+              "type": "ACTION",
+              "icon": "PlusCircleOutlined",
+              "sort": 0,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.todos.detail",
+              "name": "待办详情",
+              "label": "待办详情",
+              "title": "personal.todoDetails",
+              "type": "ACTION",
+              "icon": "EyeOutlined",
+              "sort": 1,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.todos.COMPLETE",
+              "name": "完成",
+              "label": "完成",
+              "title": "personal.complete",
+              "type": "ACTION",
+              "icon": "CheckCircleOutlined",
+              "sort": 2,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.todos.CANCEL",
+              "name": "取消事项",
+              "label": "取消事项",
+              "title": "personal.cancelItem",
+              "type": "ACTION",
+              "icon": "StopOutlined",
+              "sort": 3,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.todos.REOPEN",
+              "name": "重新打开",
+              "label": "重新打开",
+              "title": "personal.reopen",
+              "type": "ACTION",
+              "icon": "RedoOutlined",
+              "sort": 4,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            }
+          ]
+        },
+        {
+          "publicAccess": true,
+          "requireOrgTenant": false,
+          "grantable": false,
+          "disabled": false,
+          "scopeTypes": [
+            "PLATFORM",
+            "TENANT",
+            "PERSONAL"
+          ],
+          "code": "personal.messages.view",
+          "name": "我的消息",
+          "label": "我的消息",
+          "title": "menu.my.messages",
+          "type": "PAGE",
+          "path": "/my/messages",
+          "component": "common/personal/Messages",
+          "icon": "MailOutlined",
+          "routeKind": "item",
+          "sort": 3,
+          "description": "我的消息",
+          "children": [
+            {
+              "code": "personal.messages.detail",
+              "name": "消息详情",
+              "label": "消息详情",
+              "title": "personal.messageDetails",
+              "type": "ACTION",
+              "icon": "EyeOutlined",
+              "sort": 0,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.messages.READ",
+              "name": "标为已读",
+              "label": "标为已读",
+              "title": "personal.read",
+              "type": "ACTION",
+              "icon": "MailOutlined",
+              "sort": 1,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.messages.UNREAD",
+              "name": "标为未读",
+              "label": "标为未读",
+              "title": "personal.unread",
+              "type": "ACTION",
+              "icon": "MailOutlined",
+              "sort": 2,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.messages.ARCHIVE",
+              "name": "归档",
+              "label": "归档",
+              "title": "personal.archive",
+              "type": "ACTION",
+              "icon": "InboxOutlined",
+              "sort": 3,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.messages.UNARCHIVE",
+              "name": "移出归档",
+              "label": "移出归档",
+              "title": "personal.unarchive",
+              "type": "ACTION",
+              "icon": "ExportOutlined",
+              "sort": 4,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.messages.readAll",
+              "name": "全部标为已读",
+              "label": "全部标为已读",
+              "title": "personal.readAll",
+              "type": "ACTION",
+              "icon": "CheckCircleOutlined",
+              "sort": 5,
+              "publicAccess": true,
+              "requireOrgTenant": false,
+              "grantable": false,
+              "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            }
+          ]
+        }
       ]
     },
     {
@@ -459,42 +950,6 @@
       "disabled": false,
       "children": [
         {
-          "code": "access-center.view",
-          "name": "资源授权中心",
-          "label": "资源授权中心",
-          "title": "menu.system.accessCenter",
-          "type": "PAGE",
-          "path": "/workspace/access-center",
-          "component": "common/system/AccessCenter",
-          "icon": "SafetyCertificateOutlined",
-          "routeKind": "item",
-          "description": "menu.system.accessCenter",
-          "sort": 0,
-          "publicAccess": false,
-          "requireOrgTenant": false,
-          "grantable": true,
-          "disabled": false,
-          "children": [
-            {
-              "code": "access-center.manage",
-              "name": "Access Center Manage",
-              "label": "Access Center Manage",
-              "alias": "i18n:accessCenter.action.save",
-              "type": "ACTION",
-              "description": "允许在资源授权中心统一配置角色授权",
-              "sort": 101,
-              "grantable": true,
-              "publicAccess": false,
-              "requireOrgTenant": false,
-              "disabled": false
-            }
-          ],
-          "scopeTypes": [
-            "TENANT",
-            "PERSONAL"
-          ]
-        },
-        {
           "code": "users.view",
           "name": "租户成员",
           "label": "租户成员",
@@ -511,6 +966,45 @@
           "grantable": true,
           "disabled": false,
           "children": [
+            {
+              "code": "users.member.add",
+              "name": "Tenant Member Add",
+              "label": "Tenant Member Add",
+              "alias": "i18n:platform-accounts.addMember",
+              "type": "ACTION",
+              "description": "允许向当前租户添加已有账号",
+              "sort": 101,
+              "grantable": false,
+              "publicAccess": false,
+              "requireOrgTenant": true,
+              "disabled": false
+            },
+            {
+              "code": "users.member.edit",
+              "name": "Tenant Member Edit",
+              "label": "Tenant Member Edit",
+              "alias": "i18n:platform-accounts.editMember",
+              "type": "ACTION",
+              "description": "允许编辑当前租户成员",
+              "sort": 102,
+              "grantable": false,
+              "publicAccess": false,
+              "requireOrgTenant": true,
+              "disabled": false
+            },
+            {
+              "code": "users.member.remove",
+              "name": "Tenant Member Remove",
+              "label": "Tenant Member Remove",
+              "alias": "i18n:platform-accounts.removeMember",
+              "type": "ACTION",
+              "description": "允许移除当前租户成员关系",
+              "sort": 103,
+              "grantable": false,
+              "publicAccess": false,
+              "requireOrgTenant": true,
+              "disabled": false
+            },
             {
               "code": "users.config.role",
               "name": "User Role Grant",
@@ -730,8 +1224,8 @@
         },
         {
           "code": "organizations.view",
-          "name": "组织机构管理",
-          "label": "组织机构管理",
+          "name": "组织管理",
+          "label": "组织管理",
           "title": "menu.platform.organizations",
           "type": "PAGE",
           "path": "/workspace/organizations",

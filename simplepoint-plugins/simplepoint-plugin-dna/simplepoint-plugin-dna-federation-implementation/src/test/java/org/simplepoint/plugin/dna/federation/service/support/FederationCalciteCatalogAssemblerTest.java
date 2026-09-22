@@ -3,9 +3,11 @@ package org.simplepoint.plugin.dna.federation.service.support;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,10 +17,13 @@ import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
@@ -53,6 +58,51 @@ class FederationCalciteCatalogAssemblerTest {
 
   @Mock
   private JdbcDialectManagementService dialectManagementService;
+
+  @Test
+  void scopedAssemblyDoesNotConnectToUnreferencedBlockedCatalogs() throws Exception {
+    JdbcDataSource main = createDataSource();
+    initialize(main, "create table sample(id int); insert into sample values (1)");
+    String currentCatalog;
+    try (Connection connection = main.getConnection()) {
+      currentCatalog = connection.getCatalog();
+    }
+    JdbcDataSourceDefinition definition = new JdbcDataSourceDefinition();
+    definition.setId("ds-1");
+    definition.setCode("ds1");
+    definition.setDriverId("driver-1");
+    JdbcDriverDefinition driver = new JdbcDriverDefinition();
+    driver.setDatabaseType("postgresql");
+    driver.setDriverClassName("org.h2.Driver");
+    when(dataSourceService.requireSimpleDataSource("ds-1")).thenReturn(new SimpleDataSource(
+        wrapDataSource(main, currentCatalog, List.of(currentCatalog, "postgres"))
+    ));
+    when(driverService.findActiveById("driver-1")).thenReturn(Optional.of(driver));
+    JdbcDatabaseDialect dialect = postgresLikeDialect();
+    when(dialectManagementService.resolveDialect(any())).thenReturn(Optional.of(dialect));
+    FederationCalciteCatalogAssembler assembler = new FederationCalciteCatalogAssembler(
+        dataSourceService, driverService, dialectManagementService
+    );
+    try (var assembly = assembler.assemble("ds1", List.of(definition), Map.of())) {
+      var result = new DefaultCalciteQueryEngine().execute(
+          new CalciteQueryRequest("select id from ds1.public.sample", "ds1", 10, 5000),
+          assembly.schemaConfigurer()
+      );
+      assertEquals(1, result.returnedRows());
+    }
+    verify(dataSourceService, never()).createTransientSimpleDataSource(any(), any());
+    try (var cached = assembler.assemble("ds1", List.of(definition), Map.of())) {
+      assertTrue(cached.schemaCacheHit());
+    }
+    SimpleDataSource blocked = mock(SimpleDataSource.class);
+    when(blocked.getConnection()).thenThrow(new SQLException("no pg_hba.conf entry", "28000"));
+    when(dataSourceService.createTransientSimpleDataSource("ds-1", "jdbc:catalog:postgres")).thenReturn(blocked);
+    var exception = assertThrows(IllegalStateException.class, () ->
+        assembler.assemble("ds1", List.of(definition), Map.of("ds1", Set.of("postgres"))));
+    assertTrue(exception.getMessage().contains("pg_hba.conf"));
+    verify(blocked).close();
+    assembler.flushSchemaCache();
+  }
 
   @Test
   void assembleShouldExposeNestedPhysicalSchemas() throws Exception {

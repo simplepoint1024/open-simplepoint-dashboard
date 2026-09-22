@@ -58,6 +58,12 @@ import org.springframework.core.annotation.Order;
 })
 @NoArgsConstructor
 @Tag(name = "命名空间对象", description = "用于管理系统中的命名空间")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("module"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class Namespace extends BaseEntityImpl<String> {
   /**
    * The name of the namespace.

@@ -429,7 +429,7 @@ public class DefaultRemoteMcpGatewayOperations implements McpGatewayOperations {
         .requestTimeout(positive(properties.getRequestTimeout(), Duration.ofSeconds(30)))
         // Upstream output schemas are advisory and frequently lag live APIs.
         // Inputs remain validated locally; results stay size-bounded and are
-        // validated by the owning Skill/Workflow contract where applicable.
+        // validated by the owning caller contract where applicable.
         .enableCallToolSchemaCaching(false);
     clientSpec.toolsChangeConsumer(ignored ->
         signalChange(sessionReference.get(), McpGatewayEventType.TOOLS_LIST_CHANGED));

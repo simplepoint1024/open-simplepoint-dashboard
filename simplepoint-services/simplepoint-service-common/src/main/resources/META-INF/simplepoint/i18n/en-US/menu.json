@@ -1,10 +1,14 @@
 {
-  "menu.dashboard": "Dashboard",
+  "menu.my": "My workspace",
+  "menu.my.items": "My items",
+  "menu.my.todos": "My todos",
+  "menu.my.messages": "My messages",
+  "menu.home": "Home",
+  "menu.dashboard": "Home",
   "menu.profile": "Profile",
   "menu.billing": "Billing Information",
   "menu.settings": "System Settings",
   "menu.logout": "Log Out",
-
   "menu.i18n": "Internationalization",
   "menu.i18n.message": "i18n Messages",
   "menu.i18n.countries": "Country Management",
@@ -12,7 +16,6 @@
   "menu.i18n.timezones": "Timezone Management",
   "menu.i18n.languages": "Language Management",
   "menu.i18n.namespace": "i18n Namespace",
-
   "menu.monitoring": "Monitoring & Audit",
   "menu.monitoring.loginLog": "Login Logs",
   "menu.monitoring.errorLog": "Error Logs",
@@ -21,9 +24,7 @@
   "menu.monitoring.redis": "Redis Management",
   "menu.monitoring.resourceGrantLog": "Resource Grant Logs",
   "menu.ops.microApplication": "Micro Application Management",
-
   "menu.system": "System Configuration",
-  "menu.system.accessCenter": "Resource Grant Center",
   "menu.system.resource": "Resource Management",
   "menu.system.notifications": "System Notifications",
   "menu.system.identityProvider": "External Login Providers",
@@ -36,7 +37,6 @@
   "menu.storage.objects": "Object Storage",
   "menu.storage.system": "System OSS Configuration",
   "menu.storage.quotas": "Object Storage Quotas",
-
   "menu.platform": "Platform Management",
   "menu.platform.tenant": "Tenant Management",
   "menu.platform.application": "Application Management",
@@ -67,10 +67,6 @@
   "menu.ai.knowledgeBases": "Knowledge Bases",
   "menu.ai.catalog": "Extension Catalog",
   "menu.ai.mcpServers": "MCP Center",
-  "menu.ai.skills": "Skills",
-  "menu.ai.skillDesigner": "Skill Designer",
-  "menu.ai.agents": "Agents",
-  "menu.ai.workflows": "Agent Workflows",
   "menu.ai.billing": "Billing",
   "menu.tenantHome": "Tenant Home"
 }

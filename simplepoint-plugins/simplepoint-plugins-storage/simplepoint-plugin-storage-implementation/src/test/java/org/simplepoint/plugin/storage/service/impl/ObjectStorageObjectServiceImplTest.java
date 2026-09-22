@@ -379,10 +379,12 @@ class ObjectStorageObjectServiceImplTest {
         "SELF", "createOrgDeptId", "createdBy", "user-1", Set.of()
     );
     DataScopeContext.set(previous);
-    when(repository.limit(any(), eq(pageable))).thenAnswer(invocation -> {
+    when(repository.limitScoped(any(), any(), eq(pageable))).thenAnswer(invocation -> {
       assertTrue(DataScopeContext.get().isAllData());
       Map<String, String> attributes = invocation.getArgument(0);
-      assertEquals("tenant-demo", attributes.get("tenantId"));
+      Map<String, String> mandatory = invocation.getArgument(1);
+      assertTrue(!attributes.containsKey("tenantId"));
+      assertEquals("tenant-demo", mandatory.get("tenantId"));
       return org.springframework.data.domain.Page.empty(pageable);
     });
     ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");

@@ -111,7 +111,7 @@ class PlatformAccountDatabaseTest {
     var audit = accounts.audit(java.util.Map.of(), PageRequest.of(0, 20)).getContent().getFirst();
     assertThat(audit.getAfterState()).contains("PLATFORM_ADMIN").doesNotContain("never-in-audit", "hashed-not-exposed");
     context(member.getId(), AuthorizationScopeType.PLATFORM, null);
-    assertThat(accounts.list(java.util.Map.of("keyword", "member"), PageRequest.of(0, 100)).getContent()).hasSize(1);
+    assertThat(accounts.list(java.util.Map.of("keyword", "member"), PageRequest.of(0, 50)).getContent()).hasSize(1);
     assertThat(accounts.list(java.util.Map.of("keyword", "%"), PageRequest.of(0, 20)).getContent()).isEmpty();
     assertThatThrownBy(() -> accounts.assignIdentity(root.getId(), identity(true)))
         .isInstanceOf(AccessDeniedException.class);

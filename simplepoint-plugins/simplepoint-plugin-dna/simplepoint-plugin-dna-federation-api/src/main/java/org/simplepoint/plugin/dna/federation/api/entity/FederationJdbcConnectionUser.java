@@ -62,6 +62,17 @@ import org.springframework.core.annotation.Order;
 })
 @Tag(name = "JDBC连接用户", description = "用于为系统用户配置 DNA JDBC 驱动访问授权")
 @Schema(title = "i18n:dna.federation.jdbcUsers.entity.title", description = "i18n:dna.federation.jdbcUsers.entity.description")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("catalogId"),
+    @org.simplepoint.core.query.QueryField("catalogName"),
+    @org.simplepoint.core.query.QueryField("catalogCode"),
+    @org.simplepoint.core.query.QueryField("userId"),
+    @org.simplepoint.core.query.QueryField("userDisplayName"),
+    @org.simplepoint.core.query.QueryField("userEmail"),
+    @org.simplepoint.core.query.QueryField("userPhoneNumber"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class FederationJdbcConnectionUser extends BaseEntityImpl<String> {
 
   @Order(0)

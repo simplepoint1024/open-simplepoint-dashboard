@@ -77,6 +77,19 @@ import org.springframework.core.annotation.Order;
     }
 )
 @EqualsAndHashCode(callSuper = true)
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("serviceId"),
+    @org.simplepoint.core.query.QueryField("pathPattern"),
+    @org.simplepoint.core.query.QueryField("httpMethod"),
+    @org.simplepoint.core.query.QueryField("sort"),
+    @org.simplepoint.core.query.QueryField("keyStrategy"),
+    @org.simplepoint.core.query.QueryField("replenishRate"),
+    @org.simplepoint.core.query.QueryField("burstCapacity"),
+    @org.simplepoint.core.query.QueryField("requestedTokens"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class EndpointRateLimitRule extends BaseEntityImpl<String> {
 
   @Order(0)

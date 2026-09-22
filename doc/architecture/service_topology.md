@@ -106,7 +106,7 @@ sequenceDiagram
 
 - 提供 AI 业务能力的独立扩展边界。
 - `simplepoint-plugin-ai` 是 AI 领域聚合层；模型供应商、凭证、系统/租户混合作用域、模型目录和厂商适配器位于 `simplepoint-plugin-ai-core-*`，知识库、文档解析、分块和 pgvector 混合检索位于独立的 `simplepoint-plugin-ai-knowledge-*`。
-- 后续知识库、工具、技能能力分别以 `simplepoint-plugin-ai-knowledge-*`、`simplepoint-plugin-ai-tool-*`、`simplepoint-plugin-ai-skill-*` 同级扩展，按需依赖 `ai-core-api`。
+- 知识库、MCP 和工具运行时分别由 knowledge、mcp、runtime 插件族承载，按需依赖 `ai-core-api`。
 
 ## 6. 当前实现里的两个重要事实
 
@@ -120,7 +120,7 @@ sequenceDiagram
 
 P0/P1 合并后，AI 各领域的 repository/service 归入 `-implementation`，管理 REST
 及其测试直接由 AI 服务拥有。RBAC 管理 REST 由 Common 服务拥有。这样可让
-Agent/Workflow Worker 和授权服务继续共享领域实现，而不加载管理端点。
+授权服务按需共享领域实现，而不加载 AI 管理端点。
 详细映射见 [模块合并记录](module_consolidation.md)。
 
 ## 7. 阅读建议

@@ -34,9 +34,9 @@ public class AiProperties {
 
   private Integer generationMaxInputCharacters = 1_000_000;
 
-  private Integer generationMaxMessages = 200;
+  private Integer generationMaxMessages = 1000;
 
-  private Integer generationMaxTools = 64;
+  private Integer generationMaxTools = 256;
 
   private Integer generationMaxOutputTokens = 32_768;
 

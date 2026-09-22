@@ -77,6 +77,13 @@ import org.springframework.core.annotation.Order;
 @AllArgsConstructor
 @Tag(name = "租户对象", description = "用于管理系统中的租户")
 @Schema(title = "租户对象", description = "用于管理系统中的租户")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("id"),
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("ownerId"),
+    @org.simplepoint.core.query.QueryField("tenantType")
+})
 public class Tenant extends BaseEntityImpl<String> {
 
   /** Tenant logo stored in OSS. */

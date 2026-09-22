@@ -1,5 +1,6 @@
 import {useState} from 'react';
-import {Alert, Button, Descriptions, Modal, Spin, Table} from 'antd';
+import {Alert, Button, Descriptions, Modal, Spin} from 'antd';
+import Table from '@simplepoint/components/DataTable';
 import {get, useData} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import api from '@/api';
@@ -42,6 +43,8 @@ export default function EffectiveScopePreview() {
             {key: 'self', label: t('data-scopes.preview.self', '额外包含本人数据'), children: String(data.includeSelf)},
           ]} />
           <Table size="small" rowKey="field" pagination={{pageSize: 10}}
+            storageKey="rbac.effective-field-permissions"
+            query={{mode: 'local', scope: 'complete', fields: {field: {type: 'string'}, access: {type: 'string'}}}}
             dataSource={Object.entries(data.fieldPermissions ?? {}).map(([field, access]) => ({field, access}))}
             columns={[
               {title: t('data-scopes.preview.field', '资源字段'), dataIndex: 'field'},

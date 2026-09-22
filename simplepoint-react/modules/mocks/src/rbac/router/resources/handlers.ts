@@ -78,26 +78,6 @@ const resources = [
     scopeTypes: ['TENANT', 'PERSONAL'],
     children: [
       {
-        id: 'res-access-center',
-        code: 'access-center.view',
-        name: '资源授权中心',
-        label: '资源授权中心',
-        title: 'menu.workspace.accessCenter',
-        type: 'PAGE',
-        path: '/workspace/access-center',
-        component: 'common/system/AccessCenter',
-        icon: 'SafetyCertificateOutlined',
-        routeKind: 'item',
-        sort: 10,
-        publicAccess: false,
-        grantable: true,
-        disabled: false,
-        scopeTypes: ['TENANT', 'PERSONAL'],
-        children: [
-          {id: 'res-access-center-manage', code: 'access-center.manage', name: 'Resource Grant Manage', label: 'Resource Grant Manage', alias: 'i18n:table.button.authorize', type: 'ACTION', grantable: true, disabled: false, scopeTypes: ['TENANT', 'PERSONAL']},
-        ],
-      },
-      {
         id: 'res-role',
         code: 'roles.view',
         name: '角色管理',

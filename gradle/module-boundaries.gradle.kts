@@ -3,8 +3,6 @@ import java.util.zip.ZipFile
 // Verify packaged classes as well as Gradle dependencies: shared implementation
 // modules must not introduce management endpoints into authentication or workers.
 val serviceBoundaries = mapOf(
-    "simplepoint-service-agent-runtime" to listOf("org/simplepoint/plugin/ai/.*/rest/.*\\.class"),
-    "simplepoint-service-workflow-runtime" to listOf("org/simplepoint/plugin/ai/.*/rest/.*\\.class"),
     "simplepoint-service-authorization" to listOf("org/simplepoint/plugin/rbac/.*/rest/.*\\.class"),
     "simplepoint-service-host" to listOf("org/simplepoint/plugin/auditing/logging/(repository|rest|service)/.*\\.class")
 )

@@ -1,16 +1,14 @@
 import React, {useMemo} from 'react';
 import {Select} from 'antd';
 import type {WidgetProps} from '@rjsf/utils';
-import * as AntIcons from '@ant-design/icons';
-import {createIcon} from '@simplepoint/shared/types/icon';
+import {createIcon, outlinedIconNames} from '@simplepoint/shared/types/icon';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 
-const allIconNames = Object.keys(AntIcons).filter((k) => /Outlined$/.test(k));
 
 const IconPicker: React.FC<WidgetProps> = ({id, value, disabled, readonly, autofocus, onChange, placeholder, rawErrors, options}) => {
   const {t} = useI18n();
   const opts = useMemo(() => {
-    const list = (options?.enumOptions as any[]) || allIconNames.map((name) => ({ value: name, label: name }));
+    const list = (options?.enumOptions as any[]) || outlinedIconNames.map((name) => ({ value: name, label: name }));
     return list.map((o) => ({
       value: o.value,
       label: (
@@ -36,7 +34,7 @@ const IconPicker: React.FC<WidgetProps> = ({id, value, disabled, readonly, autof
       disabled={disabled || readonly}
       autoFocus={autofocus}
       onChange={(v) => onChange(v)}
-      optionFilterProp="children"
+      optionFilterProp="value"
       options={opts}
       status={status as any}
       style={{ width: '100%' }}

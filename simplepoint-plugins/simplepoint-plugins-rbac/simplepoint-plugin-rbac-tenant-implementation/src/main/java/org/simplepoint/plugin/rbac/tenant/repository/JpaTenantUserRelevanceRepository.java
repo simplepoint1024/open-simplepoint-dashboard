@@ -118,6 +118,6 @@ public interface JpaTenantUserRelevanceRepository
   );
 
   @Override
-  @Query("select u.id from User u where u.id in ?1")
+  @Query("select u.id from User u where u.id in ?1 and u.deletedAt is null")
   Set<String> existingUserIds(Collection<String> userIds);
 }

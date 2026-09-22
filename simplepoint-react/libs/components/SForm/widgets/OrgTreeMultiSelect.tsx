@@ -1,94 +1,51 @@
 import type {WidgetProps} from '@rjsf/utils';
-import {get} from '@simplepoint/shared/api/methods';
+import {Alert, Space, Typography} from 'antd';
+import AssignmentTable from '../../AssignmentTable';
+import TableActions from '../../Table/Actions';
+import {post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import type {Page} from '@simplepoint/shared/types/request';
-import {
-  OrganizationTransferSelect,
-  type EntityTransferQuery,
-  type OrganizationTransferItem,
-} from '../../EntityTransfer';
+import type {RawPage} from '@simplepoint/shared/types/request';
 
-type OrganizationOptionPage = {
-  content: OrganizationTransferItem[];
-  number: number;
-  size: number;
-  hasNext: boolean;
-};
+type OrganizationRow = {id: string; name: string; code?: string; type?: string; description?: string; enabled?: boolean};
+const endpoint = '/common/platform/organizations/selection';
+const MAX_DRAFT_IDS = 2000;
 
-const endpoint = '/common/platform/organizations/options';
-
-function toTransferPage(result: OrganizationOptionPage, query: EntityTransferQuery): Page<OrganizationTransferItem> {
-  const number = result.number ?? query.page;
-  const size = result.size ?? query.pageSize;
-  const totalPages = number + 1 + (result.hasNext ? 1 : 0);
-  return {
-    content: result.content ?? [],
-    page: {
-      size,
-      number,
-      totalPages,
-      totalElements: result.hasNext ? totalPages * size : number * size + (result.content?.length ?? 0),
-    },
-  };
-}
-
-async function fetchOrganizationPage(query: EntityTransferQuery) {
-  const result = await get<OrganizationOptionPage>(endpoint, {
-    page: String(query.page),
-    size: String(query.pageSize),
-    flat: 'true',
-    ...(query.search.trim() ? {keyword: query.search.trim()} : {}),
-  });
-  return toTransferPage(result, query);
-}
-
-async function fetchSelectedOrganizations(keys: string[]) {
-  if (keys.length === 0) return [];
-  const batches: string[][] = [];
-  for (let index = 0; index < keys.length; index += 100) {
-    batches.push(keys.slice(index, index + 100));
-  }
-  const pages = await Promise.all(batches.map(batch => get<OrganizationOptionPage>(endpoint, {
-    ids: batch.join(','),
-    size: String(batch.length),
-  })));
-  return pages.flatMap(page => page.content ?? []);
-}
-
-const OrgTreeMultiSelect = ({value, disabled, readonly, onChange, rawErrors}: WidgetProps) => {
+/** Selection is a form draft. Neither moving rows nor querying a side persists any grant. */
+export default function OrgTreeMultiSelect({value, disabled, readonly, onChange, rawErrors}: WidgetProps) {
   const {t} = useI18n();
-  const selectedValues = Array.isArray(value) ? value.map(String) : [];
-
-  return (
-    <div
-      style={{
-        border: rawErrors && rawErrors.length > 0 ? '1px solid #ff4d4f' : undefined,
-        borderRadius: rawErrors && rawErrors.length > 0 ? 6 : undefined,
-        padding: rawErrors && rawErrors.length > 0 ? 4 : undefined,
+  const ids = [...new Set(Array.isArray(value) ? value.map(String) : [])];
+  const oversized = ids.length > MAX_DRAFT_IDS;
+  return <div style={{border: rawErrors?.length ? '1px solid #ff4d4f' : undefined, borderRadius: 6}}>
+    <Space wrap style={{marginBottom: 8}}>
+      <Typography.Text>{t('organizations.selector.draftCount', '草稿选择项')}：{ids.length}</Typography.Text>
+      <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'clear.selection', sort: 0,
+        text: t('organizations.selector.clearDraft', '清空草稿选择'), icon: 'ClearOutlined', danger: true,
+        argumentMinSize: 0, argumentMaxSize: 0, disabled: disabled || readonly || ids.length === 0}]}
+        onButtonEvents={{'clear.selection': () => {if (!disabled && !readonly) onChange(undefined);}}} />
+    </Space>
+    {oversized && <Alert type="error" showIcon title={t('organizations.selector.draftLimit', '组织选择草稿最多包含 2000 项，当前内容已保留，请先调整选择')} />}
+    {!oversized && <AssignmentTable<OrganizationRow> endpoint={endpoint} parent={{}} itemKey="id"
+      storageKey="organizations.form.selection" disabled={disabled || readonly || oversized} queryKey={[ids]} refreshAfterMove={false}
+      isRowDisabled={(selected, row) => !selected && row.enabled !== true}
+      labels={{available: t('organizations.selector.available', '可选组织'), assigned: t('organizations.selector.selected', '已选组织'),
+        assign: t('organizations.selector.addDraft', '加入选择'), unassign: t('organizations.selector.removeDraft', '移除选择')}}
+      columns={[
+        {key: 'name', dataIndex: 'name', title: t('organizations.title.name', '组织名称')},
+        {key: 'code', dataIndex: 'code', title: t('organizations.title.code', '组织编码')},
+        {key: 'type', dataIndex: 'type', title: t('organizations.title.type', '类型')},
+        {key: 'description', dataIndex: 'description', title: t('organizations.title.description', '描述')},
+        {key: 'enabled', dataIndex: 'enabled', title: t('organizations.title.enabled', '启用'),
+          render: value => value === true ? t('common.enabled', '启用') : value === false ? t('common.disabled', '停用') : value},
+      ]}
+      loadPage={({selected, filters, sort, page, size, signal}) => post<RawPage<OrganizationRow>>(endpoint,
+        {ids, selected, filters}, {params: {page, size, ...(sort ? {sort} : {})}, signal})}
+      onMove={async (selected, keys) => {
+        if (disabled || readonly) return;
+        const removed = new Set(keys);
+        const next = selected ? ids.filter(id => !removed.has(id)) : [...new Set([...ids, ...keys])];
+        if (next.length > MAX_DRAFT_IDS) throw new Error(t('organizations.selector.draftLimit', '组织选择草稿最多包含 2000 项，当前内容已保留，请先调整选择'));
+        onChange(next.length ? next : undefined);
       }}
-    >
-      <OrganizationTransferSelect
-        fetchItems={fetchOrganizationPage}
-        fetchSelectedItems={fetchSelectedOrganizations}
-        value={selectedValues}
-        onValueChange={(nextKeys) => onChange(nextKeys.length > 0 ? nextKeys : undefined)}
-        disabled={disabled || readonly}
-        listHeight={280}
-        defaultPageSize={5}
-        selectedLookupPageSize={0}
-        titles={[
-          t('organizations.selector.available', '可选组织'),
-          t('organizations.selector.selected', '已选组织'),
-        ]}
-        locale={{
-          itemUnit: t('organizations.selector.itemUnit', '项'),
-          itemsUnit: t('organizations.selector.itemsUnit', '项'),
-          searchPlaceholder: t('organizations.selector.searchPlaceholder', '搜索组织'),
-          notFoundContent: t('table.emptyText', '暂无数据'),
-        }}
-      />
-    </div>
-  );
-};
-
-export default OrgTreeMultiSelect;
+    />}
+  </div>;
+}

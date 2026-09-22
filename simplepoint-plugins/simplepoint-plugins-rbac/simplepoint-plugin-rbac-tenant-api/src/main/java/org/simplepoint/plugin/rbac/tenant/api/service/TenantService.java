@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.rbac.tenant.api.service;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import org.simplepoint.api.base.BaseService;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
@@ -136,6 +137,12 @@ public interface TenantService extends BaseService<Tenant, String> {
    * Loads a page of tenant members matching the optional keyword.
    */
   Page<UserRelevanceVo> userItems(String tenantId, String keyword, Pageable pageable);
+
+  /** Loads a SQL-filtered assignment side; null selected preserves the legacy all-candidate selector. */
+  Page<UserRelevanceVo> userItems(String tenantId, Boolean selected, Map<String, String> filters, Pageable pageable);
+
+  /** Returns the candidate query contract after checking management authority over the target tenant. */
+  Map<String, Object> userItemsSchema(String tenantId);
 
   /**
    * Loads tenant members for the specified tenant.

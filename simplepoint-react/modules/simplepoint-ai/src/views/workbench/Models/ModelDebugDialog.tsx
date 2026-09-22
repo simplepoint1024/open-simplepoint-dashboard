@@ -4,7 +4,7 @@ import {
   SendOutlined,
   StopOutlined,
   UserOutlined,
-} from '@ant-design/icons';
+} from '@simplepoint/shared/types/icon';
 import {post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {

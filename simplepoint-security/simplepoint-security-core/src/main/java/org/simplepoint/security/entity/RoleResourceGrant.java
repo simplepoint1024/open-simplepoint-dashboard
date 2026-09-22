@@ -16,21 +16,24 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 
-/**
- * Role-to-resource grant with optional data and field constraints.
- */
+/** Role-to-resource grant with optional data and field constraints. */
 @Data
 @Entity
 @EqualsAndHashCode(callSuper = true)
-@Table(name = "simpoint_ac_role_resource_grants")
+@Table(
+    name = "simpoint_ac_role_resource_grants",
+    indexes =
+        @jakarta.persistence.Index(
+            name = "idx_role_grant_overview",
+            columnList = "tenant_id,role_id,deleted_at,resource_code"))
 @Schema(title = "角色资源授权实体", description = "表示角色与资源之间的授权关系")
 public class RoleResourceGrant extends TenantBaseEntityImpl<String> {
 
-  @Column(nullable = false, length = 36)
+  @Column(name = "role_id", nullable = false, length = 36)
   @Schema(title = "角色标识", description = "被授权的角色 ID")
   private String roleId;
 
-  @Column(nullable = false, length = 120)
+  @Column(name = "resource_code", nullable = false, length = 120)
   @Schema(title = "资源编码", description = "被授权的资源编码")
   private String resourceCode;
 

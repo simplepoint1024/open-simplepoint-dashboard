@@ -41,24 +41,12 @@ services:
       timeout: 3s
       retries: 20
 
-  registry:
-    image: registry:2@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
-    restart: unless-stopped
-    expose:
-      - "5000"
-    ports:
-      - "127.0.0.1:5001:5000"
-
   tool-runtime:
     environment:
       SIMPLEPOINT_TOOL_RUNTIME_INTERNAL_SERVICE_ROUTES: >-
         postgres:5432=${SIMPLEPOINT_RUNTIME_POSTGRES_NETWORK:-open-simplepoint-runtime-postgres},
         postgres.mcp-e2e.local:5432=open-simplepoint-runtime-mcp-e2e-postgres,
         site.mcp-e2e.local:80=open-simplepoint-runtime-mcp-e2e-site
-
-  ai:
-    environment:
-      SIMPLEPOINT_AI_SKILL_ARTIFACT_SIGNATURE_REQUIRED: "false"
 
 networks:
   runtime-mcp-e2e-postgres:

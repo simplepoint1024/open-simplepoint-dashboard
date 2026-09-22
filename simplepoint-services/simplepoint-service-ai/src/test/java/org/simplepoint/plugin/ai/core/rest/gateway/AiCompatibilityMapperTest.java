@@ -53,6 +53,34 @@ class AiCompatibilityMapperTest {
   }
 
   @Test
+  void mapsAssistantToolCallTurnWithEmptyContent() throws Exception {
+    var body = objectMapper.readTree("""
+        {
+          "model": "public-model",
+          "messages": [
+            {"role": "system", "content": "Be concise"},
+            {"role": "user", "content": "What is the weather in Shanghai?"},
+            {"role": "assistant", "content": "", "tool_calls": [
+              {"id": "call-1", "type": "function", "function": {
+                "name": "weather", "arguments": "{\\"city\\":\\"Shanghai\\"}"
+              }}
+            ]},
+            {"role": "tool", "tool_call_id": "call-1", "content": "sunny"}
+          ]
+        }
+        """);
+
+    var request = mapper.fromOpenAi(body, "definition-1");
+
+    assertThat(request.messages()).extracting(message -> message.role())
+        .containsExactly(MessageRole.SYSTEM, MessageRole.USER, MessageRole.ASSISTANT, MessageRole.TOOL);
+    var assistant = request.messages().get(2);
+    assertThat(assistant.content()).extracting(ContentBlock::type)
+        .containsExactly(ContentType.TOOL_CALL);
+    assertThat(assistant.content().get(0).toolName()).isEqualTo("weather");
+  }
+
+  @Test
   void mapsAnthropicContentAndRejectsUnknownRole() throws Exception {
     var body = objectMapper.readTree("""
         {

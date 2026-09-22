@@ -1,4 +1,7 @@
 import {http, HttpResponse} from 'msw';
+import dictionarySchema from '../../../../../../scripts/common-main-schemas/Dictionary.json';
+import dictionaryItemSchema from '../../../../../../scripts/common-main-schemas/DictionaryItem.json';
+import {compileLocalQuery, type LocalFields} from '../../../../../../libs/components/DataTable/localQuery';
 
 const dictionariesBase = '/common/platform/dictionaries';
 const itemsBase = '/common/platform/dictionary-items';
@@ -173,52 +176,7 @@ let dictionaryItems: DictionaryItemRecord[] = [
   },
 ];
 
-const dictionarySchema = {
-  buttons: [
-    {key: 'add', title: 'i18n:table.button.add', authority: 'dictionaries.create', sort: 0, argumentMinSize: 0, argumentMaxSize: 0},
-    {key: 'edit', title: 'i18n:table.button.edit', authority: 'dictionaries.edit', sort: 1, argumentMinSize: 1, argumentMaxSize: 1},
-    {key: 'delete', title: 'i18n:table.button.delete', authority: 'dictionaries.delete', sort: 2, argumentMinSize: 1, argumentMaxSize: 10},
-    {key: 'config.item', title: 'i18n:dictionaries.button.config.item', authority: 'dictionaries.config.item', sort: 3, argumentMinSize: 1, argumentMaxSize: 1},
-  ],
-  schema: {
-    type: 'object',
-    properties: {
-      name: {type: 'string', title: 'i18n:dictionaries.title.name'},
-      code: {type: 'string', title: 'i18n:dictionaries.title.code'},
-      description: {type: 'string', title: 'i18n:dictionaries.title.description'},
-      sort: {type: 'integer', title: 'i18n:dictionaries.title.sort'},
-      enabled: {type: 'boolean', title: 'i18n:dictionaries.title.enabled'},
-    },
-  },
-};
-
-const dictionaryItemSchema = {
-  buttons: [
-    {key: 'add', title: 'i18n:table.button.add', authority: 'dictionaries.create', sort: 0, argumentMinSize: 0, argumentMaxSize: 0},
-    {key: 'edit', title: 'i18n:table.button.edit', authority: 'dictionaries.edit', sort: 1, argumentMinSize: 1, argumentMaxSize: 1},
-    {key: 'delete', title: 'i18n:table.button.delete', authority: 'dictionaries.delete', sort: 2, argumentMinSize: 1, argumentMaxSize: 10},
-  ],
-  schema: {
-    type: 'object',
-    properties: {
-      dictionaryCode: {type: 'string', title: 'i18n:dictionaries.title.dictionaryCode', 'x-ui': {'x-list-visible': 'false'}},
-      name: {type: 'string', title: 'i18n:dictionaries.title.itemName'},
-      i18nKey: {type: 'string', title: 'i18n:dictionaries.title.i18nKey'},
-      value: {type: 'string', title: 'i18n:dictionaries.title.value'},
-      description: {type: 'string', title: 'i18n:dictionaries.title.description'},
-      sort: {type: 'integer', title: 'i18n:dictionaries.title.sort'},
-      enabled: {type: 'boolean', title: 'i18n:dictionaries.title.enabled'},
-    },
-  },
-};
-
 const nextId = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
-
-const parseFilterValue = (raw: string | null) => {
-  if (!raw) return '';
-  const separatorIndex = raw.indexOf(':');
-  return separatorIndex === -1 ? raw : raw.slice(separatorIndex + 1);
-};
 
 const sortBySort = <T extends {sort?: number | null; name?: string; value?: string}>(content: T[]) =>
   [...content].sort((a, b) => {
@@ -230,19 +188,32 @@ const sortBySort = <T extends {sort?: number | null; name?: string; value?: stri
     return nameA.localeCompare(nameB);
   });
 
-const buildPage = <T,>(content: T[]) => ({
-  content,
-  page: {
-    size: 10,
-    number: 0,
-    totalElements: content.length,
-    totalPages: 1,
-  },
-});
+const queryPage = (rows: Array<DictionaryRecord | DictionaryItemRecord>, request: Request, items = false) => {
+  const url = new URL(request.url);
+  const page = Number(url.searchParams.get('page') ?? 0), size = Number(url.searchParams.get('size') ?? 20);
+  const parent = url.searchParams.get('parentDictionaryCode');
+  try {
+    if (!Number.isInteger(page) || page < 0 || !Number.isInteger(size) || size < 1 || size > 200) throw Error('分页范围超限');
+    if (parent !== null && (!parent.trim() || parent.length > 128)) throw Error('字典编码无效');
+    const schema = items ? dictionaryItemSchema : dictionarySchema;
+    const fields: LocalFields = Object.fromEntries(Object.entries(schema.schema['x-query'].fields).map(([name, field]) => [name,
+      {type: field.javaType === 'Boolean' ? 'boolean' : field.javaType === 'Integer' ? 'integer' : field.javaType === 'Instant' ? 'date-time' : 'string'}]));
+    const query = compileLocalQuery(fields, {
+      filters: Object.fromEntries([...url.searchParams].filter(([key]) => !['page', 'size', 'sort', 'parentDictionaryCode'].includes(key))),
+      sort: url.searchParams.getAll('sort'),
+    });
+    const matches = rows.filter(row => (!items || parent === null || (row as DictionaryItemRecord).dictionaryCode === parent)
+      && query.matches(row)).sort(query.compare);
+    return HttpResponse.json({content: matches.slice(page * size, (page + 1) * size),
+      page: {number: page, size, totalElements: matches.length, totalPages: Math.ceil(matches.length / size)}});
+  } catch {
+    return HttpResponse.json({code: 'INVALID_QUERY', message: '无效的字典查询条件'}, {status: 400});
+  }
+};
 
 export default [
   http.get(`${dictionariesBase}/schema`, () => HttpResponse.json(dictionarySchema)),
-  http.get(`${dictionariesBase}`, () => HttpResponse.json(buildPage(sortBySort(dictionaries)))),
+  http.get(`${dictionariesBase}`, ({request}) => queryPage(dictionaries, request)),
   http.post(`${dictionariesBase}`, async ({request}) => {
     const payload = await request.json() as Partial<DictionaryRecord>;
     const dictionary: DictionaryRecord = {
@@ -294,14 +265,7 @@ export default [
     return HttpResponse.json(options);
   }),
   http.get(`${itemsBase}/schema`, () => HttpResponse.json(dictionaryItemSchema)),
-  http.get(`${itemsBase}`, ({request}) => {
-    const url = new URL(request.url);
-    const dictionaryCode = parseFilterValue(url.searchParams.get('dictionaryCode'));
-    const content = sortBySort(
-      dictionaryItems.filter((item) => !dictionaryCode || item.dictionaryCode === dictionaryCode)
-    );
-    return HttpResponse.json(buildPage(content));
-  }),
+  http.get(`${itemsBase}`, ({request}) => queryPage(dictionaryItems, request, true)),
   http.post(`${itemsBase}`, async ({request}) => {
     const payload = await request.json() as Partial<DictionaryItemRecord>;
     const item: DictionaryItemRecord = {

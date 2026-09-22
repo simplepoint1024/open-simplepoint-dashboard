@@ -15,6 +15,9 @@ public final class TenantDictionaryCodes {
    */
   public static final String ORGANIZATION_TYPE = "organization.type";
 
+  /** Classification of a user's membership in one tenant. */
+  public static final String TENANT_MEMBER_USER_TYPE = "tenant.member.user-type";
+
   private TenantDictionaryCodes() {
   }
 }

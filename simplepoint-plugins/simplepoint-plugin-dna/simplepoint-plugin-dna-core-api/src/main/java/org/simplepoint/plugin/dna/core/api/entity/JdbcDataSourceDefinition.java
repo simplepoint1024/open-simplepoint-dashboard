@@ -74,6 +74,20 @@ import org.springframework.core.annotation.Order;
 })
 @Tag(name = "JDBC数据源定义", description = "用于管理 JDBC 数据源连接配置和运行时连接状态")
 @Schema(title = "i18n:dna.dataSources.entity.title", description = "i18n:dna.dataSources.entity.description")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("driverId"),
+    @org.simplepoint.core.query.QueryField("jdbcUrl"),
+    @org.simplepoint.core.query.QueryField("username"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("lastConnectStatus"),
+    @org.simplepoint.core.query.QueryField("lastConnectMessage"),
+    @org.simplepoint.core.query.QueryField("lastTestedAt"),
+    @org.simplepoint.core.query.QueryField("databaseProductName"),
+    @org.simplepoint.core.query.QueryField("databaseProductVersion")
+})
 public class JdbcDataSourceDefinition extends BaseEntityImpl<String> {
 
   @Order(0)

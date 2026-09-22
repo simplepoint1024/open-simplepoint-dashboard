@@ -64,5 +64,8 @@
   "resources.boolean.grantable": "Grantable",
   "resources.boolean.notGrantable": "Structure",
   "resources.boolean.enabled": "Enabled",
-  "resources.boolean.disabled": "Disabled"
+  "resources.boolean.disabled": "Disabled",
+  "resources.tree.search": "Search resource code, path, or name",
+  "resources.tree.empty": "No resources",
+  "resources.tree.emptyResources": "No grantable resources"
 }

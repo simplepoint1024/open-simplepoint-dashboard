@@ -73,6 +73,14 @@ import org.springframework.core.annotation.Order;
 @AllArgsConstructor
 @Tag(name = "应用对象", description = "用于管理租户下的应用")
 @Schema(title = "应用对象", description = "用于管理租户下的应用")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("homepage"),
+    @org.simplepoint.core.query.QueryField("sort"),
+    @org.simplepoint.core.query.QueryField("enabled")
+})
 public class Application extends BaseEntityImpl<String> {
 
   /**

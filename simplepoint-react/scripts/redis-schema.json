@@ -1,0 +1,143 @@
+{
+  "schema" : {
+    "$schema" : "http://json-schema.org/draft-07/schema#",
+    "type" : "object",
+    "properties" : {
+      "editable" : {
+        "type" : "boolean",
+        "title" : "i18n:monitoring.redis.stringKey",
+        "description" : ""
+      },
+      "key" : {
+        "type" : [ "string", "null" ],
+        "title" : "i18n:monitoring.redis.key",
+        "description" : ""
+      },
+      "observedAt" : {
+        "type" : [ "string", "null" ],
+        "format" : "date-time",
+        "title" : "i18n:monitoring.redis.observedAt",
+        "description" : ""
+      },
+      "persistent" : {
+        "type" : "boolean",
+        "title" : "i18n:monitoring.redis.permanentFlag",
+        "description" : ""
+      },
+      "size" : {
+        "type" : "integer",
+        "title" : "i18n:monitoring.redis.sizeObserved",
+        "description" : ""
+      },
+      "ttlSeconds" : {
+        "type" : "integer",
+        "title" : "i18n:monitoring.redis.ttlObserved",
+        "description" : ""
+      },
+      "type" : {
+        "type" : "string",
+        "enum" : [ "STRING", "HASH", "LIST", "SET", "ZSET", "STREAM", "UNKNOWN" ],
+        "title" : "i18n:monitoring.redis.type",
+        "description" : ""
+      }
+    },
+    "x-query" : {
+      "maxPageSize" : 100,
+      "maxNodes" : 32,
+      "maxDepth" : 4,
+      "maxSort" : 3,
+      "fields" : {
+        "key" : {
+          "operators" : [ "like", "not:like", "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+          "sortable" : true,
+          "javaType" : "String"
+        },
+        "type" : {
+          "operators" : [ "equals", "not:equals", "in", "not:in", "is:null", "is:not:null" ],
+          "sortable" : true,
+          "javaType" : "RedisEntryType"
+        },
+        "ttlSeconds" : {
+          "operators" : [ "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+          "sortable" : true,
+          "javaType" : "Long"
+        },
+        "persistent" : {
+          "operators" : [ "equals", "not:equals", "in", "not:in", "is:null", "is:not:null" ],
+          "sortable" : true,
+          "javaType" : "Boolean"
+        },
+        "size" : {
+          "operators" : [ "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+          "sortable" : true,
+          "javaType" : "Long"
+        },
+        "editable" : {
+          "operators" : [ "equals", "not:equals", "in", "not:in", "is:null", "is:not:null" ],
+          "sortable" : true,
+          "javaType" : "Boolean"
+        },
+        "observedAt" : {
+          "operators" : [ "equals", "not:equals", "in", "not:in", "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less", "is:null", "is:not:null" ],
+          "sortable" : true,
+          "javaType" : "Instant"
+        }
+      },
+      "relations" : [ ],
+      "version" : 1
+    }
+  },
+  "buttons" : [ {
+    "path" : "[default]",
+    "color" : "blue",
+    "authority" : "redis.entries.create",
+    "variant" : "outlined",
+    "icon" : "PlusOutlined",
+    "argumentMaxSize" : 0,
+    "sort" : 0,
+    "type" : "primary",
+    "title" : "i18n:table.button.add",
+    "danger" : false,
+    "argumentMinSize" : -1,
+    "key" : "add"
+  }, {
+    "path" : "[default]",
+    "color" : "blue",
+    "authority" : "redis.entries.view",
+    "variant" : "outlined",
+    "icon" : "EyeOutlined",
+    "argumentMaxSize" : 1,
+    "sort" : 1,
+    "type" : "primary",
+    "title" : "i18n:monitoring.redis.view",
+    "danger" : false,
+    "argumentMinSize" : 1,
+    "key" : "view"
+  }, {
+    "path" : "[default]",
+    "color" : "blue",
+    "authority" : "redis.entries.edit",
+    "variant" : "outlined",
+    "icon" : "EditOutlined",
+    "argumentMaxSize" : 1,
+    "sort" : 2,
+    "type" : "primary",
+    "title" : "i18n:table.button.edit",
+    "danger" : false,
+    "argumentMinSize" : 1,
+    "key" : "edit"
+  }, {
+    "path" : "[default]",
+    "color" : "blue",
+    "authority" : "redis.entries.delete",
+    "variant" : "outlined",
+    "icon" : "DeleteOutlined",
+    "argumentMaxSize" : 1,
+    "sort" : 3,
+    "type" : "primary",
+    "title" : "i18n:table.button.delete",
+    "danger" : true,
+    "argumentMinSize" : 1,
+    "key" : "delete"
+  } ]
+}

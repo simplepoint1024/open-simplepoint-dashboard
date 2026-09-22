@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Input, List, Modal, Tag, Typography} from 'antd';
-import {SearchOutlined} from '@ant-design/icons';
-import {createIcon} from '@simplepoint/shared/types/icon.ts';
+import {SearchOutlined} from '@simplepoint/shared/types/icon';
+import {createIcon} from '@simplepoint/shared/types/icon';
 import type {RouteInfo} from '@/store/routes';
 import {flattenRoutes} from '@/store/routes';
 

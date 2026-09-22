@@ -1,18 +1,30 @@
 import {Form} from "@rjsf/antd";
 import {FormProps} from "@rjsf/core";
-import {Button} from "antd";
+import {Button, Spin} from "antd";
 import "./index.css";
 import validator from "@rjsf/validator-ajv8";
 import {RJSFValidationError, SubmitButtonProps} from "@rjsf/utils";
-import {memo, useMemo} from "react";
-import IconPicker from "./widgets/IconPicker";
-import OrgTreeMultiSelect from "./widgets/OrgTreeMultiSelect";
-import OrganizationSelect from "./widgets/OrganizationSelectWidget";
-import RemoteSelect from "./widgets/RemoteSelect";
-import OssFileWidget from "./widgets/OssFileWidget";
-import OssImageWidget from "./widgets/OssImageWidget";
-import UserPicker from "./widgets/UserPicker";
+import {lazy, memo, Suspense, useMemo, type ComponentType} from "react";
+import type {WidgetProps} from "@rjsf/utils";
 import {useI18n} from "@simplepoint/shared/hooks/useI18n";
+
+// Keep optional widget dependencies out of forms which do not use them.
+const lazyWidget = (load: () => Promise<{default: ComponentType<WidgetProps>}>) => {
+  const Widget = lazy(load);
+  return (props: WidgetProps) => (
+    <Suspense fallback={<Spin size="small" />}>
+      <Widget {...props} />
+    </Suspense>
+  );
+};
+
+const IconPicker = lazyWidget(() => import('./widgets/IconPicker'));
+const OrgTreeMultiSelect = lazyWidget(() => import('./widgets/OrgTreeMultiSelect'));
+const OrganizationSelect = lazyWidget(() => import('./widgets/OrganizationSelectWidget'));
+const RemoteSelect = lazyWidget(() => import('./widgets/RemoteSelect'));
+const OssFileWidget = lazyWidget(() => import('./widgets/OssFileWidget'));
+const OssImageWidget = lazyWidget(() => import('./widgets/OssImageWidget'));
+const UserPicker = lazyWidget(() => import('./widgets/UserPicker'));
 
 type SFormProps = Omit<FormProps, "validator">& {
   i18nNamespaces?: string[];

@@ -31,7 +31,7 @@ function injectCustomDepsSchema(schema: any): any {
     const nonCustomEnums = typeEnumValues.filter((v: string) => v !== 'CUSTOM');
 
     // Move customDeptIds out of top-level properties into dependencies
-    const customDeptIdsDef = {...CUSTOM_DEPT_IDS_SCHEMA, title: props.customDeptIds?.title};
+    const customDeptIdsDef = {...props.customDeptIds, ...CUSTOM_DEPT_IDS_SCHEMA, title: props.customDeptIds?.title};
     delete props.customDeptIds;
 
     next.dependencies = {

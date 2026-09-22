@@ -1,0 +1,69 @@
+/* The tab panel clips overflow; each page owns its scrolling viewport. */
+.sp-home {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 12px 0 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+}
+.sp-home:focus-visible { outline: 2px solid var(--home-primary); outline-offset: -2px; }
+.sp-home-welcome { display: flex; gap: 20px; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.sp-home-eyebrow { color: var(--home-primary); font-size: 13px; margin-bottom: 8px; }
+.sp-home h1 { font-size: clamp(22px, 2.4vw, 30px); line-height: 1.3; margin: 0 0 10px; }
+.sp-home-welcome p { margin: 0; color: var(--home-muted); }
+.sp-home-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; align-items: start; gap: 20px; }
+.sp-home-main, .sp-home-aside { display: grid; gap: 20px; min-width: 0; }
+.sp-home-panel { border: 1px solid var(--home-border); border-radius: 12px; padding: 20px; background: var(--home-bg); min-width: 0; }
+.sp-home h2 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; }
+.sp-home-section-heading { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+.sp-home-group + .sp-home-group { margin-top: 24px; }
+.sp-home-group h3 { font-size: 14px; font-weight: 500; margin: 16px 0 12px; }
+.sp-home-apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(170px, 100%), 1fr)); gap: 10px; }
+.sp-home-app { display: flex; gap: 12px; align-items: center; padding: 14px; min-height: 66px; border: 1px solid var(--home-border); border-radius: 8px; color: inherit; text-decoration: none; overflow-wrap: anywhere; transition: background-color .15s, border-color .15s; }
+.sp-home-app:hover, .sp-home-app:focus-visible { border-color: var(--home-primary); background: var(--home-tint); color: inherit; }
+.sp-home-app:focus-visible { outline: 2px solid var(--home-primary); outline-offset: 2px; }
+.sp-home-app-icon { background: var(--home-tint); color: var(--home-primary); border-radius: 8px; display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; font-size: 20px; }
+.sp-home-muted { color: var(--home-muted, inherit); opacity: .8; }
+.sp-home-caption { font-size: 12px; margin-bottom: 0; }
+.sp-home-time { display: block; font-size: 44px; font-variant-numeric: tabular-nums; line-height: 1.25; margin-top: 24px; letter-spacing: -1px; }
+.sp-home-clock dl { margin: 24px 0 0; }
+.sp-home-clock dl > div { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin: 12px 0; }
+.sp-home-clock dt { color: var(--home-muted); flex-shrink: 0; }
+.sp-home-clock dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.sp-home-clock dd .ant-tag { margin: 0; }
+.sp-home-actions { display: grid; gap: 10px; margin-top: 20px; }
+.sp-home-actions .ant-btn { justify-content: start; }
+.sp-home-calendar-nav { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 10px; }
+.sp-home-calendar table { table-layout: fixed; border-collapse: separate; border-spacing: 2px; width: 100%; }
+.sp-home-calendar th { font-size: 12px; font-weight: 400; color: var(--home-muted); text-align: center; padding-bottom: 6px; }
+.sp-home-calendar td { padding: 0; text-align: center; }
+.sp-home-calendar td button { border: 1px solid transparent; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; width: 100%; height: 32px; padding: 0; font: inherit; font-size: 13px; font-variant-numeric: tabular-nums; }
+.sp-home-calendar td button.is-other-month { color: var(--home-muted); opacity: .6; }
+.sp-home-calendar td button:hover { background: var(--home-tint); }
+.sp-home-calendar td button[aria-current="date"] { border-color: var(--home-primary); color: var(--home-primary); font-weight: 600; }
+.sp-home-calendar td button[aria-pressed="true"] { background: var(--home-primary); color: #fff; opacity: 1; }
+.sp-home-calendar td button:focus-visible { outline: 2px solid var(--home-primary); outline-offset: 1px; }
+.sp-home-calendar td button:disabled { cursor: default; opacity: .3; }
+.sp-home-calendar-selected { font-size: 12px; margin: 12px 0 0; overflow-wrap: anywhere; }
+.sp-home-editor { max-height: 65vh; overflow: auto; padding: 4px; }
+.sp-home-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.sp-home-edit-group { padding: 12px; border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-radius: 8px; margin-bottom: 12px; }
+.sp-home-group-tools { display: flex; gap: 8px; margin-bottom: 10px; }
+.sp-home-editor .ant-select { width: 100%; }
+.sp-home-location-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
+.sp-home-location-fields label { display: grid; gap: 8px; }
+@media (max-width: 1100px) { .sp-home-layout { grid-template-columns: minmax(0, 1fr); } .sp-home-aside { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .sp-home { padding: 12px; } .sp-home-welcome { align-items: start; flex-direction: column; } .sp-home-aside, .sp-home-location-fields { grid-template-columns: minmax(0, 1fr); } .sp-home-panel { padding: 16px; } }
+.sp-home-personal {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
+.sp-home-personal > .sp-home-panel {min-height: 280px;}
+.sp-home-personal > .ant-alert {grid-column:1/-1;}
+.sp-home-personal .sp-home-section-heading {flex-wrap:wrap;gap:8px;}
+.sp-home-personal-list {padding:0;list-style:none;margin:0;}
+.sp-home-personal-list li {padding:10px 0;border-bottom:1px solid var(--home-border);overflow-wrap:anywhere;}
+.sp-home-personal-list li:last-child {border-bottom:0;}
+@media(max-width:1200px) {.sp-home-personal {grid-template-columns:1fr;}}

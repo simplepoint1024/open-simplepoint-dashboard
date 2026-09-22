@@ -23,9 +23,7 @@ import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 import org.simplepoint.plugin.storage.api.model.ObjectStoragePlatformType;
 import org.springframework.core.annotation.Order;
 
-/**
- * Persisted object metadata.
- */
+/** Persisted object metadata. */
 @Data
 @Entity
 @Table(name = "simpoint_storage_objects")
@@ -34,15 +32,33 @@ import org.springframework.core.annotation.Order;
 @AllArgsConstructor
 @Tag(name = "对象存储对象", description = "记录对象存储中的文件元信息")
 @Schema(title = "对象存储对象", description = "记录对象存储中的文件元信息")
+@org.simplepoint.core.query.TableQuery({
+  @org.simplepoint.core.query.QueryField("providerCode"),
+  @org.simplepoint.core.query.QueryField("providerType"),
+  @org.simplepoint.core.query.QueryField("bucket"),
+  @org.simplepoint.core.query.QueryField("objectKey"),
+  @org.simplepoint.core.query.QueryField("originalFileName"),
+  @org.simplepoint.core.query.QueryField("contentType"),
+  @org.simplepoint.core.query.QueryField("contentLength"),
+  @org.simplepoint.core.query.QueryField("eTag"),
+  @org.simplepoint.core.query.QueryField("accessUrl"),
+  @org.simplepoint.core.query.QueryField("sourceServiceName"),
+  @org.simplepoint.core.query.QueryField("createdAt"),
+  @org.simplepoint.core.query.QueryField("updatedAt")
+})
 public class ObjectStorageObject extends TenantBaseEntityImpl<String> {
 
   @Order(0)
-  @Schema(title = "i18n:storage.object.providerCode", description = "i18n:storage.object.providerCode.desc")
+  @Schema(
+      title = "i18n:storage.object.providerCode",
+      description = "i18n:storage.object.providerCode.desc")
   @Column(name = "provider_code", length = 64, nullable = false)
   private String providerCode;
 
   @Order(1)
-  @Schema(title = "i18n:storage.object.providerType", description = "i18n:storage.object.providerType.desc")
+  @Schema(
+      title = "i18n:storage.object.providerType",
+      description = "i18n:storage.object.providerType.desc")
   @Enumerated(EnumType.STRING)
   @Column(name = "provider_type", length = 32, nullable = false)
   private ObjectStoragePlatformType providerType;
@@ -53,7 +69,9 @@ public class ObjectStorageObject extends TenantBaseEntityImpl<String> {
   private String bucket;
 
   @Order(3)
-  @Schema(title = "i18n:storage.object.objectKey", description = "i18n:storage.object.objectKey.desc")
+  @Schema(
+      title = "i18n:storage.object.objectKey",
+      description = "i18n:storage.object.objectKey.desc")
   @Column(name = "object_key", length = 768, nullable = false)
   private String objectKey;
 
@@ -63,12 +81,16 @@ public class ObjectStorageObject extends TenantBaseEntityImpl<String> {
   private String originalFileName;
 
   @Order(5)
-  @Schema(title = "i18n:storage.object.contentType", description = "i18n:storage.object.contentType.desc")
+  @Schema(
+      title = "i18n:storage.object.contentType",
+      description = "i18n:storage.object.contentType.desc")
   @Column(name = "content_type", length = 255)
   private String contentType;
 
   @Order(6)
-  @Schema(title = "i18n:storage.object.contentLength", description = "i18n:storage.object.contentLength.desc")
+  @Schema(
+      title = "i18n:storage.object.contentLength",
+      description = "i18n:storage.object.contentLength.desc")
   @Column(name = "content_length")
   private Long contentLength;
 
@@ -76,15 +98,20 @@ public class ObjectStorageObject extends TenantBaseEntityImpl<String> {
   @Schema(title = "i18n:storage.object.eTag", description = "i18n:storage.object.eTag.desc")
   @Column(name = "etag", length = 255)
   @SuppressWarnings("checkstyle:MemberName")
+  @com.fasterxml.jackson.annotation.JsonProperty("eTag")
   private String eTag;
 
   @Order(8)
-  @Schema(title = "i18n:storage.object.accessUrl", description = "i18n:storage.object.accessUrl.desc")
+  @Schema(
+      title = "i18n:storage.object.accessUrl",
+      description = "i18n:storage.object.accessUrl.desc")
   @Column(name = "access_url", length = 1024)
   private String accessUrl;
 
   @Order(9)
-  @Schema(title = "i18n:storage.object.sourceService", description = "i18n:storage.object.sourceService.desc")
+  @Schema(
+      title = "i18n:storage.object.sourceService",
+      description = "i18n:storage.object.sourceService.desc")
   @Column(name = "source_service_name", length = 128)
   private String sourceServiceName;
 }

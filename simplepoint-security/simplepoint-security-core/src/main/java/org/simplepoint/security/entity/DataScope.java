@@ -69,6 +69,14 @@ import org.simplepoint.core.constants.PublicButtonKeys;
     )
 })
 @Schema(title = "数据范围", description = "定义行级数据访问范围策略")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("id"),
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("type"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("createdAt"),
+    @org.simplepoint.core.query.QueryField("updatedAt")
+})
 public class DataScope extends TenantBaseEntityImpl<String> {
 
   @Schema(title = "i18n:data-scopes.title.name", description = "i18n:data-scopes.description.name")
@@ -82,6 +90,7 @@ public class DataScope extends TenantBaseEntityImpl<String> {
 
   @Schema(title = "i18n:data-scopes.title.customDeptIds", description = "i18n:data-scopes.description.customDeptIds")
   @ElementCollection(fetch = FetchType.EAGER)
+  @org.hibernate.annotations.BatchSize(size = 100)
   @CollectionTable(name = "simpoint_ac_data_scope_dept", joinColumns = @JoinColumn(name = "data_scope_id"))
   @Column(name = "dept_id", nullable = false)
   private Set<String> customDeptIds = new HashSet<>();

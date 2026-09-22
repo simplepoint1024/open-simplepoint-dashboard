@@ -1,6 +1,7 @@
 import {useData, usePage} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {App as AntApp, Button, Card, Checkbox, Empty, Input, Space, Table, Tag, Tooltip} from 'antd';
+import {App as AntApp, Button, Card, Checkbox, Empty, Input, Space, Tag, Tooltip} from 'antd';
+import Table from '@simplepoint/components/DataTable';
 import type {ColumnsType, TablePaginationConfig} from 'antd/es/table';
 import {
   CheckCircleOutlined,
@@ -8,7 +9,7 @@ import {
   DeleteOutlined,
   PlusOutlined,
   SearchOutlined,
-} from '@ant-design/icons';
+} from '@simplepoint/shared/types/icon';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   type JdbcUserDataSourceItem,

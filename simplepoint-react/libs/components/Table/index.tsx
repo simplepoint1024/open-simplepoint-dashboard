@@ -1,6 +1,6 @@
-import React, {MouseEventHandler, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import type {TableRowSelection} from 'antd/es/table/interface';
-import {Button, Col, Row, Space, Table as AntTable, Tag, Tooltip, type ButtonProps, type TableProps as AntTableProps} from 'antd';
+import {App as AntApp, Button, Col, Row, Space, Table as AntTable, Tag, Tooltip, type ButtonProps, type TableProps as AntTableProps} from 'antd';
 import {
   ClearOutlined,
   FilterFilled,
@@ -10,7 +10,7 @@ import {
   InboxOutlined,
   ReloadOutlined,
   SettingOutlined,
-} from '@ant-design/icons';
+} from '@simplepoint/shared/types/icon';
 import type {ColumnType, ColumnsType} from 'antd/es/table';
 import {Resizable} from 'react-resizable';
 import 'react-resizable/css/styles.css';
@@ -18,9 +18,16 @@ import {RJSFSchema} from '@rjsf/utils';
 import {Page, toPagination} from '@simplepoint/shared/types/request';
 import {createIcon} from '@simplepoint/shared/types/icon';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {isRowSelectionClick} from './rowClickSelection';
 import {get, put} from '@simplepoint/shared/api/methods';
 import {request} from '@simplepoint/shared/api/client';
+import TableActions from './Actions';
+export {default as TableActions} from './Actions';
 import ColumnFilter, {ColumnFilterType} from './ColumnFilter';
+import {parseColumnFilter} from './filters';
+import QueryTools from './QueryTools';
+import {pageSizeOptions} from './pagination';
+import {encodeDocument, readDocument, validateView, type QueryContract} from './query';
 import ColumnSettings, {
   ColumnFixed,
   ColumnSetting,
@@ -56,11 +63,15 @@ export interface TableProps<T> {
   columnOverrides?: Record<string, Partial<ColumnType<T>> & { order?: number }>;
   filters?: Record<string, string>;
   onFilterChange?: (filters: Record<string, string>) => void;
-  sorter?: string; // Spring format: "field,asc" or "field,desc"
+  sorter?: string | string[];
+  onQueryChange?: (filters: Record<string, string>, sort?: string | string[]) => void;
+  /** Opt-in for large flat pages; never enabled for expandable or variable-height rows. */
+  virtual?: boolean;
   onChange?: (pagination: any, filters?: any, sorter?: any, extra?: any) => void;
   rowSelection?: { selectedKeys?: React.Key[] };
   onSelectionChange?: (selectedRowKeys: React.Key[], selectedRows: T[]) => void;
   onRowDoubleClick?: (record: T, key: React.Key) => void;
+  onRowClick?: (record: T, key: React.Key) => void;
   onButtonEvents?: Record<string, (selectedRowKeys: React.Key[], selectedRows: T[], props: TableButtonProps) => void>;
   isButtonDisabled?: (
     button: TableButtonProps,
@@ -70,18 +81,9 @@ export interface TableProps<T> {
   buttons?: TableButtonProps[]
   storageKey?: string;
   expandable?: AntTableProps<T>['expandable'];
+  /** Row controls follow the first visible business column after user column preferences. */
+  rowLeadingExtra?: (record: T) => React.ReactNode;
 }
-
-const parseOp = (stored?: string) => {
-  if (!stored) return 'like';
-  const idx = stored.indexOf(':');
-  return idx === -1 ? stored : stored.slice(0, idx);
-};
-const parseText = (stored?: string) => {
-  if (!stored) return '';
-  const idx = stored.indexOf(':');
-  return idx === -1 ? '' : stored.slice(idx + 1);
-};
 
 const parseVisibleTriState = (val: any): boolean | undefined => {
   if (val === true || val === 'true' || val === 1 || val === '1') return true;
@@ -250,19 +252,13 @@ const ResizableTitle = (props: React.HTMLAttributes<HTMLTableCellElement> & { on
 
 const App = <T extends object = any>(props: TableProps<T>) => {
   const {t, locale} = useI18n();
+  const contract = (props.schema as any)?.['x-query'] as QueryContract | undefined;
+  const {message} = AntApp.useApp();
+  const sortList = useMemo(() => props.sorter ? (Array.isArray(props.sorter) ? props.sorter : [props.sorter]) : [], [props.sorter]);
   const [filters, setFilters] = useState<Record<string, string>>(props.filters ?? {});
 
   // ── 列配置持久化类型 ───────────────────────────────────────────────────────
   type StoredColConfig = { visible: boolean; fixed?: ColumnFixed | null; order?: number };
-
-  // 解析外部传入的排序状态，用于给对应列设置 sortOrder
-  const [sortField, sortDir] = useMemo(() => {
-    const s = props.sorter ?? '';
-    const idx = s.lastIndexOf(',');
-    if (!s) return [undefined, undefined];
-    if (idx === -1) return [s, 'asc'];
-    return [s.slice(0, idx), s.slice(idx + 1)];
-  }, [props.sorter]);
 
   // ── 动态计算表格体可滚动高度 ─────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null);
@@ -281,6 +277,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     };
     const ro = new ResizeObserver(update);
     if (containerRef.current) ro.observe(containerRef.current);
+    if (toolbarRef.current) ro.observe(toolbarRef.current);
     update();
     return () => ro.disconnect();
   }, []);
@@ -595,8 +592,9 @@ const App = <T extends object = any>(props: TableProps<T>) => {
         const isNumber = scalarType === 'number' || scalarType === 'integer';
         const align = key === 'icon' ? 'center' : (isNumber ? 'right' : undefined);
         const dictionaryCode = resolveDictionaryCode(schemaDef);
-        const dictionaryOptions = dictionaryCode ? resolveDictionaryOptions(schemaDef) : undefined;
-        const hasOptions = resolveDictionaryOptions(schemaDef).length > 0;
+        const resolvedOptions = resolveDictionaryOptions(schemaDef);
+        const hasOptions = resolvedOptions.length > 0;
+        const dictionaryOptions = dictionaryCode || hasOptions ? resolvedOptions : undefined;
 
         const renderCell = isBoolean
           ? (val: any) => {
@@ -659,6 +657,9 @@ const App = <T extends object = any>(props: TableProps<T>) => {
         })();
 
         const isActive = Boolean(filters[key]);
+        const capability = contract?.fields[key];
+        const structuredFilter = readDocument(filters[key]);
+        const sortDirection = sortList.find(s => s.split(',')[0] === key)?.split(',')[1];
 
         const defaultWidth = isBoolean || key === 'icon'
           ? DEFAULT_ICON_COLUMN_WIDTH
@@ -669,11 +670,9 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           dataIndex: key,
           key,
           align,
-          sorter: true,
+          sorter: contract ? (capability?.sortable ? {multiple: sortList.some(s => s.split(',')[0] === key) ? 100 - sortList.findIndex(s => s.split(',')[0] === key) : 1} : false) : true,
           showSorterTooltip: false,
-          sortOrder: key === sortField
-            ? (sortDir === 'asc' ? 'ascend' : 'descend')
-            : null,
+          sortOrder: sortDirection === 'asc' ? 'ascend' : sortDirection === 'desc' ? 'descend' : null,
           ...((!displaySettings.wrapText && !isBoolean && key !== 'icon') ? {ellipsis: true} : {}),
         };
 
@@ -681,17 +680,27 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           <div onKeyDown={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}
                onClick={(e) => e.stopPropagation()}>
             <ColumnFilter
-              initialOp={parseOp(filters[key])}
-              initialText={parseText(filters[key])}
+              initialOp={structuredFilter?.op ?? parseColumnFilter(filters[key]).op}
+              initialValue={structuredFilter?.value}
+              operators={capability?.operators}
+              javaType={capability?.javaType}
+              format={(schemaDef as any)?.format}
+              initialText={parseColumnFilter(filters[key]).text}
               columnType={columnFilterType}
               columnLabel={typeof baseTitle === 'string' ? baseTitle : key}
               options={dictionaryOptions}
-              onChange={(op: string, text: string) => {
+              onChange={(op: string, text: string, typedValue) => {
                 // is:null / is:not:null 不需要 text
                 const isNullOp = op === 'is:null' || op === 'is:not:null';
-                const value = (isNullOp || text) ? `${op}${text ? `:${text}` : ''}` : '';
+                const value = (isNullOp || text) ? capability
+                  ? encodeDocument({field: key, op, ...(isNullOp ? {} : {value: typedValue})})
+                  : `${op}${text ? `:${text}` : ''}` : '';
                 const next = {...filters};
                 if (value) next[key] = value; else delete next[key];
+                if (contract) {
+                  try {validateView({name: 'header', filters: next, sort: props.sorter}, contract);}
+                  catch (e) {void message.error((e as Error).message); return;}
+                }
                 setFilters(next);
                 if (props.onFilterChange) props.onFilterChange(next);
                 else props.refresh();
@@ -706,6 +715,10 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           ? <FilterFilled style={{color: '#1677ff', fontSize: 13}}/>
           : <FilterOutlined style={{opacity: 0.4, fontSize: 12}}/>;
 
+        if (contract && !capability?.operators.length) {
+          column.filterDropdown = undefined;
+          column.filterIcon = undefined;
+        }
         column.render = (renderCell ?? textEllipsisRender) as ColumnType<T>['render'];
 
         const override = props.columnOverrides?.[key] as (Partial<ColumnType<T>> & { order?: number }) | undefined;
@@ -753,8 +766,22 @@ const App = <T extends object = any>(props: TableProps<T>) => {
         return fixedRank(left.column.fixed) - fixedRank(right.column.fixed)
           || left.order - right.order;
       })
-      .map((item) => item.column);
-  }, [properties, colConfigs, visibleKeys, filters, sortField, sortDir, colWidths, displaySettings.wrapText, handleResize, props.onFilterChange, props.refresh, props.columnOverrides, t, locale])
+      .map((item, index) => {
+        if (index !== 0 || !props.rowLeadingExtra) return item.column;
+        const original = item.column.render;
+        return {...item.column, render: (value: any, record: T, rowIndex: number) => {
+          const extra = props.rowLeadingExtra?.(record);
+          const rendered = original ? original(value, record, rowIndex) : value;
+          if (!extra) return rendered;
+          const wrap = (content: React.ReactNode) => <Space size={4} wrap>{content}{extra}</Space>;
+          if (rendered && typeof rendered === 'object' && !React.isValidElement(rendered)
+            && !('$$typeof' in rendered) && 'children' in rendered) {
+            return {...rendered, children: wrap(rendered.children)};
+          }
+          return wrap(rendered as React.ReactNode);
+        }};
+      });
+  }, [properties, colConfigs, visibleKeys, filters, contract, sortList, colWidths, displaySettings.wrapText, handleResize, props.onFilterChange, props.refresh, props.columnOverrides, props.rowLeadingExtra, t, locale])
 
   const anonKeyMapRef = useRef(new WeakMap<object, number>());
   const anonKeySeqRef = useRef(1);
@@ -793,6 +820,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
 
   const pagination = {
     ...toPagination(props.pageable),
+    pageSizeOptions: pageSizeOptions(contract?.maxPageSize),
     showSizeChanger: displaySettings.showSizeChanger,
     showQuickJumper: displaySettings.showQuickJumper,
     showTotal: (total: number) => t('table.total', '共 {total} 条', {total}),
@@ -812,7 +840,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     const currentRows = selectedRowKeys
       .map((key) => rowByKey.get(key))
       .filter((row): row is T => !!row);
-    return currentRows.length === selectedRowKeys.length ? currentRows : selectedRows;
+    return currentRows;
   }, [rowByKey, selectedRowKeys, selectedRows]);
 
   const onSelectChange = useCallback(
@@ -824,76 +852,9 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     [props],
   );
 
-  const onButtonEvent = (button: TableButtonProps): MouseEventHandler<HTMLElement> | undefined => {
-    if (button.onClick) return button.onClick as MouseEventHandler<HTMLElement>;
-    if (props.onButtonEvents && props.onButtonEvents[button.key]) {
-      return () => {
-        props.onButtonEvents![button.key](selectedRowKeys, getSelectedRowsForEvent(), button);
-      };
-    }
-    return undefined;
-  };
-
-  const onButtonDisabled = (button: TableButtonProps): boolean => {
-    if (button.disabled) return true;
-    const {argumentMinSize, argumentMaxSize} = button;
-    const size = selectedRowKeys.length;
-    if (typeof argumentMinSize === 'number' && argumentMinSize !== -1 && size < argumentMinSize) return true;
-    if (typeof argumentMaxSize === 'number' && argumentMaxSize !== -1 && size > argumentMaxSize) return true;
-    return props.isButtonDisabled?.(
-      button,
-      selectedRowKeys,
-      getSelectedRowsForEvent(),
-    ) ?? false;
-  };
-
   const rowSelection: TableRowSelection<T> = {
     selectedRowKeys,
     onChange: (keys: React.Key[], rows: T[]) => onSelectChange(keys, rows),
-  };
-
-  const renderButtons = (buttons?: TableButtonProps[]) => {
-    if (!buttons || buttons.length === 0) return null;
-
-    const getButtonText = (button: TableButtonProps) => {
-      const anyBtn: any = button as any;
-      const raw = anyBtn.text ?? anyBtn.title ?? button.key;
-      if (typeof raw === 'string' && raw.startsWith('i18n:')) {
-        const key = raw.slice(5);
-        return t(key, key);
-      }
-      return t(`table.button.${button.key}`, raw);
-    };
-
-    const getButtonTitleAttr = (button: TableButtonProps): string | undefined => {
-      const anyBtn: any = button as any;
-      const raw = anyBtn.title as any;
-      if (typeof raw === 'string' && raw.startsWith('i18n:')) {
-        const key = raw.slice(5);
-        return t(key, key);
-      }
-      return typeof raw === 'string' ? t(`table.button.${button.key}.title`, raw) : undefined;
-    };
-
-    return buttons.map((button) => {
-      const {argumentMinSize, argumentMaxSize, sort, color, variant, text, icon, title, ...rest} = button as any;
-      const mapped: any = {...rest};
-      mapped.className = ['sp-table-button', mapped.className].filter(Boolean).join(' ');
-      if (color === 'danger') mapped.danger = true;
-      if (variant === 'outlined') mapped.ghost = true;
-      const iconNode = typeof icon === 'string' ? createIcon(icon) : icon;
-      const localizedTitle = getButtonTitleAttr(button);
-      if (localizedTitle) mapped.title = localizedTitle;
-      return (
-        <Button
-          {...mapped}
-          key={button.key}
-          onClick={onButtonEvent(button)}
-          disabled={onButtonDisabled(button)}
-          icon={iconNode}
-        >{getButtonText(button)}</Button>
-      );
-    });
   };
 
   const emptyText = useMemo(() => (
@@ -909,7 +870,8 @@ const App = <T extends object = any>(props: TableProps<T>) => {
         <Row justify="space-between" align="middle" className="sp-table-toolbar-row">
           <Col className="sp-table-toolbar-main">
             <Space className="sp-table-button-group" size={[8, 8]} wrap>
-              {renderButtons(props.buttons)}
+              <TableActions buttons={props.buttons} selectedKeys={selectedRowKeys} selectedRows={getSelectedRowsForEvent()}
+                onButtonEvents={props.onButtonEvents} isButtonDisabled={props.isButtonDisabled} />
               {selectedRowKeys.length > 0 && (
                 <Tag
                   className="sp-table-selected-tag"
@@ -923,7 +885,9 @@ const App = <T extends object = any>(props: TableProps<T>) => {
             </Space>
           </Col>
           <Col className="sp-table-toolbar-actions">
-            <Space size={4}>
+            <Space size={4} wrap>
+              {contract?.version === 1 && props.onQueryChange && <QueryTools contract={contract} properties={properties}
+                filters={filters} sort={props.sorter} storageKey={props.storageKey} onApply={props.onQueryChange} />}
               {Object.keys(filters).length > 0 && (
                 <Tooltip title={t('table.clearFilters', '清除全部筛选')}>
                   <Button
@@ -984,14 +948,23 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           columns={columns}
           dataSource={dataSource}
           expandable={props.expandable}
-          loading={props.loading}
+          loading={{spinning: !!props.loading, delay: 200}}
           pagination={pagination}
           size={displaySettings.size}
           sticky={displaySettings.stickyHeader}
           rowKey={keyOfRecord}
           onChange={props.onChange}
-          onRow={props.onRowDoubleClick ? record => ({
+          onRow={record => ({
+            onClick: event => {
+              if (!isRowSelectionClick(event)) return;
+              const key = keyOfRecord(record);
+              const keys = selectedRowKeys.includes(key)
+                ? selectedRowKeys.filter(selected => selected !== key) : [...selectedRowKeys, key];
+              onSelectChange(keys, keys.map(selected => rowByKey.get(selected)).filter((row): row is T => !!row));
+              props.onRowClick?.(record, key);
+            },
             onDoubleClick: event => {
+              if (!props.onRowDoubleClick) return;
               const target = event.target as HTMLElement | null;
               if (target?.closest('button, a, input, textarea, select, [role="button"], .ant-checkbox-wrapper')) {
                 return;
@@ -1000,9 +973,11 @@ const App = <T extends object = any>(props: TableProps<T>) => {
               onSelectChange([key], [record]);
               props.onRowDoubleClick?.(record, key);
             },
-          }) : undefined}
+          })}
           rowSelection={rowSelection}
-          scroll={{y: scrollY, x: 'max-content'}}
+          virtual={props.virtual === true && !props.expandable && !displaySettings.wrapText && dataSource.length >= 100}
+          scroll={{y: scrollY, x: props.virtual === true && !props.expandable && !displaySettings.wrapText && dataSource.length >= 100
+            ? columns.reduce((width, column) => width + (typeof column.width === 'number' ? column.width : 150), 48) : 'max-content'}}
           locale={{emptyText}}
           components={{header: {cell: ResizableTitle}}}
         />

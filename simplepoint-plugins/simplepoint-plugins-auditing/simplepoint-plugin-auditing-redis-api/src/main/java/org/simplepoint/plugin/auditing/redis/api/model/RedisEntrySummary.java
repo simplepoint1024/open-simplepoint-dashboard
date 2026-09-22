@@ -12,9 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Redis entry summary for list pages.
- */
+/** Redis entry summary for list pages. */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,8 +20,17 @@ public class RedisEntrySummary {
   private String key;
   private RedisEntryType type;
   private Long ttlSeconds;
+
+  @org.simplepoint.core.annotation.PermissionFields(
+      resource = RedisEntrySummary.class,
+      value = "ttlSeconds")
   private Boolean persistent;
+
   private Long size;
   private String valuePreview;
+
+  @org.simplepoint.core.annotation.PermissionFields(
+      resource = RedisEntrySummary.class,
+      value = "type")
   private Boolean editable;
 }

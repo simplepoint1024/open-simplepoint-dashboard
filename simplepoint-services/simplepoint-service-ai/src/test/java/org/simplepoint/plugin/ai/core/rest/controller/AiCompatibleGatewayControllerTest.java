@@ -5,25 +5,33 @@ import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.plugin.ai.core.api.exception.AiGatewayAccessException;
 import org.simplepoint.plugin.ai.core.api.exception.AiGatewayAccessException.FailureType;
+import org.simplepoint.plugin.ai.core.api.exception.AiOpenAiRequestException;
 import org.simplepoint.plugin.ai.core.api.exception.AiProviderRequestException;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.core.api.properties.AiProperties;
@@ -31,6 +39,8 @@ import org.simplepoint.plugin.ai.core.api.service.AiGatewayAccessService;
 import org.simplepoint.plugin.ai.core.api.service.AiGatewayAccessService.GatewaySession;
 import org.simplepoint.plugin.ai.core.api.service.AiGenerationService;
 import org.simplepoint.plugin.ai.core.api.service.AiGenerationService.GenerationStream;
+import org.simplepoint.plugin.ai.core.api.service.AiNativeOpenAiGateway;
+import org.simplepoint.plugin.ai.core.api.service.AiNativeOpenAiGateway.Exchange;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.ContentBlock;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.ContentType;
 import org.simplepoint.plugin.ai.core.api.vo.AiGenerationModels.EventType;
@@ -53,10 +63,13 @@ class AiCompatibleGatewayControllerTest {
 
   private MockMvc mockMvc;
 
+  private AiNativeOpenAiGateway nativeGateway;
+
   @BeforeEach
   void setUp() {
     accessService = mock(AiGatewayAccessService.class);
     generationService = mock(AiGenerationService.class);
+    nativeGateway = mock(AiNativeOpenAiGateway.class);
     ObjectMapper objectMapper = new ObjectMapper();
     AiCompatibleGatewayController controller = new AiCompatibleGatewayController(
         accessService,
@@ -64,7 +77,8 @@ class AiCompatibleGatewayControllerTest {
         new AiCompatibilityMapper(objectMapper),
         new OpenAiResponsesProtocol(objectMapper),
         Runnable::run,
-        new AiProperties()
+        new AiProperties(),
+        nativeGateway
     );
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
   }
@@ -302,6 +316,81 @@ class AiCompatibleGatewayControllerTest {
         // No active network request in this test stream.
       }
     };
+  }
+
+  @Test
+  void nativeResponseKeepsStatusRetryHeadersAndErrorBody() throws Exception {
+    authorizeNative();
+    var exchange = nativeExchange(429, false,
+        "{\"error\":{\"type\":\"rate_limit_error\",\"code\":\"rate_limit_exceeded\",\"message\":\"retry\"}}");
+    when(nativeGateway.create(any(), anyString(), eq("/responses"), anyString(), any()))
+        .thenReturn(Optional.of(exchange));
+    mockMvc.perform(post("/v1/responses").header("Authorization", "Bearer test")
+            .contentType(MediaType.APPLICATION_JSON).content("{\"model\":\"public-model\",\"input\":\"hi\"}"))
+        .andExpect(status().isTooManyRequests())
+        .andExpect(header().string("Retry-After", "7"))
+        .andExpect(jsonPath("$.error.code").value("rate_limit_exceeded"));
+    verifyNoInteractions(generationService);
+    verify(exchange).close();
+  }
+
+  @Test
+  void nativeSseUsesRawFramesWithoutDoubleEncoding() throws Exception {
+    authorizeNative();
+    String frames = "event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_1\"}}\n\n";
+    var exchange = nativeExchange(200, true, frames);
+    when(nativeGateway.create(any(), anyString(), eq("/responses"), anyString(), any()))
+        .thenReturn(Optional.of(exchange));
+    MvcResult result = mockMvc.perform(post("/v1/responses").header("Authorization", "Bearer test")
+            .contentType(MediaType.APPLICATION_JSON).content("{\"model\":\"public-model\",\"input\":\"hi\",\"stream\":true}"))
+        .andExpect(request().asyncStarted()).andReturn();
+    mockMvc.perform(asyncDispatch(result)).andExpect(status().isOk())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM))
+        .andExpect(content().string(frames));
+    verifyNoInteractions(generationService);
+  }
+
+  @Test
+  void exposesNativeCompactionAndResponseLifecycleRoutes() throws Exception {
+    authorizeNative();
+    var compact = nativeExchange(200, false, "{\"object\":\"response.compaction\",\"output\":[]}");
+    when(nativeGateway.create(any(), anyString(), eq("/responses/compact"), anyString(), any()))
+        .thenReturn(Optional.of(compact));
+    mockMvc.perform(post("/v1/responses/compact").header("Authorization", "Bearer test")
+            .contentType(MediaType.APPLICATION_JSON).content("{\"model\":\"public-model\",\"input\":[]}"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.object").value("response.compaction"));
+    var items = nativeExchange(200, false, "{\"object\":\"list\",\"data\":[]}");
+    when(nativeGateway.response(any(), eq("resp_1"), eq("GET"), eq("/input_items"), any(), any()))
+        .thenReturn(items);
+    mockMvc.perform(get("/v1/responses/resp_1/input_items?limit=2").header("Authorization", "Bearer test"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.object").value("list"));
+    when(nativeGateway.response(any(), eq("resp_missing"), eq("GET"), eq(""), any(), any()))
+        .thenThrow(new AiOpenAiRequestException(
+            404, "resource_not_found", null, "Resource not found"));
+    mockMvc.perform(get("/v1/responses/resp_missing").header("Authorization", "Bearer test"))
+        .andExpect(status().isNotFound()).andExpect(jsonPath("$.error.code").value("resource_not_found"));
+  }
+
+  private void authorizeNative() {
+    when(accessService.authenticate(anyString(), anyString()))
+        .thenReturn(new GatewaySession("key-1", "test", AiResourceScope.SYSTEM, null));
+    when(accessService.resolveModelDefinitionId(any(), anyString())).thenReturn("definition-1");
+    when(accessService.withSession(any(), any())).thenAnswer(invocation ->
+        ((Supplier<?>) invocation.getArgument(1)).get());
+  }
+
+  private Exchange nativeExchange(
+      final int status, final boolean stream, final String body) {
+    var exchange = mock(Exchange.class);
+    when(exchange.status()).thenReturn(status);
+    when(exchange.streaming()).thenReturn(stream);
+    when(exchange.headers()).thenReturn(Map.of("Retry-After", List.of("7")));
+    doAnswer(invocation -> {
+      Consumer<byte[]> consumer = invocation.getArgument(0);
+      consumer.accept(body.getBytes(StandardCharsets.UTF_8));
+      return null;
+    }).when(exchange).consume(any());
+    return exchange;
   }
 
   private void rejectApiKey() {

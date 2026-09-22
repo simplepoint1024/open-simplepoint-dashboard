@@ -1,7 +1,9 @@
 import DataTable from '@simplepoint/components/DataTable';
-import {del, get, post} from '@simplepoint/shared/api/methods';
+import {useRuntimeServerNames} from './runtimeQueries';
+import {canEditPool, canScalePool} from './rowPolicy';
+import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
+import {del, post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import type {Page} from '@simplepoint/shared/types/request';
 import {
   Alert,
   App,
@@ -13,14 +15,14 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import RuntimePoolEditorDialog from './RuntimePoolEditorDialog';
 import {
   runtimeErrorLabel,
   runtimeNetworkModeLabel,
   runtimeStatusLabel,
 } from './runtimeLabels';
-import type {RuntimePool, RuntimeServer} from './types';
+import type {RuntimePool} from './types';
 import {
   formatBytes,
   formatCpu,
@@ -32,57 +34,27 @@ import {
 const {Text} = Typography;
 
 type RuntimePoolsProps = {
+  active?: boolean;
   poolsUrl: string;
   secretsUrl: string;
   serversUrl: string;
   canManage: boolean;
 };
 
-const RuntimePools = ({poolsUrl, secretsUrl, serversUrl, canManage}: RuntimePoolsProps) => {
+const RuntimePools = ({active = true, poolsUrl, secretsUrl, serversUrl, canManage}: RuntimePoolsProps) => {
   const {t} = useI18n();
   const {message, modal} = App.useApp();
-  const [rows, setRows] = useState<RuntimePool[]>([]);
-  const [servers, setServers] = useState<RuntimeServer[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string>();
+  const list = useRemoteList<RuntimePool>(poolsUrl, active);
+  const load = list.refresh;
+  const loadError = list.error ? resolveErrorMessage(list.error, t('table.loadFail', '加载失败')) : undefined;
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingPool, setEditingPool] = useState<RuntimePool>();
   const [scalingPool, setScalingPool] = useState<RuntimePool>();
   const [scaleValue, setScaleValue] = useState(0);
   const [scaling, setScaling] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setLoadError(undefined);
-    try {
-      const [poolPage, serverPage] = await Promise.all([
-        get<Page<RuntimePool>>(poolsUrl, {page: 0, size: 500}),
-        get<Page<RuntimeServer>>(serversUrl, {page: 0, size: 500}),
-      ]);
-      setRows(poolPage.content ?? []);
-      setServers(serverPage.content ?? []);
-    } catch (error) {
-      setRows([]);
-      setServers([]);
-      setLoadError(resolveErrorMessage(
-        error,
-        t('ai.runtime.error.pools.load', 'Runtime Pool 加载失败'),
-      ));
-    } finally {
-      setLoading(false);
-    }
-  }, [poolsUrl, serversUrl, t]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const serverNames = useMemo(() => new Map(
-    servers.map((server) => [
-      server.id,
-      server.name || server.code || server.id,
-    ]),
-  ), [servers]);
+  const serverNames = useRuntimeServerNames(serversUrl, list.page.content, active);
 
   const operate = useCallback(async (
     pool: RuntimePool,
@@ -170,7 +142,7 @@ const RuntimePools = ({poolsUrl, secretsUrl, serversUrl, canManage}: RuntimePool
         <Space direction="vertical" size={0}>
           <Text copyable={{text: value}} ellipsis>{value}</Text>
           <Text type="secondary" copyable={{text: pool.imageDigest}}>
-            {pool.imageDigest.slice(0, 22)}…
+            {pool.imageDigest?.slice(0, 22) ?? '-'}…
           </Text>
         </Space>
       ),
@@ -227,13 +199,13 @@ const RuntimePools = ({poolsUrl, secretsUrl, serversUrl, canManage}: RuntimePool
       width: 390,
       render: (_: unknown, pool: RuntimePool) => (
         <Space size={4}>
-          <Button type="link" size="small" onClick={() => {
+          <Button type="link" size="small" disabled={!canEditPool(pool)} onClick={() => {
             setEditingPool(pool);
             setEditorOpen(true);
           }}>
             {t('ai.runtime.action.edit', '编辑')}
           </Button>
-          <Button type="link" size="small" onClick={() => {
+          <Button type="link" size="small" disabled={!canScalePool(pool)} onClick={() => {
             setScaleValue(pool.desiredReplicas);
             setScalingPool(pool);
           }}>
@@ -294,13 +266,10 @@ const RuntimePools = ({poolsUrl, secretsUrl, serversUrl, canManage}: RuntimePool
 
   return (
     <>
-      <Card
+      <Card className="runtime-list-pools"
         title={t('ai.runtime.pool.title', 'Runtime Pools')}
         extra={(
           <Space>
-            <Button onClick={() => void load()}>
-              {t('ai.runtime.action.refresh', '刷新')}
-            </Button>
             {canManage && (
               <Button type="primary" onClick={() => {
                 setEditingPool(undefined);
@@ -320,9 +289,8 @@ const RuntimePools = ({poolsUrl, secretsUrl, serversUrl, canManage}: RuntimePool
             message={t('ai.runtime.error.pools.load', 'Runtime Pool 加载失败')}
             description={loadError}
             action={(
-              <Button size="small" onClick={() => void load()}>
-                {t('ai.mcp.action.retry', '重试')}
-              </Button>
+              <Space><Button size="small" onClick={list.retry}>{t('table.retry', '重试')}</Button>
+                <Button size="small" onClick={list.reset}>{t('table.query.reset', '重置筛选与排序')}</Button></Space>
             )}
           />
         )}
@@ -336,19 +304,17 @@ const RuntimePools = ({poolsUrl, secretsUrl, serversUrl, canManage}: RuntimePool
             'Pool 是托管 OCI MCP Server 的声明式副本配置，支持预热、弹性扩缩容和缩容到零。',
           )}
         />
-        <DataTable
-          rowKey="id"
-          loading={loading}
-          columns={columns}
-          dataSource={rows}
+        <DataTable<RuntimePool>
+          {...list.tableProps}
+          query={list.tableProps.query}
+          columns={list.columns(columns)}
           scroll={{x: 1800}}
-          pagination={{pageSize: 20, hideOnSinglePage: true}}
         />
       </Card>
       <RuntimePoolEditorDialog
         open={editorOpen}
         pool={editingPool}
-        servers={servers}
+        serversUrl={serversUrl}
         poolsUrl={poolsUrl}
         secretsUrl={secretsUrl}
         onCancel={() => setEditorOpen(false)}

@@ -81,12 +81,12 @@ public class AiMcpPublicationServiceImpl
       normalized.putAll(attributes);
     }
     ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
-    normalized.put("scopeType", scope.scopeType().name());
-    normalized.put("tenantId", scope.tenantId() == null ? "is:null" : scope.tenantId());
-    normalized.put("deletedAt", "is:null");
+    Map<String, String> required = Map.of(
+        "scopeType", scope.scopeType().name(),
+        "tenantId", scope.tenantId() == null ? "is:null" : "equals:" + scope.tenantId());
     normalizeLikeQuery(normalized, "name");
     normalizeLikeQuery(normalized, "code");
-    return super.limit(normalized, pageable);
+    return super.limitScoped(normalized, required, pageable);
   }
 
   @Override

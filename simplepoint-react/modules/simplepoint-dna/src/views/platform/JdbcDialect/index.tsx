@@ -1,9 +1,10 @@
 import api from '@/api';
-import { InboxOutlined, PlusOutlined } from '@ant-design/icons';
+import { InboxOutlined, PlusOutlined } from '@simplepoint/shared/types/icon';
 import { request } from '@simplepoint/shared/api/client';
 import { get } from '@simplepoint/shared/api/methods';
 import { useI18n } from '@simplepoint/shared/hooks/useI18n';
-import { Alert, App as AntApp, Button, Form, Input, Modal, Space, Switch, Table, Tabs, Tag, Typography, Upload } from 'antd';
+import {Alert, App as AntApp, Button, Form, Input, Modal, Space, Switch, Tabs, Tag, Typography, Upload} from 'antd';
+import Table from '@simplepoint/components/DataTable';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -388,6 +389,14 @@ const App = () => {
                   )}
                 />
                 <Table<DialectDescriptor>
+                  storageKey="dna.dialects.loaded"
+                  query={{mode: 'local', scope: 'complete', fields: {
+                    code: {type: 'string'}, name: {type: 'string'}, description: {type: 'string'},
+                    version: {type: 'string'}, className: {type: 'string'},
+                    sourceType: {type: 'string', enum: ['CLASSPATH', 'URL', 'UPLOAD']},
+                    sourceName: {type: 'string'}, enabled: {type: 'boolean'},
+                    lastLoadMessage: {type: 'string'}, loadedAt: {type: 'date-time'},
+                  }}}
                   rowKey={(record) => `${record.code}-${record.className}-${record.sourceId || 'classpath'}`}
                   loading={loading}
                   columns={dialectColumns}
@@ -413,6 +422,12 @@ const App = () => {
                   </Button>
                 </Space>
                 <Table<DialectSourceSummary>
+                  storageKey="dna.dialects.sources"
+                  query={{mode: 'local', scope: 'complete', fields: {
+                    name: {type: 'string'}, sourceType: {type: 'string', enum: ['URL', 'UPLOAD']},
+                    sourceUrl: {type: 'string'}, localJarPath: {type: 'string'}, enabled: {type: 'boolean'},
+                    description: {type: 'string'}, lastLoadMessage: {type: 'string'}, loadedAt: {type: 'date-time'},
+                  }}}
                   rowKey="id"
                   loading={sourceLoading}
                   rowSelection={{

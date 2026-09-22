@@ -1,7 +1,5 @@
 import api from "@/api";
-import {get, post} from "@simplepoint/shared/api/methods";
-import {Page} from "@simplepoint/shared/types/request";
-import {RoleRelevantVo} from "@/api/system/role";
+import {post} from "@simplepoint/shared/api/methods";
 
 const {baseUrl} = api['rbac-users'];
 
@@ -13,14 +11,6 @@ export interface UserRoleRelevantDto {
     userId: string | null;
     // 角色权限列表
     roleIds?: string[];
-}
-
-/**
- * 获取已分配角色下拉分页
- */
-export async function fetchAuthorized(params: UserRoleRelevantDto) {
-    // 避免 "authorized??userId=..." 的双问号，将查询参数交给 get 封装追加
-    return await get<string[]>(`${baseUrl}/authorized`, params);
 }
 
 /**
@@ -37,11 +27,4 @@ export async function fetchUnauthorized(data: UserRoleRelevantDto) {
  */
 export async function fetchAuthorize(data: UserRoleRelevantDto) {
     return await post<UserRoleRelevantDto>(`${baseUrl}/authorize`, data);
-}
-
-/**
- * 获取用户管理中可分配角色列表（始终使用默认租户范围）
- */
-export async function fetchRoleCandidates(params: Record<string, string>) {
-    return await get<Page<RoleRelevantVo>>(`${baseUrl}/role-candidates`, params);
 }

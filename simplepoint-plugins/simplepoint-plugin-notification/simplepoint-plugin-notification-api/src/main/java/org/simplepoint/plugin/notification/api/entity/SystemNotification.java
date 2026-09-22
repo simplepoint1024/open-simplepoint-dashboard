@@ -59,6 +59,21 @@ import org.springframework.core.annotation.Order;
         argumentMinSize = 1, argumentMaxSize = 10, authority = "notifications.delete")
 })
 @Schema(title = "i18n:notifications.entity.title")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("title"),
+    @org.simplepoint.core.query.QueryField("content"),
+    @org.simplepoint.core.query.QueryField("category"),
+    @org.simplepoint.core.query.QueryField("priority"),
+    @org.simplepoint.core.query.QueryField("audienceType"),
+    @org.simplepoint.core.query.QueryField("audienceId"),
+    @org.simplepoint.core.query.QueryField("linkUrl"),
+    @org.simplepoint.core.query.QueryField("publishAt"),
+    @org.simplepoint.core.query.QueryField("expireAt"),
+    @org.simplepoint.core.query.QueryField("status"),
+    @org.simplepoint.core.query.QueryField("publishedAt"),
+    @org.simplepoint.core.query.QueryField("createdAt"),
+    @org.simplepoint.core.query.QueryField("updatedAt")
+})
 public class SystemNotification extends BaseEntityImpl<String> {
 
   @Version

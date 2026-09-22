@@ -1,4 +1,4 @@
-import {ReloadOutlined} from '@ant-design/icons';
+import {ReloadOutlined} from '@simplepoint/shared/types/icon';
 import {get} from '@simplepoint/shared/api/methods';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';

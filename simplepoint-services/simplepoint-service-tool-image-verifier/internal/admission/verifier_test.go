@@ -105,52 +105,6 @@ func TestVerifyCachesDecisionsByDigest(t *testing.T) {
 	}
 }
 
-func TestVerifyArtifactUsesSignaturePolicyWithoutImageScanning(t *testing.T) {
-	runner := &fakeRunner{
-		outputs: [][]byte{
-			[]byte(`[{"critical":{"identity":"workflow"}}]`),
-		},
-		errors: []error{nil},
-	}
-	cfg := testConfig()
-	cfg.AllowHTTPRegistry = true
-	cfg.IgnoreTransparencyLog = true
-	verifier := New(cfg, runner)
-	first := verifier.VerifyArtifact(context.Background(), testImage)
-	second := verifier.VerifyArtifact(context.Background(), testImage)
-	if !first.Admitted || !first.SignatureVerified || !second.Admitted {
-		t.Fatalf("expected Artifact admission, got %+v", first)
-	}
-	if len(runner.calls) != 1 {
-		t.Fatalf("expected one cached Cosign call, got %d", len(runner.calls))
-	}
-	if runner.calls[0].args[0] != "verify" {
-		t.Fatalf("expected Cosign verify, got %v", runner.calls[0].args)
-	}
-	if !contains(
-		runner.calls[0].args,
-		"--allow-http-registry",
-		"--insecure-ignore-tlog",
-	) {
-		t.Fatalf("expected configured Cosign transport policy: %v", runner.calls[0].args)
-	}
-}
-
-func TestVerifyArtifactRejectsInvalidSignature(t *testing.T) {
-	runner := &fakeRunner{
-		outputs: [][]byte{[]byte("no signatures found")},
-		errors:  []error{errors.New("exit status 1")},
-	}
-	result := New(testConfig(), runner).VerifyArtifact(
-		context.Background(),
-		testImage,
-	)
-	if result.Admitted || result.SignatureVerified ||
-		result.Reason != "artifact signature verification failed" {
-		t.Fatalf("unexpected Artifact decision: %+v", result)
-	}
-}
-
 func TestValidImageReferenceRejectsMutableAndUnsafeReferences(t *testing.T) {
 	for _, value := range []string{
 		"docker.io/example/mcp:latest",

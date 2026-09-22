@@ -37,14 +37,6 @@ export async function fetchOwnerItems(params: {page: string; size: string}) {
   return await get<Page<UserRelevanceVo>>(`${baseUrl}/owners/items`, params as Record<string, string>);
 }
 
-export async function fetchUserItems(params: {tenantId: string; page: string; size: string; keyword?: string}) {
-  return await get<Page<UserRelevanceVo>>(`${baseUrl}/users/items`, params as Record<string, string>);
-}
-
-export async function fetchAuthorizedUsers(params: Pick<TenantUsersRelevanceDto, 'tenantId'>) {
-  return await get<string[]>(`${baseUrl}/users/authorized`, params as Record<string, string>);
-}
-
 export async function fetchAuthorizeUsers(data: TenantUsersRelevanceDto) {
   return await post<TenantUsersRelevanceDto>(`${baseUrl}/users/authorize`, data);
 }

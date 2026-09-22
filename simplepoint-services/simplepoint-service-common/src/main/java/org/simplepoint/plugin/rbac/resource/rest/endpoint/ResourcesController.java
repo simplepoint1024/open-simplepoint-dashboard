@@ -133,6 +133,9 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public Map<String, String> handleIllegalArgument(IllegalArgumentException exception) {
     String message = exception.getMessage();
+    if (exception instanceof org.simplepoint.core.query.InvalidQueryException) {
+      return Map.of("code", "INVALID_QUERY", "message", message);
+    }
     return Map.of("message", message == null || message.isBlank() ? "资源请求参数不合法" : message);
   }
 }

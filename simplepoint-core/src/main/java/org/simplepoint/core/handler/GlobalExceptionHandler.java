@@ -8,13 +8,21 @@
 
 package org.simplepoint.core.handler;
 
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.simplepoint.core.query.InvalidQueryException;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * Global Http response Exception handler.
- */
+/** Global Http response Exception handler. */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+  /** Reject invalid query input without exposing entity names, values or SQL details. */
+  @ExceptionHandler(InvalidQueryException.class)
+  public ResponseEntity<Map<String, String>> invalidQuery(InvalidQueryException error) {
+    return ResponseEntity.badRequest()
+        .body(Map.of("code", "INVALID_QUERY", "message", error.getMessage()));
+  }
 }

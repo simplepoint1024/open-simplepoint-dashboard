@@ -87,6 +87,25 @@ import org.springframework.core.annotation.Order;
     )
 })
 @Schema(title = "i18n:ai.models.entity.title")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("scopeType"),
+    @org.simplepoint.core.query.QueryField("providerId"),
+    @org.simplepoint.core.query.QueryField("modelId"),
+    @org.simplepoint.core.query.QueryField("displayName"),
+    @org.simplepoint.core.query.QueryField("modelType"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("available"),
+    @org.simplepoint.core.query.QueryField("discovered"),
+    @org.simplepoint.core.query.QueryField("ownedBy"),
+    @org.simplepoint.core.query.QueryField("releasedAt"),
+    @org.simplepoint.core.query.QueryField("billingEnabled"),
+    @org.simplepoint.core.query.QueryField("billingCurrency"),
+    @org.simplepoint.core.query.QueryField("inputTokenPrice"),
+    @org.simplepoint.core.query.QueryField("cachedInputTokenPrice"),
+    @org.simplepoint.core.query.QueryField("outputTokenPrice"),
+    @org.simplepoint.core.query.QueryField("requestPrice"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class AiModelDefinition extends BaseEntityImpl<String> {
 
   @Order(0)

@@ -16,7 +16,7 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import {ApartmentOutlined, EditOutlined, MailOutlined, PhoneOutlined, ReloadOutlined, UserOutlined} from '@ant-design/icons';
+import {ApartmentOutlined, EditOutlined, MailOutlined, PhoneOutlined, ReloadOutlined, UserOutlined} from '@simplepoint/shared/types/icon';
 import {useQueryClient} from '@tanstack/react-query';
 import {useLocation, useNavigate} from 'react-router';
 import {OssImageUpload} from '@simplepoint/components/SForm/widgets/OssImageUpload';

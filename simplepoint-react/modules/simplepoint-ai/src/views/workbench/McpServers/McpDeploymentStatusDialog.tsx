@@ -1,6 +1,7 @@
 import DataTable from '@simplepoint/components/DataTable';
 import {del, get, post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {usePagePolling} from '@simplepoint/shared/page/usePagePolling';
 import {
   Alert,
   App,
@@ -130,9 +131,10 @@ const McpDeploymentStatusDialog = ({
     setDiscoverAfterReady(autoDiscover);
     discoveryAttempted.current = false;
     void refresh();
-    const timer = window.setInterval(() => void refresh(true), 2500);
-    return () => window.clearInterval(timer);
   }, [autoDiscover, open, pool, refresh, server]);
+
+  const pollStatus = useCallback(() => refresh(true), [refresh]);
+  usePagePolling(pollStatus, open, 2500);
 
   const discover = useCallback(async () => {
     if (discovering) return;
@@ -425,10 +427,15 @@ const McpDeploymentStatusDialog = ({
         ]}
       />
       <DataTable
+        storageKey="ai.mcp.deployment-workloads"
+        query={{mode: 'local', scope: 'result', fields: {
+          runtimeWorkloadId: {type: 'string'}, assignedNodeId: {type: 'string'},
+          status: {type: 'string'}, startedAt: {type: 'date-time'},
+        }}}
         rowKey="id"
         size="small"
-        dataSource={workloads.slice().reverse().slice(0, 5)}
-        pagination={false}
+        dataSource={workloads.slice().reverse()}
+        pagination={{pageSize: 5, hideOnSinglePage: true}}
         style={{marginBottom: 20}}
         columns={[
           {
@@ -488,6 +495,10 @@ const McpDeploymentStatusDialog = ({
                 {t('ai.mcp.deployment.discoveredTools', '本次发现的工具')}
               </Text>
               <DataTable
+                storageKey="ai.mcp.deployment-tools"
+                query={{mode: 'local', scope: 'result', fields: {
+                  name: {type: 'string'}, title: {type: 'string'}, description: {type: 'string'},
+                }}}
                 rowKey="name"
                 size="small"
                 dataSource={toolRows}

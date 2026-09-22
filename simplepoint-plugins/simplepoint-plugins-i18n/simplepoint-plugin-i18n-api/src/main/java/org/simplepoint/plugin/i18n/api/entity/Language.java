@@ -61,6 +61,16 @@ import org.springframework.core.annotation.Order;
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "语言对象", description = "用于管理系统中的语言")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("nameEnglish"),
+    @org.simplepoint.core.query.QueryField("nameNative"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("locale"),
+    @org.simplepoint.core.query.QueryField("textDirection"),
+    @org.simplepoint.core.query.QueryField("dateFormat"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class Language extends BaseEntityImpl<String> {
 
   /**

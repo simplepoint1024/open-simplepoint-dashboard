@@ -18,32 +18,50 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.query.QueryField;
+import org.simplepoint.core.query.TableQuery;
 import org.simplepoint.plugin.ai.runtime.api.model.AiRuntimeErrorCodeSerializer;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeNodeStatus;
 
-/**
- * Platform-owned execution node running one independent Tool Runtime process.
- */
+/** Platform-owned execution node running one independent Tool Runtime process. */
 @Data
 @Entity
 @Table(
     name = "simpoint_ai_runtime_nodes",
     indexes = {
-        @Index(
-            name = "uk_simpoint_ai_runtime_node_id",
-            columnList = "node_id",
-            unique = true
-        ),
-        @Index(name = "idx_simpoint_ai_runtime_node_status", columnList = "status"),
-        @Index(
-            name = "idx_simpoint_ai_runtime_node_heartbeat",
-            columnList = "heartbeat_expires_at"
-        )
-    }
-)
+      @Index(name = "uk_simpoint_ai_runtime_node_id", columnList = "node_id", unique = true),
+      @Index(name = "idx_simpoint_ai_runtime_node_status", columnList = "status"),
+      @Index(name = "idx_simpoint_ai_runtime_node_heartbeat", columnList = "heartbeat_expires_at")
+    })
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @Schema(title = "AI OCI Runtime Node")
+@TableQuery(
+    value = {
+      @QueryField("id"),
+      @QueryField("nodeId"),
+      @QueryField("displayName"),
+      @QueryField("status"),
+      @QueryField("cpuCores"),
+      @QueryField("memoryBytes"),
+      @QueryField("maxWorkloads"),
+      @QueryField("runningWorkloads"),
+      @QueryField("runtimeVersion"),
+      @QueryField("engineApiVersion"),
+      @QueryField("engineOsType"),
+      @QueryField("requireImageDigest"),
+      @QueryField("requireMcpLabels"),
+      @QueryField("allowBridgeNetwork"),
+      @QueryField("allowEgressNetwork"),
+      @QueryField("requireSupplyChainAdmission"),
+      @QueryField("seccompEnforced"),
+      @QueryField("appArmorEnforced"),
+      @QueryField("lastHeartbeatAt"),
+      @QueryField("heartbeatExpiresAt"),
+      @QueryField("registeredAt"),
+      @QueryField("createdAt")
+    },
+    maxPageSize = 100)
 public class AiRuntimeNode extends BaseEntityImpl<String> {
 
   @Column(name = "node_id", length = 64, nullable = false)
@@ -97,24 +115,21 @@ public class AiRuntimeNode extends BaseEntityImpl<String> {
   @Column(
       name = "max_workload_memory_bytes",
       nullable = false,
-      columnDefinition = "BIGINT DEFAULT 2147483648"
-  )
+      columnDefinition = "BIGINT DEFAULT 2147483648")
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)
   private long maxWorkloadMemoryBytes;
 
   @Column(
       name = "max_workload_nano_cpus",
       nullable = false,
-      columnDefinition = "BIGINT DEFAULT 4000000000"
-  )
+      columnDefinition = "BIGINT DEFAULT 4000000000")
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)
   private long maxWorkloadNanoCpus;
 
   @Column(
       name = "max_workload_pids_limit",
       nullable = false,
-      columnDefinition = "BIGINT DEFAULT 512"
-  )
+      columnDefinition = "BIGINT DEFAULT 512")
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)
   private long maxWorkloadPidsLimit;
 
@@ -133,24 +148,18 @@ public class AiRuntimeNode extends BaseEntityImpl<String> {
   @Column(
       name = "allow_egress_network",
       nullable = false,
-      columnDefinition = "BOOLEAN DEFAULT FALSE"
-  )
+      columnDefinition = "BOOLEAN DEFAULT FALSE")
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)
   private boolean allowEgressNetwork;
 
   @Column(
       name = "require_supply_chain_admission",
       nullable = false,
-      columnDefinition = "BOOLEAN DEFAULT FALSE"
-  )
+      columnDefinition = "BOOLEAN DEFAULT FALSE")
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)
   private boolean requireSupplyChainAdmission;
 
-  @Column(
-      name = "seccomp_enforced",
-      nullable = false,
-      columnDefinition = "BOOLEAN DEFAULT FALSE"
-  )
+  @Column(name = "seccomp_enforced", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)
   private boolean seccompEnforced;
 
@@ -158,11 +167,7 @@ public class AiRuntimeNode extends BaseEntityImpl<String> {
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)
   private String seccompProfileHash;
 
-  @Column(
-      name = "apparmor_enforced",
-      nullable = false,
-      columnDefinition = "BOOLEAN DEFAULT FALSE"
-  )
+  @Column(name = "apparmor_enforced", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
   @Schema(accessMode = Schema.AccessMode.READ_ONLY)
   private boolean appArmorEnforced;
 
@@ -179,8 +184,7 @@ public class AiRuntimeNode extends BaseEntityImpl<String> {
   @Column(
       name = "cached_image_digests_json",
       columnDefinition = "TEXT DEFAULT '[]'",
-      nullable = false
-  )
+      nullable = false)
   @Schema(hidden = true)
   private String cachedImageDigestsJson;
 

@@ -7,53 +7,33 @@ import org.simplepoint.plugin.ai.runtime.api.model.RuntimePoolUpsertRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-/**
- * Current-scope management for reusable OCI MCP runtime pools.
- */
+/** Current-scope management for reusable OCI MCP runtime pools. */
 public interface AiRuntimePoolService {
 
-  /**
-   * Creates or replaces desired state by current-scope code.
-   */
+  /** Creates or replaces desired state by current-scope code. */
   AiRuntimePool upsert(RuntimePoolUpsertRequest request);
 
-  /**
-   * Pages current-scope runtime pools.
-   */
-  Page<AiRuntimePool> findAll(Pageable pageable);
+  /** Applies public table filters inside the mandatory runtime ownership scope. */
+  Page<AiRuntimePool> query(java.util.Map<String, String> filters, Pageable pageable);
 
-  /**
-   * Finds a readable current-scope runtime pool.
-   */
+  /** Finds a readable current-scope runtime pool. */
   Optional<AiRuntimePool> find(String poolId);
 
-  /**
-   * Finds the current-scope pool owned by one managed MCP server.
-   */
+  /** Finds the current-scope pool owned by one managed MCP server. */
   Optional<AiRuntimePool> findByServer(String serverId);
 
-  /**
-   * Changes explicit desired replicas and refreshes activity.
-   */
+  /** Changes explicit desired replicas and refreshes activity. */
   AiRuntimePool scale(String poolId, RuntimePoolScaleRequest request);
 
-  /**
-   * Restores activation capacity and refreshes the idle timer.
-   */
+  /** Restores activation capacity and refreshes the idle timer. */
   AiRuntimePool activate(String poolId);
 
-  /**
-   * Disables a pool and requests full replica cleanup.
-   */
+  /** Disables a pool and requests full replica cleanup. */
   AiRuntimePool disable(String poolId);
 
-  /**
-   * Replaces all active replicas while preserving the pool desired state.
-   */
+  /** Replaces all active replicas while preserving the pool desired state. */
   AiRuntimePool redeploy(String poolId);
 
-  /**
-   * Soft-deletes a disabled pool after all replicas have been reclaimed.
-   */
+  /** Soft-deletes a disabled pool after all replicas have been reclaimed. */
   void remove(String poolId);
 }

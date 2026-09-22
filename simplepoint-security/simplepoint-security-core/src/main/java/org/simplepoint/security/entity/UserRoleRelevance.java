@@ -17,29 +17,36 @@ import org.simplepoint.api.security.base.BaseUserRoleRelevance;
 import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
 
 /**
- * Represents the relationship between users and roles
- * in the RBAC (Role-Based Access Control) system.
- * This entity is mapped to the `rbac_user_role_rel` table and defines the association
+ * Represents the relationship between users and roles in the RBAC (Role-Based Access Control)
+ * system. This entity is mapped to the `rbac_user_role_rel` table and defines the association
  * between usernames and authorities, which represent roles in the system.
  */
 @Data
 @Entity
-@Table(name = "simpoint_ac_user_role_rel")
+@Table(
+    name = "simpoint_ac_user_role_rel",
+    indexes =
+        @jakarta.persistence.Index(
+            name = "idx_user_role_overview",
+            columnList = "tenant_id,role_id,deleted_at,user_id"))
 @EqualsAndHashCode(callSuper = true)
 @Schema(title = "用户角色关联对象", description = "用于定义用户与角色之间的关联关系")
-public class UserRoleRelevance extends TenantBaseEntityImpl<String> implements BaseUserRoleRelevance {
+public class UserRoleRelevance extends TenantBaseEntityImpl<String>
+    implements BaseUserRoleRelevance {
 
   /**
-   * The username of the user associated with the role.
-   * This field specifies the user's unique identifier in the system.
+   * The username of the user associated with the role. This field specifies the user's unique
+   * identifier in the system.
    */
   @Schema(title = "用户名", description = "关联的用户名")
+  @jakarta.persistence.Column(name = "user_id")
   private String userId;
 
   /**
-   * The authority associated with the user.
-   * This field represents the role or permission assigned to the user.
+   * The authority associated with the user. This field represents the role or permission assigned
+   * to the user.
    */
   @Schema(title = "角色权限", description = "关联的角色权限标识")
+  @jakarta.persistence.Column(name = "role_id")
   private String roleId;
 }

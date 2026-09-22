@@ -7,7 +7,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.calcite.sql.SqlBasicCall;
@@ -58,6 +60,47 @@ final class FederationSqlAnalysisUtils {
     } catch (SqlParseException ex) {
       return TableReferenceSummary.empty();
     }
+  }
+
+  static Map<String, Set<String>> requestedCatalogs(
+      final String sql,
+      final String defaultSchema,
+      final String selectedSource,
+      final List<String> sourceCodes
+  ) {
+    Set<String> sources = new LinkedHashSet<>();
+    sourceCodes.forEach(code -> sources.add(code.toLowerCase(Locale.ROOT)));
+    Map<String, Set<String>> result = new LinkedHashMap<>();
+    List<List<String>> paths = new ArrayList<>(collectTableReferences(sql).identifiers());
+    if (trimToNull(defaultSchema) != null) {
+      // Parse identifiers rather than splitting on dots inside quoted names.
+      try {
+        SqlNode node = SqlParser.create(defaultSchema).parseExpression();
+        if (node instanceof SqlIdentifier identifier) {
+          List<String> path = new ArrayList<>(identifier.names);
+          path.add("__table__");
+          paths.add(path);
+        }
+      } catch (SqlParseException ignored) {
+        // The query engine remains responsible for rejecting invalid schema paths.
+      }
+    }
+    for (List<String> path : paths) {
+      if (path.size() < 2) {
+        continue;
+      }
+      String source = selectedSource.toLowerCase(Locale.ROOT);
+      int offset = 0;
+      if (sources.contains(path.getFirst().toLowerCase(Locale.ROOT))) {
+        source = path.getFirst().toLowerCase(Locale.ROOT);
+        offset = 1;
+      }
+      if (path.size() - offset >= 2) {
+        result.computeIfAbsent(source, key -> new LinkedHashSet<>())
+            .add(path.get(offset).toLowerCase(Locale.ROOT));
+      }
+    }
+    return result;
   }
 
   static List<String> extractUsedDataSources(

@@ -4,360 +4,125 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.simplepoint.core.query.ConditionsBuilder;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import org.simplepoint.core.query.FilterCondition;
 import org.springframework.data.jpa.repository.query.EscapeCharacter;
 
-/**
- * A utility class for registering and retrieving AttributeMatchers.
- * This class manages a static map of matchers and provides methods
- * for registering, unregistering, and obtaining matchers by attribute name.
- */
+/** Thread-safe operator registry retaining existing extension and factory APIs. */
 public class AttributeMatchers {
-
-  private static final Map<String, AttributeMatcher> attributeMatchers = new HashMap<>();
+  private static final Map<String, AttributeMatcher> MATCHERS = new ConcurrentHashMap<>();
 
   static {
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_LIKE, like());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_IN, in());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_NOT_IN, notIn());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_NOT_LIKE, notLike());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_BETWEEN, between());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_NOT_BETWEEN, notBetween());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_EQUALS, equals());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_NOT_EQUALS, notEquals());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_THAN_GREATER, greaterThan());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_THAN_LESS, lessThan());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_THAN_EQUAL_GREATER, greaterThanOrEqualTo());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_THAN_EQUAL_LESS, lessThanOrEqualTo());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_IS_NULL, isNull());
-    registerAttributeMatcher(ConditionsBuilder.PREFIX_IS_NOT_NULL, isNotNull());
+    FilterCondition.OPERATORS.forEach(op -> registerAttributeMatcher(op, typed(op)));
   }
 
-  /**
-   * Retrieves an AttributeMatcher by attribute name.
-   *
-   * @param attributeName the name of the attribute
-   * @return the AttributeMatcher corresponding to the attribute name
-   */
-  public static AttributeMatcher getAttributeMatcher(String attributeName) {
-    return attributeMatchers.get(attributeName);
+  /** Platform operator registry or typed predicate factory. */
+  public static AttributeMatcher getAttributeMatcher(String operator) {
+    return MATCHERS.get(operator);
   }
 
-  /**
-   * Registers a new AttributeMatcher for a given attribute name.
-   *
-   * @param attributeName    the name of the attribute
-   * @param attributeMatcher the AttributeMatcher to register
-   */
-  public static void registerAttributeMatcher(String attributeName,
-                                              AttributeMatcher attributeMatcher) {
-    attributeMatchers.put(attributeName, attributeMatcher);
+  /** Platform operator registry or typed predicate factory. */
+  public static void registerAttributeMatcher(String operator, AttributeMatcher matcher) {
+    MATCHERS.put(operator, matcher);
   }
 
-  /**
-   * Unregisters an AttributeMatcher by attribute name.
-   *
-   * @param attributeName the name of the attribute
-   */
-  public static void unregisterAttributeMatcher(String attributeName) {
-    attributeMatchers.remove(attributeName);
+  /** Platform operator registry or typed predicate factory. */
+  public static void unregisterAttributeMatcher(String operator) {
+    MATCHERS.remove(operator);
   }
 
-  /**
-   * Creates an AttributeMatcher for IN conditions.
-   * This matcher generates predicates for attributes within a specified set of values.
-   *
-   * @return an AttributeMatcher for IN conditions
-   */
-  public static AttributeMatcher in() {
+  /** Platform operator registry or typed predicate factory. */
+  public static Set<String> operators() {
+    return Set.copyOf(MATCHERS.keySet());
+  }
+
+  private static AttributeMatcher typed(String op) {
     return new AttributeMatcher() {
       @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        if (value != null && !value.trim().isEmpty()) {
-          Object[] values = value.split(",");
-          CriteriaBuilder.In<Object> inClause = criteriaBuilder.in(root.get(name));
-          for (Object o : values) {
-            inClause.value(o);
-          }
-          predicates.add(inClause);
-        }
+      public <S> void match(
+          String name,
+          String value,
+          Root<S> root,
+          CriteriaQuery<?> query,
+          CriteriaBuilder cb,
+          EscapeCharacter escape,
+          List<Predicate> predicates) {
+        predicates.add(
+            QueryPredicates.build(cb, root.get(name), new FilterCondition(op, value), escape, 100));
       }
     };
   }
 
-  /**
-   * Creates an AttributeMatcher for NOT IN conditions.
-   *
-   * @return an AttributeMatcher for NOT IN conditions
-   */
-  public static AttributeMatcher notIn() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        if (value != null && !value.trim().isEmpty()) {
-          Object[] values = value.split(",");
-          CriteriaBuilder.In<Object> inClause = criteriaBuilder.in(root.get(name));
-          for (Object o : values) {
-            inClause.value(o);
-          }
-          Predicate notInClause = criteriaBuilder.not(inClause);
-          predicates.add(notInClause);
-        }
-      }
-    };
-  }
-
-  /**
-   * Creates an AttributeMatcher for LIKE conditions.
-   *
-   * @return an AttributeMatcher for LIKE conditions
-   */
+  /** Platform operator registry or typed predicate factory. */
   public static AttributeMatcher like() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        if (value != null && !value.trim().isEmpty()) {
-          predicates.add(
-              criteriaBuilder.like(root.get(name), value, character.getEscapeCharacter()));
-        }
-      }
-    };
+    return typed("like");
   }
 
-  /**
-   * Creates an AttributeMatcher for NOT LIKE conditions.
-   *
-   * @return an AttributeMatcher for NOT LIKE conditions
-   */
+  /** Platform operator registry or typed predicate factory. */
   public static AttributeMatcher notLike() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        if (value != null && !value.trim().isEmpty()) {
-          Predicate notLikePredicate = criteriaBuilder.not(
-              criteriaBuilder.like(root.get(name), value, character.getEscapeCharacter()));
-          predicates.add(notLikePredicate);
-        }
-      }
-    };
+    return typed("not:like");
   }
 
-  /**
-   * Creates an AttributeMatcher for BETWEEN conditions.
-   *
-   * @return an AttributeMatcher for BETWEEN conditions
-   */
-  public static AttributeMatcher between() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        if (value != null && !value.trim().isEmpty()) {
-          String[] values = value.split(",");
-          if (values.length == 2) {
-            String startValue = values[0].trim();
-            String endValue = values[1].trim();
-            Predicate betweenPredicate =
-                criteriaBuilder.between(root.get(name), startValue, endValue);
-            predicates.add(betweenPredicate);
-          } else {
-            throw new IllegalArgumentException(
-                "Invalid value format for BETWEEN condition. Expected format: startValue,endValue");
-          }
-        }
-      }
-    };
-  }
-
-  /**
-   * Creates an AttributeMatcher for NOT BETWEEN conditions.
-   * This matcher generates predicates that exclude values within the specified range.
-   *
-   * @return an AttributeMatcher for NOT BETWEEN conditions
-   */
-  public static AttributeMatcher notBetween() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        if (value != null && !value.trim().isEmpty()) {
-          String[] values = value.split(",");
-          if (values.length == 2) {
-            String startValue = values[0].trim();
-            String endValue = values[1].trim();
-
-            Predicate betweenPredicate =
-                criteriaBuilder.between(root.get(name), startValue, endValue);
-            Predicate notBetweenPredicate = criteriaBuilder.not(betweenPredicate);
-            predicates.add(notBetweenPredicate);
-          } else {
-            throw new IllegalArgumentException(
-                "Invalid value format for NOT BETWEEN condition."
-                    + " Expected format: startValue,endValue"
-            );
-          }
-        }
-      }
-    };
-  }
-
-  /**
-   * Creates an AttributeMatcher for EQUAL conditions.
-   * This matcher generates predicates for exact attribute value matches.
-   *
-   * @return an AttributeMatcher for EQUAL conditions
-   */
+  /** Platform operator registry or typed predicate factory. */
   public static AttributeMatcher equals() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        if (value != null && !value.trim().isEmpty()) {
-          Predicate equalsPredicate = criteriaBuilder.equal(root.get(name), value.trim());
-          predicates.add(equalsPredicate);
-        }
-      }
-    };
+    return typed("equals");
   }
 
-  /**
-   * Creates an AttributeMatcher for NOT EQUAL conditions.
-   * This matcher generates predicates for attributes that do not match the specified value.
-   *
-   * @return an AttributeMatcher for NOT EQUAL conditions
-   */
+  /** Platform operator registry or typed predicate factory. */
   public static AttributeMatcher notEquals() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        if (value != null && !value.trim().isEmpty()) {
-          Predicate notEqualsPredicate = criteriaBuilder.notEqual(root.get(name), value.trim());
-          predicates.add(notEqualsPredicate);
-        }
-      }
-    };
+    return typed("not:equals");
   }
 
-  /**
-   * Creates an AttributeMatcher for GREATER THAN conditions.
-   *
-   * @return an AttributeMatcher for GREATER THAN conditions
-   */
+  /** Platform operator registry or typed predicate factory. */
+  public static AttributeMatcher in() {
+    return typed("in");
+  }
+
+  /** Platform operator registry or typed predicate factory. */
+  public static AttributeMatcher notIn() {
+    return typed("not:in");
+  }
+
+  /** Platform operator registry or typed predicate factory. */
+  public static AttributeMatcher between() {
+    return typed("between");
+  }
+
+  /** Platform operator registry or typed predicate factory. */
+  public static AttributeMatcher notBetween() {
+    return typed("not:between");
+  }
+
+  /** Platform operator registry or typed predicate factory. */
   public static AttributeMatcher greaterThan() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        if (value != null && !value.trim().isEmpty()) {
-          Predicate greaterThanPredicate = criteriaBuilder.greaterThan(root.get(name), value);
-          predicates.add(greaterThanPredicate);
-        }
-      }
-    };
+    return typed("than:greater");
   }
 
-  /**
-   * Creates an AttributeMatcher for LESS THAN conditions.
-   *
-   * @return an AttributeMatcher for LESS THAN conditions
-   */
+  /** Platform operator registry or typed predicate factory. */
   public static AttributeMatcher lessThan() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        if (value != null && !value.trim().isEmpty()) {
-          Predicate lessThanPredicate = criteriaBuilder.lessThan(root.get(name), value);
-          predicates.add(lessThanPredicate);
-        }
-      }
-    };
+    return typed("than:less");
   }
 
-  /**
-   * Creates an AttributeMatcher for IS NULL conditions.
-   *
-   * @return an AttributeMatcher for IS NULL conditions
-   */
-  public static AttributeMatcher isNull() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        Predicate isNullPredicate = criteriaBuilder.isNull(root.get(name));
-        predicates.add(isNullPredicate);
-      }
-    };
-  }
-
-  /**
-   * Creates an AttributeMatcher for IS NOT NULL conditions.
-   *
-   * @return an AttributeMatcher for IS NOT NULL conditions
-   */
-  public static AttributeMatcher isNotNull() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        Predicate isNotNullPredicate = criteriaBuilder.isNotNull(root.get(name));
-        predicates.add(isNotNullPredicate);
-      }
-    };
-  }
-
-  /**
-   * Creates an AttributeMatcher for GREATER THAN OR EQUAL TO conditions.
-   *
-   * @return an AttributeMatcher for GREATER THAN OR EQUAL TO conditions
-   */
+  /** Platform operator registry or typed predicate factory. */
   public static AttributeMatcher greaterThanOrEqualTo() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        Predicate gtePredicate = criteriaBuilder.greaterThanOrEqualTo(root.get(name), value);
-        predicates.add(gtePredicate);
-      }
-    };
+    return typed("than:equal:greater");
   }
 
-  /**
-   * Creates an AttributeMatcher for LESS THAN OR EQUAL TO conditions.
-   *
-   * @return an AttributeMatcher for LESS THAN OR EQUAL TO conditions
-   */
+  /** Platform operator registry or typed predicate factory. */
   public static AttributeMatcher lessThanOrEqualTo() {
-    return new AttributeMatcher() {
-      @Override
-      public <S> void match(String name, String value, Root<S> root, CriteriaQuery<?> query,
-                            CriteriaBuilder criteriaBuilder, EscapeCharacter character,
-                            List<Predicate> predicates) throws Exception {
-        Predicate ltePredicate = criteriaBuilder.lessThanOrEqualTo(root.get(name), value);
-        predicates.add(ltePredicate);
-      }
-    };
+    return typed("than:equal:less");
   }
 
+  /** Platform operator registry or typed predicate factory. */
+  public static AttributeMatcher isNull() {
+    return typed("is:null");
+  }
+
+  /** Platform operator registry or typed predicate factory. */
+  public static AttributeMatcher isNotNull() {
+    return typed("is:not:null");
+  }
 }

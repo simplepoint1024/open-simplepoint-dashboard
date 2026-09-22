@@ -3,6 +3,7 @@ package org.simplepoint.plugin.dna.federation.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -19,6 +20,8 @@ import org.simplepoint.plugin.dna.federation.api.entity.FederationCatalog;
 import org.simplepoint.plugin.dna.federation.api.repository.FederationCatalogRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class FederationCatalogServiceImplTest {
@@ -54,8 +57,9 @@ class FederationCatalogServiceImplTest {
     virtualCatalog.setCode("demo");
     virtualCatalog.setName("Demo");
     virtualCatalog.setEnabled(true);
-    when(repository.findAll(anyMap())).thenReturn(List.of(virtualCatalog));
-    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(enabledDataSource()));
+    when(repository.limit(anyMap(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(virtualCatalog)));
+    when(dataSourceService.limit(anyMap(), any(Pageable.class)))
+        .thenReturn(new PageImpl<>(List.of(enabledDataSource())));
     FederationCatalogServiceImpl service = service();
 
     Page<FederationCatalog> page = service.limit(java.util.Map.of(), PageRequest.of(0, 10));

@@ -49,10 +49,13 @@ public interface OrganizationRepository extends BaseRepository<Organization, Str
    */
   Collection<Organization> findAllByIdsAndTenantId(Collection<String> ids, String tenantId);
 
+  /** Returns a tenant's root options, excluding the specified organization. */
   Slice<Organization> findRootOptions(String tenantId, String excludeId, Pageable pageable);
 
+  /** Returns a flat tenant-scoped option slice without counting the full hierarchy. */
   Slice<Organization> findFlatOptions(String tenantId, String excludeId, Pageable pageable);
 
+  /** Returns one parent's children within the selected tenant. */
   Slice<Organization> findChildOptions(
       String tenantId,
       String parentId,
@@ -60,6 +63,7 @@ public interface OrganizationRepository extends BaseRepository<Organization, Str
       Pageable pageable
   );
 
+  /** Searches tenant options using a literal keyword and its escaped match pattern. */
   Slice<Organization> searchOptions(
       String tenantId,
       String keyword,
@@ -68,6 +72,7 @@ public interface OrganizationRepository extends BaseRepository<Organization, Str
       Pageable pageable
   );
 
+  /** Identifies which supplied parents have visible children in the tenant. */
   Collection<String> findParentIdsWithChildren(Collection<String> parentIds, String tenantId);
 
   /**

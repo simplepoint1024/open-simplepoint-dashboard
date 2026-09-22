@@ -46,8 +46,6 @@ val moduleDirectories = listOf(
     "simplepoint-plugin/simplepoint-plugin-core",
     "simplepoint-plugin/simplepoint-plugin-spring",
     "simplepoint-plugin/simplepoint-plugin-webmvc",
-    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-agent-api",
-    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-agent-implementation",
     "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-catalog-api",
     "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-catalog-implementation",
     "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-api",
@@ -58,15 +56,14 @@ val moduleDirectories = listOf(
     "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation",
     "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-runtime-api",
     "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-runtime-implementation",
-    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-skill-api",
-    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-skill-implementation",
-    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-workflow-api",
-    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-workflow-implementation",
     "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-api",
     "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation",
     "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-api",
     "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation",
     "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-jdbc-driver",
+    "simplepoint-plugins/simplepoint-plugin-personal/simplepoint-plugin-personal-api",
+    "simplepoint-plugins/simplepoint-plugin-personal/simplepoint-plugin-personal-implementation",
+    "simplepoint-plugins/simplepoint-plugin-personal/simplepoint-plugin-personal-rest",
     "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-api",
     "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-repository",
     "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-rest",
@@ -106,7 +103,6 @@ val moduleDirectories = listOf(
     "simplepoint-security/simplepoint-security-servlet",
     "simplepoint-service-router/simplepoint-service-router-consul",
     "simplepoint-service-router/simplepoint-service-router-core",
-    "simplepoint-services/simplepoint-service-agent-runtime",
     "simplepoint-services/simplepoint-service-ai",
     "simplepoint-services/simplepoint-service-auditing",
     "simplepoint-services/simplepoint-service-authorization",
@@ -114,7 +110,6 @@ val moduleDirectories = listOf(
     "simplepoint-services/simplepoint-service-dna",
     "simplepoint-services/simplepoint-service-host",
     "simplepoint-services/simplepoint-service-mcp-gateway",
-    "simplepoint-services/simplepoint-service-workflow-runtime"
 )
 
 require(moduleDirectories.map { File(it).name }.distinct().size == moduleDirectories.size) {

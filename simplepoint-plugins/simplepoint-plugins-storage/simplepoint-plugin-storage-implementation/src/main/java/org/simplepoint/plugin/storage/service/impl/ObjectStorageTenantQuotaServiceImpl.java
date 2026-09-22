@@ -41,6 +41,9 @@ public class ObjectStorageTenantQuotaServiceImpl
 
   private final TenantRepository tenantRepository;
 
+  @jakarta.persistence.PersistenceContext
+  private jakarta.persistence.EntityManager entityManager;
+
   /**
    * Object Storage Tenant Quota Service Impl.
    */
@@ -68,19 +71,18 @@ public class ObjectStorageTenantQuotaServiceImpl
   }
 
   @Override
+  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  @SuppressWarnings("unchecked")
   public <S extends ObjectStorageTenantQuota> Page<S> limit(final Map<String, String> attributes, final Pageable pageable) {
     Map<String, String> normalized = new LinkedHashMap<>();
     if (attributes != null) {
       normalized.putAll(attributes);
     }
-    normalized.put("deletedAt", "is:null");
     String tenantId = normalized.get("tenantId");
-    if (tenantId != null && !tenantId.isBlank() && !tenantId.contains(":")) {
+    if (tenantId != null && !tenantId.isBlank() && !tenantId.startsWith("{") && !tenantId.contains(":")) {
       normalized.put("tenantId", "like:" + tenantId.trim());
     }
-    Page<S> page = super.limit(normalized, pageable);
-    decorateQuotas(page.getContent());
-    return page;
+    return (Page<S>) new StorageListQueries(entityManager).quotas(normalized, pageable);
   }
 
   @Override

@@ -42,7 +42,7 @@ cp config/dev.env.example .simplepoint/dev.env
 ./dev up core
 ```
 
-启动包含 AI 工作台、MCP Gateway、Agent Runtime、Workflow Runtime 的组合：
+启动包含 AI 工作台、MCP Gateway 的组合：
 
 ```bash
 ./dev doctor ai
@@ -102,13 +102,12 @@ Terraform 或 Consul CLI，并在 `simplepoint/bootstrap/dev/status` 写入配�
 | host | 8080 |
 | auditing / dna | 6000 / 2777 |
 | ai / mcp-gateway | 2888 / 2890 |
-| agent-runtime / workflow-runtime | 2894 / 2895 |
 
 ## 5. 启动组合与能力边界
 
 - `core`：authorization、common、host，适合权限、租户、菜单和普通业务开发。
-- `ai`：core + ai、mcp-gateway、agent-runtime、workflow-runtime，支持模型接入、知识库、
-  Skill、Agent 和工作流设计/执行。
+- `ai`：core + ai、mcp-gateway，支持模型接入、知识库、
+  MCP 工具接入和扩展目录。
 - `full`：ai + auditing、dna。
 
 无 Docker 的 `ai` 组合支持远程 MCP Server 和内建能力。受管 OCI Tool Runtime 本身以

@@ -1,4 +1,8 @@
 import { http, HttpResponse } from 'msw';
+import objectSchema from '../../../../../scripts/storage-schemas/objects.json';
+import quotaSchema from '../../../../../scripts/storage-schemas/quotas.json';
+import providerSchema from '../../../../../scripts/storage-schemas/provider-configs.json';
+import {compileLocalQuery, type LocalFields} from '../../../../../libs/components/DataTable/localQuery';
 
 const base = '/common/platform/object-storage';
 
@@ -117,19 +121,31 @@ const paginate = <T,>(items: T[], pageNumber: number, pageSize: number) => {
   return buildPage(items.slice(from, to), pageNumber, pageSize, items.length);
 };
 
+function queryPage<T extends object>(items: T[], request: Request, schema: typeof objectSchema | typeof quotaSchema | typeof providerSchema) {
+  try {
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get('page') ?? 0), size = Number(url.searchParams.get('size') ?? 20);
+    if (!Number.isInteger(page) || page < 0 || !Number.isInteger(size) || size < 1 || size > schema.schema['x-query'].maxPageSize) throw Error('分页范围超限');
+    const fields: LocalFields = Object.fromEntries(Object.entries(schema.schema['x-query'].fields).map(([name, field]) => [name, {
+      type: field.javaType === 'Boolean' ? 'boolean' : field.javaType === 'Long' ? 'integer' : field.javaType === 'Instant' ? 'date-time' : 'string',
+    }]));
+    const filters = Object.fromEntries([...url.searchParams].filter(([key]) => !['page', 'size', 'sort'].includes(key)));
+    const compiled = compileLocalQuery(fields, {filters, sort: url.searchParams.getAll('sort')});
+    return HttpResponse.json(paginate(items.filter(compiled.matches).sort(compiled.compare), page, size));
+  } catch {
+    return HttpResponse.json({code: 'INVALID_QUERY', message: '查询条件无效'}, {status: 400});
+  }
+}
+
 export default [
+  http.get(`${base}/provider-configs/schema`, () => HttpResponse.json(providerSchema)),
+  http.get(`${base}/objects/schema`, () => HttpResponse.json(objectSchema)),
+  http.get(`${base}/quotas/schema`, () => HttpResponse.json(quotaSchema)),
+  http.get(`${base}/provider-configs`, ({request}) => queryPage(providers.map(provider => ({...provider,
+    id: provider.code, enabled: true, secretConfigured: true})), request, providerSchema)),
   http.get(`${base}/providers`, () => HttpResponse.json(providers)),
   http.get(`${base}/objects`, ({ request }) => {
-    const url = new URL(request.url);
-    const providerCode = url.searchParams.get('providerCode')?.trim() ?? '';
-    const originalFileName = url.searchParams.get('originalFileName')?.trim().toLowerCase() ?? '';
-    const pageNumber = Number(url.searchParams.get('page') ?? '0');
-    const pageSize = Number(url.searchParams.get('size') ?? '10');
-    const filtered = objects
-      .filter((item) => (!providerCode || item.providerCode === providerCode)
-        && (!originalFileName || item.originalFileName.toLowerCase().includes(originalFileName)))
-      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
-    return HttpResponse.json(paginate(filtered, pageNumber, pageSize));
+    return queryPage(objects, request, objectSchema);
   }),
   http.get(`${base}/objects/:id`, ({ params }) => {
     const object = objects.find((item) => item.id === params.id);
@@ -215,12 +231,7 @@ export default [
     return HttpResponse.json(ids);
   }),
   http.get(`${base}/quotas`, ({ request }) => {
-    const url = new URL(request.url);
-    const tenantId = url.searchParams.get('tenantId')?.trim().toLowerCase() ?? '';
-    const pageNumber = Number(url.searchParams.get('page') ?? '0');
-    const pageSize = Number(url.searchParams.get('size') ?? '10');
-    const filtered = quotas.filter((item) => !tenantId || item.tenantId.toLowerCase().includes(tenantId));
-    return HttpResponse.json(paginate(filtered, pageNumber, pageSize));
+    return queryPage(quotas, request, quotaSchema);
   }),
   http.post(`${base}/quotas`, async ({ request }) => {
     const payload = await request.json() as Record<string, unknown>;

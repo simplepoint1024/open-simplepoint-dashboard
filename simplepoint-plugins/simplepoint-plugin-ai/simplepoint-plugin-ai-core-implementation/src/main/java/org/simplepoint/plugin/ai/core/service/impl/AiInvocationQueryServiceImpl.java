@@ -19,8 +19,6 @@ public class AiInvocationQueryServiceImpl
     extends BaseServiceImpl<AiInvocationRecordRepository, AiInvocationRecord, String>
     implements AiInvocationQueryService {
 
-  private final AiInvocationRecordRepository repository;
-
   private final AiScopeAccessPolicy scopeAccessPolicy;
 
   /** Creates the query service. */
@@ -30,7 +28,6 @@ public class AiInvocationQueryServiceImpl
       final AiScopeAccessPolicy scopeAccessPolicy
   ) {
     super(repository, detailsProviderService);
-    this.repository = repository;
     this.scopeAccessPolicy = scopeAccessPolicy;
   }
 
@@ -45,28 +42,12 @@ public class AiInvocationQueryServiceImpl
       final Pageable pageable
   ) {
     Map<String, String> filters = new LinkedHashMap<>();
-    copyFilter(attributes, filters, "operation");
-    copyFilter(attributes, filters, "status");
-    copyFilter(attributes, filters, "modelDefinitionId");
-    copyFilter(attributes, filters, "modelId");
-    copyFilter(attributes, filters, "userId");
-    copyFilter(attributes, filters, "billingStatus");
-    copyFilter(attributes, filters, "billingCurrency");
-    copyFilter(attributes, filters, "startedAt");
-    ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
-    filters.put("scopeType", scope.scopeType().name());
-    filters.put("tenantId", scope.tenantId() == null ? "is:null" : scope.tenantId());
-    filters.put("deletedAt", "is:null");
-    return repository.limit(filters, pageable);
-  }
-
-  private static void copyFilter(
-      final Map<String, String> source,
-      final Map<String, String> target,
-      final String name
-  ) {
-    if (source != null && source.get(name) != null && !source.get(name).isBlank()) {
-      target.put(name, source.get(name).trim());
+    if (attributes != null) {
+      filters.putAll(attributes);
     }
+    ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
+    return super.limitScoped(filters, Map.of(
+        "scopeType", scope.scopeType().name(),
+        "tenantId", scope.tenantId() == null ? "is:null" : "equals:" + scope.tenantId()), pageable);
   }
 }

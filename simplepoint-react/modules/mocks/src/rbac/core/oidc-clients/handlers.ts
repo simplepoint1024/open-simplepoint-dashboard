@@ -1,11 +1,12 @@
 import {http, HttpResponse} from 'msw';
+import schema from '../../../../../../scripts/common-main-schemas/Client.json';
+import {compileLocalQuery, type LocalFields} from '../../../../../../libs/components/DataTable/localQuery';
 
 const mockClient = {
   id: '1',
   clientId: 'simplepoint-client',
   clientIdIssuedAt: '2025-09-22T13:08:42.826Z',
   clientName: 'simplepoint-client',
-  clientSecret: '$2a$10$mockedmockedmockedmockedmockedmockedmockedmockedmocked',
   clientSecretExpiresAt: null,
   clientAuthenticationMethods: 'client_secret_basic',
   authorizationGrantTypes: 'authorization_code,refresh_token',
@@ -37,160 +38,36 @@ const mockConfiguration = {
   deviceCodeTtlSeconds: 300,
 };
 
+const fields: LocalFields = Object.fromEntries(Object.entries(schema.schema['x-query'].fields)
+  .map(([name, field]) => [name, {type: field.javaType === 'Instant' ? 'date-time' : 'string'}]));
+
+const withoutSecret = (body: Record<string, unknown>) => {
+  const {clientSecret: _secret, ...visible} = body;
+  return visible;
+};
+
 export default [
-  http.get('/common/oidc/clients/schema', () => {
-    return HttpResponse.json(
-      {
-        "buttons": [{
-          "path": "[default]",
-          "color": "danger",
-          "variant": "outlined",
-          "icon": "MinusCircleOutlined",
-          "argumentMaxSize": 10,
-          "sort": 2,
-          "type": "primary",
-          "title": "i18n:table.button.delete",
-          "danger": true,
-          "argumentMinSize": 1,
-          "key": "delete"
-        }, {
-          "path": "[default]",
-          "color": "blue",
-          "variant": "outlined",
-          "icon": "PlusCircleOutlined",
-          "argumentMaxSize": 1,
-          "sort": 0,
-          "type": "primary",
-          "title": "i18n:table.button.add",
-          "danger": false,
-          "argumentMinSize": 0,
-          "key": "add"
-        }, {
-          "path": "[default]",
-          "color": "orange",
-          "variant": "outlined",
-          "icon": "EditOutlined",
-          "argumentMaxSize": 1,
-          "sort": 1,
-          "type": "primary",
-          "title": "i18n:table.button.edit",
-          "danger": false,
-          "argumentMinSize": 1,
-          "key": "edit"
-        }], "schema": {
-          "$schema": "http://json-schema.org/draft-07/schema#", "type": "object", "properties": {
-            "authorizationGrantTypes": {
-              "type": ["string", "null"],
-              "title": "i18n:clients.title.authorizationGrantTypes",
-              "description": "i18n:clients.description.authorizationGrantTypes",
-              "x-order": 4,
-              "x-ui": {"x-list-visible": "true"}
-            },
-            "clientAuthenticationMethods": {
-              "type": ["string", "null"],
-              "title": "i18n:clients.title.clientAuthenticationMethods",
-              "description": "i18n:clients.description.clientAuthenticationMethods",
-              "x-order": 3,
-              "x-ui": {"x-list-visible": "true"}
-            },
-            "clientId": {
-              "type": ["string", "null"],
-              "title": "i18n:clients.title.clientId",
-              "description": "i18n:clients.description.clientId",
-              "x-order": 0,
-              "x-ui": {"x-list-visible": "true"}
-            },
-            "clientIdIssuedAt": {
-              "type": ["string", "null"],
-              "title": "i18n:clients.title.clientIdIssuedAt",
-              "description": "i18n:clients.description.clientIdIssuedAt",
-              "format": "date-time",
-              "x-order": 8
-            },
-            "clientName": {
-              "type": ["string", "null"],
-              "title": "i18n:clients.title.clientName",
-              "description": "i18n:clients.description.clientName",
-              "x-order": 1,
-              "x-ui": {"x-list-visible": "true"}
-            },
-            "clientSecret": {
-              "type": ["string", "null"],
-              "title": "i18n:clients.title.clientSecret",
-              "description": "i18n:clients.description.clientSecret",
-              "x-order": 2,
-              "x-ui": {"widget": "password"}
-            },
-            "clientSecretExpiresAt": {
-              "type": ["string", "null"],
-              "title": "i18n:clients.title.clientSecretExpiresAt",
-              "description": "i18n:clients.description.clientSecretExpiresAt",
-              "format": "date-time",
-              "x-order": 9
-            },
-            "clientSettings": {
-              "type": ["string", "null"],
-              "title": "i18n:clients.title.clientSettings",
-              "description": "i18n:clients.description.clientSettings",
-              "x-ui": {"widget": "textarea"}
-            },
-            "postLogoutRedirectUris": {
-              "type": ["string", "null"],
-              "title": "i18n:clients.title.postLogoutRedirectUris",
-              "description": "i18n:clients.description.postLogoutRedirectUris",
-              "x-order": 6
-            },
-            "redirectUris": {
-              "type": ["string", "null"],
-              "title": "i18n:clients.title.redirectUris",
-              "description": "i18n:clients.description.redirectUris",
-              "x-order": 5
-            },
-            "scopes": {
-              "type": ["string", "null"],
-              "title": "i18n:clients.title.scopes",
-              "description": "i18n:clients.description.scopes",
-              "x-order": 7,
-              "x-ui": {"x-list-visible": "true"}
-            },
-            "tokenSettings": {
-              "type": ["string", "null"],
-              "title": "i18n:clients.title.tokenSettings",
-              "description": "i18n:clients.description.tokenSettings",
-              "x-ui": {"widget": "textarea"}
-            }
-          }
-        }
-      }
-    )
+  http.get('/common/oidc/clients/schema', () => HttpResponse.json(schema)),
+  http.get('/common/oidc/clients', ({request}) => {
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get('page') ?? 0), size = Number(url.searchParams.get('size') ?? 20);
+    try {
+      if (!Number.isSafeInteger(page) || page < 0 || !Number.isSafeInteger(size) || size < 1
+        || size > schema.schema['x-query'].maxPageSize) throw Error('分页范围超限');
+      const filters = Object.fromEntries([...url.searchParams].filter(([key]) => !['page', 'size', 'sort'].includes(key)));
+      const query = compileLocalQuery(fields, {filters, sort: url.searchParams.getAll('sort')});
+      const rows = [mockClient].filter(query.matches).sort(query.compare);
+      return HttpResponse.json({content: rows.slice(page * size, (page + 1) * size),
+        page: {number: page, size, totalElements: rows.length, totalPages: Math.ceil(rows.length / size)}});
+    } catch (error) {
+      return HttpResponse.json({code: 'INVALID_QUERY', message: (error as Error).message}, {status: 400});
+    }
   }),
-
-  http.get('/common/oidc/clients', () => {
-    return HttpResponse.json(
-      {
-        "content": [
-          mockClient
-        ],
-        "page": {
-          "size": 20,
-          "number": 0,
-          "totalElements": 1,
-          "totalPages": 1
-        }
-      }
-    )
-  }),
-
-  http.get('/common/oidc/clients/:id/configuration', () => {
-    return HttpResponse.json(mockConfiguration);
-  }),
-
-  http.post('/common/oidc/clients/configuration', async ({request}) => {
-    return HttpResponse.json(await request.json());
-  }),
-
+  http.get('/common/oidc/clients/:id/configuration', () => HttpResponse.json(mockConfiguration)),
+  http.post('/common/oidc/clients/configuration', async ({request}) =>
+    HttpResponse.json(withoutSecret(await request.json() as Record<string, unknown>))),
   http.put('/common/oidc/clients/:id/configuration', async ({request, params}) => {
     const body = await request.json() as Record<string, unknown>;
-    return HttpResponse.json({...body, id: params.id});
+    return HttpResponse.json({...withoutSecret(body), id: params.id});
   }),
 ];

@@ -1,6 +1,13 @@
 import type { ColumnType } from 'antd/es/table';
 import type {Page} from '@simplepoint/shared/types/request';
-import type { TableButtonProps } from '../Table';
+import type { TableButtonProps, TableProps } from '../Table';
+
+/** Business pages may own their queries/forms while reusing the platform table view.
+ * This mode does not fetch a CRUD schema or create a second pagination/query controller.
+ */
+export type ControlledSimpleTableProps<T extends object> = TableProps<T> & {
+  mode: 'controlled';
+};
 
 export type SimpleTableRefreshTargets = {
   page?: boolean;
@@ -21,14 +28,16 @@ export type SimpleTableErrorMessageResolver = (
 export type SimpleTablePageRequest = {
   page: number;
   size: number;
+  /** Transport-safe conditions: columns named page/size/sort are merged into $query. */
   filters: Record<string, string>;
-  sort?: string;
+  sort?: string | string[];
   signal?: AbortSignal;
 };
 
 export type SimpleTableTreeConfig<T> = {
   hasChildren: (record: T) => boolean;
-  loadChildren: (record: T) => Promise<T[]>;
+  loadChildren?: (record: T, signal?: AbortSignal) => Promise<T[]>;
+  loadChildrenPage?: (record: T, page: number, signal: AbortSignal) => Promise<import('../TreeTable/childPages').ChildPage<T>>;
 };
 
 export type SimpleTableBeforeSubmitContext = {
@@ -44,6 +53,18 @@ export type SimpleTableAfterSubmitContext = SimpleTableBeforeSubmitContext & {
 };
 
 export interface SimpleTableProps<T> {
+  /** Opt in only if the entire route has no state outside this table that must survive eviction. */
+  allowTabEviction?: boolean;
+  schemaStaleTime?: number;
+  virtual?: boolean;
+  queryContext?: string;
+  confirmDiscard?: boolean;
+  drawerTitle?: string;
+  formCustomValidate?: import('@rjsf/utils').CustomValidator<any>;
+  onRowDoubleClick?: (record: T, key: React.Key) => void;
+  onRowClick?: (record: T, key: React.Key) => void;
+  rowSelection?: TableProps<T>['rowSelection'];
+  onSelectionChange?: TableProps<T>['onSelectionChange'];
   name: string;
   baseUrl: string;
   initialFilters?: Record<string, string>;

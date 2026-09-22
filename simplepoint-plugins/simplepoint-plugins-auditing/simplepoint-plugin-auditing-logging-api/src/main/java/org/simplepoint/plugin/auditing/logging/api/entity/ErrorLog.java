@@ -41,6 +41,19 @@ import org.springframework.core.annotation.Order;
     @Index(name = "idx_error_log_exception_type", columnList = "exception_type")
 })
 @EqualsAndHashCode(callSuper = true)
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("occurredAt"),
+    @org.simplepoint.core.query.QueryField("level"),
+    @org.simplepoint.core.query.QueryField("sourceService"),
+    @org.simplepoint.core.query.QueryField("loggerName"),
+    @org.simplepoint.core.query.QueryField("message"),
+    @org.simplepoint.core.query.QueryField("exceptionType"),
+    @org.simplepoint.core.query.QueryField("exceptionMessage"),
+    @org.simplepoint.core.query.QueryField("tenantId"),
+    @org.simplepoint.core.query.QueryField("userId"),
+    @org.simplepoint.core.query.QueryField("requestUri"),
+    @org.simplepoint.core.query.QueryField("clientIp")
+})
 public class ErrorLog extends BaseEntityImpl<String> {
 
   @Order(1)

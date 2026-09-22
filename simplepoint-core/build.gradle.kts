@@ -18,9 +18,11 @@ dependencies {
     api("org.springframework.security:spring-security-oauth2-core")
     api(project(":simplepoint-remoting:simplepoint-remoting-core"))
     api("org.springframework.boot:spring-boot-autoconfigure")
+    api("tools.jackson.core:jackson-databind")
     api(libs.swagger.annotations)
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-jackson")
     testImplementation("org.springframework:spring-web")
     testImplementation("org.springframework:spring-webmvc")
     testImplementation("jakarta.servlet:jakarta.servlet-api")

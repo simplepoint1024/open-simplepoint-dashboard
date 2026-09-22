@@ -1,8 +1,9 @@
 import api from '@/api';
-import { DeleteOutlined, EyeOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EyeOutlined, PlusOutlined, ReloadOutlined } from '@simplepoint/shared/types/icon';
 import { get, post } from '@simplepoint/shared/api/methods';
 import { useI18n } from '@simplepoint/shared/hooks/useI18n';
-import { App as AntApp, Button, Card, Col, Descriptions, Empty, Form, Input, InputNumber, Modal, Row, Select, Space, Spin, Switch, Table, Tabs, Tag, Tree, Typography } from 'antd';
+import {App as AntApp, Button, Card, Col, Descriptions, Empty, Form, Input, InputNumber, Modal, Row, Select, Space, Spin, Switch, Tabs, Tag, Tree, Typography} from 'antd';
+import Table from '@simplepoint/components/DataTable';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -964,6 +965,13 @@ const App = () => {
                               {structure?.dialectName || structure?.dialectCode || '-'}
                             </Paragraph>
                             <Table<ColumnDefinition>
+                              storageKey="dna.metadata.columns"
+                              query={{mode: 'local', scope: 'complete',
+                                contextKey: JSON.stringify([selectedDataSourceId, relationPath]), fields: {
+                                  name: {type: 'string'}, typeName: {type: 'string', columnKey: 'type'},
+                                  nullable: {type: 'boolean'}, autoIncrement: {type: 'boolean'},
+                                  defaultValue: {type: 'string'}, remarks: {type: 'string'},
+                                }}}
                               rowKey={(record) => record.name}
                               columns={columnColumns}
                               dataSource={structure?.columns ?? []}
@@ -973,6 +981,13 @@ const App = () => {
                             />
                             <div style={{ height: 16 }} />
                             <Table<ConstraintDefinition>
+                              storageKey="dna.metadata.constraints"
+                              query={{mode: 'local', scope: 'complete',
+                                contextKey: JSON.stringify([selectedDataSourceId, relationPath]), fields: {
+                                  name: {type: 'string'},
+                                  type: {type: 'string', enum: ['PRIMARY_KEY', 'FOREIGN_KEY', 'UNIQUE', 'CHECK']},
+                                  checkExpression: {type: 'string'},
+                                }}}
                               rowKey={(record) => `${record.type}-${record.name}-${record.columns?.join(',')}`}
                               columns={constraintColumns}
                               dataSource={structure?.constraints ?? []}

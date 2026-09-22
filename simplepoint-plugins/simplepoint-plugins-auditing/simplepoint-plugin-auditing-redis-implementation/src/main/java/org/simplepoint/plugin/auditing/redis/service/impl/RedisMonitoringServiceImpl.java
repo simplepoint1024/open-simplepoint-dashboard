@@ -8,399 +8,131 @@
 
 package org.simplepoint.plugin.auditing.redis.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.simplepoint.plugin.auditing.redis.api.model.RedisEntryDetail;
-import org.simplepoint.plugin.auditing.redis.api.model.RedisEntrySummary;
 import org.simplepoint.plugin.auditing.redis.api.model.RedisEntryType;
 import org.simplepoint.plugin.auditing.redis.api.model.RedisValueUpsertCommand;
 import org.simplepoint.plugin.auditing.redis.api.service.RedisMonitoringService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.connection.DataType;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.core.Cursor;
-import org.springframework.data.redis.core.ScanOptions;
+import org.simplepoint.plugin.auditing.redis.service.query.RedisEntryFieldPolicy;
+import org.simplepoint.plugin.auditing.redis.service.query.RedisEntryPreviewReader;
+import org.simplepoint.plugin.auditing.redis.service.query.RedisEntryQueryService;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ZSetOperations.TypedTuple;
 import org.springframework.stereotype.Service;
 
-/**
- * Redis monitoring service implementation backed by the configured Redis instance.
- */
+/** Redis key management with shared field policy and bounded, on-demand value reads. */
 @Service
 public class RedisMonitoringServiceImpl implements RedisMonitoringService {
+  private final StringRedisTemplate redis;
+  private final RedisEntryPreviewReader previews;
+  private final RedisEntryQueryService queries;
 
-  private static final int SCAN_COUNT = 500;
-  private static final int SAMPLE_SIZE = 100;
-  private static final int PREVIEW_LENGTH = 200;
-
-  private final StringRedisTemplate stringRedisTemplate;
-  private final ObjectMapper objectMapper;
-
-  /**
-   * Creates the service with the Redis template and JSON serializer.
-   *
-   * @param stringRedisTemplate the redis template
-   * @param objectMapper        the object mapper
-   */
+  /** Creates a manager sharing the platform preview and snapshot services. */
   public RedisMonitoringServiceImpl(
-      final StringRedisTemplate stringRedisTemplate,
-      final ObjectMapper objectMapper
-  ) {
-    this.stringRedisTemplate = stringRedisTemplate;
-    this.objectMapper = objectMapper;
+      StringRedisTemplate redis, RedisEntryPreviewReader previews, RedisEntryQueryService queries) {
+    this.redis = redis;
+    this.previews = previews;
+    this.queries = queries;
   }
 
   @Override
-  public Page<RedisEntrySummary> limit(final String pattern, final String type, final Pageable pageable) {
-    RedisEntryType typeFilter = RedisEntryType.fromValue(type);
-    List<String> matchedKeys = scanKeys(normalizePattern(pattern)).stream()
-        .filter(key -> matchesType(key, typeFilter))
-        .sorted(String.CASE_INSENSITIVE_ORDER)
-        .collect(Collectors.toList());
-
-    Pageable effectivePageable = pageable == null ? Pageable.unpaged() : pageable;
-    if (effectivePageable.isUnpaged()) {
-      List<RedisEntrySummary> content = matchedKeys.stream()
-          .map(this::readSummary)
-          .filter(Objects::nonNull)
-          .collect(Collectors.toList());
-      return new PageImpl<>(content);
-    }
-
-    int fromIndex = Math.toIntExact(Math.min(effectivePageable.getOffset(), matchedKeys.size()));
-    int toIndex = Math.min(fromIndex + effectivePageable.getPageSize(), matchedKeys.size());
-    List<RedisEntrySummary> content = matchedKeys.subList(fromIndex, toIndex).stream()
-        .map(this::readSummary)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList());
-    return new PageImpl<>(content, effectivePageable, matchedKeys.size());
+  public RedisEntryDetail detail(String key) {
+    RedisEntryFieldPolicy.requireIdentity();
+    RedisEntryDetail detail =
+        previews.read(normalizeKey(key), RedisEntryFieldPolicy.readable("value"));
+    detail.setEditable(
+        Boolean.TRUE.equals(detail.getEditable()) && RedisEntryFieldPolicy.canEdit());
+    return detail;
   }
 
   @Override
-  public RedisEntryDetail detail(final String key) {
-    String normalizedKey = normalizeKey(key);
-    RedisEntryType type = readType(normalizedKey);
-    if (type == null) {
-      throw new NoSuchElementException("Redis key does not exist: " + normalizedKey);
-    }
-    return readDetail(normalizedKey, type);
-  }
-
-  @Override
-  public RedisEntryDetail create(final RedisValueUpsertCommand command) {
+  public RedisEntryDetail create(RedisValueUpsertCommand command) {
+    RedisEntryFieldPolicy.requireWrite(true);
     RedisValueUpsertCommand normalized = normalizeCommand(command);
-    if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(normalized.getKey()))) {
-      throw new IllegalArgumentException("Redis key already exists: " + normalized.getKey());
+    if (Boolean.TRUE.equals(redis.hasKey(normalized.getKey()))) {
+      throw new IllegalArgumentException("Redis key already exists");
     }
     writeStringValue(normalized);
+    queries.invalidate();
     return detail(normalized.getKey());
   }
 
   @Override
-  public RedisEntryDetail update(final RedisValueUpsertCommand command) {
+  public RedisEntryDetail update(RedisValueUpsertCommand command) {
+    RedisEntryFieldPolicy.requireWrite(false);
     RedisValueUpsertCommand normalized = normalizeCommand(command);
-    RedisEntryType type = readType(normalized.getKey());
-    if (type == null) {
-      throw new NoSuchElementException("Redis key does not exist: " + normalized.getKey());
+    RedisEntryDetail current = detail(normalized.getKey());
+    if (current.getType() != RedisEntryType.STRING) {
+      throw new IllegalArgumentException("Only string Redis keys can be edited");
     }
-    if (type != RedisEntryType.STRING) {
+    if (!Boolean.TRUE.equals(current.getEditable())) {
       throw new IllegalArgumentException(
-          "Only string Redis keys can be edited through key-value operations: " + normalized.getKey()
-      );
+          "Only complete UTF-8 string values within the editing limit can be edited");
     }
     writeStringValue(normalized);
+    queries.invalidate();
     return detail(normalized.getKey());
   }
 
   @Override
-  public void delete(final Collection<String> keys) {
-    List<String> normalizedKeys = normalizeKeys(keys);
-    if (normalizedKeys.isEmpty()) {
-      throw new IllegalArgumentException("At least one redis key is required");
+  public void delete(Collection<String> keys) {
+    RedisEntryFieldPolicy.requireIdentity();
+    if (keys == null || keys.isEmpty() || keys.size() > 100) {
+      throw new IllegalArgumentException("At least one and at most 100 redis keys are required");
     }
-    stringRedisTemplate.delete(normalizedKeys);
+    List<String> normalized = keys.stream().map(this::normalizeKey).distinct().toList();
+    redis.delete(normalized);
+    queries.invalidate();
   }
 
-  private RedisEntrySummary readSummary(final String key) {
-    RedisEntryType type = readType(key);
-    if (type == null) {
-      return null;
-    }
-    Long rawTtl = stringRedisTemplate.getExpire(key, TimeUnit.SECONDS);
-    return new RedisEntrySummary(
-        key,
-        type,
-        normalizeTtl(rawTtl),
-        isPersistent(rawTtl),
-        readSize(key, type),
-        truncate(readSerializedValue(key, type), PREVIEW_LENGTH),
-        isEditable(type)
-    );
-  }
-
-  private RedisEntryDetail readDetail(final String key, final RedisEntryType type) {
-    Long rawTtl = stringRedisTemplate.getExpire(key, TimeUnit.SECONDS);
-    return new RedisEntryDetail(
-        key,
-        type,
-        normalizeTtl(rawTtl),
-        isPersistent(rawTtl),
-        readSize(key, type),
-        isEditable(type),
-        readSerializedValue(key, type)
-    );
-  }
-
-  private boolean matchesType(final String key, final RedisEntryType typeFilter) {
-    if (typeFilter == null) {
-      return true;
-    }
-    return typeFilter == readType(key);
-  }
-
-  private RedisEntryType readType(final String key) {
-    DataType dataType = stringRedisTemplate.execute(
-        (RedisConnection connection) -> connection.type(serializeKey(key))
-    );
-    return dataType == null ? null : RedisEntryType.fromCode(dataType.code());
-  }
-
-  private Long readSize(final String key, final RedisEntryType type) {
-    return switch (type) {
-      case STRING -> stringRedisTemplate.opsForValue().size(key);
-      case HASH -> stringRedisTemplate.opsForHash().size(key);
-      case LIST -> stringRedisTemplate.opsForList().size(key);
-      case SET -> stringRedisTemplate.opsForSet().size(key);
-      case ZSET -> stringRedisTemplate.opsForZSet().size(key);
-      case STREAM, UNKNOWN -> null;
-    };
-  }
-
-  private String readSerializedValue(final String key, final RedisEntryType type) {
-    return switch (type) {
-      case STRING -> defaultString(stringRedisTemplate.opsForValue().get(key));
-      case HASH -> toJson(readHashPayload(key));
-      case LIST -> toJson(readListPayload(key));
-      case SET -> toJson(readSetPayload(key));
-      case ZSET -> toJson(readSortedSetPayload(key));
-      case STREAM -> toJson(Map.of("message", "Redis stream preview is not supported yet"));
-      case UNKNOWN -> toJson(Map.of("message", "Unsupported redis data type"));
-    };
-  }
-
-  private Map<String, Object> readHashPayload(final String key) {
-    Map<Object, Object> entries = stringRedisTemplate.opsForHash().entries(key);
-    if (entries == null) {
-      entries = Map.of();
-    }
-    Map<String, String> values = entries.entrySet().stream()
-        .map(entry -> Map.entry(stringify(entry.getKey()), stringify(entry.getValue())))
-        .sorted(Map.Entry.comparingByKey(String.CASE_INSENSITIVE_ORDER))
-        .limit(SAMPLE_SIZE)
-        .collect(Collectors.toMap(
-            Map.Entry::getKey,
-            Map.Entry::getValue,
-            (left, right) -> left,
-            LinkedHashMap::new
-        ));
-    return samplePayload(entries.size(), values);
-  }
-
-  private Map<String, Object> readListPayload(final String key) {
-    List<String> values = defaultList(
-        stringRedisTemplate.opsForList().range(key, 0, SAMPLE_SIZE - 1)
-    )
-        .stream()
-        .map(this::stringify)
-        .collect(Collectors.toList());
-    Long size = stringRedisTemplate.opsForList().size(key);
-    return samplePayload(size == null ? values.size() : size, values);
-  }
-
-  private Map<String, Object> readSetPayload(final String key) {
-    Set<String> members = defaultSet(stringRedisTemplate.opsForSet().members(key));
-    List<String> values = members.stream()
-        .map(this::stringify)
-        .sorted(String.CASE_INSENSITIVE_ORDER)
-        .limit(SAMPLE_SIZE)
-        .collect(Collectors.toList());
-    return samplePayload(members.size(), values);
-  }
-
-  private Map<String, Object> readSortedSetPayload(final String key) {
-    Set<TypedTuple<String>> tuples = defaultSet(stringRedisTemplate.opsForZSet().rangeWithScores(key, 0, SAMPLE_SIZE - 1));
-    List<Map<String, Object>> values = tuples.stream()
-        .map(tuple -> {
-          Map<String, Object> item = new LinkedHashMap<>();
-          item.put("value", tuple.getValue());
-          item.put("score", tuple.getScore());
-          return item;
-        })
-        .collect(Collectors.toList());
-    Long size = stringRedisTemplate.opsForZSet().size(key);
-    return samplePayload(size == null ? values.size() : size, values);
-  }
-
-  private Map<String, Object> samplePayload(final long size, final Object values) {
-    Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("sampled", size > SAMPLE_SIZE);
-    payload.put("size", size);
-    payload.put("values", values);
-    return payload;
-  }
-
-  private String toJson(final Object value) {
-    try {
-      return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(value);
-    } catch (JsonProcessingException ex) {
-      throw new IllegalStateException("Failed to serialize redis value payload", ex);
-    }
-  }
-
-  private List<String> scanKeys(final String pattern) {
-    List<String> keys = stringRedisTemplate.execute((RedisConnection connection) -> {
-      LinkedHashSet<String> results = new LinkedHashSet<>();
-      ScanOptions options = ScanOptions.scanOptions()
-          .match(pattern)
-          .count(SCAN_COUNT)
-          .build();
-      try (Cursor<byte[]> cursor = connection.scan(options)) {
-        while (cursor.hasNext()) {
-          String key = deserializeKey(cursor.next());
-          if (key != null) {
-            results.add(key);
-          }
-        }
-      }
-      return new ArrayList<>(results);
-    });
-    return keys == null ? List.of() : keys;
-  }
-
-  private void writeStringValue(final RedisValueUpsertCommand command) {
+  private void writeStringValue(RedisValueUpsertCommand command) {
     if (Boolean.TRUE.equals(command.getPersistent())) {
-      stringRedisTemplate.opsForValue().set(command.getKey(), command.getValue());
-      return;
+      redis.opsForValue().set(command.getKey(), command.getValue());
+    } else {
+      redis
+          .opsForValue()
+          .set(command.getKey(), command.getValue(), command.getTtlSeconds(), TimeUnit.SECONDS);
     }
-    if (command.getTtlSeconds() == null || command.getTtlSeconds() <= 0) {
-      throw new IllegalArgumentException("ttlSeconds must be greater than 0 when persistent is false");
-    }
-    stringRedisTemplate.opsForValue().set(
-        command.getKey(),
-        command.getValue(),
-        command.getTtlSeconds(),
-        TimeUnit.SECONDS
-    );
   }
 
-  private RedisValueUpsertCommand normalizeCommand(final RedisValueUpsertCommand command) {
+  private RedisValueUpsertCommand normalizeCommand(RedisValueUpsertCommand command) {
     if (command == null) {
       throw new IllegalArgumentException("Redis command must not be null");
     }
     if (command.getValue() == null) {
       throw new IllegalArgumentException("Redis value must not be null");
     }
+    final String key = normalizeKey(command.getKey());
+    byte[] value = command.getValue().getBytes(StandardCharsets.UTF_8);
+    if (!command.getValue().equals(new String(value, StandardCharsets.UTF_8))) {
+      throw new IllegalArgumentException("Redis value is not valid UTF-8");
+    }
+    if (value.length > RedisEntryPreviewReader.MAX_VALUE_BYTES) {
+      throw new IllegalArgumentException(
+          "Redis value exceeds the editing limit of 262144 UTF-8 bytes");
+    }
+    if (!Boolean.TRUE.equals(command.getPersistent())
+        && (command.getTtlSeconds() == null || command.getTtlSeconds() <= 0)) {
+      throw new IllegalArgumentException(
+          "ttlSeconds must be greater than 0 when persistent is false");
+    }
     return new RedisValueUpsertCommand(
-        normalizeKey(command.getKey()),
+        key,
         command.getValue(),
         command.getTtlSeconds(),
-        Boolean.TRUE.equals(command.getPersistent())
-    );
+        Boolean.TRUE.equals(command.getPersistent()));
   }
 
-  private String normalizeKey(final String key) {
-    String normalized = trimToNull(key);
-    if (normalized == null) {
+  private String normalizeKey(String key) {
+    if (key == null || key.isEmpty()) {
       throw new IllegalArgumentException("Redis key must not be blank");
     }
-    return normalized;
-  }
-
-  private List<String> normalizeKeys(final Collection<String> keys) {
-    if (keys == null) {
-      return List.of();
+    byte[] encoded = key.getBytes(StandardCharsets.UTF_8);
+    if (!key.equals(new String(encoded, StandardCharsets.UTF_8))) {
+      throw new IllegalArgumentException("Redis key is not valid UTF-8");
     }
-    return keys.stream()
-        .map(this::trimToNull)
-        .filter(Objects::nonNull)
-        .distinct()
-        .collect(Collectors.toList());
-  }
-
-  private String normalizePattern(final String pattern) {
-    String normalized = trimToNull(pattern);
-    return normalized == null ? "*" : normalized;
-  }
-
-  private byte[] serializeKey(final String key) {
-    byte[] bytes = stringRedisTemplate.getStringSerializer().serialize(key);
-    if (bytes == null) {
-      throw new IllegalArgumentException("Failed to serialize redis key: " + key);
-    }
-    return bytes;
-  }
-
-  private String deserializeKey(final byte[] value) {
-    return stringRedisTemplate.getStringSerializer().deserialize(value);
-  }
-
-  private Long normalizeTtl(final Long ttlSeconds) {
-    if (ttlSeconds == null || ttlSeconds < 0) {
-      return null;
-    }
-    return ttlSeconds;
-  }
-
-  private Boolean isPersistent(final Long ttlSeconds) {
-    return ttlSeconds != null && ttlSeconds == -1L;
-  }
-
-  private boolean isEditable(final RedisEntryType type) {
-    return type == RedisEntryType.STRING;
-  }
-
-  private String truncate(final String value, final int length) {
-    if (value == null || value.length() <= length) {
-      return value;
-    }
-    return value.substring(0, length) + "...";
-  }
-
-  private String trimToNull(final String value) {
-    if (value == null) {
-      return null;
-    }
-    String trimmed = value.trim();
-    return trimmed.isEmpty() ? null : trimmed;
-  }
-
-  private String defaultString(final String value) {
-    return value == null ? "" : value;
-  }
-
-  private <T> Set<T> defaultSet(final Set<T> values) {
-    return values == null ? Set.of() : values;
-  }
-
-  private <T> List<T> defaultList(final List<T> values) {
-    return values == null ? List.of() : values;
-  }
-
-  private String stringify(final Object value) {
-    return value == null ? null : String.valueOf(value);
+    return key;
   }
 }

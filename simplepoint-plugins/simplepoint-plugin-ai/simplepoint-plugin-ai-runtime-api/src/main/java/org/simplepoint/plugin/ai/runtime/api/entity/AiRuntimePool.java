@@ -17,31 +17,52 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.query.QueryField;
+import org.simplepoint.core.query.TableQuery;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.runtime.api.model.AiRuntimeErrorCodeSerializer;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimePoolStatus;
 
-/**
- * Durable desired and observed state for a reusable OCI MCP replica pool.
- */
+/** Durable desired and observed state for a reusable OCI MCP replica pool. */
 @Data
 @Entity
 @Table(
     name = "simpoint_ai_runtime_pools",
     indexes = {
-        @Index(
-            name = "idx_simpoint_ai_runtime_pool_scope",
-            columnList = "scope_type, tenant_id"
-        ),
-        @Index(
-            name = "idx_simpoint_ai_runtime_pool_status",
-            columnList = "status"
-        )
-    }
-)
+      @Index(name = "idx_simpoint_ai_runtime_pool_scope", columnList = "scope_type, tenant_id"),
+      @Index(name = "idx_simpoint_ai_runtime_pool_status", columnList = "status")
+    })
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @Schema(title = "AI OCI Runtime Pool")
+@TableQuery(
+    value = {
+      @QueryField("id"),
+      @QueryField("code"),
+      @QueryField("name"),
+      @QueryField("serverId"),
+      @QueryField("status"),
+      @QueryField("imageReference"),
+      @QueryField("imageDigest"),
+      @QueryField("requestedMemoryBytes"),
+      @QueryField("requestedNanoCpus"),
+      @QueryField("requestedPidsLimit"),
+      @QueryField("networkMode"),
+      @QueryField("minReplicas"),
+      @QueryField("maxReplicas"),
+      @QueryField("desiredReplicas"),
+      @QueryField("currentReplicas"),
+      @QueryField("readyReplicas"),
+      @QueryField("activationReplicas"),
+      @QueryField("prewarmNodes"),
+      @QueryField("prewarmedNodes"),
+      @QueryField("idleTimeoutSeconds"),
+      @QueryField("replicaLifetimeSeconds"),
+      @QueryField("lastActivityAt"),
+      @QueryField("lastReconciledAt"),
+      @QueryField("createdAt")
+    },
+    maxPageSize = 100)
 public class AiRuntimePool extends BaseEntityImpl<String> {
 
   @Enumerated(EnumType.STRING)
@@ -89,19 +110,11 @@ public class AiRuntimePool extends BaseEntityImpl<String> {
   private String networkMode;
 
   @JsonIgnore
-  @Column(
-      name = "egress_allowlist_json",
-      columnDefinition = "TEXT DEFAULT '[]'",
-      nullable = false
-  )
+  @Column(name = "egress_allowlist_json", columnDefinition = "TEXT DEFAULT '[]'", nullable = false)
   private String egressAllowlistJson;
 
   @JsonIgnore
-  @Column(
-      name = "secret_references_json",
-      columnDefinition = "TEXT DEFAULT '[]'",
-      nullable = false
-  )
+  @Column(name = "secret_references_json", columnDefinition = "TEXT DEFAULT '[]'", nullable = false)
   private String secretReferencesJson;
 
   @Transient

@@ -62,11 +62,11 @@ public class AiApiKeyServiceImpl
       scoped.putAll(attributes);
     }
     ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
-    scoped.put("scopeType", scope.scopeType().name());
-    scoped.put("tenantId", scope.tenantId() == null ? "is:null" : scope.tenantId());
-    scoped.put("deletedAt", "is:null");
+    Map<String, String> required = Map.of(
+        "scopeType", scope.scopeType().name(),
+        "tenantId", scope.tenantId() == null ? "is:null" : "equals:" + scope.tenantId());
     normalizeLike(scoped, "name");
-    return super.limit(scoped, pageable);
+    return super.limitScoped(scoped, required, pageable);
   }
 
   @Override

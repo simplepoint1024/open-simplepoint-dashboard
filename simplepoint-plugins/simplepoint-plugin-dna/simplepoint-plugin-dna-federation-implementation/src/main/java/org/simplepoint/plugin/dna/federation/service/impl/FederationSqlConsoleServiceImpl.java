@@ -381,7 +381,13 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
     List<JdbcDataSourceDefinition> queryDataSources = resolveQueryDataSources(resolvedDataSource, normalizedSql);
     FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly = catalogAssembler.assemble(
         resolvedDataSource.getCode(),
-        queryDataSources
+        queryDataSources,
+        FederationSqlAnalysisUtils.requestedCatalogs(
+            normalizedSql,
+            request.defaultSchema(),
+            resolvedDataSource.getCode(),
+            queryDataSources.stream().map(JdbcDataSourceDefinition::getCode).toList()
+        )
     );
     try {
       int effectiveMaxRows = policy.maxRows();

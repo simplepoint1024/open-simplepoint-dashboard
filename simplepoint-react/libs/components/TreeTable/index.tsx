@@ -1,97 +1,69 @@
-import {App} from 'antd';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {Button, Space, Typography} from 'antd';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import type {Key} from 'react';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {usePageSelected} from '@simplepoint/shared/page/hooks';
 import Table from '../Table';
 import type {TableProps} from '../Table';
+import {createChildPages, type ChildPage, type ChildState} from './childPages';
 
 export type TreeTableProps<T extends object> = Omit<TableProps<T>, 'expandable'> & {
   hasChildren: (record: T) => boolean;
-  loadChildren: (record: T) => Promise<T[]>;
+  loadChildren?: (record: T, signal?: AbortSignal) => Promise<T[]>;
+  loadChildrenPage?: (record: T, page: number, signal: AbortSignal) => Promise<ChildPage<T>>;
 };
 
-function rowKey(record: Record<string, unknown>): Key | undefined {
-  const key = record.id ?? record.key;
+function rowKey(record: object): string | number | undefined {
+  const row = record as {id?: Key; key?: Key};
+  const key = row.id ?? row.key;
   return typeof key === 'string' || typeof key === 'number' ? key : undefined;
 }
 
-function replaceChildren<T extends object>(rows: T[], id: Key, children: T[]): T[] {
-  return rows.map(row => {
-    const current = row as T & {id?: Key; key?: Key; children?: T[]};
-    if ((current.id ?? current.key) === id) return {...current, children};
-    if (!Array.isArray(current.children)) return row;
-    return {...current, children: replaceChildren(current.children, id, children)};
-  });
-}
-
-function prepareTreeRows<T extends object>(rows: T[], hasChildren: (record: T) => boolean): T[] {
-  return rows.map(row => {
-    const current = row as T & {children?: T[]};
-    if (Array.isArray(current.children)) {
-      return {...current, children: prepareTreeRows(current.children, hasChildren)};
-    }
-    return hasChildren(row) ? {...current, children: []} : row;
-  });
-}
-
-/**
- * Platform tree table with lazy direct-child loading.
- *
- * It deliberately builds on the regular platform Table so toolbar actions,
- * column preferences, filters, fullscreen behavior, and visual styling remain
- * identical to flat management pages.
- */
-export default function TreeTable<T extends object>({
-  pageable,
-  hasChildren,
-  loadChildren,
-  ...tableProps
-}: TreeTableProps<T>) {
-  const {message} = App.useApp();
+/** Standard table with cancellable, bounded child pages and no synthetic selectable records. */
+export default function TreeTable<T extends object>({pageable, hasChildren, loadChildren,
+  loadChildrenPage, ...tableProps}: TreeTableProps<T>) {
   const {t} = useI18n();
-  const [content, setContent] = useState<T[]>(() => prepareTreeRows(pageable?.content ?? [], hasChildren));
-  const loadingKeys = useRef(new Set<Key>());
-  const exhaustedKeys = useRef(new Set<Key>());
-  const generation = useRef(0);
-
+  const selected = usePageSelected();
+  const [states, setStates] = useState(new Map<Key, ChildState<T>>());
+  const [expanded, setExpanded] = useState<Key[]>([]);
+  const callbacks = useRef({loadChildren, loadChildrenPage});
+  callbacks.current = {loadChildren, loadChildrenPage};
+  const pager = useMemo(() => createChildPages<T>(async (record, page, signal) => {
+    if (callbacks.current.loadChildrenPage) return callbacks.current.loadChildrenPage(record, page, signal);
+    return {content: await callbacks.current.loadChildren?.(record, signal) ?? [], hasNext: false};
+  }, rowKey, setStates), []);
   useEffect(() => {
-    generation.current += 1;
-    loadingKeys.current.clear();
-    exhaustedKeys.current.clear();
-    setContent(prepareTreeRows(pageable?.content ?? [], hasChildren));
-  }, [hasChildren, pageable]);
-
-  const handleExpand = useCallback(async (expanded: boolean, record: T) => {
-    const existingChildren = (record as {children?: T[]}).children;
-    if (!expanded || (Array.isArray(existingChildren) && existingChildren.length > 0)) return;
-    const key = rowKey(record as Record<string, unknown>);
-    if (key == null || loadingKeys.current.has(key) || exhaustedKeys.current.has(key)) return;
-    const requestGeneration = generation.current;
-    loadingKeys.current.add(key);
-    try {
-      const children = await loadChildren(record);
-      if (requestGeneration !== generation.current) return;
-      if (children.length === 0) exhaustedKeys.current.add(key);
-      setContent(current => replaceChildren(current, key, prepareTreeRows(children, hasChildren)));
-    } catch {
-      if (requestGeneration === generation.current) {
-        message.error(t('table.treeLoadFail', '子节点加载失败，请重试'));
-      }
-    } finally {
-      loadingKeys.current.delete(key);
-    }
-  }, [hasChildren, loadChildren, message, t]);
-
-  return (
-    <Table<T>
-      {...tableProps}
-      pageable={{...pageable, content}}
-      expandable={{
-        childrenColumnName: 'children',
-        rowExpandable: record => hasChildren(record)
-          && !exhaustedKeys.current.has(rowKey(record as Record<string, unknown>) as Key),
-        onExpand: (expanded, record) => void handleExpand(expanded, record),
+    pager.reset(); setExpanded([]);
+    return () => pager.reset(false);
+  }, [pager, pageable]);
+  useEffect(() => {if (!selected) pager.cancelPending();}, [pager, selected]);
+  const prepare = (rows: T[]): T[] => rows.map(row => {
+    const current = row as T & {children?: T[]};
+    const key = rowKey(row);
+    const state = key === undefined ? undefined : states.get(key);
+    const children = state?.rows ?? current.children;
+    return children ? {...current, children: prepare(children)} : hasChildren(row) ? {...current, children: []} : row;
+  });
+  return <Table<T> {...tableProps} pageable={{...pageable, content: prepare(pageable?.content ?? [])}}
+    rowLeadingExtra={record => {
+        const key = rowKey(record);
+        const state = key === undefined ? undefined : states.get(key);
+        if (key === undefined || !expanded.includes(key) || !state || (!state.hasNext && !state.failed)) return null;
+        return <Space size={4} wrap>
+            {state.failed && <Typography.Text type="danger">{t('table.treeLoadFail', '子节点加载失败，请重试')}</Typography.Text>}
+            <Button size="small" type="link" loading={state.loading} disabled={tableProps.loading || !selected}
+              onClick={event => {event.stopPropagation(); void pager.next(record);}}
+              onDoubleClick={event => event.stopPropagation()}>
+              {state.failed ? t('table.retry', '重试') : t('table.loadMore', '加载更多')}
+            </Button>
+        </Space>;
       }}
-    />
-  );
+    expandable={{childrenColumnName: 'children', expandedRowKeys: expanded,
+      rowExpandable: record => hasChildren(record),
+      onExpand: (open, record) => {
+        const key = rowKey(record);
+        if (key === undefined) return;
+        setExpanded(previous => open ? [...previous, key] : previous.filter(value => value !== key));
+        if (open && selected && !tableProps.loading && !states.has(key)) void pager.next(record);
+      }}} />;
 }

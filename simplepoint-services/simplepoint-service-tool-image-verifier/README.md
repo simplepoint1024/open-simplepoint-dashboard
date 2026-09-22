@@ -12,14 +12,9 @@ For each digest-pinned image it fails closed unless all enabled checks pass:
 - a Trivy vulnerability scan with no findings at the configured blocked
   severities.
 
-The service also exposes Cosign signature admission for digest-pinned,
-non-runnable OCI Artifacts. Artifact content and media types are checked by the
-control-plane Registry client before signature admission.
-
 Requests use TLS 1.3 mutual authentication. Image admission accepts only
 certificates with the URI SAN prefix
-`spiffe://open-simplepoint/runtime-node/`; Artifact admission accepts only the
-exact `spiffe://open-simplepoint/ai-control-plane` identity. The server
+`spiffe://open-simplepoint/runtime-node/`. The server
 identity is `spiffe://open-simplepoint/tool-image-verifier`. Decisions are
 cached by immutable digest and policy hash for a short TTL. Every replica uses
 the same static policy, so replicas are horizontally scalable.
@@ -39,14 +34,11 @@ SIMPLEPOINT_TOOL_IMAGE_VERIFIER_CERTIFICATE_IDENTITY_REGEXP=...
 SIMPLEPOINT_TOOL_IMAGE_VERIFIER_CERTIFICATE_OIDC_ISSUER=https://...
 ```
 
-The private APIs are split by workload identity:
+The private API accepts runtime node identities:
 
 ```text
 POST /internal/v1/images/verify
   caller: spiffe://open-simplepoint/runtime-node/{nodeId}
-
-POST /internal/v1/artifacts/verify
-  caller: spiffe://open-simplepoint/ai-control-plane
 ```
 
 Plain HTTP Registries and skipped transparency-log verification are local-test

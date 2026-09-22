@@ -62,4 +62,8 @@ dependencies {
      implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-redis-api"))
      implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-redis-implementation"))
 
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.data:spring-data-redis")
+    testImplementation("io.lettuce:lettuce-core")
+    testRuntimeOnly("com.h2database:h2")
  }

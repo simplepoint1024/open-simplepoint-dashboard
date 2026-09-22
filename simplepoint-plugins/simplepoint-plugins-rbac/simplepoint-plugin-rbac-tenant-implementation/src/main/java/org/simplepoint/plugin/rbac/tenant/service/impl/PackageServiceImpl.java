@@ -1,7 +1,6 @@
 package org.simplepoint.plugin.rbac.tenant.service.impl;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -69,12 +68,19 @@ public class PackageServiceImpl
       return super.limit(attributes, pageable);
     }
     Collection<String> packageCodes = tenantPackageRelevanceRepository.authorized(resolveTenantScope());
-    if (packageCodes.isEmpty()) {
-      return Page.empty(pageable);
-    }
-    Map<String, String> scopedAttributes = new HashMap<>(attributes == null ? Map.of() : attributes);
-    scopedAttributes.put("code", "in:" + String.join(",", packageCodes));
-    return super.limit(scopedAttributes, pageable);
+    return super.limitInScope(attributes, "code", packageCodes, pageable);
+  }
+
+  @Override
+  public Page<Package> assignmentItems(String parent, boolean selected, Map<String, String> filters, Pageable pageable) {
+    // Tenant package assignment is a platform-admin operation, as are its existing read/write endpoints.
+    requirePlatformAdministrator();
+    String tenantId = requireCode(parent, "租户不能为空");
+    tenantRepository.findById(tenantId).filter(tenant -> tenant.getDeletedAt() == null)
+        .orElseThrow(() -> new IllegalArgumentException("租户不存在"));
+    var membership = new org.simplepoint.api.base.QueryMembership("code",
+        tenantPackageRelevanceRepository.authorized(tenantId).stream().toList(), selected);
+    return super.limitMemberships(filters, List.of(membership), pageable);
   }
 
   @Override

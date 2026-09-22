@@ -66,7 +66,6 @@ public class NotificationManagementServiceImpl
     if (attributes != null) {
       normalized.putAll(attributes);
     }
-    normalized.put("deletedAt", "is:null");
     normalizeLikeQuery(normalized, "title");
     return super.limit(normalized, pageable);
   }
@@ -275,7 +274,8 @@ public class NotificationManagementServiceImpl
       final String field
   ) {
     String value = attributes.get(field);
-    if (value != null && !value.isBlank() && !value.startsWith("like:")) {
+    // Preserve typed operators and structured header JSON; only legacy bare text means contains.
+    if (value != null && !value.isBlank() && !value.startsWith("{") && !value.contains(":")) {
       attributes.put(field, "like:" + value.trim());
     }
   }

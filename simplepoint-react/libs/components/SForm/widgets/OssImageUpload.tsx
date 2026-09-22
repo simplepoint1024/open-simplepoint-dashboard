@@ -1,8 +1,8 @@
-import {DeleteOutlined, EyeOutlined, LoadingOutlined, UploadOutlined, UserOutlined} from '@ant-design/icons';
-import {App, Avatar, Button, Image, Space, Upload} from 'antd';
+import {DeleteOutlined, EyeOutlined, LoadingOutlined, UploadOutlined, UserOutlined} from '@simplepoint/shared/types/icon';
+import {App, Avatar, Button, Image, Space, Typography, Upload} from 'antd';
 import type {UploadFile} from 'antd';
 import {useMemo, useState} from 'react';
-import {request} from '@simplepoint/shared/api/client';
+import {request, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import '../index.css';
 
@@ -12,7 +12,7 @@ type StoredObject = {
 
 export type OssImageUploadProps = {
   value?: string | null;
-  onChange: (value?: string) => void;
+  onChange: (value?: string) => void | Promise<void>;
   disabled?: boolean;
   readOnly?: boolean;
   directory?: string;
@@ -20,6 +20,7 @@ export type OssImageUploadProps = {
   maxSizeMb?: number;
   accept?: string;
   shape?: 'circle' | 'square';
+  replaceLabel?: string;
 };
 
 /** Uploads an image to the shared OSS service and stores only its stable image URL. */
@@ -33,12 +34,20 @@ export const OssImageUpload = ({
   maxSizeMb = 5,
   accept = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml',
   shape = 'square',
+  replaceLabel,
 }: OssImageUploadProps) => {
   const {t} = useI18n();
   const {message} = App.useApp();
   const [uploading, setUploading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [uploadError, setUploadError] = useState<string>();
   const blocked = disabled || readOnly || uploading;
+
+  const reportError = (error: unknown) => {
+    const text = resolveApiErrorMessage(error, t('form.image.uploadFailed', '图片上传或保存失败，请重试'));
+    setUploadError(text);
+    message.error(text);
+  };
 
   const fileList = useMemo<UploadFile[]>(() => value ? [{
     uid: value,
@@ -48,12 +57,13 @@ export const OssImageUpload = ({
   }] : [], [t, value]);
 
   const uploadImage = async (file: File) => {
+    setUploadError(undefined);
     if (!file.type.toLowerCase().startsWith('image/')) {
-      message.error(t('form.image.typeError', '请选择图片文件'));
+      reportError(new Error(t('form.image.typeError', '请选择图片文件')));
       return;
     }
     if (file.size > maxSizeMb * 1024 * 1024) {
-      message.error(t('form.image.sizeError', '图片大小不能超过 {size} MB', {size: maxSizeMb}));
+      reportError(new Error(t('form.image.sizeError', '图片大小不能超过 {size} MB', {size: maxSizeMb})));
       return;
     }
     const formData = new FormData();
@@ -69,8 +79,10 @@ export const OssImageUpload = ({
       if (!stored?.id) {
         throw new Error(t('form.image.invalidResponse', '图片上传响应无效'));
       }
-      onChange(`/common/object-storage/images/${encodeURIComponent(stored.id)}`);
+      await onChange(`/common/object-storage/images/${encodeURIComponent(stored.id)}`);
       message.success(t('form.image.uploaded', '图片上传成功'));
+    } catch (error) {
+      reportError(error);
     } finally {
       setUploading(false);
     }
@@ -100,7 +112,7 @@ export const OssImageUpload = ({
           showUploadList={false}
           disabled={blocked}
           beforeUpload={(file) => {
-            void uploadImage(file as File).catch(() => undefined);
+            void uploadImage(file as File);
             return Upload.LIST_IGNORE;
           }}
         >
@@ -109,7 +121,7 @@ export const OssImageUpload = ({
             loading={uploading}
             disabled={disabled || readOnly}
           >
-            {value ? t('form.image.replace', '更换图片') : t('form.image.upload', '上传图片')}
+            {replaceLabel || (value ? t('form.image.replace', '更换图片') : t('form.image.upload', '上传图片'))}
           </Button>
         </Upload>
         {value && shape === 'circle' ? (
@@ -118,11 +130,22 @@ export const OssImageUpload = ({
           </Button>
         ) : null}
         {value && !readOnly ? (
-          <Button danger icon={<DeleteOutlined/>} disabled={disabled || uploading} onClick={() => onChange(undefined)}>
+          <Button danger icon={<DeleteOutlined/>} disabled={disabled || uploading} onClick={async () => {
+            setUploadError(undefined);
+            setUploading(true);
+            try {
+              await onChange(undefined);
+            } catch (error) {
+              reportError(error);
+            } finally {
+              setUploading(false);
+            }
+          }}>
             {t('action.remove', '移除')}
           </Button>
         ) : null}
       </Space>
+      {uploadError ? <Typography.Text type="danger" role="alert">{uploadError}</Typography.Text> : null}
       {shape === 'circle' && value ? (
         <Image
           src={value}

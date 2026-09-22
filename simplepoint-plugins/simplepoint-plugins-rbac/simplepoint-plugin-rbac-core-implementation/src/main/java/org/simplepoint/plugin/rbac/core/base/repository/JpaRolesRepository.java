@@ -32,6 +32,11 @@ import org.springframework.stereotype.Repository;
 public interface JpaRolesRepository extends BaseRepository<Role, String>, RoleRepository {
 
   @Override
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query("select r from Role r where r.tenantId = :tenantId and r.id = :roleId and r.deletedAt is null")
+  java.util.Optional<Role> lockForAuthorization(@Param("tenantId") String tenantId, @Param("roleId") String roleId);
+
+  @Override
   @Query("""
       SELECT new org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo(r.id, r.roleName,r.authority, r.description)
       FROM Role r

@@ -5,6 +5,8 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.api.schema.DictionaryField;
+import org.simplepoint.plugin.rbac.tenant.api.constants.TenantDictionaryCodes;
 
 /**
  * TenantUserRelevance represents the relationship between users and tenants.
@@ -20,7 +22,16 @@ public class TenantUserRelevance extends BaseEntityImpl<String> {
   private String userId;
   private String tenantId;
   private String orgId;
+  @DictionaryField(TenantDictionaryCodes.TENANT_MEMBER_USER_TYPE)
+  @jakarta.persistence.Column(name = "user_type", length = 32, nullable = false)
+  private String userType = "INTERNAL";
   private Boolean enabled = true;
   @jakarta.persistence.Version
   private Long revision;
+
+  @Override
+  public void prePersist() {
+    if (userType == null || userType.isBlank()) userType = "INTERNAL";
+    super.prePersist();
+  }
 }

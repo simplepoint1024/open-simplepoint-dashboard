@@ -164,7 +164,12 @@ public class UsersController extends BaseController<UsersService, User, String> 
   @Operation(summary = "授权角色用户关联关系", description = "根据一组角色")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('users.config.role')")
   public Response<Collection<UserRoleRelevance>> authorize(@RequestBody UserRoleRelevanceDto dto) {
-    return ok(service.authorize(dto));
+    try {
+      return ok(service.authorize(dto));
+    } catch (IllegalArgumentException exception) {
+      throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+          "角色分配不符合当前成员、租户或批量限制");
+    }
   }
 
   /**
@@ -177,7 +182,12 @@ public class UsersController extends BaseController<UsersService, User, String> 
   @Operation(summary = "取消授权角色用户关联关系", description = "根据角色用户关联关系取消授权")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('users.config.role')")
   public Response<Void> unauthorized(@RequestBody UserRoleRelevanceDto dto) {
-    service.unauthorized(dto);
+    try {
+      service.unauthorized(dto);
+    } catch (IllegalArgumentException exception) {
+      throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+          "角色分配不符合当前成员、租户或批量限制");
+    }
     return Response.okay();
   }
 
@@ -187,8 +197,20 @@ public class UsersController extends BaseController<UsersService, User, String> 
   @GetMapping("/role-candidates")
   @Operation(summary = "获取用户管理可分配角色列表", description = "获取用户管理中可分配的角色列表，始终使用默认租户范围")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('users.config.role')")
-  public Response<Page<RoleRelevanceVo>> roleCandidates(Pageable pageable) {
-    return ok(service.roleCandidates(pageable));
+  public Response<Page<Map<String, Object>>> roleCandidates(@RequestParam("userId") String userId,
+      @RequestParam(value = "selected", required = false) Boolean selected,
+      @RequestParam Map<String, String> attributes, Pageable pageable) {
+    var filters = new java.util.LinkedHashMap<>(attributes);
+    filters.remove("userId");
+    filters.remove("selected");
+    return ok(service.roleCandidates(userId, selected, filters, pageable).map(RoleRelevanceVo::project));
+  }
+
+  /** Returns the candidate contract only after authorizing the target member. */
+  @GetMapping("/role-candidates/schema")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('users.config.role')")
+  public Response<Object> roleCandidatesSchema(@RequestParam("userId") String userId) {
+    return ok(service.roleCandidatesSchema(userId));
   }
 
   /**

@@ -9,20 +9,24 @@ import {
   ReloadOutlined,
   VerticalLeftOutlined,
   VerticalRightOutlined
-} from '@ant-design/icons';
-import {Breadcrumb, Button, Dropdown, Layout, Menu, Skeleton, Tabs} from 'antd';
+} from '@simplepoint/shared/types/icon';
+import {Alert, App as AntApp, Breadcrumb, Button, Dropdown, Layout, Menu, Skeleton, Tabs} from 'antd';
 import type {MenuProps, TabsProps} from 'antd';
 import {DndContext, PointerSensor, useSensor, closestCenter} from '@dnd-kit/core';
 import type {DragEndEvent} from '@dnd-kit/core';
 import {SortableContext, horizontalListSortingStrategy, useSortable, arrayMove} from '@dnd-kit/sortable';
 import {CSS} from '@dnd-kit/utilities';
-import {createIcon} from '@simplepoint/shared/types/icon.ts';
+import {createIcon} from '@simplepoint/shared/types/icon';
 import {useSideNavigation} from "@/hooks/routes";
 import {useLocation, useNavigate} from "react-router";
 import {findRouteChainByPath, flattenRoutes, getRouteKey, RouteInfo} from "@/store/routes";
 import {aboutMeItem, HeaderLogo, HeaderSearchBar, RoleSwitcherTop, TenantSwitcherTop, toolsSwitcherGroupItem} from "@/layouts/navigation-bar/top-bar.tsx";
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import MenuSearchModal from "@/layouts/navigation-bar/menu-search-modal.tsx";
+import {TabPanels} from './TabPanels';
+import {NavigationGuardContext} from './NavigationGuard';
+import {closeTargets} from './tabCache';
+import {useReleaseUpdate} from './useReleaseUpdate';
 import {useCurrentTenantProfile, useCurrentTenants} from '@/fetches/tenants.ts';
 import {getTenantId} from '@/store/tenant.ts';
 import {
@@ -70,11 +74,41 @@ const DraggableTabNode: React.FC<DraggableTabNodeProps> = ({className, ...props}
   return <div ref={setNodeRef} style={style} {...attributes} {...listeners} {...props} className={className} />;
 };
 
-const NavigateBar: React.FC<{ children?: React.ReactElement, data?: Array<RouteInfo> }> = ({children, data}) => {
+const NavigateBar: React.FC<{
+  children?: React.ReactElement;
+  data?: Array<RouteInfo>;
+  remoteRegistryKey?: string;
+}> = ({children, data, remoteRegistryKey}) => {
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768);
   const navigate = useNavigate();
   const location = useLocation();
   const {t} = useI18n();
+  const {modal} = AntApp.useApp();
+  const updateAvailable = useReleaseUpdate();
+  const guardedTabs = useRef(new Set<string>());
+  const onGuardChange = useCallback((key: string, blocked: boolean) => {
+    if (blocked) guardedTabs.current.add(key);
+    else guardedTabs.current.delete(key);
+  }, []);
+  const confirmDiscard = useCallback((keys: string[]) => {
+    if (!keys.some(key => guardedTabs.current.has(key))) return Promise.resolve(true);
+    return new Promise<boolean>(resolve => modal.confirm({
+      title: t('nav.unsavedTitle', '确认离开编辑页面'),
+      content: t('nav.unsavedContent', '页面中有打开的编辑器或未完成的操作，继续可能丢失未保存内容。是否继续？'),
+      onOk: () => resolve(true),
+      onCancel: () => resolve(false),
+    }));
+  }, [modal, t]);
+  const confirmWorkspaceChange = useCallback(() => confirmDiscard([...guardedTabs.current]), [confirmDiscard]);
+  useEffect(() => {
+    const handler = (event: BeforeUnloadEvent) => {
+      if (!guardedTabs.current.size) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
   const [activeTenantId, setActiveTenantId] = useState<string | undefined>(() => getTenantId());
   const {data: currentTenants} = useCurrentTenants();
   const activeTenant = currentTenants?.find(tenant => tenant.tenantId === activeTenantId);
@@ -92,7 +126,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data?: Array<RouteI
   // 侧边栏宽度拖动调整，按用户隔离持久化
   const SIDER_MIN = 140;
   const SIDER_MAX = 480;
-  const SIDER_DEFAULT = 180;
+  const SIDER_DEFAULT = 240;
   const getSiderStorageKey = () => {
     try {
       const raw = sessionStorage.getItem('sp.userinfo');
@@ -181,6 +215,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data?: Array<RouteI
 
   // 补充：对未在菜单中的内部路由，提供固定的名称与图标
   const extraTabs = useMemo(() => ([
+    { path: '/dashboard', label: t('menu.home', '首页'), icon: 'HomeOutlined' },
     { path: '/profile', label: t('menu.profile', '个人资料'), icon: 'UserOutlined' },
     { path: '/settings', label: t('menu.settings', '系统设置'), icon: 'SettingOutlined' },
     { path: '/tenant', label: t('menu.tenantHome', '租户主页'), icon: 'HomeOutlined' },
@@ -513,8 +548,8 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data?: Array<RouteI
 
   // 侧边菜单 items（must be declared before onMenuOpenChange which references it）
   const sideMenuItems = useMemo(
-    () => useSideNavigation(navigate, routeData).items,
-    [navigate, routeData],
+    () => useSideNavigation(navigate, routeData, remoteRegistryKey).items,
+    [navigate, remoteRegistryKey, routeData],
   );
 
   // Menu open keys: fully user-controlled after initial sync from active route
@@ -550,8 +585,9 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data?: Array<RouteI
     }
   }, [navigate, tabs]);
 
-  const onTabEdit = useCallback((targetKey: React.MouseEvent | React.KeyboardEvent | string, action: 'add' | 'remove') => {
+  const onTabEdit = useCallback(async (targetKey: React.MouseEvent | React.KeyboardEvent | string, action: 'add' | 'remove') => {
     if (action !== 'remove') return;
+    if (typeof targetKey !== 'string' || !await confirmDiscard([targetKey])) return;
     // 基于当前 tabs 计算下一状态与应跳转的 fallbackKey，避免在 setState 回调内直接 navigate
     const prevTabs = tabs;
     const idx = prevTabs.findIndex(t => t.key === targetKey);
@@ -567,11 +603,12 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data?: Array<RouteI
       // 延后到提交后再跳转，避免在渲染其他组件时更新 HashRouter
       window.setTimeout(() => navigate(fallbackKey), 0);
     }
-  }, [tabs, activeKey, navigate, normalizeTabs, persistTabs]);
+  }, [tabs, activeKey, navigate, normalizeTabs, persistTabs, confirmDiscard]);
 
   // 右键菜单：刷新、批量关闭和清除缓存
 
-  const onContextMenuClick = useCallback(({key}: { key: string }) => {
+  const onContextMenuClick = useCallback(async ({key}: { key: string }) => {
+    if (!await confirmDiscard(closeTargets(tabs, getCurrentPath(), key))) return;
     if (key === 'refresh') {
       const path = getCurrentPath();
       try {
@@ -621,7 +658,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data?: Array<RouteI
       // 延后跳转，避免在当前渲染过程中触发 HashRouter 同步更新
       window.setTimeout(() => navigate(DASHBOARD_PATH), 0);
     }
-  }, [getCurrentPath, normalizeTabs, persistTabs, getDashboardTab, navigate]);
+  }, [getCurrentPath, normalizeTabs, persistTabs, getDashboardTab, navigate, confirmDiscard, tabs]);
 
   const contextMenu = useMemo(() => ({
     items: [
@@ -704,6 +741,7 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data?: Array<RouteI
   ], [currentTenantProfile?.profileEditable, navigate, tenantMenuEnabled]);
 
   return (
+    <NavigationGuardContext.Provider value={confirmWorkspaceChange}>
     <Layout className={`nb-root ${themeMode === 'dark' ? 'theme-dark' : 'theme-light'}`} style={{ minHeight: '100vh' }}>
       <Header className="nb-header">
         {/* 左：Logo（独立组件，不受 AntD Menu overflow 检测影响）*/}
@@ -779,19 +817,11 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data?: Array<RouteI
               </div>
             </Dropdown>
             <div className="nb-inner-content">
-              {children ? tabs.map(tab => (
-                <div
-                  key={tab.key}
-                  className={`nb-tab-panel${tab.key === activeKey ? ' nb-tab-panel-active' : ''}`}
-                  hidden={tab.key !== activeKey}
-                  aria-hidden={tab.key !== activeKey}
-                >
-                  {React.cloneElement(
-                    children as React.ReactElement<{location?: string}>,
-                    {location: tab.location || tab.key},
-                  )}
-                </div>
-              )) : null}
+              {children ? (
+                <TabPanels key={children.key} tabs={tabs} activeKey={activeKey} onGuardChange={onGuardChange}>
+                  {children as React.ReactElement<{location?: string}>}
+                </TabPanels>
+              ) : null}
             </div>
           </Content>
           <Footer className="nb-footer">
@@ -807,7 +837,16 @@ const NavigateBar: React.FC<{ children?: React.ReactElement, data?: Array<RouteI
         onNavigate={onSearchNavigate}
         t={t}
       />
+      {updateAvailable && <Alert
+        style={{position: 'fixed', right: 24, bottom: 24, zIndex: 1100, maxWidth: 'calc(100vw - 48px)'}}
+        type="info" showIcon closable title={t('nav.updateAvailable', '有新版本可用')}
+        description={t('nav.updateHint', '可以继续使用当前页面，完成编辑后再刷新更新。')}
+        action={<Button onClick={async () => {
+          if (await confirmWorkspaceChange()) window.location.reload();
+        }}>{t('nav.updateNow', '刷新更新')}</Button>}
+      />}
     </Layout>
+    </NavigationGuardContext.Provider>
   );
 };
 

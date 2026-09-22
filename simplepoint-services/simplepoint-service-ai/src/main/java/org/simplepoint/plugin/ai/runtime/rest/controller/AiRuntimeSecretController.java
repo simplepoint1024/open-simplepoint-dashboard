@@ -21,9 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-/**
- * Current-scope management API for encrypted Runtime secret references.
- */
+/** Current-scope management API for encrypted Runtime secret references. */
 @RestController
 @RequestMapping(AiRuntimePaths.SECRETS)
 @Tag(name = "AI Runtime Secret", description = "OCI 工作负载短期 Secret")
@@ -31,63 +29,48 @@ public class AiRuntimeSecretController {
 
   private final AiRuntimeSecretService service;
 
-  /**
-   * Creates the current-scope Runtime secret controller.
-   */
+  /** Creates the current-scope Runtime secret controller. */
   public AiRuntimeSecretController(final AiRuntimeSecretService service) {
     this.service = service;
   }
 
-  /**
-   * Pages secret metadata without returning encrypted or plaintext values.
-   */
+  /** Pages secret metadata without returning encrypted or plaintext values. */
   @GetMapping
   @PreAuthorize(
       "hasRole('Administrator') or hasAuthority('ai.workbench.runtime.view') "
           + "or hasAuthority('ai.workbench.runtime.secrets.manage') "
           + "or hasAuthority('ai.workbench.runtime.pools.manage') "
-          + "or hasAuthority('ai.workbench.runtime.workloads.manage')"
-  )
+          + "or hasAuthority('ai.workbench.runtime.workloads.manage')")
   @Operation(summary = "分页查询 Runtime Secret")
-  public Response<Page<AiRuntimeSecret>> findAll(final Pageable pageable) {
-    return Response.limit(service.findAll(pageable), AiRuntimeSecret.class);
+  public Response<Page<AiRuntimeSecret>> findAll(
+      @org.springframework.web.bind.annotation.RequestParam
+          final java.util.Map<String, String> filters,
+      final Pageable pageable) {
+    return Response.limit(service.query(filters, pageable), AiRuntimeSecret.class);
   }
 
-  /**
-   * Finds one secret metadata record in the current scope.
-   */
+  /** Finds one secret metadata record in the current scope. */
   @GetMapping("/{id}")
   @PreAuthorize(
       "hasRole('Administrator') or hasAuthority('ai.workbench.runtime.view') "
           + "or hasAuthority('ai.workbench.runtime.secrets.manage') "
           + "or hasAuthority('ai.workbench.runtime.pools.manage') "
-          + "or hasAuthority('ai.workbench.runtime.workloads.manage')"
-  )
+          + "or hasAuthority('ai.workbench.runtime.workloads.manage')")
   @Operation(summary = "查询 Runtime Secret")
-  public Response<AiRuntimeSecret> find(
-      @PathVariable("id") final String id
-  ) {
+  public Response<AiRuntimeSecret> find(@PathVariable("id") final String id) {
     try {
-      return service.find(id)
-          .map(Response::okay)
-          .orElseGet(Response::nf);
+      return service.find(id).map(Response::okay).orElseGet(Response::nf);
     } catch (IllegalArgumentException ex) {
       throw badRequest(ex);
     }
   }
 
-  /**
-   * Creates an encrypted Runtime secret reference.
-   */
+  /** Creates an encrypted Runtime secret reference. */
   @PostMapping
   @PreAuthorize(
-      "hasRole('Administrator') or "
-          + "hasAuthority('ai.workbench.runtime.secrets.manage')"
-  )
+      "hasRole('Administrator') or " + "hasAuthority('ai.workbench.runtime.secrets.manage')")
   @Operation(summary = "创建加密 Runtime Secret")
-  public Response<AiRuntimeSecret> create(
-      @RequestBody final AiRuntimeSecret secret
-  ) {
+  public Response<AiRuntimeSecret> create(@RequestBody final AiRuntimeSecret secret) {
     try {
       return Response.okay(service.create(secret));
     } catch (IllegalArgumentException ex) {
@@ -95,41 +78,26 @@ public class AiRuntimeSecretController {
     }
   }
 
-  /**
-   * Rotates the encrypted material for an existing reference.
-   */
+  /** Rotates the encrypted material for an existing reference. */
   @PostMapping("/{id}/rotate")
   @PreAuthorize(
-      "hasRole('Administrator') or "
-          + "hasAuthority('ai.workbench.runtime.secrets.manage')"
-  )
+      "hasRole('Administrator') or " + "hasAuthority('ai.workbench.runtime.secrets.manage')")
   @Operation(summary = "轮换 Runtime Secret")
   public Response<AiRuntimeSecret> rotate(
-      @PathVariable("id") final String id,
-      @RequestBody final RuntimeSecretRotateRequest request
-  ) {
+      @PathVariable("id") final String id, @RequestBody final RuntimeSecretRotateRequest request) {
     try {
-      return Response.okay(service.rotate(
-          id,
-          request == null ? null : request.value()
-      ));
+      return Response.okay(service.rotate(id, request == null ? null : request.value()));
     } catch (IllegalArgumentException ex) {
       throw badRequest(ex);
     }
   }
 
-  /**
-   * Soft-deletes the selected secret references.
-   */
+  /** Soft-deletes the selected secret references. */
   @DeleteMapping
   @PreAuthorize(
-      "hasRole('Administrator') or "
-          + "hasAuthority('ai.workbench.runtime.secrets.manage')"
-  )
+      "hasRole('Administrator') or " + "hasAuthority('ai.workbench.runtime.secrets.manage')")
   @Operation(summary = "删除 Runtime Secret")
-  public Response<Void> remove(
-      @RequestBody final Collection<String> ids
-  ) {
+  public Response<Void> remove(@RequestBody final Collection<String> ids) {
     try {
       service.remove(ids);
       return Response.okay();
@@ -138,13 +106,8 @@ public class AiRuntimeSecretController {
     }
   }
 
-  private ResponseStatusException badRequest(
-      final IllegalArgumentException exception
-  ) {
+  private ResponseStatusException badRequest(final IllegalArgumentException exception) {
     return new ResponseStatusException(
-        HttpStatus.BAD_REQUEST,
-        "AI_RUNTIME_SECRET_REQUEST_INVALID",
-        exception
-    );
+        HttpStatus.BAD_REQUEST, "AI_RUNTIME_SECRET_REQUEST_INVALID", exception);
   }
 }

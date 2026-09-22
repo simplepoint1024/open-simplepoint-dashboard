@@ -1,4 +1,10 @@
 {
+  "organizations.selector.draftCount": "Draft selections",
+  "organizations.selector.clearDraft": "Clear draft selection",
+  "organizations.selector.addDraft": "Select",
+  "organizations.selector.removeDraft": "Deselect",
+  "organizations.selector.draftLimit": "The draft supports up to 2000 organizations. Your current selection is preserved; adjust it before continuing.",
+  "organizations.title.id": "Organization ID",
   "organizations.description.code": "Unique business code of the organization within the tenant",
   "organizations.description.description": "Short description of the organization",
   "organizations.description.enabled": "Whether the organization is enabled",

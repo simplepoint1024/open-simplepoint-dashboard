@@ -9,44 +9,23 @@ import org.simplepoint.plugin.ai.runtime.api.model.RuntimeNodeRegistration;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-/**
- * Runtime-node registration, heartbeat, fencing, and platform query contract.
- */
+/** Runtime-node registration, heartbeat, fencing, and platform query contract. */
 public interface AiRuntimeNodeService {
 
-  /**
-   * Registers a new runtime process generation for one stable node.
-   */
-  RuntimeNodeControlResponse register(
-      String nodeId,
-      RuntimeNodeRegistration registration
-  );
+  /** Registers a new runtime process generation for one stable node. */
+  RuntimeNodeControlResponse register(String nodeId, RuntimeNodeRegistration registration);
 
-  /**
-   * Renews one matching runtime process generation.
-   */
-  RuntimeNodeControlResponse heartbeat(
-      String nodeId,
-      RuntimeNodeHeartbeat heartbeat
-  );
+  /** Renews one matching runtime process generation. */
+  RuntimeNodeControlResponse heartbeat(String nodeId, RuntimeNodeHeartbeat heartbeat);
 
-  /**
-   * Marks one matching runtime process generation offline.
-   */
-  RuntimeNodeControlResponse offline(
-      String nodeId,
-      RuntimeNodeOfflineRequest request
-  );
+  /** Marks one matching runtime process generation offline. */
+  RuntimeNodeControlResponse offline(String nodeId, RuntimeNodeOfflineRequest request);
 
-  /**
-   * Returns one platform runtime node.
-   */
+  /** Returns one platform runtime node. */
   Optional<AiRuntimeNode> findActiveByNodeId(String nodeId);
 
-  /**
-   * Pages platform runtime nodes.
-   */
-  Page<AiRuntimeNode> findAll(Pageable pageable);
+  /** Applies public table filters inside the mandatory runtime ownership scope. */
+  Page<AiRuntimeNode> query(java.util.Map<String, String> filters, Pageable pageable);
 
   /**
    * Marks all expired heartbeat generations offline.

@@ -91,6 +91,22 @@ public class FederationCalciteCatalogAssembler {
       final String catalogCode,
       final Collection<JdbcDataSourceDefinition> dataSources
   ) {
+    return assemble(catalogCode, dataSources, null);
+  }
+
+  /**
+   * Mounts the current database and only explicitly referenced external catalogs.
+   *
+   * @param catalogCode selected datasource code
+   * @param dataSources referenced datasources
+   * @param requestedCatalogs catalog names by lower-case datasource code; null mounts all catalogs
+   * @return assembled Calcite root payload
+   */
+  public FederationCalciteCatalogAssembly assemble(
+      final String catalogCode,
+      final Collection<JdbcDataSourceDefinition> dataSources,
+      final Map<String, Set<String>> requestedCatalogs
+  ) {
     long startedAt = System.nanoTime();
     String normalizedCatalogCode = requireValue(catalogCode, "数据源编码不能为空");
     List<JdbcDataSourceDefinition> normalizedDataSources = normalizeDataSources(dataSources);
@@ -98,11 +114,13 @@ public class FederationCalciteCatalogAssembler {
       CachedCatalogAssembly assembly = buildCatalogAssembly(
           normalizedCatalogCode,
           normalizedDataSources,
+          requestedCatalogs,
           expireAtMillis()
       );
       return assembly.toRuntimeAssembly(false, toElapsedMs(startedAt), true);
     }
-    String cacheKey = schemaCacheKey(normalizedCatalogCode, normalizedDataSources);
+    String cacheKey = schemaCacheKey(normalizedCatalogCode, normalizedDataSources)
+        + catalogScopeKey(requestedCatalogs);
     CachedCatalogAssembly cached = lookupCachedAssembly(cacheKey);
     if (cached != null) {
       return cached.toRuntimeAssembly(true, toElapsedMs(startedAt), false);
@@ -115,6 +133,7 @@ public class FederationCalciteCatalogAssembler {
       CachedCatalogAssembly assembly = buildCatalogAssembly(
           normalizedCatalogCode,
           normalizedDataSources,
+          requestedCatalogs,
           expireAtMillis()
       );
       schemaCache.put(cacheKey, assembly);
@@ -140,9 +159,10 @@ public class FederationCalciteCatalogAssembler {
   private CachedCatalogAssembly buildCatalogAssembly(
       final String normalizedCatalogCode,
       final List<JdbcDataSourceDefinition> dataSources,
+      final Map<String, Set<String>> requestedCatalogs,
       final long expiresAtMillis
   ) {
-    List<ResolvedJdbcSource> jdbcSources = resolveJdbcSources(dataSources);
+    List<ResolvedJdbcSource> jdbcSources = resolveJdbcSources(dataSources, requestedCatalogs);
     validateRegistrationNames(normalizedCatalogCode, jdbcSources);
     return new CachedCatalogAssembly(
         normalizedCatalogCode,
@@ -224,12 +244,26 @@ public class FederationCalciteCatalogAssembler {
     return value == null ? "" : String.valueOf(value);
   }
 
-  private List<ResolvedJdbcSource> resolveJdbcSources(final Collection<JdbcDataSourceDefinition> dataSources) {
+  private static String catalogScopeKey(final Map<String, Set<String>> requestedCatalogs) {
+    if (requestedCatalogs == null) {
+      return "\\nall-catalogs";
+    }
+    return requestedCatalogs.entrySet().stream()
+        .sorted(Map.Entry.comparingByKey())
+        .map(entry -> entry.getKey() + ":" + entry.getValue().stream().sorted().toList())
+        .toList().toString();
+  }
+
+  private List<ResolvedJdbcSource> resolveJdbcSources(
+      final Collection<JdbcDataSourceDefinition> dataSources,
+      final Map<String, Set<String>> requestedCatalogs
+  ) {
     if (dataSources == null || dataSources.isEmpty()) {
       return List.of();
     }
     return dataSources.stream()
-        .map(this::resolveJdbcSource)
+        .map(definition -> resolveJdbcSource(definition, requestedCatalogs == null ? null
+            : requestedCatalogs.getOrDefault(definition.getCode().toLowerCase(Locale.ROOT), Set.of())))
         .toList();
   }
 
@@ -258,7 +292,10 @@ public class FederationCalciteCatalogAssembler {
     registerCatalogNamespaces(catalogSchema, jdbcSource.catalogNamespaces());
   }
 
-  private ResolvedJdbcSource resolveJdbcSource(final JdbcDataSourceDefinition definition) {
+  private ResolvedJdbcSource resolveJdbcSource(
+      final JdbcDataSourceDefinition definition,
+      final Set<String> requestedCatalogs
+  ) {
     JdbcDriverDefinition driver = driverService.findActiveById(requireValue(
         definition.getDriverId(),
         "数据源驱动ID不能为空"
@@ -286,7 +323,8 @@ public class FederationCalciteCatalogAssembler {
           metaData,
           dialect,
           supportContext,
-          connectionAttributes
+          connectionAttributes,
+          requestedCatalogs
       );
       return new ResolvedJdbcSource(
           definition,
@@ -312,13 +350,16 @@ public class FederationCalciteCatalogAssembler {
       final DatabaseMetaData baseMetaData,
       final JdbcDatabaseDialect dialect,
       final JdbcDatabaseDialect.SupportContext baseSupportContext,
-      final Map<String, String> connectionAttributes
+      final Map<String, String> connectionAttributes,
+      final Set<String> requestedCatalogs
   ) throws SQLException {
     List<String> visibleCatalogs = dialect.visibleCatalogs(loadCatalogs(baseMetaData), baseSupportContext);
     Map<String, String> catalogNamesByLowerCase = new LinkedHashMap<>();
     registerCatalogName(catalogNamesByLowerCase, baseSupportContext.currentCatalog());
     for (String catalogName : visibleCatalogs) {
-      registerCatalogName(catalogNamesByLowerCase, catalogName);
+      if (requestedCatalogs == null || requestedCatalogs.contains(catalogName.toLowerCase(Locale.ROOT))) {
+        registerCatalogName(catalogNamesByLowerCase, catalogName);
+      }
     }
     if (catalogNamesByLowerCase.isEmpty()) {
       return List.of();

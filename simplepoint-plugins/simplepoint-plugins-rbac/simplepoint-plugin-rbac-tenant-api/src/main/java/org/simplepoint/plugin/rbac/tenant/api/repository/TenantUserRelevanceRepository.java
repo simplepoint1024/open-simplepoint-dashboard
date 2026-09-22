@@ -13,6 +13,10 @@ import org.springframework.data.domain.Pageable;
  */
 public interface TenantUserRelevanceRepository {
 
+  /** Loads only requested assignments, including deleted rows needed for safe reactivation. */
+  List<TenantUserRelevance> findAllByTenantIdAndUserIdIn(String tenantId, Collection<String> userIds);
+
+  /** Finds an active membership without including soft-deleted relations. */
   java.util.Optional<TenantUserRelevance> findByTenantIdAndUserIdAndDeletedAtIsNull(String tenantId, String userId);
 
   /**

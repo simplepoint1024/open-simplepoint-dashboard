@@ -26,6 +26,18 @@ import org.springframework.core.annotation.Order;
 @AllArgsConstructor
 @Tag(name = "查询审计", description = "用于记录联邦查询执行情况")
 @Schema(title = "i18n:dna.federation.queryAudits.entity.title", description = "i18n:dna.federation.queryAudits.entity.description")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("catalogCode"),
+    @org.simplepoint.core.query.QueryField("viewCode"),
+    @org.simplepoint.core.query.QueryField("status"),
+    @org.simplepoint.core.query.QueryField("executedAt"),
+    @org.simplepoint.core.query.QueryField("executionTimeMs"),
+    @org.simplepoint.core.query.QueryField("resultRows"),
+    @org.simplepoint.core.query.QueryField("executedBy"),
+    @org.simplepoint.core.query.QueryField("queryText"),
+    @org.simplepoint.core.query.QueryField("pushdownSummary"),
+    @org.simplepoint.core.query.QueryField("errorMessage")
+})
 public class FederationQueryAudit extends BaseEntityImpl<String> {
 
   @Order(0)

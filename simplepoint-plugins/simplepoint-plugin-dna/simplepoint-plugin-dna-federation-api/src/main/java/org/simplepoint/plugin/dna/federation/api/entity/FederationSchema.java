@@ -62,6 +62,13 @@ import org.springframework.core.annotation.Order;
 })
 @Tag(name = "逻辑 Schema", description = "用于管理数据目录下的逻辑 Schema")
 @Schema(title = "i18n:dna.federation.schemas.entity.title", description = "i18n:dna.federation.schemas.entity.description")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("catalogId"),
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description")
+})
 public class FederationSchema extends BaseEntityImpl<String> {
 
   @Order(0)

@@ -82,6 +82,20 @@ import org.springframework.core.annotation.Order;
 })
 @Tag(name = "JDBC驱动定义", description = "用于管理数据库驱动下载地址、本地上传驱动包以及 JDBC URL 校验规则")
 @Schema(title = "i18n:dna.drivers.entity.title", description = "i18n:dna.drivers.entity.description")
+@org.simplepoint.core.query.TableQuery({
+    @org.simplepoint.core.query.QueryField("name"),
+    @org.simplepoint.core.query.QueryField("code"),
+    @org.simplepoint.core.query.QueryField("databaseType"),
+    @org.simplepoint.core.query.QueryField("version"),
+    @org.simplepoint.core.query.QueryField("driverClassName"),
+    @org.simplepoint.core.query.QueryField("downloadUrl"),
+    @org.simplepoint.core.query.QueryField("jdbcUrlPattern"),
+    @org.simplepoint.core.query.QueryField("enabled"),
+    @org.simplepoint.core.query.QueryField("description"),
+    @org.simplepoint.core.query.QueryField("localJarPath"),
+    @org.simplepoint.core.query.QueryField("downloadedAt"),
+    @org.simplepoint.core.query.QueryField("lastDownloadMessage")
+})
 public class JdbcDriverDefinition extends BaseEntityImpl<String> {
 
   @Order(0)

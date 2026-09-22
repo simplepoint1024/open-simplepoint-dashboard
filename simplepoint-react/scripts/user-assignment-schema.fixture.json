@@ -1,0 +1,131 @@
+{
+  "buttons": [],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "email": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:users.title.email",
+        "description": ""
+      },
+      "id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:users.title.id",
+        "description": ""
+      },
+      "name": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:users.title.name",
+        "description": ""
+      },
+      "phoneNumber": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:users.title.phoneNumber",
+        "description": ""
+      }
+    },
+    "x-query": {
+      "maxNodes": 32,
+      "maxPageSize": 200,
+      "version": 1,
+      "relations": [],
+      "fields": {
+        "id": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "name": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "email": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "phoneNumber": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        }
+      },
+      "maxSort": 3,
+      "maxDepth": 4
+    }
+  }
+}

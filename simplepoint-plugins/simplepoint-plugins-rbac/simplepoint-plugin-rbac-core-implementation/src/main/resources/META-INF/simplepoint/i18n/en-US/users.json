@@ -18,6 +18,7 @@
   "users.title.password": "Password",
   "users.description.password": "Login password",
   "users.title.phoneNumber": "Phone Number",
+  "users.title.id": "User ID",
   "users.description.phoneNumber": "User's phone number",
   "users.title.picture": "Avatar",
   "users.description.picture": "User avatar image",

@@ -10,7 +10,7 @@ import {
   SettingOutlined,
   UserOutlined,
   AppstoreOutlined,
-} from '@ant-design/icons';
+} from '@simplepoint/shared/types/icon';
 import {useNavigate} from 'react-router';
 
 const {Title, Text} = Typography;

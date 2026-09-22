@@ -81,6 +81,9 @@ class UsersServiceImplTest {
   RoleRepository roleRepository;
 
   @Mock
+  UserRoleCandidateQuery roleCandidateQuery;
+
+  @Mock
   ResourceGrantLogRemoteService resourceGrantLogRemoteService;
 
   @InjectMocks
@@ -402,7 +405,6 @@ class UsersServiceImplTest {
 
   @Test
   void authorize_withValidRolesAsAdmin_savesAndRefreshesVersion() {
-    when(tenantUserRelevanceRepository.authorized("tenant1")).thenReturn(Set.of("u1"));
     AuthorizationContext ctx = buildCtx("admin", true, "tenant1");
     Role role = new Role();
     role.setId("r1");

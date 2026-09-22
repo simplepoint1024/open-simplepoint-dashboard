@@ -17,7 +17,10 @@ export function registerRemotesIfAny(remotes: ServiceEntry[], entryPoint?: strin
     if (!remotes || remotes.length === 0) return;
     const mf = getInstance();
     if (!mf) return;
-    mf.registerRemotes(remotes.map(map => formatMfEntry(map, entryPoint ?? '/mf/mf-manifest.json')));
+    const registered = remotes.map(map => formatMfEntry(map, entryPoint ?? '/mf/mf-manifest.json'));
+    mf.registerRemotes(registered, {force: true});
+    // Resolve entries only for the selected/hovered page. Warming every service
+    // here competes with the initial route on high-latency external networks.
 }
 
 /**
@@ -27,9 +30,6 @@ export function registerRemotesIfAny(remotes: ServiceEntry[], entryPoint?: strin
  */
 export function formatMfEntry(serviceEntry: ServiceEntry, entryPoint: string): RuntimeRemote {
     const resolved = resolveMfEntry(serviceEntry, entryPoint);
-    if (!serviceEntry.entry) {
-        console.log(`[Mf] Remote ${serviceEntry.name} entry resolved to: ${resolved.entry}`);
-    }
     return resolved;
 }
 

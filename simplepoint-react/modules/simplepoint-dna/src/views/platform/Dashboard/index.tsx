@@ -1,21 +1,8 @@
 import api from '@/api';
 import {get} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {
-  App as AntApp,
-  Badge,
-  Button,
-  Card,
-  Col,
-  Progress,
-  Row,
-  Space,
-  Spin,
-  Statistic,
-  Table,
-  Tooltip,
-  Typography,
-} from 'antd';
+import {App as AntApp, Badge, Button, Card, Col, Progress, Row, Space, Spin, Statistic, Tooltip, Typography} from 'antd';
+import Table from '@simplepoint/components/DataTable';
 import type {ColumnsType} from 'antd/es/table';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router';
