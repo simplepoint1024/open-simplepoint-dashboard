@@ -172,7 +172,7 @@
     },
     {
       "file": "modules/simplepoint-common/src/views/system/FieldScope/config/entries/index.tsx",
-      "expression": "o.labelKey",
+      "expression": "`field-scopes.title.entry.access.${value}`",
       "expectedOccurrences": 1,
       "mode": "finite",
       "resolvedKeys": [
@@ -546,6 +546,13 @@
       "expectedOccurrences": 1,
       "mode": "runtime",
       "reason": "Trusted registered field metadata supplies i18n keys; the field name remains the fallback."
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/FieldScope/config/entries/index.tsx",
+      "expression": "text.slice(5)",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Page and field titles come from trusted registered resource metadata, with readable fallbacks."
     }
   ]
 }

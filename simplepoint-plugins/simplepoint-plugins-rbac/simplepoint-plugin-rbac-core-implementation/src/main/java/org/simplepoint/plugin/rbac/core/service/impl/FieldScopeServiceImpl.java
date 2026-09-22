@@ -55,6 +55,61 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   }
 
   @Override
+  public java.util.Map<String, PageFields> pageCatalog() {
+    requireCurrentTenantId();
+    return fieldCatalog.pages();
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public FieldScope createConfigured(Configuration configuration) {
+    var entries = configuredEntries(configuration, List.of());
+    FieldScope scope = new FieldScope();
+    scope.setName(configuration.name());
+    scope.setDescription(configuration.description());
+    FieldScope created = create(scope);
+    return replaceEntries(created.getId(), entries);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public FieldScope updateConfigured(String id, Configuration configuration) {
+    var existing = getRepository().findByIdAndTenantIdAndDeletedAtIsNull(id, requireCurrentTenantId())
+        .orElseThrow(() -> new org.simplepoint.core.permission.InvalidPermissionPolicyException("字段规则不存在"));
+    var entries = configuredEntries(configuration, existing.getEntries());
+    FieldScope metadata = new FieldScope();
+    metadata.setId(id);
+    metadata.setName(configuration.name());
+    metadata.setDescription(configuration.description());
+    modifyById(metadata);
+    return replaceEntries(id, entries);
+  }
+
+  private List<FieldScopeEntry> configuredEntries(Configuration configuration, List<FieldScopeEntry> existing) {
+    if (configuration == null || configuration.entries() == null || configuration.entries().size() > 500) {
+      throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("字段规则不能为空且不能超过 500 条");
+    }
+    var allowed = new java.util.HashSet<String>();
+    var seen = new java.util.HashSet<String>();
+    pageCatalog().values().forEach(page -> page.models().forEach(model -> model.properties().keySet()
+        .forEach(field -> allowed.add(model.model() + "#" + field))));
+    for (var entry : configuration.entries()) {
+      if (entry == null || entry.getResource() == null || entry.getField() == null || entry.getAccess() == null) {
+        throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("资源、字段和访问级别不能为空");
+      }
+      if (!seen.add(entry.getResource() + "#" + entry.getField())) {
+        throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("同一资源字段不能重复配置");
+      }
+      boolean unchanged = existing.stream().anyMatch(old -> old.getResource().equals(entry.getResource())
+          && old.getField().equals(entry.getField()) && old.getAccess() == entry.getAccess());
+      if (!unchanged && !allowed.contains(entry.getResource() + "#" + entry.getField())) {
+        throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("字段未注册或所属页面未授权");
+      }
+    }
+    return configuration.entries();
+  }
+
+  @Override
   @Transactional(rollbackFor = Exception.class)
   public FieldScope replaceEntries(String fieldScopeId, Collection<FieldScopeEntry> entries) {
     String tenantId = requireCurrentTenantId();
@@ -62,12 +117,15 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
         .orElseThrow(() -> new IllegalArgumentException("FieldScope not found: " + fieldScopeId));
     if (entries == null || entries.size() > 500) throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("字段规则不能为空且不能超过 500 条");
     java.util.Map<String, FieldScopeEntry> validated = new java.util.LinkedHashMap<>();
+    var catalog = fieldCatalog.entries();
     for (FieldScopeEntry entry : entries) {
       if (entry == null || entry.getResource() == null || entry.getField() == null || entry.getAccess() == null) {
         throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("资源、字段和访问级别不能为空");
       }
       String field = entry.getField().trim();
-      String resource = fieldCatalog.validateResource(entry.getResource().trim(), field);
+      boolean unchanged = fieldScope.getEntries().stream().anyMatch(old -> old.getResource().equals(entry.getResource())
+          && old.getField().equals(field) && old.getAccess() == entry.getAccess());
+      String resource = unchanged ? entry.getResource() : fieldCatalog.validateResource(catalog, entry.getResource().trim(), field);
       FieldScopeEntry clean = new FieldScopeEntry();
       clean.setResource(resource);
       clean.setField(field);

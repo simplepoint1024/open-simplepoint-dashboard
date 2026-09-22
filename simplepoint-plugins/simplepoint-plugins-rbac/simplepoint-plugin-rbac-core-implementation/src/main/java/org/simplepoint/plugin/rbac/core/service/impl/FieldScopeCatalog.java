@@ -35,8 +35,34 @@ public class FieldScopeCatalog {
     return result;
   }
 
+  /** Page codes are selected by users; canonical model names remain an execution detail. */
+  public Map<String, org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.PageFields> pages() {
+    var context = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    if (context == null || context.getUserId() == null) {
+      throw new org.springframework.security.access.AccessDeniedException("授权上下文不可用");
+    }
+    Map<String, org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.PageFields> result = new java.util.TreeMap<>();
+    if (context.getResources() == null || context.getResources().isEmpty()) return result;
+    entityManager.createQuery("select r.code,r.alias,r.name,r.label,r.title,r.permissionMetadata from Resource r"
+        + " where r.deletedAt is null and r.disabled=false and r.type='PAGE' and r.permissionMetadata is not null", Object[].class)
+        .getResultList().forEach(row -> {
+          String code = (String) row[0];
+          if (!context.getResources().contains(code)) return;
+          var descriptor = org.simplepoint.core.permission.PermissionPageDescriptor.fromJson((String) row[5]);
+          var models = descriptor.models().stream().filter(model -> model.fields() && !model.properties().isEmpty()).toList();
+          if (models.isEmpty()) return;
+          String title = java.util.stream.Stream.of(row[1], row[2], row[3], row[4], code)
+              .filter(value -> value instanceof String text && !text.isBlank()).map(Object::toString).findFirst().orElse(code);
+          result.put(code, new org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.PageFields(title, models));
+        });
+    return result;
+  }
+
   public String validateResource(String resource, String field) {
-    Map<String, List<String>> catalog = entries();
+    return validateResource(entries(), resource, field);
+  }
+
+  public String validateResource(Map<String, List<String>> catalog, String resource, String field) {
     String canonical = resource;
     if (!catalog.containsKey(resource)) {
       var matches = catalog.keySet().stream().filter(name -> name.substring(name.lastIndexOf('.') + 1).equals(resource)).toList();

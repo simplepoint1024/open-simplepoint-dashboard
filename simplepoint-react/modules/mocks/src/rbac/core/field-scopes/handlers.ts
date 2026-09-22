@@ -132,6 +132,27 @@ const schema = {
 };
 
 export default [
+  http.get(`${base}/page-catalog`, () => HttpResponse.json({
+    'users.view': {title: 'i18n:users.title', models: [{model: 'org.simplepoint.security.entity.User', properties: {
+      email: {title: '邮箱', type: 'java.lang.String'},
+      phoneNumber: {title: '手机号', type: 'java.lang.String'},
+      nickname: {title: '昵称', type: 'java.lang.String'},
+    }}]},
+    'organizations.view': {title: '组织管理', models: [{model: 'org.simplepoint.plugin.rbac.tenant.api.entity.Organization', properties: {
+      name: {title: '组织名称', type: 'java.lang.String'},
+      code: {title: '组织编码', type: 'java.lang.String'},
+    }}]},
+  })),
+  http.post(`${base}/configuration`, async ({request}) => {
+    const payload = await request.json() as Partial<FieldScopeItem>;
+    return HttpResponse.json(store.create({entries: [], ...payload}));
+  }),
+  http.put(`${base}/configuration`, async ({request}) => {
+    const id = new URL(request.url).searchParams.get('id');
+    const payload = await request.json() as Partial<FieldScopeItem>;
+    if (!id || !store.all().some(row => row.id === id)) return HttpResponse.json({message: 'Field scope not found'}, {status: 404});
+    return HttpResponse.json(store.update({...payload, id}));
+  }),
   http.get(`${base}/schema`, () => HttpResponse.json(schema)),
   http.get(base, ({ request }) => HttpResponse.json(pageFromUrl(new URL(request.url), store.all()))),
   http.post(base, async ({ request }) => {

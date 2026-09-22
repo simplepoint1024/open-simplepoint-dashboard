@@ -1,140 +1,94 @@
-import {App as AntdApp, Alert, Button, Form, Select, Space} from 'antd';
-import {MinusCircleOutlined, PlusOutlined} from '@simplepoint/shared/types/icon';
-import {useEffect, useState} from 'react';
-import {fetchFieldCatalog, replaceEntries, FieldScopeEntryDto} from '@/api/system/field-scope';
+import {Alert, Button, Empty, Select, Space, Table, Tag, Typography, type SelectProps} from 'antd';
+import {DeleteOutlined, PlusOutlined, ReloadOutlined} from '@simplepoint/shared/types/icon';
+import {useMemo, useState} from 'react';
+import {fetchFieldPageCatalog, type FieldScopeEntryDto} from '@/api/system/field-scope';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-
 import {useData} from '@simplepoint/shared/api/methods';
 
-const ACCESS_OPTIONS = [
-    {value: 'EDITABLE', labelKey: 'field-scopes.title.entry.access.EDITABLE'},
-    {value: 'VISIBLE', labelKey: 'field-scopes.title.entry.access.VISIBLE'},
-    {value: 'MASKED', labelKey: 'field-scopes.title.entry.access.MASKED'},
-    {value: 'HIDDEN', labelKey: 'field-scopes.title.entry.access.HIDDEN'},
-];
+const ACCESS = ['EDITABLE', 'VISIBLE', 'MASKED', 'HIDDEN'];
+const keyOf = (entry: Pick<FieldScopeEntryDto, 'resource' | 'field'>) => `${entry.resource}#${entry.field}`;
+const EMPTY: FieldScopeEntryDto[] = [];
 
-const EMPTY_ENTRIES: FieldScopeEntryDto[] = [];
-
-export interface FieldScopeEntriesConfigProps {
-    fieldScopeId: string;
-    initialEntries?: FieldScopeEntryDto[];
-    onSuccess?: () => void;
+/** Controlled editor shared by creation, editing and the registered configuration action. */
+export default function FieldEntries({value = EMPTY, onChange, disabled, onPendingChange}: {
+  value?: FieldScopeEntryDto[]; onChange?: (entries: FieldScopeEntryDto[]) => void; disabled?: boolean;
+  onPendingChange?: (pending: boolean) => void;
+}) {
+  const {t} = useI18n();
+  const [page, setPage] = useState<string>();
+  const [selected, setSelected] = useState<string[]>([]);
+  const [access, setAccess] = useState('VISIBLE');
+  const {data: catalog, isFetching, error, refetch} = useData(['fieldScopePageCatalog'], fetchFieldPageCatalog, {staleTime: 30_000});
+  const label = (text: string, fallback: string) => text?.startsWith('i18n:') ? t(text.slice(5), fallback) : text || fallback;
+  const accessOptions = ACCESS.map(value => ({value, label: t(`field-scopes.title.entry.access.${value}`, value)}));
+  const metadata = useMemo(() => {
+    const fields = new Map<string, {title: string; model: string; pages: string[]}>();
+    Object.entries(catalog ?? {}).forEach(([code, page]) => page.models.forEach(model =>
+      Object.entries(model.properties).forEach(([field, property]) => {
+        const key = keyOf({resource: model.model, field});
+        const item = fields.get(key) ?? {title: property.title, model: model.model, pages: []};
+        item.pages.push(code); fields.set(key, item);
+      })));
+    return fields;
+  }, [catalog]);
+  const configured = useMemo(() => new Set(value.map(keyOf)), [value]);
+  const pageOptions = Object.entries(catalog ?? {}).map(([code, item]) => ({value: code, label: `${label(item.title, code)} · ${code}`}));
+  const modelOptions = (catalog?.[page ?? '']?.models ?? []).map(model => ({
+    label: model.model.split('.').pop(),
+    options: Object.entries(model.properties).map(([field, property]) => ({
+      value: keyOf({resource: model.model, field}), label: `${label(property.title, field)} · ${field}`,
+      disabled: configured.has(keyOf({resource: model.model, field})),
+    })),
+  }));
+  const fieldOptions: SelectProps['options'] = modelOptions.length === 1 ? modelOptions[0].options : modelOptions;
+  const missing = !error && !!catalog && value.some(entry => !metadata.has(keyOf(entry)));
+  return <div style={{display: 'grid', gap: 12, minWidth: 0}}>
+    <Typography.Text type="secondary">{t('field-scopes.editor.hint', '选择页面资源后批量添加字段；未配置的字段沿用原有权限。规则保存后仍需在角色资源配置中绑定。')}</Typography.Text>
+    {error && <Alert type="error" title={t('field-scopes.message.catalogFailed', '字段目录加载失败，请刷新后重试')}
+      action={<Button icon={<ReloadOutlined />} onClick={() => void refetch()}>{t('table.retry', '重试')}</Button>} />}
+    {missing && <Alert type="warning" title={t('field-scopes.editor.unavailable', '部分已有字段的元数据当前不可用，配置会保留；可以移除，但不能修改其访问级别。')} />}
+    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12}}>
+      <Select aria-label={t('field-scopes.editor.resource', '页面资源')} showSearch optionFilterProp="label"
+        placeholder={t('field-scopes.editor.resource', '页面资源')} value={page} options={pageOptions}
+        loading={isFetching} disabled={disabled || !!error} onChange={code => {setPage(code); setSelected([]); onPendingChange?.(false);}} />
+      <Select aria-label={t('field-scopes.editor.fields', '选择字段')} mode="multiple" showSearch optionFilterProp="label"
+        placeholder={t('field-scopes.editor.fields', '选择字段')} value={selected} options={fieldOptions}
+        maxTagCount="responsive" disabled={disabled || !page || !!error}
+        onChange={keys => {setSelected(keys); onPendingChange?.(keys.length > 0);}} />
+      <Space.Compact style={{width: '100%'}}>
+        <Select aria-label={t('field-scopes.title.entry.access', '访问级别')} value={access} options={accessOptions}
+          style={{flex: 1}} disabled={disabled} onChange={setAccess} />
+        <Button icon={<PlusOutlined />} disabled={disabled || !!error || !selected.length || value.length + selected.length > 500}
+          onClick={() => {
+            const added = selected.filter(key => !configured.has(key)).map(key => {
+              const index = key.lastIndexOf('#'); return {resource: key.slice(0, index), field: key.slice(index + 1), access};
+            });
+            onChange?.([...value, ...added]); setSelected([]); onPendingChange?.(false);
+          }}>{t('field-scopes.editor.addFields', '添加字段')}</Button>
+      </Space.Compact>
+    </div>
+    {!!selected.length && <Typography.Text type="secondary">{t('field-scopes.editor.pending', '请点击“添加字段”，或清空已选字段后保存。')}</Typography.Text>}
+    {!isFetching && catalog && !pageOptions.length && <Empty description={t('field-scopes.editor.empty', '当前没有已授权且支持字段权限的页面资源')} />}
+    <Table size="small" rowKey={keyOf} dataSource={value} pagination={{pageSize: 8, showSizeChanger: false, hideOnSinglePage: true}}
+      scroll={{x: 680}} columns={[
+        {title: t('field-scopes.editor.resource', '页面资源'), width: '35%', render: (_, row) => {
+          const item = metadata.get(keyOf(row));
+          return <Space orientation="vertical" size={2}>
+            <span>{item?.pages.map(code => label(catalog![code].title, code)).join(' / ') || t('field-scopes.editor.legacy', '已有配置')}</span>
+            {(!item || item.pages.some(code => catalog![code].models.length > 1)) &&
+              <Typography.Text type="secondary">{row.resource.split('.').pop()}</Typography.Text>}
+          </Space>;
+        }},
+        {title: t('field-scopes.title.entry.field', '字段'), render: (_, row) => <Space wrap>
+          {label(metadata.get(keyOf(row))?.title ?? '', row.field)}<Tag>{row.field}</Tag>
+        </Space>},
+        {title: t('field-scopes.title.entry.access', '访问级别'), width: 150, render: (_, row) =>
+          <Select aria-label={`${row.field} ${t('field-scopes.title.entry.access', '访问级别')}`} value={row.access}
+            options={accessOptions} style={{width: '100%'}} disabled={disabled || !metadata.has(keyOf(row))}
+            onChange={access => onChange?.(value.map(entry => keyOf(entry) === keyOf(row) ? {...entry, access} : entry))} />},
+        {title: '', width: 56, render: (_, row) => <Button type="text" danger icon={<DeleteOutlined />}
+          aria-label={t('field-scopes.editor.remove', '移除字段')} disabled={disabled}
+          onClick={() => onChange?.(value.filter(entry => keyOf(entry) !== keyOf(row)))} />},
+      ]} />
+  </div>;
 }
-
-const App = ({fieldScopeId, initialEntries = EMPTY_ENTRIES, onSuccess}: FieldScopeEntriesConfigProps) => {
-    const {message} = AntdApp.useApp();
-    const {t} = useI18n();
-    const [form] = Form.useForm();
-    const [saving, setSaving] = useState(false);
-    const {data: catalog, isFetching, error} = useData(['fieldScopeCatalog'], fetchFieldCatalog);
-    const entries = Form.useWatch('entries', form) as FieldScopeEntryDto[] | undefined;
-    useEffect(() => {
-        form.setFieldsValue({entries: initialEntries});
-    }, [fieldScopeId, initialEntries, form]);
-    const fieldsFor = (resource?: string) => {
-        if (!catalog || !resource) return [];
-        if (catalog[resource]) return catalog[resource];
-        const matches = Object.keys(catalog).filter((key) => key.split('.').pop() === resource);
-        return matches.length === 1 ? catalog[matches[0]] : [];
-    };
-
-    const handleSave = async () => {
-        try {
-            const values = await form.validateFields();
-            const keys = (values.entries ?? []).map((entry: FieldScopeEntryDto) => entry.resource + '#' + entry.field);
-            if (new Set(keys).size !== keys.length) {
-                message.error(t('field-scopes.rule.duplicate', '同一资源字段不能重复配置'));
-                return;
-            }
-            setSaving(true);
-            await replaceEntries(fieldScopeId, values.entries ?? []);
-            message.success(t('field-scopes.message.entriesSaveSuccess', '保存成功'));
-            onSuccess?.();
-        } catch (e: any) {
-            if (e?.errorFields) return; // validation error, already shown
-            message.error(t('field-scopes.message.entriesSaveFailed', '保存失败'));
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    return (
-        <Form
-            form={form}
-            disabled={saving || isFetching || !!error}
-            initialValues={{entries: initialEntries}}
-            style={{maxWidth: 720}}
-        >
-            {error && <Alert type="error" showIcon message={t('field-scopes.message.catalogFailed', '字段目录加载失败，请刷新后重试')} />}
-            <Form.List name="entries">
-                {(fields, {add, remove}) => (
-                    <>
-                        {fields.map(({key, name, ...restField}) => (
-                            <Space
-                                key={key}
-                                align="baseline"
-                                style={{display: 'flex', marginBottom: 8, flexWrap: 'wrap'}}
-                            >
-                                <Form.Item
-                                    {...restField}
-                                    name={[name, 'resource']}
-                                    rules={[{required: true, message: t('field-scopes.rule.entry.resource', '请输入资源名')}]}
-                                    style={{marginBottom: 0, minWidth: 160}}
-                                >
-                                    <Select
-                                        showSearch optionFilterProp="label"
-                                        placeholder={t('field-scopes.title.entry.resource', '资源')}
-                                        options={Object.keys(catalog ?? {}).map((resource) => ({value: resource, label: resource}))}
-                                        onChange={() => form.setFieldValue(['entries', name, 'field'], undefined)}
-                                        loading={isFetching}
-                                    />
-                                </Form.Item>
-                                <Form.Item
-                                    {...restField}
-                                    name={[name, 'field']}
-                                    rules={[{required: true, message: t('field-scopes.rule.entry.field', '请输入字段名')}]}
-                                    style={{marginBottom: 0, minWidth: 160}}
-                                >
-                                    <Select
-                                        showSearch
-                                        placeholder={t('field-scopes.title.entry.field', '字段')}
-                                        options={fieldsFor(entries?.[name]?.resource).map((field) => ({value: field, label: field}))}
-                                    />
-                                </Form.Item>
-                                <Form.Item
-                                    {...restField}
-                                    name={[name, 'access']}
-                                    rules={[{required: true, message: t('field-scopes.rule.entry.access', '请选择访问级别')}]}
-                                    style={{marginBottom: 0, minWidth: 140}}
-                                >
-                                    <Select
-                                        placeholder={t('field-scopes.title.entry.access', '访问级别')}
-                                        style={{width: 140}}
-                                        options={ACCESS_OPTIONS.map(o => ({
-                                            value: o.value,
-                                            label: t(o.labelKey, o.value),
-                                        }))}
-                                    />
-                                </Form.Item>
-                                <MinusCircleOutlined onClick={() => remove(name)} style={{color: '#ff4d4f'}}/>
-                            </Space>
-                        ))}
-                        <Form.Item>
-                            <Button type="dashed" onClick={() => add({resource: '', field: '', access: 'VISIBLE'})}
-                                    icon={<PlusOutlined/>}>
-                                {t('field-scopes.action.addEntry', '添加规则')}
-                            </Button>
-                        </Form.Item>
-                    </>
-                )}
-            </Form.List>
-            <Form.Item>
-                <Button type="primary" onClick={handleSave} loading={saving}>
-                    {t('field-scopes.action.saveEntries', '保存')}
-                </Button>
-            </Form.Item>
-        </Form>
-    );
-};
-
-export default App;

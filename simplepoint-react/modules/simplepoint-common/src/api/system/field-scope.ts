@@ -1,11 +1,7 @@
-import {get, put} from '@simplepoint/shared/api/methods';
+import {get, post, put} from '@simplepoint/shared/api/methods';
 import api from '@/api';
 
 const {baseUrl} = api['rbac-field-scopes'];
-
-export async function fetchFieldCatalog() {
-  return get<Record<string, string[]>>(`${baseUrl}/catalog`);
-}
 
 export interface FieldScopeEntryDto {
     resource: string;
@@ -13,6 +9,24 @@ export interface FieldScopeEntryDto {
     access: string;
 }
 
-export async function replaceEntries(fieldScopeId: string, entries: FieldScopeEntryDto[]) {
-    return put(`${baseUrl}/entries?fieldScopeId=${encodeURIComponent(fieldScopeId)}`, entries);
+export interface FieldScopeConfiguration {
+  id?: string;
+  name: string;
+  description?: string;
+  entries: FieldScopeEntryDto[];
+}
+
+export interface FieldPageMetadata {
+  title: string;
+  models: Array<{model: string; properties: Record<string, {title: string; type: string}>}>;
+}
+
+export function fetchFieldPageCatalog() {
+  return get<Record<string, FieldPageMetadata>>(`${baseUrl}/page-catalog`);
+}
+
+export function saveFieldConfiguration(configuration: FieldScopeConfiguration) {
+  const {id, ...body} = configuration;
+  return id ? put<FieldScopeConfiguration>(`${baseUrl}/configuration?id=${encodeURIComponent(id)}`, body)
+    : post<FieldScopeConfiguration>(`${baseUrl}/configuration`, body);
 }

@@ -34,7 +34,7 @@ class ScopePolicyDatabaseTest {
         .applySetting("hibernate.hbm2ddl.auto", "create-drop")
         .applySetting("hibernate.physical_naming_strategy", "org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy")
         .build();
-    factory = new MetadataSources(registry).addAnnotatedClass(FieldScope.class)
+    factory = new MetadataSources(registry).addAnnotatedClass(FieldScope.class).addAnnotatedClass(Resource.class)
         .addAnnotatedClass(RoleResourceGrant.class).addAnnotatedClass(FieldScopeEntry.class).addAnnotatedClass(RoleScopeBinding.class)
         .buildMetadata().buildSessionFactory();
     session = factory.openSession();
@@ -43,9 +43,14 @@ class ScopePolicyDatabaseTest {
     repositoryFactory.setRepositoryBaseClass(BaseRepositoryImpl.class);
     policies = repositoryFactory.getRepository(JpaFieldScopeRepository.class);
     bindings = new JpaRepositoryFactory(session).getRepository(JpaRoleScopeBindingRepository.class);
-    service = new FieldScopeServiceImpl(policies, null, versions, new FieldScopeCatalog(session), new PermissionPolicyGuard(session));
+    service = new FieldScopeServiceImpl(policies, null, versions, new FieldScopeCatalog(session), new PermissionPolicyGuard(session)) {
+      @Override protected java.util.Set<String> getAllFieldNames(Class<FieldScope> clazz) {
+        return new java.util.HashSet<>(List.of("name", "description", "entries"));
+      }
+    };
     AuthorizationContext context = new AuthorizationContext();
     context.setUserId("u1");
+    context.setResources(java.util.Set.of("people.view"));
     context.setAttributes(Map.of("X-Tenant-Id", "t1"));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
   }
@@ -142,5 +147,75 @@ class ScopePolicyDatabaseTest {
     stored.setDataScopeId("scope-id");
     bindings.saveAndFlush(stored);
     assertThat(stored.getRevision()).isEqualTo(1);
+  }
+
+  void page(String code, boolean disabled) {
+    var field = new org.simplepoint.core.permission.PermissionModelDescriptor.Field("java.lang.String", "姓名", List.of("equals"), List.of());
+    var model = new org.simplepoint.core.permission.PermissionModelDescriptor("org.simplepoint.remote.Person", true, true,
+        "id", "orgId", Map.of("name", field, "email", field));
+    var resource = new Resource(); resource.setCode(code); resource.setName("人员");
+    resource.setType(ResourceType.PAGE); resource.setDisabled(disabled);
+    resource.setPermissionMetadata(new org.simplepoint.core.permission.PermissionPageDescriptor(List.of(model)).toJson());
+    session.persist(resource); session.flush();
+  }
+
+  FieldScopeEntry remoteEntry(String field) {
+    var entry = entry(field, FieldAccessType.MASKED);
+    entry.setResource("org.simplepoint.remote.Person"); return entry;
+  }
+
+  @Test void pageCatalogOnlyAdvertisesAuthorizedActivePagesWithFieldMetadata() {
+    page("people.view", false); page("secret.view", false); page("disabled.view", true);
+    var catalog = service.pageCatalog();
+    assertThat(catalog).containsOnlyKeys("people.view");
+    assertThat(catalog.get("people.view").title()).isEqualTo("人员");
+    assertThat(catalog.get("people.view").models().getFirst().properties()).containsKeys("name", "email");
+  }
+
+  @Test void configuredCreateAndUpdateSaveMetadataAndCanonicalFieldRulesTogether() {
+    page("people.view", false);
+    var created = service.createConfigured(new org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.Configuration(
+        "人员权限", "说明", List.of(remoteEntry("name"), remoteEntry("email"))));
+    session.flush();
+    assertThat(created.getTenantId()).isEqualTo("t1");
+    assertThat(created.getEntries()).hasSize(2).allMatch(e -> e.getFieldScopeId().equals(created.getId()) && e.getTenantId().equals("t1"));
+    String rowId = created.getEntries().stream().filter(e -> e.getField().equals("name")).findFirst().orElseThrow().getId();
+    var changed = remoteEntry("name"); changed.setAccess(FieldAccessType.HIDDEN);
+    service.updateConfigured(created.getId(), new org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.Configuration(
+        "更新名称", "新说明", List.of(changed)));
+    session.flush(); session.clear();
+    var saved = policies.findByIdAndTenantIdAndDeletedAtIsNull(created.getId(), "t1").orElseThrow();
+    assertThat(saved.getName()).isEqualTo("更新名称");
+    assertThat(saved.getEntries()).hasSize(1);
+    assertThat(saved.getEntries().getFirst().getId()).isEqualTo(rowId);
+    assertThat(saved.getEntries().getFirst().getAccess()).isEqualTo(FieldAccessType.HIDDEN);
+  }
+
+  @Test void unknownUnauthorizedAndDuplicateFieldsAreRejectedBeforeCreation() {
+    page("secret.view", false);
+    var configuration = new org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.Configuration("无效", null, List.of(remoteEntry("name")));
+    assertThatThrownBy(() -> service.createConfigured(configuration)).hasMessageContaining("未授权");
+    page("people.view", false);
+    assertThatThrownBy(() -> service.createConfigured(new org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.Configuration(
+        "无效", null, List.of(remoteEntry("secret"))))).hasMessageContaining("未授权");
+    assertThatThrownBy(() -> service.createConfigured(new org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.Configuration(
+        "无效", null, List.of(remoteEntry("name"), remoteEntry("name"))))).hasMessageContaining("重复");
+    assertThat(session.createQuery("select count(s) from FieldScope s", Long.class).getSingleResult()).isZero();
+  }
+
+  @Test void unavailableExistingEntriesSurviveMetadataEditsButCannotChangeAccess() {
+    var scope = policy("t1");
+    var legacy = remoteEntry("removedField"); legacy.setFieldScopeId(scope.getId()); legacy.setTenantId("t1");
+    scope.getEntries().add(legacy); session.persist(legacy); session.flush();
+    service.updateConfigured(scope.getId(), new org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.Configuration(
+        "保留旧字段", null, List.of(remoteEntry("removedField"))));
+    assertThat(scope.getEntries()).hasSize(1);
+    var modified = remoteEntry("removedField"); modified.setAccess(FieldAccessType.VISIBLE);
+    assertThatThrownBy(() -> service.updateConfigured(scope.getId(), new org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.Configuration(
+        "不可保存", null, List.of(modified)))).hasMessageContaining("未授权");
+    assertThat(scope.getName()).isEqualTo("保留旧字段");
+    var foreign = policy("t2");
+    assertThatThrownBy(() -> service.updateConfigured(foreign.getId(), new org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.Configuration(
+        "非法跨租户", null, List.of()))).hasMessageContaining("不存在");
   }
 }

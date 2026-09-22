@@ -52,6 +52,25 @@ public class FieldScopeController extends BaseController<FieldScopeService, Fiel
     return ok(service.catalog());
   }
 
+  @GetMapping("/page-catalog")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('field-scope.create') or hasAuthority('field-scope.edit')")
+  public Response<Map<String, FieldScopeService.PageFields>> pageCatalog() {
+    return ok(service.pageCatalog());
+  }
+
+  @PostMapping("/configuration")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('field-scope.create')")
+  public Response<FieldScope> createConfigured(@RequestBody FieldScopeService.Configuration configuration) {
+    return ok(service.createConfigured(configuration));
+  }
+
+  @PutMapping("/configuration")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('field-scope.edit')")
+  public Response<FieldScope> updateConfigured(@RequestParam String id,
+      @RequestBody FieldScopeService.Configuration configuration) {
+    return ok(service.updateConfigured(id, configuration));
+  }
+
   /**
    * @ Get Mapping.
    */

@@ -20,6 +20,16 @@ public interface FieldScopeService extends BaseService<FieldScope, String> {
 
   java.util.Map<String, java.util.List<String>> catalog();
 
+  record PageFields(String title, java.util.List<org.simplepoint.core.permission.PermissionModelDescriptor> models) {}
+
+  java.util.Map<String, PageFields> pageCatalog();
+
+  record Configuration(String name, String description, java.util.List<FieldScopeEntry> entries) {}
+
+  FieldScope createConfigured(Configuration configuration);
+
+  FieldScope updateConfigured(String id, Configuration configuration);
+
   /**
    * Replaces all entries in the given field scope with the provided list.
    *
