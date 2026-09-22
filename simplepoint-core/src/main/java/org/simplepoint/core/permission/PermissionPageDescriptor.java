@@ -22,12 +22,31 @@ public record PermissionPageDescriptor(List<PermissionModelDescriptor> models) {
     Map<String, PermissionModelDescriptor.Field> result = new LinkedHashMap<>();
     if (models.isEmpty()) return result;
     result.putAll(models.getFirst().properties());
-    for (var model : models) result.entrySet().removeIf(entry -> {
-      var field = model.properties().get(entry.getKey());
-      return field == null || !entry.getValue().type().equals(field.type())
-          || !entry.getValue().operators().equals(field.operators());
-    });
+    for (var model : models) {
+      result.entrySet().removeIf(entry -> {
+        var field = model.properties().get(entry.getKey());
+        return field == null || !boxed(entry.getValue().type()).equals(boxed(field.type()))
+            || !Set.copyOf(entry.getValue().values()).equals(Set.copyOf(field.values()));
+      });
+      result.replaceAll((name, field) -> new PermissionModelDescriptor.Field(boxed(field.type()),
+          field.title(), field.operators().stream().filter(model.properties().get(name).operators()::contains).toList(),
+          field.values()));
+    }
+    result.entrySet().removeIf(entry -> entry.getValue().operators().isEmpty());
     return Map.copyOf(result);
+  }
+
+  private static String boxed(String type) {
+    return switch (type) {
+      case "boolean" -> "java.lang.Boolean";
+      case "byte" -> "java.lang.Byte";
+      case "short" -> "java.lang.Short";
+      case "int" -> "java.lang.Integer";
+      case "long" -> "java.lang.Long";
+      case "float" -> "java.lang.Float";
+      case "double" -> "java.lang.Double";
+      default -> type;
+    };
   }
   public String toJson() {
     try { return MAPPER.writeValueAsString(this); }

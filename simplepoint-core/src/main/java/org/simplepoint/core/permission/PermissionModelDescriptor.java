@@ -33,6 +33,10 @@ public record PermissionModelDescriptor(String model, boolean data, boolean fiel
     for (Class<?> current = model; current != null && current != Object.class; current = current.getSuperclass()) {
       for (var field : current.getDeclaredFields()) {
         if (Modifier.isStatic(field.getModifiers()) || field.isAnnotationPresent(jakarta.persistence.Transient.class)) continue;
+        var json = field.getAnnotation(com.fasterxml.jackson.annotation.JsonProperty.class);
+        var ignored = field.getAnnotation(com.fasterxml.jackson.annotation.JsonIgnore.class);
+        if (json != null && json.access() == com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY
+            || ignored != null && ignored.value()) continue;
         Schema schema = field.getAnnotation(Schema.class);
         if (schema != null && (schema.accessMode() == Schema.AccessMode.WRITE_ONLY
             || schema.hidden() && !List.of("id", owner, department, "createdAt", "updatedAt").contains(field.getName()))) continue;

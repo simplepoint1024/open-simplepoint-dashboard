@@ -14,9 +14,17 @@ const operators = new Set(['equals', 'not:equals', 'in', 'not:in', 'is:null', 'i
 const contexts = ['user.id', 'user.organizationId', 'user.organizationIds', 'tenant.id'];
 export function commonFields(page?: PermissionPage): Record<string, PermissionField> {
   const models = page?.models ?? [];
-  return Object.fromEntries(Object.entries(models[0]?.properties ?? {}).filter(([name, field]) =>
-    field.operators.some(op => operators.has(op)) && models.every(model => model.properties[name]?.type === field.type
-      && JSON.stringify(model.properties[name]?.operators) === JSON.stringify(field.operators))));
+  const boxed = (type: string) => ({boolean: 'java.lang.Boolean', byte: 'java.lang.Byte', short: 'java.lang.Short',
+    int: 'java.lang.Integer', long: 'java.lang.Long', float: 'java.lang.Float', double: 'java.lang.Double'}[type] ?? type);
+  return Object.fromEntries(Object.entries(models[0]?.properties ?? {}).flatMap(([name, field]) => {
+    if (!models.every(model => {
+      const other = model.properties[name];
+      return other && boxed(other.type) === boxed(field.type)
+        && JSON.stringify([...other.values].sort()) === JSON.stringify([...field.values].sort());
+    })) return [];
+    const common = field.operators.filter(op => operators.has(op) && models.every(model => model.properties[name].operators.includes(op)));
+    return common.length ? [[name, {...field, type: boxed(field.type), operators: common}]] : [];
+  }));
 }
 // The platform visual editor omits empty leaf children; the server uses explicit immutable lists.
 const visual = (node: QueryNode): QueryNode => node.children?.length
