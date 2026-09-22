@@ -57,10 +57,12 @@ export const TenantHome: React.FC = () => {
 
   useEffect(() => {
     setEditOpen(false);
-    const requested = new URLSearchParams(location.search).get('section');
+    const requested = new URLSearchParams(location.search).get('section')
+      ?? (location.pathname === '/tenant/settings' ? 'settings'
+        : location.pathname === '/tenant/resources' ? 'resources' : null);
     setSection(requested === 'settings' || requested === 'resources' ? requested : 'overview');
     editWarningShown.current = false;
-  }, [queryScope, location.search]);
+  }, [queryScope, location.pathname, location.search]);
 
   useEffect(() => {
     if (!data || !wantsEdit) return;
@@ -213,10 +215,14 @@ export const TenantHome: React.FC = () => {
         </Space>
       </section>
 
-      <Tabs activeKey={section} onChange={setSection} items={[
+      <Tabs activeKey={section} onChange={next => {
+        setSection(next);
+        navigate(next === 'settings' ? '/tenant/settings'
+          : next === 'resources' ? '/tenant/resources' : '/tenant');
+      }} items={[
         {key: 'overview', label: t('tenant.settings.overview', '空间概览')},
-        {key: 'settings', label: t('tenant.settings.title', '空间设置')},
-        ...(data.tenantType === 'ORGANIZATION' ? [{key: 'resources',
+        ...(data.profileEditable ? [{key: 'settings', label: t('tenant.settings.title', '空间设置')}] : []),
+        ...(data.profileEditable && data.tenantType === 'ORGANIZATION' ? [{key: 'resources',
           label: t('tenant.resources.title', '租户资源管理')}] : []),
       ]}/>
 
@@ -247,7 +253,7 @@ export const TenantHome: React.FC = () => {
         </Col>
       </Row>}
 
-      {section === 'settings' && <Card className="tenant-home-card" title={t('tenant.settings.title', '空间设置')}>
+      {section === 'settings' && data.profileEditable && <Card className="tenant-home-card" title={t('tenant.settings.title', '空间设置')}>
         <Descriptions column={{xs: 1, sm: 2}}>
           <Descriptions.Item label={t('tenant.profile.name', '租户名称')}>{data.name}</Descriptions.Item>
           <Descriptions.Item label={t('tenant.profile.type', '租户类型')}>{tenantTypeLabel}</Descriptions.Item>
@@ -276,10 +282,10 @@ export const TenantHome: React.FC = () => {
         </div>}
       </Card>}
 
-      {section === 'resources' && data.tenantType === 'ORGANIZATION' && (data.resourceMode === 'CUSTOM'
+      {section === 'resources' && data.profileEditable && data.tenantType === 'ORGANIZATION' && (data.resourceMode === 'CUSTOM'
         ? <TenantResourceManager tenantId={tenantId!}/>
         : <Card><Empty description={t('tenant.resources.disabled', '请先在空间设置中启用租户自定义资源')}>
-          {data.profileEditable && <Button type="primary" onClick={() => setSection('settings')}>
+          {data.profileEditable && <Button type="primary" onClick={() => navigate('/tenant/settings')}>
             {t('tenant.settings.title', '空间设置')}
           </Button>}
         </Empty></Card>)}

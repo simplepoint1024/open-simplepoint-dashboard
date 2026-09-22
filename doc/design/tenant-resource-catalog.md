@@ -16,6 +16,8 @@
 
 ## 接口与迁移
 
+空间设置与租户资源管理分别注册为 `workspace.settings.view`、`workspace.resources.view` 页面资源，位于工作空间目录。前者面向组织与个人租户，后者仅面向组织租户；两者都会通过现有资源同步进入核心应用及相应默认套餐。管理接口仍要求当前组织租户所有者或管理员身份，页面授权不能单独提升管理权限。
+
 空间设置通过 `/tenants/current-profile` 维护名称、简介与品牌信息；`/tenants/current-resources/mode` 切换模式。`/tenants/current-resources` 提供分页目录、创建、编辑、删除自建项；`/sync/preview` 和 `/sync` 提供预览、更新与覆盖。所有租户 ID 由当前授权上下文取得，不接受请求体指定其他租户。
 
 上线前执行 [`20260922-tenant-resource-catalog.sql`](../deployment/sql/20260922-tenant-resource-catalog.sql)。该脚本为旧租户设置平台模式默认值并创建独立目录表与索引。上线后默认行为不变；只有租户主动启用时才生成目录数据。

@@ -85,6 +85,10 @@ export function renderRoutes(
                 return {key, path, element: <OrgTenantRequired/>};
             }
 
+            if (component === 'host/TenantHome') {
+                return {key, path, element: <TenantHome/>};
+            }
+
             const rk = path ? (refreshKeyMap[path] || 0) : 0;
 
             const {type, payload} = parseComponent(component);

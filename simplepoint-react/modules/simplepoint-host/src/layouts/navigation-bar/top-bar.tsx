@@ -731,8 +731,8 @@ export const avatarConfig = (
         label: <I18nText k='group.tenant' fallback='租户'/> as any,
         children: [
           {key: 'tenant-home', label: <I18nText k='menu.tenantHome' fallback='租户主页'/>, icon: <HomeOutlined/>, onClick: () => navigate('/tenant')},
-          ...(tenant.editable ? [{key: 'tenant-profile', label: <I18nText k='menu.workspaceSettings' fallback='空间设置'/>, icon: <EditOutlined/>, onClick: () => navigate('/tenant?section=settings')}] : []),
-          ...(tenant.editable && tenant.organization ? [{key: 'tenant-resources', label: <I18nText k='menu.tenantResources' fallback='租户资源管理'/>, icon: <ApartmentOutlined/>, onClick: () => navigate('/tenant?section=resources')}] : []),
+          ...(tenant.editable ? [{key: 'tenant-profile', label: <I18nText k='menu.workspaceSettings' fallback='空间设置'/>, icon: <EditOutlined/>, onClick: () => navigate('/tenant/settings')}] : []),
+          ...(tenant.editable && tenant.organization ? [{key: 'tenant-resources', label: <I18nText k='menu.tenantResources' fallback='租户资源管理'/>, icon: <ApartmentOutlined/>, onClick: () => navigate('/tenant/resources')}] : []),
         ],
       }] : []),
       {
