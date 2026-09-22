@@ -28,6 +28,7 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.ApplicationResourceRele
 import org.simplepoint.plugin.rbac.tenant.api.repository.PackageRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.plugin.rbac.tenant.service.properties.BuiltInTenantBootstrapProperties;
 
 class BuiltInTenantProvisionerImplTest {
@@ -39,6 +40,7 @@ class BuiltInTenantProvisionerImplTest {
   private TenantPackageRelevanceRepository tenantPackageRepository;
   private RoleRepository roleRepository;
   private RoleResourceGrantRepository roleResourceGrantRepository;
+  private ResourceAuthorizationVersionService authorizationVersions;
   private BuiltInTenantProvisionerImpl provisioner;
 
   @BeforeEach
@@ -50,6 +52,7 @@ class BuiltInTenantProvisionerImplTest {
     tenantPackageRepository = mock(TenantPackageRelevanceRepository.class);
     roleRepository = mock(RoleRepository.class);
     roleResourceGrantRepository = mock(RoleResourceGrantRepository.class);
+    authorizationVersions = mock(ResourceAuthorizationVersionService.class);
     provisioner = new BuiltInTenantProvisionerImpl(
         applicationRepository,
         packageRepository,
@@ -58,7 +61,8 @@ class BuiltInTenantProvisionerImplTest {
         tenantPackageRepository,
         roleRepository,
         roleResourceGrantRepository,
-        new BuiltInTenantBootstrapProperties()
+        new BuiltInTenantBootstrapProperties(),
+        authorizationVersions
     );
     when(applicationRepository.findAll(anyMap())).thenAnswer(invocation -> {
       Map<String, String> attributes = invocation.getArgument(0);
@@ -90,6 +94,8 @@ class BuiltInTenantProvisionerImplTest {
             org.assertj.core.groups.Tuple.tuple(BuiltInTenantCodes.CORE_APPLICATION, "dashboard.view"),
             org.assertj.core.groups.Tuple.tuple(BuiltInTenantCodes.STORAGE_APPLICATION, "storage.objects.view")
         );
+    verify(authorizationVersions).refreshByApplicationCodes(Set.of(BuiltInTenantCodes.CORE_APPLICATION));
+    verify(authorizationVersions).refreshByApplicationCodes(Set.of(BuiltInTenantCodes.STORAGE_APPLICATION));
   }
 
   @Test
@@ -104,6 +110,7 @@ class BuiltInTenantProvisionerImplTest {
     );
 
     verify(applicationResourceRepository, never()).saveAll(any());
+    verify(authorizationVersions, never()).refreshByApplicationCodes(any());
   }
 
   @Test
@@ -125,5 +132,6 @@ class BuiltInTenantProvisionerImplTest {
       assertThat(relevance.getTenantId()).isEqualTo("personal-tenant");
       assertThat(relevance.getPackageCode()).isEqualTo(BuiltInTenantCodes.PERSONAL_PACKAGE);
     });
+    verify(authorizationVersions).refreshTenant("personal-tenant");
   }
 }

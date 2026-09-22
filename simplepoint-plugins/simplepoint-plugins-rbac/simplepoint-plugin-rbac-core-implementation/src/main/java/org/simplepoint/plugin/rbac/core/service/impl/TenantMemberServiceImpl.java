@@ -29,6 +29,10 @@ public class TenantMemberServiceImpl implements TenantMemberService {
   }
 
   private Tenant tenant(boolean mutation) {
+    return tenant(mutation, false);
+  }
+
+  private Tenant tenant(boolean mutation, boolean managerRequired) {
     var ctx = AuthorizationContextHolder.getContext();
     String id = ctx == null ? null : ctx.getAttribute("X-Tenant-Id");
     if (ctx == null || ctx.getScopeType() != AuthorizationScopeType.TENANT || id == null) {
@@ -36,7 +40,7 @@ public class TenantMemberServiceImpl implements TenantMemberService {
     }
     Tenant tenant = em.find(Tenant.class, id, mutation ? LockModeType.PESSIMISTIC_WRITE : LockModeType.NONE);
     if (tenant == null || tenant.getDeletedAt() != null || tenant.getTenantType() != TenantType.ORGANIZATION) throw new AccessDeniedException("租户不存在");
-    if (mutation) {
+    if (mutation || managerRequired) {
       AuthorizationScopeGuards.requireOrganizationTenantManager(ctx, tenant.getOwnerId());
     } else if (!Boolean.TRUE.equals(ctx.getIsAdministrator())
         && !ctx.getResources().contains("users.view")
@@ -103,7 +107,7 @@ public class TenantMemberServiceImpl implements TenantMemberService {
 
   @Override
   public Page<TenantMemberView> organizationCandidates(String orgId, String keyword, Pageable pageable) {
-    Tenant tenant = tenant(true);
+    Tenant tenant = tenant(false, true);
     requireOrganization(tenant.getId(), orgId);
     return memberPage(tenant.getId(), orgId, keyword, pageable, false);
   }

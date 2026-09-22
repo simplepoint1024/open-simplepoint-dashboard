@@ -26,6 +26,7 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.PackageRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.BuiltInTenantProvisioner;
+import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.plugin.rbac.tenant.service.properties.BuiltInTenantBootstrapProperties;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RoleResourceGrant;
@@ -52,6 +53,7 @@ public class BuiltInTenantProvisionerImpl implements BuiltInTenantProvisioner {
   private final RoleRepository roleRepository;
   private final RoleResourceGrantRepository roleResourceGrantRepository;
   private final BuiltInTenantBootstrapProperties properties;
+  private final ResourceAuthorizationVersionService authorizationVersions;
 
   /**
    * Creates the provisioner.
@@ -64,7 +66,8 @@ public class BuiltInTenantProvisionerImpl implements BuiltInTenantProvisioner {
       TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
       RoleRepository roleRepository,
       RoleResourceGrantRepository roleResourceGrantRepository,
-      BuiltInTenantBootstrapProperties properties
+      BuiltInTenantBootstrapProperties properties,
+      ResourceAuthorizationVersionService authorizationVersions
   ) {
     this.applicationRepository = applicationRepository;
     this.packageRepository = packageRepository;
@@ -74,6 +77,7 @@ public class BuiltInTenantProvisionerImpl implements BuiltInTenantProvisioner {
     this.roleRepository = roleRepository;
     this.roleResourceGrantRepository = roleResourceGrantRepository;
     this.properties = properties;
+    this.authorizationVersions = authorizationVersions;
   }
 
   @Override
@@ -127,6 +131,7 @@ public class BuiltInTenantProvisionerImpl implements BuiltInTenantProvisioner {
         return relevance;
       }).toList();
       applicationResourceRelevanceRepository.saveAll(relations);
+      authorizationVersions.refreshByApplicationCodes(Set.of(applicationCode));
     }
     provisionBuiltInRoleResources(tenantCodes);
   }
@@ -145,6 +150,7 @@ public class BuiltInTenantProvisionerImpl implements BuiltInTenantProvisioner {
     relevance.setTenantId(tenantId);
     relevance.setPackageCode(PERSONAL_PACKAGE);
     tenantPackageRelevanceRepository.saveAll(List.of(relevance));
+    authorizationVersions.refreshTenant(tenantId);
   }
 
   private void provisionBuiltInRoleResources(Set<String> tenantCodes) {
@@ -188,6 +194,7 @@ public class BuiltInTenantProvisionerImpl implements BuiltInTenantProvisioner {
         .toList();
     if (!missing.isEmpty()) {
       roleResourceGrantRepository.saveAll(missing);
+      authorizationVersions.refreshTenant(tenantId);
     }
   }
 
