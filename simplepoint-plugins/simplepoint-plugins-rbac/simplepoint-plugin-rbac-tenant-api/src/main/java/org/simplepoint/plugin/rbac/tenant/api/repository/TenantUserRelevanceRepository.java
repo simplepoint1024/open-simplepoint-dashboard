@@ -34,6 +34,10 @@ public interface TenantUserRelevanceRepository {
    */
   Collection<String> authorized(String tenantId);
 
+  /** Resolves built-in row rules against tenant membership, not the global account organization. */
+  Collection<String> authorizedForScope(String tenantId, String type, Set<String> departments,
+      String userId, boolean includeSelf);
+
   /**
    * Delete All By Tenant Ids.
    */

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
-/** Catalog of locally managed entity fields. Remote modules must publish their own catalog. */
+/** Catalog of local entities and trusted metadata published by remote modules. */
 @Component
 public class FieldScopeCatalog {
   private final EntityManager entityManager;
@@ -22,6 +22,16 @@ public class FieldScopeCatalog {
         .sorted(java.util.Comparator.comparing(entity -> entity.getJavaType().getName()))
         .forEach(entity -> result.put(entity.getJavaType().getName(), entity.getAttributes().stream()
             .map(jakarta.persistence.metamodel.Attribute::getName).sorted().toList()));
+    if (entityManager.getMetamodel().getEntities().stream()
+        .anyMatch(entity -> entity.getJavaType() == org.simplepoint.security.entity.Resource.class)) {
+      entityManager.createQuery("select r.permissionMetadata from Resource r where r.deletedAt is null"
+          + " and r.permissionMetadata is not null", String.class).getResultList().forEach(json -> {
+        var page = org.simplepoint.core.permission.PermissionPageDescriptor.fromJson(json);
+        page.models().stream().filter(org.simplepoint.core.permission.PermissionModelDescriptor::fields)
+            .forEach(model -> result.merge(model.model(), model.properties().keySet().stream().sorted().toList(),
+                (local, remote) -> java.util.stream.Stream.concat(local.stream(), remote.stream()).distinct().sorted().toList()));
+      });
+    }
     return result;
   }
 
@@ -30,10 +40,10 @@ public class FieldScopeCatalog {
     String canonical = resource;
     if (!catalog.containsKey(resource)) {
       var matches = catalog.keySet().stream().filter(name -> name.substring(name.lastIndexOf('.') + 1).equals(resource)).toList();
-      if (matches.size() != 1) throw new IllegalArgumentException("未知或有歧义的资源: " + resource);
+      if (matches.size() != 1) throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("未知或有歧义的资源: " + resource);
       canonical = matches.getFirst();
     }
-    if (!catalog.get(canonical).contains(field)) throw new IllegalArgumentException("资源字段不存在: " + resource + "#" + field);
+    if (!catalog.get(canonical).contains(field)) throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("资源字段不存在: " + resource + "#" + field);
     return canonical;
   }
 }

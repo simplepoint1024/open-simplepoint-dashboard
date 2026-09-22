@@ -414,7 +414,7 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     // Unmigrated roles keep the complete legacy union, not an arbitrary first record.
     roleResourceGrantRepository.findByRoleIdIn(roleIds).stream()
         .filter(grant -> Objects.equals(tenantId, grant.getTenantId()) && grant.getDeletedAt() == null)
-        .filter(grant -> !boundRoles.contains(grant.getRoleId())).forEach(grants::add);
+        .filter(grant -> !boundRoles.contains(grant.getRoleId()) && !Boolean.TRUE.equals(grant.getPagePolicy())).forEach(grants::add);
 
     // --- Data scope resolution ---
     var dataScopeRepo = dataScopeRepositoryProvider.getIfAvailable();
@@ -539,7 +539,7 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     for (var resource : byResource.entrySet()) {
       List<RoleResourceGrant> grants = resource.getValue();
       if (grants.stream().anyMatch(grant -> grant.getDataScopeId() != null)) {
-        data.put(resource.getKey(), resolveResourceDataScope(grants, bindings, tenantId, user));
+        data.put(resource.getKey(), resolveResourceDataScope(resource.getKey(), grants, bindings, tenantId, user));
       }
       if (grants.stream().anyMatch(grant -> grant.getFieldScopeId() != null)) {
         fields.put(resource.getKey(), resolveResourceFieldScope(grants, bindings, tenantId));
@@ -549,13 +549,14 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     context.setResourceFieldPermissions(fields);
   }
 
-  private ResourceDataScope resolveResourceDataScope(List<RoleResourceGrant> grants,
+  private ResourceDataScope resolveResourceDataScope(String resourceCode, List<RoleResourceGrant> grants,
       Map<String, RoleScopeBinding> bindings, String tenantId, User user) {
     var repository = dataScopeRepositoryProvider.getIfAvailable();
     if (repository == null) throw new AccessDeniedException("无法加载页面数据权限");
     Set<String> departments = new HashSet<>();
     boolean includeSelf = false;
     boolean descendantsOnly = true;
+    List<String> expressions = new java.util.ArrayList<>();
     for (RoleResourceGrant grant : grants) {
       RoleScopeBinding binding = bindings.get(grant.getRoleId());
       String id = grant.getDataScopeId() != null ? grant.getDataScopeId()
@@ -569,6 +570,13 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
           .orElseThrow(() -> new AccessDeniedException("页面数据范围不存在或已失效"));
       DataScopeType type = policy.getType();
       if (type == null) throw new AccessDeniedException("页面数据范围类型无效");
+      if (type == DataScopeType.EXPRESSION) {
+        if (!Objects.equals(resourceCode, policy.getResourceCode()) || policy.getExpression() == null)
+          throw new AccessDeniedException("表达式规则不属于当前页面");
+        org.simplepoint.core.permission.PermissionExpression.parse(policy.getExpression());
+        expressions.add(policy.getExpression());
+        continue;
+      }
       if (type == DataScopeType.ALL) return new ResourceDataScope("ALL", Set.of(), false);
       if (type == DataScopeType.SELF) {
         includeSelf = true;
@@ -582,8 +590,8 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
       }
     }
     if (!departments.isEmpty()) return new ResourceDataScope(
-        descendantsOnly ? "DEPT_AND_BELOW" : "CUSTOM", departments, includeSelf);
-    return new ResourceDataScope(includeSelf ? "SELF" : "DENY", Set.of(), false);
+        descendantsOnly ? "DEPT_AND_BELOW" : "CUSTOM", departments, includeSelf, expressions);
+    return new ResourceDataScope(includeSelf ? "SELF" : "DENY", Set.of(), false, expressions);
   }
 
   private Map<String, String> resolveResourceFieldScope(List<RoleResourceGrant> grants,

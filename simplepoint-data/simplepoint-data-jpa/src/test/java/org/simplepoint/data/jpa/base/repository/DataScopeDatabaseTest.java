@@ -21,7 +21,11 @@ import org.springframework.security.access.AccessDeniedException;
 class DataScopeDatabaseTest {
   @Entity(name = "PermissionTestRow")
   @Table(name = "permission_test_row")
-  public static class Row extends TenantBaseEntityImpl<String> { }
+  public static class Row extends TenantBaseEntityImpl<String> {
+    private String name = "allowed";
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+  }
 
   private SessionFactory factory;
   private Session session;
@@ -46,7 +50,9 @@ class DataScopeDatabaseTest {
     foreignId = row("tenant-b", "user-a", "dept-a");
     session.flush();
     session.clear();
-    service = new BaseServiceImpl<>(new BaseRepositoryImpl<>(Row.class, session), null);
+    service = new BaseServiceImpl<>(new BaseRepositoryImpl<>(Row.class, session), null) {
+      @Override protected Set<String> getAllFieldNames(Class<Row> type) { return new java.util.HashSet<>(Set.of("name")); }
+    };
   }
 
   private String row(String tenant, String user, String dept) {
@@ -72,6 +78,7 @@ class DataScopeDatabaseTest {
   void cleanup() {
     RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
     DataScopeContext.clear();
+    org.simplepoint.core.ResourcePolicyContext.clear();
     if (session != null) {
       if (session.getTransaction().isActive()) session.getTransaction().rollback();
       session.close();
@@ -114,6 +121,42 @@ class DataScopeDatabaseTest {
     scope("CUSTOM", Set.of(), false);
     assertThat(service.count(new Row())).isZero();
     assertThat(service.findAll(Map.of())).isEmpty();
+  }
+
+  private void expression(String text) {
+    scope("ALL", Set.of(), false);
+    var context = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    context.setResourceDataScopes(Map.of("test.view", new org.simplepoint.core.ResourceDataScope("DENY", Set.of(), false, java.util.List.of(text))));
+    org.simplepoint.core.ResourcePolicyContext.set("test.view");
+  }
+
+  @Test
+  void expressionSharesTenantBoundaryCountReadsAndSqlNullLogic() {
+    expression("createdBy = $user.id OR createOrgDeptId IN [\"dept-b\"]");
+    assertThat(service.limit(Map.of(), PageRequest.of(0, 1)).getTotalElements()).isEqualTo(2);
+    assertThat(service.findById(foreignId)).isEmpty();
+    assertThat(service.findById(otherId)).isPresent();
+    expression("NOT (createOrgDeptId = $user.organizationId)");
+    assertThat(service.count(new Row())).isZero();
+    assertThat(service.findById(ownId)).isEmpty();
+    expression("createOrgDeptId NOT IN $user.organizationIds");
+    assertThat(service.count(new Row())).isEqualTo(2);
+    assertThat(service.findById(ownId)).isPresent();
+  }
+
+  @Test
+  void expressionRejectsUpdatesThatMoveAnExistingRowOutsideItsScope() {
+    expression("name = \"allowed\"");
+    Row incoming = new Row(); incoming.setId(ownId); incoming.setName("forbidden");
+    assertThatThrownBy(() -> service.modifyById(incoming)).isInstanceOf(AccessDeniedException.class);
+    assertThat(session.find(Row.class, ownId).getName()).isEqualTo("allowed");
+  }
+
+  @Test
+  void expressionCannotGrantAnUnknownFieldOrWidenOnMissingContext() {
+    expression("removedField IS NULL");
+    assertThatThrownBy(() -> service.findById(ownId)).isInstanceOf(AccessDeniedException.class);
+    assertThatThrownBy(() -> service.count(new Row())).isInstanceOf(AccessDeniedException.class);
   }
 
   @Test

@@ -9,6 +9,7 @@ import org.simplepoint.security.entity.User;
 /** Tenant membership read model; computed fields inherit their source permissions. */
 @TableQuery({@QueryField("userId"), @QueryField("name"), @QueryField("email"),
     @QueryField("orgId"), @QueryField("orgName"), @QueryField("enabled"), @QueryField("userType")})
+@org.simplepoint.core.permission.PermissionModel(page="users.view", owner="userId", department="orgId")
 public record TenantMemberView(
     @PermissionFields(resource = User.class, value = "id")
     @Schema(title = "用户标识")

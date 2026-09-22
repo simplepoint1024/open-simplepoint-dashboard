@@ -35,7 +35,7 @@ class ScopePolicyDatabaseTest {
         .applySetting("hibernate.physical_naming_strategy", "org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy")
         .build();
     factory = new MetadataSources(registry).addAnnotatedClass(FieldScope.class)
-        .addAnnotatedClass(FieldScopeEntry.class).addAnnotatedClass(RoleScopeBinding.class)
+        .addAnnotatedClass(RoleResourceGrant.class).addAnnotatedClass(FieldScopeEntry.class).addAnnotatedClass(RoleScopeBinding.class)
         .buildMetadata().buildSessionFactory();
     session = factory.openSession();
     session.beginTransaction();
@@ -43,7 +43,7 @@ class ScopePolicyDatabaseTest {
     repositoryFactory.setRepositoryBaseClass(BaseRepositoryImpl.class);
     policies = repositoryFactory.getRepository(JpaFieldScopeRepository.class);
     bindings = new JpaRepositoryFactory(session).getRepository(JpaRoleScopeBindingRepository.class);
-    service = new FieldScopeServiceImpl(policies, null, versions, new FieldScopeCatalog(session));
+    service = new FieldScopeServiceImpl(policies, null, versions, new FieldScopeCatalog(session), new PermissionPolicyGuard(session));
     AuthorizationContext context = new AuthorizationContext();
     context.setUserId("u1");
     context.setAttributes(Map.of("X-Tenant-Id", "t1"));
@@ -114,6 +114,19 @@ class ScopePolicyDatabaseTest {
         .isInstanceOf(IllegalArgumentException.class);
     assertThat(policy.getEntries()).hasSize(1);
     assertThat(policy.getEntries().getFirst().getAccess()).isEqualTo(FieldAccessType.HIDDEN);
+  }
+
+  @Test
+  void deletingRoleBoundPolicyIsRejectedWithoutChangingItsEntries() {
+    var policy = policy("t1");
+    var grant = new RoleResourceGrant();
+    grant.setTenantId("t1"); grant.setRoleId("role-1"); grant.setResourceCode("orders.view");
+    grant.setFieldScopeId(policy.getId()); grant.setPagePolicy(true); session.persist(grant); session.flush();
+    assertThatThrownBy(() -> service.removeByIds(java.util.Set.of(policy.getId())))
+        .isInstanceOf(org.simplepoint.core.permission.InvalidPermissionPolicyException.class)
+        .hasMessageContaining("正在被角色使用");
+    assertThat(policy.getDeletedAt()).isNull();
+    verifyNoInteractions(versions);
   }
 
   @Test

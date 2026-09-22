@@ -107,6 +107,7 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
   @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.create')")
   @Operation(summary = "添加资源", description = "添加一个新的资源")
   public Response<Resource> add(@RequestBody Resource data) {
+    data.setPermissionMetadata(null); // Only trusted module registration publishes enforcement contracts.
     return ok(service.create(data));
   }
 

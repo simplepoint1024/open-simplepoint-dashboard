@@ -49,6 +49,13 @@ public class BaseController<S extends BaseService<T, I>, T extends BaseEntity<I>
     this.service = service;
   }
 
+  /** Resolves standard page metadata without a request or database query. */
+  public org.simplepoint.core.permission.PermissionModelDescriptor permissionModel() {
+    Class<?> model = org.springframework.core.ResolvableType.forClass(getClass())
+        .as(BaseController.class).getGeneric(1).resolve();
+    return model == null ? null : org.simplepoint.core.permission.PermissionModelDescriptor.describe(model);
+  }
+
   /**
    * Retrieves metadata about the Role entity.
    *
@@ -143,4 +150,3 @@ public class BaseController<S extends BaseService<T, I>, T extends BaseEntity<I>
     return Response.limit(pageable, resource);
   }
 }
-

@@ -352,8 +352,9 @@ class AuthorizationContextServiceImplTest {
     assertThat(context.getAttribute("X-Tenant-Id")).isEqualTo("tenant1");
   }
 
-  @Test
-  void pagePoliciesResolveOnlyForEffectiveTenantResources() {
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings={"SELF", "EXPRESSION"})
+  void pagePoliciesResolveOnlyForEffectiveTenantResources(String policyType) {
     User user = new User();
     Tenant tenant = new Tenant();
     tenant.setOwnerId("u1"); tenant.setTenantType(TenantType.ORGANIZATION);
@@ -377,16 +378,17 @@ class AuthorizationContextServiceImplTest {
     binding.setTenantId("tenant1"); binding.setRoleId("role1");
     when(roleScopeBindingRepositoryProvider.getIfAvailable()).thenReturn(bindings);
     when(bindings.findByTenantIdAndRoleIdIn("tenant1", List.of("role1")))
-        .thenReturn(List.of(binding));
+        .thenReturn(policyType.equals("EXPRESSION") ? List.of() : List.of(binding));
     RoleResourceGrant pageGrant = new RoleResourceGrant();
     pageGrant.setTenantId("tenant1"); pageGrant.setRoleId("role1");
     pageGrant.setResourceCode("users.view"); pageGrant.setDataScopeId("data1");
-    pageGrant.setFieldScopeId("field1");
+    pageGrant.setFieldScopeId("field1"); pageGrant.setPagePolicy(true);
     RoleResourceGrant obsolete = new RoleResourceGrant();
     obsolete.setTenantId("tenant1"); obsolete.setRoleId("role1");
-    obsolete.setResourceCode("obsolete.view"); obsolete.setDataScopeId("missing");
+    obsolete.setResourceCode("obsolete.view"); obsolete.setDataScopeId("missing"); obsolete.setPagePolicy(true);
     when(grants.findByRoleIdIn(List.of("role1"))).thenReturn(List.of(pageGrant, obsolete));
-    DataScope data = new DataScope(); data.setTenantId("tenant1"); data.setType(DataScopeType.SELF);
+    DataScope data = new DataScope(); data.setTenantId("tenant1"); data.setType(DataScopeType.valueOf(policyType));
+    data.setResourceCode("users.view"); data.setExpression("email CONTAINS \"@example.test\"");
     when(dataScopeRepositoryProvider.getIfAvailable()).thenReturn(dataScopes);
     when(dataScopes.findByIdAndTenantIdAndDeletedAtIsNull("data1", "tenant1"))
         .thenReturn(Optional.of(data));
@@ -402,7 +404,12 @@ class AuthorizationContextServiceImplTest {
 
     assertThat(context.getResourceDataScopes()).containsKey("users.view")
         .doesNotContainKey("obsolete.view");
-    assertThat(context.getResourceDataScopes().get("users.view").type()).isEqualTo("SELF");
+    assertThat(context.getResourceDataScopes().get("users.view").type()).isEqualTo(policyType.equals("EXPRESSION") ? "DENY" : "SELF");
+    if (policyType.equals("EXPRESSION")) {
+      assertThat(context.getResourceDataScopes().get("users.view").expressions()).containsExactly(data.getExpression());
+      assertThat(context.getDataScopeType()).isEqualTo("SELF");
+      assertThat(context.getFieldPermissions()).isNullOrEmpty();
+    }
     assertThat(context.getResourceFieldPermissions().get("users.view"))
         .containsEntry(User.class.getName() + "#email", "HIDDEN");
   }

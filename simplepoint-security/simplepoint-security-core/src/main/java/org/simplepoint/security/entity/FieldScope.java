@@ -30,6 +30,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
  * A field scope is attached to a role to restrict which fields are visible or editable.
  */
 @Data
+@org.simplepoint.core.permission.PermissionModel(data = false, fields = false)
 @Entity
 @EqualsAndHashCode(callSuper = true)
 @Table(name = "simpoint_ac_field_scope")

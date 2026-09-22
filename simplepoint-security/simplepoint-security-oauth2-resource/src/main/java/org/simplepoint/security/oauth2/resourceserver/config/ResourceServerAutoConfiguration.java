@@ -53,6 +53,14 @@ public class ResourceServerAutoConfiguration {
 
   /** Registers scope enforcement after handler mapping and before controller invocation. */
   @Bean
+  public org.simplepoint.core.permission.ResourcePermissionCatalog resourcePermissionCatalog(
+      org.springframework.beans.factory.ObjectProvider<org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping> mappings,
+      ClasspathResourceScopeRegistry scopes) {
+    return new org.simplepoint.security.oauth2.resourceserver.scope.StandardResourcePermissionCatalog(mappings, scopes);
+  }
+
+  /** Registers scope enforcement after handler mapping and before controller invocation. */
+  @Bean
   public WebMvcConfigurer resourceScopeWebMvcConfigurer(
       final ClasspathResourceScopeRegistry scopeRegistry
   ) {

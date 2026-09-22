@@ -86,27 +86,6 @@ public class TenantMemberServiceImpl implements TenantMemberService {
     return new PageImpl<>(rows, pageable, em.createQuery(count).getSingleResult());
   }
 
-  private static final String SUBTREE = """
-      with recursive subtree(id) as (
-        select id from simpoint_saas_organizations
-          where id = :org and tenant_id = :tenant and deleted_at is null
-        union
-        select o.id from simpoint_saas_organizations o
-          join subtree s on o.parent_id = s.id
-          where o.tenant_id = :tenant and o.deleted_at is null
-      )
-      """;
-  private static final String MEMBER_FROM = """
-      from simpoint_saas_tenant_user_rel m
-      join simpoint_ac_users u on u.id = m.user_id and u.deleted_at is null
-      left join simpoint_saas_organizations o on o.id = m.org_id
-        and o.tenant_id = :tenant and o.deleted_at is null
-      where m.tenant_id = :tenant and m.deleted_at is null
-        and (:keyword = '' or position(:keyword in lower(
-          coalesce(u.nickname, '') || ' ' || coalesce(u.name, '') || ' '
-          || coalesce(u.email, '') || ' ' || u.id)) > 0)
-      """;
-
   @Override
   public Page<TenantMemberView> organizationMembers(String orgId, String keyword, Pageable pageable) {
     Tenant tenant = tenant(false);
@@ -134,30 +113,7 @@ public class TenantMemberServiceImpl implements TenantMemberService {
       return org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(access) || "MASKED".equals(access);
     })) throw new AccessDeniedException("当前字段权限不允许搜索成员信息");
     DataScopeCondition dataScope = organizationScope();
-    if (dataScope != null && !dataScope.isAllData()) {
-      return scopedMemberPage(tenantId, orgId, search, page, subtree, dataScope);
-    }
-    String scope = subtree ? " and m.org_id in (select id from subtree)"
-        : " and (m.org_id is null or m.org_id <> :org)";
-    var data = em.createNativeQuery((subtree ? SUBTREE : "") + """
-        select m.user_id, coalesce(u.nickname, u.name, u.email, u.id), u.email,
-          m.org_id, o.name, m.enabled, m.user_type, m.revision
-        """ + MEMBER_FROM + scope
-        + " order by lower(coalesce(u.nickname, u.name, u.email, u.id)), m.user_id"
-        + " limit :limit offset :offset");
-    data.setParameter("tenant", tenantId).setParameter("org", orgId)
-        .setParameter("keyword", search).setParameter("limit", page.getPageSize())
-        .setParameter("offset", (int) page.getOffset());
-    @SuppressWarnings("unchecked")
-    List<Object[]> raw = data.getResultList();
-    List<TenantMemberView> rows = raw.stream().map(columns -> new TenantMemberView(
-        (String) columns[0], (String) columns[1], (String) columns[2],
-        (String) columns[3], (String) columns[4], Boolean.TRUE.equals(columns[5]),
-        (String) columns[6], columns[7] == null ? null : ((Number) columns[7]).longValue())).toList();
-    Number count = (Number) em.createNativeQuery((subtree ? SUBTREE : "") + "select count(*) "
-        + MEMBER_FROM + scope).setParameter("tenant", tenantId).setParameter("org", orgId)
-        .setParameter("keyword", search).getSingleResult();
-    return new PageImpl<>(rows, page, count.longValue());
+    return scopedMemberPage(tenantId, orgId, search, page, subtree, dataScope);
   }
 
   private Page<TenantMemberView> scopedMemberPage(String tenantId, String orgId, String search,
@@ -191,6 +147,7 @@ public class TenantMemberServiceImpl implements TenantMemberService {
     var predicates = new ArrayList<Predicate>();
     predicates.add(subtree ? member.get("orgId").in(subtreeIds)
         : cb.or(cb.isNull(member.get("orgId")), cb.notEqual(member.get("orgId"), orgId)));
+    if (scope != null && !scope.isAllData()) {
     var visibleOrg = query.subquery(Integer.class);
     var org = visibleOrg.from(Organization.class);
     var authorized = DataScopePredicates.compile(scope, org, cb, em.getMetamodel());
@@ -198,6 +155,7 @@ public class TenantMemberServiceImpl implements TenantMemberService {
         cb.equal(org.get("tenantId"), tenantId), cb.isNull(org.get("deletedAt")),
         authorized == null ? cb.conjunction() : authorized);
     predicates.add(cb.exists(visibleOrg));
+    }
     if (!search.isEmpty()) {
       String pattern = "%" + search.replace("\\", "\\\\").replace("%", "\\%")
           .replace("_", "\\_") + "%";
@@ -232,9 +190,8 @@ public class TenantMemberServiceImpl implements TenantMemberService {
   private DataScopeCondition organizationScope() {
     var context = AuthorizationContextHolder.getContext();
     var rule = context == null ? null : context.activeDataScope();
-    if (rule == null || Boolean.TRUE.equals(context.getIsAdministrator())) return null;
-    return new DataScopeCondition(rule.type(), "id", "createdBy", context.getUserId(),
-        rule.departmentIds(), rule.includeSelf());
+    if (rule == null || !"organizations.view".equals(ResourcePolicyContext.get())) return null;
+    return rule.condition("id", "createdBy", context);
   }
 
   private void requireOrganization(String tenantId, String orgId) {
@@ -290,6 +247,8 @@ public class TenantMemberServiceImpl implements TenantMemberService {
     member.setTenantId(tenant.getId()); member.setUserId(user.getId());
     member.setOrgId(command.orgId() == null || command.orgId().isBlank() ? null : command.orgId()); member.setEnabled(true);
     member.setUserType(userType(command.userType(), "INTERNAL"));
+    assertMemberAllowed(member);
+    assertMemberWritable(null, command);
     em.persist(member);
     versions.refreshTenant(tenant.getId());
   }
@@ -299,6 +258,8 @@ public class TenantMemberServiceImpl implements TenantMemberService {
   public void update(String userId, TenantMemberCommand command) {
     Tenant tenant = tenant(true);
     TenantUserRelevance member = member(tenant.getId(), userId);
+    assertMemberAllowed(member);
+    assertMemberWritable(member, command);
     if (!Objects.equals(command.revision(), member.getRevision())) throw new OptimisticLockingFailureException("成员已发生变更，请刷新后重试");
     if (Objects.equals(userId, tenant.getOwnerId()) && Boolean.FALSE.equals(command.enabled())) {
       throw new AccessDeniedException("不能停用租户所有者");
@@ -307,6 +268,7 @@ public class TenantMemberServiceImpl implements TenantMemberService {
     member.setOrgId(command.orgId());
     if (command.enabled() != null) member.setEnabled(command.enabled());
     if (command.userType() != null) member.setUserType(userType(command.userType(), member.getUserType()));
+    assertMemberAllowed(member);
     versions.refreshTenant(tenant.getId());
   }
 
@@ -316,6 +278,7 @@ public class TenantMemberServiceImpl implements TenantMemberService {
     Tenant tenant = tenant(true);
     if (Objects.equals(userId, tenant.getOwnerId())) throw new AccessDeniedException("请先转移租户所有权");
     TenantUserRelevance member = member(tenant.getId(), userId);
+    assertMemberAllowed(member);
     em.createQuery("delete from UserRoleRelevance r where r.tenantId=:tenant and r.userId=:user")
         .setParameter("tenant", tenant.getId()).setParameter("user", userId).executeUpdate();
     em.remove(member);
@@ -333,6 +296,49 @@ public class TenantMemberServiceImpl implements TenantMemberService {
     var count = em.createQuery("select count(o) from Organization o where o.id=:org and o.tenantId=:tenant and o.deletedAt is null and o.enabled=true", Long.class)
         .setParameter("org", orgId).setParameter("tenant", tenantId).getSingleResult();
     if (count != 1) throw new AccessDeniedException("组织不存在或不属于当前租户");
+  }
+
+  private void assertMemberAllowed(TenantUserRelevance member) {
+    var context = AuthorizationContextHolder.getContext();
+    var scope = context == null ? null : context.activeDataScope();
+    if (scope == null || "ALL".equals(scope.type())) return;
+    if ("organizations.view".equals(ResourcePolicyContext.get())) {
+      requireOrganization(member.getTenantId(), member.getOrgId());
+      return;
+    }
+    boolean self = Objects.equals(member.getUserId(), context.getUserId());
+    var account = em.find(User.class, member.getUserId());
+    java.util.function.Function<String, Object> values = field -> switch (field) {
+      case "userId" -> member.getUserId(); case "orgId" -> member.getOrgId();
+      case "enabled" -> member.getEnabled(); case "userType" -> member.getUserType();
+      case "email" -> account == null ? null : account.getEmail();
+      case "name" -> account == null ? null : account.getNickname() != null ? account.getNickname()
+          : account.getName() != null ? account.getName() : account.getEmail() != null ? account.getEmail() : account.getId();
+      case "orgName" -> { var org = member.getOrgId() == null ? null : em.find(Organization.class, member.getOrgId());
+        yield org == null || !Objects.equals(org.getTenantId(), member.getTenantId()) || org.getDeletedAt() != null ? null : org.getName(); }
+      default -> throw new AccessDeniedException("成员权限字段映射无效");
+    };
+    if (scope.condition("orgId", "userId", context).getExpressions().stream().anyMatch(node ->
+        org.simplepoint.core.permission.PermissionExpressionEvaluator.matches(node, values))) return;
+    boolean allowed = switch (scope.type()) {
+      case "SELF" -> self;
+      case "DEPT", "DEPT_AND_BELOW", "CUSTOM" -> member.getOrgId() != null && scope.departmentIds().contains(member.getOrgId())
+          || scope.includeSelf() && self;
+      default -> false;
+    };
+    if (!allowed) throw new AccessDeniedException("成员不在当前数据权限范围内");
+  }
+
+  private void assertMemberWritable(TenantUserRelevance existing, TenantMemberCommand command) {
+    var values = new java.util.LinkedHashMap<String, Object>();
+    if (existing == null || !Objects.equals(existing.getOrgId(), command.orgId())) values.put("orgId", command.orgId());
+    if (command.enabled() != null && (existing == null || !Objects.equals(existing.getEnabled(), command.enabled()))) values.put("enabled", command.enabled());
+    if (command.userType() != null && (existing == null || !Objects.equals(existing.getUserType(), command.userType()))) values.put("userType", command.userType());
+    if (existing == null) values.put("email", command.email());
+    values.forEach((field, value) -> {
+      if (!org.simplepoint.core.jackson.FieldPermissionPolicy.writable(TenantMemberView.class, field))
+        throw new AccessDeniedException("字段不允许修改: " + field);
+    });
   }
 
   private static String userType(String requested, String fallback) {

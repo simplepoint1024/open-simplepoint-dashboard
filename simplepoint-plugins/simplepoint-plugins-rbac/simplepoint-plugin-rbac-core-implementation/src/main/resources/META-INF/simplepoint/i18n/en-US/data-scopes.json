@@ -18,7 +18,7 @@
   "data-scopes.title.customDeptIds": "Custom Departments",
   "data-scopes.description.customDeptIds": "Set of department IDs explicitly granted access; only used when scope type is CUSTOM",
   "data-scopes.preview.title": "Current effective permissions",
-  "data-scopes.preview.boundary": "Shows saved policies for the current user, tenant and role. This is not a simulation of unsaved changes or proof that a business endpoint enforces these policies. ALL remains tenant-scoped.",
+  "data-scopes.preview.boundary": "Shows saved page data and field policies and legacy role defaults in this workspace. Pages without a policy retain their domain defaults. ALL remains tenant-scoped.",
   "data-scopes.preview.failed": "Failed to load permission preview",
   "data-scopes.preview.user": "User",
   "data-scopes.preview.tenant": "Tenant",
@@ -29,5 +29,17 @@
   "data-scopes.preview.depts": "Organization IDs",
   "data-scopes.preview.self": "Include own rows additionally",
   "data-scopes.preview.field": "Resource field",
-  "data-scopes.preview.access": "Access level"
+  "data-scopes.preview.access": "Access level",
+  "data-scopes.preview.resource": "Page resource",
+  "data-scopes.title.resourceCode": "Target page",
+  "data-scopes.title.expression": "Permission expression",
+  "data-scopes.expression.hint": "Use registered fields of the target page. Text and visual modes share one rule. Apply visual changes before saving.",
+  "data-scopes.expression.invalid": "Expression validation failed",
+  "data-scopes.expression.loadFailed": "Could not load field metadata",
+  "data-scopes.expression.choosePage": "Select a target page first",
+  "data-scopes.expression.text": "Expression",
+  "data-scopes.expression.visual": "Visual editor",
+  "data-scopes.expression.literal": "Literal value",
+  "data-scopes.expression.apply": "Apply visual rule",
+  "data-scopes.expression.validate": "Validate and format"
 }

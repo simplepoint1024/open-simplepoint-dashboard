@@ -78,6 +78,7 @@ import org.springframework.core.annotation.Order;
     @org.simplepoint.core.query.QueryField("sort"),
     @org.simplepoint.core.query.QueryField("enabled")
 })
+@org.simplepoint.core.permission.PermissionModel(department = "id")
 public class Organization extends TenantBaseEntityImpl<String> {
 
   @Order(0)

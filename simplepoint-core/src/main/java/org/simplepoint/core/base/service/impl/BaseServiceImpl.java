@@ -348,6 +348,7 @@ public class BaseServiceImpl
 
       BeanUtil.copyProperties(db, entity, options);
       applyModificationAuditContext(entity);
+      assertAccessible(entity);
 
       // Audit diff between db (before) and entity (after merge)
       getModifyDataAuditingServices().forEach(svc -> svc.modify(db, entity, repository.getDomainClass()));
@@ -713,7 +714,7 @@ public class BaseServiceImpl
   }
 
   private <V> V runWithDefaultDataScope(Supplier<V> supplier) {
-    if (!isDataScopeApplicable()) {
+    if (!hasApplicableDataScope()) {
       DataScopeCondition previous = DataScopeContext.get();
       DataScopeContext.set(new DataScopeCondition(
           DATA_SCOPE_ALL, dataScopeDeptField(), dataScopeOwnerField(), null, Set.of()
@@ -728,24 +729,31 @@ public class BaseServiceImpl
         }
       }
     }
-    if (DataScopeContext.get() != null) {
+    DataScopeCondition previous = DataScopeContext.get();
+    AuthorizationContext context = getAuthorizationContext();
+    if (previous != null && useInheritedDataScope() && (context == null || context.activeDataScope() == null)) {
       return supplier.get();
     }
     DataScopeCondition condition = buildDefaultDataScopeCondition();
-    if (condition == null) {
+    if (condition == null && previous == null) {
       return supplier.get();
     }
-    DataScopeContext.set(condition);
+    // Explicit page policies must use this entity mapping, even under an inherited AOP annotation.
+    DataScopeContext.set(condition == null ? new DataScopeCondition(DATA_SCOPE_ALL, dataScopeDeptField(),
+        dataScopeOwnerField(), null, Set.of()) : condition);
     try {
       return supplier.get();
     } finally {
-      DataScopeContext.clear();
+      if (previous == null) DataScopeContext.clear();
+      else DataScopeContext.set(previous);
     }
   }
 
-  protected final DataScopeCondition buildDefaultDataScopeCondition() {
+  protected boolean useInheritedDataScope() { return true; }
+
+  protected DataScopeCondition buildDefaultDataScopeCondition() {
     AuthorizationContext ctx = getAuthorizationContext();
-    if (ctx != null && Boolean.TRUE.equals(ctx.getIsAdministrator())) {
+    if (ctx != null && ctx.activeDataScope() == null && Boolean.TRUE.equals(ctx.getIsAdministrator())) {
       return null;
     }
     ResourceDataScope resourceScope = ctx == null ? null : ctx.activeDataScope();
@@ -754,6 +762,7 @@ public class BaseServiceImpl
     if (DATA_SCOPE_ALL.equals(scopeType)) {
       return null;
     }
+    if (resourceScope != null) return resourceScope.condition(dataScopeDeptField(), dataScopeOwnerField(), ctx);
     return new DataScopeCondition(
         scopeType == null || scopeType.isBlank() ? "DENY" : scopeType,
         dataScopeDeptField(),
@@ -767,7 +776,7 @@ public class BaseServiceImpl
   }
 
   private boolean isDataScopeRestricted() {
-    if (!isDataScopeApplicable()) {
+    if (!hasApplicableDataScope()) {
       return false;
     }
     DataScopeCondition condition = DataScopeContext.get();
@@ -783,12 +792,12 @@ public class BaseServiceImpl
     }
   }
 
-  private boolean isAccessible(T entity) {
+  protected boolean isAccessible(T entity) {
     if (entity == null) {
       return false;
     }
     AuthorizationContext ctx = getAuthorizationContext();
-    if (!isDataScopeApplicable() || (ctx != null && Boolean.TRUE.equals(ctx.getIsAdministrator()))) {
+    if (!hasApplicableDataScope() || (ctx != null && ctx.activeDataScope() == null && Boolean.TRUE.equals(ctx.getIsAdministrator()))) {
       return true;
     }
     if (ctx == null) {
@@ -802,6 +811,9 @@ public class BaseServiceImpl
     if (scopeType == null || scopeType.isBlank()) {
       return false;
     }
+    if (resourceScope != null && resourceScope.condition(dataScopeDeptField(), dataScopeOwnerField(), ctx)
+        .getExpressions().stream().anyMatch(node -> org.simplepoint.core.permission.PermissionExpressionEvaluator.matches(
+            node, field -> permissionFieldValue(entity, field)))) return true;
     return switch (scopeType) {
       case DATA_SCOPE_SELF -> {
         Object owner = readFieldValue(entity, dataScopeOwnerField());
@@ -847,7 +859,9 @@ public class BaseServiceImpl
    * Override together with {@link #dataScopeDeptField()} when an entity does not use the standard names.
    */
   protected String dataScopeOwnerField() {
-    return DEFAULT_DATA_SCOPE_OWNER_FIELD;
+    var model = repository.getDomainClass();
+    var mapping = model == null ? null : model.getAnnotation(org.simplepoint.core.permission.PermissionModel.class);
+    return mapping == null ? DEFAULT_DATA_SCOPE_OWNER_FIELD : mapping.owner();
   }
 
   /**
@@ -855,7 +869,9 @@ public class BaseServiceImpl
    * Override together with {@link #dataScopeOwnerField()} when an entity does not use the standard names.
    */
   protected String dataScopeDeptField() {
-    return DEFAULT_DATA_SCOPE_DEPT_FIELD;
+    var model = repository.getDomainClass();
+    var mapping = model == null ? null : model.getAnnotation(org.simplepoint.core.permission.PermissionModel.class);
+    return mapping == null ? DEFAULT_DATA_SCOPE_DEPT_FIELD : mapping.department();
   }
 
   /**
@@ -868,6 +884,24 @@ public class BaseServiceImpl
    */
   protected boolean isDataScopeApplicable() {
     return true;
+  }
+
+  private boolean hasApplicableDataScope() {
+    AuthorizationContext context = getAuthorizationContext();
+    return context != null && context.activeDataScope() != null || isDataScopeApplicable();
+  }
+
+  protected Object permissionFieldValue(T entity, String name) {
+    for (Class<?> type = entity.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
+      try {
+        Field field = type.getDeclaredField(name); field.setAccessible(true); return field.get(entity);
+      } catch (NoSuchFieldException ignored) {
+        // Search inherited persistent fields.
+      } catch (IllegalAccessException error) {
+        throw new AccessDeniedException("权限字段不可读取: " + name, error);
+      }
+    }
+    throw new AccessDeniedException("权限字段映射已失效: " + name);
   }
 
   private Object readFieldValue(Object target, String fieldName) {

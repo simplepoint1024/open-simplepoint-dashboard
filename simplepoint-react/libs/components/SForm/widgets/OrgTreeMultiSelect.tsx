@@ -7,7 +7,7 @@ import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {RawPage} from '@simplepoint/shared/types/request';
 
 type OrganizationRow = {id: string; name: string; code?: string; type?: string; description?: string; enabled?: boolean};
-const endpoint = '/common/platform/organizations/selection';
+const endpoint = '/common/organizations/selection';
 const MAX_DRAFT_IDS = 2000;
 
 /** Selection is a form draft. Neither moving rows nor querying a side persists any grant. */

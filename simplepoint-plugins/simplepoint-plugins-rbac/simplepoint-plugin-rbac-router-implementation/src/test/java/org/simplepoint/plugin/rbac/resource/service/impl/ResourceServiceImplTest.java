@@ -134,6 +134,7 @@ class ResourceServiceImplTest {
   @Test
   void syncRetiresResourcesNoLongerDeclaredByTheOwner() {
     Resource current = resource("current-id", "dna.federation.catalogs.create");
+    current.setPermissionMetadata("{\"models\":[]}");
     Resource stale = resource("stale-id", "dna.federation.data-catalogs.create");
     when(repository.loadAll()).thenReturn(List.of(current, stale));
     when(repository.updateById(any(Resource.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -148,6 +149,8 @@ class ResourceServiceImplTest {
 
     service.sync("dna", Set.of(declaration));
 
+    verify(repository).updateById(org.mockito.ArgumentMatchers.argThat((Resource value) ->
+        "current-id".equals(value.getId()) && current.getPermissionMetadata().equals(value.getPermissionMetadata())));
     verify(repository).deleteByIds(List.of("stale-id"));
     verify(grantRepository).deleteAllByResourceCodes(Set.of(stale.getCode()));
     verify(authorizationVersionService).refreshByResourceCodes(Set.of(stale.getCode()));

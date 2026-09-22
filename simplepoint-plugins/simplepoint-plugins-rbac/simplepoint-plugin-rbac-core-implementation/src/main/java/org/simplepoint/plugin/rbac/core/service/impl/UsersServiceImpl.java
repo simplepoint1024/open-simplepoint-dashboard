@@ -122,34 +122,79 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     this.roleCandidateQuery = roleCandidateQuery;
   }
 
+  @jakarta.persistence.PersistenceContext
+  private jakarta.persistence.EntityManager permissionEntityManager;
+
+  private String permissionTenant() {
+    if (currentTenantId() == null && AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) return null;
+    return resolveCurrentTenantScope();
+  }
+
   @Override
   protected boolean isDataScopeApplicable() {
-    return false;
+    return permissionTenant() != null;
   }
 
   @Override
-  public <S extends User> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
-    if (AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
-      return super.limit(attributes, pageable);
-    }
-    String tenantId = resolveCurrentTenantScope();
-    Set<String> userIds = currentTenantUserIds(tenantId);
-    if (userIds.isEmpty()) {
-      return Page.empty(pageable);
-    }
-    Map<String, String> scopedAttributes = new HashMap<>(attributes == null ? Map.of() : attributes);
-    scopedAttributes.put("id", "in:" + String.join(",", userIds));
-    return super.limit(scopedAttributes, pageable);
+  protected boolean useInheritedDataScope() { return false; }
+
+  /** User scope is defined by membership in this tenant, never the global account's audit organization. */
+  @Override
+  protected org.simplepoint.core.datascopeannotation.DataScopeCondition buildDefaultDataScopeCondition() {
+    String tenantId = permissionTenant();
+    if (tenantId == null || tenantId.isBlank()) return super.buildDefaultDataScopeCondition();
+    var context = getAuthorizationContext();
+    var rule = context == null ? null : context.activeDataScope();
+    Set<String> allowed;
+    if (rule == null || "ALL".equals(rule.type())) allowed = currentTenantUserIds(tenantId);
+    else if (!rule.expressions().isEmpty()) allowed = expressionMemberIds(tenantId, rule);
+    else allowed = new LinkedHashSet<>(tenantUserRelevanceRepository.authorizedForScope(tenantId,
+        rule.type(), rule.departmentIds().isEmpty() ? Set.of("__no_department__") : rule.departmentIds(),
+        context.getUserId(), rule.includeSelf()));
+    return new org.simplepoint.core.datascopeannotation.DataScopeCondition("CUSTOM", "id", "id",
+        context == null ? null : context.getUserId(), allowed, false);
   }
 
   @Override
-  public Optional<User> findById(String id) {
-    Optional<User> user = super.findById(id);
-    if (user.isEmpty() || AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
-      return user;
-    }
-    String tenantId = resolveCurrentTenantScope();
-    return currentTenantUserIds(tenantId).contains(id) ? user : Optional.empty();
+  protected boolean isAccessible(User user) {
+    if (user == null) return false;
+    String tenantId = permissionTenant();
+    if (tenantId == null || tenantId.isBlank()) return super.isAccessible(user);
+    var context = getAuthorizationContext();
+    var rule = context.activeDataScope();
+    if (rule == null || rule.expressions().isEmpty()) return buildDefaultDataScopeCondition().getDeptIds().contains(user.getId());
+    var member = tenantUserRelevanceRepository.findByTenantIdAndUserIdAndDeletedAtIsNull(tenantId, user.getId()).orElse(null);
+    if (member == null) return false;
+    boolean self = user.getId().equals(context.getUserId());
+    boolean builtin = switch (rule.type()) {
+      case "ALL" -> true; case "SELF" -> self;
+      case "CUSTOM", "DEPT", "DEPT_AND_BELOW" -> member.getOrgId() != null && rule.departmentIds().contains(member.getOrgId()) || rule.includeSelf() && self;
+      default -> false;
+    };
+    if (builtin) return true;
+    return rule.condition("orgId", "userId", context).getExpressions().stream().anyMatch(node ->
+        org.simplepoint.core.permission.PermissionExpressionEvaluator.matches(node, field -> switch (field) {
+          case "orgId" -> member.getOrgId(); case "enabled" -> member.getEnabled() == null || member.getEnabled();
+          case "userId" -> user.getId();
+          case "name" -> user.getNickname() != null ? user.getNickname() : user.getName() != null ? user.getName() : user.getEmail() != null ? user.getEmail() : user.getId();
+          default -> permissionFieldValue(user, field);
+        }));
+  }
+
+  private Set<String> expressionMemberIds(String tenantId, org.simplepoint.core.ResourceDataScope rule) {
+    var cb = permissionEntityManager.getCriteriaBuilder();
+    var query = cb.createQuery(String.class);
+    var member = query.from(org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance.class);
+    var user = query.from(User.class);
+    var fields = new java.util.LinkedHashMap<String, jakarta.persistence.criteria.Expression<?>>();
+    permissionEntityManager.getMetamodel().entity(User.class).getAttributes().forEach(attribute -> fields.put(attribute.getName(), user.get(attribute.getName())));
+    fields.put("orgId", member.get("orgId")); fields.put("userId", member.get("userId"));
+    fields.put("enabled", cb.coalesce(member.<Boolean>get("enabled"), true));
+    fields.put("name", cb.<String>coalesce().value(user.get("nickname")).value(user.get("name")).value(user.get("email")).value(user.get("id")));
+    var policy = org.simplepoint.data.jpa.DataScopePredicates.compile(rule.condition("orgId", "userId", getAuthorizationContext()), fields, cb);
+    query.select(member.get("userId")).where(cb.equal(member.get("tenantId"), tenantId), cb.isNull(member.get("deletedAt")),
+        cb.equal(member.get("userId"), user.get("id")), cb.isNull(user.get("deletedAt")), policy);
+    return new LinkedHashSet<>(permissionEntityManager.createQuery(query).getResultList());
   }
 
   @Override

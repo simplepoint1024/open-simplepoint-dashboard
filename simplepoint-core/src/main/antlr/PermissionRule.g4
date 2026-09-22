@@ -1,0 +1,25 @@
+grammar PermissionRule;
+@header {package org.simplepoint.core.permission.antlr;}
+rule: disjunction EOF;
+disjunction: conjunction (OR conjunction)*;
+conjunction: unary (AND unary)*;
+unary: NOT unary | '(' disjunction ')' | comparison;
+comparison: IDENT operator value | IDENT IS NOT? NULL;
+operator: '=' | '==' | '!=' | '<>' | '>' | '>=' | '<' | '<=' | IN | NOT IN | CONTAINS | NOT CONTAINS;
+value: scalar | '[' scalar (',' scalar)* ']';
+scalar: STRING | NUMBER | TRUE | FALSE | CONTEXT;
+AND: [aA][nN][dD] | '&&';
+OR: [oO][rR] | '||';
+NOT: [nN][oO][tT] | '!';
+IN: [iI][nN];
+IS: [iI][sS];
+NULL: [nN][uU][lL][lL];
+CONTAINS: [cC][oO][nN][tT][aA][iI][nN][sS];
+TRUE: 'true';
+FALSE: 'false';
+CONTEXT: '$' [a-zA-Z][a-zA-Z0-9]* ('.' [a-zA-Z][a-zA-Z0-9]*)+;
+IDENT: [a-zA-Z_][a-zA-Z0-9_]*;
+NUMBER: '-'? ('0' | [1-9][0-9]*) ('.' [0-9]+)? ([eE] [+-]? [0-9]+)?;
+STRING: '"' ('\\' ( ["\\/bfnrt] | 'u' HEX HEX HEX HEX ) | ~["\\\r\n])* '"';
+fragment HEX: [0-9a-fA-F];
+WS: [ \t\r\n]+ -> skip;

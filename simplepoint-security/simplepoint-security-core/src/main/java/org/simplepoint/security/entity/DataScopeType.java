@@ -19,6 +19,9 @@ public enum DataScopeType {
    */
   SELF(0),
 
+  /** Page-bound, validated permission expression. */
+  EXPRESSION(0),
+
   /**
    * Custom set of organizational units (departments) specified explicitly.
    */

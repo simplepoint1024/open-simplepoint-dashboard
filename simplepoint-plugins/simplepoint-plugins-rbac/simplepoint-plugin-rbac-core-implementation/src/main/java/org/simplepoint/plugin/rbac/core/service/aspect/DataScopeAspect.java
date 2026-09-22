@@ -48,7 +48,7 @@ public class DataScopeAspect {
 
     ResourceDataScope resourceScope = ctx.activeDataScope();
     String scopeType = resourceScope == null ? ctx.getDataScopeType() : resourceScope.type();
-    if (Boolean.TRUE.equals(ctx.getIsAdministrator())) {
+    if (resourceScope == null && Boolean.TRUE.equals(ctx.getIsAdministrator())) {
       scopeType = "ALL";
     } else if (scopeType == null || scopeType.isBlank()) {
       scopeType = "DENY";
@@ -58,7 +58,7 @@ public class DataScopeAspect {
     boolean includeSelf = resourceScope == null ? Boolean.TRUE.equals(ctx.getDataScopeIncludeSelf())
         : resourceScope.includeSelf();
 
-    DataScopeCondition condition = new DataScopeCondition(
+    DataScopeCondition condition = resourceScope != null ? resourceScope.condition(dataScope.deptField(), dataScope.ownerField(), ctx) : new DataScopeCondition(
         scopeType,
         dataScope.deptField(),
         dataScope.ownerField(),

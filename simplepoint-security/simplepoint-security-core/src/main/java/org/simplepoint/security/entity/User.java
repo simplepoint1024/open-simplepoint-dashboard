@@ -98,6 +98,7 @@ import org.springframework.security.core.GrantedAuthority;
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "用户对象", description = "用于管理系统中的用户")
+@org.simplepoint.core.permission.PermissionModel(owner="id", department="orgId")
 public class User extends BaseEntityImpl<String> implements BaseUser {
 
   @Transient

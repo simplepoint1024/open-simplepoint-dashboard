@@ -31,6 +31,7 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
 
   private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
   private final FieldScopeCatalog fieldCatalog;
+  private final PermissionPolicyGuard policyGuard;
 
   /**
    * Field Scope Service Impl.
@@ -39,11 +40,12 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
       FieldScopeRepository repository,
       DetailsProviderService detailsProviderService,
       ResourceAuthorizationVersionService resourceAuthorizationVersionService,
-      FieldScopeCatalog fieldCatalog
+      FieldScopeCatalog fieldCatalog, PermissionPolicyGuard policyGuard
   ) {
     super(repository, detailsProviderService);
     this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.fieldCatalog = fieldCatalog;
+    this.policyGuard = policyGuard;
   }
 
   @Override
@@ -58,11 +60,11 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
     String tenantId = requireCurrentTenantId();
     FieldScope fieldScope = getRepository().findByIdAndTenantIdAndDeletedAtIsNull(fieldScopeId, tenantId)
         .orElseThrow(() -> new IllegalArgumentException("FieldScope not found: " + fieldScopeId));
-    if (entries == null || entries.size() > 500) throw new IllegalArgumentException("字段规则不能为空且不能超过 500 条");
+    if (entries == null || entries.size() > 500) throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("字段规则不能为空且不能超过 500 条");
     java.util.Map<String, FieldScopeEntry> validated = new java.util.LinkedHashMap<>();
     for (FieldScopeEntry entry : entries) {
       if (entry == null || entry.getResource() == null || entry.getField() == null || entry.getAccess() == null) {
-        throw new IllegalArgumentException("资源、字段和访问级别不能为空");
+        throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("资源、字段和访问级别不能为空");
       }
       String field = entry.getField().trim();
       String resource = fieldCatalog.validateResource(entry.getResource().trim(), field);
@@ -73,7 +75,7 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
       clean.setFieldScopeId(fieldScopeId);
       clean.setTenantId(tenantId);
       if (validated.putIfAbsent(resource + "#" + field, clean) != null) {
-        throw new IllegalArgumentException("字段规则重复: " + resource + "#" + field);
+        throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("字段规则重复: " + resource + "#" + field);
       }
     }
     // Reuse existing rows to avoid INSERT-before-orphan-DELETE unique-key collisions.
@@ -128,6 +130,7 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void removeByIds(Collection<String> ids) {
+    policyGuard.requireUnused(requireCurrentTenantId(), ids, false);
     super.removeByIds(ids);
     refreshCurrentTenantAuthorizationVersion();
   }
@@ -149,8 +152,13 @@ public class FieldScopeServiceImpl extends BaseServiceImpl<FieldScopeRepository,
   }
 
   private void requireSeparateEntriesEndpoint(FieldScope entity) {
+    if (entity == null) throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("规则不能为空");
+    entity.setName(PermissionPolicyGuard.name(entity.getName()));
+    if (entity.getDescription() != null && entity.getDescription().length() > 200) {
+      throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("规则描述不能超过 200 个字符");
+    }
     if (entity.getEntries() != null && !entity.getEntries().isEmpty()) {
-      throw new IllegalArgumentException("请使用字段规则配置接口修改 entries");
+      throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("请使用字段规则配置接口修改 entries");
     }
   }
 

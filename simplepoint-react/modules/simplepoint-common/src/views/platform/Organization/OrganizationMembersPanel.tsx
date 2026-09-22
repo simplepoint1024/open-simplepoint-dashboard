@@ -56,7 +56,7 @@ export default function OrganizationMembersPanel({organization, scope}: {organiz
     if (!candidate || !organization || scope !== getQueryScopeSnapshot()) return;
     setSaving(true);
     try {
-      await put(`${base}/${encodeURIComponent(candidate.userId)}`, {orgId: organization.id,
+      await put(`${base}/by-organization/${encodeURIComponent(candidate.userId)}`, {orgId: organization.id,
         revision: candidate.revision, userType: candidateType});
       setCandidateOpen(false); setCandidate(undefined);
       await Promise.all([members.refetch(), candidates.refetch()]);
@@ -68,7 +68,7 @@ export default function OrganizationMembersPanel({organization, scope}: {organiz
     if (scope !== getQueryScopeSnapshot()) return;
     setEditingUser(member.userId);
     try {
-      await put(`${base}/${encodeURIComponent(member.userId)}`, {orgId: member.orgId ?? null,
+      await put(`${base}/by-organization/${encodeURIComponent(member.userId)}`, {orgId: member.orgId ?? null,
         revision: member.revision, userType});
       await members.refetch();
       message.success(t('tenant-members.typeSaved', '用户类型已更新'));

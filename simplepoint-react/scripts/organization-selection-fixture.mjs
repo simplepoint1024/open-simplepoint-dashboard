@@ -19,7 +19,7 @@ export function createOrganizationSelectionFixture() {
   return {
     queries, writes, scopes, initialIds, failNext() {fail = true;}, readonly() {readonly = true;},
     async handle(req, url, respond, expectedFailure) {
-      const base = '/common/platform/organizations/selection';
+      const base = '/common/organizations/selection';
       if (url.pathname === '/common/data-scopes/schema') return respond({buttons: [
         {key: 'edit', title: '编辑', icon: 'EditOutlined', argumentMinSize: 1, argumentMaxSize: 1, sort: 0},
       ], schema: {type: 'object', properties: {

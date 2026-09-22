@@ -54,7 +54,7 @@ const App = () => {
     };
 
     return (
-        <div>
+        <div style={{height: '100%', width: '100%', minWidth: 0, minHeight: 0}}>
             <SimpleTable
                 key={tableRevision}
                 {...baseConfig}

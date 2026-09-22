@@ -24,6 +24,7 @@ const OrganizationSelect = lazyWidget(() => import('./widgets/OrganizationSelect
 const RemoteSelect = lazyWidget(() => import('./widgets/RemoteSelect'));
 const OssFileWidget = lazyWidget(() => import('./widgets/OssFileWidget'));
 const OssImageWidget = lazyWidget(() => import('./widgets/OssImageWidget'));
+const PermissionExpression = lazyWidget(() => import('./widgets/PermissionExpression'));
 const UserPicker = lazyWidget(() => import('./widgets/UserPicker'));
 
 type SFormProps = Omit<FormProps, "validator">& {
@@ -54,6 +55,7 @@ const formTemplates = {
 
 const defaultWidgets = {
   IconPicker,
+  PermissionExpression,
   OrgTreeMultiSelect,
   OrganizationSelect,
   RemoteSelect,
@@ -154,7 +156,7 @@ const SForm = (props: SFormProps) => {
       {...rest}
       schema={schema}
       uiSchema={mergedUiSchema}
-      formContext={{...(rest.formContext || {}), submitLoading}}
+      formContext={{...(rest.formContext || {}), formData: rest.formData, submitLoading}}
       validator={validator}
       validate={mergedValidate}
       showErrorList={false}

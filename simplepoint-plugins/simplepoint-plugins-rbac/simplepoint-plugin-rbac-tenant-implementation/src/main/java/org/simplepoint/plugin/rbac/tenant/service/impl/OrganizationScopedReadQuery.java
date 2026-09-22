@@ -126,10 +126,9 @@ public class OrganizationScopedReadQuery {
   }
 
   private static Map<String, jakarta.persistence.criteria.Expression<?>> fields(Root<Organization> root) {
-    return Map.of("name", root.get("name"), "code", root.get("code"),
-        "parentId", root.get("parentId"), "type", root.get("type"),
-        "description", root.get("description"), "sort", root.get("sort"),
-        "enabled", root.get("enabled"));
+    var fields = new java.util.LinkedHashMap<String, jakarta.persistence.criteria.Expression<?>>();
+    root.getModel().getAttributes().forEach(attribute -> fields.put(attribute.getName(), root.get(attribute.getName())));
+    return fields;
   }
 
   private static void checkPage(Pageable page) {

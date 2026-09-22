@@ -19,6 +19,10 @@ export async function smokeOrganizationSelection({clickMenu, clickReady, clickTe
   };
   const close = async () => {
     await clickReady('.ant-drawer-open > .ant-drawer-content-wrapper .ant-drawer-close');
+    await poll(() => evaluate(`!document.querySelector('.sp-assignment-panel') || !!document.querySelector('.ant-modal-confirm, .ant-modal-wrap:not([style*="display: none"]) .ant-modal')`), 'draft close or discard confirmation');
+    if (await evaluate(`!!document.querySelector('.sp-assignment-panel')`)) {
+      await clickText('.ant-modal button', '放弃修改');
+    }
     await poll(() => evaluate(`!document.querySelector('.sp-assignment-panel')`), 'draft form closed');
   };
   await clickMenu('组织选择测试');

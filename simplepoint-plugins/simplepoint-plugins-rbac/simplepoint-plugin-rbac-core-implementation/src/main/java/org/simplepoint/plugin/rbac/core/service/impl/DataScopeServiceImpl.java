@@ -29,6 +29,9 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
     implements DataScopeService {
 
   private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
+  private final PermissionPolicyGuard policyGuard;
+  @org.springframework.beans.factory.annotation.Autowired
+  private PermissionExpressionService expressions;
   private final org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository organizations;
 
   /**
@@ -38,11 +41,13 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
       DataScopeRepository repository,
       DetailsProviderService detailsProviderService,
       ResourceAuthorizationVersionService resourceAuthorizationVersionService,
-      org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository organizations
+      org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository organizations,
+      PermissionPolicyGuard policyGuard
   ) {
     super(repository, detailsProviderService);
     this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.organizations = organizations;
+    this.policyGuard = policyGuard;
   }
 
   @Override
@@ -71,6 +76,11 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends DataScope> DataScope modifyById(S entity) {
+    var existing = getRepository().findByIdAndTenantIdAndDeletedAtIsNull(entity.getId(), requireCurrentTenantId())
+        .orElseThrow(() -> new org.simplepoint.core.permission.InvalidPermissionPolicyException("规则不存在"));
+    if (existing.getType() != entity.getType() || !java.util.Objects.equals(existing.getResourceCode(), entity.getResourceCode())) {
+      policyGuard.requireUnused(requireCurrentTenantId(), List.of(entity.getId()), true);
+    }
     validatePolicy(entity);
     entity.setTenantId(requireCurrentTenantId());
     DataScope result = super.modifyById(entity);
@@ -81,6 +91,7 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void removeByIds(Collection<String> ids) {
+    policyGuard.requireUnused(requireCurrentTenantId(), ids, true);
     super.removeByIds(ids);
     refreshCurrentTenantAuthorizationVersion();
   }
@@ -103,13 +114,29 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
 
   private void validatePolicy(DataScope entity) {
     String tenantId = requireCurrentTenantId();
-    if (entity.getType() == null) throw new IllegalArgumentException("数据范围类型不能为空");
+    if (entity == null) throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("规则不能为空");
+    entity.setName(PermissionPolicyGuard.name(entity.getName()));
+    if (entity.getDescription() != null && entity.getDescription().length() > 200) {
+      throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("规则描述不能超过 200 个字符");
+    }
+    if (entity.getType() == null) throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("数据范围类型不能为空");
+    if (entity.getType() == org.simplepoint.security.entity.DataScopeType.EXPRESSION) {
+      var validated = expressions.validate(entity.getResourceCode(), entity.getExpression(), null);
+      entity.setExpression(validated.expression());
+      entity.setCustomDeptIds(java.util.Set.of());
+      return;
+    }
+    entity.setResourceCode(null);
+    entity.setExpression(null);
     if (entity.getType() != org.simplepoint.security.entity.DataScopeType.CUSTOM) {
       entity.setCustomDeptIds(java.util.Set.of());
       return;
     }
     if (entity.getCustomDeptIds() == null || entity.getCustomDeptIds().isEmpty()) {
-      throw new IllegalArgumentException("自定义范围至少需要选择一个组织");
+      throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("自定义范围至少需要选择一个组织");
+    }
+    if (entity.getCustomDeptIds().size() > 2000) {
+      throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("自定义范围最多选择 2000 个组织");
     }
     for (String id : entity.getCustomDeptIds()) {
       if (id == null || organizations.findByIdAndTenantId(id, tenantId)

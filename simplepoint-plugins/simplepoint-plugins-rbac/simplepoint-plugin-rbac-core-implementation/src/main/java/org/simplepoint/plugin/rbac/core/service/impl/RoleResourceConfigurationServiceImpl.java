@@ -35,6 +35,7 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.entity.DataScope;
+import org.simplepoint.core.permission.PermissionPageDescriptor;
 import org.simplepoint.security.entity.FieldScope;
 import org.simplepoint.security.ResourceScopePolicy;
 import org.simplepoint.security.entity.Resource;
@@ -138,7 +139,8 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
         || page.getOffset() > Integer.MAX_VALUE) {
       throw badRequest("不支持的规则类型或分页参数");
     }
-    if (data ? !DATA_POLICY_PAGES.contains(resourceCode) : !FIELD_POLICY_MODELS.containsKey(resourceCode)) {
+    var descriptor = permissionModels(List.of(resourceCode)).get(resourceCode);
+    if (descriptor == null || !(data ? descriptor.data() : descriptor.fields())) {
       throw badRequest("当前页面尚未接入此类权限规则");
     }
     String search = keyword == null ? "" : keyword.trim();
@@ -150,19 +152,21 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
       var query = cb.createQuery(DataScope.class);
       var root = query.from(DataScope.class);
       query.select(root).where(cb.equal(root.get("tenantId"), tenant), cb.isNull(root.get("deletedAt")),
-          cb.like(cb.lower(root.get("name")), pattern, '!'))
+          cb.like(cb.lower(root.get("name")), pattern, '!'),
+          cb.or(cb.notEqual(root.get("type"), org.simplepoint.security.entity.DataScopeType.EXPRESSION), cb.equal(root.get("resourceCode"), resourceCode)))
           .orderBy(cb.asc(root.get("name")), cb.asc(root.get("id")));
       var count = cb.createQuery(Long.class);
       var counted = count.from(DataScope.class);
       count.select(cb.count(counted)).where(cb.equal(counted.get("tenantId"), tenant),
-          cb.isNull(counted.get("deletedAt")), cb.like(cb.lower(counted.get("name")), pattern, '!'));
+          cb.isNull(counted.get("deletedAt")), cb.like(cb.lower(counted.get("name")), pattern, '!'),
+          cb.or(cb.notEqual(counted.get("type"), org.simplepoint.security.entity.DataScopeType.EXPRESSION), cb.equal(counted.get("resourceCode"), resourceCode)));
       List<PolicyOption> values = em.createQuery(query).setFirstResult((int) page.getOffset())
           .setMaxResults(page.getPageSize()).getResultList().stream()
           .map(scope -> new PolicyOption(scope.getId(), scope.getName(), scope.getType().name()))
           .toList();
       return new PageImpl<>(values, page, em.createQuery(count).getSingleResult());
     }
-    String model = FIELD_POLICY_MODELS.get(resourceCode);
+    Set<String> model = descriptor.fieldModels();
     var cb = em.getCriteriaBuilder();
     var query = cb.createQuery(FieldScope.class);
     var root = query.from(FieldScope.class);
@@ -181,11 +185,11 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
   }
 
   private Predicate fieldEntryExists(CriteriaBuilder cb, CommonAbstractCriteria query,
-      Root<FieldScope> scope, String tenant, String model) {
+      Root<FieldScope> scope, String tenant, Set<String> model) {
     var sub = query.subquery(Integer.class);
     var entry = sub.from(org.simplepoint.security.entity.FieldScopeEntry.class);
     sub.select(cb.literal(1)).where(cb.equal(entry.get("fieldScopeId"), scope.get("id")),
-        cb.equal(entry.get("tenantId"), tenant), cb.equal(entry.get("resource"), model),
+        cb.equal(entry.get("tenantId"), tenant), entry.get("resource").in(model),
         cb.isNull(entry.get("deletedAt")));
     return cb.exists(sub);
   }
@@ -365,6 +369,7 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
 
   private List<Row> rowsCustom(List<TenantResource> resources, String tenant, String roleId) {
     if (resources.isEmpty()) return List.of();
+    var models = permissionModels(resources.stream().map(TenantResource::getCode).toList());
     Set<String> grantableCodes = tenantResourceCatalog.grantableCodes(tenant,
         resources.stream().map(TenantResource::getCode).toList());
     Map<String, List<RoleResourceGrant>> grants = em.createQuery(
@@ -397,7 +402,7 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
           digest(resource.getId() + "|" + resource.getCode() + "|" + resource.getUpdatedAt()
               + "|" + assigned.stream().map(g -> g.getId() + ":" + g.getUpdatedAt())
                   .sorted().collect(Collectors.joining("|"))),
-          policySlot(resource.getCode(), assigned, true), policySlot(resource.getCode(), assigned, false));
+          policySlot(models.get(resource.getCode()), assigned, true), policySlot(models.get(resource.getCode()), assigned, false));
     }).toList();
   }
 
@@ -596,7 +601,8 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
       for (int start = 0; start < codes.size(); start += QUERY_BATCH) {
         Long legacy = em.createQuery("select count(g) from RoleResourceGrant g"
             + " where g.tenantId = :tenant and g.roleId = :role and g.deletedAt is null"
-            + " and g.resourceCode in :codes and (g.dataScopeId is not null or g.fieldScopeId is not null)", Long.class)
+            + " and g.resourceCode in :codes and (g.pagePolicy is null or g.pagePolicy = false)"
+            + " and (g.dataScopeId is not null or g.fieldScopeId is not null)", Long.class)
             .setParameter("tenant", tenant).setParameter("role", roleId)
             .setParameter("codes", codes.subList(start, Math.min(start + QUERY_BATCH, codes.size())))
             .getSingleResult();
@@ -636,9 +642,15 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
     for (String field : List.of("roleId", "resourceCode")) {
       requireReadable(RoleResourceGrant.class, field);
     }
-    Long count = em.createQuery("select count(r) from Role r where r.tenantId = :tenant"
-        + " and r.id = :id and r.deletedAt is null", Long.class)
-        .setParameter("tenant", tenant).setParameter("id", roleId).getSingleResult();
+    var cb = em.getCriteriaBuilder();
+    var query = cb.createQuery(Long.class); var role = query.from(Role.class);
+    var context = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    var scope = context == null ? null : context.activeDataScope();
+    var allowed = org.simplepoint.data.jpa.DataScopePredicates.compile(scope == null ? null
+        : scope.condition("createOrgDeptId", "createdBy", context), role, cb, em.getMetamodel());
+    query.select(cb.count(role)).where(cb.equal(role.get("tenantId"), tenant), cb.equal(role.get("id"), roleId),
+        cb.isNull(role.get("deletedAt")), allowed == null ? cb.conjunction() : allowed);
+    Long count = em.createQuery(query).getSingleResult();
     if (count != 1) {
       throw new AccessDeniedException("角色不存在或不属于当前租户");
     }
@@ -767,20 +779,28 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
           navigationParentIds.contains(resource.getId()),
           resource.getDescription(), Boolean.TRUE.equals(resource.getGrantable()),
           !assigned.isEmpty(), revision(resource, assigned),
-          policySlot(resource.getCode(), assigned, true),
-          policySlot(resource.getCode(), assigned, false));
+          policySlot(PermissionPageDescriptor.fromJson(resource.getPermissionMetadata()), assigned, true),
+          policySlot(PermissionPageDescriptor.fromJson(resource.getPermissionMetadata()), assigned, false));
     }).toList();
   }
 
-  // Each enabled page must cover its list, count, picker, detail and mutation paths.
-  private static final Set<String> DATA_POLICY_PAGES = Set.of("organizations.view");
-  private static final Map<String, String> FIELD_POLICY_MODELS = Map.of(
-      "users.view", User.class.getName(),
-      "organizations.view", Organization.class.getName());
+  private Map<String, PermissionPageDescriptor> permissionModels(java.util.Collection<String> codes) {
+    Map<String, PermissionPageDescriptor> result = new java.util.HashMap<>();
+    List<String> values = codes.stream().filter(java.util.Objects::nonNull).distinct().toList();
+    for (int offset = 0; offset < values.size(); offset += QUERY_BATCH) {
+      em.createQuery("select r from Resource r where r.code in :codes and r.deletedAt is null"
+          + " and r.disabled = false and r.type = :type", Resource.class)
+          .setParameter("codes", values.subList(offset, Math.min(offset + QUERY_BATCH, values.size())))
+          .setParameter("type", ResourceType.PAGE).getResultList().forEach(resource -> {
+            var descriptor = PermissionPageDescriptor.fromJson(resource.getPermissionMetadata());
+            if (descriptor != null) result.put(resource.getCode(), descriptor);
+          });
+    }
+    return result;
+  }
 
-  private static PolicySlot policySlot(String code, List<RoleResourceGrant> grants, boolean data) {
-    boolean supported = (data ? DATA_POLICY_PAGES.contains(code) : FIELD_POLICY_MODELS.containsKey(code))
-        && grants.size() <= 1;
+  private static PolicySlot policySlot(PermissionPageDescriptor model, List<RoleResourceGrant> grants, boolean data) {
+    boolean supported = model != null && (data ? model.data() : model.fields()) && grants.size() <= 1;
     String id = grants.size() == 1
         ? (data ? grants.getFirst().getDataScopeId() : grants.getFirst().getFieldScopeId()) : null;
     return new PolicySlot(supported, id);
@@ -789,6 +809,7 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
   private void applyPolicyChanges(String tenant, String roleId, List<Change> changes,
       Map<String, Row> current) {
     boolean updated = false;
+    var models = permissionModels(current.values().stream().map(Row::code).toList());
     for (Change change : changes) {
       if (change.dataPermission() == null && change.fieldPermission() == null) continue;
       Row row = current.get(change.resourceId());
@@ -804,19 +825,23 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
       String dataId = change.dataPermission() == null ? null : trimToNull(change.dataPermission().policyId());
       String fieldId = change.fieldPermission() == null ? null : trimToNull(change.fieldPermission().policyId());
       if (dataId != null) {
-        DataScope policy = em.find(DataScope.class, dataId);
+        DataScope policy = em.find(DataScope.class, dataId, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
         if (policy == null || policy.getDeletedAt() != null || !tenant.equals(policy.getTenantId())) {
           throw new AccessDeniedException("数据范围不存在或不属于当前租户");
         }
+        if (policy.getType() == org.simplepoint.security.entity.DataScopeType.EXPRESSION) {
+          if (!row.code().equals(policy.getResourceCode())) throw badRequest("表达式规则只能绑定到其目标页面");
+          org.simplepoint.core.permission.PermissionExpression.validate(policy.getExpression(), models.get(row.code()).commonProperties());
+        }
       }
       if (fieldId != null) {
-        FieldScope policy = em.find(FieldScope.class, fieldId);
+        FieldScope policy = em.find(FieldScope.class, fieldId, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
         if (policy == null || policy.getDeletedAt() != null || !tenant.equals(policy.getTenantId())) {
           throw new AccessDeniedException("字段范围不存在或不属于当前租户");
         }
-        String model = FIELD_POLICY_MODELS.get(row.code());
-        if (model == null || policy.getEntries().stream().noneMatch(entry ->
-            model.equals(entry.getResource()) && tenant.equals(entry.getTenantId())
+        Set<String> model = models.get(row.code()) == null ? Set.of() : models.get(row.code()).fieldModels();
+        if (model.isEmpty() || policy.getEntries().stream().noneMatch(entry ->
+            model.contains(entry.getResource()) && tenant.equals(entry.getTenantId())
                 && entry.getAccess() != null)) {
           throw badRequest("所选字段规则没有当前页面的有效字段条目");
         }
@@ -831,6 +856,7 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
             "页面授权记录发生变化或存在重复项，请刷新后重试");
       }
       RoleResourceGrant grant = grants.getFirst();
+      grant.setPagePolicy(true);
       if (change.dataPermission() != null) grant.setDataScopeId(dataId);
       if (change.fieldPermission() != null) grant.setFieldScopeId(fieldId);
       updated = true;

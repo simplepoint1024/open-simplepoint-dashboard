@@ -6,10 +6,13 @@ subprojects {
 }
 
 plugins {
+    antlr
     jacoco
 }
 
 dependencies {
+    antlr("org.antlr:antlr4:4.13.2")
+    api("org.antlr:antlr4-runtime:4.13.2")
     implementation("org.slf4j:slf4j-api")
     api(project(":simplepoint-api"))
     api("org.springframework.data:spring-data-commons")
@@ -38,4 +41,8 @@ tasks.jacocoTestReport {
         xml.required.set(false)
         html.required.set(true)
     }
+}
+
+tasks.generateGrammarSource {
+    arguments = arguments + listOf("-visitor", "-no-listener")
 }

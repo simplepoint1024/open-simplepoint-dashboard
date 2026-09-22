@@ -157,6 +157,8 @@ class RoleResourceConfigurationHttpTest {
   void organizationDataRuleCanBeListedBoundAndClearedOnlyWithinTenant() {
     Resource page = new Resource();
     page.setCode("organizations.view"); page.setName("Organizations");
+    page.setPermissionMetadata(new org.simplepoint.core.permission.PermissionPageDescriptor(List.of(
+        org.simplepoint.core.permission.PermissionModelDescriptor.describe(Organization.class))).toJson());
     page.setType(ResourceType.PAGE); page.setGrantable(true); page.setDisabled(false);
     page.setPublicAccess(true); page.setScopeTypes(EnumSet.of(ResourceScopeType.TENANT));
     em.persist(page);
@@ -194,6 +196,8 @@ class RoleResourceConfigurationHttpTest {
   void fieldPolicyOptionsAndAssignmentStayWithinThePageModel() {
     Resource page = new Resource();
     page.setCode("users.view"); page.setName("Members");
+    page.setPermissionMetadata(new org.simplepoint.core.permission.PermissionPageDescriptor(List.of(
+        org.simplepoint.core.permission.PermissionModelDescriptor.describe(User.class))).toJson());
     page.setType(ResourceType.PAGE); page.setGrantable(true); page.setDisabled(false);
     page.setPublicAccess(true); page.setScopeTypes(EnumSet.of(ResourceScopeType.TENANT));
     em.persist(page);

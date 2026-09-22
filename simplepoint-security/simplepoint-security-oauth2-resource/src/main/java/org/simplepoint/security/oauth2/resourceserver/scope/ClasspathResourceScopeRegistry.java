@@ -21,6 +21,7 @@ public class ClasspathResourceScopeRegistry {
 
   private final Map<String, Set<ResourceScopeType>> scopesByCode;
   private final Map<String, String> pageByCode;
+  private final Map<Class<?>, Optional<String>> controllerPages = new java.util.concurrent.ConcurrentHashMap<>();
 
   /** Creates and validates a catalog from every resource manifest on the service classpath. */
   public ClasspathResourceScopeRegistry(final ObjectMapper objectMapper) throws IOException {
@@ -68,6 +69,26 @@ public class ClasspathResourceScopeRegistry {
   /** Resolves an action or API authority to its closest PAGE ancestor. */
   public Optional<String> findPage(final String resourceCode) {
     return Optional.ofNullable(pageByCode.get(resourceCode));
+  }
+
+  /** The root GET is the canonical page for standard schemas and auxiliary controller methods. */
+  public Optional<String> findControllerPage(Class<?> controller) {
+    return controllerPages.computeIfAbsent(controller, this::resolveControllerPage);
+  }
+
+  private Optional<String> resolveControllerPage(Class<?> controller) {
+    Set<String> pages = new java.util.LinkedHashSet<>();
+    for (var method : controller.getMethods()) {
+      var get = org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
+          method, org.springframework.web.bind.annotation.GetMapping.class);
+      if (get == null || java.util.Arrays.stream(get.value()).anyMatch(path -> !path.isBlank())
+          || java.util.Arrays.stream(get.path()).anyMatch(path -> !path.isBlank())) continue;
+      var permission = org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
+          method, org.springframework.security.access.prepost.PreAuthorize.class);
+      if (permission != null) ResourceScopeHandlerInterceptor.extractAuthorities(permission.value())
+          .forEach(authority -> findPage(authority).ifPresent(pages::add));
+    }
+    return pages.size() == 1 ? Optional.of(pages.iterator().next()) : Optional.empty();
   }
 
   /** Returns an immutable snapshot, primarily for diagnostics and tests. */

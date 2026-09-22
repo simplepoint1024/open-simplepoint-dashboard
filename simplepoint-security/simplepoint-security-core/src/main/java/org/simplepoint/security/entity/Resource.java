@@ -103,9 +103,14 @@ import org.springframework.core.annotation.Order;
     @org.simplepoint.core.query.QueryField("updatedAt"),
     @org.simplepoint.core.query.QueryField("id")
 })
+@org.simplepoint.core.permission.PermissionModel(data = false)
 public class Resource extends BaseEntityImpl<String> {
 
   public static final String CODE_FIELD = "code";
+
+  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
+  @Column(columnDefinition = "text")
+  private String permissionMetadata;
 
   @Order(1)
   @Schema(

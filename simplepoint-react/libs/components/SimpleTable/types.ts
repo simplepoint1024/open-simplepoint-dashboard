@@ -60,6 +60,7 @@ export interface SimpleTableProps<T> {
   queryContext?: string;
   confirmDiscard?: boolean;
   drawerTitle?: string;
+  drawerWidth?: number | string;
   formCustomValidate?: import('@rjsf/utils').CustomValidator<any>;
   onRowDoubleClick?: (record: T, key: React.Key) => void;
   onRowClick?: (record: T, key: React.Key) => void;
@@ -84,7 +85,7 @@ export interface SimpleTableProps<T> {
   beforeSubmit?: (context: SimpleTableBeforeSubmitContext) => Promise<any> | any;
   afterSubmit?: (context: SimpleTableAfterSubmitContext) => Promise<void> | void;
   formSchemaTransform?: (schema: any, editingRecord: any | null) => any;
-  formUiSchema?: Record<string, any>;
+  formUiSchema?: Record<string, any> | ((formData: any) => Record<string, any>);
   columnOverrides?: Record<string, SimpleTableColumnOverride<T>>;
   i18nNamespaces: string[];
   submitRefreshTargets?: SimpleTableRefreshTargets;

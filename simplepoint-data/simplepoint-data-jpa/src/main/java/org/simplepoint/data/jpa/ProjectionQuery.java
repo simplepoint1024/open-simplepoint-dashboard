@@ -105,12 +105,23 @@ public final class ProjectionQuery {
     return new ProjectionQuery(model, filters, pageable, fields);
   }
 
-  /** Builds only user predicates; callers must AND mandatory scopes outside this result. */
+  /** ANDs page rules with user filters; tenant and soft-delete boundaries remain mandatory at the caller. */
   public Predicate predicate(CriteriaBuilder cb, Map<String, Expression<?>> expressions) {
-    return cb.and(
+    var policy = model.getAnnotation(org.simplepoint.core.permission.PermissionModel.class);
+    var context = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    var scope = context == null ? null : context.activeDataScope();
+    Predicate permission = cb.conjunction();
+    if (scope != null && policy != null && policy.data() && (policy.page().isBlank()
+        || policy.page().equals(org.simplepoint.core.ResourcePolicyContext.get()))) {
+      var condition = scope.condition(policy == null ? "createOrgDeptId" : policy.department(),
+          policy == null ? "createdBy" : policy.owner(), context);
+      var compiled = DataScopePredicates.compile(condition, expressions, cb);
+      if (compiled != null) permission = compiled;
+    }
+    return cb.and(permission, cb.and(
         predicates.stream()
             .map(predicate -> predicate.apply(cb, expressions))
-            .toArray(Predicate[]::new));
+            .toArray(Predicate[]::new)));
   }
 
   /** Applies SQL NULLS LAST ordering with an explicit unique, server-owned tie breaker. */

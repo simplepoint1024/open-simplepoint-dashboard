@@ -465,7 +465,7 @@
       ]
     },
     {
-      "file": "libs/components/Table/QueryTools.tsx",
+      "file": "libs/components/Table/ConditionEditor.tsx",
       "expression": "`table.query.operator.${value}`",
       "expectedOccurrences": 1,
       "mode": "finite",
@@ -539,6 +539,13 @@
       "expectedOccurrences": 1,
       "mode": "runtime",
       "reason": "Dictionary item labels are supplied by the registered tenant member user type dictionary."
+    },
+    {
+      "file": "libs/components/SForm/widgets/PermissionExpression.tsx",
+      "expression": "field.title.slice(5)",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Trusted registered field metadata supplies i18n keys; the field name remains the fallback."
     }
   ]
 }

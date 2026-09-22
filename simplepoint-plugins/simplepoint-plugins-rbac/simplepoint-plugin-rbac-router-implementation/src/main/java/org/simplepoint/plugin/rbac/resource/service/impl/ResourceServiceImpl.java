@@ -198,6 +198,9 @@ public class ResourceServiceImpl
         final String oldCode = existing.getCode();
         final String oldPath = existing.getPath();
         resource.setId(existing.getId());
+        // Shared resource manifests are also published by services without this page's controller.
+        // An absent contract must not erase the owning service's registered enforcement metadata.
+        if (resource.getPermissionMetadata() == null) resource.setPermissionMetadata(existing.getPermissionMetadata());
         resource = getRepository().updateById(resource);
         saveAncestors(resource, true);
         migrateResourceCode(oldCode, resource.getCode());
@@ -605,6 +608,9 @@ public class ResourceServiceImpl
     resourceAncestorRepository.saveAll(relations);
   }
 
+  @jakarta.persistence.PersistenceContext
+  private jakarta.persistence.EntityManager permissionEntityManager;
+
   private void migrateResourceCode(String oldCode, String newCode) {
     if (!hasText(oldCode) || !hasText(newCode) || Objects.equals(oldCode, newCode)) {
       return;
@@ -612,6 +618,10 @@ public class ResourceServiceImpl
     var grantRepository = roleResourceGrantRepositoryProvider.getIfAvailable();
     if (grantRepository != null) {
       grantRepository.updateResourceCode(oldCode, newCode);
+    }
+    if (permissionEntityManager != null) {
+      permissionEntityManager.createQuery("update DataScope d set d.resourceCode=:newCode where d.resourceCode=:oldCode")
+          .setParameter("newCode", newCode).setParameter("oldCode", oldCode).executeUpdate();
     }
     var refreshService = resourceAuthorizationVersionServiceProvider.getIfAvailable();
     if (refreshService != null) {

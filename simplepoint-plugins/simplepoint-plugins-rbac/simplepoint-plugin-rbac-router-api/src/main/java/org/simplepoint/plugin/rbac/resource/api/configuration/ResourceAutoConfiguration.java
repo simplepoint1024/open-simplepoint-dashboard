@@ -37,6 +37,25 @@ public class ResourceAutoConfiguration implements ApplicationRunner {
   private final ClassPathResource legacyResource;
   private final String legacyResourcePath;
   private final String applicationName;
+  private ObjectProvider<org.simplepoint.core.permission.ResourcePermissionCatalog> permissionCatalog;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public void setPermissionCatalog(ObjectProvider<org.simplepoint.core.permission.ResourcePermissionCatalog> catalog) {
+    this.permissionCatalog = catalog;
+  }
+
+  private void enrichPermissions(Set<ResourceDeclaration> resources) {
+    var catalog = permissionCatalog == null ? null : permissionCatalog.getIfAvailable();
+    var entries = catalog == null ? java.util.Map.<String, org.simplepoint.core.permission.PermissionPageDescriptor>of()
+        : catalog.entries();
+    var queue = new java.util.ArrayDeque<>(resources);
+    while (!queue.isEmpty()) {
+      var resource = queue.removeFirst();
+      var descriptor = entries.get(resource.getCode());
+      resource.setPermissionMetadata(descriptor == null ? null : descriptor.toJson());
+      if (resource.getChildren() != null) queue.addAll(resource.getChildren());
+    }
+  }
 
   /**
    * Creates resource auto-configuration.
@@ -104,6 +123,7 @@ public class ResourceAutoConfiguration implements ApplicationRunner {
       }
       String owner = hasText(configuration.getModule()) ? configuration.getModule() : applicationName;
       log.info("Initializing resources from module configuration: {}", configuration.getSource());
+      enrichPermissions(resources);
       resourceService.sync(owner, resources);
       log.info("Finished initializing resources from module configuration: {}", configuration.getSource());
     }
@@ -112,6 +132,7 @@ public class ResourceAutoConfiguration implements ApplicationRunner {
       Set<ResourceDeclaration> resources = readLegacyResources();
       if (resources != null && !resources.isEmpty()) {
         log.info("Initializing resources from legacy configuration file: {}", legacyResource.getPath());
+        enrichPermissions(resources);
         resourceService.sync(applicationName, resources);
         log.info("Finished initializing resources from legacy configuration file: {}", legacyResource.getPath());
       }

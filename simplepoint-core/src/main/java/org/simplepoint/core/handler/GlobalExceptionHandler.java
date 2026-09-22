@@ -19,6 +19,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+  @ExceptionHandler(org.simplepoint.core.permission.InvalidPermissionPolicyException.class)
+  public ResponseEntity<Map<String, String>> invalidPermissionPolicy(
+      org.simplepoint.core.permission.InvalidPermissionPolicyException error) {
+    return ResponseEntity.badRequest()
+        .body(Map.of("code", "INVALID_PERMISSION_POLICY", "message", error.getMessage()));
+  }
+
   /** Reject invalid query input without exposing entity names, values or SQL details. */
   @ExceptionHandler(InvalidQueryException.class)
   public ResponseEntity<Map<String, String>> invalidQuery(InvalidQueryException error) {

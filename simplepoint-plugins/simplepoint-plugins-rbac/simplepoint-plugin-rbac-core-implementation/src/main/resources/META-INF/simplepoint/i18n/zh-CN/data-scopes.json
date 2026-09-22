@@ -18,7 +18,7 @@
   "data-scopes.title.customDeptIds": "自定义部门",
   "data-scopes.description.customDeptIds": "明确授权的部门 ID 集合；仅在范围类型为「自定义部门」时生效",
   "data-scopes.preview.title": "当前生效权限",
-  "data-scopes.preview.boundary": "展示当前用户、租户和角色的已保存策略，不是未保存配置的模拟，也不代表具体业务接口已接入数据权限。ALL 仍受租户隔离约束。",
+  "data-scopes.preview.boundary": "展示当前工作空间已保存的页面数据与字段规则，及兼容的角色默认范围。未配置页面规则时沿用接口默认权限，ALL 仍受租户隔离约束。",
   "data-scopes.preview.failed": "权限预览加载失败",
   "data-scopes.preview.user": "用户",
   "data-scopes.preview.tenant": "租户",
@@ -29,5 +29,17 @@
   "data-scopes.preview.depts": "组织 ID",
   "data-scopes.preview.self": "额外包含本人数据",
   "data-scopes.preview.field": "资源字段",
-  "data-scopes.preview.access": "访问级别"
+  "data-scopes.preview.access": "访问级别",
+  "data-scopes.preview.resource": "页面资源",
+  "data-scopes.title.resourceCode": "目标页面",
+  "data-scopes.title.expression": "权限表达式",
+  "data-scopes.expression.hint": "仅可使用目标页面已注册的字段。文本和可视化共用规则；编辑可视化后请先应用，再保存。",
+  "data-scopes.expression.invalid": "表达式校验失败",
+  "data-scopes.expression.loadFailed": "字段元数据加载失败",
+  "data-scopes.expression.choosePage": "请先选择目标页面",
+  "data-scopes.expression.text": "表达式",
+  "data-scopes.expression.visual": "可视化",
+  "data-scopes.expression.literal": "固定值",
+  "data-scopes.expression.apply": "应用可视化配置",
+  "data-scopes.expression.validate": "校验并格式化"
 }

@@ -28,6 +28,9 @@ import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
             columnList = "tenant_id,role_id,deleted_at,resource_code"))
 @Schema(title = "角色资源授权实体", description = "表示角色与资源之间的授权关系")
 public class RoleResourceGrant extends TenantBaseEntityImpl<String> {
+  /** Separates new page rules from legacy role-wide grants during migration. */
+  @io.swagger.v3.oas.annotations.media.Schema(hidden = true, accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY)
+  private Boolean pagePolicy;
 
   @Column(name = "role_id", nullable = false, length = 36)
   @Schema(title = "角色标识", description = "被授权的角色 ID")

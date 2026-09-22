@@ -8,6 +8,7 @@ import org.springframework.data.domain.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+@org.simplepoint.core.permission.PermissionPage(value="users.view", model=TenantMemberView.class)
 @RestController
 @RequestMapping("/tenant-members")
 @PreAuthorize("isAuthenticated()")
@@ -22,6 +23,7 @@ public class TenantMemberController {
   @GetMapping("/capabilities")
   public Response<java.util.Map<String, Boolean>> capabilities() { return Response.okay(service.capabilities()); }
   @GetMapping
+  @PreAuthorize("hasAuthority('users.view')")
   public Response<Page<java.util.Map<String, Object>>> list(@RequestParam java.util.Map<String, String> filters, Pageable page) {
     return Response.okay(service.list(filters, page).map(TenantMemberView::project));
   }
@@ -40,16 +42,26 @@ public class TenantMemberController {
     return Response.okay(service.organizationCandidates(orgId, keyword, page).map(TenantMemberView::project));
   }
   @GetMapping("/schema")
+  @PreAuthorize("hasAuthority('users.view')")
   public Response<java.util.Map<String, Object>> schema() {
     service.capabilities();
     return Response.okay(schemas.schema(TenantMemberView.class, org.simplepoint.core.AuthorizationContextHolder.getContext()));
   }
   @PostMapping
+  @PreAuthorize("hasAuthority('users.view')")
   public Response<Void> add(@RequestBody TenantMemberCommand command) { service.add(command); return Response.okay(null); }
   @PutMapping("/{userId}")
+  @PreAuthorize("hasAuthority('users.view')")
   public Response<Void> update(@PathVariable("userId") String userId, @RequestBody TenantMemberCommand command) {
     service.update(userId, command); return Response.okay(null);
   }
+  @PutMapping("/by-organization/{userId}")
+  @PreAuthorize("hasAuthority('organizations.view')")
+  public Response<Void> updateOrganizationMember(@PathVariable("userId") String userId,
+      @RequestBody TenantMemberCommand command) {
+    service.update(userId, command); return Response.okay(null);
+  }
   @DeleteMapping("/{userId}")
+  @PreAuthorize("hasAuthority('users.view')")
   public Response<Void> remove(@PathVariable("userId") String userId) { service.remove(userId); return Response.okay(null); }
 }

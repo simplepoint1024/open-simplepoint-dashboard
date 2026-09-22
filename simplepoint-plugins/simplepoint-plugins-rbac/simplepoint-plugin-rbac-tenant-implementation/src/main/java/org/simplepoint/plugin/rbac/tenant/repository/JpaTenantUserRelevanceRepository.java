@@ -37,8 +37,19 @@ public interface JpaTenantUserRelevanceRepository
   void deleteMemberships(String tenantId, Set<String> userIds);
 
   @Override
-  @Query("select distinct tur.userId from TenantUserRelevance tur where tur.tenantId = ?1")
+  @Query("select distinct tur.userId from TenantUserRelevance tur where tur.tenantId = ?1 and tur.deletedAt is null")
   Collection<String> authorized(String tenantId);
+
+  @Override
+  @Query("""
+      select m.userId from TenantUserRelevance m where m.tenantId=:tenantId and m.deletedAt is null
+        and ((:type='SELF' and m.userId=:userId)
+          or (:type in ('DEPT','DEPT_AND_BELOW','CUSTOM')
+            and (m.orgId in :departments or (:includeSelf=true and m.userId=:userId))))
+      """)
+  Collection<String> authorizedForScope(@Param("tenantId") String tenantId, @Param("type") String type,
+      @Param("departments") Set<String> departments, @Param("userId") String userId,
+      @Param("includeSelf") boolean includeSelf);
 
   @Override
   @Modifying

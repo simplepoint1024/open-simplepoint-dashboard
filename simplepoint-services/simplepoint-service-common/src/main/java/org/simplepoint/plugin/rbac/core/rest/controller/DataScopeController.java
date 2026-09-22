@@ -37,6 +37,29 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "数据范围管理", description = "用于管理系统中的行级数据访问范围策略")
 public class DataScopeController extends BaseController<DataScopeService, DataScope, String> {
 
+  @org.springframework.beans.factory.annotation.Autowired
+  private org.simplepoint.plugin.rbac.core.service.impl.PermissionExpressionService expressions;
+
+  @GetMapping("/expression/catalog")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('data-scope.view')")
+  public Response<Map<String, org.simplepoint.core.permission.PermissionPageDescriptor>> expressionCatalog() {
+    return ok(expressions.catalog());
+  }
+
+  public record ExpressionRequest(String resourceCode, String expression, Map<String, Object> ast) {}
+
+  @PostMapping("/expression/validate")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('data-scope.view')")
+  public Response<Map<String, Object>> validateExpression(
+      @RequestBody ExpressionRequest request) {
+    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    org.simplepoint.core.query.QueryDocument.Node ast;
+    try { ast = request.ast() == null ? null : mapper.convertValue(request.ast(), org.simplepoint.core.query.QueryDocument.Node.class); }
+    catch (IllegalArgumentException error) { throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("可视化规则结构无效"); }
+    var result = expressions.validate(request.resourceCode(), request.expression(), ast);
+    return ok(Map.of("expression", result.expression(), "ast", mapper.convertValue(result.ast(), Map.class)));
+  }
+
   /**
    * Data Scope Controller.
    */
@@ -62,6 +85,8 @@ public class DataScopeController extends BaseController<DataScopeService, DataSc
     result.put("deptIds", context.getDeptIds());
     result.put("includeSelf", Boolean.TRUE.equals(context.getDataScopeIncludeSelf()));
     result.put("fieldPermissions", context.getFieldPermissions());
+    result.put("resourceDataScopes", context.getResourceDataScopes());
+    result.put("resourceFieldPermissions", context.getResourceFieldPermissions());
     return ok(result);
   }
 

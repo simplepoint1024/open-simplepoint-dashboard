@@ -144,7 +144,7 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
           </span>
         )}
         placement="right"
-        width={480}
+        width={props.drawerWidth ?? 480}
         open={drawerOpen && selected}
         maskClosable={!submitLoading}
         keyboard={!submitLoading}
@@ -177,7 +177,7 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
             {submitError && <Alert type="error" showIcon title={submitError} />}
             <SForm
               schema={formSchema ?? schemaData.schema}
-              uiSchema={props.formUiSchema}
+              uiSchema={typeof props.formUiSchema === 'function' ? props.formUiSchema(formDraft) : props.formUiSchema}
               formData={formDraft}
               onChange={(event) => {setFormDraft(event.formData ?? {}); setDirty(true);}}
               onSubmit={handleFormSubmit}

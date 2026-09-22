@@ -50,11 +50,18 @@ public class ResourceScopeHandlerInterceptor implements AsyncHandlerInterceptor 
       preAuthorize = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getBeanType(), PreAuthorize.class);
     }
     if (preAuthorize == null) {
+      if (org.simplepoint.core.base.controller.BaseController.class.isAssignableFrom(handlerMethod.getBeanType())) {
+        registry.findControllerPage(handlerMethod.getBeanType()).ifPresent(ResourcePolicyContext::set);
+      }
       return true;
     }
 
     Set<String> declaredAuthorities = extractAuthorities(preAuthorize.value());
     AuthorizationContext context = AuthorizationContextHolder.getContext();
+    if (declaredAuthorities.isEmpty()) {
+      var explicit = handlerMethod.getBeanType().getAnnotation(org.simplepoint.core.permission.PermissionPage.class);
+      if (explicit != null) ResourcePolicyContext.set(explicit.value());
+    }
     if (declaredAuthorities.isEmpty() || context == null) {
       return true;
     }
@@ -67,7 +74,7 @@ public class ResourceScopeHandlerInterceptor implements AsyncHandlerInterceptor 
       }
       knownAuthority = true;
       if (ResourceScopePolicy.isAccessible(scopes.get(), context)) {
-        selectPage(declaredAuthorities, context);
+        selectPage(declaredAuthorities, context, handlerMethod.getBeanType());
         return true;
       }
     }
@@ -76,13 +83,20 @@ public class ResourceScopeHandlerInterceptor implements AsyncHandlerInterceptor 
     }
     Collection<String> contextResources = context.getResources();
     if (contextResources != null && contextResources.stream().anyMatch(declaredAuthorities::contains)) {
-      selectPage(declaredAuthorities, context);
+      selectPage(declaredAuthorities, context, handlerMethod.getBeanType());
       return true;
     }
     throw new AccessDeniedException("资源未声明或不属于当前工作空间");
   }
 
-  private void selectPage(Set<String> authorities, AuthorizationContext context) {
+  private void selectPage(Set<String> authorities, AuthorizationContext context, Class<?> controller) {
+    if (org.simplepoint.core.base.controller.BaseController.class.isAssignableFrom(controller)) {
+      var page = registry.findControllerPage(controller);
+      if (page.isPresent()) {
+        ResourcePolicyContext.set(page.get());
+        return;
+      }
+    }
     Set<String> pages = new LinkedHashSet<>();
     authorities.forEach(authority -> registry.findPage(authority).ifPresent(pages::add));
     if (pages.size() == 1) {

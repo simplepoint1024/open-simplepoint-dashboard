@@ -22,6 +22,7 @@ public final class DataScopeCondition {
   private final String userId;
   private final Set<String> deptIds;
   private final boolean includeSelf;
+  private final java.util.List<org.simplepoint.core.query.QueryDocument.Node> expressions;
 
   /**
    * Constructs a DataScopeCondition.
@@ -48,6 +49,12 @@ public final class DataScopeCondition {
    */
   public DataScopeCondition(String scopeType, String deptField, String ownerField, String userId, Set<String> deptIds,
                             boolean includeSelf) {
+    this(scopeType, deptField, ownerField, userId, deptIds, includeSelf, java.util.List.of());
+  }
+
+  public DataScopeCondition(String scopeType, String deptField, String ownerField, String userId, Set<String> deptIds,
+      boolean includeSelf, java.util.List<org.simplepoint.core.query.QueryDocument.Node> expressions) {
+    this.expressions = java.util.List.copyOf(expressions);
     this.scopeType = scopeType;
     this.deptField = deptField;
     this.ownerField = ownerField;
@@ -55,6 +62,8 @@ public final class DataScopeCondition {
     this.deptIds = deptIds;
     this.includeSelf = includeSelf;
   }
+
+  public java.util.List<org.simplepoint.core.query.QueryDocument.Node> getExpressions() { return expressions; }
 
   public String getScopeType() {
     return scopeType;

@@ -83,6 +83,8 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
     // A new organization has no id yet. SELF can own it; fixed organization sets
     // cannot contain the new id and must not silently create an invisible row.
     if (scope == null || scope.isAllData() || scope.isSelf() || scope.isIncludeSelf()) return;
+    if (scope.getExpressions().stream().anyMatch(node -> org.simplepoint.core.permission.PermissionExpressionEvaluator.matches(
+        node, field -> permissionFieldValue(entity, field)))) return;
     if ("DEPT_AND_BELOW".equals(scope.getScopeType()) && entity.getParentId() != null
         && scope.getDeptIds().contains(entity.getParentId())) return;
     throw new org.springframework.security.access.AccessDeniedException(

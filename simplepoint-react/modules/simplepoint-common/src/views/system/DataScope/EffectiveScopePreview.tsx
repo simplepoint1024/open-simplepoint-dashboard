@@ -14,6 +14,8 @@ interface EffectiveScope {
   deptIds?: string[];
   includeSelf: boolean;
   fieldPermissions?: Record<string, string>;
+  resourceDataScopes?: Record<string, {type: string; departmentIds?: string[]; includeSelf: boolean; expressions?: string[]}>;
+  resourceFieldPermissions?: Record<string, Record<string, string>>;
 }
 
 export default function EffectiveScopePreview() {
@@ -42,6 +44,24 @@ export default function EffectiveScopePreview() {
             {key: 'depts', label: t('data-scopes.preview.depts', '组织 ID'), children: data.deptIds?.join(', ') || '-'},
             {key: 'self', label: t('data-scopes.preview.self', '额外包含本人数据'), children: String(data.includeSelf)},
           ]} />
+          <Table size="small" rowKey="resource" pagination={{pageSize: 10}}
+            storageKey="rbac.effective-page-data-permissions"
+            dataSource={Object.entries(data.resourceDataScopes ?? {}).map(([resource, rule]) => ({resource, ...rule}))}
+            columns={[
+              {title: t('data-scopes.preview.resource', '页面资源'), dataIndex: 'resource'},
+              {title: t('data-scopes.preview.scope', '行范围'), dataIndex: 'type', render: (type: string, row: {expressions?: string[]}) => row.expressions?.length ? [type === 'DENY' ? '' : type, ...row.expressions].filter(Boolean).join(' OR ') : type},
+              {title: t('data-scopes.preview.depts', '组织 ID'), dataIndex: 'departmentIds', render: (ids: string[]) => ids?.join(', ') || '-'},
+              {title: t('data-scopes.preview.self', '额外包含本人数据'), dataIndex: 'includeSelf', render: String},
+            ]} />
+          <Table size="small" rowKey="key" pagination={{pageSize: 10}}
+            storageKey="rbac.effective-page-field-permissions"
+            dataSource={Object.entries(data.resourceFieldPermissions ?? {}).flatMap(([resource, fields]) =>
+              Object.entries(fields).map(([field, access]) => ({key: `${resource}:${field}`, resource, field, access})))}
+            columns={[
+              {title: t('data-scopes.preview.resource', '页面资源'), dataIndex: 'resource'},
+              {title: t('data-scopes.preview.field', '资源字段'), dataIndex: 'field'},
+              {title: t('data-scopes.preview.access', '访问级别'), dataIndex: 'access'},
+            ]} />
           <Table size="small" rowKey="field" pagination={{pageSize: 10}}
             storageKey="rbac.effective-field-permissions"
             query={{mode: 'local', scope: 'complete', fields: {field: {type: 'string'}, access: {type: 'string'}}}}

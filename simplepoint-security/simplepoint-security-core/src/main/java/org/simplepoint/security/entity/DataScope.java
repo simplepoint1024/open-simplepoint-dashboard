@@ -33,6 +33,7 @@ import org.simplepoint.core.constants.PublicButtonKeys;
  * A data scope is attached to a role to restrict which rows of data the role's holders can see.
  */
 @Data
+@org.simplepoint.core.permission.PermissionModel(data = false, fields = false)
 @Entity
 @EqualsAndHashCode(callSuper = true)
 @Table(name = "simpoint_ac_data_scope")
@@ -79,14 +80,24 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 })
 public class DataScope extends TenantBaseEntityImpl<String> {
 
-  @Schema(title = "i18n:data-scopes.title.name", description = "i18n:data-scopes.description.name")
+  @Schema(title = "i18n:data-scopes.title.name", description = "i18n:data-scopes.description.name",
+      requiredMode = Schema.RequiredMode.REQUIRED, minLength = 1, maxLength = 100)
   @Column(nullable = false, length = 100)
   private String name;
 
-  @Schema(title = "i18n:data-scopes.title.type", description = "i18n:data-scopes.description.type")
+  @Schema(title = "i18n:data-scopes.title.type", description = "i18n:data-scopes.description.type",
+      requiredMode = Schema.RequiredMode.REQUIRED)
   @Column(nullable = false, length = 30)
   @Enumerated(EnumType.STRING)
   private DataScopeType type;
+
+  @Schema(title = "i18n:data-scopes.title.resourceCode", maxLength = 200)
+  @Column(length = 200)
+  private String resourceCode;
+
+  @Schema(title = "i18n:data-scopes.title.expression", maxLength = 8192)
+  @Column(columnDefinition = "text")
+  private String expression;
 
   @Schema(title = "i18n:data-scopes.title.customDeptIds", description = "i18n:data-scopes.description.customDeptIds")
   @ElementCollection(fetch = FetchType.EAGER)

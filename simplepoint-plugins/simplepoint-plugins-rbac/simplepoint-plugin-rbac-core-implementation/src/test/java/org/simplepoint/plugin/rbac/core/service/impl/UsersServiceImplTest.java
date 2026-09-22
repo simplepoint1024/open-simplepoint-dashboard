@@ -159,10 +159,11 @@ class UsersServiceImplTest {
     PageRequest pageable = PageRequest.of(0, 20);
     when(tenantUserRelevanceRepository.authorized("tenant-1")).thenReturn(List.of("member-1"));
     when(userRepository.limit(
-        Map.of("id", "in:member-1", "deletedAt", "is:null"), pageable
+        Map.of("deletedAt", "is:null"), pageable
     )).thenAnswer(invocation -> {
       assertThat(DataScopeContext.get()).isNotNull();
-      assertThat(DataScopeContext.get().isAllData()).isTrue();
+      assertThat(DataScopeContext.get().getDeptField()).isEqualTo("id");
+      assertThat(DataScopeContext.get().getDeptIds()).containsExactly("member-1");
       return new PageImpl<>(List.of(member), pageable, 1);
     });
 

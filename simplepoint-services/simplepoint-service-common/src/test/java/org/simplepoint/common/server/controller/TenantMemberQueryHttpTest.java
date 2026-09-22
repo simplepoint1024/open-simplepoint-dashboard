@@ -150,6 +150,26 @@ class TenantMemberQueryHttpTest {
   }
 
   @Test
+  void explicitMemberPolicyFiltersRowsAndCountEvenForAdministrator() throws Exception {
+    context.setIsAdministrator(true);
+    context.setResourceDataScopes(Map.of("users.view", new ResourceDataScope("SELF", Set.of(), false)));
+    ResourcePolicyContext.set("users.view");
+    mvc.perform(get("/tenant-members").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.content[0].name").value("Alpha"));
+  }
+
+  @Test
+  void memberExpressionUsesTheSameProjectionForRowsAndCounts() throws Exception {
+    context.setResourceDataScopes(Map.of("users.view", new ResourceDataScope("DENY", Set.of(), false,
+        List.of("name CONTAINS \"Alpha\" AND orgId IS NOT NULL"))));
+    ResourcePolicyContext.set("users.view");
+    mvc.perform(get("/tenant-members").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.content[0].userId").value(owner.getId()));
+  }
+
+  @Test
   void generatedSchemaIsSerializableByTheProductionJsonConverter() throws Exception {
     var response = mvc.perform(get("/tenant-members/schema")
             .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))

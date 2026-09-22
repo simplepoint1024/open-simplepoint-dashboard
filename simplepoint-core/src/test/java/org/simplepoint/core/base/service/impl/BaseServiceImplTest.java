@@ -784,6 +784,38 @@ class BaseServiceImplTest {
   }
 
   @Test
+  void explicitPageScopeOverridesInheritedAspectMappingAndAdministratorShortcut() {
+    when(repository.getDomainClass()).thenReturn(StubEntity.class);
+    TestServiceImpl mapped = new TestServiceImpl(repository, detailsProviderService) {
+      @Override protected String dataScopeDeptField() { return "orgId"; }
+      @Override protected boolean isDataScopeApplicable() { return false; }
+    };
+    mapped.injectedContext = new AuthorizationContext();
+    mapped.injectedContext.setUserId("reader");
+    mapped.injectedContext.setIsAdministrator(true);
+    mapped.injectedContext.setResourceDataScopes(Map.of("test.page",
+        new org.simplepoint.core.ResourceDataScope("CUSTOM", Set.of("org-a"), false)));
+    var previous = new org.simplepoint.core.datascopeannotation.DataScopeCondition(
+        "ALL", "createOrgDeptId", "createdBy", "reader", Set.of());
+    ResourcePolicyContext.set("test.page");
+    org.simplepoint.core.datascopeannotation.DataScopeContext.set(previous);
+    when(repository.limit(any(), any())).thenAnswer(call -> {
+      var active = org.simplepoint.core.datascopeannotation.DataScopeContext.get();
+      assertThat(active.getScopeType()).isEqualTo("CUSTOM");
+      assertThat(active.getDeptField()).isEqualTo("orgId");
+      assertThat(active.getDeptIds()).containsExactly("org-a");
+      return Page.empty();
+    });
+    try {
+      mapped.limit(Map.of(), PageRequest.of(0, 10));
+      assertThat(org.simplepoint.core.datascopeannotation.DataScopeContext.get()).isSameAs(previous);
+    } finally {
+      ResourcePolicyContext.clear();
+      org.simplepoint.core.datascopeannotation.DataScopeContext.clear();
+    }
+  }
+
+  @Test
   void getAuthorizationContext_defaultImpl_returnsFromContextHolder() {
     // Use the real base implementation (no override)
     BaseServiceImpl<BaseRepository<StubEntity, String>, StubEntity, String> realService =

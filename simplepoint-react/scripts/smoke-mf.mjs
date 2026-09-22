@@ -109,6 +109,7 @@ const server = createServer(async (req, res) => {
     if (await organizationSelectionFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await roleAssignmentFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await userAssignmentFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (pathname === '/common/data-scopes/expression/catalog') return respond({});
     if (pathname === '/userinfo') return respond({sub: 'smoke', preferred_username: 'smoke', name: 'MF smoke'});
     if (pathname === '/common/platform/object-storage/providers') return respond([]);
     if (pathname === '/common/platform/object-storage/provider-configs/schema') return respond(commonMainFixture.datasets.find(dataset => dataset.name === 'StorageProvider').schema);
