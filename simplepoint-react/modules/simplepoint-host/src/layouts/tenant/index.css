@@ -48,6 +48,10 @@
 .tenant-home-copy p.ant-typography { margin: 8px 0 0; max-width: 760px; color: rgba(255, 255, 255, .78); }
 .tenant-home-actions { flex: 0 0 auto; }
 .tenant-home-card { height: 100%; border-radius: 12px; }
+.tenant-resource-mode { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--ant-color-border-secondary, #f0f0f0); }
+.tenant-resource-sync-steps { margin: 0; padding-left: 22px; }
+.tenant-resource-sync-steps ul { max-height: 120px; overflow-y: auto; padding-left: 20px; }
+.tenant-resource-breadcrumb { display: flex; margin-bottom: 12px; }
 
 .tenant-owner-card {
   display: flex;

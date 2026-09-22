@@ -28,6 +28,10 @@ import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationResourceRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.PackageApplicationRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceKey;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
 import org.simplepoint.security.ResourceScopePolicy;
 import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.ResourceScopeType;
@@ -53,6 +57,12 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
   private final EntityManager em;
   private final RoleService roles;
   private final RoleRepository repository;
+  private TenantResourceCatalog tenantResourceCatalog;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  public void setTenantResourceCatalog(TenantResourceCatalog tenantResourceCatalog) {
+    this.tenantResourceCatalog = tenantResourceCatalog;
+  }
 
   /** Creates the bounded resource editor. */
   public RoleResourceConfigurationServiceImpl(
@@ -89,6 +99,10 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
     if (parentId != null && rootsOnly) {
       throw badRequest("不能同时筛选根资源和子资源");
     }
+    if (custom(tenant)) {
+      return listCustom(tenant, roleId, search, state, resourceType,
+          parentId, rootsOnly, navigationOnly, page);
+    }
     var cb = em.getCriteriaBuilder();
     var query = cb.createQuery(Resource.class);
     var resource = query.from(Resource.class);
@@ -110,6 +124,10 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
   @Transactional(rollbackFor = Exception.class)
   public void save(String roleId, Patch patch) {
     final String tenant = requireRole(roleId);
+    if (custom(tenant)) {
+      saveCustom(tenant, roleId, patch);
+      return;
+    }
     if (patch == null || patch.changes() == null || patch.changes().size() > MAX_CHANGES) {
       throw badRequest("每次最多保存 5000 项明确变更");
     }
@@ -162,6 +180,7 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
     if (resourceId == null || resourceId.isBlank()) {
       throw badRequest("请选择资源目录");
     }
+    if (custom(tenant)) return previewCustom(resourceId, granted, subtreeCustom(tenant, roleId, resourceId));
     return preview(resourceId, granted, subtree(tenant, roleId, resourceId));
   }
 
@@ -169,6 +188,14 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
   public List<Row> subtreeRows(String roleId, String resourceId) {
     String tenant = requireRole(roleId);
     if (resourceId == null || resourceId.isBlank()) throw badRequest("请选择资源目录");
+    if (custom(tenant)) {
+      List<TenantResource> items = subtreeCustom(tenant, roleId, resourceId).resources();
+      List<Row> result = new ArrayList<>(items.size());
+      for (int start = 0; start < items.size(); start += QUERY_BATCH) {
+        result.addAll(rowsCustom(items.subList(start, Math.min(start + QUERY_BATCH, items.size())), tenant, roleId));
+      }
+      return result;
+    }
     List<Resource> items = subtree(tenant, roleId, resourceId).resources();
     List<Row> result = new ArrayList<>(items.size());
     for (int start = 0; start < items.size(); start += QUERY_BATCH) {
@@ -185,6 +212,10 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
     if (command == null || command.resourceId() == null || command.resourceId().isBlank()
         || command.granted() == null || command.revision() == null) {
       throw badRequest("批量资源变更缺少目录、授权状态或版本");
+    }
+    if (custom(tenant)) {
+      saveSubtreeCustom(tenant, roleId, command);
+      return;
     }
     if (repository.lockForAuthorization(tenant, roleId).isEmpty()) {
       throw new AccessDeniedException("角色不存在或不属于当前租户");
@@ -206,6 +237,218 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
   }
 
   private record Subtree(List<Resource> resources, Set<String> grantedCodes, String revision) {}
+
+  private boolean custom(String tenant) {
+    return tenantResourceCatalog != null
+        && tenantResourceCatalog.mode(tenant) == TenantResourceMode.CUSTOM;
+  }
+
+  private Page<Row> listCustom(String tenant, String roleId, String search, String state,
+      ResourceType type, String parentId, boolean rootsOnly, boolean navigationOnly, Pageable page) {
+    var cb = em.getCriteriaBuilder();
+    var query = cb.createQuery(TenantResource.class);
+    var root = query.from(TenantResource.class);
+    query.select(root).where(customFilters(cb, query, root, tenant, roleId, search, state,
+        type, parentId, rootsOnly, navigationOnly));
+    query.orderBy(cb.asc(root.get("sort")), cb.asc(root.get("name")), cb.asc(root.get("code")));
+    List<TenantResource> resources = em.createQuery(query).setFirstResult((int) page.getOffset())
+        .setMaxResults(page.getPageSize()).getResultList();
+    var count = cb.createQuery(Long.class);
+    var counted = count.from(TenantResource.class);
+    count.select(cb.count(counted)).where(customFilters(cb, count, counted, tenant, roleId,
+        search, state, type, parentId, rootsOnly, navigationOnly));
+    return new PageImpl<>(rowsCustom(resources, tenant, roleId), page, em.createQuery(count).getSingleResult());
+  }
+
+  private Predicate customFilters(CriteriaBuilder cb, CommonAbstractCriteria query,
+      Root<TenantResource> resource, String tenant, String roleId, String search, String state,
+      ResourceType type, String parentId, boolean rootsOnly, boolean navigationOnly) {
+    List<Predicate> predicates = new ArrayList<>();
+    predicates.add(cb.equal(resource.get("tenantId"), tenant));
+    predicates.add(cb.isTrue(resource.get("enabled")));
+    if (!search.isEmpty()) {
+      String pattern = "%" + search.replace("!", "!!").replace("%", "!%")
+          .replace("_", "!_").toLowerCase(java.util.Locale.ROOT) + "%";
+      predicates.add(cb.or(cb.like(cb.lower(resource.get("code")), pattern, '!'),
+          cb.like(cb.lower(resource.get("name")), pattern, '!')));
+    }
+    if (type != null) predicates.add(cb.equal(resource.get("type"), type));
+    if (navigationOnly) predicates.add(navigationTypeCustom(cb, resource));
+    if (parentId != null) predicates.add(cb.equal(resource.get("parentId"), parentId));
+    else if (rootsOnly) predicates.add(cb.isNull(resource.get("parentId")));
+    if (!"all".equals(state)) {
+      var sub = query.subquery(Integer.class);
+      var grant = sub.from(RoleResourceGrant.class);
+      sub.select(cb.literal(1)).where(cb.equal(grant.get("tenantId"), tenant),
+          cb.equal(grant.get("roleId"), roleId),
+          cb.equal(grant.get("resourceCode"), resource.get("code")),
+          cb.isNull(grant.get("deletedAt")));
+      predicates.add("granted".equals(state) ? cb.exists(sub) : cb.not(cb.exists(sub)));
+    }
+    return cb.and(predicates.toArray(Predicate[]::new));
+  }
+
+  private static Predicate navigationTypeCustom(CriteriaBuilder cb, Root<TenantResource> resource) {
+    return cb.not(resource.get("type").in(ResourceType.ACTION, ResourceType.API));
+  }
+
+  private List<Row> rowsCustom(List<TenantResource> resources, String tenant, String roleId) {
+    if (resources.isEmpty()) return List.of();
+    Set<String> grantableCodes = tenantResourceCatalog.grantableCodes(tenant,
+        resources.stream().map(TenantResource::getCode).toList());
+    Map<String, List<RoleResourceGrant>> grants = em.createQuery(
+        "select g from RoleResourceGrant g where g.tenantId = :tenant and g.roleId = :role"
+            + " and g.deletedAt is null and g.resourceCode in :codes", RoleResourceGrant.class)
+        .setParameter("tenant", tenant).setParameter("role", roleId)
+        .setParameter("codes", resources.stream().map(TenantResource::getCode).toList())
+        .getResultList().stream().collect(Collectors.groupingBy(RoleResourceGrant::getResourceCode));
+    List<Object[]> children = em.createQuery(
+        "select distinct r.parentId, r.type from TenantResource r where r.tenantId = :tenant"
+            + " and r.enabled = true and r.parentId in :ids", Object[].class)
+        .setParameter("tenant", tenant)
+        .setParameter("ids", resources.stream().map(TenantResource::getId).toList())
+        .getResultList();
+    Set<String> parentIds = new java.util.HashSet<>();
+    Set<String> navigationParents = new java.util.HashSet<>();
+    for (Object[] item : children) {
+      parentIds.add((String) item[0]);
+      if (item[1] != ResourceType.ACTION && item[1] != ResourceType.API) {
+        navigationParents.add((String) item[0]);
+      }
+    }
+    return resources.stream().map(resource -> {
+      List<RoleResourceGrant> assigned = grants.getOrDefault(resource.getCode(), List.of());
+      return new Row(resource.getId(), resource.getCode(), resource.getName(),
+          resource.getType().name(), resource.getPath(), resource.getParentId(),
+          resource.getIcon(), parentIds.contains(resource.getId()),
+          navigationParents.contains(resource.getId()), resource.getDescription(),
+          resource.isGrantable() && grantableCodes.contains(resource.getCode()), !assigned.isEmpty(),
+          digest(resource.getId() + "|" + resource.getCode() + "|" + resource.getUpdatedAt()
+              + "|" + assigned.stream().map(g -> g.getId() + ":" + g.getUpdatedAt())
+                  .sorted().collect(Collectors.joining("|"))),
+          new PolicySlot(false, null), new PolicySlot(false, null));
+    }).toList();
+  }
+
+  private void saveCustom(String tenant, String roleId, Patch patch) {
+    if (patch == null || patch.changes() == null || patch.changes().size() > MAX_CHANGES) {
+      throw badRequest("每次最多保存 5000 项明确变更");
+    }
+    if (repository.lockForAuthorization(tenant, roleId).isEmpty()) {
+      throw new AccessDeniedException("角色不存在或不属于当前租户");
+    }
+    Set<String> ids = new LinkedHashSet<>();
+    Set<String> codes = new LinkedHashSet<>();
+    for (Change change : patch.changes()) {
+      if (change == null || change.resourceId() == null || change.resourceCode() == null
+          || change.revision() == null || change.granted() == null || !ids.add(change.resourceId())
+          || !codes.add(change.resourceCode())) throw badRequest("资源变更缺少标识、版本或存在重复项");
+    }
+    if (ids.isEmpty()) return;
+    Map<String, Row> current = new java.util.HashMap<>();
+    List<String> requested = List.copyOf(ids);
+    for (int start = 0; start < requested.size(); start += QUERY_BATCH) {
+      List<TenantResource> found = em.createQuery("select r from TenantResource r"
+          + " where r.tenantId = :tenant and r.enabled = true and r.id in :ids", TenantResource.class)
+          .setParameter("tenant", tenant)
+          .setParameter("ids", requested.subList(start, Math.min(start + QUERY_BATCH, requested.size())))
+          .getResultList();
+      rowsCustom(found, tenant, roleId).forEach(row -> current.put(row.id(), row));
+    }
+    Set<String> added = new LinkedHashSet<>();
+    Set<String> removed = new LinkedHashSet<>();
+    for (Change change : patch.changes()) {
+      Row row = current.get(change.resourceId());
+      if (row == null || !row.grantable() || !Objects.equals(row.code(), change.resourceCode())
+          || !Objects.equals(row.revision(), change.revision())) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "资源或授权已发生变化，请重新载入后确认");
+      }
+      if (row.granted() != change.granted()) (change.granted() ? added : removed).add(row.code());
+    }
+    applyChanges(tenant, roleId, added, removed);
+  }
+
+  private record CustomSubtree(List<TenantResource> resources, Set<String> grantedCodes,
+      Set<String> grantableCodes, String revision) {}
+
+  private CustomSubtree subtreeCustom(String tenant, String roleId, String rootId) {
+    TenantResource root = em.find(TenantResource.class, new TenantResourceKey(tenant, rootId));
+    if (root == null || !root.isEnabled()) throw new AccessDeniedException("资源目录不存在或无权访问");
+    List<TenantResource> resources = new ArrayList<>();
+    resources.add(root);
+    Set<String> seen = new java.util.HashSet<>();
+    seen.add(rootId);
+    List<String> parents = List.of(rootId);
+    while (!parents.isEmpty()) {
+      List<String> next = new ArrayList<>();
+      for (int start = 0; start < parents.size(); start += QUERY_BATCH) {
+        List<TenantResource> children = em.createQuery("select r from TenantResource r"
+            + " where r.tenantId = :tenant and r.enabled = true and r.parentId in :parents",
+            TenantResource.class).setParameter("tenant", tenant)
+            .setParameter("parents", parents.subList(start, Math.min(start + QUERY_BATCH, parents.size())))
+            .setMaxResults(MAX_SUBTREE + 1).getResultList();
+        for (TenantResource item : children) {
+          if (!seen.add(item.getId())) continue;
+          resources.add(item);
+          next.add(item.getId());
+          if (resources.size() > MAX_SUBTREE) throw badRequest("目录内可见资源超过 5000 项");
+        }
+      }
+      parents = next;
+    }
+    resources.sort(java.util.Comparator.comparing(TenantResource::getId));
+    Set<String> granted = new LinkedHashSet<>();
+    StringBuilder revision = new StringBuilder();
+    for (TenantResource item : resources) {
+      revision.append(item.getId()).append('|').append(item.getCode()).append('|')
+          .append(item.getParentId()).append('|').append(item.getUpdatedAt()).append(';');
+    }
+    for (int start = 0; start < resources.size(); start += QUERY_BATCH) {
+      List<String> codes = resources.subList(start, Math.min(start + QUERY_BATCH, resources.size()))
+          .stream().map(TenantResource::getCode).toList();
+      for (RoleResourceGrant grant : em.createQuery("select g from RoleResourceGrant g"
+          + " where g.tenantId = :tenant and g.roleId = :role and g.deletedAt is null"
+          + " and g.resourceCode in :codes order by g.resourceCode, g.id", RoleResourceGrant.class)
+          .setParameter("tenant", tenant).setParameter("role", roleId)
+          .setParameter("codes", codes).getResultList()) {
+        granted.add(grant.getResourceCode());
+        revision.append(grant.getResourceCode()).append(':').append(grant.getId())
+            .append(':').append(grant.getUpdatedAt()).append(';');
+      }
+    }
+    Set<String> grantableCodes = tenantResourceCatalog.grantableCodes(tenant,
+        resources.stream().map(TenantResource::getCode).toList());
+    return new CustomSubtree(resources, granted, grantableCodes, digest(revision.toString()));
+  }
+
+  private BulkPreview previewCustom(String rootId, boolean granted, CustomSubtree subtree) {
+    int total = 0;
+    int changed = 0;
+    for (TenantResource entry : subtree.resources()) {
+      if (!subtree.grantableCodes().contains(entry.getCode())) continue;
+      total++;
+      if (subtree.grantedCodes().contains(entry.getCode()) != granted) changed++;
+    }
+    return new BulkPreview(rootId, granted, total, changed, subtree.revision());
+  }
+
+  private void saveSubtreeCustom(String tenant, String roleId, BulkCommand command) {
+    if (repository.lockForAuthorization(tenant, roleId).isEmpty()) {
+      throw new AccessDeniedException("角色不存在或不属于当前租户");
+    }
+    CustomSubtree subtree = subtreeCustom(tenant, roleId, command.resourceId());
+    if (!Objects.equals(subtree.revision(), command.revision())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "目录资源或授权已发生变化，请重新预览");
+    }
+    Set<String> added = new LinkedHashSet<>();
+    Set<String> removed = new LinkedHashSet<>();
+    for (TenantResource entry : subtree.resources()) {
+      if (!subtree.grantableCodes().contains(entry.getCode())) continue;
+      if (command.granted() && !subtree.grantedCodes().contains(entry.getCode())) added.add(entry.getCode());
+      if (!command.granted() && subtree.grantedCodes().contains(entry.getCode())) removed.add(entry.getCode());
+    }
+    applyChanges(tenant, roleId, added, removed);
+  }
 
   private BulkPreview preview(String resourceId, boolean granted, Subtree subtree) {
     int total = 0;

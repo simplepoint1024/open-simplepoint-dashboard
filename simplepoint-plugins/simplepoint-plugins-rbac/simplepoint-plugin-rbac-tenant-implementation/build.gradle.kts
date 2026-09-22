@@ -4,10 +4,12 @@ dependencies {
     implementation("org.springframework.security:spring-security-oauth2-core")
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api"))
     implementation(project(":simplepoint-remoting:simplepoint-remoting-core"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-api"))
     implementation(project(":simplepoint-platform:simplepoint-platform-bootstrap"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-api"))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("jakarta.servlet:jakarta.servlet-api")
+    testRuntimeOnly("com.h2database:h2")
 }

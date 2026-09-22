@@ -26,8 +26,11 @@ import org.simplepoint.plugin.rbac.resource.api.vo.MicroModuleItemVo;
 import org.simplepoint.plugin.rbac.resource.service.support.ButtonResourceMetadataRegistry;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.plugin.rbac.tenant.api.service.BuiltInTenantProvisioner;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
 import org.simplepoint.remoting.RemoteProvider;
 import org.simplepoint.security.ResourceDeclaration;
 import org.simplepoint.security.ResourceScopePolicy;
@@ -65,6 +68,12 @@ public class ResourceServiceImpl
   private final ObjectProvider<ResourceAuthorizationVersionService> resourceAuthorizationVersionServiceProvider;
   private final ObjectProvider<ButtonResourceMetadataRegistry> buttonResourceMetadataRegistryProvider;
   private final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider;
+  private TenantResourceCatalog tenantResourceCatalog;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  public void setTenantResourceCatalog(TenantResourceCatalog tenantResourceCatalog) {
+    this.tenantResourceCatalog = tenantResourceCatalog;
+  }
 
   private volatile ServiceResourceRouteResult adminRoutesCache;
   private volatile long adminRoutesCacheExpiry;
@@ -249,6 +258,12 @@ public class ResourceServiceImpl
     if (context == null) {
       throw new IllegalArgumentException("User context is null or not logged in");
     }
+    String activeTenantId = context.getAttribute("X-Tenant-Id");
+    if (tenantResourceCatalog != null && context.getScopeType() == AuthorizationScopeType.TENANT
+        && hasText(activeTenantId)
+        && tenantResourceCatalog.mode(activeTenantId) == TenantResourceMode.CUSTOM) {
+      return customRoutes(context, activeTenantId);
+    }
     if (AuthorizationScopeGuards.isPlatformAdministrator(context)) {
       ServiceResourceRouteResult cached = adminRoutesCache;
       if (cached != null && System.currentTimeMillis() < adminRoutesCacheExpiry) {
@@ -294,6 +309,57 @@ public class ResourceServiceImpl
         services,
         buildResourceTree(resources, services, true, loadRemoteEntriesByServiceName())
     ), context);
+  }
+
+  private ServiceResourceRouteResult customRoutes(AuthorizationContext context, String tenantId) {
+    Map<String, TenantResource> catalog = tenantResourceCatalog.activeResources(tenantId).stream()
+        .collect(Collectors.toMap(TenantResource::getId, item -> item));
+    Set<String> selected = new LinkedHashSet<>();
+    for (TenantResource item : catalog.values()) {
+      if (context.getResources().contains(item.getCode())) selected.add(item.getId());
+    }
+    // A tenant page alias grants access to its platform page. Show the alias as
+    // the navigation entry instead of also rendering the backing platform page.
+    Set<String> aliasedPlatformPages = selected.stream().map(catalog::get)
+        .map(TenantResource::getTargetResourceId).filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+    selected.removeAll(aliasedPlatformPages);
+    for (String id : List.copyOf(selected)) {
+      String cursor = id;
+      Set<String> seen = new HashSet<>();
+      while (cursor != null && seen.add(cursor)) {
+        TenantResource item = catalog.get(cursor);
+        if (item == null) break;
+        selected.add(cursor);
+        cursor = item.getParentId();
+      }
+    }
+    List<Resource> resources = new ArrayList<>();
+    for (String id : selected) {
+      TenantResource item = catalog.get(id);
+      if (item == null) continue;
+      Resource resource = new Resource();
+      resource.setId(item.getId());
+      resource.setCode(item.getCode());
+      resource.setName(item.getName());
+      resource.setType(item.getType());
+      resource.setPath(item.getPath());
+      resource.setComponent(item.getComponent());
+      resource.setRouteKind(item.getRouteKind());
+      resource.setParentId(item.getParentId());
+      resource.setIcon(item.getIcon());
+      resource.setSort(item.getSort());
+      resource.setDescription(item.getDescription());
+      resource.setGrantable(item.isGrantable());
+      resource.setDisabled(false);
+      resource.setPublicAccess(false);
+      resource.setRequireOrgTenant(true);
+      resource.setScopeTypes(Set.of(ResourceScopeType.TENANT));
+      if (isRouteResource(resource)) resources.add(resource);
+    }
+    Set<ServiceResourceRouteResult.ServiceEntry> services = new HashSet<>();
+    return withScopeContext(ServiceResourceRouteResult.of(services,
+        buildResourceTree(resources, services, true, loadRemoteEntriesByServiceName())), context);
   }
 
   @Override

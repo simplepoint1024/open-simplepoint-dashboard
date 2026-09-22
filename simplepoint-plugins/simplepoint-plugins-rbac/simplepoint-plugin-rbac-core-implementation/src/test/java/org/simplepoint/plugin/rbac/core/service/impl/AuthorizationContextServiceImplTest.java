@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -29,6 +31,8 @@ import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantReposito
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
 import org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
@@ -315,6 +319,42 @@ class AuthorizationContextServiceImplTest {
     assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_OWNER);
     assertThat(ctx.getVersion()).isEqualTo(7L);
     verify(tenantPackageRepo).findResourceCodesByTenantId("tenant1");
+  }
+
+  @Test
+  void customTenantContextDropsPlatformGrantsMissingFromCurrentCatalog() {
+    User user = new User();
+    user.setSuperAdmin(false);
+    Tenant tenant = new Tenant();
+    tenant.setOwnerId("owner");
+    tenant.setTenantType(TenantType.ORGANIZATION);
+    tenant.setResourceMode(TenantResourceMode.CUSTOM);
+    TenantRepository tenantRepository = mock(TenantRepository.class);
+    ResourceService resourceService = mock(ResourceService.class);
+    TenantResourceCatalog catalog = mock(TenantResourceCatalog.class);
+    service.setTenantResourceCatalog(catalog);
+    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
+    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenantRepository);
+    when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
+    when(tenantRepository.hasUser("tenant1", "u1")).thenReturn(true);
+    when(usersService.loadRolesByUserId("tenant1", "u1"))
+        .thenReturn(List.of(new RoleGrantedAuthority("role1", "ROLE_USER")));
+    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
+    when(usersService.loadResourcesInRoleIds(List.of("role1")))
+        .thenReturn(Set.of("platform.allowed", "platform.revoked", "tenant.tenant1.alias"));
+    when(resourceServiceProvider.getIfAvailable()).thenReturn(resourceService);
+    when(resourceService.findPublicAccessCodes()).thenReturn(List.of());
+    when(resourceService.filterAccessibleCodes(anyCollection(), eq(AuthorizationScopeType.TENANT), eq(false)))
+        .thenAnswer(call -> call.getArgument(0));
+    when(catalog.mode("tenant1")).thenReturn(TenantResourceMode.CUSTOM);
+    when(catalog.effectivePlatformCodes(eq("tenant1"), anyCollection()))
+        .thenReturn(new LinkedHashSet<>(Set.of("platform.allowed")));
+    when(catalog.grantableCodes(eq("tenant1"), anyCollection()))
+        .thenReturn(Set.of("tenant.tenant1.alias"));
+
+    AuthorizationContext context = service.calculate("tenant1", "u1", null, null);
+    assertThat(context.getResources()).contains("platform.allowed", "tenant.tenant1.alias")
+        .doesNotContain("platform.revoked");
   }
 
   @Test

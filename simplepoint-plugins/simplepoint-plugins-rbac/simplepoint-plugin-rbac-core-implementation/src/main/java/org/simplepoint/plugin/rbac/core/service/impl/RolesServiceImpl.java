@@ -30,7 +30,9 @@ import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
 import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RoleResourceGrant;
@@ -57,6 +59,12 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
   private final ResourceGrantLogRemoteService resourceGrantLogRemoteService;
   private final ResourceService resourceService;
+  private TenantResourceCatalog tenantResourceCatalog;
+
+  @Autowired(required = false)
+  public void setTenantResourceCatalog(TenantResourceCatalog tenantResourceCatalog) {
+    this.tenantResourceCatalog = tenantResourceCatalog;
+  }
   private final ScopePolicyValidator scopePolicyValidator;
   private final RoleScopeBindingService roleScopeBindingService;
 
@@ -223,15 +231,23 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     if (resourceCodes.isEmpty()) {
       return List.of();
     }
-    Set<String> accessibleGrantableCodes = resourceService.findAllByCodes(resourceCodes).stream()
-        .filter(resource -> Boolean.TRUE.equals(resource.getGrantable()))
-        .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
-        .map(Resource::getCode)
-        .collect(Collectors.toSet());
+    String tenantId = resolveCurrentTenantScope();
+    Set<String> accessibleGrantableCodes = tenantResourceCatalog != null
+        && tenantResourceCatalog.mode(tenantId) == TenantResourceMode.CUSTOM
+        ? tenantResourceCatalog.grantableCodes(tenantId, resourceCodes)
+        : resourceService.findAllByCodes(resourceCodes).stream()
+            .filter(resource -> Boolean.TRUE.equals(resource.getGrantable()))
+            .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
+            .map(Resource::getCode)
+            .collect(Collectors.toSet());
     if (!accessibleGrantableCodes.containsAll(resourceCodes)) {
       Set<String> rejected = new LinkedHashSet<>(resourceCodes);
       rejected.removeAll(accessibleGrantableCodes);
       throw new AccessDeniedException("资源不属于当前工作空间、未开通或不可授权: " + String.join(",", rejected));
+    }
+    if ((dto.getDataScopeId() != null || dto.getFieldScopeId() != null)
+        && resourceCodes.stream().anyMatch(code -> code.startsWith("tenant." + tenantId + "."))) {
+      throw new AccessDeniedException("租户自建导航资源不能绑定平台数据或字段策略，请授权对应的平台资源");
     }
     Set<RoleResourceGrant> grants = new HashSet<>();
     String roleId = dto.getRoleId();

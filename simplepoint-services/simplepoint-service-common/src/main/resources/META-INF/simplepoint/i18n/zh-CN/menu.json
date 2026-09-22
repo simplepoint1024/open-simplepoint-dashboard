@@ -68,5 +68,7 @@
   "menu.ai.catalog": "扩展市场",
   "menu.ai.mcpServers": "MCP 中心",
   "menu.ai.billing": "账单",
+  "menu.tenantResources": "租户资源管理",
+  "menu.workspaceSettings": "空间设置",
   "menu.tenantHome": "租户主页"
 }

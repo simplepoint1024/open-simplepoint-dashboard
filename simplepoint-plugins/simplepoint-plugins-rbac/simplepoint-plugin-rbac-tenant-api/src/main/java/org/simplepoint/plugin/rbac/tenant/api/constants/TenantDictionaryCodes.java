@@ -10,6 +10,9 @@ public final class TenantDictionaryCodes {
    */
   public static final String TENANT_TYPE = "tenant.type";
 
+  /** Resource catalog mode for organization workspaces. */
+  public static final String TENANT_RESOURCE_MODE = "tenant.resource-mode";
+
   /**
    * Dictionary code for organization types.
    */

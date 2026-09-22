@@ -13,6 +13,7 @@ import {
   Row,
   Skeleton,
   Space,
+  Tabs,
   Tag,
   Typography,
 } from 'antd';
@@ -26,13 +27,14 @@ import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {type CurrentTenantProfile, useCurrentTenantProfile, useCurrentTenants} from '@/fetches/tenants.ts';
 import {useI18n} from '@/layouts/i18n/useI18n.ts';
 import './index.css';
+import {TenantResourceManager} from './TenantResourceManager.tsx';
 
 type TenantProfileForm = Pick<CurrentTenantProfile, 'name' | 'description' | 'logo' | 'backgroundImage'>;
 
 const displayValue = (value?: string | null) => value?.trim() || '-';
 
 export const TenantHome: React.FC = () => {
-  const {message} = AntdApp.useApp();
+  const {message, modal} = AntdApp.useApp();
   const {t} = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,6 +43,7 @@ export const TenantHome: React.FC = () => {
   const tenantId = queryScope[0] ?? undefined;
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [section, setSection] = useState('overview');
   const editWarningShown = useRef(false);
   const [form] = Form.useForm<TenantProfileForm>();
   const {data: currentTenants, isLoading: tenantsLoading} = useCurrentTenants();
@@ -54,8 +57,10 @@ export const TenantHome: React.FC = () => {
 
   useEffect(() => {
     setEditOpen(false);
+    const requested = new URLSearchParams(location.search).get('section');
+    setSection(requested === 'settings' || requested === 'resources' ? requested : 'overview');
     editWarningShown.current = false;
-  }, [queryScope]);
+  }, [queryScope, location.search]);
 
   useEffect(() => {
     if (!data || !wantsEdit) return;
@@ -123,6 +128,33 @@ export const TenantHome: React.FC = () => {
     }
   };
 
+  const selectResourceMode = (mode: 'PLATFORM' | 'CUSTOM') => {
+    if (mode === (data?.resourceMode ?? 'PLATFORM')) return;
+    modal.confirm({
+      title: mode === 'CUSTOM'
+        ? t('tenant.settings.enableCustom', '启用租户自定义资源')
+        : t('tenant.settings.usePlatform', '改用平台内置资源'),
+      content: mode === 'CUSTOM'
+        ? t('tenant.settings.enableHint', '首次开启会自动拉取当前租户获授权的平台资源。之后角色授权与菜单会使用租户资源目录。')
+        : t('tenant.settings.platformHint', '租户自定义目录及角色授权会保留，切回平台模式后暂不生效。'),
+      okText: t('action.confirm', '确认'),
+      onOk: async () => {
+        try {
+          setSaving(true);
+          await put('/common/tenants/current-resources/mode', {mode},
+            {headers: tenantId ? {'X-Tenant-Id': tenantId} : undefined});
+          await refetch();
+          message.success(t('tenant.settings.modeSaved', '资源加载类型已更新'));
+          window.location.reload();
+        } catch (error: any) {
+          message.error(error?.message ?? t('tenant.settings.modeFailed', '资源加载类型切换失败'));
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
+  };
+
   if (activeTenant?.tenantType === 'PLATFORM') {
     return (
       <div className="tenant-home-page tenant-home-empty">
@@ -181,7 +213,14 @@ export const TenantHome: React.FC = () => {
         </Space>
       </section>
 
-      <Row gutter={[16, 16]}>
+      <Tabs activeKey={section} onChange={setSection} items={[
+        {key: 'overview', label: t('tenant.settings.overview', '空间概览')},
+        {key: 'settings', label: t('tenant.settings.title', '空间设置')},
+        ...(data.tenantType === 'ORGANIZATION' ? [{key: 'resources',
+          label: t('tenant.resources.title', '租户资源管理')}] : []),
+      ]}/>
+
+      {section === 'overview' && <Row gutter={[16, 16]}>
         <Col xs={24} xl={16}>
           <Card className="tenant-home-card" title={t('tenant.profile.about', '租户信息')}>
             <Descriptions column={{xs: 1, sm: 2}}>
@@ -206,7 +245,44 @@ export const TenantHome: React.FC = () => {
             <div className="tenant-owner-contact"><MailOutlined/> {displayValue(data.ownerEmail)}</div>
           </Card>
         </Col>
-      </Row>
+      </Row>}
+
+      {section === 'settings' && <Card className="tenant-home-card" title={t('tenant.settings.title', '空间设置')}>
+        <Descriptions column={{xs: 1, sm: 2}}>
+          <Descriptions.Item label={t('tenant.profile.name', '租户名称')}>{data.name}</Descriptions.Item>
+          <Descriptions.Item label={t('tenant.profile.type', '租户类型')}>{tenantTypeLabel}</Descriptions.Item>
+          <Descriptions.Item label={t('tenant.profile.description', '租户简介')} span={2}>
+            {displayValue(data.description)}
+          </Descriptions.Item>
+        </Descriptions>
+        {data.profileEditable && <Button icon={<EditOutlined/>} onClick={openEditor}>
+          {t('tenant.profile.edit', '编辑租户资料')}
+        </Button>}
+        {data.tenantType === 'ORGANIZATION' && <div className="tenant-resource-mode">
+          <Typography.Title level={5}>{t('tenant.settings.resourceMode', '资源加载类型')}</Typography.Title>
+          <Typography.Paragraph type="secondary">
+            {t('tenant.settings.modeDescription', '默认使用平台内置资源；启用自定义后，本空间的菜单和角色授权以租户目录为准。')}
+          </Typography.Paragraph>
+          <Space wrap>
+            <Button type={(data.resourceMode ?? 'PLATFORM') === 'PLATFORM' ? 'primary' : 'default'}
+              disabled={!data.profileEditable || saving} onClick={() => selectResourceMode('PLATFORM')}>
+              {t('tenant.settings.platform', '平台内置')}
+            </Button>
+            <Button type={data.resourceMode === 'CUSTOM' ? 'primary' : 'default'}
+              disabled={!data.profileEditable || saving} onClick={() => selectResourceMode('CUSTOM')}>
+              {t('tenant.settings.custom', '租户自定义')}
+            </Button>
+          </Space>
+        </div>}
+      </Card>}
+
+      {section === 'resources' && data.tenantType === 'ORGANIZATION' && (data.resourceMode === 'CUSTOM'
+        ? <TenantResourceManager tenantId={tenantId!}/>
+        : <Card><Empty description={t('tenant.resources.disabled', '请先在空间设置中启用租户自定义资源')}>
+          {data.profileEditable && <Button type="primary" onClick={() => setSection('settings')}>
+            {t('tenant.settings.title', '空间设置')}
+          </Button>}
+        </Empty></Card>)}
 
       <Drawer
         title={t('tenant.profile.edit', '编辑租户资料')}

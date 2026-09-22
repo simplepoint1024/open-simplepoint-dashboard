@@ -1,5 +1,6 @@
 package org.simplepoint.plugin.rbac.tenant.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -182,6 +183,14 @@ public class Tenant extends BaseEntityImpl<String> {
   )
   private Long authorizationVersion;
 
+  /** PLATFORM is the safe default for all existing tenants. */
+  @DictionaryField(TenantDictionaryCodes.TENANT_RESOURCE_MODE)
+  @Enumerated(EnumType.STRING)
+  @Column(name = "resource_mode", length = 16, nullable = false)
+  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+  private TenantResourceMode resourceMode = TenantResourceMode.PLATFORM;
+
   /**
    * The ID of the tenant owner.
    * This field is used to identify the user who owns the tenant and has administrative privileges over it.
@@ -299,6 +308,9 @@ public class Tenant extends BaseEntityImpl<String> {
    */
   @Override
   public void prePersist() {
+    if (this.resourceMode == null) {
+      this.resourceMode = TenantResourceMode.PLATFORM;
+    }
     if (this.tenantType == null) {
       this.tenantType = TenantType.ORGANIZATION;
     }

@@ -697,7 +697,7 @@ export const toolsSwitcherGroupItem = (): ItemType => {
  */
  export const aboutMeItem = (
    navigate: (path: string) => void,
-   tenant?: {enabled: boolean; editable: boolean},
+   tenant?: {enabled: boolean; editable: boolean; organization?: boolean},
  ): ItemType => {
   const menu = avatarConfig(navigate, tenant);
   return {
@@ -714,7 +714,7 @@ export const toolsSwitcherGroupItem = (): ItemType => {
  */
 export const avatarConfig = (
   navigate: (path: string) => void,
-  tenant?: {enabled: boolean; editable: boolean},
+  tenant?: {enabled: boolean; editable: boolean; organization?: boolean},
 ): MenuProps => {
   return {
     items: [
@@ -731,7 +731,8 @@ export const avatarConfig = (
         label: <I18nText k='group.tenant' fallback='租户'/> as any,
         children: [
           {key: 'tenant-home', label: <I18nText k='menu.tenantHome' fallback='租户主页'/>, icon: <HomeOutlined/>, onClick: () => navigate('/tenant')},
-          ...(tenant.editable ? [{key: 'tenant-profile', label: <I18nText k='menu.tenantProfile' fallback='租户资料'/>, icon: <EditOutlined/>, onClick: () => navigate('/tenant?edit=1')}] : []),
+          ...(tenant.editable ? [{key: 'tenant-profile', label: <I18nText k='menu.workspaceSettings' fallback='空间设置'/>, icon: <EditOutlined/>, onClick: () => navigate('/tenant?section=settings')}] : []),
+          ...(tenant.editable && tenant.organization ? [{key: 'tenant-resources', label: <I18nText k='menu.tenantResources' fallback='租户资源管理'/>, icon: <ApartmentOutlined/>, onClick: () => navigate('/tenant?section=resources')}] : []),
         ],
       }] : []),
       {

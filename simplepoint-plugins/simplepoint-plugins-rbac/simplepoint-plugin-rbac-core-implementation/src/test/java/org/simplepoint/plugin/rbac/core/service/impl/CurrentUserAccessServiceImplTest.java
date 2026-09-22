@@ -24,6 +24,9 @@ import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.ResourceType;
@@ -144,6 +147,39 @@ class CurrentUserAccessServiceImplTest {
     assertThat(detail.fieldPermissionSupported()).isFalse();
     assertThatThrownBy(() -> service.pageDetail(null, "users.edit"))
         .isInstanceOf(ResponseStatusException.class);
+  }
+
+  @Test
+  void customPageAliasHidesBackingPageAndShowsItsOperations() {
+    TenantResourceCatalog catalog = mock(TenantResourceCatalog.class);
+    service.setTenantResourceCatalog(catalog);
+    TenantResource platformPage = new TenantResource();
+    platformPage.setTenantId("tenant-a"); platformPage.setId("platform-page");
+    platformPage.setPlatformResourceId("platform-page");
+    platformPage.setCode("users.view"); platformPage.setName("Platform users");
+    platformPage.setType(ResourceType.PAGE); platformPage.setEnabled(true);
+    TenantResource action = new TenantResource();
+    action.setTenantId("tenant-a"); action.setId("platform-action");
+    action.setPlatformResourceId("platform-action"); action.setParentId(platformPage.getId());
+    action.setCode("users.edit"); action.setName("Edit users");
+    action.setType(ResourceType.ACTION); action.setEnabled(true);
+    TenantResource alias = new TenantResource();
+    alias.setTenantId("tenant-a"); alias.setId("alias");
+    alias.setTargetResourceId(platformPage.getId());
+    alias.setCode("tenant.tenant-a.alias"); alias.setName("My users");
+    alias.setType(ResourceType.PAGE); alias.setEnabled(true);
+    when(catalog.mode("tenant-a")).thenReturn(TenantResourceMode.CUSTOM);
+    when(catalog.activeResources("tenant-a")).thenReturn(List.of(platformPage, action, alias));
+    AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setUserId("user-a"); ctx.setScopeType(AuthorizationScopeType.TENANT);
+    ctx.setResources(Set.of(platformPage.getCode(), alias.getCode(), action.getCode()));
+    ctx.setAttributes(Map.of("X-Tenant-Id", "tenant-a"));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, ctx);
+
+    var pages = service.resources(null, "", "PAGE", PageRequest.of(0, 10));
+    assertThat(pages.getContent()).extracting(row -> row.code()).containsExactly(alias.getCode());
+    assertThat(service.pageDetail(null, alias.getCode()).operations())
+        .extracting(row -> row.code()).containsExactly(action.getCode());
   }
 
   @Test

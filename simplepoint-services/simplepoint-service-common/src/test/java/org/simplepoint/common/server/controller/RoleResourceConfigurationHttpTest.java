@@ -19,6 +19,7 @@ import org.simplepoint.plugin.rbac.core.api.service.RoleResourceConfigurationSer
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.plugin.rbac.core.rest.controller.RoleResourceConfigurationController;
 import org.simplepoint.plugin.rbac.core.service.impl.RoleResourceConfigurationServiceImpl;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
 import org.simplepoint.plugin.rbac.tenant.api.entity.*;
 import org.simplepoint.security.entity.*;
 import org.springframework.data.domain.PageRequest;
@@ -55,6 +56,7 @@ class RoleResourceConfigurationHttpTest {
         .addAnnotatedClass(TenantPackageRelevance.class)
         .addAnnotatedClass(PackageApplicationRelevance.class)
         .addAnnotatedClass(ApplicationResourceRelevance.class)
+        .addAnnotatedClass(TenantResource.class)
         .buildMetadata().buildSessionFactory();
     em = factory.openSession(); em.beginTransaction();
     role = new Role(); role.setTenantId("tenant-a"); role.setRoleName("Manager");
@@ -124,6 +126,33 @@ class RoleResourceConfigurationHttpTest {
     if (em != null) {if (em.getTransaction().isActive()) em.getTransaction().rollback(); em.close();}
     if (factory != null) factory.close();
     RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+  }
+
+  @Test
+  void customCatalogIsTheOnlySourceForRoleEditorAndSave() {
+    TenantResource copy = new TenantResource();
+    copy.setTenantId("tenant-a"); copy.setId(resources.get(1).getId());
+    copy.setPlatformResourceId(resources.get(1).getId());
+    copy.setCode(resources.get(1).getCode()); copy.setName("Workspace page");
+    copy.setType(ResourceType.PAGE); copy.setGrantable(true); copy.setEnabled(true);
+    em.persist(copy);
+    TenantResource foreignCopy = new TenantResource();
+    foreignCopy.setTenantId("tenant-b"); foreignCopy.setId(resources.get(2).getId());
+    foreignCopy.setPlatformResourceId(resources.get(2).getId());
+    foreignCopy.setCode(resources.get(2).getCode()); foreignCopy.setName("Foreign page");
+    foreignCopy.setType(ResourceType.PAGE); foreignCopy.setGrantable(true); foreignCopy.setEnabled(true);
+    em.persist(foreignCopy);
+    em.flush();
+    TenantResourceCatalog catalog = mock(TenantResourceCatalog.class);
+    when(catalog.mode("tenant-a")).thenReturn(TenantResourceMode.CUSTOM);
+    when(catalog.grantableCodes(eq("tenant-a"), anyCollection())).thenReturn(Set.of(copy.getCode()));
+    service.setTenantResourceCatalog(catalog);
+    var page = service.list(role.getId(), "", "all", null, null, false, false, PageRequest.of(0, 20));
+    assertEquals(1, page.getTotalElements());
+    assertEquals(copy.getId(), page.getContent().getFirst().id());
+    Row row = page.getContent().getFirst();
+    service.save(role.getId(), new Patch(List.of(change(row, true))));
+    verify(roles).authorize(argThat(dto -> dto.getResourceCodes().contains(copy.getCode())));
   }
 
   @Test

@@ -24,6 +24,8 @@ import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.constants.TenantContextIds;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
 import org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
@@ -63,6 +65,12 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
   private final ObjectProvider<RoleScopeBindingRepository> roleScopeBindingRepositoryProvider;
   private final ObjectProvider<org.simplepoint.plugin.rbac.core.api.repository.PlatformIdentityRepository> platformIdentities;
   private final ObjectProvider<org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository> tenantMemberships;
+  private TenantResourceCatalog tenantResourceCatalog;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  public void setTenantResourceCatalog(TenantResourceCatalog tenantResourceCatalog) {
+    this.tenantResourceCatalog = tenantResourceCatalog;
+  }
 
   /**
    * Constructs an AuthorizationContextServiceImpl with the specified UsersService.
@@ -197,6 +205,7 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     if (!roleIds.isEmpty()) {
       resources.addAll(usersService.loadResourcesInRoleIds(roleIds));
     }
+    Set<String> explicitlyGrantedCodes = new LinkedHashSet<>(resources);
     var resourceService = resourceServiceProvider.getIfAvailable();
     if (resourceService != null) {
       Collection<String> publicResourceCodes = resourceService.findPublicAccessCodes();
@@ -217,6 +226,28 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
       }
       if (scopeType == AuthorizationScopeType.PLATFORM) platformRoles.forEach(role -> resources.addAll(role.permissions()));
       resources.retainAll(resourceService.filterAccessibleCodes(resources, scopeType, administrator));
+    }
+    if (tenantResourceCatalog != null && resolvedTenantId != null
+        && scopeType == AuthorizationScopeType.TENANT
+        && tenantResourceCatalog.mode(resolvedTenantId) == TenantResourceMode.CUSTOM) {
+      Set<String> publicCodes = resourceService == null ? new LinkedHashSet<>()
+          : new LinkedHashSet<>(resourceService.findPublicAccessCodes());
+      publicCodes.retainAll(resources);
+      Set<String> catalogCandidates = new LinkedHashSet<>(resources);
+      catalogCandidates.addAll(explicitlyGrantedCodes);
+      Set<String> platformCodes = tenantResourceCatalog.effectivePlatformCodes(resolvedTenantId,
+          catalogCandidates);
+      if (resourceService != null) {
+        platformCodes.retainAll(resourceService.filterAccessibleCodes(platformCodes, scopeType, administrator));
+      }
+      Set<String> customCodes = tenantResourceCatalog.grantableCodes(resolvedTenantId, explicitlyGrantedCodes);
+      resources.clear();
+      resources.addAll(platformCodes);
+      // Public endpoints remain public regardless of the tenant navigation catalog.
+      resources.addAll(publicCodes);
+      for (String code : customCodes) {
+        if (code.startsWith("tenant." + resolvedTenantId + ".")) resources.add(code);
+      }
     }
     boolean tenantAdmin = hasTenantAdminAuthority(roleAuthorityVos, resources);
     AuthorizationActorRole actorRole = resolveActorRole(administrator, resolvedTenantId, resolvedTenant, tenantOwner, tenantAdmin);

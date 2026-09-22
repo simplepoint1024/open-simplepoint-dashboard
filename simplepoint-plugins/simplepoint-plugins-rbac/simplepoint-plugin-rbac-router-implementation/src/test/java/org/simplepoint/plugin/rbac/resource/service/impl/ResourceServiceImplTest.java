@@ -11,7 +11,11 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.simplepoint.api.security.service.DetailsProviderService;
+import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.AuthorizationScopeType;
+import org.simplepoint.core.RequestContextHolder;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.resource.api.repository.ResourceAncestorRepository;
 import org.simplepoint.plugin.rbac.resource.api.repository.ResourceRepository;
@@ -20,6 +24,9 @@ import org.simplepoint.plugin.rbac.resource.service.support.ButtonResourceMetada
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
 import org.simplepoint.security.ResourceDeclaration;
 import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.ResourceNode;
@@ -56,6 +63,72 @@ class ResourceServiceImplTest {
         emptyProvider(),
         emptyProvider()
     );
+  }
+
+  @Test
+  void tenantCustomRoutesUseTenantCatalogAndPreserveItsHierarchy() {
+    TenantResourceCatalog catalog = mock(TenantResourceCatalog.class);
+    service.setTenantResourceCatalog(catalog);
+    TenantResource directory = new TenantResource();
+    directory.setTenantId("tenant-a"); directory.setId("directory");
+    directory.setCode("tenant.tenant-a.directory"); directory.setName("Workspace");
+    directory.setType(ResourceType.GROUP); directory.setEnabled(true);
+    TenantResource page = new TenantResource();
+    page.setTenantId("tenant-a"); page.setId("platform-page-id");
+    page.setPlatformResourceId("platform-page-id"); page.setParentId("directory");
+    page.setCode("licensed.page"); page.setName("Licensed page");
+    page.setType(ResourceType.PAGE); page.setPath("/licensed");
+    page.setComponent("common/LicensedPage"); page.setEnabled(true); page.setGrantable(true);
+    when(catalog.mode("tenant-a")).thenReturn(TenantResourceMode.CUSTOM);
+    when(catalog.activeResources("tenant-a")).thenReturn(List.of(directory, page));
+    AuthorizationContext context = new AuthorizationContext();
+    context.setScopeType(AuthorizationScopeType.TENANT);
+    context.setAttributes(Map.of("X-Tenant-Id", "tenant-a"));
+    context.setResources(Set.of("licensed.page"));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+
+    var routes = service.routes();
+
+    assertThat(routes.routes()).hasSize(1);
+    ResourceNode root = routes.routes().iterator().next();
+    assertThat(root.getName()).isEqualTo("Workspace");
+    assertThat(root.getChildren()).hasSize(1);
+    assertThat(root.getChildren().getFirst().getPath()).isEqualTo("/licensed");
+  }
+
+  @Test
+  void tenantPageAliasReplacesItsPlatformPageInRoutes() {
+    TenantResourceCatalog catalog = mock(TenantResourceCatalog.class);
+    service.setTenantResourceCatalog(catalog);
+    TenantResource page = new TenantResource();
+    page.setTenantId("tenant-a"); page.setId("platform-page-id");
+    page.setPlatformResourceId("platform-page-id");
+    page.setCode("licensed.page"); page.setName("Licensed page");
+    page.setType(ResourceType.PAGE); page.setPath("/licensed");
+    page.setComponent("common/LicensedPage"); page.setEnabled(true); page.setGrantable(true);
+    TenantResource alias = new TenantResource();
+    alias.setTenantId("tenant-a"); alias.setId("alias-id");
+    alias.setTargetResourceId(page.getId());
+    alias.setCode("tenant.tenant-a.alias-id"); alias.setName("Custom page");
+    alias.setType(ResourceType.PAGE); alias.setPath("/custom-licensed");
+    alias.setComponent(page.getComponent()); alias.setEnabled(true); alias.setGrantable(true);
+    when(catalog.mode("tenant-a")).thenReturn(TenantResourceMode.CUSTOM);
+    when(catalog.activeResources("tenant-a")).thenReturn(List.of(page, alias));
+    AuthorizationContext context = new AuthorizationContext();
+    context.setScopeType(AuthorizationScopeType.TENANT);
+    context.setAttributes(Map.of("X-Tenant-Id", "tenant-a"));
+    context.setResources(Set.of(page.getCode(), alias.getCode()));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+
+    var routes = service.routes();
+
+    assertThat(routes.routes()).hasSize(1);
+    assertThat(routes.routes().iterator().next().getPath()).isEqualTo("/custom-licensed");
+  }
+
+  @AfterEach
+  void clearContext() {
+    RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
   }
 
   @Test

@@ -18,6 +18,7 @@ import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.constants.TenantContextIds;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.command.TenantProfileUpdateCommand;
@@ -402,6 +403,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   @Transactional(rollbackFor = Exception.class)
   public <S extends Tenant> S create(S entity) {
     requirePlatformAdministrator();
+    entity.setResourceMode(TenantResourceMode.PLATFORM);
     entity.setLogo(normalizeOssImage(entity.getLogo(), "租户 Logo"));
     entity.setBackgroundImage(normalizeOssImage(entity.getBackgroundImage(), "租户背景图片"));
     if (entity.getAuthorizationVersion() == null) {
@@ -421,6 +423,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   public <S extends Tenant> Tenant modifyById(S entity) {
     requirePlatformAdministrator();
     Tenant current = super.findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("租户不存在"));
+    entity.setResourceMode(current.getResourceMode());
     entity.setLogo(normalizeOssImage(entity.getLogo(), "租户 Logo"));
     entity.setBackgroundImage(normalizeOssImage(entity.getBackgroundImage(), "租户背景图片"));
     if (entity.getAuthorizationVersion() == null) {

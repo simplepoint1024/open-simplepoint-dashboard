@@ -21,6 +21,9 @@ import org.simplepoint.plugin.rbac.core.api.service.CurrentUserAccessService;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.ResourceType;
@@ -45,6 +48,12 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
   private final TenantService tenants;
   private final UsersService users;
   private final ResourceService resources;
+  private TenantResourceCatalog tenantResourceCatalog;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  public void setTenantResourceCatalog(TenantResourceCatalog tenantResourceCatalog) {
+    this.tenantResourceCatalog = tenantResourceCatalog;
+  }
 
   public CurrentUserAccessServiceImpl(EntityManager em, TenantService tenants,
       UsersService users, ResourceService resources) {
@@ -110,6 +119,39 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
     Map<String, List<String>> directory = directories(List.of(page));
     ResourceAccess pageAccess = withDirectory(project(code, page, effective.contains(code)), directory.get(code));
     List<ResourceAccess> operations = new ArrayList<>();
+    if (customCatalog(context)) {
+      Map<String, List<TenantResource>> childrenByParent = new HashMap<>();
+      TenantResource selectedPage = null;
+      for (TenantResource entry : tenantResourceCatalog.activeResources(tenantId(context))) {
+        if (code.equals(entry.getCode())) selectedPage = entry;
+        childrenByParent.computeIfAbsent(entry.getParentId() == null ? "" : entry.getParentId(),
+            ignored -> new ArrayList<>()).add(entry);
+      }
+      Set<String> seenCustom = new HashSet<>();
+      List<String> queue = selectedPage != null && selectedPage.getTargetResourceId() != null
+          ? List.of(page.getId(), selectedPage.getTargetResourceId()) : List.of(page.getId());
+      int visited = 0;
+      while (!queue.isEmpty()) {
+        List<String> next = new ArrayList<>();
+        for (String parent : queue) {
+          for (TenantResource entry : childrenByParent.getOrDefault(parent, List.of())) {
+            if (!seenCustom.add(entry.getId())) continue;
+            if (++visited > MAX_DETAIL_NODES) throw new ResponseStatusException(
+                HttpStatus.UNPROCESSABLE_ENTITY, "页面下级资源过多，请收窄资源层级");
+            if (entry.getType() == ResourceType.PAGE) continue;
+            if (selected.contains(entry.getCode()) && entry.getType() != ResourceType.GROUP
+                && entry.getType() != ResourceType.MODULE) {
+              operations.add(project(entry.getCode(), virtual(entry), effective.contains(entry.getCode())));
+            }
+            next.add(entry.getId());
+          }
+        }
+        queue = next;
+      }
+      operations.sort(Comparator.comparing(ResourceAccess::label, String.CASE_INSENSITIVE_ORDER)
+          .thenComparing(ResourceAccess::code));
+      return new PageAccessDetail(pageAccess, List.copyOf(operations), false, false);
+    }
     Set<String> seen = new HashSet<>();
     List<String> frontier = List.of(page.getId());
     int total = 0;
@@ -155,6 +197,17 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
   }
 
   private Set<String> pageCodes(Set<String> codes) {
+    if (customCatalog(requireContext())) {
+      List<TenantResource> active = tenantResourceCatalog.activeResources(tenantId(requireContext()));
+      Set<String> aliasedPlatformPages = active.stream()
+          .filter(item -> codes.contains(item.getCode()))
+          .map(TenantResource::getTargetResourceId).filter(java.util.Objects::nonNull)
+          .collect(java.util.stream.Collectors.toSet());
+      return active.stream()
+          .filter(item -> item.getType() == ResourceType.PAGE && codes.contains(item.getCode())
+              && !(item.isPlatformSource() && aliasedPlatformPages.contains(item.getId())))
+          .map(TenantResource::getCode).collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
     List<String> all = List.copyOf(codes);
     Set<String> pages = new LinkedHashSet<>();
     for (int start = 0; start < all.size(); start += LOOKUP_BATCH_SIZE) {
@@ -167,6 +220,14 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
   }
 
   private Map<String, Resource> visibleResources(Collection<String> codes) {
+    if (customCatalog(requireContext())) {
+      Set<String> requested = new HashSet<>(codes);
+      Map<String, Resource> custom = new HashMap<>();
+      for (TenantResource entry : tenantResourceCatalog.activeResources(tenantId(requireContext()))) {
+        if (requested.contains(entry.getCode())) custom.put(entry.getCode(), virtual(entry));
+      }
+      return custom;
+    }
     Map<String, Resource> result = new HashMap<>();
     List<String> all = List.copyOf(new LinkedHashSet<>(codes));
     for (int start = 0; start < all.size(); start += LOOKUP_BATCH_SIZE) {
@@ -183,6 +244,26 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
   }
 
   private Map<String, List<String>> directories(List<Resource> pages) {
+    if (customCatalog(requireContext())) {
+      Map<String, TenantResource> catalog = new HashMap<>();
+      tenantResourceCatalog.activeResources(tenantId(requireContext()))
+          .forEach(entry -> catalog.put(entry.getId(), entry));
+      Map<String, List<String>> result = new HashMap<>();
+      for (Resource page : pages) {
+        List<String> names = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        String cursor = page.getParentId();
+        while (cursor != null && seen.add(cursor) && names.size() < 20) {
+          TenantResource parent = catalog.get(cursor);
+          if (parent == null) break;
+          names.add(parent.getName());
+          cursor = parent.getParentId();
+        }
+        Collections.reverse(names);
+        result.put(page.getCode(), List.copyOf(names));
+      }
+      return result;
+    }
     Map<String, Resource> ancestry = new HashMap<>();
     pages.forEach(page -> ancestry.put(page.getId(), page));
     Set<String> frontier = new LinkedHashSet<>();
@@ -221,6 +302,27 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
       result.put(page.getCode(), List.copyOf(names));
     }
     return result;
+  }
+
+  private boolean customCatalog(AuthorizationContext context) {
+    String tenant = tenantId(context);
+    return tenantResourceCatalog != null && context.getScopeType() == AuthorizationScopeType.TENANT
+        && tenant != null && tenantResourceCatalog.mode(tenant) == TenantResourceMode.CUSTOM;
+  }
+
+  private static Resource virtual(TenantResource entry) {
+    Resource resource = new Resource();
+    resource.setId(entry.getId());
+    resource.setCode(entry.getCode());
+    resource.setName(entry.getName());
+    resource.setType(entry.getType());
+    resource.setParentId(entry.getParentId());
+    resource.setPath(entry.getPath());
+    resource.setComponent(entry.getComponent());
+    resource.setIcon(entry.getIcon());
+    resource.setGrantable(entry.isGrantable());
+    resource.setDisabled(!entry.isEnabled());
+    return resource;
   }
 
   private static ResourceAccess withDirectory(ResourceAccess row, List<String> directory) {

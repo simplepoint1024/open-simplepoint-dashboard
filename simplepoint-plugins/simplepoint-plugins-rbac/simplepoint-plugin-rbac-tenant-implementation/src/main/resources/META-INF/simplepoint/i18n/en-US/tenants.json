@@ -21,6 +21,8 @@
   "tenants.button.config.user": "Configure Members",
   "tenants.userConfig.authorizedUsers": "Tenant Members",
   "tenants.userConfig.availableUsers": "Available Users",
+  "tenants.resourceMode.PLATFORM": "Platform",
+  "tenants.resourceMode.CUSTOM": "Custom",
   "tenants.type.ORGANIZATION": "Organization Tenant",
   "tenants.type.PERSONAL": "Personal Tenant"
 }

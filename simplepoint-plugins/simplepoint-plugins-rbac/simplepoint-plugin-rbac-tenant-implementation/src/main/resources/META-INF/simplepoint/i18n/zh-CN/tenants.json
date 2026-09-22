@@ -21,6 +21,8 @@
   "tenants.button.config.user": "配置成员",
   "tenants.userConfig.authorizedUsers": "租户成员",
   "tenants.userConfig.availableUsers": "可选用户",
+  "tenants.resourceMode.PLATFORM": "平台内置",
+  "tenants.resourceMode.CUSTOM": "租户自定义",
   "tenants.type.ORGANIZATION": "组织租户",
   "tenants.type.PERSONAL": "个人租户"
 }

@@ -68,5 +68,7 @@
   "menu.ai.catalog": "Extension Catalog",
   "menu.ai.mcpServers": "MCP Center",
   "menu.ai.billing": "Billing",
+  "menu.tenantResources": "Tenant Resource Management",
+  "menu.workspaceSettings": "Workspace Settings",
   "menu.tenantHome": "Tenant Home"
 }

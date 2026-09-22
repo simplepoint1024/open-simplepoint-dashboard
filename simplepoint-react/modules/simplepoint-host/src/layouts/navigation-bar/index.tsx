@@ -737,8 +737,9 @@ const NavigateBar: React.FC<{
     aboutMeItem(navigate, {
       enabled: tenantMenuEnabled,
       editable: currentTenantProfile?.profileEditable === true,
+      organization: currentTenantProfile?.tenantType === 'ORGANIZATION',
     }),
-  ], [currentTenantProfile?.profileEditable, navigate, tenantMenuEnabled]);
+  ], [currentTenantProfile?.profileEditable, currentTenantProfile?.tenantType, navigate, tenantMenuEnabled]);
 
   return (
     <NavigationGuardContext.Provider value={confirmWorkspaceChange}>
