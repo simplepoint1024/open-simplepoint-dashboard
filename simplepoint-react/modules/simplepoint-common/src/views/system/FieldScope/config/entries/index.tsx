@@ -1,6 +1,6 @@
 import {Alert, Button, Empty, Select, Space, Table, Tag, Typography, type SelectProps} from 'antd';
 import {DeleteOutlined, PlusOutlined, ReloadOutlined} from '@simplepoint/shared/types/icon';
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {fetchFieldPageCatalog, type FieldScopeEntryDto} from '@/api/system/field-scope';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {useData} from '@simplepoint/shared/api/methods';
@@ -14,7 +14,7 @@ export default function FieldEntries({value = EMPTY, onChange, disabled, onPendi
   value?: FieldScopeEntryDto[]; onChange?: (entries: FieldScopeEntryDto[]) => void; disabled?: boolean;
   onPendingChange?: (pending: boolean) => void;
 }) {
-  const {t} = useI18n();
+  const {t, ensure, locale} = useI18n();
   const [page, setPage] = useState<string>();
   const [selected, setSelected] = useState<string[]>([]);
   const [access, setAccess] = useState('VISIBLE');
@@ -31,6 +31,15 @@ export default function FieldEntries({value = EMPTY, onChange, disabled, onPendi
       })));
     return fields;
   }, [catalog]);
+  useEffect(() => {
+    const titles = [
+      ...Object.values(catalog ?? {}).map(item => item.title),
+      ...(catalog?.[page ?? '']?.models ?? []).flatMap(model => Object.values(model.properties).map(field => field.title)),
+      ...value.map(entry => metadata.get(keyOf(entry))?.title ?? ''),
+    ];
+    const namespaces = [...new Set(titles.filter(title => title.startsWith('i18n:')).map(title => title.slice(5).split('.')[0]))];
+    if (namespaces.length) void ensure(namespaces);
+  }, [catalog, page, value, metadata, ensure, locale]);
   const configured = useMemo(() => new Set(value.map(keyOf)), [value]);
   const pageOptions = Object.entries(catalog ?? {}).map(([code, item]) => ({value: code, label: `${label(item.title, code)} · ${code}`}));
   const modelOptions = (catalog?.[page ?? '']?.models ?? []).map(model => ({
