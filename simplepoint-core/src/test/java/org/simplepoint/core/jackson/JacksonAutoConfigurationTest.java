@@ -11,10 +11,23 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.junit.jupiter.api.Test;
+import java.math.BigDecimal;
+import java.util.Map;
 
 class JacksonAutoConfigurationTest {
 
   private final JacksonAutoConfiguration config = new JacksonAutoConfiguration();
+
+  @Test
+  void legacyMapperAlsoKeepsDecimalPayloadsExact() throws Exception {
+    var mapper = config.objectMapper();
+    var amount = new BigDecimal("999999999999.123456789012");
+    assertThat(mapper.writeValueAsString(Map.of("amount", amount, "count", 42)))
+        .contains("\"amount\":\"999999999999.123456789012\"", "\"count\":42");
+    assertThat(mapper.writeValueAsString(new BigDecimal("1E-12"))).isEqualTo("\"0.000000000001\"");
+    assertThat(mapper.readValue("\"999999999999.123456789012\"", BigDecimal.class)).isEqualByComparingTo(amount);
+    assertThat(mapper.readValue("999999999999.123456789012", BigDecimal.class)).isEqualByComparingTo(amount);
+  }
 
   @Test
   void objectMapper_isNotNull() {

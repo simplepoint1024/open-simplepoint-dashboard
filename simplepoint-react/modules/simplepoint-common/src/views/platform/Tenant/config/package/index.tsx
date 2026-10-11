@@ -8,9 +8,10 @@ import type {PackageRelevantVo} from '@/api/platform/package';
 
 export interface TenantPackageConfigProps {
   tenantId: string;
+  onInteractionLockChange?: (locked: boolean) => void;
 }
 
-const App = ({tenantId}: TenantPackageConfigProps) => {
+const App = ({tenantId, onInteractionLockChange}: TenantPackageConfigProps) => {
   const {t, messages, ensure, locale} = useI18n();
   useEffect(() => {void ensure(['packages', 'table', 'common']);}, [ensure, locale]);
   const columns = useMemo<TableColumnsType<PackageRelevantVo>>(() => [
@@ -21,9 +22,10 @@ const App = ({tenantId}: TenantPackageConfigProps) => {
   if (!tenantId) return <div/>;
   return <AssignmentTable<PackageRelevantVo> endpoint={`${api['platform.packages'].baseUrl}/items`}
     parent={{tenantId}} itemKey="code" columns={columns} storageKey="platform.packages.assignment"
-    onMove={(selected, keys) => selected
-      ? fetchUnauthorized({tenantId, packageCodes: keys})
-      : fetchAuthorize({tenantId, packageCodes: keys})}/>;
+    onInteractionLockChange={onInteractionLockChange}
+    onMove={(selected, keys, options) => selected
+      ? fetchUnauthorized({tenantId, packageCodes: keys}, options)
+      : fetchAuthorize({tenantId, packageCodes: keys}, options)}/>;
 };
 
 export default App;

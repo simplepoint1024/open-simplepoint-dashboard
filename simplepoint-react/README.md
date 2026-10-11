@@ -9,6 +9,9 @@ This repository contains the React frontend workspace for the SimplePoint dashbo
 - `modules/simplepoint-audit`: the auditing and monitoring remote.
 - `modules/simplepoint-dna`: the DNA remote.
 - `modules/simplepoint-ai`: the AI workspace with separate platform-managed and tenant-owned provider/model views.
+- `modules/simplepoint-app`: the application workbench remote for application and form composition.
+- `modules/simplepoint-workflow`: the process center remote for definitions, tasks, and matters.
+- `libs/components/WorkflowDesigner` and `libs/components/ProcessStatusDiagram`: reusable BPMN authoring and read-only execution-state components.
 - `libs/`: shared UI and data-access utilities consumed by the apps.
 
 ## Prerequisites

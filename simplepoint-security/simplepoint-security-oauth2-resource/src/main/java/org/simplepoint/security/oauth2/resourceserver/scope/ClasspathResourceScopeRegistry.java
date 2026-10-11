@@ -85,8 +85,15 @@ public class ClasspathResourceScopeRegistry {
           || java.util.Arrays.stream(get.path()).anyMatch(path -> !path.isBlank())) continue;
       var permission = org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
           method, org.springframework.security.access.prepost.PreAuthorize.class);
+      if (permission == null) permission = org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
+          controller, org.springframework.security.access.prepost.PreAuthorize.class);
       if (permission != null) ResourceScopeHandlerInterceptor.extractAuthorities(permission.value())
           .forEach(authority -> findPage(authority).ifPresent(pages::add));
+    }
+    if (pages.isEmpty()) {
+      var explicit = org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
+          controller, org.simplepoint.core.permission.PermissionPage.class);
+      if (explicit != null) return Optional.of(explicit.value());
     }
     return pages.size() == 1 ? Optional.of(pages.iterator().next()) : Optional.empty();
   }

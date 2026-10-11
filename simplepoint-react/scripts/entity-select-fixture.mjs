@@ -1,9 +1,13 @@
 import {compileLocalQuery} from '../libs/components/DataTable/localQuery.ts';
+import {readFileSync} from 'node:fs';
 
 /** Isolated selection and assignment fixtures; never contacts production role/tenant records. */
 export function createEntitySelectFixture() {
   let enabled = false;
-  const requests = [], resourceRequests = [], resourceSaves = [], resourceBulks = [];
+  const assertContextBound = ids => {if (!Array.isArray(ids) || ids.length > 200) throw Error('Unbounded preview context');};
+  const requests = [], resourceRequests = [], resourceSaves = [], resourceBulks = [], policyRequests = [];
+  const policies = [{id: 'preview-old', name: '原组织范围'}, {id: 'preview-new', name: '新组织范围'},
+    ...Array.from({length: 521}, (_, index) => ({id: 'policy-' + index, name: '范围规则' + String(index).padStart(3, '0')}))];
   let resourceConflict = false;
   const resourceRoot = {id: 'resource-root', code: 'resource.root', label: '测试资源目录', type: 'GROUP',
     icon: 'AppstoreOutlined', hasChildren: true, grantable: false, granted: false, revision: '1',
@@ -27,12 +31,37 @@ export function createEntitySelectFixture() {
     return resourceRows.filter(row => ids.has(row.id) && (!grantableOnly || row.grantable));
   };
   const subtreeToken = rows => rows.map(row => `${row.id}:${row.granted}:${row.revision}`).join('|');
-  return {requests, resourceRequests, resourceSaves, resourceBulks,
+  return {requests, resourceRequests, resourceSaves, resourceBulks, policyRequests,
     resourceRows, conflictResources() {resourceConflict = true;}, enable() {enabled = true;}, async handle(req, url, respond, expectedFailure) {
     if (!enabled) return false;
     const path = url.pathname;
-    const resourceMatch = path.match(/^\/common\/role-resource-configuration\/roles\/(Role-\d+)\/(resources|resource-changes|resource-subtree|resource-subtree\/resources)$/);
+    if (path === '/common/platform/object-storage/quotas/schema') {
+      const schema = JSON.parse(readFileSync(new URL('./storage-schemas/quotas.json', import.meta.url), 'utf8'));
+      return respond({...schema, buttons: [{key: 'add', title: '新增配额', sort: 0,
+        argumentMinSize: 0, argumentMaxSize: 0}]}), true;
+    }
+    const resourceMatch = path.match(/^\/common\/role-resource-configuration\/roles\/(Role-\d+)\/(policy-options|resource-context|resources|resource-changes|resource-subtree|resource-subtree\/resources)$/);
     if (resourceMatch) {
+      if (resourceMatch[2] === 'policy-options') {
+        policyRequests.push(new URLSearchParams(url.searchParams));
+        const page = Number(url.searchParams.get('page')), size = Number(url.searchParams.get('size'));
+        if (size > 20) throw Error('Policy picker cannot materialize a directory');
+        const selected = url.searchParams.get('selectedId'), keyword = url.searchParams.get('keyword') ?? '';
+        const rows = policies.filter(row => (!selected || row.id === selected) && row.name.includes(keyword));
+        return respond({content: rows.slice(page * size, (page + 1) * size),
+          page: {number: page, size, totalElements: rows.length, totalPages: Math.ceil(rows.length / size)}}), true;
+      }
+      if (resourceMatch[2] === 'resource-context') {
+        const chunks = []; for await (const chunk of req) chunks.push(chunk);
+        const ids = JSON.parse(Buffer.concat(chunks).toString());
+        assertContextBound(ids);
+        const selected = new Set(ids);
+        for (const id of selected) {
+          const row = resourceRows.find(row => row.id === id);
+          if (row?.parentId) selected.add(row.parentId);
+        }
+        return respond(resourceRows.filter(row => selected.has(row.id))), true;
+      }
       if (resourceMatch[2] === 'resource-subtree/resources') {
         return respond(descendants(url.searchParams.get('resourceId'), false).map(row => ({...row,
           hasChildren: resourceRows.some(child => child.parentId === row.id),
@@ -63,6 +92,8 @@ export function createEntitySelectFixture() {
         for (const change of payload.changes) {
           const row = resourceRows.find(row => row.id === change.resourceId);
           if (!row || row.revision !== change.revision) throw Error('Stale resource revision');
+          if (change.dataPermission) row.dataPermission.policyId = change.dataPermission.policyId;
+          if (change.fieldPermission) row.fieldPermission.policyId = change.fieldPermission.policyId;
           row.granted = change.granted; row.revision = String(Number(row.revision) + 1);
         }
         return respond(null), true;

@@ -2,12 +2,25 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {setImmediate} from 'node:timers/promises';
 import {isCancelledError, InfiniteQueryObserver, QueryClient, QueryObserver} from '@tanstack/react-query';
-import {getStoredRoleId, setStoredContextId, setStoredRoleId, setStoredTenantId} from './contextId.ts';
+import {getStoredRoleId, resolveApiScope, shouldUseTenantContext, setStoredContextId, setStoredRoleId, setStoredTenantId} from './contextId.ts';
 import {bindQueryScope, getQueryScopeSnapshot, scopedPagePlaceholder, scopedQueryKey, scopedQueryOptions, subscribeQueryScope} from './queryScope.ts';
 
 const scopeA = ['tenant-a', 'role-a', 'context-a'];
 const scopeB = ['tenant-b', 'role-b', 'context-b'];
 const resourceKey = ['managed-mcp-servers'];
+
+test('workspace APIs and query strings cannot inherit a global prefix by substring collision', () => {
+  for (const endpoint of ['/common/tenants/current-resources', '/common/tenants/current-resources/picker',
+    '/common/tenants/current-profile', '/common/tenants/current-resource-configuration',
+    '/dna/metadata?redirect=/common/tenants/current', 'https://app.example/common/tenants/current-profile']) {
+    assert.equal(resolveApiScope(endpoint), 'tenant', endpoint); assert.equal(shouldUseTenantContext(endpoint), true, endpoint);
+  }
+  for (const endpoint of ['/common/tenants/current', '/common/tenants/current?tenantId=x',
+    '/common/tenants/current-roles', '/common/users/picker/items', '/common/i18n/messages/mapping']) {
+    assert.equal(resolveApiScope(endpoint), 'global', endpoint);
+  }
+  assert.equal(resolveApiScope('/common/resources/service-routes'), 'tenant', 'specific tenant exception precedes broad global directory');
+});
 
 test('a role selected in one workspace is never reused in another workspace', t => {
   setup(t);

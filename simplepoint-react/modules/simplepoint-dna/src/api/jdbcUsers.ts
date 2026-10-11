@@ -1,6 +1,7 @@
 import api from '@/api';
 import {get, post, put} from '@simplepoint/shared/api/methods';
 import type {Page} from '@simplepoint/shared/types/request';
+import type {RequestOptions} from '@simplepoint/shared/api/client';
 
 const {baseUrl} = api['platform.dna-federation-jdbc-users'];
 
@@ -39,12 +40,12 @@ export async function fetchGrants(userId: string) {
   return await get<JdbcUserGrant[]>(`${baseUrl}/grants`, {userId});
 }
 
-export async function fetchAuthorize(data: JdbcUserDataSourceAssignDto) {
-  return await post<JdbcUserGrant[]>(`${baseUrl}/authorize`, data);
+export async function fetchAuthorize(data: JdbcUserDataSourceAssignDto, options?: RequestOptions) {
+  return await post<JdbcUserGrant[]>(`${baseUrl}/authorize`, data, options);
 }
 
-export async function fetchUnauthorized(data: JdbcUserDataSourceAssignDto) {
-  return await post(`${baseUrl}/unauthorized`, data);
+export async function fetchUnauthorized(data: JdbcUserDataSourceAssignDto, options?: RequestOptions) {
+  return await post(`${baseUrl}/unauthorized`, data, options);
 }
 
 export async function updateGrantPermissions(grantId: string, permissions: string[]) {

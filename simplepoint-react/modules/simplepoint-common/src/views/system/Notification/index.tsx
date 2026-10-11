@@ -1,49 +1,41 @@
 import api from '@/api';
 import SimpleTable from '@simplepoint/components/SimpleTable';
+import TableActions from '@simplepoint/components/Table/Actions';
 import type {TableButtonProps} from '@simplepoint/components/Table';
 import {post} from '@simplepoint/shared/api/methods';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {App as AntdApp, Typography} from 'antd';
-import {useCallback, useMemo, useState} from 'react';
+import {Alert, Modal, Typography} from 'antd';
+import {useCallback, useMemo, useRef, useState} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
+import {useSchema} from '@simplepoint/shared/hooks/useSchema';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
+import {usePageRetention} from '@simplepoint/shared/page/hooks';
+import {scopedQueryKey} from '@simplepoint/shared/api/queryScope';
+import {canNotificationAction, notificationDate, notificationFormData, notificationFormUi, usableNotification,
+  type NotificationAction, type NotificationRow} from './model';
 
 const {Text} = Typography;
 const baseConfig = api['system.notifications'];
 
-type NotificationRow = {
-  id: string;
-  title?: string;
-  content?: string;
-  category?: string;
-  priority?: string;
-  audienceType?: string;
-  audienceId?: string;
-  status?: 'DRAFT' | 'PUBLISHED' | 'REVOKED';
-  publishAt?: string;
-  expireAt?: string;
-};
-
-type NotificationAction = 'publish' | 'revoke' | 'duplicate';
-
-const displayDate = (value?: string) => value ? new Date(value).toLocaleString() : '-';
+type Confirmation = {action: NotificationAction; row: NotificationRow};
 
 const NotificationView = () => {
-  const {message, modal} = AntdApp.useApp();
   const {t} = useI18n();
-  const [tableKey, setTableKey] = useState(0);
+  const scope = useQueryScope(), client = useQueryClient(), operation = useOperationScope(baseConfig.baseUrl);
+  const permissions = useSchema(baseConfig.baseUrl, {staleTime: 30_000, retry: false});
+  const [pending, setPending] = useState<Confirmation>(), pendingRef = useRef<Confirmation | undefined>(undefined);
+  const [error, setError] = useState<string>(), [notice, setNotice] = useState<string>();
+  const [rootLocked, setRootLocked] = useState(false), rootLockRef = useRef(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<NotificationRow | null>(null);
+  const blocked = !!pending || operation.busy || rootLocked || drawerOpen;
+  usePageRetention(!blocked, blocked);
+  const rootInteraction = useCallback((locked: boolean) => {rootLockRef.current = locked; setRootLocked(locked);}, []);
 
-  const lifecycleAction = useCallback((
-    action: NotificationAction,
-    rows: NotificationRow[],
-  ) => {
-    const row = rows[0];
-    if (!row?.id) return;
-    const config = {
+  const config = useMemo(() => ({
       publish: {
-        expectedStatus: 'DRAFT',
-        invalidMessage: t('notifications.message.publishDraftOnly', '仅草稿通知可以发布'),
         title: t('notifications.confirm.publish.title', '发布系统通知'),
         content: t(
           'notifications.confirm.publish.content',
@@ -54,8 +46,6 @@ const NotificationView = () => {
         failureMessage: t('notifications.message.publishFailed', '通知发布失败'),
       },
       revoke: {
-        expectedStatus: 'PUBLISHED',
-        invalidMessage: t('notifications.message.revokePublishedOnly', '仅已发布通知可以撤回'),
         title: t('notifications.confirm.revoke.title', '撤回系统通知'),
         content: t(
           'notifications.confirm.revoke.content',
@@ -66,11 +56,6 @@ const NotificationView = () => {
         failureMessage: t('notifications.message.revokeFailed', '通知撤回失败'),
       },
       duplicate: {
-        expectedStatus: 'REVOKED',
-        invalidMessage: t(
-          'notifications.message.duplicateRevokedOnly',
-          '仅已撤回通知可以复制为新草稿',
-        ),
         title: t('notifications.confirm.duplicate.title', '复制为新草稿'),
         content: t(
           'notifications.confirm.duplicate.content',
@@ -84,47 +69,44 @@ const NotificationView = () => {
         failureMessage: t('notifications.message.duplicateFailed', '创建新草稿失败'),
       },
     } satisfies Record<NotificationAction, {
-      expectedStatus: NotificationRow['status'];
-      invalidMessage: string;
       title: string;
       content: string;
       okText: string;
       successMessage: string;
       failureMessage: string;
-    }>;
-    const current = config[action];
-    if (row.status !== current.expectedStatus) {
-      message.warning(current.invalidMessage);
-      return;
-    }
-    modal.confirm({
-      title: current.title,
-      content: current.content,
-      okText: current.okText,
-      cancelText: t('cancel', '取消'),
-      okButtonProps: action === 'revoke' ? {danger: true} : undefined,
-      onOk: async () => {
-        try {
-          const result = await post<NotificationRow>(
-            `${baseConfig.baseUrl}/${row.id}/${action}`,
-            {},
-          );
-          if (action === 'duplicate') {
-            setEditingRecord(result);
-            setDrawerOpen(true);
-          }
-          message.success(current.successMessage);
-          setTableKey((current) => current + 1);
-        } catch (error) {
-          message.error(resolveApiErrorMessage(
-            error,
-            current.failureMessage,
-          ));
-          throw error;
-        }
-      },
-    });
-  }, [message, modal, t]);
+    }>), [t]);
+  const lifecycleAction = useCallback((action: NotificationAction, rows: NotificationRow[]) => {
+    if (!operation.current() || !operation.isSelected() || operation.isBusy() || rootLockRef.current || pendingRef.current
+      || permissions.error || !permissions.data?.buttons.some(button => button.key === action)
+      || rows.length !== 1 || !canNotificationAction(action, rows[0])) return;
+    const captured = {action, row: structuredClone(rows[0])}; pendingRef.current = captured; setPending(captured);
+    setError(undefined); setNotice(undefined);
+  }, [operation.current, operation.isSelected, operation.isBusy, permissions.data, permissions.error]);
+  const close = () => {
+    if (!operation.current() || !operation.isSelected() || operation.isBusy()) return;
+    pendingRef.current = undefined; setPending(undefined); setError(undefined);
+  };
+  const confirm = async () => {
+    const captured = pendingRef.current;
+    if (!captured || permissions.error || !permissions.data?.buttons.some(button => button.key === captured.action)
+      || !canNotificationAction(captured.action, captured.row)) return;
+    const request = operation.begin(); if (!request) return; setError(undefined);
+    try {
+      const result = await post<NotificationRow>(`${baseConfig.baseUrl}/${encodeURIComponent(captured.row.id)}/${captured.action}`,
+        {}, {signal: request.signal, notifyOnError: false});
+      if (!operation.current(request.signal) || pendingRef.current !== captured) return;
+      pendingRef.current = undefined; setPending(undefined);
+      setNotice(config[captured.action].successMessage);
+      if (captured.action === 'duplicate' && usableNotification(result) && result.status === 'DRAFT'
+        && permissions.data.buttons.some(button => button.key === 'edit')) {
+        rootLockRef.current = true; setRootLocked(true);
+        setEditingRecord(structuredClone(result)); setDrawerOpen(true);
+      }
+      // Invalidate the existing scoped controller, never remount the table or reset its query/page.
+      void client.invalidateQueries({queryKey: scopedQueryKey(scope, [baseConfig.baseUrl, baseConfig.name])});
+    } catch (reason) {if (operation.current(request.signal)) setError(resolveApiErrorMessage(reason, config[captured.action].failureMessage));}
+    finally {operation.finish(request);}
+  };
 
   const customButtonEvents = useMemo<Record<string, (
     selectedRowKeys: React.Key[],
@@ -141,24 +123,25 @@ const NotificationView = () => {
     _selectedRowKeys: React.Key[],
     selectedRows: NotificationRow[],
   ) => {
+    if (!operation.selected || pendingRef.current || operation.isBusy() || rootLockRef.current || permissions.error || !permissions.data) return true;
     if (selectedRows.length === 0) return false;
     switch (button.key) {
       case 'edit':
       case 'publish':
-        return selectedRows.some((row) => row.status !== 'DRAFT');
+        return selectedRows.some((row) => !canNotificationAction('publish', row));
       case 'revoke':
-        return selectedRows.some((row) => row.status !== 'PUBLISHED');
+        return selectedRows.some((row) => !canNotificationAction('revoke', row));
       case 'duplicate':
-        return selectedRows.some((row) => row.status !== 'REVOKED');
+        return selectedRows.some((row) => !canNotificationAction('duplicate', row));
       case 'delete':
       case 'del':
         return selectedRows.some(
-          (row) => row.status !== 'DRAFT' && row.status !== 'REVOKED',
+          (row) => !usableNotification(row) || row.status !== 'DRAFT' && row.status !== 'REVOKED',
         );
       default:
         return false;
     }
-  }, []);
+  }, [operation.selected, operation.isBusy, permissions.error, permissions.data, rootLocked, pending]);
 
   const formSchemaTransform = useCallback((schema: any) => {
     const next = structuredClone(schema ?? {});
@@ -183,8 +166,13 @@ const NotificationView = () => {
     if (properties.audienceId) {
       properties.audienceId.description = t(
         'notifications.description.audienceId',
-        '目标类型为租户或用户时必填，填写对应租户 ID 或用户 ID。',
+        '目标类型为租户或用户时，请选择对应的租户或用户。',
       );
+      properties.audienceId.minLength = Math.max(1, Number(properties.audienceId.minLength) || 0);
+      if (properties.audienceType) next.allOf = [...(next.allOf ?? []), {
+        if: {properties: {audienceType: {enum: ['TENANT', 'USER']}}, required: ['audienceType']},
+        then: {required: ['audienceId'], properties: {audienceId: {type: 'string', minLength: 1}}},
+      }];
     }
     return next;
   }, [t]);
@@ -200,14 +188,26 @@ const NotificationView = () => {
     priority: {width: 110},
     audienceType: {width: 120},
     status: {width: 110},
-    publishAt: {width: 180, render: displayDate},
-    expireAt: {width: 180, render: displayDate},
+    publishAt: {width: 180, render: notificationDate},
+    expireAt: {width: 180, render: notificationDate},
   }), []);
+  const formUiSchema = useCallback((draft: Record<string, unknown>) => {
+    const field = permissions.data?.schema.properties?.audienceId;
+    const readable = !!field && typeof field === 'object' && !['MASKED', 'HIDDEN'].includes(String(field['x-field-access']));
+    return notificationFormUi(draft, readable, readable && typeof field === 'object' && field.readOnly !== true);
+  }, [permissions.data?.schema.properties]);
 
   return (
-    <SimpleTable
-      key={tableKey}
+    <div style={{height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column'}}>
+    {notice && <Alert className="notification-operation-notice" type="success" showIcon title={notice} style={{marginBottom: 12}}/>}
+    {permissions.error && <Alert className="notification-permission-error" type="error" showIcon title={t('table.schemaLoadFail', '页面结构加载失败，请稍后重试。')}
+      action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', sort: 0, text: t('table.retry', '重试'),
+        disabled: !operation.selected, onClick: () => void permissions.refetch()}]}/>}/>}
+    <div style={{flex: 1, minHeight: 0}}><SimpleTable
       {...baseConfig}
+      schemaStaleTime={30_000} allowTabEviction={!pending && !operation.busy} confirmDiscard
+      onInteractionLockChange={rootInteraction}
+      rowSelection={{isRowSelectable: () => !pendingRef.current && !operation.isBusy() && !rootLockRef.current}}
       customButtonEvents={customButtonEvents}
       isButtonDisabled={isButtonDisabled}
       drawerOpen={drawerOpen}
@@ -218,9 +218,24 @@ const NotificationView = () => {
       editingRecord={editingRecord}
       onEditingRecordChange={setEditingRecord}
       formSchemaTransform={formSchemaTransform}
+      formUiSchema={formUiSchema} formDataTransform={notificationFormData}
       columnOverrides={columnOverrides}
-    />
+      submitRefreshTargets={{page: true, schema: false}} deleteRefreshTargets={{page: true, schema: false}}
+    /></div>
+    {pending && operation.selected && <Modal rootClassName="notification-operation-confirm" open destroyOnHidden maskClosable={false}
+      closable={!operation.busy} keyboard={!operation.busy} title={config[pending.action].title} onCancel={close}
+      footer={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+        {key: 'cancel', sort: 0, text: t('action.cancel', '取消'), disabled: operation.busy, onClick: close},
+        {key: 'confirm', sort: 1, type: 'primary', danger: pending.action === 'revoke', text: config[pending.action].okText,
+          loading: operation.busy, disabled: !!permissions.error || !permissions.data?.buttons.some(button => button.key === pending.action),
+          onClick: () => void confirm()},
+      ]}/>}>
+      <Typography.Paragraph>{config[pending.action].content}</Typography.Paragraph>
+      <Typography.Text>{pending.row.title}</Typography.Text>
+      {error && <Alert className="notification-operation-error" type="error" showIcon title={error}/>}
+    </Modal>}
+    </div>
   );
 };
 
-export default NotificationView;
+export default function NotificationPage() {return <NotificationView key={JSON.stringify(useQueryScope())}/>;}

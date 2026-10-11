@@ -27,6 +27,7 @@ import ColumnFilter, {ColumnFilterType} from './ColumnFilter';
 import {parseColumnFilter} from './filters';
 import QueryTools from './QueryTools';
 import {pageSizeOptions} from './pagination';
+import {visibleKeySignature} from './visibleKeys';
 import {encodeDocument, readDocument, validateView, type QueryContract} from './query';
 import ColumnSettings, {
   ColumnFixed,
@@ -50,6 +51,7 @@ export type TableButtonProps = ButtonProps & {
   argumentMaxSize?: number;
   argumentMinSize?: number;
   text?: string;
+  iconOnly?: boolean;
   color?: string;
   variant?: string;
 };
@@ -68,7 +70,9 @@ export interface TableProps<T> {
   /** Opt-in for large flat pages; never enabled for expandable or variable-height rows. */
   virtual?: boolean;
   onChange?: (pagination: any, filters?: any, sorter?: any, extra?: any) => void;
-  rowSelection?: { selectedKeys?: React.Key[] };
+  rowSelection?: { selectedKeys?: React.Key[]; isRowSelectable?: (row: T) => boolean };
+  /** Successful owner mutations can invalidate a selection without remounting table preferences. */
+  selectionResetKey?: number;
   onSelectionChange?: (selectedRowKeys: React.Key[], selectedRows: T[]) => void;
   onRowDoubleClick?: (record: T, key: React.Key) => void;
   onRowClick?: (record: T, key: React.Key) => void;
@@ -84,34 +88,6 @@ export interface TableProps<T> {
   /** Row controls follow the first visible business column after user column preferences. */
   rowLeadingExtra?: (record: T) => React.ReactNode;
 }
-
-const parseVisibleTriState = (val: any): boolean | undefined => {
-  if (val === true || val === 'true' || val === 1 || val === '1') return true;
-  if (val === false || val === 'false' || val === 0 || val === '0') return false;
-  return undefined;
-};
-
-const readVisibleFlag = (schema: any): boolean | undefined => {
-  if (!schema) return undefined;
-  const legacy1 = schema?.['x-ui']?.['x-list-visible'];
-  return (
-    parseVisibleTriState(legacy1)
-  );
-};
-
-const computeVisibleKeys = (properties: Record<string, any>): string[] => {
-  const keys = Object.keys(properties);
-  let anyDeclared = false;
-  const visible: string[] = [];
-  for (const key of keys) {
-    const flag = readVisibleFlag(properties[key]);
-    if (flag !== undefined) {
-      anyDeclared = true;
-      if (flag) visible.push(key);
-    }
-  }
-  return anyDeclared ? visible : keys;
-};
 
 const resolveI18nLabel = (value: unknown): string => {
   if (typeof value !== 'string' || !value.startsWith('i18n:')) return String(value ?? '');
@@ -298,7 +274,8 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     return (s as any)?.properties ?? s ?? {};
   }, [props.schema]);
 
-  const visibleKeys = useMemo(() => computeVisibleKeys(properties), [properties]);
+  const columnIdentity = useMemo(() => visibleKeySignature(properties), [properties]);
+  const visibleKeys = useMemo<string[]>(() => JSON.parse(columnIdentity), [columnIdentity]);
 
   // Keys are scoped by userId so each user gets independent settings on the same browser.
   const storageKey = useMemo(() => {
@@ -589,7 +566,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
         const baseTitle = (schemaDef as any)?.title ?? key;
         const scalarType = schemaScalarType(schemaDef);
         const isBoolean = scalarType === 'boolean';
-        const isNumber = scalarType === 'number' || scalarType === 'integer';
+        const isNumber = scalarType === 'number' || scalarType === 'integer' || !!(schemaDef as any)?.['x-decimal'];
         const align = key === 'icon' ? 'center' : (isNumber ? 'right' : undefined);
         const dictionaryCode = resolveDictionaryCode(schemaDef);
         const resolvedOptions = resolveDictionaryOptions(schemaDef);
@@ -642,6 +619,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
         // 推断列类型，传给 ColumnFilter 以决定操作符分组
         const schemaType = (schemaDef as any)?.type;
         const columnFilterType: ColumnFilterType = (() => {
+          if ((schemaDef as any)?.['x-decimal'] || contract?.fields[key]?.javaType === 'BigDecimal') return 'number';
           if (schemaType === 'number') return 'number';
           if (schemaType === 'integer') return 'integer';
           if (schemaType === 'boolean') return 'boolean';
@@ -828,6 +806,12 @@ const App = <T extends object = any>(props: TableProps<T>) => {
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>(props.rowSelection?.selectedKeys ?? []);
   const [selectedRows, setSelectedRows] = useState<T[]>([]);
+  const previousSelectionReset = useRef(props.selectionResetKey);
+  useEffect(() => {
+    if (previousSelectionReset.current === props.selectionResetKey) return;
+    previousSelectionReset.current = props.selectionResetKey;
+    setSelectedRowKeys([]); setSelectedRows([]); props.onSelectionChange?.([], []);
+  }, [props.selectionResetKey, props.onSelectionChange]);
 
   useEffect(() => {
     if (props.rowSelection?.selectedKeys) {
@@ -854,6 +838,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
 
   const rowSelection: TableRowSelection<T> = {
     selectedRowKeys,
+    getCheckboxProps: row => ({disabled: props.rowSelection?.isRowSelectable?.(row) === false}),
     onChange: (keys: React.Key[], rows: T[]) => onSelectChange(keys, rows),
   };
 
@@ -956,7 +941,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           onChange={props.onChange}
           onRow={record => ({
             onClick: event => {
-              if (!isRowSelectionClick(event)) return;
+              if (!isRowSelectionClick(event) || props.rowSelection?.isRowSelectable?.(record) === false) return;
               const key = keyOfRecord(record);
               const keys = selectedRowKeys.includes(key)
                 ? selectedRowKeys.filter(selected => selected !== key) : [...selectedRowKeys, key];
@@ -964,7 +949,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
               props.onRowClick?.(record, key);
             },
             onDoubleClick: event => {
-              if (!props.onRowDoubleClick) return;
+              if (!props.onRowDoubleClick || props.rowSelection?.isRowSelectable?.(record) === false) return;
               const target = event.target as HTMLElement | null;
               if (target?.closest('button, a, input, textarea, select, [role="button"], .ant-checkbox-wrapper')) {
                 return;

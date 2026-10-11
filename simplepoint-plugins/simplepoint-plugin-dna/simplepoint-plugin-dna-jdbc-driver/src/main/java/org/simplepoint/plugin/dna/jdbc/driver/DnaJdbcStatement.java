@@ -18,8 +18,9 @@ import java.util.List;
  *
  * <p>Supports both read queries (SELECT), DML statements (INSERT, UPDATE,
  * DELETE, MERGE/UPSERT), and DDL statements (CREATE, ALTER, DROP, TRUNCATE).
- * DML and DDL are pushed directly to the physical database through the DNA
- * gateway without Calcite optimization.
+ * Standard INSERT, UPDATE and DELETE use Calcite's JDBC adapter. MERGE,
+ * UPSERT, DML outside Calcite's supported grammar, and DDL use the physical
+ * database via the DNA gateway.
  */
 class DnaJdbcStatement implements Statement {
 
@@ -105,12 +106,9 @@ class DnaJdbcStatement implements Statement {
    */
   protected int doExecuteUpdate(final String sql, final List<Object> parameters) throws SQLException {
     closeCurrentResultSet();
-    return withTimeoutGuard("执行", () -> {
-      DnaJdbcModels.UpdateResult result =
-          connection.client().executeUpdate(connection.currentCatalog(), sql, connection.currentSchema(), parameters);
-      lastUpdateCount = result != null && result.affectedRows() != null ? result.affectedRows().intValue() : 0;
-      return lastUpdateCount;
-    });
+    throw new SQLFeatureNotSupportedException(
+        "DNA JDBC write statements are disabled; use the DNA Runtime Record API"
+    );
   }
 
   protected int doExecuteDdl(final String sql) throws SQLException {
@@ -118,22 +116,18 @@ class DnaJdbcStatement implements Statement {
   }
 
   /**
-   * Executes a DDL statement (CREATE, ALTER, DROP, TRUNCATE, etc.)
-   * by pushing it directly to the physical database through the gateway.
+   * Rejects direct DDL and guides callers to the versioned Runtime publication API.
    *
-   * @param sql the DDL SQL statement
-   * @param parameters bind parameters for server-side prepared execution (may be {@code null})
-   * @return affected rows (typically 0 for DDL)
-   * @throws SQLException if execution fails
+   * @param sql the rejected DDL SQL statement
+   * @param parameters unused bind parameters
+   * @return never returns normally
+   * @throws SQLException always, because the federation JDBC contract is read-only
    */
   protected int doExecuteDdl(final String sql, final List<Object> parameters) throws SQLException {
     closeCurrentResultSet();
-    return withTimeoutGuard("执行", () -> {
-      DnaJdbcModels.UpdateResult result =
-          connection.client().executeDdl(connection.currentCatalog(), sql, connection.currentSchema(), parameters);
-      lastUpdateCount = result != null && result.affectedRows() != null ? result.affectedRows().intValue() : 0;
-      return lastUpdateCount;
-    });
+    throw new SQLFeatureNotSupportedException(
+        "DNA JDBC DDL is disabled; use the DNA Runtime schema publication API"
+    );
   }
 
   /**

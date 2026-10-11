@@ -4,7 +4,8 @@ import 'antd/dist/reset.css';
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {HashRouter, Routes} from 'react-router';
-import {App as AntApp, Button, ConfigProvider, Modal, Result, theme} from 'antd';
+import {App as AntApp, ConfigProvider, Modal, Result, theme} from 'antd';
+import TableActions from '@simplepoint/components/Table/Actions';
 import AntTable from '@simplepoint/components/DataTable';
 import {QuestionCircleOutlined} from '@simplepoint/shared/types/icon';
 
@@ -273,9 +274,8 @@ const App: React.FC = () => {
                                             : t('error.requestFailed', '请求失败')
                                     }
                                     extra={(
-                                        <Button type="primary" onClick={retryBootstrap}>
-                                            {t('action.retry', '重试')}
-                                        </Button>
+                                        <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', sort: 0,
+                                            type: 'primary', text: t('action.retry', '重试'), onClick: retryBootstrap}]}/>
                                     )}
                                 />
                             </div>

@@ -53,6 +53,9 @@ class TenantMemberQueryHttpTest {
   SessionFactory factory;
   Session em;
   MockMvc mvc;
+  org.springframework.web.context.support.AnnotationConfigWebApplicationContext web;
+  TenantMemberServiceImpl service;
+  ResourceAuthorizationVersionService versions;
   AuthorizationContext context;
   Tenant tenant;
   Organization organization;
@@ -67,6 +70,7 @@ class TenantMemberQueryHttpTest {
         .applySetting("hibernate.hbm2ddl.auto", "create-drop").build())
         .addAnnotatedClass(User.class).addAnnotatedClass(Tenant.class)
         .addAnnotatedClass(TenantUserRelevance.class).addAnnotatedClass(Organization.class)
+        .addAnnotatedClass(org.simplepoint.security.entity.UserRoleRelevance.class)
         .buildMetadata().buildSessionFactory();
     em = factory.openSession(); em.beginTransaction();
     tenant = new Tenant(); tenant.setName("current"); tenant.setTenantType(TenantType.ORGANIZATION);
@@ -88,17 +92,25 @@ class TenantMemberQueryHttpTest {
     var generator = config.schemaGenerator(Set.of(config.openApiModule(), config.jacksonModule(), config.javaxValidationModule()));
     when(details.getDialect(JsonSchemaGenerator.class)).thenReturn(config.defaultJsonSchemaGenerator(generator));
     when(details.getDialect(JsonSchemaDetailsService.class)).thenReturn(mock(JsonSchemaDetailsService.class));
-    mvc = MockMvcBuilders.standaloneSetup(new TenantMemberController(
-        new TenantMemberServiceImpl(em, mock(ResourceAuthorizationVersionService.class)), details))
-        .setControllerAdvice(new GlobalExceptionHandler())
-        .setMessageConverters(new org.springframework.http.converter.json.JacksonJsonHttpMessageConverter())
-        .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver()).build();
+    versions = mock(ResourceAuthorizationVersionService.class);
+    service = new TenantMemberServiceImpl(em, versions);
+    web = new org.springframework.web.context.support.AnnotationConfigWebApplicationContext();
+    web.setServletContext(new org.springframework.mock.web.MockServletContext());
+    web.register(PluginWebConfiguration.class);
+    web.addBeanFactoryPostProcessor(beans -> {
+      beans.registerSingleton("members", service);
+      beans.registerSingleton("details", details);
+    });
+    web.refresh();
+    mvc = MockMvcBuilders.webAppContextSetup(web).build();
   }
 
-  AuthorizationContext context() {
+  AuthorizationContext context() { return context(Set.of("users.view", "organizations.view", "organizations.members.remove")); }
+
+  AuthorizationContext context(Set<String> resources) {
     var result = new AuthorizationContext(); result.setScopeType(AuthorizationScopeType.TENANT);
     result.setUserId(owner.getId()); result.setActorRole(AuthorizationActorRole.TENANT_OWNER);
-    result.setIsAdministrator(false); result.setResources(Set.of("users.view"));
+    result.setIsAdministrator(false); result.setResources(resources);
     result.setAttributes(Map.of("X-Tenant-Id", tenant.getId()));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, result);
     return result;
@@ -115,10 +127,42 @@ class TenantMemberQueryHttpTest {
 
   @AfterEach
   void cleanup() {
+    if (web != null) web.close();
     ResourcePolicyContext.clear();
     RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
     if (em != null) {if (em.getTransaction().isActive()) em.getTransaction().rollback(); em.close();}
     if (factory != null) factory.close();
+  }
+
+  @org.springframework.context.annotation.Configuration(proxyBeanMethods = false)
+  @org.springframework.web.servlet.config.annotation.EnableWebMvc
+  static class PluginWebConfiguration implements org.springframework.web.servlet.config.annotation.WebMvcConfigurer {
+    @org.springframework.context.annotation.Bean
+    TenantMemberController memberController(TenantMemberServiceImpl members, DetailsProviderService details) {
+      return new TenantMemberController(members, details);
+    }
+    @org.springframework.context.annotation.Bean
+    GlobalExceptionHandler errors() { return new GlobalExceptionHandler(); }
+    @org.springframework.context.annotation.Bean
+    org.simplepoint.plugin.webmvc.handler.ServletMappingPluginInstanceHandler pluginMapping(
+        org.springframework.context.ApplicationContext context) {
+      var mapping = new org.simplepoint.plugin.webmvc.handler.ServletMappingPluginInstanceHandler(
+          new org.simplepoint.plugin.spring.handle.SpringBeanPluginInstanceHandler(context));
+      mapping.setOrder(-1);
+      return mapping;
+    }
+    @org.springframework.context.annotation.Bean
+    org.springframework.web.servlet.handler.MappedInterceptor resourcePermissions() throws Exception {
+      var catalog = new org.simplepoint.security.oauth2.resourceserver.scope.ClasspathResourceScopeRegistry(new ObjectMapper());
+      return new org.simplepoint.security.oauth2.resourceserver.config.ResourceServerAutoConfiguration()
+          .resourceScopeInterceptor(catalog);
+    }
+    @Override public void addArgumentResolvers(List<org.springframework.web.method.support.HandlerMethodArgumentResolver> resolvers) {
+      resolvers.add(new PageableHandlerMethodArgumentResolver());
+    }
+    @Override public void configureMessageConverters(List<org.springframework.http.converter.HttpMessageConverter<?>> converters) {
+      converters.add(new org.springframework.http.converter.json.JacksonJsonHttpMessageConverter());
+    }
   }
 
   @Test
@@ -134,7 +178,7 @@ class TenantMemberQueryHttpTest {
     context.setResources(Set.of("users.view", "organizations.view"));
     context.setResourceDataScopes(Map.of("organizations.view",
         new ResourceDataScope("CUSTOM", Set.of(organization.getId()), false)));
-    ResourcePolicyContext.set("organizations.view");
+
 
     mvc.perform(get("/tenant-members/by-organization").param("orgId", organization.getId())
             .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
@@ -153,7 +197,7 @@ class TenantMemberQueryHttpTest {
   void explicitMemberPolicyFiltersRowsAndCountEvenForAdministrator() throws Exception {
     context.setIsAdministrator(true);
     context.setResourceDataScopes(Map.of("users.view", new ResourceDataScope("SELF", Set.of(), false)));
-    ResourcePolicyContext.set("users.view");
+
     mvc.perform(get("/tenant-members").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
         .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
         .andExpect(jsonPath("$.content[0].name").value("Alpha"));
@@ -163,7 +207,7 @@ class TenantMemberQueryHttpTest {
   void memberExpressionUsesTheSameProjectionForRowsAndCounts() throws Exception {
     context.setResourceDataScopes(Map.of("users.view", new ResourceDataScope("DENY", Set.of(), false,
         List.of("name CONTAINS \"Alpha\" AND orgId IS NOT NULL"))));
-    ResourcePolicyContext.set("users.view");
+
     mvc.perform(get("/tenant-members").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
         .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
         .andExpect(jsonPath("$.content[0].userId").value(owner.getId()));
@@ -236,6 +280,81 @@ class TenantMemberQueryHttpTest {
                 + membership.getRevision() + ",\"userType\":\"UNKNOWN\"}")
             .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)));
     assertInstanceOf(IllegalArgumentException.class, invalidType.getCause());
+  }
+
+  @Test
+  void memberEditRetainsReadonlyOrganizationAndRejectsCapturedStaleRevision() throws Exception {
+    context.setResourceFieldPermissions(Map.of("users.view", Map.of(
+        TenantUserRelevance.class.getName() + "#orgId", "VISIBLE")));
+    var relation = membership(owner.getId());
+    Long capturedRevision = relation.getRevision();
+    var command = new org.simplepoint.plugin.rbac.core.api.pojo.command.TenantMemberCommand(
+        null, organization.getId(), null, capturedRevision, "EXTERNAL");
+    mvc.perform(get("/tenant-members/schema").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.schema.properties.orgId.readOnly").value(true));
+    mvc.perform(put("/tenant-members/" + owner.getId()).contentType("application/json")
+        .content(new ObjectMapper().writeValueAsString(command))
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)).andExpect(status().isOk());
+    em.flush();
+    assertEquals(organization.getId(), relation.getOrgId());
+    assertEquals("EXTERNAL", relation.getUserType());
+    mvc.perform(put("/tenant-members/" + owner.getId()).contentType("application/json")
+        .content(new ObjectMapper().writeValueAsString(command))
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("MEMBER_CHANGED"));
+    var clearing = assertThrows(jakarta.servlet.ServletException.class, () -> mvc.perform(
+        put("/tenant-members/" + owner.getId()).contentType("application/json")
+          .content(new ObjectMapper().writeValueAsString(new org.simplepoint.plugin.rbac.core.api.pojo.command.TenantMemberCommand(
+              null, null, null, relation.getRevision(), null)))
+          .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)));
+    assertInstanceOf(AccessDeniedException.class, clearing.getCause());
+    assertEquals(organization.getId(), relation.getOrgId());
+  }
+
+  @Test
+  void memberRoleCapabilityRequiresBothTenantManagementAndActualAssignmentAuthority() throws Exception {
+    mvc.perform(get("/tenant-members/capabilities").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.manage").value(true))
+        .andExpect(jsonPath("$.configureRoles").value(false));
+    context = context(Set.of("users.view", "users.config.role"));
+    mvc.perform(get("/tenant-members/capabilities").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.configureRoles").value(true));
+    var viewer = new AuthorizationContext(); viewer.setScopeType(AuthorizationScopeType.TENANT);
+    viewer.setUserId("member-viewer"); viewer.setActorRole(AuthorizationActorRole.TENANT_MEMBER);
+    viewer.setIsAdministrator(false); viewer.setResources(Set.of("users.view", "users.config.role"));
+    viewer.setAttributes(Map.of("X-Tenant-Id", tenant.getId()));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, viewer);
+    mvc.perform(get("/tenant-members/capabilities").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, viewer))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.manage").value(false))
+        .andExpect(jsonPath("$.configureRoles").value(false));
+  }
+
+  @Test
+  void tenantMemberRemovalDeletesOnlyCurrentMembershipAndTenantRolesNotGlobalAccountOrOtherTenants() throws Exception {
+    var user = member("SharedMember", tenant.getId(), organization.getId(), true, false, false);
+    var otherMember = new TenantUserRelevance(); otherMember.setTenantId("outside"); otherMember.setUserId(user.getId());
+    otherMember.setEnabled(true); em.persist(otherMember);
+    var currentRole = new org.simplepoint.security.entity.UserRoleRelevance(); currentRole.setTenantId(tenant.getId());
+    currentRole.setUserId(user.getId()); currentRole.setRoleId("current-role"); em.persist(currentRole);
+    var otherRole = new org.simplepoint.security.entity.UserRoleRelevance(); otherRole.setTenantId("outside");
+    otherRole.setUserId(user.getId()); otherRole.setRoleId("other-role"); em.persist(otherRole);
+    var globalRole = new org.simplepoint.security.entity.UserRoleRelevance(); globalRole.setTenantId("__platform__"); globalRole.setUserId(user.getId());
+    globalRole.setRoleId("global-role"); em.persist(globalRole); em.flush();
+    String memberId = membership(user.getId()).getId();
+    mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/tenant-members/" + user.getId())
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)).andExpect(status().isOk());
+    em.flush(); em.clear();
+    assertNull(em.find(TenantUserRelevance.class, memberId));
+    assertNull(em.find(org.simplepoint.security.entity.UserRoleRelevance.class, currentRole.getId()));
+    assertEquals(user.getId(), em.find(User.class, user.getId()).getId());
+    assertEquals(user.getId(), em.find(TenantUserRelevance.class, otherMember.getId()).getUserId());
+    assertEquals("other-role", em.find(org.simplepoint.security.entity.UserRoleRelevance.class, otherRole.getId()).getRoleId());
+    assertEquals("global-role", em.find(org.simplepoint.security.entity.UserRoleRelevance.class, globalRole.getId()).getRoleId());
+    org.mockito.Mockito.verify(versions).refreshTenant(tenant.getId());
+    var ownerRemoval = assertThrows(jakarta.servlet.ServletException.class, () -> mvc.perform(
+        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/tenant-members/" + owner.getId())
+          .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)));
+    assertInstanceOf(AccessDeniedException.class, ownerRemoval.getCause());
   }
 
   @Test
@@ -327,4 +446,108 @@ class TenantMemberQueryHttpTest {
       assertInstanceOf(AccessDeniedException.class, failure.getCause());
     }
   }
+  private TenantUserRelevance membership(String userId) {
+    return em.createQuery("select m from TenantUserRelevance m where m.userId=:user and m.tenantId=:tenant", TenantUserRelevance.class)
+        .setParameter("user", userId).setParameter("tenant", tenant.getId()).getSingleResult();
+  }
+
+  private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder detach(String userId, String orgId, Long revision) throws Exception {
+    return org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/tenant-members/by-organization/" + userId)
+        .contentType("application/json").content(new ObjectMapper().writeValueAsString(
+            new org.simplepoint.plugin.rbac.core.api.pojo.command.OrganizationMemberRemoval(orgId, revision)))
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+  }
+
+  @Test
+  void removalFromParentDetachesChildMemberAndRetainsTenantAccountAndRoles() throws Exception {
+    var child = new Organization(); child.setCode("child"); child.setName("Child");
+    child.setTenantId(tenant.getId()); child.setParentId(organization.getId()); child.setEnabled(true); em.persist(child);
+    var user = member("Removable", tenant.getId(), child.getId(), true, false, false);
+    var role = new org.simplepoint.security.entity.UserRoleRelevance();
+    role.setTenantId(tenant.getId()); role.setUserId(user.getId()); role.setRoleId("retained-role"); em.persist(role);
+    em.flush();
+    context.setResourceDataScopes(Map.of("organizations.view", new ResourceDataScope("DEPT_AND_BELOW",
+        Set.of(organization.getId(), child.getId()), false)));
+    var relation = membership(user.getId());
+    mvc.perform(detach(user.getId(), organization.getId(), relation.getRevision())).andExpect(status().isOk());
+    em.flush(); em.clear();
+    assertNull(membership(user.getId()).getOrgId());
+    assertEquals(true, membership(user.getId()).getEnabled());
+    assertEquals("INTERNAL", membership(user.getId()).getUserType());
+    assertEquals(user.getId(), em.find(User.class, user.getId()).getId());
+    assertEquals("retained-role", em.find(org.simplepoint.security.entity.UserRoleRelevance.class, role.getId()).getRoleId());
+    org.mockito.Mockito.verify(versions).refreshTenant(tenant.getId());
+    assertNull(ResourcePolicyContext.get());
+    mvc.perform(get("/tenant-members/by-organization").param("orgId", organization.getId())
+        .param("keyword", "Removable").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(0));
+    mvc.perform(get("/tenant-members").param("userId", "equals:" + user.getId())
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1));
+  }
+
+  @Test
+  void removalRejectsStaleRevisionForeignMembershipAndOutOfScopeSource() throws Exception {
+    var relation = membership(owner.getId());
+    mvc.perform(detach(owner.getId(), organization.getId(), relation.getRevision() + 1)).andExpect(status().isConflict());
+    var foreign = em.createQuery("select u from User u where u.nickname='Foreign'", User.class).getSingleResult();
+    var crossTenant = assertThrows(jakarta.servlet.ServletException.class,
+        () -> mvc.perform(detach(foreign.getId(), organization.getId(), 0L)));
+    assertInstanceOf(IllegalArgumentException.class, crossTenant.getCause());
+    var sibling = new Organization(); sibling.setCode("sibling"); sibling.setName("Sibling");
+    sibling.setTenantId(tenant.getId()); sibling.setEnabled(true); em.persist(sibling); em.flush();
+    var wrongParent = assertThrows(jakarta.servlet.ServletException.class,
+        () -> mvc.perform(detach(owner.getId(), sibling.getId(), relation.getRevision())));
+    assertInstanceOf(AccessDeniedException.class, wrongParent.getCause());
+    context.setResourceDataScopes(Map.of("organizations.view", new ResourceDataScope("CUSTOM", Set.of(sibling.getId()), false)));
+    var denied = assertThrows(jakarta.servlet.ServletException.class,
+        () -> mvc.perform(detach(owner.getId(), organization.getId(), relation.getRevision())));
+    assertInstanceOf(AccessDeniedException.class, denied.getCause());
+    assertEquals(organization.getId(), relation.getOrgId());
+    org.mockito.Mockito.verifyNoInteractions(versions);
+  }
+
+  @Test
+  void organizationFieldPolicyControlsSchemaProjectionUpdatesAndRemovalWithoutContextBleed() throws Exception {
+    context.setResourceFieldPermissions(Map.of("organizations.view", Map.of(
+        TenantUserRelevance.class.getName() + "#orgId", "VISIBLE",
+        TenantUserRelevance.class.getName() + "#userType", "HIDDEN",
+        User.class.getName() + "#email", "MASKED")));
+    mvc.perform(get("/tenant-members/by-organization/schema").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.schema.properties.orgId.readOnly").value(true))
+        .andExpect(jsonPath("$.schema.properties.userType").doesNotExist());
+    mvc.perform(get("/tenant-members/by-organization").param("orgId", organization.getId())
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].email").value("***"))
+        .andExpect(jsonPath("$.content[0].userType").doesNotExist());
+    var relation = membership(owner.getId());
+    var denied = assertThrows(jakarta.servlet.ServletException.class,
+        () -> mvc.perform(detach(owner.getId(), organization.getId(), relation.getRevision())));
+    assertInstanceOf(AccessDeniedException.class, denied.getCause());
+    var write = assertThrows(jakarta.servlet.ServletException.class, () -> mvc.perform(
+        put("/tenant-members/by-organization/" + owner.getId()).contentType("application/json")
+          .content(new ObjectMapper().writeValueAsString(new org.simplepoint.plugin.rbac.core.api.pojo.command.TenantMemberCommand(
+              null, organization.getId(), null, relation.getRevision(), "EXTERNAL")))
+          .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)));
+    assertInstanceOf(AccessDeniedException.class, write.getCause());
+    assertNull(ResourcePolicyContext.get());
+    mvc.perform(get("/tenant-members/schema").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.schema.properties.userType").exists());
+    mvc.perform(get("/tenant-members").param("userId", "equals:" + owner.getId())
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].email").value("Alpha@example.test"));
+    assertEquals(organization.getId(), relation.getOrgId());
+    org.mockito.Mockito.verifyNoInteractions(versions);
+  }
+
+  @Test
+  void managerStillNeedsExplicitRemovalAuthority() throws Exception {
+    context = context(Set.of("users.view", "organizations.view"));
+    var relation = membership(owner.getId());
+    var denied = assertThrows(jakarta.servlet.ServletException.class,
+        () -> mvc.perform(detach(owner.getId(), organization.getId(), relation.getRevision())));
+    assertInstanceOf(AccessDeniedException.class, denied.getCause());
+    assertEquals(organization.getId(), relation.getOrgId());
+  }
+
 }

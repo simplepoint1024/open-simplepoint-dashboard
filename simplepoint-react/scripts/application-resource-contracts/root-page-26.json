@@ -1,0 +1,46 @@
+{
+  "content": [
+    {
+      "children": [],
+      "code": "resource.code.520",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-520",
+      "label": "Resource520",
+      "name": "Resource520",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 520,
+      "type": "PAGE"
+    }
+  ],
+  "empty": false,
+  "first": false,
+  "last": true,
+  "number": 26,
+  "numberOfElements": 1,
+  "pageable": {
+    "offset": 520,
+    "pageNumber": 26,
+    "pageSize": 20,
+    "paged": true,
+    "sort": {
+      "empty": false,
+      "sorted": true,
+      "unsorted": false
+    },
+    "unpaged": false
+  },
+  "size": 20,
+  "sort": {
+    "empty": false,
+    "sorted": true,
+    "unsorted": false
+  },
+  "totalElements": 521,
+  "totalPages": 27
+}

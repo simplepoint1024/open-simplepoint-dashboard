@@ -1,0 +1,66 @@
+[
+  {
+    "value": "tenant.approver",
+    "selectable": true
+  },
+  {
+    "value": "部门/审核",
+    "selectable": true
+  },
+  {
+    "value": "review (operations)",
+    "selectable": true
+  },
+  {
+    "value": "tenant-${role}",
+    "selectable": true
+  },
+  {
+    "value": "single'quote",
+    "selectable": true
+  },
+  {
+    "value": "\\path",
+    "selectable": true
+  },
+  {
+    "value": " role ",
+    "selectable": true
+  },
+  {
+    "value": " ",
+    "selectable": true
+  },
+  {
+    "value": "",
+    "selectable": false
+  },
+  {
+    "value": "role,other",
+    "selectable": false
+  },
+  {
+    "value": " leading",
+    "selectable": false
+  },
+  {
+    "value": "trailing ",
+    "selectable": false
+  },
+  {
+    "value": "role\tcontrol",
+    "selectable": false
+  },
+  {
+    "value": "rolecontrol",
+    "selectable": false
+  },
+  {
+    "value": " ",
+    "selectable": false
+  },
+  {
+    "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "selectable": false
+  }
+]

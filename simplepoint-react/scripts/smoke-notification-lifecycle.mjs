@@ -1,0 +1,110 @@
+import assert from 'node:assert/strict';
+
+export async function smokeNotificationLifecycle({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture, reload}) {
+  fixture.enable();
+  const root = '.nb-tab-panel-active [data-resource="/common/system/notifications"]', confirm = '.notification-operation-confirm .ant-modal';
+  const form = '.sp-simple-table-drawer.ant-drawer-open', popup = '.ant-select-dropdown:not(.ant-select-dropdown-hidden)';
+  const dropdown = '.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown';
+  const target = 'notification-520';
+  const select = async id => {
+    const selector = root + ' [data-row-key="' + id + '"] .ant-checkbox-input';
+    await poll(() => evaluate(`!!document.querySelector('${selector}') && !document.querySelector('${root} .ant-spin-spinning')`), 'actual notification source settles');
+    if (!await evaluate(`document.querySelector('${selector}').checked`)) await clickReady(selector);
+  };
+  const hide = async () => {await evaluate(`location.hash='#/profile'`); await poll(() => evaluate(`!!document.querySelector('.nb-tab-panel-active .profile-nav-links') && !document.querySelector('${confirm}') && !document.querySelector('${form}')`), 'all notification overlays belong to their actual page');};
+  const show = () => clickMenu('契约测试 SystemNotification');
+  const action = async label => {await clickText(root + ' button', label); await poll(() => evaluate(`!!document.querySelector('${confirm}')`), 'captured notification confirmation');};
+  const doubleConfirm = async () => {
+    await poll(() => evaluate(`!!document.querySelector('${confirm} .ant-btn-primary') && !document.querySelector('${confirm} .ant-btn-primary').disabled`), 'owned notification confirm becomes available');
+    await evaluate(`(()=>{const button=document.querySelector('${confirm} .ant-btn-primary'),close=document.querySelector('${confirm} .ant-modal-close');button.click();button.click();close?.click();})()`);
+  };
+  const chooseType = async type => {
+    await evaluate(`document.querySelector('${form} #root_audienceType').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
+    await clickText(popup + ' .ant-select-item-option', type);
+  };
+  const search = async keyword => {
+    await poll(() => evaluate(`!!document.querySelector('${form} #root_audienceId')?.closest('.ant-select')`), 'actual lazy audience selector mounts');
+    await evaluate(`document.querySelector('${form} #root_audienceId').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
+    await fill(form + ' #root_audienceId', keyword);
+  };
+  const closeForm = async () => {
+    await clickReady(form + ' .ant-drawer-close');
+    await poll(() => evaluate(`!document.querySelector('${form}') || !!document.querySelector('.sp-simple-table-discard .ant-modal')`), 'real form close/guard');
+    if (await evaluate(`!!document.querySelector('.sp-simple-table-discard .ant-modal')`)) await clickText('.sp-simple-table-discard button', '放弃修改');
+    await poll(() => evaluate(`!document.querySelector('${form}')`), 'owned metadata editor closes');
+  };
+  const transition = async mode => {
+    fixture.mode(mode); await evaluate(`localStorage.setItem('sp.contextId:__platform__',${JSON.stringify('notification-' + mode)});window.dispatchEvent(new CustomEvent('sp-set-context-id',{detail:{tenantId:'__platform__',contextId:${JSON.stringify('notification-' + mode)}}}));`);
+    await poll(() => evaluate(`!document.querySelector('${confirm}') && !document.querySelector('${form}')`), 'old notification scope releases overlays');
+  };
+  await show(); await select('notification-000');
+  assert.equal(fixture.reads.filter(read => read.kind !== 'list').length, 0, 'notification list never preloads audience directories');
+  assert.equal(await evaluate(`document.querySelector('${root}').textContent.includes('Invalid Date')`), false);
+  await evaluate(`document.querySelector('${root} th[data-column-key="title"] .ant-table-filter-trigger')?.click()`);
+  if (!await evaluate(`!!document.querySelector('${dropdown}')`)) await evaluate(`[...document.querySelectorAll('${root} th')].find(element=>element.textContent.includes('标题')).querySelector('.ant-table-filter-trigger').click()`);
+  await poll(() => evaluate(`!!document.querySelector('${dropdown} input.ant-input')`), 'server title filter');
+  await fill(dropdown + ' input.ant-input', 'Notice'); await clickText(dropdown + ' button', '应用');
+  await clickReady(root + ' .ant-pagination-item-27'); await select(target);
+  await evaluate(`(()=>{window.__notificationOriginalTable=document.querySelector('${root}');return true;})()`);
+  await evaluate(`(()=>{const buttons=[...document.querySelectorAll('${root} button')];buttons.find(button=>button.textContent.replaceAll(' ','')==='发布').click();buttons.find(button=>button.textContent.replaceAll(' ','')==='新增')?.click();})()`);
+  await poll(() => evaluate(`!!document.querySelector('${confirm}')`), 'same-frame lifecycle captures one owner');
+  assert.equal(await evaluate(`!!document.querySelector('${form}')`), false, 'root CRUD cannot replace a captured lifecycle action');
+  await hide(); await show(); await poll(() => evaluate(`document.querySelector('${confirm}')?.textContent.includes('Notice 520')`), 'confirmation and its original target return together');
+  fixture.failWrite(400); const before = fixture.writes.length; await doubleConfirm();
+  await hide(); const hiddenReads = fixture.reads.filter(read => read.kind === 'list').length;
+  await poll(() => fixture.writes.at(-1)?.completed, 'hidden captured write settles');
+  assert.equal(fixture.writes.length, before + 1, 'double publish confirms one actual mutation');
+  assert.equal(fixture.reads.filter(read => read.kind === 'list').length, hiddenReads, 'inactive failure does not refresh notification lists');
+  assert.equal(await evaluate(`!!document.querySelector('.ant-message-notice-error')`), false, 'hidden failure never toasts over another owner');
+  await show(); await poll(() => evaluate(`document.querySelector('${confirm} .notification-operation-error')?.textContent.includes('通知状态已改变')`), 'captured conflict and retry survive route change');
+  await doubleConfirm(); await poll(() => fixture.rows.find(row => row.id === target).status === 'PUBLISHED' && evaluate(`!document.querySelector('${confirm}') && !document.querySelector('${root} .ant-spin-spinning')`), 'publish retry succeeds and refreshes same controller');
+  assert.equal(await evaluate(`window.__notificationOriginalTable===document.querySelector('${root}')`), true, 'lifecycle refresh does not remount table');
+  assert.equal(await evaluate(`document.querySelector('${root} .ant-pagination-item-active')?.textContent`), '27');
+  assert.ok(fixture.reads.filter(read => read.kind === 'list').at(-1).params.has('title'), 'captured refresh retains server header query');
+  assert.equal(await evaluate(`document.querySelector('${root} [data-row-key="${target}"] .ant-checkbox-input').checked`), true, 'refresh retains the same actual selected notification');
+  await action('撤回'); await doubleConfirm(); await poll(() => fixture.rows.find(row => row.id === target).status === 'REVOKED' && evaluate(`!document.querySelector('${confirm}') && !document.querySelector('${root} .ant-spin-spinning')`), 'actual published notification revokes');
+  await action('复制为草稿'); await doubleConfirm(); await poll(() => evaluate(`!!document.querySelector('${form} form.rjsf #root_title')`), 'server duplicate opens genuine schema form only with edit authority');
+  assert.equal(await evaluate(`document.querySelector('${form} #root_title').value`), 'Notice 520');
+  assert.equal(fixture.reads.filter(read => read.kind !== 'list').length, 0, 'broadcast duplicate never reads directories');
+  const duplicate = fixture.rows.find(row => row.id.startsWith('notification-copy-'));
+  await fill(form + ' #root_title', 'Edited independent copy'); await chooseType('USER'); fixture.directoryDenied(true); await search('recipient520');
+  await poll(() => evaluate(`document.querySelector('${popup}')?.textContent.includes('加载失败')`), 'directory permission failure is explicit, never replaced with raw ID entry');
+  fixture.directoryDenied(false); await clickText(popup + ' button', '重试');
+  await poll(() => evaluate(`!![...document.querySelectorAll('${popup} .ant-select-item-option')].find(element=>element.textContent.includes('Recipient520'))`), 'off-page real user candidate');
+  await clickText(popup + ' .ant-select-item-option', 'Recipient520 · recipient520@example.test');
+  await hide(); await show(); await poll(() => evaluate(`document.querySelector('${form}')?.textContent.includes('Recipient520') && document.querySelector('${form} #root_title')?.value==='Edited independent copy'`), 'user audience and other metadata draft survive page change');
+  await chooseType('TENANT');
+  await poll(() => evaluate(`!!document.querySelector('${form} #root_audienceId')?.closest('.ant-select') && !document.querySelector('${form} #root_audienceId').closest('.ant-select').textContent.includes('Recipient520')`), 'changing directory clears the old user identifier');
+  const emptyWrites = fixture.writes.length; await clickReady(form + ' button[type="submit"]');
+  await poll(() => evaluate(`!!document.querySelector('${form} .text-danger, ${form} .ant-form-item-has-error, ${form} .error-detail')`), 'missing typed audience is required by genuine form schema');
+  assert.equal(fixture.writes.length, emptyWrites, 'empty audience never reaches notification write');
+  await search('AudienceTenant520'); await poll(() => evaluate(`!![...document.querySelectorAll('${popup} .ant-select-item-option')].find(element=>element.textContent==='AudienceTenant520')`), 'tenant directory searches beyond 500');
+  await clickText(popup + ' .ant-select-item-option', 'AudienceTenant520'); fixture.failWrite(); await clickReady(form + ' button[type="submit"]');
+  await poll(() => evaluate(`document.querySelector('${form} .ant-alert-error')?.textContent.includes('通知事务失败')`), 'copy metadata failure preserves typed selection');
+  assert.equal(fixture.writes.at(-1).id, duplicate.id);
+  assert.equal(fixture.writes.at(-1).data.audienceId, 'notification-tenant-520');
+  await clickReady(form + ' button[type="submit"]'); await poll(() => evaluate(`!document.querySelector('${form}')`), 'metadata retry edits the independently created draft');
+  assert.equal(fixture.rows.find(row => row.id === target).status, 'REVOKED');
+  assert.equal(fixture.rows.find(row => row.id === target).audienceType, 'ALL');
+  assert.equal(fixture.rows.find(row => row.id === duplicate.id).audienceType, 'TENANT');
+  assert.ok(fixture.reads.filter(read => read.kind === 'user' && !read.selected).every(read => Number(read.params.get('size')) <= 50 && read.params.get('keyword').length >= 3));
+  assert.ok(fixture.reads.filter(read => read.kind === 'tenant').every(read => Number(read.params.get('size')) <= 100));
+  await transition('no-edit'); await select('notification-002'); await action('复制为草稿'); await doubleConfirm();
+  await poll(() => fixture.writes.at(-1).completed && evaluate(`!document.querySelector('${confirm}') && !document.querySelector('${root} .ant-spin-spinning')`), 'duplicate-only authority completes its own permitted action');
+  assert.equal(await evaluate(`!!document.querySelector('${form}')`), false, 'duplicate authority does not fabricate edit permission');
+  await transition('readonly-audience'); fixture.rows[0].audienceType = 'USER'; fixture.rows[0].audienceId = 'notification-user-520';
+  await reload(); await show(); await select('notification-000'); await clickText(root + ' button', '编辑');
+  await poll(() => evaluate(`document.querySelector('${form}')?.textContent.includes('Recipient520')`), 'readonly audience resolves its real stored label');
+  assert.equal(await evaluate(`document.querySelector('${form} #root_audienceId').closest('.ant-select').classList.contains('ant-select-disabled')`), true);
+  assert.equal(await evaluate(`document.querySelector('${form} #root_audienceType').closest('.ant-select').classList.contains('ant-select-disabled')`), true,
+    'readonly identifier cannot be cleared or reinterpreted by changing its audience directory');
+  await closeForm();
+  await transition('all'); await select('notification-000'); await action('发布'); fixture.failWrite(); fixture.writeDelay(1200); const scopeWrites = fixture.writes.length; await doubleConfirm();
+  await poll(() => fixture.writes.length === scopeWrites + 1 && !fixture.writes.at(-1).completed, 'old notification scope has a live write');
+  await transition('viewer'); await poll(() => fixture.writes.at(-1).completed && evaluate(`!document.querySelector('${confirm}') && !document.querySelector('${form}')`), 'old scope settles without reviving notification state');
+  assert.equal(await evaluate(`document.body.textContent.includes('通知事务失败')`), false);
+  assert.equal(await evaluate(`[...document.querySelectorAll('${root} .sp-table-button')].some(button=>/发布|撤回|复制/.test(button.textContent))`), false);
+  await transition('masked'); await poll(() => evaluate(`document.querySelector('${root}')?.textContent.includes('标识不可用')`), 'protected notification identities are non-actionable');
+  assert.equal(await evaluate(`document.querySelector('${root}').textContent.includes('Invalid Date')`), false);
+  console.log('PASS: Notification actual schema/actions, owned confirm/retry/hidden writes, no remount or query/page/selection loss, independent copy/edit permissions, real bounded user/tenant fields, required/type-switch/readonly behavior and old-scope suppression');
+}

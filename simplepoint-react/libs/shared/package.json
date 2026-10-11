@@ -2,6 +2,7 @@
   "name": "@simplepoint/shared",
   "version": "1.0.0",
   "exports": {
+    "./page/Section": "./page/Section.tsx",
     "./*.ts": "./*.ts",
     "./*": "./*.ts"
   }

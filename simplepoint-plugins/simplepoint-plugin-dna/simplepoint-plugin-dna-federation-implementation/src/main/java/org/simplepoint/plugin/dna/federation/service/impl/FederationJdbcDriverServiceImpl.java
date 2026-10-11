@@ -744,6 +744,8 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
 
     private final ConcurrentMap<String, FederationJdbcDriverModels.TabularResult> metadataCache;
 
+    private volatile String metadataVersionToken;
+
     private JdbcConnectionSession(
         final String loginSubject,
         final String userId,
@@ -760,6 +762,7 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
       this.authentication = authentication;
       this.authorizationContexts = new ConcurrentHashMap<>();
       this.metadataCache = new ConcurrentHashMap<>();
+      this.metadataVersionToken = "";
     }
 
     private AuthorizationContext resolveAuthorizationContext(
@@ -780,13 +783,23 @@ public class FederationJdbcDriverServiceImpl implements FederationJdbcDriverServ
         final MetadataLoader loader,
         final FederationMetadataCacheService globalCache
     ) {
-      return metadataCache.computeIfAbsent(key, ignored -> {
-        FederationJdbcDriverModels.TabularResult cached = globalCache.get(key);
+      List<String> dataSourceIds = authorizedDataSources.values().stream()
+          .map(AuthorizedDataSource::dataSource)
+          .map(JdbcDataSourceDefinition::getId)
+          .toList();
+      String currentVersion = globalCache.versionToken(dataSourceIds);
+      if (!currentVersion.equals(metadataVersionToken)) {
+        metadataCache.clear();
+        metadataVersionToken = currentVersion;
+      }
+      String scopedKey = globalCache.scopedKey(dataSourceIds, key);
+      return metadataCache.computeIfAbsent(scopedKey, ignored -> {
+        FederationJdbcDriverModels.TabularResult cached = globalCache.get(scopedKey);
         if (cached != null) {
           return cached;
         }
         FederationJdbcDriverModels.TabularResult result = loader.load();
-        globalCache.put(key, result);
+        globalCache.put(scopedKey, result);
         return result;
       });
     }

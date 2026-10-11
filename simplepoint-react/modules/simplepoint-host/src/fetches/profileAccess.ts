@@ -6,11 +6,11 @@ import {normalizePage} from '@simplepoint/shared/types/request';
 import type {RawPage} from '@simplepoint/shared/types/request';
 
 export type ProfileResourceAccess = {
-  code: string;
-  label?: string;
-  type: string;
-  path?: string;
-  icon?: string;
+  code?: string | null;
+  label?: string | null;
+  type?: string | null;
+  path?: string | null;
+  icon?: string | null;
   effective: boolean;
   available: boolean;
   directory?: string[];

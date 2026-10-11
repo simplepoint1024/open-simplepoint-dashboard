@@ -40,10 +40,18 @@ public class DataScopeController extends BaseController<DataScopeService, DataSc
   @org.springframework.beans.factory.annotation.Autowired
   private org.simplepoint.plugin.rbac.core.service.impl.PermissionExpressionService expressions;
 
+  @org.springframework.beans.factory.annotation.Autowired
+  private org.simplepoint.plugin.rbac.core.service.impl.PermissionPresentationService presentation;
+
+  @GetMapping("/presentation")
+  @PreAuthorize("isAuthenticated()")
+  public Response<Map<String, Object>> presentation() { return ok(presentation.catalog()); }
+
   @GetMapping("/expression/catalog")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('data-scope.view')")
-  public Response<Map<String, org.simplepoint.core.permission.PermissionPageDescriptor>> expressionCatalog() {
-    return ok(expressions.catalog());
+  public Response<Map<String, org.simplepoint.core.permission.PermissionPageDescriptor>> expressionCatalog(
+      @RequestParam(value = "resourceCode", required = false) String resourceCode) {
+    return ok(expressions.catalog(resourceCode));
   }
 
   public record ExpressionRequest(String resourceCode, String expression, Map<String, Object> ast) {}

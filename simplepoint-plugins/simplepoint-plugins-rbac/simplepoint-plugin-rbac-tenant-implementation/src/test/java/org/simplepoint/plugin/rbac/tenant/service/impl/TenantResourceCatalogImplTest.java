@@ -25,6 +25,9 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceKey;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.PackageApplicationRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationResourceRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
@@ -46,14 +49,17 @@ class TenantResourceCatalogImplTest {
   Resource group;
   Resource page;
   Resource unlicensed;
+  ApplicationResourceRelevance initialLicense;
 
   @BeforeEach
   void setup() {
     var registry = new StandardServiceRegistryBuilder()
         .applySetting("hibernate.connection.url", "jdbc:h2:mem:tenant-catalog-" + UUID.randomUUID())
-        .applySetting("hibernate.hbm2ddl.auto", "create-drop").build();
+        .applySetting("hibernate.hbm2ddl.auto", "create-drop").applySetting("hibernate.generate_statistics", true).build();
     factory = new MetadataSources(registry).addAnnotatedClass(Tenant.class)
         .addAnnotatedClass(TenantResource.class).addAnnotatedClass(Resource.class)
+        .addAnnotatedClass(TenantPackageRelevance.class).addAnnotatedClass(PackageApplicationRelevance.class)
+        .addAnnotatedClass(ApplicationResourceRelevance.class)
         .addAnnotatedClass(RoleResourceGrant.class)
         .buildMetadata().buildSessionFactory();
     em = factory.openSession();
@@ -65,6 +71,9 @@ class TenantResourceCatalogImplTest {
     group = resource("app.group", ResourceType.GROUP, null);
     page = resource("app.page", ResourceType.PAGE, group.getId());
     unlicensed = resource("app.secret", ResourceType.PAGE, group.getId());
+    var subscription = new TenantPackageRelevance(); subscription.setTenantId(tenant.getId()); subscription.setPackageCode("catalog-package"); em.persist(subscription);
+    var application = new PackageApplicationRelevance(); application.setPackageCode(subscription.getPackageCode()); application.setApplicationCode("catalog-app"); em.persist(application);
+    initialLicense = new ApplicationResourceRelevance(); initialLicense.setApplicationCode(application.getApplicationCode()); initialLicense.setResourceCode(page.getCode()); em.persist(initialLicense);
     em.flush();
     tenants = mock(TenantRepository.class);
     packages = mock(TenantPackageRelevanceRepository.class);
@@ -94,6 +103,73 @@ class TenantResourceCatalogImplTest {
     result.setDisabled(false);
     em.persist(result);
     return result;
+  }
+
+  private TenantResource pickerEntry(Resource resource, String name) {
+    return pickerEntry(resource, name, tenant.getId());
+  }
+  private TenantResource pickerEntry(Resource resource, String name, String tenantScope) {
+    var row = new TenantResource(); row.setTenantId(tenantScope); row.setId(resource.getId());
+    row.setPlatformResourceId(resource.getId()); row.setCode(resource.getCode()); row.setName(name);
+    row.setType(resource.getType()); row.setGrantable(resource.getGrantable()); row.setSort(0); em.persist(row); return row;
+  }
+
+  @Test
+  void pickerUsesLiveSqlEligibilityBeforePaginationAndSelectedLookup() {
+    catalog.selectMode(TenantResourceMode.CUSTOM);
+    var licensed = initialLicense;
+    TenantResource last = null;
+    for (int i = 0; i < 521; i++) {
+      var live = resource("picker." + i, ResourceType.PAGE, null); live.setPublicAccess(true);
+      last = pickerEntry(live, String.format("Choice%03d", i));
+    }
+    var hidden = resource("picker.hidden", ResourceType.PAGE, null); hidden.setPublicAccess(true); hidden.setRouteKind("hidden"); pickerEntry(hidden, "Choice hidden");
+    var disabled = resource("picker.disabled", ResourceType.PAGE, null); disabled.setPublicAccess(true); disabled.setDisabled(true); pickerEntry(disabled, "Choice disabled");
+    var deleted = resource("picker.deleted", ResourceType.PAGE, null); deleted.setPublicAccess(true); deleted.setDeletedAt(java.time.Instant.now()); pickerEntry(deleted, "Choice deleted");
+    var platformOnly = resource("picker.platform", ResourceType.PAGE, null); platformOnly.setPublicAccess(true); platformOnly.setScopeTypes(EnumSet.of(ResourceScopeType.PLATFORM)); pickerEntry(platformOnly, "Choice platform");
+    var foreign = resource("picker.foreign", ResourceType.PAGE, null); foreign.setPublicAccess(true); pickerEntry(foreign, "Choice foreign", "another");
+    var notGranted = resource("picker.notGranted", ResourceType.PAGE, null); pickerEntry(notGranted, "Choice not granted");
+    em.flush(); em.clear();
+    factory.getStatistics().clear(); clearInvocations(packages, platform);
+    var result = catalog.picker(TenantResourceCatalog.PickerKind.PAGE_TARGET, null, null, "Choice", null, PageRequest.of(26, 20));
+    assertEquals(521, result.getTotalElements()); assertEquals(1, result.getContent().size()); assertEquals(last.getId(), result.getContent().getFirst().getId());
+    assertEquals(1, factory.getStatistics().getEntityLoadCount(), "the live eligibility query does not hydrate the platform catalog");
+    verifyNoInteractions(packages, platform); em.clear(); factory.getStatistics().clear();
+    var selected = catalog.picker(TenantResourceCatalog.PickerKind.PAGE_TARGET, null, null, "", last.getId(), PageRequest.of(0, 1));
+    assertEquals(last.getId(), selected.getContent().getFirst().getId());
+    assertEquals(1, factory.getStatistics().getEntityLoadCount());
+    for (String id : List.of(hidden.getId(), disabled.getId(), deleted.getId(), platformOnly.getId(), foreign.getId(), notGranted.getId(), "' OR 1=1 --")) {
+      assertEquals(0, catalog.picker(TenantResourceCatalog.PickerKind.PAGE_TARGET, null, null, "", id, PageRequest.of(0, 1)).getTotalElements());
+    }
+    assertEquals(1, catalog.picker(TenantResourceCatalog.PickerKind.PAGE_TARGET, null, null, "", page.getId(), PageRequest.of(0, 1)).getTotalElements());
+    licensed = em.find(ApplicationResourceRelevance.class, licensed.getId()); licensed.setDeletedAt(java.time.Instant.now()); em.flush();
+    assertEquals(0, catalog.picker(TenantResourceCatalog.PickerKind.PAGE_TARGET, null, null, "", page.getId(), PageRequest.of(0, 1)).getTotalElements(), "revoked entitlement is removed before pagination without synchronizing snapshots");
+  }
+
+  @Test
+  void parentPickerHonorsChildTypeExclusionAndBounds() {
+    catalog.selectMode(TenantResourceMode.CUSTOM);
+    var feature = pickerEntry(resource("feature", ResourceType.FEATURE, null), "feature");
+    pickerEntry(resource("action", ResourceType.ACTION, null), "action");
+    pickerEntry(resource("api", ResourceType.API, null), "api"); em.flush();
+    assertEquals(0, catalog.picker(TenantResourceCatalog.PickerKind.PARENT, ResourceType.PAGE, null, "", feature.getId(), PageRequest.of(0, 1)).getTotalElements());
+    assertEquals(1, catalog.picker(TenantResourceCatalog.PickerKind.PARENT, ResourceType.ACTION, null, "", feature.getId(), PageRequest.of(0, 1)).getTotalElements());
+    assertEquals(0, catalog.picker(TenantResourceCatalog.PickerKind.PARENT, ResourceType.ACTION, feature.getId(), "", feature.getId(), PageRequest.of(0, 1)).getTotalElements());
+    assertThrows(org.springframework.web.server.ResponseStatusException.class,
+        () -> catalog.picker(TenantResourceCatalog.PickerKind.PARENT, null, null, "", null, PageRequest.of(0, 20)));
+    assertThrows(org.springframework.web.server.ResponseStatusException.class,
+        () -> catalog.picker(TenantResourceCatalog.PickerKind.PAGE_TARGET, null, null, "", null, PageRequest.of(0, 51)));
+    assertThrows(org.springframework.web.server.ResponseStatusException.class,
+        () -> catalog.picker(TenantResourceCatalog.PickerKind.PAGE_TARGET, null, null, "", "x".repeat(37), PageRequest.of(0, 1)));
+  }
+
+  @Test
+  void resourcePickerNeverAllowsAnOrdinaryMemberToBrowseManagerChoices() {
+    var member = new AuthorizationContext(); member.setUserId("ordinary-member"); member.setScopeType(AuthorizationScopeType.TENANT);
+    member.setAttributes(Map.of("X-Tenant-Id", tenant.getId()));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, member);
+    assertThrows(AccessDeniedException.class, () -> catalog.picker(TenantResourceCatalog.PickerKind.PARENT,
+        ResourceType.PAGE, null, "", null, PageRequest.of(0, 20)));
   }
 
   @AfterEach
@@ -164,7 +240,9 @@ class TenantResourceCatalogImplTest {
   @Test
   void platformRevocationStopsRoleGrantBeforeCatalogRefresh() {
     catalog.selectMode(TenantResourceMode.CUSTOM);
+    assertEquals(Set.of(page.getCode()), catalog.grantableCodes(tenant.getId(), Set.of(page.getCode())));
     when(packages.findResourceCodesByTenantId(tenant.getId())).thenReturn(Set.of());
+    initialLicense.setDeletedAt(java.time.Instant.now()); em.flush();
     assertTrue(catalog.grantableCodes(tenant.getId(), Set.of(page.getCode())).isEmpty());
     assertTrue(catalog.effectivePlatformCodes(tenant.getId(), Set.of(page.getCode())).isEmpty());
     assertTrue(em.find(TenantResource.class,

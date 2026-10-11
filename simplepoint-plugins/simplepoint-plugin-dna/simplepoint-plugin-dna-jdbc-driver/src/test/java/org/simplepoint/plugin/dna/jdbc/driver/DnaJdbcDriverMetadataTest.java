@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.dna.jdbc.driver;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +13,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -114,6 +116,24 @@ class DnaJdbcDriverMetadataTest {
 
         assertThat(connection.getCatalog()).isEqualTo("PG");
         assertThat(connection.getSchema()).isEqualTo("reporting");
+
+        assertThatThrownBy(() -> connection.setReadOnly(false))
+            .isInstanceOf(java.sql.SQLFeatureNotSupportedException.class)
+            .hasMessageContaining("Runtime Record API");
+        assertThatThrownBy(() -> connection.setAutoCommit(false))
+            .isInstanceOf(java.sql.SQLFeatureNotSupportedException.class)
+            .hasMessageContaining("Runtime transaction API");
+        assertThatThrownBy(connection::commit)
+            .isInstanceOf(java.sql.SQLFeatureNotSupportedException.class)
+            .hasMessageContaining("Runtime transaction API");
+        try (Statement statement = connection.createStatement()) {
+          assertThatThrownBy(() -> statement.executeUpdate("UPDATE orders SET status = 'paid'"))
+              .isInstanceOf(java.sql.SQLFeatureNotSupportedException.class)
+              .hasMessageContaining("Runtime Record API");
+          assertThatThrownBy(() -> statement.execute("CREATE TABLE unsupported (id INT)"))
+              .isInstanceOf(java.sql.SQLFeatureNotSupportedException.class)
+              .hasMessageContaining("Runtime schema publication API");
+        }
       }
 
       serverFuture.get();

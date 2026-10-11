@@ -415,6 +415,57 @@ class TenantServiceImplTest {
         .isInstanceOf(AccessDeniedException.class);
   }
 
+  @Test
+  void resolveActiveMemberIds_allowsServiceRouterAndFiltersMemberships() {
+    setServiceRouterAuthentication();
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    tenant.setOwnerId("owner1");
+    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
+    when(repository.resolveActiveUserIds(
+        "tenant1",
+        Set.of("owner1", "user1", "user2", "unknown")
+    )).thenReturn(List.of("owner1", "user1"));
+
+    Collection<String> result = service.resolveActiveMemberIds(
+        "tenant1",
+        List.of("owner1", "user1", "user2", "unknown")
+    );
+
+    assertThat(result).containsExactlyInAnyOrder("owner1", "user1");
+  }
+
+  @Test
+  void resolveActiveMemberIds_rejectsHumanOutsideTenant() {
+    setAuthentication("outsider");
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
+    when(repository.resolveActiveUserIds("tenant1", Set.of("outsider"))).thenReturn(List.of());
+
+    assertThatThrownBy(() -> service.resolveActiveMemberIds("tenant1", List.of("user1")))
+        .isInstanceOf(AccessDeniedException.class);
+  }
+
+  @Test
+  void resolveActiveRoleAuthorities_isTenantScopedBoundedAndRequiresAnAuthorizedCaller() {
+    setServiceRouterAuthentication();
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    tenant.setOwnerId("owner1");
+    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
+    when(repository.resolveActiveRoleAuthorities("tenant1", Set.of("approver", "foreign")))
+        .thenReturn(List.of("approver"));
+    assertThat(service.resolveActiveRoleAuthorities("tenant1", List.of("approver", "foreign")))
+        .containsExactly("approver");
+    assertThatThrownBy(() -> service.resolveActiveRoleAuthorities("tenant1", java.util.stream.IntStream.range(0, 51)
+        .mapToObj(index -> "role" + index).toList())).isInstanceOf(IllegalArgumentException.class);
+    setAuthentication("outsider");
+    when(repository.resolveActiveUserIds("tenant1", Set.of("outsider"))).thenReturn(List.of());
+    assertThatThrownBy(() -> service.resolveActiveRoleAuthorities("tenant1", List.of("approver")))
+        .isInstanceOf(AccessDeniedException.class);
+  }
+
   // ── authorizePackages ─────────────────────────────────────────────────────
 
   @Test
@@ -840,6 +891,18 @@ class TenantServiceImplTest {
         new SimpleGrantedAuthority("ROLE_Administrator");
     UsernamePasswordAuthenticationToken auth =
         new UsernamePasswordAuthenticationToken("admin", null, List.of(adminAuthority));
+    SecurityContextHolder.getContext().setAuthentication(auth);
+  }
+
+  private void setServiceRouterAuthentication() {
+    SimpleGrantedAuthority serviceRouterAuthority =
+        new SimpleGrantedAuthority("SCOPE_service-router.invoke");
+    UsernamePasswordAuthenticationToken auth =
+        new UsernamePasswordAuthenticationToken(
+            "simplepoint-service-workflow",
+            null,
+            List.of(serviceRouterAuthority)
+        );
     SecurityContextHolder.getContext().setAuthentication(auth);
   }
 

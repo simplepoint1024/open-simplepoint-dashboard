@@ -1,13 +1,20 @@
 import api from '@/api';
 import { InboxOutlined, PlusOutlined } from '@simplepoint/shared/types/icon';
 import { request } from '@simplepoint/shared/api/client';
-import { get } from '@simplepoint/shared/api/methods';
+import { get, useData } from '@simplepoint/shared/api/methods';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import {usePageRetention} from '@simplepoint/shared/page/hooks';
+import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
 import { useI18n } from '@simplepoint/shared/hooks/useI18n';
-import {Alert, App as AntApp, Button, Form, Input, Modal, Space, Switch, Tabs, Tag, Typography, Upload} from 'antd';
+import {Alert, App as AntApp, Modal, Space, Tabs, Tag, Typography, Upload} from 'antd';
 import Table from '@simplepoint/components/DataTable';
+import TableActions from '@simplepoint/components/Table/Actions';
+import SForm from '@simplepoint/components/SForm/Lazy';
+import type {SFormHandle} from '@simplepoint/components/SForm';
+import type {RJSFSchema} from '@rjsf/utils';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { formatDateTime, resolveErrorMessage } from '../shared';
 
 const { Dragger } = Upload;
@@ -61,13 +68,6 @@ type UploadSourceFormValues = {
   file?: UploadFile[];
 };
 
-const normalizeUploadEvent = (event: { fileList?: UploadFile[] } | UploadFile[]) => {
-  if (Array.isArray(event)) {
-    return event;
-  }
-  return event?.fileList ?? [];
-};
-
 const sourceTypeColorMap: Record<SourceType, string> = {
   CLASSPATH: 'blue',
   URL: 'gold',
@@ -77,16 +77,32 @@ const sourceTypeColorMap: Record<SourceType, string> = {
 const App = () => {
   const { t, ensure, locale } = useI18n();
   const { message } = AntApp.useApp();
-  const [loadedDialects, setLoadedDialects] = useState<DialectDescriptor[]>([]);
-  const [sources, setSources] = useState<DialectSourceSummary[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [sourceLoading, setSourceLoading] = useState(false);
+  const operation = useOperationScope();
+  const [writeError, setWriteError] = useState('');
+  const [deleting, setDeleting] = useState<{id: string; name: string}[]>();
   const [urlModalOpen, setUrlModalOpen] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedSourceIds, setSelectedSourceIds] = useState<React.Key[]>([]);
-  const [urlForm] = Form.useForm<UrlSourceFormValues>();
-  const [uploadForm] = Form.useForm<UploadSourceFormValues>();
+  const [urlValues, setUrlValues] = useState<UrlSourceFormValues>({enabled: true});
+  const [uploadValues, setUploadValues] = useState<UploadSourceFormValues>({enabled: true});
+  const [files, setFiles] = useState<UploadFile[]>([]);
+  const urlFormRef = useRef<SFormHandle>(null);
+  const uploadFormRef = useRef<SFormHandle>(null);
+  const savingRef = useRef(false);
+  const locked = urlModalOpen || uploadModalOpen || !!deleting || operation.busy;
+  usePageRetention(!locked, locked);
+  const permissions = useData(['dna-dialect-permissions', baseConfig.baseUrl], ({signal}) =>
+    get<{canCreateUrl: boolean; canUpload: boolean; canDelete: boolean}>(`${baseConfig.baseUrl}/workbench-permissions`, undefined, {signal}), {retry: false});
+  const dialectsQuery = useData(['dna-dialects', baseConfig.baseUrl], ({signal}) =>
+    get<DialectDescriptor[]>(baseConfig.baseUrl, undefined, {signal}), {retry: false});
+  const sourcesQuery = useData(['dna-dialect-sources', baseConfig.baseUrl], ({signal}) =>
+    get<DialectSourceSummary[]>(`${baseConfig.baseUrl}/sources`, undefined, {signal}), {retry: false});
+  const loadedDialects = dialectsQuery.data ?? [];
+  const sources = sourcesQuery.data ?? [];
+  const loading = dialectsQuery.isFetching;
+  const sourceLoading = sourcesQuery.isFetching;
+  const loadError = permissions.error || dialectsQuery.error || sourcesQuery.error;
 
   useEffect(() => {
     void ensure(baseConfig.i18nNamespaces);
@@ -96,54 +112,33 @@ const App = () => {
     return t(`dna.dialects.page.sourceType.${value}`, value);
   }, [message, t]);
 
-  const loadDialects = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await get<DialectDescriptor[]>(baseConfig.baseUrl);
-      setLoadedDialects(data ?? []);
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.dialects.page.error.loadDialects', 'Failed to load dialects.')));
-    } finally {
-      setLoading(false);
-    }
-  }, [message, t]);
-
-  const loadSources = useCallback(async () => {
-    setSourceLoading(true);
-    try {
-      const data = await get<DialectSourceSummary[]>(`${baseConfig.baseUrl}/sources`);
-      setSources(data ?? []);
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.dialects.page.error.loadSources', 'Failed to load dialect sources.')));
-    } finally {
-      setSourceLoading(false);
-    }
-  }, [t]);
-
   const reload = useCallback(async () => {
-    await Promise.all([loadDialects(), loadSources()]);
-  }, [loadDialects, loadSources]);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
+    await Promise.all([dialectsQuery.refetch(), sourcesQuery.refetch()]);
+  }, [dialectsQuery.refetch, sourcesQuery.refetch]);
 
   const openUrlModal = useCallback(() => {
-    urlForm.setFieldsValue({ enabled: true });
+    if (!permissions.data?.canCreateUrl || locked || loadError || !operation.isSelected()) return;
+    setWriteError('');
+    setUrlValues({enabled: true});
     setUrlModalOpen(true);
-  }, [urlForm]);
+  }, [permissions.data?.canCreateUrl, locked, loadError, operation.isSelected]);
 
   const openUploadModal = useCallback(() => {
-    uploadForm.setFieldsValue({ enabled: true, file: [] });
+    if (!permissions.data?.canUpload || locked || loadError || !operation.isSelected()) return;
+    setWriteError('');
+    setUploadValues({enabled: true}); setFiles([]);
     setUploadModalOpen(true);
-  }, [uploadForm]);
+  }, [permissions.data?.canUpload, locked, loadError, operation.isSelected]);
 
-  const handleCreateUrlSource = useCallback(async () => {
-    const values = await urlForm.validateFields();
+  const handleCreateUrlSource = useCallback(async (values: UrlSourceFormValues) => {
+    if (!permissions.data?.canCreateUrl || !urlModalOpen || loadError || savingRef.current) return;
+    const controller = operation.begin(); if (!controller) return; setWriteError('');
+    savingRef.current = true;
     setSaving(true);
     try {
       await request(`${baseConfig.baseUrl}/url`, {
         method: 'POST',
+        signal: controller.signal,
         body: JSON.stringify({
           name: values.name?.trim(),
           sourceUrl: values.sourceUrl?.trim(),
@@ -151,20 +146,21 @@ const App = () => {
           description: values.description?.trim() || null,
         }),
       });
+      if (!operation.current(controller.signal)) return;
       message.success(t('dna.dialects.page.success.createUrl', 'URL dialect source created successfully.'));
       setUrlModalOpen(false);
-      urlForm.resetFields();
+      setUrlValues({enabled: true});
       await reload();
     } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.dialects.page.error.createUrl', 'Failed to create URL dialect source.')));
+      if (operation.current(controller.signal)) setWriteError(resolveErrorMessage(error, t('dna.dialects.page.error.createUrl', 'Failed to create URL dialect source.')));
     } finally {
-      setSaving(false);
+      savingRef.current = false; operation.finish(controller); if (operation.current()) setSaving(false);
     }
-  }, [baseConfig.baseUrl, message, reload, t, urlForm]);
+  }, [message, reload, t, permissions.data?.canCreateUrl, urlModalOpen, loadError, operation.begin, operation.current, operation.finish]);
 
-  const handleUploadSource = useCallback(async () => {
-    const values = await uploadForm.validateFields();
-    const file = values.file?.[0]?.originFileObj as File | undefined;
+  const handleUploadSource = useCallback(async (values: UploadSourceFormValues) => {
+    if (!permissions.data?.canUpload || !uploadModalOpen || loadError || savingRef.current) return;
+    const file = files[0]?.originFileObj as File | undefined;
     if (!file) {
       message.warning(t('dna.dialects.page.warning.selectJar', 'Select a dialect jar first.'));
       return;
@@ -176,42 +172,51 @@ const App = () => {
     if (values.description?.trim()) {
       formData.append('description', values.description.trim());
     }
-    setSaving(true);
+    const controller = operation.begin(); if (!controller) return; setWriteError('');
+    savingRef.current = true; setSaving(true);
     try {
       await request(`${baseConfig.baseUrl}/upload`, {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       });
+      if (!operation.current(controller.signal)) return;
       message.success(t('dna.dialects.page.success.upload', 'Dialect jar uploaded successfully.'));
       setUploadModalOpen(false);
-      uploadForm.resetFields();
+      setUploadValues({enabled: true}); setFiles([]);
       await reload();
     } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.dialects.page.error.upload', 'Failed to upload dialect jar.')));
+      if (operation.current(controller.signal)) setWriteError(resolveErrorMessage(error, t('dna.dialects.page.error.upload', 'Failed to upload dialect jar.')));
     } finally {
-      setSaving(false);
+      savingRef.current = false; operation.finish(controller); if (operation.current()) setSaving(false);
     }
-  }, [baseConfig.baseUrl, message, reload, t, uploadForm]);
+  }, [message, reload, t, files, permissions.data?.canUpload, uploadModalOpen, loadError, operation.begin, operation.current, operation.finish]);
 
   const handleDeleteSources = useCallback(async () => {
+    if (!permissions.data?.canDelete || !deleting?.length || savingRef.current || loadError) return;
+    const captured = deleting.map(source => source.id);
+    const controller = operation.begin(); if (!controller) return; setWriteError('');
     if (selectedSourceIds.length === 0) {
       message.warning(t('dna.dialects.page.warning.selectSources', 'Select dialect sources to delete.'));
       return;
     }
-    setSaving(true);
+    savingRef.current = true; setSaving(true);
     try {
-      await request(`${baseConfig.baseUrl}/sources?ids=${encodeURIComponent(selectedSourceIds.join(','))}`, {
+      await request(`${baseConfig.baseUrl}/sources?ids=${encodeURIComponent(captured.join(','))}`, {
         method: 'DELETE',
+        signal: controller.signal,
       });
+      if (!operation.current(controller.signal)) return;
       message.success(t('dna.dialects.page.success.delete', 'Dialect sources deleted successfully.'));
       setSelectedSourceIds([]);
+      setDeleting(undefined);
       await reload();
     } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.dialects.page.error.delete', 'Failed to delete dialect sources.')));
+      if (operation.current(controller.signal)) setWriteError(resolveErrorMessage(error, t('dna.dialects.page.error.delete', 'Failed to delete dialect sources.')));
     } finally {
-      setSaving(false);
+      savingRef.current = false; operation.finish(controller); if (operation.current()) setSaving(false);
     }
-  }, [baseConfig.baseUrl, message, reload, selectedSourceIds, t]);
+  }, [message, reload, selectedSourceIds, deleting, t, permissions.data?.canDelete, loadError, operation.begin, operation.current, operation.finish]);
 
   const dialectColumns = useMemo<ColumnsType<DialectDescriptor>>(() => [
     {
@@ -314,8 +319,8 @@ const App = () => {
       key: 'enabled',
       width: 100,
       render: (value?: boolean | null) => (
-        <Tag color={value === false ? 'red' : 'green'}>
-          {value === false ? t('dna.dialects.page.state.no', 'No') : t('dna.dialects.page.state.yes', 'Yes')}
+        <Tag color={value === false ? 'red' : value === true ? 'green' : 'default'}>
+          {value === false ? t('dna.dialects.page.state.no', 'No') : value === true ? t('dna.dialects.page.state.yes', 'Yes') : '—'}
         </Tag>
       ),
     },
@@ -368,8 +373,24 @@ const App = () => {
     },
   ], [resolveSourceTypeLabel, t]);
 
+  const sourceSchema = useMemo<RJSFSchema>(() => ({type: 'object', required: ['name'], properties: {
+    name: {type: 'string', title: t('dna.dialects.page.form.name.label', 'Source Name'), minLength: 1, maxLength: 128, pattern: '\\S'},
+    description: {type: 'string', title: t('dna.dialects.page.form.description.label', 'Description'), maxLength: 512,
+      'x-ui': {widget: 'textarea'}},
+    enabled: {type: 'boolean', title: t('dna.dialects.page.form.enabled.label', 'Enabled'), default: true},
+  }}), [t]);
+  const urlSchema = useMemo<RJSFSchema>(() => ({...sourceSchema, required: ['name', 'sourceUrl'], properties: {
+    ...sourceSchema.properties, sourceUrl: {type: 'string', title: t('dna.dialects.page.form.sourceUrl.label', 'Remote URL'),
+      minLength: 1, maxLength: 2048, format: 'uri', pattern: '^[hH][tT][tT][pP][sS]?://'},
+  }}), [sourceSchema, t]);
+
   return (
     <>
+      {loadError && <Alert type="error" showIcon title={t('table.loadFail', '加载失败')}
+        description={resolveErrorMessage(loadError, t('dna.dialects.page.error.loadDialects', 'Failed to load dialects.'))}
+        action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+          {key: 'retry', sort: 1, text: t('table.retry', '重试')},
+        ]} onButtonEvents={{retry: () => {void reload(); void permissions.refetch();}}}/>}/>}
       <Tabs
         items={[
           {
@@ -390,6 +411,7 @@ const App = () => {
                 />
                 <Table<DialectDescriptor>
                   storageKey="dna.dialects.loaded"
+                  refresh={() => void reload()}
                   query={{mode: 'local', scope: 'complete', fields: {
                     code: {type: 'string'}, name: {type: 'string'}, description: {type: 'string'},
                     version: {type: 'string'}, className: {type: 'string'},
@@ -412,17 +434,25 @@ const App = () => {
             label: t('dna.dialects.page.tab.externalSources', 'External Dialect Sources'),
             children: (
               <>
-                <Space style={{ marginBottom: 16 }}>
-                  <Button type="primary" icon={<PlusOutlined />} onClick={openUrlModal}>
-                    {t('dna.dialects.page.button.createUrl', 'Create URL Source')}
-                  </Button>
-                  <Button onClick={openUploadModal}>{t('dna.dialects.page.button.uploadJar', 'Upload Dialect Jar')}</Button>
-                  <Button danger disabled={selectedSourceIds.length === 0} loading={saving} onClick={() => void handleDeleteSources()}>
-                    {t('dna.dialects.page.button.deleteSelected', 'Delete Selected')}
-                  </Button>
-                </Space>
                 <Table<DialectSourceSummary>
                   storageKey="dna.dialects.sources"
+                  refresh={() => void reload()}
+                  toolbarExtra={<TableActions selectedKeys={selectedSourceIds}
+                    selectedRows={sources.filter(source => selectedSourceIds.includes(source.id))}
+                    buttons={[
+                      ...(permissions.data?.canCreateUrl ? [{key: 'createUrl', sort: 1, type: 'primary' as const,
+                        icon: <PlusOutlined/>, text: t('dna.dialects.page.button.createUrl', 'Create URL Source'), disabled: locked || !!loadError || !operation.selected}] : []),
+                      ...(permissions.data?.canUpload ? [{key: 'upload', sort: 2,
+                        text: t('dna.dialects.page.button.uploadJar', 'Upload Dialect Jar'), disabled: locked || !!loadError || !operation.selected}] : []),
+                      ...(permissions.data?.canDelete ? [{key: 'delete', sort: 3, danger: true, argumentMinSize: 1,
+                        text: t('dna.dialects.page.button.deleteSelected', 'Delete Selected'), disabled: locked || !!loadError || !operation.selected}] : []),
+                    ]} onButtonEvents={{createUrl: openUrlModal, upload: openUploadModal,
+                      delete: () => {
+                        if (locked || loadError || !permissions.data?.canDelete || !operation.isSelected()) return;
+                        const captured = sources.filter(source => selectedSourceIds.includes(source.id)).map(({id, name}) => ({id, name}));
+                        if (captured.length !== selectedSourceIds.length || !captured.length) return;
+                        setWriteError(''); setDeleting(captured);
+                      }}}/>}
                   query={{mode: 'local', scope: 'complete', fields: {
                     name: {type: 'string'}, sourceType: {type: 'string', enum: ['URL', 'UPLOAD']},
                     sourceUrl: {type: 'string'}, localJarPath: {type: 'string'}, enabled: {type: 'boolean'},
@@ -432,7 +462,8 @@ const App = () => {
                   loading={sourceLoading}
                   rowSelection={{
                     selectedRowKeys: selectedSourceIds,
-                    onChange: (keys) => setSelectedSourceIds(keys),
+                    onChange: (keys) => {if (!locked) setSelectedSourceIds(keys);},
+                    getCheckboxProps: () => ({disabled: locked}),
                   }}
                   columns={sourceColumns}
                   dataSource={sources}
@@ -446,86 +477,73 @@ const App = () => {
       />
 
       <Modal
+        wrapClassName="dna-dialect-url"
         title={t('dna.dialects.page.modal.url.title', 'Create URL Dialect Source')}
-        open={urlModalOpen}
-        destroyOnHidden
-        onCancel={() => !saving && setUrlModalOpen(false)}
-        onOk={() => void handleCreateUrlSource()}
+        open={urlModalOpen && operation.selected}
+        destroyOnHidden={!urlModalOpen}
+        onCancel={() => !savingRef.current && setUrlModalOpen(false)}
+        onOk={() => urlFormRef.current?.submit()}
+        closable={!saving} maskClosable={!saving} keyboard={!saving} cancelButtonProps={{disabled: saving}}
         confirmLoading={saving}
         okText={t('dna.dialects.page.modal.url.ok', 'Create')}
         cancelText={t('cancel', 'Cancel')}
+        okButtonProps={{disabled: !permissions.data?.canCreateUrl || !!loadError}}
       >
-        <Form form={urlForm} layout="vertical" initialValues={{ enabled: true }}>
-          <Form.Item
-            label={t('dna.dialects.page.form.name.label', 'Source Name')}
-            name="name"
-            rules={[{ required: true, message: t('dna.dialects.page.form.name.required', 'Enter the source name.') }]}
-          >
-            <Input maxLength={128} placeholder={t('dna.dialects.page.form.name.placeholder.url', 'For example PostgreSQL extended dialect')} />
-          </Form.Item>
-          <Form.Item
-            label={t('dna.dialects.page.form.sourceUrl.label', 'Remote URL')}
-            name="sourceUrl"
-            rules={[{ required: true, message: t('dna.dialects.page.form.sourceUrl.required', 'Enter the remote URL.') }]}
-          >
-            <Input maxLength={2048} placeholder={t('dna.dialects.page.form.sourceUrl.placeholder', 'https://example.com/custom-dialect.jar')} />
-          </Form.Item>
-          <Form.Item label={t('dna.dialects.page.form.description.label', 'Description')} name="description">
-            <Input.TextArea maxLength={512} placeholder={t('dna.dialects.page.form.description.placeholder', 'Optional note')} />
-          </Form.Item>
-          <Form.Item label={t('dna.dialects.page.form.enabled.label', 'Enabled')} name="enabled" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-        </Form>
+        {writeError && <Alert showIcon type="error" title={writeError}/>}
+        <SForm ref={urlFormRef} schema={urlSchema} hideSubmit disabled={saving}
+          formData={urlValues} onChange={event => {if (!savingRef.current) setUrlValues(event.formData ?? {});}}
+          onSubmit={event => void handleCreateUrlSource(event.formData ?? {})}/>
       </Modal>
 
       <Modal
+        wrapClassName="dna-dialect-upload"
         title={t('dna.dialects.page.modal.upload.title', 'Upload Dialect Jar')}
-        open={uploadModalOpen}
-        destroyOnHidden
-        onCancel={() => !saving && setUploadModalOpen(false)}
-        onOk={() => void handleUploadSource()}
+        open={uploadModalOpen && operation.selected}
+        destroyOnHidden={!uploadModalOpen}
+        onCancel={() => !savingRef.current && setUploadModalOpen(false)}
+        onOk={() => uploadFormRef.current?.submit()}
+        closable={!saving} maskClosable={!saving} keyboard={!saving} cancelButtonProps={{disabled: saving}}
         confirmLoading={saving}
         okText={t('dna.dialects.page.modal.upload.ok', 'Upload')}
         cancelText={t('cancel', 'Cancel')}
+        okButtonProps={{disabled: !permissions.data?.canUpload || !!loadError}}
       >
+        {writeError && <Alert showIcon type="error" title={writeError}/>}
         <Paragraph type="secondary">
           {t(
             'dna.dialects.page.description.uploadIntro',
             'After upload, the database dialect implementations inside the jar are discovered automatically through SPI / ServiceLoader.',
           )}
         </Paragraph>
-        <Form form={uploadForm} layout="vertical" initialValues={{ enabled: true }}>
-          <Form.Item
-            label={t('dna.dialects.page.form.name.label', 'Source Name')}
-            name="name"
-            rules={[{ required: true, message: t('dna.dialects.page.form.name.required', 'Enter the source name.') }]}
-          >
-            <Input maxLength={128} placeholder={t('dna.dialects.page.form.name.placeholder.upload', 'For example internal enterprise dialect')} />
-          </Form.Item>
-          <Form.Item label={t('dna.dialects.page.form.description.label', 'Description')} name="description">
-            <Input.TextArea maxLength={512} placeholder={t('dna.dialects.page.form.description.placeholder', 'Optional note')} />
-          </Form.Item>
-          <Form.Item label={t('dna.dialects.page.form.enabled.label', 'Enabled')} name="enabled" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item
-            label={t('dna.dialects.page.form.jar.label', 'Dialect Jar')}
-            name="file"
-            valuePropName="fileList"
-            getValueFromEvent={normalizeUploadEvent}
-            rules={[{ required: true, message: t('dna.dialects.page.form.jar.required', 'Upload a dialect jar.') }]}
-          >
-            <Dragger beforeUpload={() => false} multiple={false} maxCount={1} accept=".jar">
+        <SForm ref={uploadFormRef} schema={sourceSchema} hideSubmit disabled={saving}
+          formData={uploadValues} onChange={event => {if (!savingRef.current) setUploadValues(event.formData ?? {});}}
+          onSubmit={event => void handleUploadSource(event.formData ?? {})}/>
+        <Text>{t('dna.dialects.page.form.jar.label', 'Dialect Jar')}</Text>
+        {/* A local driver artifact uploads directly to the dialect endpoint, not through OSS attachment widgets. */}
+            <Dragger disabled={saving || !permissions.data?.canUpload} fileList={files}
+              onChange={event => {if (!savingRef.current && operation.isSelected()) setFiles(event.fileList);}}
+              beforeUpload={() => false} multiple={false} maxCount={1} accept=".jar">
               <p className="ant-upload-drag-icon"><InboxOutlined /></p>
               <p className="ant-upload-text">{t('dna.dialects.page.form.jar.dragText', 'Click or drag a dialect jar here to upload')}</p>
               <p className="ant-upload-hint">{t('dna.dialects.page.form.jar.hint', 'Only one jar file is supported')}</p>
             </Dragger>
-          </Form.Item>
-        </Form>
+      </Modal>
+      <Modal wrapClassName="dna-dialect-delete" open={!!deleting && operation.selected} destroyOnHidden={!deleting}
+        title={t('dna.dialects.page.button.deleteSelected', 'Delete Selected')}
+        closable={!saving} maskClosable={!saving} keyboard={!saving} onCancel={() => {if (!savingRef.current) setDeleting(undefined);}}
+        footer={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+          {key: 'cancel', sort: 1, text: t('cancel', '取消'), disabled: saving},
+          {key: 'confirm', sort: 2, text: t('action.confirm', '确认'), type: 'primary', danger: true, loading: saving,
+            disabled: saving || !!loadError || !permissions.data?.canDelete},
+        ]} onButtonEvents={{cancel: () => {if (!savingRef.current) setDeleting(undefined);}, confirm: () => void handleDeleteSources()}}/>}>
+        {deleting?.map(source => source.name).join('、')}
+        {writeError && <Alert showIcon type="error" title={writeError}/>}
       </Modal>
     </>
   );
 };
 
-export default App;
+export default function ScopedJdbcDialects() {
+  const scope = useQueryScope();
+  return <App key={JSON.stringify(scope)}/>;
+}

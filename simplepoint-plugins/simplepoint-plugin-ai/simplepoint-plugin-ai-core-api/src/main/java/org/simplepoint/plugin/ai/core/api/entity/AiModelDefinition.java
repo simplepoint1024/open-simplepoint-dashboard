@@ -19,6 +19,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
+import org.simplepoint.core.annotation.PermissionFields;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
@@ -129,6 +130,7 @@ public class AiModelDefinition extends BaseEntityImpl<String> {
   private String providerId;
 
   @Transient
+  @PermissionFields(resource = AiProviderDefinition.class, value = "name")
   @Schema(title = "i18n:ai.models.title.providerName", accessMode = Schema.AccessMode.READ_ONLY)
   private String providerName;
 

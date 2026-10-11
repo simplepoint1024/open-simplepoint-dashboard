@@ -1,5 +1,7 @@
-import React from 'react';
-import {Button, Popconfirm, Result, Space} from 'antd';
+import React, {useState} from 'react';
+import {Popconfirm, Result, Space} from 'antd';
+import TableActions from '@simplepoint/components/Table/Actions';
+import {usePageSelected} from '@simplepoint/shared/page/hooks';
 import { loadRemote } from '@module-federation/runtime';
 import {preloadRemoteComponentAssets} from './mfPreload';
 import {createPrefetchScheduler, permitsSpeculation} from './prefetchScheduler';
@@ -103,7 +105,9 @@ export function getLazyComponent(
   remoteRegistryKey?: string,
 ): React.LazyExoticComponent<React.ComponentType<any>> {
   const fallback: { default: React.ComponentType<any> } = {
-    default: () => (
+    default: () => {
+      const selected = usePageSelected(), [confirming, setConfirming] = useState(false);
+      return (
       <Result
         status="error"
         title={t('error.remoteLoadFail', '远程资源加载失败，请稍后再试。')}
@@ -111,20 +115,21 @@ export function getLazyComponent(
         extra={
           spec ? (
             <Space>
-              <Button type="primary" onClick={() => retryRouteLoad(spec, remoteRegistryKey)}>
-                {t('error.reload', '重新加载')}
-              </Button>
+              <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'reload', sort: 0, type: 'primary',
+                text: t('error.reload', '重新加载'), onClick: () => retryRouteLoad(spec, remoteRegistryKey)}]}/>
               <Popconfirm
                 title={t('error.refreshPageConfirm', '刷新会丢失未保存的内容，确定继续吗？')}
+                open={selected && confirming} onOpenChange={setConfirming}
                 onConfirm={() => window.location.reload()}
               >
-                <Button>{t('error.refreshPage', '刷新页面获取最新版本')}</Button>
+                <span style={{display: 'inline-flex'}}><TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'refresh', sort: 0,
+                  text: t('error.refreshPage', '刷新页面获取最新版本'), onClick: () => setConfirming(true)}]}/></span>
               </Popconfirm>
             </Space>
           ) : undefined
         }
       />
-    )
+    );}
   };
   if (!spec) return React.lazy(async () => fallback);
   const key = cacheKey(spec, remoteRegistryKey);

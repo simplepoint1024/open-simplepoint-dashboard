@@ -1,9 +1,13 @@
 package org.simplepoint.plugin.rbac.resource.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -33,8 +37,6 @@ import org.simplepoint.security.entity.ResourceNode;
 import org.simplepoint.security.entity.ResourceScopeType;
 import org.simplepoint.security.entity.ResourceType;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 class ResourceServiceImplTest {
@@ -80,8 +82,9 @@ class ResourceServiceImplTest {
     page.setType(ResourceType.PAGE); page.setPath("/licensed");
     page.setComponent("common/LicensedPage"); page.setEnabled(true); page.setGrantable(true);
     when(catalog.mode("tenant-a")).thenReturn(TenantResourceMode.CUSTOM);
-    when(catalog.activeResources("tenant-a")).thenReturn(List.of(directory, page));
+    when(catalog.navigationResources(eq("tenant-a"), anyCollection())).thenReturn(List.of(directory, page));
     AuthorizationContext context = new AuthorizationContext();
+    context.setUserId("verified-user");
     context.setScopeType(AuthorizationScopeType.TENANT);
     context.setAttributes(Map.of("X-Tenant-Id", "tenant-a"));
     context.setResources(Set.of("licensed.page"));
@@ -113,8 +116,9 @@ class ResourceServiceImplTest {
     alias.setType(ResourceType.PAGE); alias.setPath("/custom-licensed");
     alias.setComponent(page.getComponent()); alias.setEnabled(true); alias.setGrantable(true);
     when(catalog.mode("tenant-a")).thenReturn(TenantResourceMode.CUSTOM);
-    when(catalog.activeResources("tenant-a")).thenReturn(List.of(page, alias));
+    when(catalog.navigationResources(eq("tenant-a"), anyCollection())).thenReturn(List.of(alias));
     AuthorizationContext context = new AuthorizationContext();
+    context.setUserId("verified-user");
     context.setScopeType(AuthorizationScopeType.TENANT);
     context.setAttributes(Map.of("X-Tenant-Id", "tenant-a"));
     context.setResources(Set.of(page.getCode(), alias.getCode()));
@@ -157,24 +161,21 @@ class ResourceServiceImplTest {
   }
 
   @Test
-  void limitTreeExposesTheDirectParentScopeBoundaryForEditing() {
-    Resource parent = resource("parent-id", "resources.root");
-    parent.setType(ResourceType.MODULE);
-    parent.setScopeTypes(Set.of(ResourceScopeType.TENANT, ResourceScopeType.PERSONAL));
-    Resource child = resource("child-id", "resources.child");
-    child.setParentId(parent.getId());
-    child.setScopeTypes(Set.of(ResourceScopeType.TENANT));
-    PageRequest pageable = PageRequest.of(0, 20);
-    when(repository.limit(any(), any())).thenReturn(new PageImpl<>(List.of(parent), pageable, 1));
-    when(ancestorRepository.findChildIdsByAncestorIds(List.of(parent.getId())))
-        .thenReturn(List.of(child.getId()));
-    when(repository.findAllByIds(List.of(child.getId()))).thenReturn(List.of(child));
+  void limitTreeRejectsMissingAuthorizationWithoutFallingBackToUnscopedRepositories() {
+    assertThatThrownBy(() -> service.limitTree(Map.of(), PageRequest.of(0, 20)))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    verifyNoInteractions(repository, ancestorRepository);
+  }
 
-    Page<ResourceNode> result = service.limitTree(Map.of(), pageable);
-
-    ResourceNode childNode = result.getContent().getFirst().getChildren().getFirst();
-    assertThat(childNode.getParentScopeTypes())
-        .containsExactlyInAnyOrder(ResourceScopeType.TENANT, ResourceScopeType.PERSONAL);
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"MASKED", "HIDDEN"})
+  void administratorNavigationRequiresTheActualQueryAdapterInsteadOfAnUnscopedRepositoryFallback(String access) {
+    var protectedContext = new AuthorizationContext(); protectedContext.setUserId("second"); protectedContext.setIsAdministrator(true);
+    protectedContext.setScopeType(AuthorizationScopeType.PLATFORM);
+    protectedContext.setFieldPermissions(Map.of(Resource.class.getName() + "#name", access));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, protectedContext);
+    assertThatThrownBy(() -> service.routes()).isInstanceOf(IllegalStateException.class);
+    verifyNoInteractions(repository, ancestorRepository);
   }
 
   private Resource resource(String id, String code) {

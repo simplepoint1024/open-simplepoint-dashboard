@@ -18,6 +18,7 @@ import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.rbac.core.api.pojo.command.ChangePasswordCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.command.UserProfileUpdateCommand;
+import org.simplepoint.plugin.rbac.core.api.pojo.command.UserPictureUpdateCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.dto.UserRoleRelevanceDto;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleRelevanceVo;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserPickerItem;
@@ -88,7 +89,12 @@ public class UsersController extends BaseController<UsersService, User, String> 
       @RequestParam(name = "keyword", required = false) String keyword,
       Pageable pageable
   ) {
-    return ok(service.searchPickerItems(keyword, boundedPickerPageable(pageable)));
+    try {
+      return ok(service.searchPickerItems(keyword, boundedPickerPageable(pageable)));
+    } catch (IllegalArgumentException error) {
+      throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+          "选人搜索参数无效，请检查搜索前缀与分页范围");
+    }
   }
 
   /** Resolves persisted picker IDs without exposing a broad directory query. */
@@ -96,7 +102,12 @@ public class UsersController extends BaseController<UsersService, User, String> 
   @Operation(summary = "回显已选用户", description = "批量解析选人字段中已经保存的用户ID")
   @PreAuthorize(USER_PICKER_ACCESS)
   public Response<Collection<UserPickerItem>> selectedPickerItems(@RequestParam("ids") String ids) {
-    return ok(service.resolvePickerItems(StringUtil.stringToSet(ids)));
+    try {
+      return ok(service.resolvePickerItems(StringUtil.stringToSet(ids)));
+    } catch (IllegalArgumentException error) {
+      throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+          "已选用户回显参数无效，单次最多100个用户");
+    }
   }
 
   /**
@@ -246,6 +257,13 @@ public class UsersController extends BaseController<UsersService, User, String> 
   @PreAuthorize("isAuthenticated()")
   public Response<User> updateCurrentProfile(@RequestBody UserProfileUpdateCommand command) {
     return ok(service.updateCurrentProfile(currentUserId(), command));
+  }
+
+  @PutMapping("/me/picture")
+  @Operation(summary = "修改当前用户头像", description = "仅更新当前登录用户的 OSS 头像，不覆盖其他个人资料")
+  @PreAuthorize("isAuthenticated()")
+  public Response<User> updateCurrentPicture(@RequestBody UserPictureUpdateCommand command) {
+    return ok(service.updateCurrentPicture(currentUserId(), command.picture()));
   }
 
   private String currentUserId() {

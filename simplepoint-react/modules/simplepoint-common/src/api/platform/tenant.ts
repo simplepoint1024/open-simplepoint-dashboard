@@ -1,6 +1,7 @@
 import api from '@/api';
 import {get, post} from '@simplepoint/shared/api/methods';
 import {Page} from '@simplepoint/shared/types/request';
+import type {RequestOptions} from '@simplepoint/shared/api/client';
 
 const {baseUrl} = api['platform.tenants'];
 
@@ -25,22 +26,22 @@ export async function fetchAuthorized(params: Pick<TenantPackagesRelevanceDto, '
   return await get<string[]>(`${baseUrl}/authorized`, params as Record<string, string>);
 }
 
-export async function fetchAuthorize(data: TenantPackagesRelevanceDto) {
-  return await post<TenantPackagesRelevanceDto>(`${baseUrl}/authorize`, data);
+export async function fetchAuthorize(data: TenantPackagesRelevanceDto, options?: RequestOptions) {
+  return await post<TenantPackagesRelevanceDto>(`${baseUrl}/authorize`, data, options);
 }
 
-export async function fetchUnauthorized(data: TenantPackagesRelevanceDto) {
-  return await post<TenantPackagesRelevanceDto>(`${baseUrl}/unauthorized`, data);
+export async function fetchUnauthorized(data: TenantPackagesRelevanceDto, options?: RequestOptions) {
+  return await post<TenantPackagesRelevanceDto>(`${baseUrl}/unauthorized`, data, options);
 }
 
 export async function fetchOwnerItems(params: {page: string; size: string}) {
   return await get<Page<UserRelevanceVo>>(`${baseUrl}/owners/items`, params as Record<string, string>);
 }
 
-export async function fetchAuthorizeUsers(data: TenantUsersRelevanceDto) {
-  return await post<TenantUsersRelevanceDto>(`${baseUrl}/users/authorize`, data);
+export async function fetchAuthorizeUsers(data: TenantUsersRelevanceDto, options?: RequestOptions) {
+  return await post<TenantUsersRelevanceDto>(`${baseUrl}/users/authorize`, data, options);
 }
 
-export async function fetchUnauthorizedUsers(data: TenantUsersRelevanceDto) {
-  return await post<TenantUsersRelevanceDto>(`${baseUrl}/users/unauthorized`, data);
+export async function fetchUnauthorizedUsers(data: TenantUsersRelevanceDto, options?: RequestOptions) {
+  return await post<TenantUsersRelevanceDto>(`${baseUrl}/users/unauthorized`, data, options);
 }

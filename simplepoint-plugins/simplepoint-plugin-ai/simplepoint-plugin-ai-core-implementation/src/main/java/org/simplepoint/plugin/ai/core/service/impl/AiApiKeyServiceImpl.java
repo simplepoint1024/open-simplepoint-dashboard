@@ -73,6 +73,7 @@ public class AiApiKeyServiceImpl
   public Optional<AiApiKey> findById(final String id) {
     Optional<AiApiKey> key = repository.findActiveById(requireId(id));
     key.ifPresent(this::assertCanRead);
+    key.ifPresent(this::assertAccessible);
     return key;
   }
 
@@ -122,13 +123,16 @@ public class AiApiKeyServiceImpl
     AiApiKey current = repository.findActiveById(requireId(id))
         .orElseThrow(() -> new IllegalArgumentException("模型 API Key 不存在"));
     scopeAccessPolicy.assertCanManageOwnedResource(current.getScopeType(), current.getTenantId());
+    assertAccessible(current);
+    if (current.getRevokedAt() != null) {
+      throw new IllegalStateException("已吊销的模型 API Key 不能轮换");
+    }
     IssuedSecret issued = keyHasher.issue();
     current.setKeyPrefix(issued.prefix());
     current.setSecretHash(issued.hash());
     current.setLastUsedAt(null);
     current.setUsageCount(0L);
-    current.setRevokedAt(null);
-    current.setEnabled(Boolean.TRUE);
+    // Rotation changes the credential, not enablement, expiry or rate-limit policy.
     AiApiKey saved = repository.save(current);
     saved.setIssuedKey(issued.rawKey());
     return saved;
@@ -146,6 +150,7 @@ public class AiApiKeyServiceImpl
         .toList();
     keys.forEach(key -> scopeAccessPolicy.assertCanManageOwnedResource(
         key.getScopeType(), key.getTenantId()));
+    keys.forEach(this::assertAccessible);
     Instant revokedAt = Instant.now();
     keys.forEach(key -> {
       key.setEnabled(Boolean.FALSE);
@@ -161,7 +166,8 @@ public class AiApiKeyServiceImpl
   }
 
   private void normalizeEditable(final AiApiKey entity, final AiApiKey current) {
-    entity.setName(requireText(entity.getName(), "API Key 名称不能为空"));
+    // A policy-only update may omit a readable-but-not-writable name.
+    entity.setName(requireText(entity.getName() == null && current != null ? current.getName() : entity.getName(), "API Key 名称不能为空"));
     entity.setDescription(trimToNull(entity.getDescription()));
     if (entity.getName().length() > 128) {
       throw new IllegalArgumentException("API Key 名称不能超过 128 个字符");

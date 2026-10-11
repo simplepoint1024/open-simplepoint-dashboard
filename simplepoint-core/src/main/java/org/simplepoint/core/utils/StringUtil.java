@@ -8,7 +8,7 @@
 
 package org.simplepoint.core.utils;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -43,11 +43,10 @@ public class StringUtil {
    * @throws NumberFormatException if any part of the string cannot be parsed into a Long
    */
   public static Set<Long> stringToLongSet(String input) {
-    Set<Long> set = new HashSet<>();
-    // Split the input string using the splitLast method
-    String[] parts = splitLast(input, ",");
+    Set<Long> set = new LinkedHashSet<>();
+    String[] parts = input.split(",", -1);
     for (String part : parts) {
-      set.add(Long.parseLong(part));
+      set.add(Long.parseLong(part.trim()));
     }
     return set;
   }
@@ -59,9 +58,8 @@ public class StringUtil {
    * @return a set of String values parsed from the input string
    */
   public static Set<String> stringToSet(String input) {
-    Set<String> set = new HashSet<>();
-    // Split the input string using the splitLast method
-    String[] parts = splitLast(input, ",");
+    Set<String> set = new LinkedHashSet<>();
+    String[] parts = input.split(",", -1);
     for (String part : parts) {
       set.add(part.trim()); // Trim whitespace around each part
     }

@@ -1,1261 +1,324 @@
+import {lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type Key} from 'react';
+import {Alert, App, Descriptions, Empty, Modal, Space, Spin, Splitter, Tabs, Tag, Tree, Typography} from 'antd';
+import type {ColumnsType} from 'antd/es/table';
+import DataTable from '@simplepoint/components/DataTable';
+import TableActions from '@simplepoint/components/Table/Actions';
+import type {TableButtonProps} from '@simplepoint/components/Table';
+import {get, post, useData} from '@simplepoint/shared/api/methods';
+import {normalizePage, type RawPage} from '@simplepoint/shared/types/request';
+import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import {usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
+import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
+import {DeleteOutlined, EyeOutlined, PlusOutlined, ReloadOutlined} from '@simplepoint/shared/types/icon';
+import JdbcDataSourceSelect, {enabledSources, type JdbcSourceOption} from '../JdbcDataSource/select';
+import {findMetadataTreeNodeByKey, normalizeMetadataTreeNodes, renderMetadataTreeTitle, replaceMetadataTreeChildren,
+  type MetadataNodeType, type MetadataPathSegment, type MetadataTreeNode} from '../metadataTree';
+import {constraintTypeTitle, metadataPayload, type DialogTarget, type FormKind, type MetadataDraft} from './forms';
+import type {MetadataFormHandle} from './MetadataForm';
 import api from '@/api';
-import { DeleteOutlined, EyeOutlined, PlusOutlined, ReloadOutlined } from '@simplepoint/shared/types/icon';
-import { get, post } from '@simplepoint/shared/api/methods';
-import { useI18n } from '@simplepoint/shared/hooks/useI18n';
-import {App as AntApp, Button, Card, Col, Descriptions, Empty, Form, Input, InputNumber, Modal, Row, Select, Space, Spin, Switch, Tabs, Tag, Tree, Typography} from 'antd';
-import Table from '@simplepoint/components/DataTable';
-import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  findMetadataTreeNodeByKey,
-  normalizeMetadataTreeNodes,
-  replaceMetadataTreeChildren,
-  type MetadataNodeType,
-  type MetadataPathNodeType,
-  type MetadataPathSegment,
-  type MetadataTreeNode,
-} from '../metadataTree';
-import { resolveErrorMessage } from '../shared';
+import './index.css';
 
-const { Paragraph, Text } = Typography;
-const dataSourceConfig = api['platform.dna-data-sources'];
-const metadataConfig = api['platform.dna-metadata'];
+const MetadataForm = lazy(() => import('./MetadataForm'));
+const base = api['platform.dna-metadata'];
+const sources = api['platform.dna-data-sources'];
+type Permissions = Record<'view' | 'preview' | 'createNamespace' | 'createTable' | 'createView' |
+  'alterColumn' | 'dropColumn' | 'addConstraint' | 'dropConstraint' | 'drop', boolean>;
+type Column = {name: string; typeName: string; size?: number | null; scale?: number | null; nullable?: boolean | null;
+  defaultValue?: string | null; autoIncrement?: boolean | null; remarks?: string | null};
+type Constraint = {name?: string; type: string; columns?: string[]; reference?: {tablePath?: MetadataPathSegment[]; columns?: string[]}; checkExpression?: string};
+type Structure = {columns: Column[]; constraints: Constraint[]; dialectName?: string; dialectCode?: string};
+type Preview = {columns: string[]; content: Record<string, unknown>[]; totalElements: number; pageNumber: number; pageSize: number};
+const noPath: MetadataPathSegment[] = [];
+const noNames: string[] = [];
+const columnData = (column?: Column) => column ? {...column} : {name: '', typeName: '', nullable: true, autoIncrement: false};
+const isDelete = (kind: FormKind) => ['drop', 'dropColumn', 'dropConstraint'].includes(kind);
+const validSource = (row?: JdbcSourceOption) => !!row?.id && row.id !== '***' && !!row.code && row.code !== '***';
 
-type NodeType = MetadataPathNodeType;
-type ConstraintType = 'PRIMARY_KEY' | 'FOREIGN_KEY' | 'UNIQUE' | 'CHECK';
-type PathSegment = MetadataPathSegment;
-
-type ColumnDefinition = {
-  name: string;
-  typeName: string;
-  size?: number | null;
-  scale?: number | null;
-  nullable?: boolean | null;
-  defaultValue?: string | null;
-  autoIncrement?: boolean | null;
-  remarks?: string | null;
-};
-
-type ConstraintReference = {
-  tablePath?: PathSegment[] | null;
-  columns?: string[] | null;
-};
-
-type ConstraintDefinition = {
-  name?: string | null;
-  type: ConstraintType;
-  columns?: string[] | null;
-  reference?: ConstraintReference | null;
-  checkExpression?: string | null;
-};
-
-type TableStructure = {
-  tablePath: PathSegment[];
-  dialectCode?: string | null;
-  dialectName?: string | null;
-  columns: ColumnDefinition[];
-  constraints: ConstraintDefinition[];
-};
-
-type DataPreviewPage = {
-  columns: string[];
-  content: Array<Record<string, unknown>>;
-  totalElements: number;
-  pageNumber: number;
-  pageSize: number;
-};
-
-type JdbcDataSourceOption = {
-  id: string;
-  code?: string;
-  name?: string;
-  driverName?: string;
-  databaseProductName?: string;
-};
-
-type NamespaceFormValues = {
-  type?: Extract<NodeType, 'DATABASE' | 'CATALOG' | 'SCHEMA'>;
-  name?: string;
-};
-
-type TableFormValues = {
-  name?: string;
-  columnsJson?: string;
-  constraintsJson?: string;
-};
-
-type ViewFormValues = {
-  name?: string;
-  definitionSql?: string;
-};
-
-type ColumnFormValues = {
-  currentName?: string;
-  name?: string;
-  typeName?: string;
-  size?: number | null;
-  scale?: number | null;
-  nullable?: boolean;
-  defaultValue?: string;
-  autoIncrement?: boolean;
-  remarks?: string;
-};
-
-type ConstraintFormValues = {
-  name?: string;
-  type?: ConstraintType;
-  columns?: string;
-  referenceCatalog?: string;
-  referenceSchema?: string;
-  referenceTable?: string;
-  referenceColumns?: string;
-  checkExpression?: string;
-};
-
-const buildDisplayType = (column?: ColumnDefinition | null) => {
-  if (!column) {
-    return '-';
-  }
-  if (column.size == null || column.size <= 0) {
-    return column.typeName || '-';
-  }
-  if (column.scale == null || column.scale < 0) {
-    return `${column.typeName}(${column.size})`;
-  }
-  return `${column.typeName}(${column.size},${column.scale})`;
-};
-
-const parseJsonArray = <T,>(
-  value: string | undefined,
-  label: string,
-  mustBeArrayMessage: string,
-  invalidFormatMessage: string,
-): T[] => {
-  const raw = value?.trim();
-  if (!raw) {
-    return [];
-  }
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      throw new Error(`${label}${mustBeArrayMessage}`);
-    }
-    return parsed as T[];
-  } catch (error) {
-    throw new Error(error instanceof Error ? error.message : `${label}${invalidFormatMessage}`);
-  }
-};
-
-const splitCommaValues = (value?: string) => value?.split(',').map((item) => item.trim()).filter(Boolean) ?? [];
-
-const App = () => {
-  const { t, ensure, locale } = useI18n();
-  const { message } = AntApp.useApp();
-  const [dataSources, setDataSources] = useState<JdbcDataSourceOption[]>([]);
-  const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>();
-  const [treeData, setTreeData] = useState<MetadataTreeNode[]>([]);
-  const [selectedNode, setSelectedNode] = useState<MetadataTreeNode | null>(null);
-  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
-  const [treeLoading, setTreeLoading] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [structure, setStructure] = useState<TableStructure | null>(null);
-  const [preview, setPreview] = useState<DataPreviewPage | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewPage, setPreviewPage] = useState({ current: 1, pageSize: 20, total: 0 });
-  const [namespaceModalOpen, setNamespaceModalOpen] = useState(false);
-  const [tableModalOpen, setTableModalOpen] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [columnModalOpen, setColumnModalOpen] = useState(false);
-  const [constraintModalOpen, setConstraintModalOpen] = useState(false);
-  const [columnMode, setColumnMode] = useState<'add' | 'alter'>('add');
-  const [submitting, setSubmitting] = useState(false);
-  const [namespaceForm] = Form.useForm<NamespaceFormValues>();
-  const [tableForm] = Form.useForm<TableFormValues>();
-  const [viewForm] = Form.useForm<ViewFormValues>();
-  const [columnForm] = Form.useForm<ColumnFormValues>();
-  const [constraintForm] = Form.useForm<ConstraintFormValues>();
-
-  useEffect(() => {
-    void ensure(metadataConfig.i18nNamespaces);
-  }, [ensure, locale]);
-
-  const resolveNodeTypeLabel = useCallback((type: MetadataNodeType, fallback?: string | null) => {
-    return t(`dna.metadata.page.nodeType.${type}`, fallback || type);
-  }, [t]);
-
-  const resolveConstraintTypeLabel = useCallback((type: ConstraintType) => {
-    return t(`dna.metadata.page.constraintType.${type}`, type);
-  }, [t]);
-
-  const loadDataSources = useCallback(async () => {
-    try {
-      const page = await get<{ content?: JdbcDataSourceOption[] }>(dataSourceConfig.baseUrl, { page: 0, size: 200 });
-      const content = page.content ?? [];
-      setDataSources(content);
-      if (!selectedDataSourceId && content[0]?.id) {
-        setSelectedDataSourceId(content[0].id);
-      }
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.metadata.page.error.loadDataSources', 'Failed to load data sources.')));
-    }
-  }, [message, selectedDataSourceId, t]);
-
-  const loadChildren = useCallback(async (path: PathSegment[]) => {
-    if (!selectedDataSourceId) {
-      return [];
-    }
-    const data = await post<MetadataTreeNode[]>(`${metadataConfig.baseUrl}/${selectedDataSourceId}/children`, { path });
-    return normalizeMetadataTreeNodes(data ?? [], resolveNodeTypeLabel, {dataSourceId: selectedDataSourceId});
-  }, [resolveNodeTypeLabel, selectedDataSourceId]);
-
-  const reloadRoot = useCallback(async () => {
-    if (!selectedDataSourceId) {
-      setTreeData([]);
-      return;
-    }
-    setTreeLoading(true);
-    try {
-      const data = await loadChildren([]);
-      setTreeData(data);
-      setSelectedNode(null);
-      setSelectedKeys([]);
-      setStructure(null);
-      setPreview(null);
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.metadata.page.error.loadTree', 'Failed to load metadata tree.')));
-    } finally {
-      setTreeLoading(false);
-    }
-  }, [loadChildren, message, selectedDataSourceId, t]);
-
-  useEffect(() => {
-    void loadDataSources();
-  }, [loadDataSources]);
-
-  useEffect(() => {
-    void reloadRoot();
-  }, [reloadRoot]);
-
-  const relationPath = useMemo<PathSegment[] | null>(() => {
-    if (!selectedNode) {
-      return null;
-    }
-    if (selectedNode.type === 'TABLE' || selectedNode.type === 'VIEW') {
-      return selectedNode.path;
-    }
-    if (selectedNode.type === 'COLUMN') {
-      return selectedNode.path.slice(0, -1);
-    }
-    return null;
-  }, [selectedNode]);
-
-  const selectedTablePath = useMemo<PathSegment[] | null>(() => {
-    if (!relationPath || relationPath.length === 0) {
-      return null;
-    }
-    return relationPath[relationPath.length - 1]?.type === 'TABLE' ? relationPath : null;
-  }, [relationPath]);
-
-  const rootNamespaceType = useMemo<Extract<NodeType, 'DATABASE' | 'CATALOG' | 'SCHEMA'> | undefined>(() => {
-    const type = treeData[0]?.type;
-    if (type === 'DATABASE' || type === 'CATALOG' || type === 'SCHEMA') {
-      return type;
-    }
-    return undefined;
-  }, [treeData]);
-
-  const availableNamespaceTypes = useMemo<Extract<NodeType, 'DATABASE' | 'CATALOG' | 'SCHEMA'>[]>(() => {
-    if (selectedNode?.type === 'DATABASE' || selectedNode?.type === 'CATALOG') {
-      return ['SCHEMA'];
-    }
-    if (!selectedNode && rootNamespaceType) {
-      return [rootNamespaceType];
-    }
-    return [];
-  }, [rootNamespaceType, selectedNode]);
-
-  const canCreateRelationAtRoot = useMemo(() => !rootNamespaceType, [rootNamespaceType]);
-  const selectedNamespacePath = useMemo<PathSegment[] | null>(() => {
-    if (!selectedNode) {
-      return canCreateRelationAtRoot ? [] : null;
-    }
-    if (selectedNode.type === 'DATABASE' || selectedNode.type === 'CATALOG' || selectedNode.type === 'SCHEMA') {
-      return selectedNode.path;
-    }
-    return null;
-  }, [canCreateRelationAtRoot, selectedNode]);
-
-  const loadStructure = useCallback(async (path: PathSegment[]) => {
-    if (!selectedDataSourceId) {
-      return;
-    }
-    setDetailLoading(true);
-    try {
-      const data = await post<TableStructure>(`${metadataConfig.baseUrl}/${selectedDataSourceId}/structure`, { path });
-      setStructure(data);
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.metadata.page.error.loadStructure', 'Failed to load table structure.')));
-    } finally {
-      setDetailLoading(false);
-    }
-  }, [message, selectedDataSourceId, t]);
-
-  const loadPreview = useCallback(async (path: PathSegment[], current = 1, pageSize = 20) => {
-    if (!selectedDataSourceId) {
-      return;
-    }
-    setPreviewLoading(true);
-    try {
-      const data = await post<DataPreviewPage>(
-        `${metadataConfig.baseUrl}/${selectedDataSourceId}/preview?page=${Math.max(current - 1, 0)}&size=${pageSize}`,
-        { path },
-      );
-      setPreview(data);
-      setPreviewPage({
-        current: (data.pageNumber ?? 0) + 1,
-        pageSize: data.pageSize ?? pageSize,
-        total: data.totalElements ?? 0,
-      });
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.metadata.page.error.loadPreview', 'Failed to load data preview.')));
-    } finally {
-      setPreviewLoading(false);
-    }
-  }, [message, selectedDataSourceId, t]);
-
-  useEffect(() => {
-    if (!relationPath) {
-      setStructure(null);
-      setPreview(null);
-      return;
-    }
-    void Promise.all([
-      loadStructure(relationPath),
-      loadPreview(relationPath, 1, previewPage.pageSize),
-    ]);
-  }, [loadPreview, loadStructure, previewPage.pageSize, relationPath]);
-
-  const handleLoadData = useCallback(async (treeNode: any) => {
-    const node = treeNode as MetadataTreeNode;
-    if (node.isLeaf) {
-      return;
-    }
-    if (node.children && node.children.length > 0) {
-      return;
-    }
-    try {
-      const children = await loadChildren(node.path);
-      setTreeData((current) => replaceMetadataTreeChildren(current, node.key, children));
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.metadata.page.error.loadChildren', 'Failed to load child nodes.')));
-    }
-  }, [loadChildren, message, t]);
-
-  const handleSelect = useCallback((keys: React.Key[]) => {
-    setSelectedKeys(keys);
-    const node = keys.length > 0 ? findMetadataTreeNodeByKey(treeData, keys[0]) : null;
-    setSelectedNode(node);
-  }, [treeData]);
-
-  const handleRefresh = useCallback(async () => {
-    await reloadRoot();
-    message.success(t('dna.metadata.page.success.refresh', 'Metadata refreshed.'));
-  }, [message, reloadRoot, t]);
-
-  const handlePreviewTableChange = useCallback((pagination: TablePaginationConfig) => {
-    if (!relationPath) {
-      return;
-    }
-    void loadPreview(relationPath, pagination.current || 1, pagination.pageSize || 20);
-  }, [loadPreview, relationPath]);
-
-  const namespaceOptions = useMemo(() => availableNamespaceTypes.map((type) => ({
-    label: t(`dna.metadata.page.option.namespace.${type}`, type),
-    value: type,
-  })), [availableNamespaceTypes, t]);
-
-  const openNamespaceModal = useCallback(() => {
-    namespaceForm.setFieldsValue({ type: availableNamespaceTypes[0], name: '' });
-    setNamespaceModalOpen(true);
-  }, [availableNamespaceTypes, namespaceForm]);
-
-  const openTableModal = useCallback(() => {
-    tableForm.setFieldsValue({
-      name: '',
-      columnsJson: JSON.stringify([
-        { name: 'id', typeName: 'VARCHAR', size: 64, nullable: false },
-        { name: 'name', typeName: 'VARCHAR', size: 128, nullable: false },
-      ], null, 2),
-      constraintsJson: JSON.stringify([
-        { name: 'pk_demo', type: 'PRIMARY_KEY', columns: ['id'] },
-      ], null, 2),
-    });
-    setTableModalOpen(true);
-  }, [tableForm]);
-
-  const openViewModal = useCallback(() => {
-    viewForm.setFieldsValue({
-      name: '',
-      definitionSql: 'SELECT * FROM your_table',
-    });
-    setViewModalOpen(true);
-  }, [viewForm]);
-
-  const openAddColumnModal = useCallback(() => {
-    setColumnMode('add');
-    columnForm.setFieldsValue({
-      currentName: undefined,
-      name: '',
-      typeName: 'VARCHAR',
-      size: 255,
-      scale: null,
-      nullable: true,
-      defaultValue: '',
-      autoIncrement: false,
-      remarks: '',
-    });
-    setColumnModalOpen(true);
-  }, [columnForm]);
-
-  const openAlterColumnModal = useCallback(() => {
-    const currentName = selectedNode?.type === 'COLUMN' ? selectedNode.path[selectedNode.path.length - 1]?.name : undefined;
-    const currentColumn = structure?.columns.find((item) => item.name === currentName);
-    setColumnMode('alter');
-    columnForm.setFieldsValue({
-      currentName,
-      name: currentColumn?.name,
-      typeName: currentColumn?.typeName,
-      size: currentColumn?.size ?? null,
-      scale: currentColumn?.scale ?? null,
-      nullable: currentColumn?.nullable !== false,
-      defaultValue: currentColumn?.defaultValue || '',
-      autoIncrement: currentColumn?.autoIncrement === true,
-      remarks: currentColumn?.remarks || '',
-    });
-    setColumnModalOpen(true);
-  }, [columnForm, selectedNode, structure?.columns]);
-
-  const openConstraintModal = useCallback(() => {
-    constraintForm.setFieldsValue({
-      name: '',
-      type: 'PRIMARY_KEY',
-      columns: '',
-      referenceCatalog: '',
-      referenceSchema: '',
-      referenceTable: '',
-      referenceColumns: '',
-      checkExpression: '',
-    });
-    setConstraintModalOpen(true);
-  }, [constraintForm]);
-
-  const handleCreateNamespace = useCallback(async () => {
-    if (!selectedDataSourceId) {
-      return;
-    }
-    const values = await namespaceForm.validateFields();
-    setSubmitting(true);
-    try {
-      await post(`${metadataConfig.baseUrl}/${selectedDataSourceId}/namespaces`, {
-        type: values.type,
-        parentPath: selectedNamespacePath ?? [],
-        name: values.name?.trim(),
-      });
-      message.success(t('dna.metadata.page.success.createNamespace', 'Namespace created successfully.'));
-      setNamespaceModalOpen(false);
-      namespaceForm.resetFields();
-      await reloadRoot();
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.metadata.page.error.createNamespace', 'Failed to create namespace.')));
-    } finally {
-      setSubmitting(false);
-    }
-  }, [message, metadataConfig.baseUrl, namespaceForm, reloadRoot, selectedDataSourceId, selectedNamespacePath, t]);
-
-  const handleCreateTable = useCallback(async () => {
-    if (!selectedDataSourceId || selectedNamespacePath == null) {
-      return;
-    }
-    const values = await tableForm.validateFields();
-    setSubmitting(true);
-    try {
-      await post(`${metadataConfig.baseUrl}/${selectedDataSourceId}/tables`, {
-        parentPath: selectedNamespacePath,
-        name: values.name?.trim(),
-        columns: parseJsonArray<ColumnDefinition>(
-          values.columnsJson,
-          t('dna.metadata.page.form.table.columnsJson.label', 'Column Definition JSON'),
-          t('dna.metadata.page.validation.mustBeArray', ' must be an array'),
-          t('dna.metadata.page.validation.invalidFormat', ' has an invalid format'),
-        ),
-        constraints: parseJsonArray<ConstraintDefinition>(
-          values.constraintsJson,
-          t('dna.metadata.page.form.table.constraintsJson.label', 'Constraint Definition JSON'),
-          t('dna.metadata.page.validation.mustBeArray', ' must be an array'),
-          t('dna.metadata.page.validation.invalidFormat', ' has an invalid format'),
-        ),
-      });
-      message.success(t('dna.metadata.page.success.createTable', 'Table created successfully.'));
-      setTableModalOpen(false);
-      tableForm.resetFields();
-      await reloadRoot();
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.metadata.page.error.createTable', 'Failed to create table.')));
-    } finally {
-      setSubmitting(false);
-    }
-  }, [message, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedNamespacePath, t, tableForm]);
-
-  const handleCreateView = useCallback(async () => {
-    if (!selectedDataSourceId || selectedNamespacePath == null) {
-      return;
-    }
-    const values = await viewForm.validateFields();
-    setSubmitting(true);
-    try {
-      await post(`${metadataConfig.baseUrl}/${selectedDataSourceId}/views`, {
-        parentPath: selectedNamespacePath,
-        name: values.name?.trim(),
-        definitionSql: values.definitionSql?.trim(),
-      });
-      message.success(t('dna.metadata.page.success.createView', 'View created successfully.'));
-      setViewModalOpen(false);
-      viewForm.resetFields();
-      await reloadRoot();
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.metadata.page.error.createView', 'Failed to create view.')));
-    } finally {
-      setSubmitting(false);
-    }
-  }, [message, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedNamespacePath, t, viewForm]);
-
-  const handleSubmitColumn = useCallback(async () => {
-    if (!selectedDataSourceId || !selectedTablePath) {
-      return;
-    }
-    const values = await columnForm.validateFields();
-    setSubmitting(true);
-    try {
-      const payload = {
-        tablePath: selectedTablePath,
-        currentName: values.currentName?.trim(),
-        column: {
-          name: values.name?.trim(),
-          typeName: values.typeName?.trim(),
-          size: values.size ?? null,
-          scale: values.scale ?? null,
-          nullable: values.nullable !== false,
-          defaultValue: values.defaultValue?.trim() || null,
-          autoIncrement: values.autoIncrement === true,
-          remarks: values.remarks?.trim() || null,
-        },
-      };
-      await post(
-        `${metadataConfig.baseUrl}/${selectedDataSourceId}/${columnMode === 'add' ? 'columns' : 'columns/alter'}`,
-        payload,
-      );
-      message.success(columnMode === 'add'
-        ? t('dna.metadata.page.success.addColumn', 'Column added successfully.')
-        : t('dna.metadata.page.success.alterColumn', 'Column updated successfully.'));
-      setColumnModalOpen(false);
-      columnForm.resetFields();
-      await reloadRoot();
-    } catch (error) {
-      message.error(resolveErrorMessage(
-        error,
-        columnMode === 'add'
-          ? t('dna.metadata.page.error.addColumn', 'Failed to add column.')
-          : t('dna.metadata.page.error.alterColumn', 'Failed to update column.'),
-      ));
-    } finally {
-      setSubmitting(false);
-    }
-  }, [columnForm, columnMode, message, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedTablePath, t]);
-
-  const handleDropColumn = useCallback(async () => {
-    if (!selectedDataSourceId || !selectedTablePath || selectedNode?.type !== 'COLUMN') {
-      return;
-    }
-    const columnName = selectedNode.path[selectedNode.path.length - 1]?.name;
-    setSubmitting(true);
-    try {
-      await post(`${metadataConfig.baseUrl}/${selectedDataSourceId}/columns/drop`, {
-        tablePath: selectedTablePath,
-        columnName,
-      });
-      message.success(t('dna.metadata.page.success.dropColumn', 'Column deleted successfully.'));
-      await reloadRoot();
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.metadata.page.error.dropColumn', 'Failed to delete column.')));
-    } finally {
-      setSubmitting(false);
-    }
-  }, [message, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedNode, selectedTablePath, t]);
-
-  const handleAddConstraint = useCallback(async () => {
-    if (!selectedDataSourceId || !selectedTablePath) {
-      return;
-    }
-    const values = await constraintForm.validateFields();
-    setSubmitting(true);
-    try {
-      const referencePath: PathSegment[] = [];
-      if (values.referenceCatalog?.trim()) {
-        referencePath.push({ type: rootNamespaceType || 'DATABASE', name: values.referenceCatalog.trim() });
-      }
-      if (values.referenceSchema?.trim()) {
-        referencePath.push({ type: 'SCHEMA', name: values.referenceSchema.trim() });
-      }
-      if (values.referenceTable?.trim()) {
-        referencePath.push({ type: 'TABLE', name: values.referenceTable.trim() });
-      }
-      await post(`${metadataConfig.baseUrl}/${selectedDataSourceId}/constraints`, {
-        tablePath: selectedTablePath,
-        constraint: {
-          name: values.name?.trim() || null,
-          type: values.type,
-          columns: splitCommaValues(values.columns),
-          reference: values.type === 'FOREIGN_KEY'
-            ? {
-                tablePath: referencePath,
-                columns: splitCommaValues(values.referenceColumns),
-              }
-            : null,
-          checkExpression: values.type === 'CHECK' ? values.checkExpression?.trim() || null : null,
-        },
-      });
-      message.success(t('dna.metadata.page.success.addConstraint', 'Constraint added successfully.'));
-      setConstraintModalOpen(false);
-      constraintForm.resetFields();
-      await reloadRoot();
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.metadata.page.error.addConstraint', 'Failed to add constraint.')));
-    } finally {
-      setSubmitting(false);
-    }
-  }, [constraintForm, message, metadataConfig.baseUrl, reloadRoot, rootNamespaceType, selectedDataSourceId, selectedTablePath, t]);
-
-  const handleDropConstraint = useCallback(async (record: ConstraintDefinition) => {
-    if (!selectedDataSourceId || !selectedTablePath) {
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await post(`${metadataConfig.baseUrl}/${selectedDataSourceId}/constraints/drop`, {
-        tablePath: selectedTablePath,
-        constraintName: record.name,
-        type: record.type,
-      });
-      message.success(t('dna.metadata.page.success.dropConstraint', 'Constraint deleted successfully.'));
-      await reloadRoot();
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.metadata.page.error.dropConstraint', 'Failed to delete constraint.')));
-    } finally {
-      setSubmitting(false);
-    }
-  }, [message, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedTablePath, t]);
-
-  const handleDropObject = useCallback(async () => {
-    if (!selectedDataSourceId || !selectedNode || selectedNode.type === 'COLUMN') {
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await post(`${metadataConfig.baseUrl}/${selectedDataSourceId}/drop`, {
-        path: selectedNode.path,
-        cascade: true,
-      });
-      message.success(t('dna.metadata.page.success.dropObject', 'Object deleted successfully.'));
-      await reloadRoot();
-    } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.metadata.page.error.dropObject', 'Failed to delete object.')));
-    } finally {
-      setSubmitting(false);
-    }
-  }, [message, metadataConfig.baseUrl, reloadRoot, selectedDataSourceId, selectedNode, t]);
-
-  const dataSourceLabel = useCallback((item: JdbcDataSourceOption) => {
-    const primary = item.name || item.code || item.id;
-    const secondary = item.code && item.code !== primary ? ` (${item.code})` : '';
-    return `${primary}${secondary}`;
-  }, []);
-
-  const columnColumns = useMemo<ColumnsType<ColumnDefinition>>(() => [
-    {
-      title: t('dna.metadata.page.table.columns.name', 'Column Name'),
-      dataIndex: 'name',
-      key: 'name',
-      width: 180,
-    },
-    {
-      title: t('dna.metadata.page.table.columns.type', 'Type'),
-      key: 'type',
-      width: 180,
-      render: (_value, record) => buildDisplayType(record),
-    },
-    {
-      title: t('dna.metadata.page.table.columns.nullable', 'Nullable'),
-      dataIndex: 'nullable',
-      key: 'nullable',
-      width: 100,
-      render: (value?: boolean | null) => (
-        <Tag color={value === false ? 'red' : 'green'}>
-          {value === false
-            ? t('dna.metadata.page.state.no', 'No')
-            : t('dna.metadata.page.state.yes', 'Yes')}
-        </Tag>
-      ),
-    },
-    {
-      title: t('dna.metadata.page.table.columns.defaultValue', 'Default Value'),
-      dataIndex: 'defaultValue',
-      key: 'defaultValue',
-      width: 160,
-      ellipsis: true,
-      render: (value?: string | null) => value || '-',
-    },
-    {
-      title: t('dna.metadata.page.table.columns.autoIncrement', 'Auto Increment'),
-      dataIndex: 'autoIncrement',
-      key: 'autoIncrement',
-      width: 100,
-      render: (value?: boolean | null) => (
-        <Tag color={value ? 'blue' : 'default'}>
-          {value ? t('dna.metadata.page.state.yes', 'Yes') : t('dna.metadata.page.state.no', 'No')}
-        </Tag>
-      ),
-    },
-    {
-      title: t('dna.metadata.page.table.columns.remarks', 'Remarks'),
-      dataIndex: 'remarks',
-      key: 'remarks',
-      ellipsis: true,
-      render: (value?: string | null) => value || '-',
-    },
-  ], [t]);
-
-  const constraintColumns = useMemo<ColumnsType<ConstraintDefinition>>(() => [
-    {
-      title: t('dna.metadata.page.table.constraints.name', 'Constraint Name'),
-      dataIndex: 'name',
-      key: 'name',
-      width: 180,
-      render: (value?: string | null) => value || '-',
-    },
-    {
-      title: t('dna.metadata.page.table.constraints.type', 'Type'),
-      dataIndex: 'type',
-      key: 'type',
-      width: 120,
-      render: (value: ConstraintType) => <Tag color="blue">{resolveConstraintTypeLabel(value)}</Tag>,
-    },
-    {
-      title: t('dna.metadata.page.table.constraints.columns', 'Columns'),
-      dataIndex: 'columns',
-      key: 'columns',
-      width: 200,
-      render: (value?: string[] | null) => value && value.length > 0 ? value.join(', ') : '-',
-    },
-    {
-      title: t('dna.metadata.page.table.constraints.reference', 'Reference'),
-      dataIndex: 'reference',
-      key: 'reference',
-      width: 260,
-      render: (value?: ConstraintReference | null) => {
-        if (!value?.tablePath?.length) {
-          return '-';
-        }
-        const target = value.tablePath.map((segment) => segment.name).join(' / ');
-        const columns = value.columns?.length ? ` (${value.columns.join(', ')})` : '';
-        return `${target}${columns}`;
-      },
-    },
-    {
-      title: t('dna.metadata.page.table.constraints.checkExpression', 'CHECK Expression'),
-      dataIndex: 'checkExpression',
-      key: 'checkExpression',
-      ellipsis: true,
-      render: (value?: string | null) => value || '-',
-    },
-    {
-      title: t('dna.metadata.page.table.constraints.actions', 'Actions'),
-      key: 'actions',
-      width: 120,
-      render: (_value, record) => (
-        <Button danger size="small" onClick={() => void handleDropConstraint(record)}>
-          {t('dna.metadata.page.table.constraints.drop', 'Delete')}
-        </Button>
-      ),
-    },
-  ], [handleDropConstraint, resolveConstraintTypeLabel, t]);
-
-  const previewColumns = useMemo<ColumnsType<Record<string, unknown>>>(() => (
-    preview?.columns?.map((name) => ({
-      title: name,
-      dataIndex: name,
-      key: name,
-      width: 180,
-      ellipsis: true,
-      render: (value: unknown) => {
-        if (value == null) {
-          return '-';
-        }
-        if (typeof value === 'object') {
-          return JSON.stringify(value);
-        }
-        return String(value);
-      },
-    })) ?? []
-  ), [preview?.columns]);
-
-  const constraintType = Form.useWatch('type', constraintForm);
-
-  return (
-    <>
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, gap: 16 }}>
-      <Space style={{ flexShrink: 0 }} wrap>
-        <Select
-          style={{ width: 320 }}
-          placeholder={t('dna.metadata.page.placeholder.selectDataSource', 'Select a data source')}
-          value={selectedDataSourceId}
-          options={dataSources.map((item) => ({ label: dataSourceLabel(item), value: item.id }))}
-          onChange={(value) => setSelectedDataSourceId(value)}
-        />
-        <Button icon={<ReloadOutlined />} onClick={() => void handleRefresh()} loading={treeLoading}>
-          {t('dna.metadata.page.button.refreshTree', 'Refresh Tree')}
-        </Button>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          disabled={!selectedDataSourceId || availableNamespaceTypes.length === 0}
-          onClick={openNamespaceModal}
-        >
-          {t('dna.metadata.page.button.createNamespace', 'Create Namespace')}
-        </Button>
-        <Button
-          icon={<PlusOutlined />}
-          disabled={!selectedDataSourceId || selectedNamespacePath == null}
-          onClick={openTableModal}
-        >
-          {t('dna.metadata.page.button.createTable', 'Create Table')}
-        </Button>
-        <Button
-          icon={<PlusOutlined />}
-          disabled={!selectedDataSourceId || selectedNamespacePath == null}
-          onClick={openViewModal}
-        >
-          {t('dna.metadata.page.button.createView', 'Create View')}
-        </Button>
-        <Button
-          icon={<PlusOutlined />}
-          disabled={!selectedDataSourceId || !selectedTablePath}
-          onClick={openAddColumnModal}
-        >
-          {t('dna.metadata.page.button.addColumn', 'Add Column')}
-        </Button>
-        <Button
-          icon={<PlusOutlined />}
-          disabled={!selectedDataSourceId || selectedNode?.type !== 'COLUMN'}
-          onClick={openAlterColumnModal}
-        >
-          {t('dna.metadata.page.button.alterColumn', 'Alter Column')}
-        </Button>
-        <Button
-          icon={<PlusOutlined />}
-          disabled={!selectedDataSourceId || !selectedTablePath}
-          onClick={openConstraintModal}
-        >
-          {t('dna.metadata.page.button.addConstraint', 'Add Constraint')}
-        </Button>
-        <Button
-          danger
-          icon={<DeleteOutlined />}
-          disabled={!selectedDataSourceId || !selectedNode || selectedNode.type === 'ROOT'}
-          onClick={() => void handleDropObject()}
-        >
-          {t('dna.metadata.page.button.dropObject', 'Delete Object')}
-        </Button>
-        <Button
-          danger
-          disabled={!selectedDataSourceId || selectedNode?.type !== 'COLUMN'}
-          onClick={() => void handleDropColumn()}
-        >
-          {t('dna.metadata.page.button.dropColumn', 'Delete Column')}
-        </Button>
-      </Space>
-
-      <Row gutter={16} style={{ flex: 1, minHeight: 0 }}>
-        <Col span={8} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <Card title={t('dna.metadata.page.card.tree', 'Metadata Tree')} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }} bodyStyle={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-            {treeLoading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
-                <Spin />
-              </div>
-            ) : treeData.length > 0 ? (
-              <Tree
-                treeData={treeData}
-                loadData={handleLoadData}
-                selectedKeys={selectedKeys}
-                onSelect={(keys) => handleSelect(keys)}
-              />
-            ) : (
-              <Empty
-                description={selectedDataSourceId
-                  ? t('dna.metadata.page.empty.noObjects', 'No objects are available for this data source.')
-                  : t('dna.metadata.page.empty.selectDataSource', 'Select a data source first.')}
-              />
-            )}
-          </Card>
-        </Col>
-        <Col span={16} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <Card
-            title={t('dna.metadata.page.card.details', 'Object Details')}
-            extra={relationPath
-              ? (
-                <Button icon={<EyeOutlined />} onClick={() => relationPath && void loadPreview(relationPath, 1, previewPage.pageSize)}>
-                  {t('dna.metadata.page.button.refreshPreview', 'Refresh Preview')}
-                </Button>
-              )
-              : null}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-            bodyStyle={{ flex: 1, overflow: 'auto', minHeight: 0 }}
-          >
-            {!selectedNode ? (
-              <Empty description={t('dna.metadata.page.empty.selectObject', 'Select an object from the left tree.')} />
-            ) : (
-              <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                <Descriptions size="small" column={2} bordered>
-                  <Descriptions.Item label={t('dna.metadata.page.detail.name', 'Name')}>
-                    {selectedNode.path[selectedNode.path.length - 1]?.name || '-'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label={t('dna.metadata.page.detail.type', 'Type')}>
-                    {resolveNodeTypeLabel(selectedNode.type, selectedNode.typeLabel)}
-                  </Descriptions.Item>
-                  <Descriptions.Item label={t('dna.metadata.page.detail.path', 'Path')} span={2}>
-                    {selectedNode.path.map((segment) => segment.name).join(' / ') || '/'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label={t('dna.metadata.page.detail.dataType', 'Data Type')}>
-                    {selectedNode.dataType || '-'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label={t('dna.metadata.page.detail.nullable', 'Nullable')}>
-                    {selectedNode.nullable == null
-                      ? '-'
-                      : selectedNode.nullable
-                        ? t('dna.metadata.page.state.yes', 'Yes')
-                        : t('dna.metadata.page.state.no', 'No')}
-                  </Descriptions.Item>
-                  <Descriptions.Item label={t('dna.metadata.page.detail.defaultValue', 'Default Value')}>
-                    {selectedNode.defaultValue || '-'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label={t('dna.metadata.page.detail.remarks', 'Remarks')}>
-                    {selectedNode.remarks || '-'}
-                  </Descriptions.Item>
-                </Descriptions>
-
-                {relationPath ? (
-                  <Tabs
-                    items={[
-                      {
-                        key: 'structure',
-                        label: t('dna.metadata.page.tab.structure', 'Structure'),
-                        children: (
-                          <Spin spinning={detailLoading}>
-                            <Paragraph>
-                              <Text strong>{t('dna.metadata.page.detail.dialect', 'Dialect')}：</Text>
-                              {structure?.dialectName || structure?.dialectCode || '-'}
-                            </Paragraph>
-                            <Table<ColumnDefinition>
-                              storageKey="dna.metadata.columns"
-                              query={{mode: 'local', scope: 'complete',
-                                contextKey: JSON.stringify([selectedDataSourceId, relationPath]), fields: {
-                                  name: {type: 'string'}, typeName: {type: 'string', columnKey: 'type'},
-                                  nullable: {type: 'boolean'}, autoIncrement: {type: 'boolean'},
-                                  defaultValue: {type: 'string'}, remarks: {type: 'string'},
-                                }}}
-                              rowKey={(record) => record.name}
-                              columns={columnColumns}
-                              dataSource={structure?.columns ?? []}
-                              pagination={false}
-                              size="small"
-                              scroll={{ x: 960 }}
-                            />
-                            <div style={{ height: 16 }} />
-                            <Table<ConstraintDefinition>
-                              storageKey="dna.metadata.constraints"
-                              query={{mode: 'local', scope: 'complete',
-                                contextKey: JSON.stringify([selectedDataSourceId, relationPath]), fields: {
-                                  name: {type: 'string'},
-                                  type: {type: 'string', enum: ['PRIMARY_KEY', 'FOREIGN_KEY', 'UNIQUE', 'CHECK']},
-                                  checkExpression: {type: 'string'},
-                                }}}
-                              rowKey={(record) => `${record.type}-${record.name}-${record.columns?.join(',')}`}
-                              columns={constraintColumns}
-                              dataSource={structure?.constraints ?? []}
-                              pagination={false}
-                              size="small"
-                              scroll={{ x: 1100 }}
-                            />
-                          </Spin>
-                        ),
-                      },
-                      {
-                        key: 'preview',
-                        label: t('dna.metadata.page.tab.preview', 'Data Preview'),
-                        children: (
-                          <Table<Record<string, unknown>>
-                            rowKey={(_record, index) => `${previewPage.current}-${index}`}
-                            loading={previewLoading}
-                            columns={previewColumns}
-                            dataSource={preview?.content ?? []}
-                            pagination={{
-                              current: previewPage.current,
-                              pageSize: previewPage.pageSize,
-                              total: previewPage.total,
-                              showSizeChanger: true,
-                            }}
-                            onChange={handlePreviewTableChange}
-                            size="small"
-                            scroll={{ x: 'max-content' }}
-                          />
-                        ),
-                      },
-                    ]}
-                  />
-                ) : null}
-              </Space>
-            )}
-          </Card>
-        </Col>
-      </Row>
+export default function JdbcMetadata() {
+  const scope = useQueryScope();
+  return <MetadataWorkbench key={JSON.stringify(scope)}/>;
+}
+function MetadataWorkbench() {
+  const {t, ensure, locale} = useI18n();
+  const [chosen, setChosen] = useState<JdbcSourceOption>();
+  const [locked, setLocked] = useState(false);
+  const lock = useRef(false);
+  const permissions = useData(['dna-metadata-permissions', base.baseUrl], ({signal}) =>
+    get<Permissions>(base.baseUrl + '/workbench-permissions', undefined, {signal}), {retry: false});
+  const initial = useData(['dna-metadata-initial-source', sources.baseUrl], async ({signal}) =>
+    normalizePage(await get<RawPage<JdbcSourceOption>>(sources.baseUrl,
+      {page: 0, size: 1, sort: 'name,asc', ...enabledSources}, {signal})).content[0],
+  {enabled: permissions.data?.view === true && !chosen, retry: false});
+  const source = chosen ?? initial.data;
+  useEffect(() => {void ensure(base.i18nNamespaces);}, [ensure, locale]);
+  const onLock = useCallback((value: boolean) => {lock.current = value; setLocked(value);}, []);
+  return <div className="dna-metadata-workbench">
+    <div className="sp-table-toolbar">
+      <div className="dna-metadata-source"><JdbcDataSourceSelect value={source?.code} disabled={locked || permissions.data?.view !== true}
+        placeholder={t('dna.metadata.page.placeholder.selectDataSource', 'Select a data source')}
+        onChange={(_code, row) => {if (!lock.current && validSource(row)) setChosen(row);}}/></div>
     </div>
+    {(permissions.error || initial.error) && <Alert type="error" showIcon
+      title={resolveApiErrorMessage(permissions.error ?? initial.error, t('table.loadFail', '加载失败'))}
+      action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', sort: 0,
+        text: t('table.retry', '重试'), onClick: () => void (permissions.error ? permissions.refetch() : initial.refetch())}]}/>}/>}
+    {permissions.isLoading || initial.isLoading ? <Spin/> : permissions.data?.view && validSource(source)
+      ? <MetadataSession key={source!.id} source={source!} permissions={permissions.data} onLock={onLock}/>
+      : <Empty description={t('dna.metadata.page.empty.selectDataSource', 'Select a data source first.')}/>}
+  </div>;
+}
 
-      <Modal
-        title={t('dna.metadata.page.modal.namespace.title', 'Create Namespace')}
-        open={namespaceModalOpen}
-        destroyOnHidden
-        confirmLoading={submitting}
-        onCancel={() => !submitting && setNamespaceModalOpen(false)}
-        onOk={() => void handleCreateNamespace()}
-      >
-        <Form form={namespaceForm} layout="vertical">
-          <Form.Item
-            label={t('dna.metadata.page.form.namespace.type.label', 'Type')}
-            name="type"
-            rules={[{ required: true, message: t('dna.metadata.page.form.namespace.type.required', 'Select a namespace type.') }]}
-          >
-            <Select options={namespaceOptions} />
-          </Form.Item>
-          <Form.Item
-            label={t('dna.metadata.page.form.namespace.name.label', 'Name')}
-            name="name"
-            rules={[{ required: true, message: t('dna.metadata.page.form.namespace.name.required', 'Enter a name.') }]}
-          >
-            <Input maxLength={128} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={t('dna.metadata.page.modal.table.title', 'Create Table')}
-        open={tableModalOpen}
-        destroyOnHidden
-        confirmLoading={submitting}
-        width={760}
-        onCancel={() => !submitting && setTableModalOpen(false)}
-        onOk={() => void handleCreateTable()}
-      >
-        <Paragraph type="secondary">
-          {t(
-            'dna.metadata.page.form.table.intro',
-            'Use JSON arrays for columns and constraints so primary keys, unique constraints, foreign keys, and CHECK expressions can be expressed completely.',
-          )}
-        </Paragraph>
-        <Form form={tableForm} layout="vertical">
-          <Form.Item
-            label={t('dna.metadata.page.form.table.name.label', 'Table Name')}
-            name="name"
-            rules={[{ required: true, message: t('dna.metadata.page.form.table.name.required', 'Enter a table name.') }]}
-          >
-            <Input maxLength={128} />
-          </Form.Item>
-          <Form.Item
-            label={t('dna.metadata.page.form.table.columnsJson.label', 'Column Definition JSON')}
-            name="columnsJson"
-            rules={[{ required: true, message: t('dna.metadata.page.form.table.columnsJson.required', 'Enter the column JSON.') }]}
-          >
-            <Input.TextArea rows={10} />
-          </Form.Item>
-          <Form.Item label={t('dna.metadata.page.form.table.constraintsJson.label', 'Constraint Definition JSON')} name="constraintsJson">
-            <Input.TextArea rows={8} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={t('dna.metadata.page.modal.view.title', 'Create View')}
-        open={viewModalOpen}
-        destroyOnHidden
-        confirmLoading={submitting}
-        width={760}
-        onCancel={() => !submitting && setViewModalOpen(false)}
-        onOk={() => void handleCreateView()}
-      >
-        <Form form={viewForm} layout="vertical">
-          <Form.Item
-            label={t('dna.metadata.page.form.view.name.label', 'View Name')}
-            name="name"
-            rules={[{ required: true, message: t('dna.metadata.page.form.view.name.required', 'Enter a view name.') }]}
-          >
-            <Input maxLength={128} />
-          </Form.Item>
-          <Form.Item
-            label={t('dna.metadata.page.form.view.definitionSql.label', 'View SQL')}
-            name="definitionSql"
-            rules={[{ required: true, message: t('dna.metadata.page.form.view.definitionSql.required', 'Enter the view SQL.') }]}
-          >
-            <Input.TextArea rows={12} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={columnMode === 'add'
-          ? t('dna.metadata.page.modal.column.addTitle', 'Add Column')
-          : t('dna.metadata.page.modal.column.alterTitle', 'Alter Column')}
-        open={columnModalOpen}
-        destroyOnHidden
-        confirmLoading={submitting}
-        onCancel={() => !submitting && setColumnModalOpen(false)}
-        onOk={() => void handleSubmitColumn()}
-      >
-        <Form form={columnForm} layout="vertical" initialValues={{ nullable: true, autoIncrement: false }}>
-          {columnMode === 'alter' ? (
-            <Form.Item
-              label={t('dna.metadata.page.form.column.currentName.label', 'Current Column Name')}
-              name="currentName"
-              rules={[{ required: true, message: t('dna.metadata.page.form.column.currentName.required', 'Enter the current column name.') }]}
-            >
-              <Input maxLength={128} />
-            </Form.Item>
-          ) : null}
-          <Form.Item
-            label={t('dna.metadata.page.form.column.name.label', 'Column Name')}
-            name="name"
-            rules={[{ required: true, message: t('dna.metadata.page.form.column.name.required', 'Enter the column name.') }]}
-          >
-            <Input maxLength={128} />
-          </Form.Item>
-          <Form.Item
-            label={t('dna.metadata.page.form.column.typeName.label', 'Type')}
-            name="typeName"
-            rules={[{ required: true, message: t('dna.metadata.page.form.column.typeName.required', 'Enter the column type.') }]}
-          >
-            <Input maxLength={128} placeholder={t('dna.metadata.page.form.column.typeName.placeholder', 'For example VARCHAR / BIGINT / NUMERIC')} />
-          </Form.Item>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label={t('dna.metadata.page.form.column.size.label', 'Length / Precision')} name="size">
-                <InputNumber style={{ width: '100%' }} min={1} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label={t('dna.metadata.page.form.column.scale.label', 'Scale')} name="scale">
-                <InputNumber style={{ width: '100%' }} min={0} />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item label={t('dna.metadata.page.form.column.defaultValue.label', 'Default Value')} name="defaultValue">
-            <Input maxLength={256} placeholder={t('dna.metadata.page.form.column.defaultValue.placeholder', 'For example CURRENT_TIMESTAMP or 0')} />
-          </Form.Item>
-          <Form.Item label={t('dna.metadata.page.form.column.remarks.label', 'Remarks')} name="remarks">
-            <Input.TextArea maxLength={512} rows={3} />
-          </Form.Item>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label={t('dna.metadata.page.form.column.nullable.label', 'Nullable')} name="nullable" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label={t('dna.metadata.page.form.column.autoIncrement.label', 'Auto Increment')} name="autoIncrement" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={t('dna.metadata.page.modal.constraint.title', 'Add Constraint')}
-        open={constraintModalOpen}
-        destroyOnHidden
-        confirmLoading={submitting}
-        width={720}
-        onCancel={() => !submitting && setConstraintModalOpen(false)}
-        onOk={() => void handleAddConstraint()}
-      >
-        <Form form={constraintForm} layout="vertical">
-          <Form.Item label={t('dna.metadata.page.form.constraint.name.label', 'Constraint Name')} name="name">
-            <Input maxLength={128} />
-          </Form.Item>
-          <Form.Item
-            label={t('dna.metadata.page.form.constraint.type.label', 'Constraint Type')}
-            name="type"
-            rules={[{ required: true, message: t('dna.metadata.page.form.constraint.type.required', 'Select a constraint type.') }]}
-          >
-            <Select
-              options={[
-                { label: resolveConstraintTypeLabel('PRIMARY_KEY'), value: 'PRIMARY_KEY' },
-                { label: resolveConstraintTypeLabel('UNIQUE'), value: 'UNIQUE' },
-                { label: resolveConstraintTypeLabel('FOREIGN_KEY'), value: 'FOREIGN_KEY' },
-                { label: resolveConstraintTypeLabel('CHECK'), value: 'CHECK' },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item
-            label={t('dna.metadata.page.form.constraint.columns.label', 'Local Columns (comma separated)')}
-            name="columns"
-            rules={[{ required: true, message: t('dna.metadata.page.form.constraint.columns.required', 'Enter local columns.') }]}
-          >
-            <Input placeholder={t('dna.metadata.page.form.constraint.columns.placeholder', 'For example id,name')} />
-          </Form.Item>
-          {constraintType === 'FOREIGN_KEY' ? (
-            <>
-              <Form.Item label={t('dna.metadata.page.form.constraint.referenceCatalog.label', 'Reference Catalog / Database')} name="referenceCatalog">
-                <Input placeholder={t('dna.metadata.page.form.constraint.referenceCatalog.placeholder', 'Optional')} />
-              </Form.Item>
-              <Form.Item label={t('dna.metadata.page.form.constraint.referenceSchema.label', 'Reference Schema')} name="referenceSchema">
-                <Input placeholder={t('dna.metadata.page.form.constraint.referenceSchema.placeholder', 'Optional')} />
-              </Form.Item>
-              <Form.Item
-                label={t('dna.metadata.page.form.constraint.referenceTable.label', 'Reference Table')}
-                name="referenceTable"
-                rules={[{ required: true, message: t('dna.metadata.page.form.constraint.referenceTable.required', 'Enter the reference table.') }]}
-              >
-                <Input />
-              </Form.Item>
-              <Form.Item
-                label={t('dna.metadata.page.form.constraint.referenceColumns.label', 'Reference Columns (comma separated)')}
-                name="referenceColumns"
-                rules={[{ required: true, message: t('dna.metadata.page.form.constraint.referenceColumns.required', 'Enter the reference columns.') }]}
-              >
-                <Input placeholder={t('dna.metadata.page.form.constraint.referenceColumns.placeholder', 'For example id')} />
-              </Form.Item>
-            </>
-          ) : null}
-          {constraintType === 'CHECK' ? (
-            <Form.Item
-              label={t('dna.metadata.page.form.constraint.checkExpression.label', 'CHECK Expression')}
-              name="checkExpression"
-              rules={[{ required: true, message: t('dna.metadata.page.form.constraint.checkExpression.required', 'Enter the CHECK expression.') }]}
-            >
-              <Input.TextArea rows={4} placeholder={t('dna.metadata.page.form.constraint.checkExpression.placeholder', 'For example amount >= 0')} />
-            </Form.Item>
-          ) : null}
-        </Form>
-      </Modal>
-    </>
-  );
-};
-
-export default App;
+function MetadataSession({source, permissions, onLock}: {source: JdbcSourceOption; permissions: Permissions; onLock: (value: boolean) => void}) {
+  const {t} = useI18n();
+  const {message} = App.useApp();
+  const selectedPage = usePageSelected();
+  const [revision, setRevision] = useState(0);
+  const [tree, setTree] = useState<MetadataTreeNode[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
+  const [node, setNode] = useState<MetadataTreeNode | null>(null);
+  const [tab, setTab] = useState('structure');
+  const [previewPage, setPreviewPage] = useState({number: 0, size: 20});
+  const [dialog, setDialog] = useState<DialogTarget>();
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>();
+  const [childError, setChildError] = useState<{node: MetadataTreeNode; message: string}>();
+  const form = useRef<MetadataFormHandle>(null);
+  const mutation = useRef(false);
+  const mounted = useRef(true);
+  const generation = useRef(0);
+  const childRequests = useRef(new Map<string, AbortController>());
+  const translation = useRef(t); translation.current = t;
+  const label = useCallback((type: MetadataNodeType, fallback?: string | null) => {
+    const t = translation.current;
+    return t(`dna.metadata.page.nodeType.${type}`, fallback || type);
+  }, []);
+  const endpoint = base.baseUrl + '/' + encodeURIComponent(source.id);
+  const root = useData(['dna-metadata-root', endpoint, revision], async ({signal}) => {
+    const data = await post<MetadataTreeNode[]>(endpoint + '/children', {path: noPath}, {signal});
+    if (!Array.isArray(data)) throw Error(translation.current('table.loadFail', '加载失败'));
+    return normalizeMetadataTreeNodes(data, label, {dataSourceId: source.id});
+  }, {retry: false});
+  useEffect(() => {if (root.data) setTree(root.data);}, [root.data]);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {mounted.current = false; generation.current++; childRequests.current.forEach(request => request.abort());};
+  }, []);
+  usePageRetention(!dialog && !submitting, !!dialog || submitting);
+  const relation = useMemo(() => node?.type === 'TABLE' || node?.type === 'VIEW' ? node.path
+    : node?.type === 'COLUMN' ? node.path.slice(0, -1) : undefined, [node]);
+  const tablePath = relation?.[relation.length - 1]?.type === 'TABLE' ? relation : undefined;
+  const structure = useData(['dna-metadata-structure', endpoint, relation, revision], ({signal}) =>
+    post<Structure>(endpoint + '/structure', {path: relation}, {signal}), {enabled: !!relation, retry: false});
+  const preview = useData(['dna-metadata-preview', endpoint, relation, previewPage, revision], ({signal}) =>
+    post<Preview>(endpoint + '/preview?page=' + previewPage.number + '&size=' + previewPage.size,
+      {path: relation}, {signal}), {enabled: !!relation && tab === 'preview' && permissions.preview, retry: false});
+  const rootType = ['DATABASE', 'CATALOG', 'SCHEMA'].includes(tree[0]?.type) ? tree[0].type : undefined;
+  const namespaceTypes = useMemo(() => node?.type === 'DATABASE' || node?.type === 'CATALOG' ? ['SCHEMA']
+    : !node && rootType ? [rootType] : [], [node, rootType]);
+  const namespacePath = !node ? rootType ? undefined : noPath
+    : ['DATABASE', 'CATALOG', 'SCHEMA'].includes(node.type) ? node.path : undefined;
+  const columnNames = useMemo(() => structure.data?.columns?.map(column => column.name) ?? noNames, [structure.data]);
+  const currentName = node?.type === 'COLUMN' ? node.path[node.path.length - 1]?.name : undefined;
+  const currentColumn = structure.data?.columns?.find(column => column.name === currentName);
+  const can = (kind: FormKind) => permissions[kind === 'namespace' ? 'createNamespace' : kind === 'table' ? 'createTable'
+    : kind === 'view' ? 'createView' : kind === 'columnAdd' || kind === 'columnAlter' ? 'alterColumn'
+      : kind === 'constraint' ? 'addConstraint' : kind];
+  const open = (target: DialogTarget) => {
+    if (mutation.current || dialog || !can(target.kind)) return;
+    // Capture the exact source/path before opening: later tree selection cannot retarget a DDL request.
+    onLock(true); setSubmitError(undefined); setDialog(structuredClone(target));
+  };
+  const close = () => {if (!mutation.current) {setDialog(undefined); setSubmitError(undefined); onLock(false);}};
+  const refresh = () => {
+    if (mutation.current || dialog) return;
+    generation.current++; childRequests.current.forEach(request => request.abort()); childRequests.current.clear();
+    setSelectedKeys([]); setNode(null); setTree([]); setChildError(undefined); setRevision(value => value + 1);
+  };
+  const loadChildren = async (treeNode: MetadataTreeNode) => {
+    if (treeNode.isLeaf || treeNode.loaded || mutation.current || dialog) return;
+    const key = String(treeNode.key);
+    if (childRequests.current.has(key)) return;
+    const abort = new AbortController(); childRequests.current.set(key, abort);
+    const current = generation.current;
+    try {
+      const data = await post<MetadataTreeNode[]>(endpoint + '/children', {path: treeNode.path}, {signal: abort.signal});
+      if (!mounted.current || abort.signal.aborted || current !== generation.current) return;
+      if (!Array.isArray(data)) throw Error(t('table.loadFail', '加载失败'));
+      const children = normalizeMetadataTreeNodes(data, label, {dataSourceId: source.id});
+      setTree(previous => replaceMetadataTreeChildren(previous, treeNode.key, children)); setChildError(undefined);
+    } catch (error) {
+      if (mounted.current && !abort.signal.aborted && current === generation.current) {
+        setChildError({node: treeNode, message: resolveApiErrorMessage(error, t('dna.metadata.page.error.loadChildren', 'Failed to load child nodes.'))});
+        // Reject so Ant Tree does not mark a failed node as loaded; retry remains meaningful.
+        throw error;
+      }
+    } finally {if (childRequests.current.get(key) === abort) childRequests.current.delete(key);}
+  };
+  const submit = async (data: MetadataDraft) => {
+    if (!dialog || mutation.current || !can(dialog.kind)) return;
+    mutation.current = true; setSubmitting(true); setSubmitError(undefined);
+    try {
+      const request = metadataPayload(dialog, data);
+      await post(endpoint + '/' + request.suffix, request.payload);
+      if (!mounted.current) return;
+      message.success(isDelete(dialog.kind) ? t('table.deleteSuccess', '删除成功') : dialog.kind === 'columnAlter'
+        ? t('table.editSuccess', '修改成功') : t('table.addSuccess', '新增成功'));
+      generation.current++; childRequests.current.forEach(request => request.abort()); childRequests.current.clear();
+      setDialog(undefined); setNode(null); setSelectedKeys([]); setTree([]); setRevision(value => value + 1); onLock(false);
+    } catch (error) {if (mounted.current) setSubmitError(resolveApiErrorMessage(error, t('error.operationFailed', '操作失败，请重试')));}
+    finally {mutation.current = false; if (mounted.current) setSubmitting(false);}
+  };
+  const action = (key: string, text: string, onClick: () => void, disabled = false, danger = false): TableButtonProps =>
+    ({key, sort: 0, text, disabled: disabled || !!dialog || submitting || root.isFetching || !!root.error, danger,
+      icon: danger ? <DeleteOutlined/> : key === 'refresh' ? <ReloadOutlined/> : <PlusOutlined/>, onClick});
+  const buttons: TableButtonProps[] = [
+    action('refresh', t('dna.metadata.page.button.refreshTree', 'Refresh Tree'), refresh),
+    ...(permissions.createNamespace ? [action('createNamespace', t('dna.metadata.page.button.createNamespace', 'Create Namespace'),
+      () => open({kind: 'namespace', path: namespacePath ?? noPath, data: {type: namespaceTypes[0], name: ''}}), !namespaceTypes.length)] : []),
+    ...(permissions.createTable ? [action('createTable', t('dna.metadata.page.button.createTable', 'Create Table'),
+      () => open({kind: 'table', path: namespacePath!, data: {name: '', columns: [], constraints: []}}), !namespacePath)] : []),
+    ...(permissions.createView ? [action('createView', t('dna.metadata.page.button.createView', 'Create View'),
+      () => open({kind: 'view', path: namespacePath!, data: {name: '', definitionSql: ''}}), !namespacePath)] : []),
+    ...(permissions.alterColumn ? [
+      action('addColumn', t('dna.metadata.page.button.addColumn', 'Add Column'),
+        () => open({kind: 'columnAdd', path: tablePath!, data: columnData()}), !tablePath),
+      action('alterColumn', t('dna.metadata.page.button.alterColumn', 'Alter Column'),
+        () => open({kind: 'columnAlter', path: tablePath!, currentName, data: columnData(currentColumn)}),
+        !tablePath || !currentColumn || structure.isFetching),
+    ] : []),
+    ...(permissions.addConstraint ? [action('addConstraint', t('dna.metadata.page.button.addConstraint', 'Add Constraint'),
+      () => open({kind: 'constraint', path: tablePath!, data: {type: 'PRIMARY_KEY', columns: []}}),
+      !tablePath || structure.isFetching || !!structure.error)] : []),
+    ...(permissions.drop ? [action('drop', t('dna.metadata.page.button.dropObject', 'Delete Object'),
+      () => open({kind: 'drop', path: node!.path, data: {cascade: false}}),
+      !node || node.type === 'ROOT' || node.type === 'COLUMN', true)] : []),
+    ...(permissions.dropColumn ? [action('dropColumn', t('dna.metadata.page.button.dropColumn', 'Delete Column'),
+      () => open({kind: 'dropColumn', path: tablePath!, currentName, data: {}}), !tablePath || !currentName, true)] : []),
+  ];
+  const yesNo = (value?: boolean | null) => value == null ? '—'
+    : <Tag color={value ? 'success' : 'default'}>{value ? t('dna.metadata.page.state.yes', 'Yes') : t('dna.metadata.page.state.no', 'No')}</Tag>;
+  const columns: ColumnsType<Column> = [
+    {key: 'name', dataIndex: 'name', title: t('dna.metadata.page.table.columns.name', 'Column Name'), width: 180},
+    {key: 'type', dataIndex: 'typeName', title: t('dna.metadata.page.table.columns.type', 'Type'), width: 180,
+      render: (_value, column) => column.typeName + (column.size != null && column.size > 0
+        ? '(' + column.size + (column.scale != null && column.scale >= 0 ? ',' + column.scale : '') + ')' : '')},
+    {key: 'nullable', dataIndex: 'nullable', title: t('dna.metadata.page.table.columns.nullable', 'Nullable'), width: 100, render: yesNo},
+    {key: 'defaultValue', dataIndex: 'defaultValue', title: t('dna.metadata.page.table.columns.defaultValue', 'Default Value'), width: 160},
+    {key: 'autoIncrement', dataIndex: 'autoIncrement', title: t('dna.metadata.page.table.columns.autoIncrement', 'Auto Increment'), width: 120, render: yesNo},
+    {key: 'remarks', dataIndex: 'remarks', title: t('dna.metadata.page.table.columns.remarks', 'Remarks'), width: 180},
+  ];
+  const constraints: ColumnsType<Constraint> = [
+    {key: 'name', dataIndex: 'name', title: t('dna.metadata.page.table.constraints.name', 'Constraint Name'), width: 180},
+    {key: 'type', dataIndex: 'type', title: t('dna.metadata.page.table.constraints.type', 'Type'), width: 120,
+      render: value => constraintTypeTitle(t, value)},
+    {key: 'columns', dataIndex: 'columns', title: t('dna.metadata.page.table.constraints.columns', 'Columns'), width: 200,
+      render: value => Array.isArray(value) ? value.join(', ') : '—'},
+    {key: 'reference', dataIndex: 'reference', title: t('dna.metadata.page.table.constraints.reference', 'Reference'), width: 260,
+      render: (value: Constraint['reference']) => value?.tablePath?.length
+        ? value.tablePath.map(part => part.name).join(' / ') + (value.columns?.length ? ' (' + value.columns.join(', ') + ')' : '') : '—'},
+    {key: 'checkExpression', dataIndex: 'checkExpression', title: t('dna.metadata.page.table.constraints.checkExpression', 'CHECK Expression'), width: 200},
+    ...(permissions.dropConstraint ? [{key: 'actions', title: t('dna.metadata.page.table.constraints.actions', 'Actions'), width: 120,
+      render: (_value: unknown, constraint: Constraint) => <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+        action('dropConstraint', t('dna.metadata.page.table.constraints.drop', 'Delete'),
+          () => open({kind: 'dropConstraint', path: tablePath!, currentName: constraint.name, constraintType: constraint.type, data: {}}),
+          !tablePath || !constraint.name, true)]}/>,
+    }] : []),
+  ];
+  const titles: Record<FormKind, string> = {
+    namespace: t('dna.metadata.page.modal.namespace.title', 'Create Namespace'),
+    table: t('dna.metadata.page.modal.table.title', 'Create Table'), view: t('dna.metadata.page.modal.view.title', 'Create View'),
+    columnAdd: t('dna.metadata.page.modal.column.addTitle', 'Add Column'), columnAlter: t('dna.metadata.page.modal.column.alterTitle', 'Alter Column'),
+    constraint: t('dna.metadata.page.modal.constraint.title', 'Add Constraint'),
+    drop: t('dna.metadata.page.button.dropObject', 'Delete Object'), dropColumn: t('dna.metadata.page.button.dropColumn', 'Delete Column'),
+    dropConstraint: t('dna.metadata.page.table.constraints.drop', 'Delete'),
+  };
+  const retry = (run: () => void) => <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{
+    key: 'retry', sort: 0, text: t('table.retry', '重试'), disabled: submitting || !!dialog, onClick: run}]}/>;
+  return <>
+    <div className="sp-table-toolbar"><TableActions selectedKeys={[]} selectedRows={[]} buttons={buttons}/></div>
+    <Splitter className="dna-metadata-split">
+      <Splitter.Panel defaultSize="30%" min={180} max="60%">
+        <div className="dna-metadata-pane">
+          {root.error ? <Alert type="error" showIcon title={resolveApiErrorMessage(root.error, t('dna.metadata.page.error.loadTree', 'Failed to load metadata tree.'))}
+            action={retry(() => void root.refetch())}/> : root.isFetching && !tree.length ? <Spin/> : <Tree blockNode
+              treeData={tree} selectedKeys={selectedKeys} disabled={!!dialog || submitting}
+              loadData={loadChildren} titleRender={node => renderMetadataTreeTitle(node.type, node.rawTitle ?? '', label)}
+              onSelect={keys => {
+                if (mutation.current || dialog) return;
+                setSelectedKeys(keys); setNode(keys.length ? findMetadataTreeNodeByKey(tree, keys[0]) : null);
+                setPreviewPage(previous => ({...previous, number: 0}));
+              }}/>}
+          {childError && <Alert type="error" showIcon title={childError.message} action={retry(() => {
+            void loadChildren(childError.node).catch(() => undefined);
+          })}/>}
+          {!root.isFetching && !root.error && !tree.length && <Empty description={t('dna.metadata.page.empty.noObjects', 'No objects are available for this data source.')}/>}
+        </div>
+      </Splitter.Panel>
+      <Splitter.Panel min={320}>
+        <div className="dna-metadata-pane">
+          {!node ? <Empty description={t('dna.metadata.page.empty.selectObject', 'Select an object from the left tree.')}/> : <>
+            <Descriptions size="small" column={2} bordered>
+              <Descriptions.Item label={t('dna.metadata.page.detail.name', 'Name')}>{node.path[node.path.length - 1]?.name ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('dna.metadata.page.detail.type', 'Type')}>{label(node.type, node.typeLabel)}</Descriptions.Item>
+              <Descriptions.Item label={t('dna.metadata.page.detail.path', 'Path')} span={2}>{node.path.map(part => part.name).join(' / ')}</Descriptions.Item>
+              <Descriptions.Item label={t('dna.metadata.page.detail.dataType', 'Data Type')}>{node.dataType ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('dna.metadata.page.detail.nullable', 'Nullable')}>{yesNo(node.nullable)}</Descriptions.Item>
+              <Descriptions.Item label={t('dna.metadata.page.detail.defaultValue', 'Default Value')}>{node.defaultValue ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('dna.metadata.page.detail.remarks', 'Remarks')}>{node.remarks ?? '—'}</Descriptions.Item>
+            </Descriptions>
+            {relation && <Tabs activeKey={tab} onChange={setTab} tabBarExtraContent={tab === 'preview' && permissions.preview
+              ? <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'refreshPreview', sort: 0, icon: <EyeOutlined/>,
+                text: t('dna.metadata.page.button.refreshPreview', 'Refresh Preview'), disabled: preview.isFetching || !!dialog,
+                onClick: () => void preview.refetch()}]}/> : undefined}
+              items={[{key: 'structure', label: t('dna.metadata.page.tab.structure', 'Structure'), children: <>
+                {structure.error && <Alert type="error" showIcon title={resolveApiErrorMessage(structure.error, t('dna.metadata.page.error.loadStructure', 'Failed to load table structure.'))}
+                  action={retry(() => void structure.refetch())}/>}
+                <Typography.Paragraph>{t('dna.metadata.page.detail.dialect', 'Dialect') + ': '}
+                  {structure.data?.dialectName ?? structure.data?.dialectCode ?? '—'}</Typography.Paragraph>
+                <Space orientation="vertical" style={{width: '100%'}}>
+                  <DataTable<Column> storageKey="dna.metadata.columns" rowKey="name" columns={columns}
+                    loading={structure.isFetching} dataSource={structure.error ? [] : structure.data?.columns ?? []}
+                    query={{mode: 'local', scope: 'complete', contextKey: JSON.stringify([source.id, relation]), fields: {
+                      name: {type: 'string'}, typeName: {type: 'string', columnKey: 'type'}, nullable: {type: 'boolean'},
+                      autoIncrement: {type: 'boolean'}, defaultValue: {type: 'string'}, remarks: {type: 'string'}}}}
+                    pagination={false} size="small" scroll={{x: 960}}/>
+                  <DataTable<Constraint> storageKey="dna.metadata.constraints" rowKey={row => JSON.stringify([row.type, row.name, row.columns])}
+                    columns={constraints} loading={structure.isFetching} dataSource={structure.error ? [] : structure.data?.constraints ?? []}
+                    query={{mode: 'local', scope: 'complete', contextKey: JSON.stringify([source.id, relation]), fields: {
+                      name: {type: 'string'}, type: {type: 'string', enum: ['PRIMARY_KEY', 'FOREIGN_KEY', 'UNIQUE', 'CHECK']},
+                      checkExpression: {type: 'string'}}}} pagination={false} size="small" scroll={{x: 1100}}/>
+                </Space>
+              </>}, ...(permissions.preview ? [{key: 'preview', label: t('dna.metadata.page.tab.preview', 'Data Preview'), children: <>
+                {preview.error && <Alert type="error" showIcon title={resolveApiErrorMessage(preview.error, t('dna.metadata.page.error.loadPreview', 'Failed to load data preview.'))}
+                  action={retry(() => void preview.refetch())}/>}
+                <DataTable<Record<string, unknown>> rowKey={(_row, index) => previewPage.number + '-' + index}
+                  loading={preview.isFetching} dataSource={preview.error ? [] : preview.data?.content ?? []}
+                  columns={preview.data?.columns?.map(name => ({key: name, dataIndex: [name], title: name, width: 180, ellipsis: true,
+                    render: value => value == null ? '—' : typeof value === 'object' ? JSON.stringify(value) : String(value)})) ?? []}
+                  pagination={{current: previewPage.number + 1, pageSize: previewPage.size, total: preview.data?.totalElements ?? 0,
+                    showSizeChanger: true, pageSizeOptions: [10, 20, 50]}}
+                  onChange={page => setPreviewPage({number: page.pageSize !== previewPage.size ? 0 : (page.current ?? 1) - 1, size: page.pageSize ?? 20})}
+                  size="small" scroll={{x: 'max-content'}}/>
+              </>}] : [])]}/>}
+          </>}
+        </div>
+      </Splitter.Panel>
+    </Splitter>
+    <Modal rootClassName="dna-metadata-dialog" open={!!dialog && selectedPage} title={dialog && titles[dialog.kind]}
+      destroyOnHidden width={dialog?.kind === 'table' || dialog?.kind === 'view' ? 760 : 600}
+      confirmLoading={submitting} closable={!submitting} maskClosable={!submitting} keyboard={!submitting}
+      onCancel={close} onOk={() => form.current?.submit()} okButtonProps={{danger: dialog && isDelete(dialog.kind)}}
+      afterClose={() => {if (!dialog) onLock(false);}}>
+      {dialog && <Space orientation="vertical" style={{width: '100%'}}>
+        <Typography.Text code>{source.name ?? source.code} / {dialog.path.map(part => part.name).join(' / ')}
+          {dialog.currentName ? ' / ' + dialog.currentName : ''}</Typography.Text>
+        {isDelete(dialog.kind) && <Alert type="warning" showIcon title={t('dna.metadata.page.delete.warning',
+          'This operation changes the physical database and cannot be undone here. Confirm the source and target before proceeding.')}/>}
+        {submitError && <Alert type="error" showIcon title={submitError}/>}
+        <Suspense fallback={<Spin/>}><MetadataForm key={JSON.stringify([dialog.kind, dialog.path, dialog.currentName])}
+          ref={form} target={dialog} namespaceTypes={namespaceTypes} columns={columnNames} disabled={submitting} onSubmit={data => void submit(data)}/></Suspense>
+      </Space>}
+    </Modal>
+  </>;
+}

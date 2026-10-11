@@ -1,4 +1,5 @@
 {
+  "tenant-members.userTypesUnavailable": "No member types are currently available",
   "tenant-members.panel": "Organization users",
   "tenant-members.selectOrganization": "Select an organization to view its users and descendants",
   "tenant-members.descendantsHint": "Users in this organization and all descendants",
@@ -15,5 +16,8 @@
   "tenant-members.userType.REFERENCE": "Reference",
   "tenant-members.assigned": "User added to organization",
   "tenant-members.saveFailed": "Save failed. Refresh and retry.",
-  "tenant-members.typeSaved": "User type updated"
+  "tenant-members.typeSaved": "User type updated",
+  "tenant-members.removeFromOrganization": "Remove from organization",
+  "tenant-members.removeOrganizationBoundary": "Only the organization assignment is removed. Tenant membership, roles and account are retained.",
+  "tenant-members.removedFromOrganization": "User removed from organization"
 }

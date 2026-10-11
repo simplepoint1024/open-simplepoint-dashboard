@@ -160,13 +160,14 @@ public class ObjectStorageObjectServiceImpl
 
   @Override
   public Optional<ObjectStorageObject> findActiveById(final String id) {
-    return repository.findActiveByIdAndTenantId(id, requireCurrentTenantId());
+    return repository.findActiveByIdAndTenantId(id, requireCurrentTenantId()).filter(this::isAccessible);
   }
 
   @Override
   public ObjectStorageReadResult download(final String id) {
     ObjectStorageObject object = repository.findActiveByIdAndTenantId(id, requireCurrentTenantId())
         .orElseThrow(() -> new NoSuchElementException("对象不存在: " + id));
+    assertAccessible(object);
     return read(object);
   }
 
@@ -187,13 +188,13 @@ public class ObjectStorageObjectServiceImpl
       return true;
     }
     if (AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
-      return true;
+      return isAccessible(object);
     }
     String tenantId = currentTenantId();
     if (tenantId == null || tenantId.isBlank()) {
       tenantId = resolvePersonalTenantId();
     }
-    return Objects.equals(trimToNull(object.getTenantId()), trimToNull(tenantId));
+    return Objects.equals(trimToNull(object.getTenantId()), trimToNull(tenantId)) && isAccessible(object);
   }
 
   @Override
@@ -241,11 +242,15 @@ public class ObjectStorageObjectServiceImpl
 
   private ObjectStorageReadResult read(final ObjectStorageObject object) {
     ResolvedProvider provider = resolveProvider(object.getProviderCode(), true);
+    String fileAccess = org.simplepoint.core.jackson.FieldPermissionPolicy.access(
+        getAuthorizationContext(), ObjectStorageObject.class, "originalFileName");
+    String downloadName = org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(fileAccess)
+        || "MASKED".equals(fileAccess) ? "download" : object.getOriginalFileName();
     return resolveDriver(provider.getProperties().getType()).read(
         provider.getProperties(),
         object.getBucket(),
         object.getObjectKey(),
-        object.getOriginalFileName()
+        downloadName
     );
   }
 
@@ -262,6 +267,18 @@ public class ObjectStorageObjectServiceImpl
     String objectKey = resolveObjectKey(tenantId, provider.getProperties(), fileName, request);
     ensureObjectKeyAvailable(provider.getCode(), provider.getProperties().getBucket(), objectKey);
     String sourceServiceName = resolveSourceServiceName(request);
+    ObjectStorageObject entity = new ObjectStorageObject();
+    entity.setTenantId(tenantId);
+    entity.setProviderCode(provider.getCode());
+    entity.setProviderType(provider.getProperties().getType());
+    entity.setBucket(provider.getProperties().getBucket());
+    entity.setObjectKey(objectKey);
+    entity.setOriginalFileName(fileName);
+    entity.setContentType(normalizeContentType(file.getContentType()));
+    entity.setContentLength(file.getSize());
+    entity.setSourceServiceName(sourceServiceName);
+    applyCreationAuditContext(entity);
+    assertCreateAccessible(entity);
     ObjectStorageWriteResult writeResult;
     try (InputStream inputStream = file.getInputStream()) {
       ObjectStorageWriteRequest writeRequest = new ObjectStorageWriteRequest(
@@ -281,10 +298,6 @@ public class ObjectStorageObjectServiceImpl
     } catch (Exception ex) {
       throw new IllegalStateException("对象上传失败: " + ex.getMessage(), ex);
     }
-    ObjectStorageObject entity = new ObjectStorageObject();
-    entity.setTenantId(tenantId);
-    entity.setProviderCode(provider.getCode());
-    entity.setProviderType(provider.getProperties().getType());
     entity.setBucket(writeResult.getBucket());
     entity.setObjectKey(writeResult.getObjectKey());
     entity.setOriginalFileName(fileName);
@@ -294,6 +307,7 @@ public class ObjectStorageObjectServiceImpl
     entity.setAccessUrl(trimToNull(writeResult.getAccessUrl()));
     entity.setSourceServiceName(sourceServiceName);
     try {
+      assertCreateAccessible(entity);
       return repository.save(entity);
     } catch (RuntimeException ex) {
       resolveDriver(provider.getProperties().getType()).delete(
@@ -315,6 +329,8 @@ public class ObjectStorageObjectServiceImpl
         ids,
         requireCurrentTenantId()
     );
+    // Validate the whole batch before the first irreversible storage operation.
+    objects.forEach(this::assertAccessible);
     for (ObjectStorageObject object : objects) {
       ResolvedProvider provider = resolveProvider(object.getProviderCode(), true);
       resolveDriver(provider.getProperties().getType()).delete(

@@ -2,10 +2,12 @@ package org.simplepoint.plugin.ai.core.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.ai.core.api.entity.AiProviderDefinition;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.core.api.repository.AiProviderDefinitionRepository;
+import org.simplepoint.plugin.ai.core.api.vo.AiProviderOption;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -23,6 +25,18 @@ public interface JpaAiProviderDefinitionRepository
       where p.id = :id and p.deletedAt is null
       """)
   Optional<AiProviderDefinition> findActiveById(@Param("id") String id);
+
+  @Override
+  @Query("""
+      select new org.simplepoint.plugin.ai.core.api.vo.AiProviderOption(p.id, p.name, p.code, p.enabled)
+      from AiProviderDefinition p
+      where p.id in :ids and p.deletedAt is null
+        and (p.scopeType = :scopeType
+          or (p.scopeType is null and :scopeType = org.simplepoint.plugin.ai.core.api.model.AiResourceScope.SYSTEM))
+        and ((:tenantId is null and p.tenantId is null) or p.tenantId = :tenantId)
+      """)
+  List<AiProviderOption> findSelectedOptions(@Param("ids") Set<String> ids,
+      @Param("scopeType") AiResourceScope scopeType, @Param("tenantId") String tenantId);
 
   @Override
   @Query("""

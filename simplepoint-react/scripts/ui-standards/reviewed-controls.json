@@ -1,0 +1,516 @@
+{
+  "version": 1,
+  "reviewedOn": "2026-10-10",
+  "scope": "Native-control classification only. This does not assert completed page layout, write safety, performance or deployment gates.",
+  "controls": [
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Billing/index.tsx",
+      "component": "DatePicker.RangePicker",
+      "fingerprint": "063178b999df76cc894e647db3d9f337204f7f546b6ecd31592e78848c80553a",
+      "reviewedAtLine": 120,
+      "category": "query-parameter-control",
+      "reason": "Date-range control supplies validated exclusive from/to query boundaries to the scoped billing aggregate and schema-driven invocation table; neither an entity directory nor a resource editing form.",
+      "evidence": [
+        "modules/simplepoint-ai/src/views/workbench/Billing/model.test.mjs",
+        "scripts/smoke-billing.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Catalog/index.tsx",
+      "component": "Select",
+      "fingerprint": "a7ded6e069685f0fa2dfd2a0a3aaeff3edc710ddbbf383c671f3130d36407115",
+      "reviewedAtLine": 141,
+      "category": "local-enum-filter",
+      "reason": "Finite source/kind facets filter the paged catalog API; options are domain enums, not entities fetched from an incomplete first page.",
+      "evidence": [
+        "modules/simplepoint-ai/src/views/workbench/Catalog/model.test.mjs",
+        "scripts/smoke-catalog.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-ai/src/views/workbench/Catalog/index.tsx",
+      "component": "Select",
+      "fingerprint": "bf051cbb10a6eacf3666b2775020647dd57174ac8d1ea5411676e0b43ded5ab1",
+      "reviewedAtLine": 145,
+      "category": "local-enum-filter",
+      "reason": "Finite source/kind facets filter the paged catalog API; options are domain enums, not entities fetched from an incomplete first page.",
+      "evidence": [
+        "modules/simplepoint-ai/src/views/workbench/Catalog/model.test.mjs",
+        "scripts/smoke-catalog.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/personal/components/ItemDetail.tsx",
+      "component": "Pagination",
+      "fingerprint": "9fb78e43e9b2bb81b3f091b3b271d7c0505c64c5115db49916b4c96ba9907b1d",
+      "reviewedAtLine": 63,
+      "category": "paged-projection",
+      "reason": "Standalone pagination belongs to a chronological event-card timeline; the item CRUD table retains its own SimpleTable controller.",
+      "evidence": [
+        "scripts/smoke-mf.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/FieldScope/config/entries/index.tsx",
+      "component": "Button",
+      "fingerprint": "eb1212635caefd2595781750a527fc12c40aa83bacdd6ddbfe3038d63ff813f6",
+      "reviewedAtLine": 46,
+      "category": "hierarchy-navigation",
+      "reason": "This compact sidebar control only expands a resource branch, not a CRUD action. Each branch owns a counted 15-node page; hiding, collapsing and saving cancel unused reads, and synchronous form ownership refuses stale expansion.",
+      "evidence": [
+        "scripts/smoke-field-matrix.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/FieldScope/config/entries/index.tsx",
+      "component": "html:button",
+      "fingerprint": "ea12fa9d4125bf5f8ce5230a17bc99941ec6345dba64b8d46fcba98fcdd08ead",
+      "reviewedAtLine": 48,
+      "category": "hierarchy-navigation",
+      "reason": "This sidebar node only chooses the registered page whose fields are shown, without granting or writing permissions. Native scope/selection guards cancel the former target and reject its stale field callbacks; actual writes use SForm and TableActions.",
+      "evidence": [
+        "scripts/smoke-field-matrix.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/FieldScope/config/entries/index.tsx",
+      "component": "Pagination",
+      "fingerprint": "98474e11a45a2a05520bcfaa1af97a7e5f1e9ab6f554b4496cabe10866353478",
+      "reviewedAtLine": 55,
+      "category": "paged-projection",
+      "reason": "A hierarchy branch, not a resource CRUD table, independently pages 15 navigation nodes. Paging is refused during form validation, discard or writes; actual nested navigation beyond 500 and aborting unused branch requests are browser-verified.",
+      "evidence": [
+        "scripts/smoke-field-matrix.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Resource/components/ResourceTreeTransfer.tsx",
+      "component": "Pagination",
+      "fingerprint": "8498eaddd461fb22e2bc875fcc9f953ca74ef8bd47d61fc8e1827a5178512e78",
+      "reviewedAtLine": 561,
+      "category": "paged-projection",
+      "reason": "This counted 20-row resource-tree navigator cancels the previous root/branch read when paging and cannot change during an owned write. Assignment actions remain platform controls; this is not a CRUD table.",
+      "evidence": [
+        "scripts/smoke-application-resources.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Resource/components/ResourceTreeTransfer.tsx",
+      "component": "Pagination",
+      "fingerprint": "c9ee01365fe59d7bcea303ad3e6aa6d23f50f256ca3d63ac43d9c58b03aaa76d",
+      "reviewedAtLine": 600,
+      "category": "paged-projection",
+      "reason": "This independent 20-row assigned-resource tree navigator uses settled server totals for last-page clamping, follows its captured application and cannot change during an owned write. Assignment actions remain platform controls.",
+      "evidence": [
+        "scripts/smoke-application-resources.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Role/config/resource/index.tsx",
+      "component": "html:button",
+      "fingerprint": "e6b369b680ed7d0b76576f31d9890e8666b046248fa118562ce0457162d82396",
+      "reviewedAtLine": 69,
+      "category": "hierarchy-navigation",
+      "reason": "This resource-tree disclosure or focus target only navigates the local editor; its captured owner blocks interaction during confirmations and writes. Permission updates use platform actions.",
+      "evidence": [
+        "scripts/smoke-role-resources.mjs",
+        "scripts/smoke-role-lifecycle.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Role/config/resource/index.tsx",
+      "component": "html:button",
+      "fingerprint": "795d9204106591fc0ac6d9444ab7603f79e55254c9ba630d235fdff84bc878aa",
+      "reviewedAtLine": 74,
+      "category": "hierarchy-navigation",
+      "reason": "This resource-tree disclosure or focus target only navigates the local editor; its captured owner blocks interaction during confirmations and writes. Permission updates use platform actions.",
+      "evidence": [
+        "scripts/smoke-role-resources.mjs",
+        "scripts/smoke-role-lifecycle.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Role/config/resource/index.tsx",
+      "component": "Pagination",
+      "fingerprint": "1e33712435f204f69596d21b285b7870596fe2a04ea9ea8638a0ab95c530b9e3",
+      "reviewedAtLine": 87,
+      "category": "paged-projection",
+      "reason": "This counted 20-row resource navigation projection pages server results or the local pending draft without persisting grants. Only the captured platform preview/save actions write permissions.",
+      "evidence": [
+        "scripts/smoke-role-resources.mjs",
+        "scripts/smoke-role-lifecycle.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Role/config/resource/index.tsx",
+      "component": "Select",
+      "fingerprint": "ba818b22ec5deff3bdc056c6b40cc791f063d4a9f9bdf61cdebaab9f36ab0079",
+      "reviewedAtLine": 255,
+      "category": "local-enum-filter",
+      "reason": "This four-state authorization filter is a finite editor facet, not an entity selector or writable form field. It is owned and disabled while confirmation/preview/write locks hold.",
+      "evidence": [
+        "scripts/smoke-role-resources.mjs",
+        "scripts/smoke-role-lifecycle.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Role/config/resource/index.tsx",
+      "component": "html:button",
+      "fingerprint": "014e89e49dac960da2400426e0cfef7081b886446cb8f961e4457446964a89f3",
+      "reviewedAtLine": 269,
+      "category": "hierarchy-navigation",
+      "reason": "This resource-tree disclosure or focus target only navigates the local editor; its captured owner blocks interaction during confirmations and writes. Permission updates use platform actions.",
+      "evidence": [
+        "scripts/smoke-role-resources.mjs",
+        "scripts/smoke-role-lifecycle.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-common/src/views/system/Role/config/resource/index.tsx",
+      "component": "Pagination",
+      "fingerprint": "9443faa33942e4b69637610a91a5b593dfe3edf958d76b420cf741aab0c237b9",
+      "reviewedAtLine": 275,
+      "category": "paged-projection",
+      "reason": "This counted 20-row resource navigation projection pages server results or the local pending draft without persisting grants. Only the captured platform preview/save actions write permissions.",
+      "evidence": [
+        "scripts/smoke-role-resources.mjs",
+        "scripts/smoke-role-lifecycle.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-dna/src/views/platform/SqlConsole/index.tsx",
+      "component": "Button",
+      "fingerprint": "c8d411b816c6d76c8abdf41dedefc896676e9660980281b23cffed39d61b5319",
+      "reviewedAtLine": 1365,
+      "category": "local-editor-command",
+      "reason": "This control inserts text, formats the local SQL draft or opens editor options. SQL execute/explain/export and remote retries separately use platform actions and actual permissions.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "scripts/smoke-dna-workbench.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-dna/src/views/platform/SqlConsole/index.tsx",
+      "component": "Button",
+      "fingerprint": "864b53c87bfc3d144558f64aeff54a261defc7082129b31e1069599ce1a207ae",
+      "reviewedAtLine": 1389,
+      "category": "local-editor-command",
+      "reason": "This control inserts text, formats the local SQL draft or opens editor options. SQL execute/explain/export and remote retries separately use platform actions and actual permissions.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "scripts/smoke-dna-workbench.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-dna/src/views/platform/SqlConsole/index.tsx",
+      "component": "Button",
+      "fingerprint": "b09791ce9dea80b89b89220df2c16aebda5a9c3df97f7386ba9eeab58c66d441",
+      "reviewedAtLine": 1410,
+      "category": "local-editor-command",
+      "reason": "This control inserts text, formats the local SQL draft or opens editor options. SQL execute/explain/export and remote retries separately use platform actions and actual permissions.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "scripts/smoke-dna-workbench.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/NotificationButton.tsx",
+      "component": "Button",
+      "fingerprint": "44832aa7a9cd67a273cd6c296813dfa9d69912f4aa3a83089a8c5c109c1bb154",
+      "reviewedAtLine": 22,
+      "category": "hierarchy-navigation",
+      "reason": "The bell opens shared notification navigation, while counted pagination belongs to a rich inbox list; acknowledgement and read-all mutations use platform actions.",
+      "evidence": [
+        "scripts/smoke-home-customization.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/NotificationButton.tsx",
+      "component": "Pagination",
+      "fingerprint": "fa32d7fe8562fed852bbfdb0a5a55b14caf171e4467ff43369e0b6fa14943f54",
+      "reviewedAtLine": 28,
+      "category": "paged-projection",
+      "reason": "The bell opens shared notification navigation, while counted pagination belongs to a rich inbox list; acknowledgement and read-all mutations use platform actions.",
+      "evidence": [
+        "scripts/smoke-home-customization.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/index.tsx",
+      "component": "Button",
+      "fingerprint": "0f9f35f597aca84943e7349daf9e114b6cdb54cae7db1608e8b00ee800dc9c90",
+      "reviewedAtLine": 684,
+      "category": "navigation-control",
+      "reason": "This shell control closes an overflow tab, opens the overflow-tab menu or collapses the sidebar. Tab release retains the existing workspace discard guard.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "modules/simplepoint-host/src/layouts/navigation-bar/tabCache.test.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/index.tsx",
+      "component": "Button",
+      "fingerprint": "aff0e2ff3a86081b82035132347d9a87d717c1ed1bb04b917dad6d10de120df3",
+      "reviewedAtLine": 712,
+      "category": "navigation-control",
+      "reason": "This shell control closes an overflow tab, opens the overflow-tab menu or collapses the sidebar. Tab release retains the existing workspace discard guard.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "modules/simplepoint-host/src/layouts/navigation-bar/tabCache.test.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/index.tsx",
+      "component": "Button",
+      "fingerprint": "fb418d2eded3e604b6d54a7888a9653063d42dfa34b444d25a57a366c2e14e03",
+      "reviewedAtLine": 790,
+      "category": "navigation-control",
+      "reason": "This shell control closes an overflow tab, opens the overflow-tab menu or collapses the sidebar. Tab release retains the existing workspace discard guard.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "modules/simplepoint-host/src/layouts/navigation-bar/tabCache.test.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "component": "html:button",
+      "fingerprint": "4255f5d61efaaa2dd3537151e4b2c5765a165ff47107647effc4755e46f00766",
+      "reviewedAtLine": 203,
+      "category": "navigation-control",
+      "reason": "This global shell trigger opens tenant/role/language navigation or changes local theme/size/fullscreen, shortcuts or a project link. It is not a resource form; destructive cache cleanup uses a guarded platform action.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "scripts/smoke-host-preferences.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "component": "html:button",
+      "fingerprint": "3ea331533febea6880c49efab7d57740b863b8564bb796749f6cc4fbf8e8eceb",
+      "reviewedAtLine": 338,
+      "category": "navigation-control",
+      "reason": "This global shell trigger opens tenant/role/language navigation or changes local theme/size/fullscreen, shortcuts or a project link. It is not a resource form; destructive cache cleanup uses a guarded platform action.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "scripts/smoke-host-preferences.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "component": "Button",
+      "fingerprint": "7397e8ac418d5574f18549df47056ef6c442b434ac297f44ffe26e659c9f5116",
+      "reviewedAtLine": 459,
+      "category": "navigation-control",
+      "reason": "This global shell trigger opens tenant/role/language navigation or changes local theme/size/fullscreen, shortcuts or a project link. It is not a resource form; destructive cache cleanup uses a guarded platform action.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "scripts/smoke-host-preferences.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "component": "Button",
+      "fingerprint": "cd8c8b26390f6b41c6369847f2e1c2a155932a09cee5d4af9d3e71c603ca6eb3",
+      "reviewedAtLine": 531,
+      "category": "navigation-control",
+      "reason": "This global shell trigger opens tenant/role/language navigation or changes local theme/size/fullscreen, shortcuts or a project link. It is not a resource form; destructive cache cleanup uses a guarded platform action.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "scripts/smoke-host-preferences.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "component": "Button",
+      "fingerprint": "667dd059c971ac92d97bb0bbeeaace19a9eadfcaa13bf48a6c7cfd2ca59f55d3",
+      "reviewedAtLine": 571,
+      "category": "navigation-control",
+      "reason": "This global shell trigger opens tenant/role/language navigation or changes local theme/size/fullscreen, shortcuts or a project link. It is not a resource form; destructive cache cleanup uses a guarded platform action.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "scripts/smoke-host-preferences.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "component": "Button",
+      "fingerprint": "141292cd03b06f5e25fb79136d661b500f1e565972cbcd6d03527d1945f7df3a",
+      "reviewedAtLine": 640,
+      "category": "navigation-control",
+      "reason": "This global shell trigger opens tenant/role/language navigation or changes local theme/size/fullscreen, shortcuts or a project link. It is not a resource form; destructive cache cleanup uses a guarded platform action.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "scripts/smoke-host-preferences.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "component": "Button",
+      "fingerprint": "43d52b938018c3ac03c51266417cc30c7812eee9043272d22f0db6e2a1d51710",
+      "reviewedAtLine": 672,
+      "category": "navigation-control",
+      "reason": "This global shell trigger opens tenant/role/language navigation or changes local theme/size/fullscreen, shortcuts or a project link. It is not a resource form; destructive cache cleanup uses a guarded platform action.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "scripts/smoke-host-preferences.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
+      "component": "Button",
+      "fingerprint": "e5827a787a080032bae6d0933b1184d05879f2f61646a8d2940b7edc8be0ece5",
+      "reviewedAtLine": 689,
+      "category": "navigation-control",
+      "reason": "This global shell trigger opens tenant/role/language navigation or changes local theme/size/fullscreen, shortcuts or a project link. It is not a resource form; destructive cache cleanup uses a guarded platform action.",
+      "evidence": [
+        "scripts/smoke-mf.mjs",
+        "scripts/smoke-host-preferences.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/profile/ProfileSections.tsx",
+      "component": "html:button",
+      "fingerprint": "6d1e0d0b7d8c61b1f3ced7e4880fea9550a786c59dc650212714377563b26149",
+      "reviewedAtLine": 66,
+      "category": "navigation-control",
+      "reason": "Read-only role-view tabs and permission-detail tiles navigate scoped access projections; separate counted card/detail pages do not create a second CRUD controller.",
+      "evidence": [
+        "scripts/smoke-host-preferences.mjs",
+        "modules/simplepoint-host/src/layouts/profile/ProfileSections.tsx"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/profile/ProfileSections.tsx",
+      "component": "html:button",
+      "fingerprint": "6f2a45ed043c18deecabe1f43292e073aad1f8d226448ec66dc357809c387ba7",
+      "reviewedAtLine": 70,
+      "category": "navigation-control",
+      "reason": "Read-only role-view tabs and permission-detail tiles navigate scoped access projections; separate counted card/detail pages do not create a second CRUD controller.",
+      "evidence": [
+        "scripts/smoke-host-preferences.mjs",
+        "modules/simplepoint-host/src/layouts/profile/ProfileSections.tsx"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/profile/ProfileSections.tsx",
+      "component": "html:button",
+      "fingerprint": "f7b83d05ff8b2b93822c0850bc98e8fc22420c7c64f3b2806df87ff2b085f848",
+      "reviewedAtLine": 100,
+      "category": "navigation-control",
+      "reason": "Read-only permission-detail tiles navigate source-projected access rows; hidden or masked codes disable navigation and are guarded again inside the callback. Cards are not CRUD actions.",
+      "evidence": [
+        "scripts/smoke-profile-access.mjs",
+        "scripts/profile-access-contracts/masked-page.json",
+        "scripts/profile-access-contracts/hidden-page.json",
+        "modules/simplepoint-host/src/layouts/profile/ProfileSections.tsx"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/profile/ProfileSections.tsx",
+      "component": "Pagination",
+      "fingerprint": "c0c95f1d7adee4af81eca5e0c3b7a887e36aab365d995c3b23252ca59fa0ad93",
+      "reviewedAtLine": 118,
+      "category": "paged-projection",
+      "reason": "Read-only role-view tabs and permission-detail tiles navigate scoped access projections; separate counted card/detail pages do not create a second CRUD controller.",
+      "evidence": [
+        "scripts/smoke-host-preferences.mjs",
+        "modules/simplepoint-host/src/layouts/profile/ProfileSections.tsx"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/profile/ProfileSections.tsx",
+      "component": "Pagination",
+      "fingerprint": "c90661eab7f132d93188738a7d389b34c7bd330624092d422330bd623f1cc208",
+      "reviewedAtLine": 141,
+      "category": "paged-projection",
+      "reason": "Read-only role-view tabs and permission-detail tiles navigate scoped access projections; separate counted card/detail pages do not create a second CRUD controller.",
+      "evidence": [
+        "scripts/smoke-host-preferences.mjs",
+        "modules/simplepoint-host/src/layouts/profile/ProfileSections.tsx"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/profile/index.tsx",
+      "component": "html:button",
+      "fingerprint": "a4b9aed703894c3be9694236ecdb9faad6a13274d5035c16de43408fe14da49b",
+      "reviewedAtLine": 122,
+      "category": "navigation-control",
+      "reason": "The local profile-section navigation selects About/Access/Organization/Security without a domain write; actual profile, avatar and password writes use SForm/platform actions.",
+      "evidence": [
+        "scripts/smoke-host-preferences.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/views/home/HomeCalendar.tsx",
+      "component": "Button",
+      "fingerprint": "13e035e6d274d320751a8295ed4bfbd7e2fd541e809482553ae6e8b34b44fb23",
+      "reviewedAtLine": 46,
+      "category": "specialized-calendar",
+      "reason": "This fixed six-week calendar grid has roving keyboard/date focus and local month/today controls; it is not a record table, server query or business mutation.",
+      "evidence": [
+        "modules/simplepoint-host/src/views/home/calendar.test.mjs",
+        "scripts/smoke-mf.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/views/home/HomeCalendar.tsx",
+      "component": "Button",
+      "fingerprint": "bdf79ccc19d26ef2e43eaed272e4ded18b772319e3c667e3a08df3ffbc72f107",
+      "reviewedAtLine": 48,
+      "category": "specialized-calendar",
+      "reason": "This fixed six-week calendar grid has roving keyboard/date focus and local month/today controls; it is not a record table, server query or business mutation.",
+      "evidence": [
+        "modules/simplepoint-host/src/views/home/calendar.test.mjs",
+        "scripts/smoke-mf.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/views/home/HomeCalendar.tsx",
+      "component": "Button",
+      "fingerprint": "72abee076d40903d3cc37470406a21cab855fdca0b11b43f11367e4bab3bac8c",
+      "reviewedAtLine": 51,
+      "category": "specialized-calendar",
+      "reason": "This fixed six-week calendar grid has roving keyboard/date focus and local month/today controls; it is not a record table, server query or business mutation.",
+      "evidence": [
+        "modules/simplepoint-host/src/views/home/calendar.test.mjs",
+        "scripts/smoke-mf.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/views/home/HomeCalendar.tsx",
+      "component": "html:table",
+      "fingerprint": "202fc20a2a5a9fad35b0b4838211006b13721257c85fecbf953f412adef9f6d7",
+      "reviewedAtLine": 54,
+      "category": "specialized-calendar",
+      "reason": "This fixed six-week calendar grid has roving keyboard/date focus and local month/today controls; it is not a record table, server query or business mutation.",
+      "evidence": [
+        "modules/simplepoint-host/src/views/home/calendar.test.mjs",
+        "scripts/smoke-mf.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-host/src/views/home/HomeCalendar.tsx",
+      "component": "html:button",
+      "fingerprint": "41a946ecd9d80a4980a901e45eb8a7f4ace3ff7aebf5236c798f1e263d2e3aba",
+      "reviewedAtLine": 57,
+      "category": "specialized-calendar",
+      "reason": "This fixed six-week calendar grid has roving keyboard/date focus and local month/today controls; it is not a record table, server query or business mutation.",
+      "evidence": [
+        "modules/simplepoint-host/src/views/home/calendar.test.mjs",
+        "scripts/smoke-mf.mjs"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-workflow/src/views/Instances/index.tsx",
+      "component": "Select",
+      "fingerprint": "bd881d825a9e62f5c22cc33b637ca9646206820f2fe14da15640fb9b72e4db42",
+      "reviewedAtLine": 124,
+      "category": "local-enum-filter",
+      "reason": "A fixed RUNNING/COMPLETED/CANCELED status enum filters the actual server instance query; tenant users/roles and runtime forms use their dedicated shared selectors/SForm.",
+      "evidence": [
+        "scripts/smoke-workflow-lifecycle.mjs",
+        "modules/simplepoint-workflow/src/views/Instances/index.tsx"
+      ]
+    }
+  ]
+}

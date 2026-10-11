@@ -8,9 +8,11 @@ import com.simplepoint.service.router.registry.LocalServiceRegistry;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Dispatches inbound service router requests to local providers.
@@ -65,7 +67,17 @@ public class ServiceInvocationDispatcher {
         return method;
       }
     }
-    throw new IllegalArgumentException("No routed method found: " + request.service() + "#" + request.method());
+    String expectedCounts = Arrays.stream(routedService.interfaceType().getMethods())
+        .filter(method -> Objects.equals(RoutedServiceMetadataResolver.methodId(method), request.method()))
+        .map(Method::getParameterCount)
+        .distinct()
+        .sorted()
+        .map(String::valueOf)
+        .collect(Collectors.joining(","));
+    throw new IllegalArgumentException(
+        "No routed method found: " + request.service() + "#" + request.method()
+            + " with " + argCount + " arguments; expected counts: [" + expectedCounts + "]"
+    );
   }
 
   private Object[] convertArgs(final List<Object> args, final Type[] parameterTypes) {

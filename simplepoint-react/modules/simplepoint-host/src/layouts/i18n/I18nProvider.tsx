@@ -153,11 +153,12 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
         try {
             const data = await fetchMessages(lang);
             if (mySeq !== loadSeqRef.current) return;
-            cache.current.set(lang, data);
-            setMessages(data);
-            writeStoredMessages(lang, data);
-            updateGlobalI18n(data, lang);
-            loadedNsRef.current.delete(lang);
+            // Namespace requests may finish before the base bundle during a language change.
+            const merged = {...data, ...(cache.current.get(lang) || {})};
+            cache.current.set(lang, merged);
+            setMessages(merged);
+            writeStoredMessages(lang, merged);
+            updateGlobalI18n(merged, lang);
         } catch (err) {
             console.warn(`[i18n] Failed to load messages for ${lang}`, err);
         } finally {
@@ -171,7 +172,7 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
         const normalized = normalizeNamespaces(ns);
         if (normalized.length === 0) return;
 
-        const loadedNs = getLoadedNs(locale);
+        const loadedNs = getLoadedNs(localeRef.current);
         const missing = normalized.filter((key) => !loadedNs.has(key));
         if (missing.length === 0 && !ensureInflightRef.current && ensurePendingNsRef.current.size === 0) {
             return;
@@ -202,7 +203,7 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
             }
 
             ensurePendingNsRef.current.clear();
-            const lng = locale;
+            const lng = localeRef.current;
 
             ensureInflightRef.current = fetchMessages(lng, list)
                 .then((data) => {
@@ -220,11 +221,8 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
 
                         // 仅当 locale 未切换时才更新 state
                         if (lng === localeRef.current) {
-                            setMessages(prev => {
-                                const mergedState = {...prev, ...validData};
-                                updateGlobalI18n(mergedState, lng);
-                                return mergedState;
-                            });
+                            setMessages(merged);
+                            updateGlobalI18n(merged, lng);
                         }
                     }
                 })
@@ -268,6 +266,7 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
 
     const refresh = useCallback(async () => {
         cache.current.delete(locale);
+        loadedNsRef.current.delete(locale);
         localStorage.removeItem(cacheKey(locale));
         localStorage.removeItem(cacheTsKey(locale));
         await loadMessages(locale);
@@ -297,7 +296,8 @@ export const I18nProvider: React.FC<{ children?: React.ReactNode }> = ({children
                 return;
             }
             const shouldRemount = localStorage.getItem('sp.i18n.forceRemount');
-            if (shouldRemount === 'false') return;
+            // Translations update through context/events. Remounting discards open forms and permission drafts.
+            if (shouldRemount !== 'true') return;
             const path = window.location.hash?.replace(/^#/, '') || window.location.pathname || '/';
             emitAsync('sp-refresh-route', {path});
         });

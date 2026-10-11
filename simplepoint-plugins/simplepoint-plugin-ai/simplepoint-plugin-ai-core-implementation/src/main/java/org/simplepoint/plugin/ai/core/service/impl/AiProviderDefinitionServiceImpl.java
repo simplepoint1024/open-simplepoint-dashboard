@@ -1,5 +1,7 @@
 package org.simplepoint.plugin.ai.core.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import java.net.URI;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -10,6 +12,8 @@ import java.util.Optional;
 import java.util.Set;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.core.jackson.FieldPermissionPolicy;
+import org.simplepoint.core.query.QueryCapabilities;
 import org.simplepoint.plugin.ai.core.api.entity.AiProviderDefinition;
 import org.simplepoint.plugin.ai.core.api.model.AiProviderType;
 import org.simplepoint.plugin.ai.core.api.model.AiProviderVendor;
@@ -17,6 +21,7 @@ import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.core.api.repository.AiModelDefinitionRepository;
 import org.simplepoint.plugin.ai.core.api.repository.AiProviderDefinitionRepository;
 import org.simplepoint.plugin.ai.core.api.service.AiProviderDefinitionService;
+import org.simplepoint.plugin.ai.core.api.vo.AiProviderOption;
 import org.simplepoint.plugin.ai.core.service.security.AiCredentialCipher;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy.ScopeAssignment;
@@ -77,6 +82,28 @@ public class AiProviderDefinitionServiceImpl
     return provider.map(this::decorate);
   }
 
+  @Override
+  public List<AiProviderOption> selectedOptions(final Collection<String> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return List.of();
+    }
+    if (ids.size() > 100) {
+      throw new IllegalArgumentException("已选接入回读最多支持 100 个标识");
+    }
+    if (!QueryCapabilities.readable(AiProviderDefinition.class, "id")) {
+      throw new org.springframework.security.access.AccessDeniedException("当前字段权限不允许回读接入标识");
+    }
+    Set<String> targets = new java.util.LinkedHashSet<>();
+    for (String id : ids) {
+      if (id == null || id.isBlank() || id.length() > 64 || id.trim().matches("\\*+")) {
+        throw new IllegalArgumentException("接入标识无效");
+      }
+      targets.add(id);
+    }
+    ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
+    return repository.findSelectedOptions(targets, scope.scopeType(), scope.tenantId());
+  }
+
   /** {@inheritDoc} */
   @Override
   public Optional<AiProviderDefinition> findActiveByCode(final String code) {
@@ -85,7 +112,7 @@ public class AiProviderDefinitionServiceImpl
         normalizeCode(code),
         scope.scopeType(),
         scope.tenantId()
-    ).map(this::decorate);
+    ).filter(this::isAccessible).map(this::decorate);
   }
 
   /** {@inheritDoc} */
@@ -124,6 +151,7 @@ public class AiProviderDefinitionServiceImpl
     normalizeAndValidate(entity, null);
     String desiredCiphertext = null;
     if (entity.getApiKey() != null && !entity.getApiKey().isBlank()) {
+      org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(AiProviderDefinition.class, "apiKey");
       desiredCiphertext = credentialCipher.encrypt(entity.getApiKey().trim());
       entity.setCredentialCiphertext(desiredCiphertext);
     }
@@ -154,6 +182,11 @@ public class AiProviderDefinitionServiceImpl
     AiProviderDefinition current = repository.findActiveById(requireEntityId(entity))
         .orElseThrow(() -> new IllegalArgumentException("AI 供应商不存在: " + entity.getId()));
     scopeAccessPolicy.assertCanWriteResource(current.getScopeType(), current.getTenantId());
+    if (entity.getApiKey() != null && !entity.getApiKey().isBlank()) {
+      FieldPermissionPolicy.requireWritable(AiProviderDefinition.class, "apiKey");
+    }
+    BeanUtil.copyProperties(current, entity, CopyOptions.create().setIgnoreNullValue(false)
+        .setFieldNameEditor(name -> FieldPermissionPolicy.writable(AiProviderDefinition.class, name) ? null : name));
     entity.setScopeType(AiScopeAccessPolicy.effectiveScope(current.getScopeType()));
     entity.setTenantId(current.getTenantId());
     normalizeAndValidate(entity, current.getId());
@@ -204,6 +237,7 @@ public class AiProviderDefinitionServiceImpl
         provider.getScopeType(),
         provider.getTenantId()
     ));
+    providers.forEach(this::assertAccessible);
     Set<String> modelIds = providers.stream()
         .flatMap(provider -> modelRepository.findAllActiveByProviderId(provider.getId()).stream())
         .map(org.simplepoint.plugin.ai.core.api.entity.AiModelDefinition::getId)
@@ -274,6 +308,7 @@ public class AiProviderDefinitionServiceImpl
   }
 
   private void assertCanRead(final AiProviderDefinition provider) {
+    assertAccessible(provider);
     scopeAccessPolicy.assertCanReadManagedResource(
         provider.getScopeType(),
         provider.getTenantId()

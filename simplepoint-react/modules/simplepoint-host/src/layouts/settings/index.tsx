@@ -1,265 +1,104 @@
-import React, {useEffect, useMemo, useState} from "react";
-import {
-    App as AntApp,
-    Avatar,
-    Button,
-    Card,
-    Col,
-    Descriptions,
-    Divider,
-    Form,
-    List,
-    Radio,
-    Row,
-    Segmented,
-    Select,
-    Space,
-    Tag
-} from "antd";
-import {
-    DesktopOutlined,
-    FontSizeOutlined,
-    GlobalOutlined,
-    MoonOutlined,
-    ReloadOutlined,
-    SkinOutlined,
-    SunOutlined,
-    UserOutlined
-} from "@simplepoint/shared/types/icon";
-import {useI18n} from "@/layouts/i18n/useI18n";
-import "./index.css";
+import {useEffect, useMemo, useState} from 'react';
+import {App, Descriptions, Divider, Space, Tag, Typography, version as antdVersion} from 'antd';
+import SForm from '@simplepoint/components/SForm/Lazy';
+import TableActions from '@simplepoint/components/Table/Actions';
+import {usePageRetention} from '@simplepoint/shared/page/hooks';
+import {useI18n} from '@/layouts/i18n/useI18n';
+import hostPackage from '../../../package.json';
+import './index.css';
 
-const THEME_KEY = "sp.theme";
-const SIZE_KEY = "sp.globalSize";
+type ThemeMode = 'light' | 'dark' | 'system';
+type SizeMode = 'small' | 'middle' | 'large';
+const themeModes: ThemeMode[] = ['light', 'dark', 'system'];
+const sizeModes: SizeMode[] = ['small', 'middle', 'large'];
+const THEME_KEY = 'sp.theme', SIZE_KEY = 'sp.globalSize';
+const stored = <T extends string,>(key: string, values: readonly T[], fallback: T): T => {
+  try {const value = localStorage.getItem(key) as T; return values.includes(value) ? value : fallback;}
+  catch {return fallback;}
+};
+function apply(key: string, value: string, event: string) {
+  localStorage.setItem(key, value);
+  window.dispatchEvent(new CustomEvent(event, {detail: value}));
+}
 
-const readLS = <T, >(key: string, fallback: T): T => {
+export function Settings() {
+  const {t, languages = [], locale, setLocale, ensure} = useI18n();
+  const {message} = App.useApp();
+  const [themeMode, setThemeMode] = useState(() => stored(THEME_KEY, themeModes, 'light'));
+  const [sizeMode, setSizeMode] = useState(() => stored(SIZE_KEY, sizeModes, 'middle'));
+  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() =>
+    window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const resolvedTheme = themeMode === 'system' ? systemTheme : themeMode;
+  usePageRetention(true, false);
+  useEffect(() => {void ensure(['settings', 'table']);}, [ensure, locale]);
+  useEffect(() => {
+    const theme = (event: Event) => {const value = (event as CustomEvent<ThemeMode>).detail;
+      if (themeModes.includes(value)) setThemeMode(value);};
+    const size = (event: Event) => {const value = (event as CustomEvent<SizeMode>).detail;
+      if (sizeModes.includes(value)) setSizeMode(value);};
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const system = () => setSystemTheme(media.matches ? 'dark' : 'light');
+    window.addEventListener('sp-set-theme', theme); window.addEventListener('sp-set-size', size);
+    media.addEventListener('change', system);
+    return () => {window.removeEventListener('sp-set-theme', theme); window.removeEventListener('sp-set-size', size);
+      media.removeEventListener('change', system);};
+  }, []);
+  const appearanceSchema = useMemo(() => ({type: 'object' as const, properties: {
+    theme: {type: 'string' as const, title: t('settings.theme'), oneOf: [
+      {const: 'light', title: t('settings.light')}, {const: 'dark', title: t('settings.dark')},
+      {const: 'system', title: t('settings.system')},
+    ]},
+    size: {type: 'string' as const, title: t('settings.size'), oneOf: [
+      {const: 'small', title: t('size.small')}, {const: 'middle', title: t('size.middle')}, {const: 'large', title: t('size.large')},
+    ]},
+  }}), [t]);
+  const languageSchema = useMemo(() => ({type: 'object' as const, properties: {
+    language: {type: 'string' as const, title: t('settings.language'),
+      oneOf: languages.map(language => ({const: language.code, title: language.name}))},
+  }}), [languages, t]);
+  const updateAppearance = (next: {theme?: ThemeMode; size?: SizeMode}) => {
     try {
-        return (localStorage.getItem(key) as T) || fallback;
-    } catch {
-        return fallback;
-    }
-};
-
-const writeLS = (key: string, val: any) => {
-    try {
-        localStorage.setItem(key, val);
-    } catch {
-    }
-};
-
-const dispatchEvent = (name: string, detail: any) => {
-    try {
-        window.dispatchEvent(new CustomEvent(name, {detail}));
-    } catch {
-    }
-};
-
-export const Settings: React.FC = () => {
-    const {t, languages = [], locale, setLocale, ensure} = useI18n();
-    const {message} = AntApp.useApp();
-
-    // 加载 settings 命名空间
-    useEffect(() => {
-        ensure(["settings"]).catch();
-    }, [ensure, locale]);
-
-    // 主题 & 尺寸
-    const [themeMode, setThemeMode] = useState<"light" | "dark" | "system">(
-        () => readLS(THEME_KEY, "light")
-    );
-    const [sizeMode, setSizeMode] = useState<"small" | "middle" | "large">(
-        () => readLS(SIZE_KEY, "middle")
-    );
-
-    // 跟随系统主题
-    const getSystemTheme = () =>
-        window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-
-    const resolvedTheme =
-        themeMode === "system" ? getSystemTheme() : (themeMode as "light" | "dark");
-
-    // 监听外部主题事件
-    useEffect(() => {
-        const handler = (e: any) => setThemeMode(e?.detail || "light");
-        window.addEventListener("sp-set-theme", handler);
-        return () => window.removeEventListener("sp-set-theme", handler);
-    }, []);
-
-    // 语言选项
-    const languageOptions = useMemo(
-        () => languages.map(l => ({label: l.name, value: l.code})),
-        [languages]
-    );
-
-    // --- handlers ---
-    const updateTheme = (val: any) => {
-        writeLS(THEME_KEY, val);
-        setThemeMode(val);
-        dispatchEvent("sp-set-theme", val);
-        message.success(t("settings.themeUpdated"));
-    };
-
-    const updateSize = (val: any) => {
-        writeLS(SIZE_KEY, val);
-        setSizeMode(val);
-        dispatchEvent("sp-set-size", val);
-        message.success(t("settings.sizeUpdated"));
-    };
-
-    const updateLang = (val: string) => {
-        setLocale(val);
-        message.success(t("settings.langUpdated"));
-    };
-
-    const resetAppearance = () => {
-        writeLS(THEME_KEY, "light");
-        writeLS(SIZE_KEY, "middle");
-        setThemeMode("light");
-        setSizeMode("middle");
-        dispatchEvent("sp-set-theme", "light");
-        dispatchEvent("sp-set-size", "middle");
-        message.success(t("settings.resetApplied"));
-    };
-
-    const resetLang = () => {
-        setLocale("zh-CN");
-        message.success(t("settings.resetLangApplied"));
-    };
-
-    // 示例数据
-    const sampleData = [
-        {title: t("settings.sampleItem"), desc: t("settings.sampleDesc")},
-        {title: t("settings.sampleItem"), desc: t("settings.sampleDesc")}
-    ];
-
-    return (
-        <div className="settings-page">
-            <Row gutter={[16, 16]}>
-                {/* 外观设置 */}
-                <Col xs={24} lg={12}>
-                    <Card
-                        className="settings-card"
-                        title={
-                            <Space>
-                                <SkinOutlined/>
-                                {t("settings.appearance")}
-                            </Space>
-                        }
-                    >
-                        <Form layout="vertical">
-                            <Form.Item label={t("settings.theme")}>
-                                <Segmented
-                                    value={themeMode}
-                                    onChange={v => updateTheme(v)}
-                                    options={[
-                                        {label: t("settings.light"), value: "light", icon: <SunOutlined/>},
-                                        {label: t("settings.dark"), value: "dark", icon: <MoonOutlined/>},
-                                        {label: t("settings.system"), value: "system", icon: <DesktopOutlined/>}
-                                    ]}
-                                />
-                                <Space style={{marginTop: 8}} wrap>
-                                    <Tag color="blue">
-                                        {t("settings.theme")}:{" "}
-                                        {themeMode === "system"
-                                            ? t("settings.system")
-                                            : t(`settings.${themeMode}`)}
-                                    </Tag>
-                                    <Tag>
-                                        {t("settings.preview")}: {t(`settings.${resolvedTheme}`)}
-                                    </Tag>
-                                </Space>
-                            </Form.Item>
-
-                            <Form.Item label={t("settings.size")}>
-                                <Radio.Group value={sizeMode} onChange={e => updateSize(e.target.value)}>
-                                    <Radio.Button value="small">{t("size.small")}</Radio.Button>
-                                    <Radio.Button value="middle">{t("size.middle")}</Radio.Button>
-                                    <Radio.Button value="large">{t("size.large")}</Radio.Button>
-                                </Radio.Group>
-                            </Form.Item>
-
-                            <Divider/>
-                            <Button icon={<ReloadOutlined/>} onClick={resetAppearance}>
-                                {t("action.reset")}
-                            </Button>
-                        </Form>
-                    </Card>
-                </Col>
-
-                {/* 国际化 */}
-                <Col xs={24} lg={12}>
-                    <Card
-                        className="settings-card"
-                        title={
-                            <Space>
-                                <GlobalOutlined/>
-                                {t("settings.i18n")}
-                            </Space>
-                        }
-                    >
-                        <Form layout="vertical">
-                            <Form.Item label={t("settings.language")}>
-                                <Select
-                                    value={locale}
-                                    options={languageOptions}
-                                    onChange={updateLang}
-                                    showSearch
-                                    optionFilterProp="label"
-                                />
-                            </Form.Item>
-
-                            <Form.Item label={t("settings.preview")}>
-                                <List
-                                    size="small"
-                                    dataSource={sampleData}
-                                    renderItem={(it, idx) => (
-                                        <List.Item key={idx}>
-                                            <List.Item.Meta
-                                                avatar={<Avatar size={24} icon={<UserOutlined/>}/>}
-                                                title={it.title}
-                                                description={it.desc}
-                                            />
-                                        </List.Item>
-                                    )}
-                                />
-                            </Form.Item>
-
-                            <Divider/>
-                            <Button onClick={resetLang}>{t("action.resetLang")}</Button>
-                        </Form>
-                    </Card>
-                </Col>
-
-                {/* 关于 */}
-                <Col span={24}>
-                    <Card
-                        className="settings-card"
-                        title={
-                            <Space>
-                                <FontSizeOutlined/>
-                                {t("settings.about")}
-                            </Space>
-                        }
-                    >
-                        <Descriptions size="small" column={2}>
-                            <Descriptions.Item label={t("about.version")}>v1.0.0</Descriptions.Item>
-                            <Descriptions.Item label={t("about.license")}>
-                                {t("about.licenseValue")}
-                            </Descriptions.Item>
-                            <Descriptions.Item label={t("about.repo")}>
-                                <a
-                                    href="https://github.com/simplepoint1024/open-simplepoint-dashboard-react"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    github.com/simplepoint1024/open-simplepoint-dashboard-react
-                                </a>
-                            </Descriptions.Item>
-                            <Descriptions.Item label={t("about.ui")}>Ant Design v5</Descriptions.Item>
-                        </Descriptions>
-                    </Card>
-                </Col>
-            </Row>
-        </div>
-    );
-};
+      if (next.theme && themeModes.includes(next.theme) && next.theme !== themeMode) {
+        apply(THEME_KEY, next.theme, 'sp-set-theme'); setThemeMode(next.theme); message.success(t('settings.themeUpdated'));
+      }
+      if (next.size && sizeModes.includes(next.size) && next.size !== sizeMode) {
+        apply(SIZE_KEY, next.size, 'sp-set-size'); setSizeMode(next.size); message.success(t('settings.sizeUpdated'));
+      }
+    } catch {message.error(t('error.operationFailed', '操作失败，请重试'));}
+  };
+  return <div className="settings-page">
+    <section className="settings-form"><Typography.Title level={5}>{t('settings.appearance')}</Typography.Title>
+      <SForm hideSubmit schema={appearanceSchema} formData={{theme: themeMode, size: sizeMode}}
+        onChange={event => updateAppearance(event.formData ?? {})}/>
+      <Space wrap>
+        <Tag color="blue">{t('settings.theme')}: {t(`settings.${themeMode}`)}</Tag>
+        <Tag>{t('settings.preview')}: {t(`settings.${resolvedTheme}`)}</Tag>
+      </Space>
+      <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'resetAppearance', sort: 0,
+        icon: 'ReloadOutlined', text: t('action.reset'), onClick: () => {
+          try {apply(THEME_KEY, 'light', 'sp-set-theme'); apply(SIZE_KEY, 'middle', 'sp-set-size');
+            setThemeMode('light'); setSizeMode('middle'); message.success(t('settings.resetApplied'));}
+          catch {message.error(t('error.operationFailed', '操作失败，请重试'));}
+        }}]}/>
+    </section>
+    <Divider/>
+    <section className="settings-form"><Typography.Title level={5}>{t('settings.i18n')}</Typography.Title>
+      <SForm hideSubmit schema={languageSchema} formData={{language: locale}} onChange={event => {
+        const next = event.formData?.language;
+        if (next && next !== locale && languages.some(language => language.code === next)) {
+          setLocale(next); message.success(t('settings.langUpdated'));
+        }
+      }}/>
+      <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'resetLanguage', sort: 0,
+        text: t('action.resetLang'), onClick: () => {setLocale('zh-CN'); message.success(t('settings.resetLangApplied'));}}]}/>
+    </section>
+    <Divider/>
+    <section><Typography.Title level={5}>{t('settings.about')}</Typography.Title>
+      <Descriptions size="small" column={2}>
+        <Descriptions.Item label={t('about.version')}>{hostPackage.version}</Descriptions.Item>
+        <Descriptions.Item label={t('about.license')}>Apache-2.0</Descriptions.Item>
+        <Descriptions.Item label={t('about.ui')}>Ant Design {antdVersion}</Descriptions.Item>
+      </Descriptions>
+    </section>
+  </div>;
+}

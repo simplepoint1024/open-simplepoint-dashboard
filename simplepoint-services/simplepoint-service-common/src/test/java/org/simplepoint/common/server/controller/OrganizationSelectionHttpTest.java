@@ -38,7 +38,9 @@ class OrganizationSelectionHttpTest {
   SessionFactory factory;
   Session em;
   MockMvc mvc;
+  org.springframework.web.context.support.AnnotationConfigWebApplicationContext web;
   AuthorizationContext context;
+  OrganizationRepository organizationRepository;
   List<Organization> rows = new ArrayList<>();
   List<String> selectedIds;
   ObjectMapper mapper = new ObjectMapper();
@@ -70,17 +72,24 @@ class OrganizationSelectionHttpTest {
     queryProxy.setProxyTargetClass(true);
     queryProxy.addAdvice(new org.springframework.dao.support.PersistenceExceptionTranslationInterceptor(
         new org.springframework.orm.jpa.vendor.HibernateJpaDialect()));
-    var service = new OrganizationServiceImpl(mock(OrganizationRepository.class), details, null,
+    organizationRepository = mock(OrganizationRepository.class, withSettings().defaultAnswer(
+        org.mockito.AdditionalAnswers.delegatesTo(new org.simplepoint.data.jpa.base.repository.BaseRepositoryImpl<>(Organization.class, em))));
+    var service = new OrganizationServiceImpl(organizationRepository, details, null,
         mock(ResourceAuthorizationVersionService.class), (OrganizationSelectionQuery) queryProxy.getProxy(),
         new OrganizationScopedReadQuery(em));
-    mvc = MockMvcBuilders.standaloneSetup(new OrganizationController(service)).setControllerAdvice(new GlobalExceptionHandler())
-        .setMessageConverters(new org.springframework.http.converter.json.JacksonJsonHttpMessageConverter())
-        .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver()).build();
+    web = new org.springframework.web.context.support.AnnotationConfigWebApplicationContext();
+    web.setServletContext(new org.springframework.mock.web.MockServletContext());
+    web.register(PluginWebConfiguration.class);
+    web.addBeanFactoryPostProcessor(beans -> beans.registerSingleton("organizationService", service));
+    web.refresh();
+    mvc = MockMvcBuilders.webAppContextSetup(web).build();
     authorize(Map.of(), "tenant-a");
   }
 
   void authorize(Map<String, String> fields, String tenant) {
     context = new AuthorizationContext(); context.setUserId("reader"); context.setIsAdministrator(false);
+    context.setScopeType(AuthorizationScopeType.TENANT);
+    context.setResources(Set.of("organizations.view"));
     context.setFieldPermissions(fields);
     context.setAttributes(tenant == null ? Map.of() : Map.of("X-Tenant-Id", tenant));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
@@ -95,10 +104,50 @@ class OrganizationSelectionHttpTest {
 
   @AfterEach
   void cleanup() {
+    if (web != null) web.close();
     ResourcePolicyContext.clear();
     RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
     if (em != null) {if (em.getTransaction().isActive()) em.getTransaction().rollback(); em.close();}
     if (factory != null) factory.close();
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void calculatedOwnerContextRetainsTreeIdentifiersAndEditableFields() throws Exception {
+    var users = mock(org.simplepoint.plugin.rbac.core.api.service.UsersService.class);
+    var tenants = mock(org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository.class);
+    var tenantProvider = mock(org.springframework.beans.factory.ObjectProvider.class);
+    when(tenantProvider.getIfAvailable()).thenReturn(tenants);
+    var tenant = new org.simplepoint.plugin.rbac.tenant.api.entity.Tenant();
+    tenant.setOwnerId("owner"); tenant.setTenantType(org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.ORGANIZATION);
+    when(tenants.findById("tenant-a")).thenReturn(Optional.of(tenant));
+    when(tenants.hasUser("tenant-a", "owner")).thenReturn(true);
+    when(users.findByIdForAuthorization("owner")).thenReturn(Optional.of(new org.simplepoint.security.entity.User()));
+    when(users.loadRolesByUserId("tenant-a", "owner")).thenReturn(List.of(
+        new org.simplepoint.core.authority.RoleGrantedAuthority("role", "ROLE_TENANT_OWNER")));
+    when(users.loadResourcesInRoleIds(List.of("role"))).thenReturn(Set.of("organizations.view", "organizations.edit"));
+    var calculator = new org.simplepoint.plugin.rbac.core.service.impl.AuthorizationContextServiceImpl(users,
+        mock(org.springframework.beans.factory.ObjectProvider.class), mock(org.springframework.beans.factory.ObjectProvider.class),
+        tenantProvider, mock(org.springframework.beans.factory.ObjectProvider.class), mock(org.springframework.beans.factory.ObjectProvider.class),
+        mock(org.springframework.beans.factory.ObjectProvider.class), mock(org.springframework.beans.factory.ObjectProvider.class),
+        mock(org.springframework.beans.factory.ObjectProvider.class), mock(org.springframework.beans.factory.ObjectProvider.class),
+        mock(org.springframework.beans.factory.ObjectProvider.class));
+    context = calculator.calculate("tenant-a", "owner", null, null);
+    doAnswer(call -> new ArrayList<>(new OrganizationScopedReadQuery(em).visibleParentsWithChildren(
+        call.getArgument(1), new HashSet<>((Collection<String>) call.getArgument(0)), null)))
+        .when(organizationRepository).findParentIdsWithChildren(anyCollection(), anyString());
+    rows.get(1).setParentId(rows.get(0).getId()); em.flush();
+    mvc.perform(get("/organizations/tree").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(rows.get(0).getId()))
+        .andExpect(jsonPath("$.content[0].hasChildren").value(true));
+    mvc.perform(get("/organizations/tree").param("treeParentId", rows.get(0).getId())
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(rows.get(1).getId()))
+        .andExpect(jsonPath("$.content[0].parentId").value(rows.get(0).getId()));
+    mvc.perform(get("/organizations/schema").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.schema.properties.name").exists())
+        .andExpect(jsonPath("$.schema.properties.parentId").exists());
+    assertNull(org.simplepoint.core.jackson.FieldPermissionPolicy.access(context, Organization.class, "name"));
   }
 
   @Test
@@ -128,9 +177,9 @@ class OrganizationSelectionHttpTest {
 
     context.setResourceDataScopes(Map.of("organizations.view",
         new ResourceDataScope("CUSTOM", ids, false)));
-    ResourcePolicyContext.set("organizations.view");
     mvc.perform(query(false, List.of(), Map.of())).andExpect(status().isOk())
         .andExpect(jsonPath("$.totalElements").value(2));
+    assertNull(ResourcePolicyContext.get(), "page context must be cleared after the HTTP response");
     mvc.perform(query(true, List.of(rows.get(0).getId(), rows.get(1).getId()), Map.of()))
         .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
         .andExpect(jsonPath("$.content[0].id").value(rows.get(1).getId()));
@@ -150,6 +199,101 @@ class OrganizationSelectionHttpTest {
             .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
         .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].name").value("***"))
         .andExpect(jsonPath("$.content[0].description").doesNotExist());
+  }
+
+  @Test
+  void directChildOptionsRemainCountFreeAndScopedBeyondOneHundred() throws Exception {
+    var parent = rows.getFirst().getId();
+    for (int index = 1; index < rows.size(); index++) rows.get(index).setParentId(parent);
+    em.flush();
+    var permitted = new HashSet<>(rows.stream().map(Organization::getId).toList());
+    permitted.remove(rows.get(120).getId());
+    context.setResourceDataScopes(Map.of("organizations.view", new ResourceDataScope("CUSTOM", permitted, false)));
+    factory.getStatistics().clear();
+    mvc.perform(get("/platform/organizations/options").param("parentId", parent).param("page", "2").param("size", "50")
+        .param("excludeId", rows.get(241).getId()).requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.number").value(2)).andExpect(jsonPath("$.size").value(50))
+        .andExpect(jsonPath("$.hasNext").value(true)).andExpect(jsonPath("$.content.length()").value(50))
+        .andExpect(jsonPath("$.content[0].id").value(rows.get(101).getId()))
+        .andExpect(jsonPath("$.totalElements").doesNotExist()).andExpect(jsonPath("$.page").doesNotExist());
+    assertEquals(2, factory.getStatistics().getQueryExecutionCount(), "one bounded slice plus visible-child metadata, no COUNT");
+    mvc.perform(get("/platform/organizations/options").param("parentId", parent).param("page", "4").param("size", "50")
+        .param("excludeId", rows.get(241).getId()).requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.number").value(4)).andExpect(jsonPath("$.hasNext").value(false))
+        .andExpect(jsonPath("$.content.length()").value(39))
+        .andExpect(jsonPath("$.content[0].id").value(rows.get(202).getId()))
+        .andExpect(jsonPath("$.content[38].id").value(rows.get(240).getId()));
+    assertNull(ResourcePolicyContext.get(), "picker page ownership never leaks into the next request");
+    assertEquals(0, factory.getStatistics().getEntityUpdateCount(), "options never persist draft selections");
+  }
+
+  @Test
+  void selectedOptionsResolveExactHistoricalIdsWithoutBypassingTenantDataOrFieldPermissions() throws Exception {
+    var permitted = Set.of(rows.get(231).getId(), rows.get(242).getId(), rows.get(243).getId());
+    context.setResourceDataScopes(Map.of("organizations.view", new ResourceDataScope("CUSTOM", permitted, false)));
+    var ids = String.join(",", List.of(rows.get(120).getId(), rows.get(231).getId(), rows.get(242).getId(), rows.get(243).getId()));
+    mvc.perform(get("/platform/organizations/options").param("ids", ids).param("size", "30")
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].id").value(rows.get(231).getId()))
+        .andExpect(jsonPath("$.content[0].enabled").value(false)).andExpect(jsonPath("$.hasNext").value(false));
+    context.setResourceFieldPermissions(Map.of("organizations.view", Map.of(
+        Organization.class.getName() + "#name", "MASKED", Organization.class.getName() + "#code", "HIDDEN",
+        Organization.class.getName() + "#enabled", "MASKED")));
+    mvc.perform(get("/platform/organizations/options").param("ids", rows.get(231).getId())
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(rows.get(231).getId()))
+        .andExpect(jsonPath("$.content[0].name").value("***"))
+        .andExpect(jsonPath("$.content[0].enabled").value("***"))
+        .andExpect(jsonPath("$.content[0].code").doesNotExist());
+    assertNull(ResourcePolicyContext.get());
+  }
+
+  /** Mirrors the additional handler mapping used by the platform plugin loader. */
+  @org.springframework.context.annotation.Configuration(proxyBeanMethods = false)
+  @org.springframework.web.servlet.config.annotation.EnableWebMvc
+  static class PluginWebConfiguration implements org.springframework.web.servlet.config.annotation.WebMvcConfigurer {
+    @org.springframework.context.annotation.Bean
+    OrganizationController organizationController(OrganizationServiceImpl service) { return new OrganizationController(service); }
+    @org.springframework.context.annotation.Bean
+    GlobalExceptionHandler errors() { return new GlobalExceptionHandler(); }
+    @org.springframework.context.annotation.Bean
+    org.simplepoint.plugin.webmvc.handler.ServletMappingPluginInstanceHandler pluginMapping(
+        org.springframework.context.ApplicationContext context) {
+      var mapping = new org.simplepoint.plugin.webmvc.handler.ServletMappingPluginInstanceHandler(
+          new org.simplepoint.plugin.spring.handle.SpringBeanPluginInstanceHandler(context));
+      mapping.setOrder(-1);
+      return mapping;
+    }
+    @org.springframework.context.annotation.Bean
+    org.springframework.web.servlet.handler.MappedInterceptor resourcePermissions() throws Exception {
+      var catalog = new org.simplepoint.security.oauth2.resourceserver.scope.ClasspathResourceScopeRegistry(new ObjectMapper());
+      return new org.simplepoint.security.oauth2.resourceserver.config.ResourceServerAutoConfiguration()
+          .resourceScopeInterceptor(catalog);
+    }
+    @Override public void addArgumentResolvers(List<org.springframework.web.method.support.HandlerMethodArgumentResolver> resolvers) {
+      resolvers.add(new PageableHandlerMethodArgumentResolver());
+    }
+    @Override public void configureMessageConverters(List<org.springframework.http.converter.HttpMessageConverter<?>> converters) {
+      converters.add(new org.springframework.http.converter.json.JacksonJsonHttpMessageConverter());
+    }
+  }
+
+  @Test
+  void hiddenIdentifierUsesFlatScopedReadWithoutLeakingNavigationKeys() throws Exception {
+    rows.get(1).setParentId(rows.get(0).getId()); em.flush();
+    context.setResourceDataScopes(Map.of("organizations.view", new ResourceDataScope("CUSTOM",
+        Set.of(rows.get(0).getId(), rows.get(1).getId()), false)));
+    context.setResourceFieldPermissions(Map.of("organizations.view", Map.of(
+        Organization.class.getName() + "#id", "HIDDEN", Organization.class.getName() + "#parentId", "HIDDEN")));
+    mvc.perform(get("/organizations/tree").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
+        .andExpect(jsonPath("$.content[0].id").doesNotExist())
+        .andExpect(jsonPath("$.content[0].parentId").doesNotExist())
+        .andExpect(jsonPath("$.content[0].hasChildren").value(false));
+    var denied = assertThrows(jakarta.servlet.ServletException.class, () -> mvc.perform(get("/organizations/tree")
+        .param("treeParentId", rows.get(0).getId()).requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)));
+    assertInstanceOf(AccessDeniedException.class, denied.getCause());
   }
 
   @Test

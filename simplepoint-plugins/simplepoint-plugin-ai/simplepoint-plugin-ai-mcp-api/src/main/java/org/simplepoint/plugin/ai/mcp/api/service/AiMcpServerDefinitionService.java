@@ -16,6 +16,7 @@ import org.simplepoint.plugin.ai.mcp.api.gateway.McpResourceTemplateDescriptor;
 import org.simplepoint.plugin.ai.mcp.api.gateway.McpToolDescriptor;
 import org.simplepoint.plugin.ai.mcp.api.model.McpCapabilitySnapshotDetails;
 import org.simplepoint.plugin.ai.mcp.api.model.McpCapabilitySnapshotSummary;
+import org.simplepoint.plugin.ai.mcp.api.model.McpCatalogRegistration;
 import org.simplepoint.plugin.ai.mcp.api.model.McpOauthAuthorizationStart;
 import org.simplepoint.plugin.ai.mcp.api.model.McpOauthCallbackCommand;
 import org.simplepoint.plugin.ai.mcp.api.model.McpPromptGetCommand;
@@ -29,6 +30,9 @@ import org.springframework.data.domain.Pageable;
  */
 public interface AiMcpServerDefinitionService
     extends BaseService<AiMcpServerDefinition, String> {
+
+  /** Pages non-secret internal catalog metadata using the current management scope. */
+  Page<McpCatalogRegistration> findCatalog(String query, Pageable pageable);
 
   /**
    * Finds an active MCP server visible in the current scope.

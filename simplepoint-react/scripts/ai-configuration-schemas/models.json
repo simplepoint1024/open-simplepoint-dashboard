@@ -1,0 +1,604 @@
+{
+  "buttons": [
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "ai.workbench.models.create",
+      "variant": "outlined",
+      "icon": "PlusCircleOutlined",
+      "argumentMaxSize": 1,
+      "sort": 0,
+      "type": "primary",
+      "title": "i18n:table.button.create",
+      "danger": false,
+      "argumentMinSize": 0,
+      "key": "add"
+    },
+    {
+      "path": "[default]",
+      "color": "orange",
+      "authority": "ai.workbench.models.edit",
+      "variant": "outlined",
+      "icon": "EditOutlined",
+      "argumentMaxSize": 1,
+      "sort": 1,
+      "type": "primary",
+      "title": "i18n:table.button.edit",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "edit"
+    },
+    {
+      "path": "[default]",
+      "color": "danger",
+      "authority": "ai.workbench.models.delete",
+      "variant": "outlined",
+      "icon": "MinusCircleOutlined",
+      "argumentMaxSize": 10,
+      "sort": 2,
+      "type": "primary",
+      "title": "i18n:table.button.delete",
+      "danger": true,
+      "argumentMinSize": 1,
+      "key": "delete"
+    },
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "ai.workbench.models.debug",
+      "variant": "outlined",
+      "icon": "MessageOutlined",
+      "argumentMaxSize": 1,
+      "sort": 3,
+      "type": "primary",
+      "title": "i18n:ai.model-debug.button",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "debug"
+    }
+  ],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "scopeType": {
+        "type": "string",
+        "enum": [
+          "SYSTEM",
+          "TENANT"
+        ],
+        "title": "i18n:ai.models.title.scopeType",
+        "description": "",
+        "readOnly": true,
+        "x-order": 0,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "tenantId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.models.title.tenantId",
+        "description": "",
+        "readOnly": true,
+        "x-order": 1
+      },
+      "providerId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.models.title.providerId",
+        "description": "",
+        "x-order": 2,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "modelId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.models.title.modelId",
+        "description": "",
+        "minLength": 1,
+        "maxLength": 256,
+        "x-order": 3,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "displayName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.models.title.displayName",
+        "description": "",
+        "maxLength": 256,
+        "x-order": 4,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "modelType": {
+        "type": "string",
+        "enum": [
+          "LLM",
+          "EMBEDDING",
+          "RERANK",
+          "IMAGE",
+          "AUDIO",
+          "MODERATION",
+          "MULTIMODAL",
+          "OTHER"
+        ],
+        "title": "i18n:ai.models.title.modelType",
+        "description": "",
+        "x-order": 5,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "enabled": {
+        "type": "boolean",
+        "title": "i18n:ai.models.title.enabled",
+        "description": "",
+        "x-order": 6,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "billingEnabled": {
+        "type": "boolean",
+        "title": "i18n:ai.models.title.billingEnabled",
+        "description": "i18n:ai.models.description.billingEnabled",
+        "x-order": 7,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "billingCurrency": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.models.title.billingCurrency",
+        "description": "i18n:ai.models.description.billingCurrency",
+        "minLength": 3,
+        "maxLength": 3,
+        "x-order": 8,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "inputTokenPrice": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+        "title": "i18n:ai.models.title.inputTokenPrice",
+        "description": "i18n:ai.models.description.tokenPrice",
+        "x-order": 9,
+        "x-ui": {
+          "x-list-visible": "true",
+          "widget": "Decimal"
+        },
+        "x-decimal": {
+          "precision": 19,
+          "scale": 8,
+          "minimum": "0",
+          "maximum": "99999999999.99999999"
+        }
+      },
+      "cachedInputTokenPrice": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+        "title": "i18n:ai.models.title.cachedInputTokenPrice",
+        "description": "i18n:ai.models.description.cachedInputTokenPrice",
+        "x-order": 10,
+        "x-decimal": {
+          "precision": 19,
+          "scale": 8,
+          "minimum": "0",
+          "maximum": "99999999999.99999999"
+        },
+        "x-ui": {
+          "widget": "Decimal"
+        }
+      },
+      "outputTokenPrice": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+        "title": "i18n:ai.models.title.outputTokenPrice",
+        "description": "i18n:ai.models.description.tokenPrice",
+        "x-order": 11,
+        "x-ui": {
+          "x-list-visible": "true",
+          "widget": "Decimal"
+        },
+        "x-decimal": {
+          "precision": 19,
+          "scale": 8,
+          "minimum": "0",
+          "maximum": "99999999999.99999999"
+        }
+      },
+      "requestPrice": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+        "title": "i18n:ai.models.title.requestPrice",
+        "description": "i18n:ai.models.description.requestPrice",
+        "x-order": 12,
+        "x-decimal": {
+          "precision": 19,
+          "scale": 8,
+          "minimum": "0",
+          "maximum": "99999999999.99999999"
+        },
+        "x-ui": {
+          "widget": "Decimal"
+        }
+      },
+      "description": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.models.title.description",
+        "description": "",
+        "maxLength": 512,
+        "x-order": 13
+      },
+      "available": {
+        "type": "boolean",
+        "title": "i18n:ai.models.title.available",
+        "description": "",
+        "readOnly": true,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "discovered": {
+        "type": "boolean",
+        "title": "i18n:ai.models.title.discovered",
+        "description": "",
+        "readOnly": true
+      },
+      "ownedBy": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.models.title.ownedBy",
+        "description": "",
+        "readOnly": true,
+        "maxLength": 256
+      },
+      "providerName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.models.title.providerName",
+        "description": "",
+        "readOnly": true
+      },
+      "releasedAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time",
+        "title": "i18n:ai.models.title.releasedAt",
+        "description": "",
+        "readOnly": true
+      }
+    },
+    "x-query": {
+      "version": 1,
+      "relations": [],
+      "fields": {
+        "scopeType": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "AiResourceScope"
+        },
+        "providerId": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "modelId": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "displayName": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "modelType": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "AiModelType"
+        },
+        "enabled": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "available": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "discovered": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "ownedBy": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "releasedAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "billingEnabled": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "billingCurrency": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "inputTokenPrice": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "BigDecimal"
+        },
+        "cachedInputTokenPrice": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "BigDecimal"
+        },
+        "outputTokenPrice": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "BigDecimal"
+        },
+        "requestPrice": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "BigDecimal"
+        },
+        "description": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        }
+      },
+      "maxSort": 3,
+      "maxDepth": 4,
+      "maxNodes": 32,
+      "maxPageSize": 200
+    }
+  }
+}

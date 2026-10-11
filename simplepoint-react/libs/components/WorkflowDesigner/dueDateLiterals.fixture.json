@@ -1,0 +1,22 @@
+[
+  {"source": "${true}", "typeIssue": true},
+  {"source": "${false}", "typeIssue": true},
+  {"source": "${0}", "typeIssue": true},
+  {"source": "${0.5}", "typeIssue": true},
+  {"source": "${1e2}", "typeIssue": true},
+  {"source": "${9007199254740993}", "typeIssue": true},
+  {"source": "${9223372036854775808}", "typeIssue": true},
+  {"source": "${1e309}", "typeIssue": true},
+  {"source": "${null}", "noDate": true},
+  {"source": "${\"P1DT2H\"}"},
+  {"source": "${'PT0S'}"},
+  {"source": "P1D"},
+  {"source": "PT30M"},
+  {"source": "2026-10-12T12:00:00Z"},
+  {"source": "${\"2026-10-12T12:00:00Z\"}"},
+  {"source": "${due}"},
+  {"source": "${\"2026-02-30T12:00:00Z\"}", "instant": "2026-02-28T12:00:00Z"},
+  {"source": "2026-02-30T12:00:00Z", "instant": "2026-02-28T12:00:00Z"},
+  {"source": "${\"2026-10-12T12:00:00\"}"},
+  {"source": "${\"P1W\"}"}
+]

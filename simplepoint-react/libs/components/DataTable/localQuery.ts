@@ -1,4 +1,5 @@
 import {filterNode, operatorLabels, validateView, type QueryContract, type QueryNode} from '../Table/query.ts';
+import {exactDecimal as decimal, compareDecimals as decimalCompare} from '@simplepoint/shared/utils/decimal.ts';
 
 export type LocalField = {
   type: 'string' | 'number' | 'integer' | 'boolean' | 'date' | 'date-time' | 'local-date-time';
@@ -32,22 +33,6 @@ export function localQuerySchema(fields: LocalFields): QuerySchema {
       ...(definition.enum ? {enum: [...definition.enum]} : {})};
   }
   return {properties, 'x-query': {version: 1, maxSort: 3, maxDepth: 4, maxNodes: 32, fields: capabilities}};
-}
-
-/** Decimal strings retain precision (IDs and monetary values can exceed JS safe integers). */
-function decimal(value: unknown): {coefficient: bigint; scale: number} {
-  const match = String(value).match(/^([+-]?)(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/);
-  if (!match || !(match[2] || match[3]) || String(value).length > 2000) throw Error('Invalid numeric value');
-  const exponent = Number(match[4] ?? 0);
-  if (!Number.isInteger(exponent) || Math.abs(exponent) > 1000) throw Error('Numeric exponent out of bounds');
-  return {coefficient: BigInt(`${match[1]}${match[2] || '0'}${match[3] || ''}`), scale: (match[3]?.length ?? 0) - exponent};
-}
-
-function decimalCompare(a: ReturnType<typeof decimal>, b: ReturnType<typeof decimal>): number {
-  const scale = Math.max(a.scale, b.scale);
-  const x = scale === a.scale ? a.coefficient : a.coefficient * BigInt(`1${'0'.repeat(scale - a.scale)}`);
-  const y = scale === b.scale ? b.coefficient : b.coefficient * BigInt(`1${'0'.repeat(scale - b.scale)}`);
-  return x < y ? -1 : x > y ? 1 : 0;
 }
 
 function temporal(value: unknown, type: LocalField['type']): string | ReturnType<typeof decimal> {

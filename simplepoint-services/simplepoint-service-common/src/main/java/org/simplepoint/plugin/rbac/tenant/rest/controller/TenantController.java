@@ -190,6 +190,13 @@ public class TenantController extends BaseController<TenantService, Tenant, Stri
     return ok(service.userItems(tenantId, selected, filters, pageable).map(UserRelevanceVo::project));
   }
 
+  /** Checks the selected tenant's real manager capability without loading an account directory. */
+  @GetMapping("/users/capabilities")
+  @PreAuthorize("isAuthenticated()")
+  public Response<Map<String, Boolean>> userManagementCapabilities(@RequestParam("tenantId") String tenantId) {
+    return ok(service.userManagementCapabilities(tenantId));
+  }
+
   /** Returns only the candidate fields available to this tenant's manager. */
   @GetMapping("/users/items/schema")
   @PreAuthorize("isAuthenticated()")

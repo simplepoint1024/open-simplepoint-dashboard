@@ -8,12 +8,13 @@ import {
   updateAccount,
 } from '@/api/system/platform-account';
 import SimpleTable from '@simplepoint/components/SimpleTable';
+import SForm, {type SFormHandle} from '@simplepoint/components/SForm';
 import type {TableButtonProps} from '@simplepoint/components/Table';
 import {useData} from '@simplepoint/shared/api/methods';
 import {EMPTY_QUERY_SCOPE, getQueryScopeSnapshot, subscribeQueryScope} from '@simplepoint/shared/api/queryScope';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {Alert, App, Form, Input, Modal, Select, Space, Switch, Tag} from 'antd';
-import {useCallback, useMemo, useState, useSyncExternalStore} from 'react';
+import {Alert, App, Modal, Space, Tag} from 'antd';
+import {useCallback, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps} from 'react';
 import {accountActionDisabled} from './accountActions';
 
 const baseConfig = api['platform.accounts'];
@@ -29,18 +30,41 @@ function PlatformAccountsContent({scope}: {scope: string}) {
   const [mode, setMode] = useState<'create' | 'edit' | 'identity'>();
   const [selected, setSelected] = useState<PlatformAccount>();
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [tableRevision, setTableRevision] = useState(0);
-  const [form] = Form.useForm<PlatformAccountCommand>();
+  const formRef = useRef<SFormHandle>(null);
+  const [formData, setFormData] = useState<Partial<PlatformAccountCommand>>({});
   const capabilities = useData(['platformAccountCapabilities', scope], fetchCapabilities);
 
   const open = useCallback((next: 'create' | 'edit' | 'identity', account?: PlatformAccount) => {
-    form.resetFields();
     setSelected(account);
     setMode(next);
-    form.setFieldsValue(next === 'identity'
+    setFormData(next === 'identity'
       ? {roles: account?.roles ?? [], superAdmin: account?.superAdmin ?? false}
       : next === 'edit' ? {name: account?.name, enabled: account?.enabled} : {});
-  }, [form]);
+  }, []);
+
+  const schema = useMemo<ComponentProps<typeof SForm>['schema']>(() => ({type: 'object',
+    required: ['reason', 'confirmationPassword', ...(mode === 'create' ? ['email', 'initialPassword'] : []),
+      ...(capabilities.data?.twoFactorEnabled ? ['confirmationCode'] : [])],
+    properties: {
+      ...(mode !== 'identity' ? {name: {type: 'string', title: t('platform-accounts.name', '姓名'), maxLength: 100}} : {}),
+      ...(mode === 'create' ? {
+        email: {type: 'string', title: t('platform-accounts.email', '邮箱'), format: 'email'},
+        initialPassword: {type: 'string', title: t('platform-accounts.initialPassword', '新账号初始密码'), minLength: 12, maxLength: 64},
+      } : {}),
+      ...(mode === 'edit' ? {enabled: {type: 'boolean', title: t('platform-accounts.enabled', '账号启用')}} : {}),
+      ...(mode === 'identity' ? {
+        roles: {type: 'array', title: t('platform-accounts.roles', '平台角色'), uniqueItems: true,
+          items: {type: 'string', enum: ['PLATFORM_ADMIN', 'ACCOUNT_ADMIN', 'AUDITOR']}},
+        superAdmin: {type: 'boolean', title: t('platform-accounts.root', '超级管理员')},
+      } : {}),
+      reason: {type: 'string', title: t('platform-accounts.reason', '操作原因'), pattern: '\\S', maxLength: 500},
+      confirmationPassword: {type: 'string', title: t('platform-accounts.confirmPassword', '你的当前账号密码（二次验证）'), minLength: 1},
+      ...(capabilities.data?.twoFactorEnabled ? {confirmationCode: {type: 'string',
+        title: t('platform-accounts.confirmCode', '你的动态验证码'), pattern: '^[0-9]{6}$', maxLength: 6}} : {}),
+    },
+  }), [capabilities.data?.twoFactorEnabled, mode, t]);
 
   const customButtonEvents = useMemo<Record<string, (
     selectedRowKeys: React.Key[],
@@ -70,16 +94,11 @@ function PlatformAccountsContent({scope}: {scope: string}) {
     },
   }), [t]);
 
-  const save = async () => {
-    if (scope !== getQueryScopeSnapshot()) return;
-    let values: PlatformAccountCommand;
-    try {
-      values = await form.validateFields();
-    } catch {
-      return;
-    }
-    if (scope !== getQueryScopeSnapshot()) return;
-    setSaving(true);
+  const save = async (values: PlatformAccountCommand) => {
+    if (scope !== getQueryScopeSnapshot() || savingRef.current || !mode
+      || accountActionDisabled(mode === 'create' ? 'add' : mode === 'identity' ? 'config.identity' : 'edit',
+        selected ? [selected] : [], capabilities.data?.permissions)) return;
+    savingRef.current = true; setSaving(true);
     try {
       if (mode === 'create') {
         await createAccount(values);
@@ -90,15 +109,15 @@ function PlatformAccountsContent({scope}: {scope: string}) {
       }
       setMode(undefined);
       setSelected(undefined);
-      form.resetFields();
+      setFormData({});
       setTableRevision(value => value + 1);
       await capabilities.refetch();
       message.success(t('platform-accounts.saved', '已保存，权限变更将在后续请求生效'));
     } catch {
-      form.setFieldsValue({confirmationPassword: '', confirmationCode: ''});
+      setFormData(current => ({...current, confirmationPassword: '', confirmationCode: ''}));
       message.error(t('platform-accounts.failed', '操作失败，请检查权限、身份验证或刷新后的账号版本'));
     } finally {
-      setSaving(false);
+      savingRef.current = false; setSaving(false);
     }
   };
 
@@ -127,7 +146,7 @@ function PlatformAccountsContent({scope}: {scope: string}) {
         title={mode === 'identity'
           ? t('platform-accounts.assign', '授予/撤销平台身份')
           : t('platform-accounts.account', '平台账号')}
-        onOk={() => void save()}
+        onOk={() => formRef.current?.submit()}
         confirmLoading={saving}
         maskClosable={false}
         destroyOnHidden
@@ -135,57 +154,19 @@ function PlatformAccountsContent({scope}: {scope: string}) {
           if (!saving) {
             setMode(undefined);
             setSelected(undefined);
-            form.resetFields();
+            setFormData({});
           }
         }}
       >
-        <Form form={form} layout="vertical" preserve={false} disabled={saving}>
-          {mode !== 'identity' ? (
-            <Form.Item name="name" label={t('platform-accounts.name', '姓名')} rules={[{max: 100}]}>
-              <Input/>
-            </Form.Item>
-          ) : null}
-          {mode === 'create' ? (
-            <>
-              <Form.Item name="email" label={t('platform-accounts.email', '邮箱')} rules={[{required: true, type: 'email'}]}>
-                <Input/>
-              </Form.Item>
-              <Form.Item name="initialPassword" label={t('platform-accounts.initialPassword', '新账号初始密码')} rules={[{required: true, min: 12, max: 64}]}>
-                <Input.Password autoComplete="new-password"/>
-              </Form.Item>
-            </>
-          ) : null}
-          {mode === 'edit' ? (
-            <Form.Item name="enabled" label={t('platform-accounts.enabled', '账号启用')} valuePropName="checked">
-              <Switch/>
-            </Form.Item>
-          ) : null}
-          {mode === 'identity' ? (
-            <>
-              <Alert type="warning" message={t('platform-accounts.rootWarning', '超级管理员拥有应急最高权限；普通平台管理员仅管理账号与平台账号审计。不能撤销最后一个有效超级管理员。')}/>
-              <Form.Item name="roles" label={t('platform-accounts.roles', '平台角色')}>
-                <Select
-                  mode="multiple"
-                  options={['PLATFORM_ADMIN', 'ACCOUNT_ADMIN', 'AUDITOR'].map(role => ({label: role, value: role}))}
-                />
-              </Form.Item>
-              <Form.Item name="superAdmin" label={t('platform-accounts.root', '超级管理员')} valuePropName="checked">
-                <Switch/>
-              </Form.Item>
-            </>
-          ) : null}
-          <Form.Item name="reason" label={t('platform-accounts.reason', '操作原因')} rules={[{required: true, whitespace: true, max: 500}]}>
-            <Input.TextArea/>
-          </Form.Item>
-          <Form.Item name="confirmationPassword" label={t('platform-accounts.confirmPassword', '你的当前账号密码（二次验证）')} rules={[{required: true}]}>
-            <Input.Password autoComplete="current-password"/>
-          </Form.Item>
-          {capabilities.data?.twoFactorEnabled ? (
-            <Form.Item name="confirmationCode" label={t('platform-accounts.confirmCode', '你的动态验证码')} rules={[{required: true, pattern: /^[0-9]{6}$/}]}>
-              <Input autoComplete="one-time-code" maxLength={6}/>
-            </Form.Item>
-          ) : null}
-        </Form>
+        {mode === 'identity' && <Alert type="warning" message={t('platform-accounts.rootWarning', '超级管理员拥有应急最高权限；普通平台管理员仅管理账号与平台账号审计。不能撤销最后一个有效超级管理员。')}/>}
+        {mode && <SForm key={`${mode}:${selected?.id ?? 'new'}`} ref={formRef} hideSubmit schema={schema}
+          uiSchema={{reason: {'ui:widget': 'textarea'}, roles: {'ui:widget': 'select'},
+            initialPassword: {'ui:widget': 'password', 'ui:options': {autoComplete: 'new-password'}},
+            confirmationPassword: {'ui:widget': 'password', 'ui:options': {autoComplete: 'current-password'}},
+            confirmationCode: {'ui:options': {autoComplete: 'one-time-code'}}}}
+          formData={formData} disabled={saving}
+          onChange={event => setFormData(event.formData ?? {})}
+          onSubmit={event => void save(event.formData as PlatformAccountCommand)}/>}
       </Modal>
     </div>
   );

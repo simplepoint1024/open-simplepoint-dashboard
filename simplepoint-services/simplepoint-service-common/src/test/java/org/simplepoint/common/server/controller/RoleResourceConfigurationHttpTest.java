@@ -217,6 +217,10 @@ class RoleResourceConfigurationHttpTest {
     var options = service.policies(role.getId(), "users.view", "field", "", PageRequest.of(0, 10));
     assertEquals(1, options.getTotalElements());
     assertEquals(allowed.getId(), options.getContent().getFirst().id());
+    assertEquals(allowed.getId(), service.policies(role.getId(), "users.view", "field", "",
+        PageRequest.of(0, 1), allowed.getId()).getContent().getFirst().id());
+    assertEquals(0, service.policies(role.getId(), "users.view", "field", "",
+        PageRequest.of(0, 1), unrelated.getId()).getTotalElements());
     Row row = list("users.view", "all").stream().filter(item -> item.code().equals("users.view"))
         .findFirst().orElseThrow();
     assertTrue(row.fieldPermission().supported());
@@ -227,6 +231,43 @@ class RoleResourceConfigurationHttpTest {
         null, new PolicyUpdate(allowed.getId())))));
     em.flush(); em.clear();
     assertEquals(allowed.getId(), em.find(RoleResourceGrant.class, grant.getId()).getFieldScopeId());
+  }
+
+  @Test
+  void policyDirectoryPaginatesBeyondFiveHundredAndHydratesOnlyAnEligibleExactId() throws Exception {
+    Resource page = new Resource(); page.setCode("organizations.view"); page.setName("Organizations");
+    page.setPermissionMetadata(new org.simplepoint.core.permission.PermissionPageDescriptor(List.of(
+        org.simplepoint.core.permission.PermissionModelDescriptor.describe(Organization.class))).toJson());
+    page.setType(ResourceType.PAGE); page.setGrantable(true); page.setDisabled(false);
+    page.setPublicAccess(true); page.setScopeTypes(EnumSet.of(ResourceScopeType.TENANT)); em.persist(page);
+    DataScope last = null;
+    for (int i = 0; i < 521; i++) {
+      DataScope item = new DataScope(); item.setTenantId("tenant-a"); item.setName("Policy" + String.format("%03d", i));
+      item.setType(DataScopeType.DEPT); em.persist(item); last = item;
+    }
+    DataScope foreignRule = new DataScope(); foreignRule.setTenantId("tenant-b"); foreignRule.setName("Foreign");
+    foreignRule.setType(DataScopeType.ALL); em.persist(foreignRule);
+    DataScope deleted = new DataScope(); deleted.setTenantId("tenant-a"); deleted.setName("Deleted");
+    deleted.setType(DataScopeType.ALL); deleted.setDeletedAt(Instant.now()); em.persist(deleted);
+    em.flush(); em.clear();
+    var beyond = service.policies(role.getId(), "organizations.view", "data", "", PageRequest.of(26, 20));
+    assertEquals(521, beyond.getTotalElements());
+    assertEquals(1, beyond.getContent().size());
+    assertEquals(last.getId(), beyond.getContent().getFirst().id());
+    factory.getStatistics().clear();
+    var selected = service.policies(role.getId(), "organizations.view", "data", "", PageRequest.of(0, 1), last.getId());
+    assertEquals(1, selected.getTotalElements()); assertEquals("Policy520", selected.getContent().getFirst().name());
+    assertTrue(factory.getStatistics().getEntityLoadCount() <= 2, "Selected hydration must not materialize the policy catalog");
+    for (String id : List.of(foreignRule.getId(), deleted.getId(), "' OR '1'='1")) {
+      assertEquals(0, service.policies(role.getId(), "organizations.view", "data", "", PageRequest.of(0, 1), id).getTotalElements());
+    }
+    mvc.perform(get("/role-resource-configuration/roles/" + role.getId() + "/policy-options")
+        .param("resourceCode", "organizations.view").param("kind", "data").param("selectedId", last.getId())
+        .param("page", "0").param("size", "1")).andExpect(status().isOk())
+        .andExpect(jsonPath("$.content[0].name").value("Policy520"));
+    mvc.perform(get("/role-resource-configuration/roles/" + role.getId() + "/policy-options")
+        .param("resourceCode", "organizations.view").param("kind", "data").param("selectedId", "x".repeat(65))
+        .param("page", "0").param("size", "1")).andExpect(status().isBadRequest());
   }
 
   @Test
@@ -251,9 +292,31 @@ class RoleResourceConfigurationHttpTest {
     var page = service.list(role.getId(), "", "all", null, null, false, false, PageRequest.of(0, 20));
     assertEquals(1, page.getTotalElements());
     assertEquals(copy.getId(), page.getContent().getFirst().id());
+    assertEquals(List.of(copy.getId()), service.contextRows(role.getId(),
+        List.of(copy.getId(), foreignCopy.getId(), resources.get(3).getId())).stream().map(Row::id).toList());
     Row row = page.getContent().getFirst();
     service.save(role.getId(), new Patch(List.of(change(row, true))));
     verify(roles).authorize(argThat(dto -> dto.getResourceCodes().contains(copy.getCode())));
+  }
+
+  @Test
+  void previewContextIsBoundedAndPreservesVisibilityAndRoleIsolation() throws Exception {
+    Resource child = resources.get(2), parent = resources.get(1);
+    var contextRows = service.contextRows(role.getId(), List.of(child.getId(), child.getId(), resources.get(242).getId()));
+    assertEquals(Set.of(child.getId(), parent.getId()), contextRows.stream().map(Row::id)
+        .collect(java.util.stream.Collectors.toSet()));
+    mvc.perform(post(endpoint() + "/resource-context").contentType(MediaType.APPLICATION_JSON)
+        .content("[\"" + child.getId() + "\"]")
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+    assertThrows(AccessDeniedException.class, () -> service.contextRows(foreign.getId(), List.of(child.getId())));
+    assertThrows(ResponseStatusException.class, () -> service.contextRows(role.getId(), Collections.nCopies(201, child.getId())));
+    assertThrows(ResponseStatusException.class, () -> service.contextRows(role.getId(), Arrays.asList((String) null)));
+    // Existing malformed parent cycles terminate and do not duplicate rows.
+    em.find(Resource.class, parent.getId()).setParentId(child.getId()); em.flush();
+    assertEquals(2, service.contextRows(role.getId(), List.of(child.getId())).size());
+    context.setFieldPermissions(Map.of(Resource.class.getName() + "#parentId", "HIDDEN"));
+    assertThrows(AccessDeniedException.class, () -> service.contextRows(role.getId(), List.of(child.getId())));
   }
 
   @Test
@@ -372,6 +435,88 @@ class RoleResourceConfigurationHttpTest {
     context.replaceScopeType(AuthorizationScopeType.PERSONAL);
     assertEquals(1, service.list(role.getId(), "", "all", null, null, false, false, PageRequest.of(0, 20)).getTotalElements());
     ar.setDeletedAt(Instant.now()); em.flush(); assertTrue(list(resource.getCode(), "all").isEmpty());
+  }
+
+  @Test
+  void packagePagesKeepUnpackagedDirectoriesNavigableWithoutExpandingGrants() throws Exception {
+    Resource root = catalogResource("workspace", ResourceType.MODULE, null, false);
+    Resource group = catalogResource("workspace.security", ResourceType.GROUP, root, false);
+    Resource page = catalogResource("workspace.security.roles", ResourceType.PAGE, group, true);
+    Resource unlicensed = catalogResource("workspace.security.other", ResourceType.PAGE, group, true);
+    Resource empty = catalogResource("workspace.empty", ResourceType.GROUP, root, false);
+    var tp = new TenantPackageRelevance(); tp.setTenantId("tenant-a"); tp.setPackageCode("package"); em.persist(tp);
+    var pa = new PackageApplicationRelevance(); pa.setPackageCode("package"); pa.setApplicationCode("app"); em.persist(pa);
+    var ar = new ApplicationResourceRelevance(); ar.setApplicationCode("app"); ar.setResourceCode(page.getCode()); em.persist(ar);
+    em.flush();
+
+    mvc.perform(get(endpoint() + "/resources").param("rootsOnly", "true")
+        .param("navigationOnly", "true").param("size", "1")
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.content[0].code").value(root.getCode()))
+        .andExpect(jsonPath("$.content[0].grantable").value(false))
+        .andExpect(jsonPath("$.content[0].hasNavigationChildren").value(true));
+    assertEquals(List.of(group.getCode()), service.list(role.getId(), "", "all", null,
+        root.getId(), false, true, PageRequest.of(0, 1)).map(Row::code).getContent());
+    assertEquals(List.of(page.getCode()), service.list(role.getId(), "", "all", null,
+        group.getId(), false, true, PageRequest.of(0, 1)).map(Row::code).getContent());
+    assertTrue(list(empty.getCode(), "all").isEmpty());
+    assertTrue(list(unlicensed.getCode(), "all").isEmpty());
+
+    // Both directory selection paths must authorize only the licensed page.
+    var subtree = service.subtreeRows(role.getId(), root.getId());
+    assertEquals(Set.of(root.getCode(), group.getCode(), page.getCode()),
+        subtree.stream().map(Row::code).collect(java.util.stream.Collectors.toSet()));
+    var changes = subtree.stream().filter(Row::grantable).map(row -> change(row, true)).toList();
+    service.save(role.getId(), new Patch(changes)); em.flush();
+    var revoke = service.previewSubtree(role.getId(), root.getId(), false);
+    assertEquals(1, revoke.total()); assertEquals(1, revoke.changed());
+    service.saveSubtree(role.getId(), new BulkCommand(root.getId(), false, revoke.revision()));
+    var add = service.previewSubtree(role.getId(), root.getId(), true);
+    service.saveSubtree(role.getId(), new BulkCommand(root.getId(), true, add.revision()));
+    em.flush();
+    assertEquals(List.of(page.getCode()), em.createQuery(
+        "select g.resourceCode from RoleResourceGrant g where g.tenantId = 'tenant-a'"
+            + " and g.roleId = :role and g.resourceCode like 'workspace%' and g.deletedAt is null", String.class)
+        .setParameter("role", role.getId()).getResultList());
+    Row directory = list(root.getCode(), "all").stream().filter(row -> row.id().equals(root.getId())).findFirst().orElseThrow();
+    assertThrows(ResponseStatusException.class,
+        () -> service.save(role.getId(), new Patch(List.of(change(directory, true)))));
+
+    context.replaceScopeType(AuthorizationScopeType.PERSONAL);
+    assertEquals(3, list("workspace", "all").size());
+    // Neither inactive nor out-of-scope descendants can expose a directory.
+    page.setDisabled(true); em.flush(); assertTrue(list("workspace", "all").isEmpty());
+    page.setDisabled(false); page.setDeletedAt(Instant.now()); em.flush();
+    assertTrue(list("workspace", "all").isEmpty());
+    page.setDeletedAt(null); page.setScopeTypes(EnumSet.of(ResourceScopeType.PLATFORM)); em.flush();
+    assertTrue(list("workspace", "all").isEmpty());
+    page.setScopeTypes(EnumSet.of(ResourceScopeType.TENANT, ResourceScopeType.PERSONAL));
+    root.setScopeTypes(EnumSet.of(ResourceScopeType.PLATFORM)); em.flush();
+    assertFalse(list("workspace", "all").stream().anyMatch(row -> row.id().equals(root.getId())));
+    root.setScopeTypes(EnumSet.of(ResourceScopeType.TENANT, ResourceScopeType.PERSONAL));
+    // A grantable parent still requires its own package entitlement.
+    root.setGrantable(true); em.flush();
+    assertFalse(list("workspace", "all").stream().anyMatch(row -> row.id().equals(root.getId())));
+    root.setGrantable(false); ar.setDeletedAt(Instant.now()); em.flush();
+    assertTrue(list("workspace", "all").isEmpty());
+    ar.setDeletedAt(null); tp.setTenantId("tenant-b"); em.flush();
+    assertTrue(list("workspace", "all").isEmpty());
+  }
+
+  private Resource catalogResource(String code, ResourceType type, Resource parent, boolean grantable) {
+    Resource resource = new Resource(); resource.setCode(code); resource.setName(code);
+    resource.setType(type); resource.setGrantable(grantable); resource.setDisabled(false);
+    resource.setPublicAccess(false);
+    resource.setScopeTypes(EnumSet.of(ResourceScopeType.TENANT, ResourceScopeType.PERSONAL));
+    resource.setParentId(parent == null ? null : parent.getId()); em.persist(resource);
+    Resource ancestor = parent;
+    while (ancestor != null) {
+      var relation = new ResourceAncestor(); relation.setChildId(resource.getId());
+      relation.setAncestorId(ancestor.getId()); em.persist(relation);
+      ancestor = ancestor.getParentId() == null ? null : em.find(Resource.class, ancestor.getParentId());
+    }
+    return resource;
   }
 
   @Test

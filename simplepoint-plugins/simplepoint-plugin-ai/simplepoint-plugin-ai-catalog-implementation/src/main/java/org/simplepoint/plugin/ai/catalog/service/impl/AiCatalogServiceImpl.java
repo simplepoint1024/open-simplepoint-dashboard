@@ -8,7 +8,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
@@ -36,6 +35,7 @@ import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
 import org.simplepoint.plugin.ai.mcp.api.entity.AiMcpServerDefinition;
 import org.simplepoint.plugin.ai.mcp.api.model.McpAuthenticationType;
+import org.simplepoint.plugin.ai.mcp.api.model.McpCatalogRegistration;
 import org.simplepoint.plugin.ai.mcp.api.model.McpServerDeploymentType;
 import org.simplepoint.plugin.ai.mcp.api.model.McpTransportType;
 import org.simplepoint.plugin.ai.mcp.api.service.AiMcpServerDefinitionService;
@@ -54,8 +54,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class AiCatalogServiceImpl implements AiCatalogService {
-
-  private static final int INTERNAL_LIMIT = 500;
 
   private final AiCatalogEntryRepository entryRepository;
 
@@ -109,33 +107,16 @@ public class AiCatalogServiceImpl implements AiCatalogService {
     int normalizedPage = Math.max(0, page);
     int normalizedSize = Math.max(1, Math.min(size, 100));
     String keyword = normalize(query);
-    List<AiCatalogItem> internalItems = new ArrayList<>();
-    if (source == null || source == CatalogSource.INTERNAL) {
-      if (kind == null || kind == CatalogPackageKind.MCP_SERVER) {
-        mcpServerService.limit(
-            Map.of(),
-            PageRequest.of(0, INTERNAL_LIMIT)
-        ).forEach(server -> internalItems.add(internalServer(server)));
-      }
-    }
-    List<AiCatalogItem> filteredInternal = internalItems.stream()
-        .filter(item -> matches(item, keyword))
-        .sorted(Comparator
-            .comparing(
-                (AiCatalogItem item) -> value(item.title()),
-                String.CASE_INSENSITIVE_ORDER
-            )
-            .thenComparing(AiCatalogItem::id))
-        .toList();
+    if (keyword != null && keyword.length() > 200) throw new IllegalArgumentException("Catalog query must not exceed 200 characters");
     long offset = (long) normalizedPage * normalizedSize;
+    if (offset > Integer.MAX_VALUE) throw new IllegalArgumentException("Catalog page offset is too large");
     List<AiCatalogItem> result = new ArrayList<>();
-    int internalFrom = (int) Math.min(offset, filteredInternal.size());
-    int internalTo = Math.min(
-        internalFrom + normalizedSize,
-        filteredInternal.size()
-    );
-    if (internalFrom < internalTo) {
-      result.addAll(filteredInternal.subList(internalFrom, internalTo));
+    long internalTotal = 0;
+    if ((source == null || source == CatalogSource.INTERNAL)
+        && (kind == null || kind == CatalogPackageKind.MCP_SERVER)) {
+      Page<McpCatalogRegistration> internal = mcpServerService.findCatalog(keyword, PageRequest.of(normalizedPage, normalizedSize));
+      internalTotal = internal.getTotalElements();
+      internal.map(this::internalServer).forEach(result::add);
     }
     boolean includeOfficial = (source == null
         || source == CatalogSource.OFFICIAL_MCP)
@@ -143,25 +124,24 @@ public class AiCatalogServiceImpl implements AiCatalogService {
     long officialTotal = 0;
     if (includeOfficial) {
       int remaining = normalizedSize - result.size();
-      long officialOffset = Math.max(0, offset - filteredInternal.size());
-      Page<AiCatalogEntry> officialPage =
-          entryRepository.findAllActiveBySource(
+      long officialOffset = Math.max(0, offset - internalTotal);
+      String pattern = keyword == null ? "" : "%" + keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+      if (remaining == 0) {
+        officialTotal = entryRepository.countActiveBySource(CatalogSource.OFFICIAL_MCP, CatalogEntryStatus.ACTIVE, pattern);
+      } else {
+        Page<AiCatalogEntry> officialPage = entryRepository.findAllActiveBySource(
               CatalogSource.OFFICIAL_MCP,
               CatalogEntryStatus.ACTIVE,
-              keyword == null ? "" : "%" + keyword + "%",
-              new OffsetPageRequest(
-                  remaining > 0 ? officialOffset : 0,
-                  Math.max(1, remaining)
-              )
+              pattern,
+              new OffsetPageRequest(officialOffset, remaining)
           );
-      officialTotal = officialPage.getTotalElements();
-      if (remaining > 0) {
+        officialTotal = officialPage.getTotalElements();
         officialPage.stream()
             .map(this::officialEntry)
             .forEach(result::add);
       }
     }
-    long total = filteredInternal.size() + officialTotal;
+    long total = internalTotal + officialTotal;
     int totalPages = total == 0
         ? 0 : Math.toIntExact((total + normalizedSize - 1) / normalizedSize);
     return new AiCatalogPage(
@@ -184,7 +164,7 @@ public class AiCatalogServiceImpl implements AiCatalogService {
   public AiCatalogSyncResult syncOfficialRegistry() {
     if (scopeAccessPolicy.currentManagementScope().scopeType()
         != AiResourceScope.SYSTEM) {
-      throw new IllegalArgumentException(
+      throw new org.springframework.security.access.AccessDeniedException(
           "Official MCP Registry synchronization is platform-only"
       );
     }
@@ -385,27 +365,30 @@ public class AiCatalogServiceImpl implements AiCatalogService {
     return selected.identifier() + "==" + version;
   }
 
-  private AiCatalogItem internalServer(final AiMcpServerDefinition server) {
+  private AiCatalogItem internalServer(final McpCatalogRegistration server) {
     return new AiCatalogItem(
-        "internal:mcp:" + server.getId(),
+        "internal:mcp:" + server.id(),
         CatalogSource.INTERNAL,
         CatalogPackageKind.MCP_SERVER,
         null,
-        server.getCode(),
-        server.getRemoteServerVersion(),
-        server.getName(),
-        server.getDescription(),
-        server.getStatus() == null ? null : server.getStatus().name(),
-        server.getScopeType(),
-        server.getEndpointUrl(),
+        server.code(),
+        server.version(),
+        server.name(),
+        server.description(),
+        server.status() == null ? null : server.status().name(),
+        server.scopeType(),
+        server.endpointUrl(),
         null,
         null,
         false,
-        server.getUpdatedAt()
+        false,
+        false,
+        server.updatedAt()
     );
   }
 
   private AiCatalogItem officialEntry(final AiCatalogEntry entry) {
+    boolean remote = isImportable(entry.getEndpointUrl(), entry.getTransportType()), runtime = hasImportablePackage(entry);
     return new AiCatalogItem(
         entry.getId(),
         entry.getSource(),
@@ -420,25 +403,11 @@ public class AiCatalogServiceImpl implements AiCatalogService {
         entry.getEndpointUrl(),
         entry.getRepositoryUrl(),
         entry.getWebsiteUrl(),
-        isImportable(entry.getEndpointUrl(), entry.getTransportType())
-            || hasImportablePackage(entry),
+        remote || runtime,
+        remote,
+        runtime,
         firstInstant(entry.getRegistryUpdatedAt(), entry.getUpdatedAt())
     );
-  }
-
-  private static boolean matches(
-      final AiCatalogItem item,
-      final String keyword
-  ) {
-    if (keyword == null) {
-      return true;
-    }
-    return List.of(
-        value(item.title()),
-        value(item.description()),
-        value(item.registryName()),
-        value(item.code())
-    ).stream().anyMatch(value -> value.toLowerCase(Locale.ROOT).contains(keyword));
   }
 
   private void requireSyncEnabled() {
@@ -526,10 +495,6 @@ public class AiCatalogServiceImpl implements AiCatalogService {
     String normalized = value.trim();
     return normalized.length() <= maximum
         ? normalized : normalized.substring(0, maximum);
-  }
-
-  private static String value(final String value) {
-    return value == null ? "" : value;
   }
 
   private static Instant firstInstant(

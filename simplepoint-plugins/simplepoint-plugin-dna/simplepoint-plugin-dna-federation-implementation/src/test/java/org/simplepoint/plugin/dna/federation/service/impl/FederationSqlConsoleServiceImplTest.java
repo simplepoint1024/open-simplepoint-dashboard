@@ -11,8 +11,16 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.calcite.adapter.jdbc.SafeJdbcSchema;
+import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -23,6 +31,9 @@ import org.simplepoint.data.calcite.core.query.CalciteQueryColumn;
 import org.simplepoint.data.calcite.core.query.CalciteQueryEngine;
 import org.simplepoint.data.calcite.core.query.CalciteQueryRequest;
 import org.simplepoint.data.calcite.core.query.CalciteQueryResult;
+import org.simplepoint.data.calcite.core.query.CalciteUpdateRequest;
+import org.simplepoint.data.calcite.core.query.CalciteUpdateResult;
+import org.simplepoint.data.calcite.core.query.DefaultCalciteQueryEngine;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationQueryAudit;
@@ -427,6 +438,106 @@ class FederationSqlConsoleServiceImplTest {
   }
 
   @Test
+  void standardDmlShouldExecuteThroughCalciteJdbcAdapter() {
+    JdbcDataSourceDefinition source = enabledDataSource("ds-1", "ds1");
+    FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly =
+        new FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly(
+            "ds1", List.of("ds1"), root -> {});
+    when(dataSourceService.findActiveByCode("ds1")).thenReturn(java.util.Optional.of(source));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(source));
+    when(catalogAssembler.assemble(eq("ds1"), argThat((java.util.Collection<JdbcDataSourceDefinition> sources) ->
+        sources.size() == 1 && sources.iterator().next() == source), anyMap())).thenReturn(assembly);
+    when(queryEngine.executeUpdate(any(CalciteUpdateRequest.class), any()))
+        .thenReturn(new CalciteUpdateResult(1, 4L, List.of("INSERT INTO orders (id) VALUES (1)")));
+    when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    FederationQueryModels.SqlExecuteResult response = service().smartExecute(
+        new FederationQueryModels.SqlConsoleRequest(
+            "ds1", "-- generated statement\n/* classifier comment */\n"
+                + "INSERT INTO ds1.orders (id) VALUES (1)"));
+
+    assertEquals("DML", response.type());
+    assertEquals(1, response.updateResult().affectedRows());
+    verify(queryEngine).executeUpdate(argThat(request -> request.sql().contains("\"ds1\".\"orders\"")
+        && request.defaultSchema().equals("ds1") && request.timeoutMs() == 60_000), any());
+    verify(catalogAssembler).assemble(eq("ds1"), any(java.util.Collection.class),
+        argThat(catalogs -> catalogs.isEmpty()));
+    verify(dataSourceService, never()).requireSimpleDataSource(any());
+  }
+
+  @Test
+  void standardDmlShouldMountOnlyTheReferencedCatalogNamespace() {
+    JdbcDataSourceDefinition source = enabledDataSource("ds-1", "ds1");
+    FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly =
+        new FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly(
+            "ds1", List.of("ds1"), root -> {});
+    when(dataSourceService.findActiveByCode("ds1")).thenReturn(java.util.Optional.of(source));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(source));
+    when(catalogAssembler.assemble(eq("ds1"), any(java.util.Collection.class), anyMap()))
+        .thenReturn(assembly);
+    when(queryEngine.executeUpdate(any(CalciteUpdateRequest.class), any()))
+        .thenReturn(new CalciteUpdateResult(1, 4L, List.of()));
+    when(auditService.create(any(FederationQueryAudit.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    service().smartExecute(new FederationQueryModels.SqlConsoleRequest(
+        "ds1", "INSERT INTO ds1.public.orders (id) VALUES (1)"));
+
+    verify(catalogAssembler).assemble(eq("ds1"), any(java.util.Collection.class),
+        argThat(catalogs -> catalogs.equals(Map.of("ds1", Set.of("public")))));
+  }
+
+  @Test
+  void sqlConsoleDmlShouldReachPhysicalDatabaseThroughCalcite() throws Exception {
+    JdbcDataSource physical = new JdbcDataSource();
+    physical.setURL("jdbc:h2:mem:federation-calcite-dml-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
+    physical.setUser("sa");
+    physical.setPassword("");
+    try (Connection connection = physical.getConnection(); Statement statement = connection.createStatement()) {
+      statement.execute("create table orders (id int primary key, amount int not null, name varchar(100))");
+    }
+    JdbcDataSourceDefinition source = enabledDataSource("ds-1", "ds1");
+    var assembly = new FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly(
+        "ds1", List.of("ds1"), root -> root.add("ds1",
+            SafeJdbcSchema.create(root, "ds1", physical, null, "PUBLIC")));
+    when(dataSourceService.findActiveByCode("ds1")).thenReturn(java.util.Optional.of(source));
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(source));
+    when(catalogAssembler.assemble(eq("ds1"), any(java.util.Collection.class), anyMap())).thenReturn(assembly);
+    when(auditService.create(any(FederationQueryAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    FederationSqlConsoleServiceImpl service = new FederationSqlConsoleServiceImpl(
+        dataSourceService, policyRepository, auditService, catalogAssembler,
+        new DefaultCalciteQueryEngine(),
+        new org.simplepoint.plugin.dna.federation.service.support.FederationMetadataCacheService());
+
+    FederationQueryModels.SqlExecuteResult response = service.smartExecute(
+        new FederationQueryModels.SqlConsoleRequest("ds1",
+            "INSERT INTO ds1.orders (id, amount, name) VALUES (?, ?, ?)",
+            null, List.of(1, 10, "测试-日本語")));
+
+    assertEquals("DML", response.type());
+    assertEquals(1, response.updateResult().affectedRows());
+    assertEquals(1, service.smartExecute(new FederationQueryModels.SqlConsoleRequest("ds1",
+        "UPDATE ds1.orders SET amount = ? WHERE id = ?", null, List.of(20, 1)))
+        .updateResult().affectedRows());
+    try (Connection connection = physical.getConnection();
+         Statement statement = connection.createStatement();
+         ResultSet result = statement.executeQuery("select amount, name from orders where id = 1")) {
+      assertTrue(result.next());
+      assertEquals(20, result.getInt(1));
+      assertEquals("测试-日本語", result.getString(2));
+    }
+    assertEquals(1, service.smartExecute(new FederationQueryModels.SqlConsoleRequest("ds1",
+        "DELETE FROM ds1.orders WHERE id = ?", null, List.of(1)))
+        .updateResult().affectedRows());
+    try (Connection connection = physical.getConnection();
+         Statement statement = connection.createStatement();
+         ResultSet result = statement.executeQuery("select count(*) from orders")) {
+      assertTrue(result.next());
+      assertEquals(0, result.getInt(1));
+    }
+  }
+
+  @Test
   void executeDdlShouldThrowWhenRequestIsNull() {
     FederationSqlConsoleServiceImpl service = service();
     assertThrows(IllegalArgumentException.class, () -> service.executeDdl(null));
@@ -445,12 +556,21 @@ class FederationSqlConsoleServiceImplTest {
     FederationSqlConsoleServiceImpl service = service();
 
     FederationQueryModels.SqlExecuteResult result = service.smartExecute(
-        new FederationQueryModels.SqlConsoleRequest(null, " FLUSH CACHE; ")
+        new FederationQueryModels.SqlConsoleRequest(null, " -- maintenance\n FLUSH CACHE; ")
     );
 
     assertEquals("FLUSH_CACHE", result.type());
     assertTrue(result.message().contains("Calcite Schema 缓存清除 2 条"));
     verify(catalogAssembler).flushSchemaCache();
+  }
+
+  @Test
+  void statementClassificationShouldSkipNestedLeadingComments() {
+    assertEquals(
+        "DELETE FROM ds1.orders",
+        FederationSqlAnalysisUtils.stripLeadingComments(
+            " -- first\n /* outer /* nested */ comment */ DELETE FROM ds1.orders")
+    );
   }
 
   private boolean usesQuotedQualifiedName(final CalciteQueryRequest request) {

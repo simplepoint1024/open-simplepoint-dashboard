@@ -2,6 +2,7 @@ package org.simplepoint.plugin.dna.core.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Map;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.dna.core.api.constants.DnaPaths;
@@ -12,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,6 +38,31 @@ public class JdbcMetadataManagementController {
    */
   public JdbcMetadataManagementController(final JdbcMetadataManagementService service) {
     this.service = service;
+  }
+
+  /** UI capabilities remain independent, matching each endpoint's authorization expression. */
+  @GetMapping("/workbench-permissions")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.metadata.view')")
+  @Operation(summary = "查询元数据工作台权限")
+  public Response<?> workbenchPermissions(final Authentication authentication) {
+    return BaseController.ok(Map.of(
+        "view", permitted(authentication, "dna.metadata.view"),
+        "preview", permitted(authentication, "dna.metadata.preview"),
+        "createNamespace", permitted(authentication, "dna.metadata.create-namespace"),
+        "createTable", permitted(authentication, "dna.metadata.create-table"),
+        "createView", permitted(authentication, "dna.metadata.create-view"),
+        "alterColumn", permitted(authentication, "dna.metadata.alter-column"),
+        "dropColumn", permitted(authentication, "dna.metadata.drop-column"),
+        "addConstraint", permitted(authentication, "dna.metadata.add-constraint"),
+        "dropConstraint", permitted(authentication, "dna.metadata.drop-constraint"),
+        "drop", permitted(authentication, "dna.metadata.drop")
+    ));
+  }
+
+  private boolean permitted(final Authentication authentication, final String authority) {
+    return authentication != null && authentication.isAuthenticated()
+        && authentication.getAuthorities().stream().anyMatch(granted ->
+            "ROLE_Administrator".equals(granted.getAuthority()) || authority.equals(granted.getAuthority()));
   }
 
   /**
@@ -75,6 +103,23 @@ public class JdbcMetadataManagementController {
     try {
       JdbcMetadataModels.TableStructure structure = service.structure(dataSourceId, request);
       return BaseController.ok(structure);
+    } catch (IllegalArgumentException | IllegalStateException ex) {
+      return badRequest(ex.getMessage());
+    }
+  }
+
+  /**
+   * Returns the relation catalog used by the SQL editor completion engine.
+   *
+   * @param dataSourceId datasource id
+   * @return completion catalog
+   */
+  @GetMapping("/{dataSourceId}/completion-catalog")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.metadata.view')")
+  @Operation(summary = "查询 SQL 补全目录", description = "查询方言、默认命名空间以及数据表和视图目录；字段按需读取")
+  public Response<?> completionCatalog(@PathVariable("dataSourceId") final String dataSourceId) {
+    try {
+      return BaseController.ok(service.completionCatalog(dataSourceId));
     } catch (IllegalArgumentException | IllegalStateException ex) {
       return badRequest(ex.getMessage());
     }

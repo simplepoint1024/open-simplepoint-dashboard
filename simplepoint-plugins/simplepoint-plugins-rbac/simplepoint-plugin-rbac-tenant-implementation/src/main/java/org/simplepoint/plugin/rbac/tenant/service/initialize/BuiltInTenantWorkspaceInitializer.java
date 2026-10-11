@@ -2,12 +2,14 @@ package org.simplepoint.plugin.rbac.tenant.service.initialize;
 
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.ADMIN_ROLE_AUTHORITY;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.AI_APPLICATION;
+import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.APP_APPLICATION;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.CORE_APPLICATION;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.MEMBER_ROLE_AUTHORITY;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.ORGANIZATION_PACKAGE;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.OWNER_ROLE_AUTHORITY;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.PERSONAL_PACKAGE;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.STORAGE_APPLICATION;
+import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.WORKFLOW_APPLICATION;
 
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -111,7 +113,7 @@ public class BuiltInTenantWorkspaceInitializer {
         "rbac-tenant",
         "workspace",
         CONTRIBUTION_KEY,
-        "1",
+        "3",
         400,
         this::initializeWorkspace
     );
@@ -131,6 +133,8 @@ public class BuiltInTenantWorkspaceInitializer {
         20
     );
     ensureApplication(AI_APPLICATION, "SimplePoint AI", "模型供应商、模型目录和知识库能力", "/ai", 30);
+    ensureApplication(APP_APPLICATION, "SimplePoint 应用工作台", "表单与应用管理", "/app/workbench", 40);
+    ensureApplication(WORKFLOW_APPLICATION, "SimplePoint 流程中心", "流程设计、待办和事项追踪", "/workflow/tasks", 50);
 
     ensurePackage(
         ORGANIZATION_PACKAGE,
@@ -146,7 +150,7 @@ public class BuiltInTenantWorkspaceInitializer {
     );
     ensurePackageApplications(
         ORGANIZATION_PACKAGE,
-        Set.of(CORE_APPLICATION, STORAGE_APPLICATION, AI_APPLICATION)
+        Set.of(CORE_APPLICATION, STORAGE_APPLICATION, AI_APPLICATION, APP_APPLICATION, WORKFLOW_APPLICATION)
     );
     ensurePackageApplications(
         PERSONAL_PACKAGE,
@@ -313,13 +317,23 @@ public class BuiltInTenantWorkspaceInitializer {
     Set<String> personalCodes = grantableCodes(AuthorizationScopeType.PERSONAL);
     provisioner.provisionApplicationResources(
         "common",
-        excludePrefix(tenantCodes, "ai."),
-        excludePrefix(personalCodes, "ai.")
+        excludePrefix(excludePrefix(excludePrefix(tenantCodes, "ai."), "app."), "workflow."),
+        excludePrefix(excludePrefix(excludePrefix(personalCodes, "ai."), "app."), "workflow.")
     );
     provisioner.provisionApplicationResources(
         "ai",
         selectByPrefix(tenantCodes, "ai."),
         selectByPrefix(personalCodes, "ai.")
+    );
+    provisioner.provisionApplicationResources(
+        "app",
+        selectByPrefix(tenantCodes, "app."),
+        selectByPrefix(personalCodes, "app.")
+    );
+    provisioner.provisionApplicationResources(
+        "workflow",
+        selectByPrefix(tenantCodes, "workflow."),
+        selectByPrefix(personalCodes, "workflow.")
     );
   }
 

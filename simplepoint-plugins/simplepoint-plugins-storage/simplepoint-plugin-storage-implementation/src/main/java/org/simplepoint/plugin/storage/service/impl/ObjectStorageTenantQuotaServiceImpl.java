@@ -10,6 +10,7 @@ package org.simplepoint.plugin.storage.service.impl;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -97,6 +98,14 @@ public class ObjectStorageTenantQuotaServiceImpl
   public <S extends ObjectStorageTenantQuota> ObjectStorageTenantQuota modifyById(final S entity) {
     ObjectStorageTenantQuota current = repository.findActiveById(entity.getId())
         .orElseThrow(() -> new IllegalArgumentException("配额不存在"));
+    var original = new org.springframework.beans.BeanWrapperImpl(current);
+    var incoming = new org.springframework.beans.BeanWrapperImpl(entity);
+    for (String field : List.of("tenantId", "quotaBytes", "enabled", "description")) {
+      if (!org.simplepoint.core.jackson.FieldPermissionPolicy.writable(
+          getAuthorizationContext(), ObjectStorageTenantQuota.class, field)) {
+        incoming.setPropertyValue(field, original.getPropertyValue(field));
+      }
+    }
     normalizeAndValidate(entity, current.getId());
     if (entity.getEnabled() == null) {
       entity.setEnabled(current.getEnabled());

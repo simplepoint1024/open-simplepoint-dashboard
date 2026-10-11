@@ -27,13 +27,14 @@ import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 
 /**
- * Default read-only Calcite execution engine backed by a transient {@code jdbc:calcite:} session.
+ * Default Calcite execution engine backed by a transient {@code jdbc:calcite:} session.
  */
 public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
 
@@ -57,6 +58,53 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
       "EnumerableNestedLoopJoin",
       "EnumerableCorrelate"
   );
+
+  /** {@inheritDoc} */
+  @Override
+  public CalciteUpdateResult executeUpdate(
+      final CalciteUpdateRequest request,
+      final CalciteSchemaConfigurer schemaConfigurer
+  ) {
+    if (request == null) {
+      throw new IllegalArgumentException("更新请求不能为空");
+    }
+    String sql = trimToNull(request.sql());
+    if (sql == null) {
+      throw new IllegalArgumentException("SQL 不能为空");
+    }
+    sql = trimTrailingSemicolon(sql);
+    validateDml(sql);
+    if (request.timeoutMs() < 1) {
+      throw new IllegalArgumentException("timeoutMs 必须大于 0");
+    }
+    String normalizedSql = sql;
+    return withSession(trimToNull(request.defaultSchema()), schemaConfigurer, session -> {
+      CapturedValue<CalciteUpdateResult> captured = captureBackendQueries(() -> {
+        long startedAt = System.nanoTime();
+        List<Object> params = request.parameters();
+        try {
+          int affectedRows;
+          if (params != null && !params.isEmpty()) {
+            try (PreparedStatement statement = session.connection().prepareStatement(normalizedSql)) {
+              statement.setQueryTimeout(toQueryTimeoutSeconds(request.timeoutMs()));
+              bindParameters(statement, params);
+              affectedRows = statement.executeUpdate();
+            }
+          } else {
+            try (Statement statement = session.connection().createStatement()) {
+              statement.setQueryTimeout(toQueryTimeoutSeconds(request.timeoutMs()));
+              affectedRows = statement.executeUpdate(normalizedSql);
+            }
+          }
+          return new CalciteUpdateResult(affectedRows, toElapsedMs(startedAt), List.of());
+        } catch (SQLException ex) {
+          throw new IllegalStateException("Calcite 更新执行失败: " + rootMessage(ex), ex);
+        }
+      });
+      CalciteUpdateResult result = captured.value();
+      return new CalciteUpdateResult(result.affectedRows(), result.executionTimeMs(), captured.capturedQueries());
+    });
+  }
 
   /** {@inheritDoc} */
   @Override
@@ -180,6 +228,25 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
       SqlNode statement = statements.get(0);
       if (statement == null || !statement.getKind().belongsTo(SqlKind.QUERY)) {
         throw new IllegalArgumentException("仅支持只读查询 SQL");
+      }
+    } catch (SqlParseException ex) {
+      throw new IllegalArgumentException("SQL 解析失败: " + rootMessage(ex), ex);
+    }
+  }
+
+  private static void validateDml(final String sql) {
+    try {
+      SqlNodeList statements = SqlParser.create(sql).parseStmtList();
+      if (statements.size() != 1) {
+        throw new IllegalArgumentException("只允许执行单条 SQL");
+      }
+      SqlNode statement = statements.get(0);
+      if (statement instanceof SqlInsert insert && insert.isUpsert()) {
+        throw new IllegalArgumentException("UPSERT 请使用目标数据库的原生执行通道");
+      }
+      SqlKind kind = statement == null ? null : statement.getKind();
+      if (kind != SqlKind.INSERT && kind != SqlKind.UPDATE && kind != SqlKind.DELETE) {
+        throw new IllegalArgumentException("仅支持 INSERT、UPDATE、DELETE 语句");
       }
     } catch (SqlParseException ex) {
       throw new IllegalArgumentException("SQL 解析失败: " + rootMessage(ex), ex);

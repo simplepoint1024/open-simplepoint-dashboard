@@ -138,6 +138,28 @@ class OpenAiProviderAdapterTest {
     server.start();
   }
 
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"OPENAI_COMPATIBLE", "ANTHROPIC"})
+  void numericCatalogPricesRemainExactBeforeDomainNormalization(String protocol) throws Exception {
+    startServer(exchange -> respond(exchange, """
+        {"data":[{"id":"exact-model","pricing":{"input_per_million":99999999999.99999999,
+          "output_per_million":0.123456785,"currency":"USD"}}],"has_more":false}
+        """));
+    var mapper = new ObjectMapper();
+    org.simplepoint.plugin.ai.core.api.spi.AiProviderAdapter adapter = protocol.equals("ANTHROPIC")
+        ? new AnthropicProviderAdapter(mapper, new AiModelTypeDetector(), new AiDiscoveredPricingParser(), new AiProperties())
+        : new OpenAiProviderAdapter(mapper, new AiModelTypeDetector(), new AiDiscoveredPricingParser(), new AiProperties());
+    var connection = new ProviderConnection("exact-provider", AiProviderType.valueOf(protocol), AiProviderVendor.CUSTOM,
+        "http://127.0.0.1:" + server.getAddress().getPort() + "/v1", null, "isolated-key", true, 5);
+    var model = adapter.discoverModels(connection).getFirst();
+    assertEquals(new BigDecimal("99999999999.99999999"), model.pricing().inputTokenPrice());
+    assertEquals(new BigDecimal("0.12345679"), model.pricing().outputTokenPrice(), "Existing domain HALF_UP normalization remains unchanged");
+    org.junit.jupiter.api.Assertions.assertFalse(mapper.isEnabled(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS),
+        "Catalog decoding must not reconfigure the shared request mapper");
+    org.junit.jupiter.api.Assertions.assertTrue(mapper.readTree(model.metadataJson()).path("pricing").path("input_per_million").isNumber(),
+        "Remote metadata keeps numeric JSON types");
+  }
+
   private static void respond(final HttpExchange exchange, final String body) throws IOException {
     byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
     exchange.getResponseHeaders().add("Content-Type", "application/json");

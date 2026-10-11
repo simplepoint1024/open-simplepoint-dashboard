@@ -4,9 +4,9 @@ import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import api from '@/api';
 import {fetchAuthorizeUsers, fetchUnauthorizedUsers, type UserRelevanceVo} from '@/api/platform/tenant';
 
-export interface TenantUserConfigProps {tenantId: string; ownerId?: string}
+export interface TenantUserConfigProps {tenantId: string; ownerId?: string; onInteractionLockChange?: (locked: boolean) => void}
 
-export default function TenantUserConfig({tenantId, ownerId}: TenantUserConfigProps) {
+export default function TenantUserConfig({tenantId, ownerId, onInteractionLockChange}: TenantUserConfigProps) {
   const {t, messages, ensure, locale} = useI18n();
   useEffect(() => {void ensure(['users', 'table', 'common']);}, [ensure, locale]);
   const columns = useMemo<AssignmentTableProps<UserRelevanceVo>['columns']>(() => [
@@ -19,7 +19,8 @@ export default function TenantUserConfig({tenantId, ownerId}: TenantUserConfigPr
   return <AssignmentTable<UserRelevanceVo> endpoint={`${api['platform.tenants'].baseUrl}/users/items`}
     parent={{tenantId}} itemKey="id" columns={columns} storageKey="platform.tenants.users.assignment"
     disabledKeys={ownerId ? [ownerId] : undefined}
-    onMove={(selected, keys) => selected
-      ? fetchUnauthorizedUsers({tenantId, userIds: keys})
-      : fetchAuthorizeUsers({tenantId, userIds: keys})}/>;
+    onInteractionLockChange={onInteractionLockChange}
+    onMove={(selected, keys, options) => selected
+      ? fetchUnauthorizedUsers({tenantId, userIds: keys}, options)
+      : fetchAuthorizeUsers({tenantId, userIds: keys}, options)}/>;
 }

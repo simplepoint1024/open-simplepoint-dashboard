@@ -79,7 +79,12 @@
   "form.passwordMismatch": "Passwords do not match",
   "form.remoteSelect.empty": "No matching data",
   "form.remoteSelect.more": "Load more",
+  "form.remoteSelect.previous": "Load earlier results",
   "form.remoteSelect.selectedLoadFailed": "Selected option failed to load; the original value is retained",
+  "form.remoteSelect.selectedLoading": "Loading selected option",
+  "form.remoteSelect.selectedUnavailable": "Selected option unavailable",
+  "form.remoteSelect.roleUnsupported": "This role authority is unsafe for workflow use: a comma, outer whitespace, control character, or excessive length.",
+  "form.remoteSelect.selectedUnavailableHint": "Some selected options were deleted or are inaccessible. Original values are retained; please select again.",
   "form.remoteSelect.invalidEndpoint": "The remote selector has no valid endpoint",
   "form.remoteSelect.loadFailed": "Loading failed. Enter a keyword to retry.",
   "form.remoteSelect.placeholder": "Search by name, account, email, or phone number",
@@ -275,5 +280,14 @@
   "tenant.profile.saveFailed": "Failed to save the tenant profile",
   "tenant.profile.type": "Tenant Type",
   "tenant.profile.unavailable": "No accessible tenant profile is available in this workspace",
-  "tenant.type.platform": "Platform"
+  "tenant.type.platform": "Platform",
+  "form.remoteSelect.invalidSource": "The remote selector has no valid directory adapter",
+  "form.decimal.scale": "At most {scale} decimal places are supported",
+  "form.decimal.minimum": "The value must be {comparison} {minimum}",
+  "form.decimal.maximum": "The value must be {comparison} {maximum}",
+  "form.decimal.greater": "greater than",
+  "form.decimal.atLeast": "at least",
+  "form.decimal.less": "less than",
+  "form.decimal.atMost": "at most",
+  "form.decimal.invalid": "Enter a valid decimal value"
 }

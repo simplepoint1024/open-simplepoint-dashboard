@@ -32,8 +32,7 @@ import org.springframework.security.oauth2.server.resource.web.authentication.Be
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.handler.MappedInterceptor;
 
 /**
  * Auto-configuration for the resource server.
@@ -59,17 +58,12 @@ public class ResourceServerAutoConfiguration {
     return new org.simplepoint.security.oauth2.resourceserver.scope.StandardResourcePermissionCatalog(mappings, scopes);
   }
 
-  /** Registers scope enforcement after handler mapping and before controller invocation. */
+  /** Applies to every handler mapping, including dynamically registered plugin controllers. */
   @Bean
-  public WebMvcConfigurer resourceScopeWebMvcConfigurer(
+  public MappedInterceptor resourceScopeInterceptor(
       final ClasspathResourceScopeRegistry scopeRegistry
   ) {
-    return new WebMvcConfigurer() {
-      @Override
-      public void addInterceptors(final InterceptorRegistry registry) {
-        registry.addInterceptor(new ResourceScopeHandlerInterceptor(scopeRegistry));
-      }
-    };
+    return new MappedInterceptor(null, new ResourceScopeHandlerInterceptor(scopeRegistry));
   }
 
   /**

@@ -1,0 +1,1333 @@
+{
+  "content": [
+    {
+      "children": [
+        {
+          "children": [],
+          "code": "management-child-000",
+          "description": "Child actual description 0",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-000",
+          "label": "Node management-child-000",
+          "method": "POST",
+          "name": "Node management-child-000",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/0",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 0,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-001",
+          "description": "Child actual description 1",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-001",
+          "label": "Node management-child-001",
+          "method": "POST",
+          "name": "Node management-child-001",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/1",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 1,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-002",
+          "description": "Child actual description 2",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-002",
+          "label": "Node management-child-002",
+          "method": "POST",
+          "name": "Node management-child-002",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/2",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 2,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-003",
+          "description": "Child actual description 3",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-003",
+          "label": "Node management-child-003",
+          "method": "POST",
+          "name": "Node management-child-003",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/3",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 3,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-004",
+          "description": "Child actual description 4",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-004",
+          "label": "Node management-child-004",
+          "method": "POST",
+          "name": "Node management-child-004",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/4",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 4,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-005",
+          "description": "Child actual description 5",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-005",
+          "label": "Node management-child-005",
+          "method": "POST",
+          "name": "Node management-child-005",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/5",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 5,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-006",
+          "description": "Child actual description 6",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-006",
+          "label": "Node management-child-006",
+          "method": "POST",
+          "name": "Node management-child-006",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/6",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 6,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-007",
+          "description": "Child actual description 7",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-007",
+          "label": "Node management-child-007",
+          "method": "POST",
+          "name": "Node management-child-007",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/7",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 7,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-008",
+          "description": "Child actual description 8",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-008",
+          "label": "Node management-child-008",
+          "method": "POST",
+          "name": "Node management-child-008",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/8",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 8,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-009",
+          "description": "Child actual description 9",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-009",
+          "label": "Node management-child-009",
+          "method": "POST",
+          "name": "Node management-child-009",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/9",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 9,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-010",
+          "description": "Child actual description 10",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-010",
+          "label": "Node management-child-010",
+          "method": "POST",
+          "name": "Node management-child-010",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/10",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 10,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-011",
+          "description": "Child actual description 11",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-011",
+          "label": "Node management-child-011",
+          "method": "POST",
+          "name": "Node management-child-011",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/11",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 11,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-012",
+          "description": "Child actual description 12",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-012",
+          "label": "Node management-child-012",
+          "method": "POST",
+          "name": "Node management-child-012",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/12",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 12,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-013",
+          "description": "Child actual description 13",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-013",
+          "label": "Node management-child-013",
+          "method": "POST",
+          "name": "Node management-child-013",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/13",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 13,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-014",
+          "description": "Child actual description 14",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-014",
+          "label": "Node management-child-014",
+          "method": "POST",
+          "name": "Node management-child-014",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/14",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 14,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-015",
+          "description": "Child actual description 15",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-015",
+          "label": "Node management-child-015",
+          "method": "POST",
+          "name": "Node management-child-015",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/15",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 15,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-016",
+          "description": "Child actual description 16",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-016",
+          "label": "Node management-child-016",
+          "method": "POST",
+          "name": "Node management-child-016",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/16",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 16,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-017",
+          "description": "Child actual description 17",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-017",
+          "label": "Node management-child-017",
+          "method": "POST",
+          "name": "Node management-child-017",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/17",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 17,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-018",
+          "description": "Child actual description 18",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-018",
+          "label": "Node management-child-018",
+          "method": "POST",
+          "name": "Node management-child-018",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/18",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 18,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-019",
+          "description": "Child actual description 19",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-019",
+          "label": "Node management-child-019",
+          "method": "POST",
+          "name": "Node management-child-019",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/19",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 19,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-020",
+          "description": "Child actual description 20",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-020",
+          "label": "Node management-child-020",
+          "method": "POST",
+          "name": "Node management-child-020",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/20",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 20,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-021",
+          "description": "Child actual description 21",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-021",
+          "label": "Node management-child-021",
+          "method": "POST",
+          "name": "Node management-child-021",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/21",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 21,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-022",
+          "description": "Child actual description 22",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-022",
+          "label": "Node management-child-022",
+          "method": "POST",
+          "name": "Node management-child-022",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/22",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 22,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-023",
+          "description": "Child actual description 23",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-023",
+          "label": "Node management-child-023",
+          "method": "POST",
+          "name": "Node management-child-023",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/23",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 23,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-024",
+          "description": "Child actual description 24",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-024",
+          "label": "Node management-child-024",
+          "method": "POST",
+          "name": "Node management-child-024",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/24",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 24,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-025",
+          "description": "Child actual description 25",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-025",
+          "label": "Node management-child-025",
+          "method": "POST",
+          "name": "Node management-child-025",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/25",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 25,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-026",
+          "description": "Child actual description 26",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-026",
+          "label": "Node management-child-026",
+          "method": "POST",
+          "name": "Node management-child-026",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/26",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 26,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-027",
+          "description": "Child actual description 27",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-027",
+          "label": "Node management-child-027",
+          "method": "POST",
+          "name": "Node management-child-027",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/27",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 27,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-028",
+          "description": "Child actual description 28",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-028",
+          "label": "Node management-child-028",
+          "method": "POST",
+          "name": "Node management-child-028",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/28",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 28,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-029",
+          "description": "Child actual description 29",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-029",
+          "label": "Node management-child-029",
+          "method": "POST",
+          "name": "Node management-child-029",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/29",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 29,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-030",
+          "description": "Child actual description 30",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-030",
+          "label": "Node management-child-030",
+          "method": "POST",
+          "name": "Node management-child-030",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/30",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 30,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-031",
+          "description": "Child actual description 31",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-031",
+          "label": "Node management-child-031",
+          "method": "POST",
+          "name": "Node management-child-031",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/31",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 31,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-032",
+          "description": "Child actual description 32",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-032",
+          "label": "Node management-child-032",
+          "method": "POST",
+          "name": "Node management-child-032",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/32",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 32,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-033",
+          "description": "Child actual description 33",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-033",
+          "label": "Node management-child-033",
+          "method": "POST",
+          "name": "Node management-child-033",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/33",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 33,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-034",
+          "description": "Child actual description 34",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-034",
+          "label": "Node management-child-034",
+          "method": "POST",
+          "name": "Node management-child-034",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/34",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 34,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-035",
+          "description": "Child actual description 35",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-035",
+          "label": "Node management-child-035",
+          "method": "POST",
+          "name": "Node management-child-035",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/35",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 35,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-036",
+          "description": "Child actual description 36",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-036",
+          "label": "Node management-child-036",
+          "method": "POST",
+          "name": "Node management-child-036",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/36",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 36,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-037",
+          "description": "Child actual description 37",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-037",
+          "label": "Node management-child-037",
+          "method": "POST",
+          "name": "Node management-child-037",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/37",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 37,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-038",
+          "description": "Child actual description 38",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-038",
+          "label": "Node management-child-038",
+          "method": "POST",
+          "name": "Node management-child-038",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/38",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 38,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-039",
+          "description": "Child actual description 39",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-039",
+          "label": "Node management-child-039",
+          "method": "POST",
+          "name": "Node management-child-039",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/39",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 39,
+          "type": "ACTION"
+        },
+        {
+          "children": [],
+          "code": "management-child-040",
+          "description": "Child actual description 40",
+          "disabled": false,
+          "grantable": true,
+          "id": "management-child-040",
+          "label": "Node management-child-040",
+          "method": "POST",
+          "name": "Node management-child-040",
+          "parentId": "management-000",
+          "parentScopeTypes": [
+            "PLATFORM"
+          ],
+          "pattern": "/actual/40",
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "scopeTypes": [
+            "PLATFORM"
+          ],
+          "sort": 40,
+          "type": "ACTION"
+        }
+      ],
+      "code": "management-000",
+      "component": "common/system/Resource",
+      "description": "Actual description 000",
+      "disabled": false,
+      "grantable": false,
+      "id": "management-000",
+      "label": "Management000",
+      "name": "Management000",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 0,
+      "type": "GROUP"
+    },
+    {
+      "children": [],
+      "code": "management-001",
+      "component": "common/system/Resource",
+      "description": "Actual description 001",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-001",
+      "label": "Management001",
+      "name": "Management001",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 1,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-002",
+      "component": "common/system/Resource",
+      "description": "Actual description 002",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-002",
+      "label": "Management002",
+      "name": "Management002",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 2,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-003",
+      "component": "common/system/Resource",
+      "description": "Actual description 003",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-003",
+      "label": "Management003",
+      "name": "Management003",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 3,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-004",
+      "component": "common/system/Resource",
+      "description": "Actual description 004",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-004",
+      "label": "Management004",
+      "name": "Management004",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 4,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-005",
+      "component": "common/system/Resource",
+      "description": "Actual description 005",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-005",
+      "label": "Management005",
+      "name": "Management005",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 5,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-006",
+      "component": "common/system/Resource",
+      "description": "Actual description 006",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-006",
+      "label": "Management006",
+      "name": "Management006",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 6,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-007",
+      "component": "common/system/Resource",
+      "description": "Actual description 007",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-007",
+      "label": "Management007",
+      "name": "Management007",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 7,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-008",
+      "component": "common/system/Resource",
+      "description": "Actual description 008",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-008",
+      "label": "Management008",
+      "name": "Management008",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 8,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-009",
+      "component": "common/system/Resource",
+      "description": "Actual description 009",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-009",
+      "label": "Management009",
+      "name": "Management009",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 9,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-010",
+      "component": "common/system/Resource",
+      "description": "Actual description 010",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-010",
+      "label": "Management010",
+      "name": "Management010",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 10,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-011",
+      "component": "common/system/Resource",
+      "description": "Actual description 011",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-011",
+      "label": "Management011",
+      "name": "Management011",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 11,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-012",
+      "component": "common/system/Resource",
+      "description": "Actual description 012",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-012",
+      "label": "Management012",
+      "name": "Management012",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 12,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-013",
+      "component": "common/system/Resource",
+      "description": "Actual description 013",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-013",
+      "label": "Management013",
+      "name": "Management013",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 13,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-014",
+      "component": "common/system/Resource",
+      "description": "Actual description 014",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-014",
+      "label": "Management014",
+      "name": "Management014",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 14,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-015",
+      "component": "common/system/Resource",
+      "description": "Actual description 015",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-015",
+      "label": "Management015",
+      "name": "Management015",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 15,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-016",
+      "component": "common/system/Resource",
+      "description": "Actual description 016",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-016",
+      "label": "Management016",
+      "name": "Management016",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 16,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-017",
+      "component": "common/system/Resource",
+      "description": "Actual description 017",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-017",
+      "label": "Management017",
+      "name": "Management017",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 17,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-018",
+      "component": "common/system/Resource",
+      "description": "Actual description 018",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-018",
+      "label": "Management018",
+      "name": "Management018",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 18,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "management-019",
+      "component": "common/system/Resource",
+      "description": "Actual description 019",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-019",
+      "label": "Management019",
+      "name": "Management019",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 19,
+      "type": "PAGE"
+    }
+  ],
+  "empty": false,
+  "first": true,
+  "last": false,
+  "number": 0,
+  "numberOfElements": 20,
+  "pageable": {
+    "offset": 0,
+    "pageNumber": 0,
+    "pageSize": 20,
+    "paged": true,
+    "sort": {
+      "empty": false,
+      "sorted": true,
+      "unsorted": false
+    },
+    "unpaged": false
+  },
+  "size": 20,
+  "sort": {
+    "empty": false,
+    "sorted": true,
+    "unsorted": false
+  },
+  "totalElements": 521,
+  "totalPages": 27
+}

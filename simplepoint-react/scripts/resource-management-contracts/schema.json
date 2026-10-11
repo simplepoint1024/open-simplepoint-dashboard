@@ -1,0 +1,718 @@
+{
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.name",
+        "description": "i18n:resources.description.name",
+        "minLength": 1,
+        "maxLength": 100,
+        "x-order": 0,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "code": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.code",
+        "description": "i18n:resources.description.code",
+        "minLength": 1,
+        "maxLength": 120,
+        "x-order": 1,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "alias": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.alias",
+        "description": "i18n:resources.description.alias",
+        "maxLength": 120,
+        "x-order": 2,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "title": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.title",
+        "description": "i18n:resources.description.title",
+        "x-order": 3
+      },
+      "label": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.label",
+        "description": "i18n:resources.description.label",
+        "x-order": 4
+      },
+      "type": {
+        "type": "string",
+        "enum": [
+          "GROUP",
+          "MODULE",
+          "PAGE",
+          "FEATURE",
+          "ACTION",
+          "API"
+        ],
+        "title": "i18n:resources.title.type",
+        "description": "i18n:resources.description.type",
+        "x-order": 5,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "scopeTypes": {
+        "title": "i18n:resources.title.scopeTypes",
+        "description": "i18n:resources.description.scopeTypes",
+        "x-order": 6,
+        "x-ui": {
+          "x-list-visible": "true",
+          "widget": "checkboxes",
+          "dictCode": "resource.scope.type"
+        },
+        "x-dictionary-code": "resource.scope.type",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "SYSTEM",
+            "PLATFORM",
+            "TENANT",
+            "PERSONAL"
+          ],
+          "title": "i18n:resources.title.scopeTypes",
+          "description": "i18n:resources.description.scopeTypes",
+          "x-order": 6,
+          "x-ui": {
+            "x-list-visible": "true",
+            "widget": "checkboxes",
+            "dictCode": "resource.scope.type"
+          },
+          "x-dictionary-code": "resource.scope.type"
+        }
+      },
+      "path": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.path",
+        "description": "i18n:resources.description.path",
+        "maxLength": 200,
+        "x-order": 7,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "routeKind": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.routeKind",
+        "description": "i18n:resources.description.routeKind",
+        "x-order": 8
+      },
+      "component": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.component",
+        "description": "i18n:resources.description.component",
+        "maxLength": 160,
+        "x-order": 9,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "icon": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.icon",
+        "description": "i18n:resources.description.icon",
+        "maxLength": 100,
+        "x-order": 10,
+        "x-ui": {
+          "x-list-visible": "true",
+          "widget": "IconPicker"
+        }
+      },
+      "sort": {
+        "type": "integer",
+        "title": "i18n:resources.title.sort",
+        "description": "i18n:resources.description.sort",
+        "x-order": 11,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "method": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.method",
+        "description": "i18n:resources.description.method",
+        "x-order": 12
+      },
+      "pattern": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.pattern",
+        "description": "i18n:resources.description.pattern",
+        "x-order": 13
+      },
+      "publicAccess": {
+        "type": "boolean",
+        "title": "i18n:resources.title.publicAccess",
+        "description": "i18n:resources.description.publicAccess",
+        "x-order": 14
+      },
+      "requireOrgTenant": {
+        "type": "boolean",
+        "title": "i18n:resources.title.requireOrgTenant",
+        "description": "i18n:resources.description.requireOrgTenant",
+        "x-order": 15
+      },
+      "grantable": {
+        "type": "boolean",
+        "title": "i18n:resources.title.grantable",
+        "description": "i18n:resources.description.grantable",
+        "x-order": 16
+      },
+      "disabled": {
+        "type": "boolean",
+        "title": "i18n:resources.title.disabled",
+        "description": "i18n:resources.description.disabled",
+        "x-order": 17
+      },
+      "danger": {
+        "type": "boolean",
+        "title": "i18n:resources.title.danger",
+        "description": "i18n:resources.description.danger",
+        "x-order": 18
+      },
+      "pluginId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.pluginId",
+        "description": "i18n:resources.description.pluginId",
+        "x-order": 19
+      },
+      "description": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:resources.title.description",
+        "description": "i18n:resources.description.description",
+        "x-order": 20
+      }
+    },
+    "x-query": {
+      "relations": [],
+      "version": 1,
+      "maxPageSize": 200,
+      "maxNodes": 32,
+      "maxDepth": 4,
+      "maxSort": 3,
+      "fields": {
+        "code": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "name": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "alias": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "title": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "label": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "type": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "ResourceType"
+        },
+        "parentId": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "pluginId": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "path": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "component": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "icon": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "sort": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Integer"
+        },
+        "routeKind": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "method": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "pattern": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "description": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "publicAccess": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "requireOrgTenant": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "grantable": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "disabled": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "danger": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "createdAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "updatedAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "id": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        }
+      }
+    }
+  },
+  "buttons": [
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "resources.create",
+      "variant": "outlined",
+      "icon": "PlusCircleOutlined",
+      "argumentMaxSize": 1,
+      "sort": 0,
+      "type": "primary",
+      "title": "i18n:table.button.create",
+      "danger": false,
+      "argumentMinSize": 0,
+      "key": "add"
+    },
+    {
+      "path": "[default]",
+      "color": "orange",
+      "authority": "resources.edit",
+      "variant": "outlined",
+      "icon": "EditOutlined",
+      "argumentMaxSize": 1,
+      "sort": 1,
+      "type": "primary",
+      "title": "i18n:table.button.edit",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "edit"
+    },
+    {
+      "path": "[default]",
+      "color": "danger",
+      "authority": "resources.delete",
+      "variant": "outlined",
+      "icon": "MinusCircleOutlined",
+      "argumentMaxSize": 10,
+      "sort": 2,
+      "type": "primary",
+      "title": "i18n:table.button.delete",
+      "danger": true,
+      "argumentMinSize": 1,
+      "key": "delete"
+    }
+  ]
+}

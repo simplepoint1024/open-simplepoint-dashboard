@@ -1,0 +1,369 @@
+{
+  "content": [
+    {
+      "children": [],
+      "code": "resource.code.000",
+      "disabled": false,
+      "grantable": false,
+      "hasChildren": true,
+      "id": "resource-000",
+      "label": "Resource000",
+      "name": "Resource000",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 0,
+      "type": "GROUP"
+    },
+    {
+      "children": [],
+      "code": "resource.code.001",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-001",
+      "label": "Resource001",
+      "name": "Resource001",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 1,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.002",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-002",
+      "label": "Resource002",
+      "name": "Resource002",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 2,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.003",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-003",
+      "label": "Resource003",
+      "name": "Resource003",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 3,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.004",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-004",
+      "label": "Resource004",
+      "name": "Resource004",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 4,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.005",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-005",
+      "label": "Resource005",
+      "name": "Resource005",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 5,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.006",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-006",
+      "label": "Resource006",
+      "name": "Resource006",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 6,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.007",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-007",
+      "label": "Resource007",
+      "name": "Resource007",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 7,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.008",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-008",
+      "label": "Resource008",
+      "name": "Resource008",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 8,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.009",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-009",
+      "label": "Resource009",
+      "name": "Resource009",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 9,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.010",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-010",
+      "label": "Resource010",
+      "name": "Resource010",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 10,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.011",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-011",
+      "label": "Resource011",
+      "name": "Resource011",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 11,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.012",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-012",
+      "label": "Resource012",
+      "name": "Resource012",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 12,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.013",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-013",
+      "label": "Resource013",
+      "name": "Resource013",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 13,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.014",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-014",
+      "label": "Resource014",
+      "name": "Resource014",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 14,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.015",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-015",
+      "label": "Resource015",
+      "name": "Resource015",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 15,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.016",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-016",
+      "label": "Resource016",
+      "name": "Resource016",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 16,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.017",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-017",
+      "label": "Resource017",
+      "name": "Resource017",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 17,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.018",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-018",
+      "label": "Resource018",
+      "name": "Resource018",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 18,
+      "type": "PAGE"
+    },
+    {
+      "children": [],
+      "code": "resource.code.019",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-019",
+      "label": "Resource019",
+      "name": "Resource019",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 19,
+      "type": "PAGE"
+    }
+  ],
+  "empty": false,
+  "first": true,
+  "last": false,
+  "number": 0,
+  "numberOfElements": 20,
+  "pageable": {
+    "offset": 0,
+    "pageNumber": 0,
+    "pageSize": 20,
+    "paged": true,
+    "sort": {
+      "empty": false,
+      "sorted": true,
+      "unsorted": false
+    },
+    "unpaged": false
+  },
+  "size": 20,
+  "sort": {
+    "empty": false,
+    "sorted": true,
+    "unsorted": false
+  },
+  "totalElements": 521,
+  "totalPages": 27
+}

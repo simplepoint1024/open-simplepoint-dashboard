@@ -30,6 +30,10 @@ public interface TenantMemberService {
   /** Updates membership with optimistic revision validation. */
   void update(String userId, TenantMemberCommand command);
 
+  /** Detaches an organization membership, retaining tenant membership and tenant roles. */
+  void removeFromOrganization(String userId,
+      org.simplepoint.plugin.rbac.core.api.pojo.command.OrganizationMemberRemoval command);
+
   /** Removes a member without deleting the global account. */
   void remove(String userId);
 }

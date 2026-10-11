@@ -52,7 +52,7 @@ class CurrentUserAccessServiceImplTest {
         .applySetting("hibernate.physical_naming_strategy", "org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy")
         .build();
     factory = new MetadataSources(registry).addAnnotatedClass(Organization.class)
-        .addAnnotatedClass(Resource.class)
+        .addAnnotatedClass(Resource.class).addAnnotatedClass(TenantResource.class)
         .addAnnotatedClass(TenantUserRelevance.class).buildMetadata().buildSessionFactory();
     em = factory.openSession();
     em.beginTransaction();
@@ -169,7 +169,8 @@ class CurrentUserAccessServiceImplTest {
     alias.setCode("tenant.tenant-a.alias"); alias.setName("My users");
     alias.setType(ResourceType.PAGE); alias.setEnabled(true);
     when(catalog.mode("tenant-a")).thenReturn(TenantResourceMode.CUSTOM);
-    when(catalog.activeResources("tenant-a")).thenReturn(List.of(platformPage, action, alias));
+    em.persist(platformPage); em.persist(action); em.persist(alias); em.flush();
+    when(catalog.selectedResources(org.mockito.ArgumentMatchers.eq("tenant-a"), anyCollection())).thenReturn(List.of(platformPage, action, alias));
     AuthorizationContext ctx = new AuthorizationContext();
     ctx.setUserId("user-a"); ctx.setScopeType(AuthorizationScopeType.TENANT);
     ctx.setResources(Set.of(platformPage.getCode(), alias.getCode(), action.getCode()));

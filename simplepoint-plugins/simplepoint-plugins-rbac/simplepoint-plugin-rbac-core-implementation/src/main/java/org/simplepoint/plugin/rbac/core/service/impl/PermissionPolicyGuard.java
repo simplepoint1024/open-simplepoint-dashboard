@@ -21,6 +21,26 @@ public class PermissionPolicyGuard {
     return name.trim();
   }
 
+  /** Bound rules remain editable; expressions must still be valid for every binding. */
+  public void validateDataUpdate(String tenant, DataScope proposed) {
+    DataScope current = em.find(DataScope.class, proposed.getId(), LockModeType.PESSIMISTIC_WRITE);
+    if (current == null || current.getDeletedAt() != null || !tenant.equals(current.getTenantId())) {
+      throw new InvalidPermissionPolicyException("规则不存在或不属于当前工作空间");
+    }
+    if (proposed.getType() != org.simplepoint.security.entity.DataScopeType.EXPRESSION) return;
+    Long defaults = em.createQuery("select count(b) from RoleScopeBinding b where b.tenantId = :tenant"
+        + " and b.deletedAt is null and b.dataScopeId = :id", Long.class)
+        .setParameter("tenant", tenant).setParameter("id", current.getId()).getSingleResult();
+    Long incompatible = em.createQuery("select count(g) from RoleResourceGrant g where g.tenantId = :tenant"
+        + " and g.deletedAt is null and g.dataScopeId = :id and (g.pagePolicy is null or g.pagePolicy = false"
+        + " or g.resourceCode is null or g.resourceCode <> :page)", Long.class)
+        .setParameter("tenant", tenant).setParameter("id", current.getId())
+        .setParameter("page", proposed.getResourceCode()).getSingleResult();
+    if (defaults > 0 || incompatible > 0) {
+      throw new InvalidPermissionPolicyException("该规则仍用于其他页面或角色默认范围，无法改为当前页面专属表达式；请调整关联或另建规则");
+    }
+  }
+
   public void requireUnused(String tenant, Collection<String> ids, boolean data) {
     if (ids == null || ids.isEmpty() || ids.size() > 100 || ids.stream().anyMatch(id -> id == null || id.isBlank())) {
       throw new InvalidPermissionPolicyException("每次请选择 1 至 100 条有效规则");

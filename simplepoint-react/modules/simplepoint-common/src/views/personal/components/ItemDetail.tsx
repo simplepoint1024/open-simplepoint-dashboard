@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {Button, Checkbox, Drawer, Input, Pagination, Space, Spin} from 'antd';
+import {Checkbox, Drawer, Input, Pagination, Space, Spin} from 'antd';
 import {TableActions} from '@simplepoint/components/Table';
 import {usePersonalActions} from './usePersonalActions';
 import {canPersonalAction} from './actions';
@@ -48,14 +48,18 @@ export function ItemDetail({id, trashItem, onClose, onEdit}: {id: string; trashI
           <div className="sp-personal-checklist">{item.checklist.map(entry => <Checkbox key={entry.id} checked={entry.done} disabled>{entry.title}</Checkbox>)}</div></>}
         {!item.deletedAt && <><Input.TextArea value={note} onChange={event => setNote(event.target.value)} maxLength={2000} rows={3} disabled={write.busy}
           aria-label={t('personal.comment', '添加备注')} placeholder={t('personal.notePlaceholder', '补充进展或备注，保存后将保留在操作记录中')} />
-          <Space style={{marginTop: 12}}><Button type="primary" disabled={!note.trim()} loading={write.busy} onClick={() => void action('COMMENT')}>{actions.COMMENT}</Button>
-            {!!note && <Button disabled={write.busy} onClick={() => setNote('')}>{t('personal.clearNote', '清空备注')}</Button>}</Space></>}
+          <div style={{marginTop: 12}}><TableActions selectedKeys={[item.id]} selectedRows={[item]}
+            buttons={[
+              {key: 'comment', sort: 1, text: actions.COMMENT, type: 'primary', disabled: !note.trim(), loading: write.busy},
+              ...(note ? [{key: 'clear', sort: 2, text: t('personal.clearNote', '清空备注'), disabled: write.busy}] : []),
+            ]} onButtonEvents={{comment: () => void action('COMMENT'), clear: () => setNote('')}}/></div></>}
         <section className="sp-personal-history"><h3>{t('personal.history', '操作记录')}</h3>
           <ErrorNotice error={history.error} retry={() => void history.refetch()} />
           <Spin spinning={history.isLoading}>{history.data?.content.map(entry => <div className="sp-personal-history-entry" key={entry.id}>
             <Space><strong>{actions[entry.action as keyof typeof actions] || entry.action}</strong><span>{formatTime(entry.createdAt)}</span></Space>
             {entry.detail && <div className="sp-personal-description">{entry.detail}</div>}
           </div>)}</Spin>
+          {/* Chronological event cards, not a tabular list: the platform table controller does not own this timeline. */}
           <Pagination size="small" current={page + 1} pageSize={10} total={history.data?.page.totalElements || 0} onChange={value => setPage(value - 1)} showSizeChanger={false} hideOnSinglePage />
         </section>
       </>}

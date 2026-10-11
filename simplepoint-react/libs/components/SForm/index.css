@@ -8,7 +8,7 @@
     margin-bottom: 4px;
     font-size: 13px;
     font-weight: 500;
-    color: rgba(0,0,0,0.88);
+    color: var(--ant-color-text);
 }
 .rjsf .form-control,
 .rjsf input[type="text"],
@@ -23,7 +23,7 @@
 .rjsf .field-description,
 .rjsf .help-block {
     font-size: 12px;
-    color: rgba(0,0,0,0.45);
+    color: var(--ant-color-text-secondary);
     margin-top: 2px;
 }
 .rjsf .field-array .array-item {
@@ -38,7 +38,7 @@
 .rjsf .errors-block .text-danger,
 .rjsf .field-error {
     font-size: 12px;
-    color: #ff4d4f;
+    color: var(--ant-color-error);
 }
 /* Object fields: use grid layout for compact display */
 .rjsf .fieldset > .form-group {

@@ -1,5 +1,6 @@
 {
   "ai.mcp.action.refresh": "刷新",
+  "ai.mcp.action.cancel": "取消",
   "ai.mcp.action.retry": "重试",
   "ai.mcp.auth.bearer": "Bearer 令牌",
   "ai.mcp.auth.none": "无认证",

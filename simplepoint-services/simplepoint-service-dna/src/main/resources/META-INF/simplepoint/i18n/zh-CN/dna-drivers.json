@@ -73,5 +73,6 @@
   "dna.drivers.page.form.jar.label": "驱动 JAR",
   "dna.drivers.page.form.jar.required": "请上传驱动 JAR 文件",
   "dna.drivers.page.form.jar.dragText": "点击或拖拽驱动 JAR 到此处上传",
-  "dna.drivers.page.form.jar.hint": "仅支持单个 JDBC 驱动 JAR 文件"
+  "dna.drivers.page.form.jar.hint": "仅支持单个 JDBC 驱动 JAR 文件",
+  "dna.drivers.page.action.close": "关闭"
 }

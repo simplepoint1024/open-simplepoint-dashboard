@@ -1,4 +1,4 @@
-export type EntityOption = {value: string; label: string};
+export type EntityOption = {value: string; label: string; disabled?: boolean; title?: string};
 
 export function entitySearchParams(keyword: string, page: number, size = 20) {
   const name = keyword.trim();
@@ -14,14 +14,21 @@ export function entityLookupParams(id: string) {
 /** Bound every selected-value lookup; keep all IDs, including values outside the first search page. */
 export function entityLookupBatches(ids: readonly string[]) {
   const distinct = [...new Set(ids.filter(id => typeof id === 'string' && id !== ''))];
-  const batches = [];
-  for (let offset = 0; offset < distinct.length; offset += 100) {
-    const values = distinct.slice(offset, offset + 100);
-    batches.push(values.length === 1 ? entityLookupParams(values[0]) : {
+  const parameters = (values: string[]) => values.length === 1 ? entityLookupParams(values[0]) : {
       page: 0, size: values.length,
       id: JSON.stringify({version: 1, where: {field: 'id', op: 'in', value: values}}),
-    });
+    };
+  const batches: ReturnType<typeof parameters>[] = [];
+  let values: string[] = [];
+  for (const id of distinct) {
+    const next = [...values, id];
+    // Leave room for endpoint and eligibility filters below common gateway request-line limits.
+    const wire = new URLSearchParams({id: parameters(next).id}).toString();
+    if (values.length && (next.length > 100 || wire.length > 2500)) {
+      batches.push(parameters(values)); values = [id];
+    } else values = next;
   }
+  if (values.length) batches.push(parameters(values));
   return batches;
 }
 

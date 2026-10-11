@@ -7,6 +7,7 @@ import {LoadingBoundary, LoadingPlaceholder} from '../LoadingFeedback';
 import {createIcon} from '@simplepoint/shared/types/icon';
 import type {ControlledSimpleTableProps, SimpleTableProps} from './types';
 import {useSimpleTableController} from './useSimpleTableController';
+import {hasRecordIdentity} from './recordIdentity';
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {usePageSelected} from '@simplepoint/shared/page/hooks';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
@@ -18,13 +19,15 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
   const controller = useSimpleTableController(props);
   const { t } = controller;
   const { data: schemaData, formSchema, error: schemaError, retry: retrySchema, dictionariesError, retryDictionaries } = controller.schema;
-  const { bootLoading, tableLoading, submitLoading, submitError, drawerSchemaLoading, hasSchemaError, hasPageError, showPageWarning } = controller.status;
+  const { bootLoading, tableLoading, submitLoading, submitError, deleteOpen, drawerSchemaLoading, hasSchemaError, hasPageError, showPageWarning } = controller.status;
   const { data: pageData, filters, buttons } = controller.table;
   const { open: drawerOpen, editingRecord, setOpen: setDrawerOpen } = controller.drawer;
   const { defaultEvents, handleFormSubmit, retryPage } = controller.actions;
   const drawerWasOpenRef = useRef(false);
   const [dirty, setDirty] = useState(false);
   const [discard, setDiscard] = useState(false);
+  const discardRef = useRef(false);
+  const changeDiscard = (next: boolean) => {discardRef.current = next; setDiscard(next);};
   const [formDraft, setFormDraft] = useState<any>(() => (
     editingRecord ?? props.initialValues ?? {}
   ));
@@ -38,8 +41,10 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
       setFormDraft(editingRecord ?? props.initialValues ?? {});
       setDirty(false);
     }
+    if (!drawerOpen) {setDirty(false); changeDiscard(false);}
     drawerWasOpenRef.current = drawerOpen;
   }, [drawerOpen, editingRecord, props.initialValues]);
+  const hasUnidentifiableRows = pageData?.content?.some((row: unknown) => !hasRecordIdentity(row)) ?? false;
   const buttonEvents = {
     ...defaultEvents,
     ...(props.customButtonEvents ?? {}),
@@ -84,7 +89,7 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
   );
 
   return (
-    <div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+    <div data-resource={props.baseUrl} style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
       {bootLoading ? (
         <LoadingPlaceholder />
       ) : hasSchemaError ? (
@@ -98,6 +103,8 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
               {renderPageError()}
             </div>
           ) : null}
+          {hasUnidentifiableRows && <Alert type="info" showIcon style={{marginBottom: 12, flexShrink: 0}}
+            message={t('table.restrictedRecordIdentity', '部分记录的标识不可用，无法选择、展开或执行记录操作。请检查当前角色的字段权限。')}/>}
           {(() => {
             const tableProps = {
               refresh: controller.table.refresh,
@@ -110,23 +117,28 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
               virtual: props.virtual ?? true,
               onChange: controller.table.onChange,
               onFilterChange: controller.table.onFilterChange,
-              storageKey: `${props.baseUrl}:${props.name}`,
+              storageKey: props.storageKey ?? `${props.baseUrl}:${props.name}`,
               onButtonEvents: buttonEvents,
               isButtonDisabled: (button: TableButtonProps, keys: React.Key[], rows: any[]) =>
-                tableLoading || submitLoading || !!props.isButtonDisabled?.(button, keys, rows),
+                tableLoading || submitLoading || deleteOpen || !!props.isButtonDisabled?.(button, keys, rows),
               onRowDoubleClick: props.onRowDoubleClick ?? (editButton && buttonEvents[editButton.key]
                 ? (record: any, key: React.Key) => {
                   if (props.isButtonDisabled?.(editButton, [key], [record])) return;
-                  if (tableLoading || submitLoading) return;
+                  if (tableLoading || submitLoading || deleteOpen) return;
                   buttonEvents[editButton.key]([key], [record], editButton);
                 }
                 : undefined),
               onRowClick: props.onRowClick,
-              rowSelection: props.rowSelection,
+              rowSelection: {
+                ...props.rowSelection,
+                isRowSelectable: (record: any) => !submitLoading && !deleteOpen && hasRecordIdentity(record)
+                  && props.rowSelection?.isRowSelectable?.(record) !== false,
+              },
               onSelectionChange: props.onSelectionChange,
+              selectionResetKey: controller.table.selectionResetKey,
               buttons,
               loading: tableLoading || submitLoading,
-              refreshDisabled: controller.table.refreshDisabled,
+              refreshDisabled: controller.table.refreshDisabled || deleteOpen,
             };
             return props.tree
               ? <TreeTable<any> {...tableProps} {...props.tree} />
@@ -149,10 +161,10 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
         maskClosable={!submitLoading}
         keyboard={!submitLoading}
         onClose={() => {
-          if (submitLoading) {
+          if (!controller.drawer.canClose()) {
             return;
           }
-          if (props.confirmDiscard && dirty) setDiscard(true);
+          if (props.confirmDiscard && dirty) changeDiscard(true);
           else setDrawerOpen(false);
         }}
         destroyOnHidden={!drawerOpen}
@@ -177,21 +189,37 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
             {submitError && <Alert type="error" showIcon title={submitError} />}
             <SForm
               schema={formSchema ?? schemaData.schema}
-              uiSchema={typeof props.formUiSchema === 'function' ? props.formUiSchema(formDraft) : props.formUiSchema}
+              uiSchema={typeof props.formUiSchema === 'function' ? props.formUiSchema(formDraft, formSchema ?? schemaData.schema) : props.formUiSchema}
               formData={formDraft}
-              onChange={(event) => {setFormDraft(event.formData ?? {}); setDirty(true);}}
+              onChange={(event) => {
+                if (controller.status.isSubmitting() || discardRef.current) return;
+                const next = event.formData ?? {};
+                setFormDraft(props.formDataTransform ? props.formDataTransform(next, formDraft) : next); setDirty(true);
+              }}
               onSubmit={handleFormSubmit}
+              onBeforeSubmit={() => !discardRef.current && controller.actions.beginFormSubmit()}
+              onError={controller.actions.handleFormError}
               submitLoading={submitLoading}
-              disabled={submitLoading}
+              submitDisabled={discard}
+              disabled={submitLoading || discard}
               customValidate={props.formCustomValidate}
             />
           </Suspense>
         )}
         </LoadingBoundary>
       </Drawer>
-      <Modal open={discard && selected && drawerOpen} title={t('personal.discard', '放弃未保存的修改？')}
-        onCancel={() => setDiscard(false)} onOk={() => {setDiscard(false); setDrawerOpen(false);}}
+      <Modal wrapClassName="sp-simple-table-discard" open={discard && selected && drawerOpen} title={t('personal.discard', '放弃未保存的修改？')}
+        onCancel={() => {if (controller.drawer.canClose()) changeDiscard(false);}}
+        onOk={() => {if (controller.drawer.canClose()) {changeDiscard(false); setDrawerOpen(false);}}}
         okText={t('personal.discardConfirm', '放弃修改')} cancelText={t('personal.continueEditing', '继续编辑')} />
+      <Modal wrapClassName="sp-simple-table-delete" open={controller.deletion.open && selected}
+        destroyOnHidden={!controller.deletion.open} title={t('table.confirmDeleteTitle', '确认删除')}
+        confirmLoading={submitLoading} closable={!submitLoading} maskClosable={!submitLoading} keyboard={!submitLoading}
+        cancelButtonProps={{disabled: submitLoading}} okButtonProps={{danger: true}}
+        onOk={() => void controller.deletion.confirm()} onCancel={controller.deletion.cancel}>
+        {t('table.confirmDeleteContent', '确定要删除选中的 {count} 条数据吗？', {count: controller.deletion.count})}
+        {controller.deletion.error && <Alert type="error" showIcon title={controller.deletion.error}/>}
+      </Modal>
     </div>
   );
 };

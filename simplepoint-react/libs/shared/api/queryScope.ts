@@ -36,6 +36,11 @@ export function scopedQueryKey(scope: QueryScope, key: QueryKey): QueryKey {
   return [SCOPE_KEY, ...scope, ...key];
 }
 
+/** Only the last enabled owner may cancel a shared authorized read; scope/source matching is exact. */
+export function cancelInactiveScopedQuery(client: QueryClient, scope: QueryScope, key: QueryKey) {
+  return client.cancelQueries({queryKey: scopedQueryKey(scope, key), exact: true, predicate: query => !query.isActive()});
+}
+
 /** Retain a page during pagination/filtering, never across resource or auth changes. */
 export function scopedPagePlaceholder<T>(scope: QueryScope, resource: readonly string[]) {
   const prefix = scopedQueryKey(scope, resource);

@@ -22,10 +22,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class PermissionExpressionHttpTest {
   SessionFactory factory; Session em; MockMvc mvc; AuthorizationContext context;
+  final List<String> statements = new ArrayList<>();
   @BeforeEach void setup() {
     factory = new MetadataSources(new StandardServiceRegistryBuilder()
         .applySetting("hibernate.connection.url", "jdbc:h2:mem:expression-" + UUID.randomUUID())
-        .applySetting("hibernate.hbm2ddl.auto", "create-drop").build())
+        .applySetting("hibernate.hbm2ddl.auto", "create-drop").applySetting("hibernate.generate_statistics", true)
+        .applySetting("hibernate.session_factory.statement_inspector", (org.hibernate.resource.jdbc.spi.StatementInspector) sql -> {statements.add(sql); return sql;}).build())
         .addAnnotatedClass(Resource.class).buildMetadata().buildSessionFactory();
     em = factory.openSession(); em.beginTransaction();
     Resource resource = new Resource(); resource.setCode("organizations.view"); resource.setName("Organizations");
@@ -40,6 +42,7 @@ class PermissionExpressionHttpTest {
     mvc = MockMvcBuilders.standaloneSetup(controller)
         .setControllerAdvice(new org.simplepoint.core.handler.GlobalExceptionHandler())
         .setMessageConverters(new org.springframework.http.converter.json.JacksonJsonHttpMessageConverter()).build();
+    statements.clear(); factory.getStatistics().clear();
   }
   @AfterEach void cleanup() {
     RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
@@ -69,5 +72,32 @@ class PermissionExpressionHttpTest {
           .contentType("application/json").content(body)).andExpect(status().isBadRequest())
           .andExpect(jsonPath("$.code").value("INVALID_PERMISSION_POLICY"));
     }
+  }
+  @Test void targetedMetadataHttpUsesTheExactGrantedPageWithoutEnumeratingItsNeighbors() throws Exception {
+    var unrelated = new Resource(); unrelated.setId("other"); unrelated.setCode("other.view"); unrelated.setName("Other page");
+    unrelated.setType(ResourceType.PAGE); unrelated.setDisabled(false); unrelated.setPermissionMetadata("unparseable granted neighbor");
+    em.persist(unrelated); em.flush(); em.clear();
+    var next = new AuthorizationContext(); next.setUserId("u1"); next.setResources(Set.of("organizations.view", "other.view", "data-scope.view"));
+    context = next; RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    statements.clear(); factory.getStatistics().clear();
+    mvc.perform(get("/data-scopes/expression/catalog").param("resourceCode", "organizations.view")
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)).andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$['organizations.view'].models[0].properties.name.type").value("java.lang.String"))
+        .andExpect(jsonPath("$['other.view']").doesNotExist());
+    assertEquals(1, factory.getStatistics().getQueryExecutionCount());
+    assertTrue(statements.stream().filter(sql -> sql.startsWith("select")).allMatch(sql -> sql.contains("code=?") && sql.contains("fetch first ? rows only")));
+  }
+  @Test void unknownOrEmptyTargetHttpCannotFallBackToTheWholeCatalogOrImpersonateAGrant() throws Exception {
+    for (String code : List.of("foreign.view", "", " ", "organizations.view ")) {
+      mvc.perform(get("/data-scopes/expression/catalog").param("resourceCode", code).param("userId", "admin").param("tenantId", "foreign")
+          .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)).andExpect(status().isOk()).andExpect(content().json("{}"));
+    }
+    assertEquals(0, factory.getStatistics().getQueryExecutionCount()); assertTrue(statements.isEmpty());
+    for (String body : List.of("{}", "{\"resourceCode\":\"\"}", "{\"resourceCode\":\"foreign.view\"}")) {
+      mvc.perform(post("/data-scopes/expression/validate").contentType("application/json").content(body)
+          .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)).andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.code").value("INVALID_PERMISSION_POLICY"));
+    }
+    assertEquals(0, factory.getStatistics().getQueryExecutionCount()); assertTrue(statements.isEmpty());
   }
 }

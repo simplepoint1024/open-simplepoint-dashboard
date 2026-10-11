@@ -5,10 +5,18 @@ import {entityLookupBatches, entityLookupParams, entitySearchParams, mergeEntity
 test('multiple selected identities are deduplicated and read in bounded batches without truncation', () => {
   const ids = Array.from({length: 241}, (_, index) => `item:${index},literal`);
   const batches = entityLookupBatches([...ids, ids[0], '']);
-  assert.deepEqual(batches.map(batch => batch.size), [100, 100, 41]);
+  assert.ok(batches.every(batch => batch.size <= 100));
   assert.deepEqual(batches.flatMap(batch => JSON.parse(batch.id).where.value), ids);
   assert.deepEqual(entityLookupBatches(['one']), [entityLookupParams('one')]);
   assert.deepEqual(entityLookupBatches([]), []);
+});
+
+test('long and Unicode identities are also bounded by encoded request size, with no dropped selections', () => {
+  const ids = Array.from({length: 50}, (_, index) => `${index}-` + '审核'.repeat(40));
+  const batches = entityLookupBatches(ids);
+  assert.ok(batches.length > 1);
+  assert.ok(batches.every(batch => new URLSearchParams({id: batch.id}).toString().length <= 2500));
+  assert.deepEqual(batches.flatMap(batch => JSON.parse(batch.id).where.value), ids);
 });
 
 test('entity search uses bounded pages and literal typed input, not a truncated local catalog', () => {

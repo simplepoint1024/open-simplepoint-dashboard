@@ -1,0 +1,104 @@
+{
+  "module": "app",
+  "resources": [
+    {
+      "code": "app.platform.view",
+      "name": "应用平台",
+      "label": "应用平台",
+      "title": "menu.app.platform",
+      "type": "MODULE",
+      "path": "/app",
+      "icon": "AppstoreOutlined",
+      "routeKind": "submenu",
+      "description": "menu.app.platform",
+      "sort": 15,
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "grantable": false,
+      "disabled": false,
+      "scopeTypes": ["SYSTEM", "TENANT"],
+      "children": [
+        {
+          "code": "app.workbench.view",
+          "name": "工作台",
+          "label": "工作台",
+          "title": "menu.app.workbench",
+          "type": "PAGE",
+          "path": "/app/workbench",
+          "component": "app/Workbench",
+          "icon": "LayoutOutlined",
+          "routeKind": "item",
+          "description": "menu.app.workbench",
+          "sort": 0,
+          "publicAccess": false,
+          "requireOrgTenant": true,
+          "grantable": true,
+          "disabled": false,
+          "scopeTypes": ["TENANT"],
+          "children": [
+            {
+              "code": "app.workbench.apps.create",
+              "name": "新建应用",
+              "label": "新建应用",
+              "title": "app.application.create",
+              "alias": "i18n:app.application.create",
+              "type": "ACTION",
+              "icon": "PlusOutlined",
+              "sort": 0,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "app.workbench.pages.create",
+              "name": "添加页面",
+              "label": "添加页面",
+              "title": "app.page.create",
+              "alias": "i18n:app.page.create",
+              "type": "ACTION",
+              "icon": "PlusOutlined",
+              "sort": 10,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "code": "app.templates.view",
+          "name": "应用模板",
+          "label": "应用模板",
+          "title": "menu.app.templates",
+          "type": "PAGE",
+          "path": "/app/templates",
+          "component": "app/Templates",
+          "icon": "FileTextOutlined",
+          "routeKind": "item",
+          "description": "menu.app.templates",
+          "sort": 10,
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "grantable": true,
+          "disabled": false
+        },
+        {
+          "code": "app.marketplace.view",
+          "name": "应用市场",
+          "label": "应用市场",
+          "title": "menu.app.marketplace",
+          "type": "PAGE",
+          "path": "/app/marketplace",
+          "component": "app/Marketplace",
+          "icon": "RocketOutlined",
+          "routeKind": "item",
+          "description": "menu.app.marketplace",
+          "sort": 20,
+          "publicAccess": false,
+          "requireOrgTenant": false,
+          "grantable": true,
+          "disabled": false
+        }
+      ]
+    }
+  ]
+}

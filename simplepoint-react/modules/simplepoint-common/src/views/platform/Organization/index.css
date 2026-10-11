@@ -19,8 +19,8 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--ant-color-bg-container);
+  border: 1px solid var(--ant-color-border-secondary);
   border-radius: 8px;
 }
 

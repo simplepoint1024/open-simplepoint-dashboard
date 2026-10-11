@@ -1313,6 +1313,19 @@
               "publicAccess": false,
               "requireOrgTenant": true,
               "disabled": false
+            },
+            {
+              "code": "organizations.members.remove",
+              "name": "移出组织",
+              "label": "移出组织",
+              "alias": "i18n:tenant-members.removeFromOrganization",
+              "type": "ACTION",
+              "description": "移出组织并保留租户成员身份与角色",
+              "sort": 104,
+              "grantable": true,
+              "publicAccess": false,
+              "requireOrgTenant": true,
+              "disabled": false
             }
           ],
           "scopeTypes": [

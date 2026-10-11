@@ -23,6 +23,9 @@ public interface AiCatalogEntryRepository extends BaseRepository<AiCatalogEntry,
    */
   Optional<AiCatalogEntry> findActiveById(String id);
 
+  /** Counts matching official entries without hydrating a descriptor when an internal page is full. */
+  long countActiveBySource(CatalogSource source, CatalogEntryStatus status, String keyword);
+
   /**
    * Searches active records for one external source.
    */

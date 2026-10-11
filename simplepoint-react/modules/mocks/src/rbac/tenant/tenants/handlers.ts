@@ -150,6 +150,9 @@ function buildUserPage(request: Request) {
 }
 
 export default [
+  // This isolated demo simulates the platform administrator; production uses the real owner/admin guard.
+  http.get(`${base}/users/capabilities`, ({request}) => HttpResponse.json({canConfigureMembers:
+    tenants.some(tenant => tenant.id === new URL(request.url).searchParams.get('tenantId') && tenant.tenantType === 'ORGANIZATION')})),
   http.get(`${base}/schema`, () => HttpResponse.json(schema)),
   http.get(base, () => HttpResponse.json(pageData)),
   http.get(`${base}/owners/items`, () => HttpResponse.json({

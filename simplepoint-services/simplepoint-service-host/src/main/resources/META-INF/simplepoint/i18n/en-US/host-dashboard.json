@@ -9,6 +9,7 @@
   "home.invalid": "Enter a group name and check region and time zone settings.",
   "home.saveError": "Could not save. Your changes are retained; please retry.",
   "home.editorHint": "Settings belong to your account and workspace. Only apps accessible to your current role are shown.",
+  "home.unavailableApps": "Keeping {count} shortcuts unavailable to your current role.",
   "home.groupName": "Group name",
   "home.moveUp": "Move group up",
   "home.moveDown": "Move group down",

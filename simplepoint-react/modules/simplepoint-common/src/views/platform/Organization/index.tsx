@@ -5,7 +5,7 @@ import type {OrganizationOption} from '@simplepoint/components/OrganizationSelec
 import {get} from '@simplepoint/shared/api/methods';
 import {normalizePage, type RawPage} from '@simplepoint/shared/types/request';
 import type {Key} from 'react';
-import {useCallback, useState, useSyncExternalStore} from 'react';
+import {useCallback, useRef, useState, useSyncExternalStore} from 'react';
 import {EMPTY_QUERY_SCOPE, getQueryScopeSnapshot, subscribeQueryScope} from '@simplepoint/shared/api/queryScope';
 import OrganizationMembersPanel from './OrganizationMembersPanel';
 import './index.css';
@@ -17,7 +17,8 @@ type OrganizationRow = OrganizationOption & {
   children?: OrganizationRow[];
 };
 
-const hasChildren = (record: OrganizationRow) => record.hasChildren;
+const canIdentify = (record: OrganizationRow) => !!record.id && record.id !== '***';
+const hasChildren = (record: OrganizationRow) => canIdentify(record) && record.hasChildren;
 
 const App = () => {
   const scope = useSyncExternalStore(subscribeQueryScope, getQueryScopeSnapshot, () => EMPTY_QUERY_SCOPE);
@@ -30,6 +31,8 @@ const OrganizationWorkspace = ({scope}: {scope: string}) => {
   const [initialValues, setInitialValues] = useState<any>({});
   const [treeMode, setTreeMode] = useState(true);
   const [selectedOrganization, setSelectedOrganization] = useState<OrganizationRow>();
+  const [membersBlocked, setMembersBlocked] = useState(false), membersBlockedRef = useRef(false);
+  const onMembersBlocked = useCallback((blocked: boolean) => {membersBlockedRef.current = blocked; setMembersBlocked(blocked);}, []);
 
   const loadPage = useCallback(async ({page, size, filters, sort, signal}: SimpleTablePageRequest) => {
     const flat = Object.keys(filters).length > 0 || (Array.isArray(sort) ? sort.length > 0 : Boolean(sort));
@@ -48,6 +51,7 @@ const OrganizationWorkspace = ({scope}: {scope: string}) => {
 
   const customButtonEvents = {
     add: (_keys: Key[], rows: any[]) => {
+      if (membersBlockedRef.current) return;
       setEditingRecord(null);
       setInitialValues({
         parentId: rows?.[0]?.id ?? undefined,
@@ -101,11 +105,12 @@ const OrganizationWorkspace = ({scope}: {scope: string}) => {
       initialValues={initialValues}
       customButtonEvents={customButtonEvents}
       formSchemaTransform={formSchemaTransform}
-      rowSelection={{selectedKeys: selectedOrganization ? [selectedOrganization.id] : []}}
-      onSelectionChange={(_keys, rows) => setSelectedOrganization(rows[rows.length - 1])}
+      isButtonDisabled={() => membersBlocked}
+      rowSelection={{selectedKeys: selectedOrganization ? [selectedOrganization.id] : [], isRowSelectable: record => !membersBlockedRef.current && canIdentify(record)}}
+      onSelectionChange={(_keys, rows) => {if (!membersBlockedRef.current) setSelectedOrganization(rows[rows.length - 1]);}}
     />
     </div>
-    <OrganizationMembersPanel organization={selectedOrganization} scope={scope}/>
+    <OrganizationMembersPanel organization={selectedOrganization} scope={scope} onBlockedChange={onMembersBlocked}/>
   </div>;
 };
 

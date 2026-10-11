@@ -32,6 +32,20 @@ import org.springframework.core.annotation.Order;
 @AllArgsConstructor
 @Tag(name = "对象存储对象", description = "记录对象存储中的文件元信息")
 @Schema(title = "对象存储对象", description = "记录对象存储中的文件元信息")
+@org.simplepoint.core.annotation.ButtonDeclarations({
+  @org.simplepoint.core.annotation.ButtonDeclaration(key = "upload", title = "i18n:storage.upload",
+      icon = "UploadOutlined", sort = 0, argumentMinSize = 0, argumentMaxSize = 0,
+      authority = "storage.objects.create"),
+  @org.simplepoint.core.annotation.ButtonDeclaration(key = "view", title = "i18n:storage.detail",
+      icon = "EyeOutlined", sort = 1, argumentMinSize = 1, argumentMaxSize = 1,
+      authority = "storage.objects.view"),
+  @org.simplepoint.core.annotation.ButtonDeclaration(key = "download", title = "i18n:storage.download",
+      icon = "DownloadOutlined", sort = 2, argumentMinSize = 1, argumentMaxSize = 1,
+      authority = "storage.objects.view"),
+  @org.simplepoint.core.annotation.ButtonDeclaration(key = "delete", title = "i18n:table.button.delete",
+      icon = "MinusCircleOutlined", sort = 3, argumentMinSize = 1, argumentMaxSize = 10, danger = true,
+      authority = "storage.objects.delete")
+})
 @org.simplepoint.core.query.TableQuery({
   @org.simplepoint.core.query.QueryField("providerCode"),
   @org.simplepoint.core.query.QueryField("providerType"),

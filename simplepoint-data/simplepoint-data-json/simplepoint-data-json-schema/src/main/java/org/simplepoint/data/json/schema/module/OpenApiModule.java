@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
+import java.math.BigDecimal;
+import jakarta.persistence.Column;
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -24,6 +26,14 @@ public class OpenApiModule implements Module {
 
   @Override
   public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
+    builder.forTypesInGeneral().withTypeAttributeOverride((attributes, type, context) -> {
+      if (type.getType().getErasedType() != BigDecimal.class) return;
+      boolean nullable = attributes.path("type").isArray() && java.util.stream.StreamSupport
+          .stream(attributes.path("type").spliterator(), false).anyMatch(item -> "null".equals(item.asText()));
+      if (nullable) attributes.putArray("type").add("string").add("null");
+      else attributes.put("type", "string");
+      attributes.put("pattern", "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$");
+    });
     builder.forFields()
         .withInstanceAttributeOverride((attributes, field, context) -> {
           // x-order from Spring's @Order
@@ -36,6 +46,9 @@ public class OpenApiModule implements Module {
           Schema schema = field.getAnnotation(Schema.class);
           if (schema != null) {
             applyExtensions(attributes, schema);
+          }
+          if (field.getType().getErasedType() == BigDecimal.class) {
+            applyDecimalField(attributes, field.getAnnotation(Column.class), schema);
           }
 
           DictionaryField dictionaryField = field.getAnnotation(DictionaryField.class);
@@ -80,7 +93,8 @@ public class OpenApiModule implements Module {
           }
           // 2) Make String and Instant nullable by default
           Class<?> raw = field.getType().getErasedType();
-          return raw == String.class || raw == Instant.class;
+          return raw == String.class || raw == Instant.class
+              || raw == BigDecimal.class && (field.getAnnotation(Column.class) == null || field.getAnnotation(Column.class).nullable());
         })
         .withDefaultResolver(field -> {
           Schema schema = field.getAnnotation(Schema.class);
@@ -97,6 +111,24 @@ public class OpenApiModule implements Module {
           Schema schema = field.getAnnotation(Schema.class);
           return schema != null && !schema.format().isEmpty() ? schema.format() : null;
         });
+  }
+
+  private static void applyDecimalField(ObjectNode attributes, Column column, Schema schema) {
+    ObjectNode decimal = attributes.putObject("x-decimal");
+    if (column != null && column.precision() > 0) {
+      int precision = column.precision(), scale = column.scale();
+      decimal.put("precision", precision); decimal.put("scale", scale);
+      BigDecimal limit = BigDecimal.ONE.scaleByPowerOfTen(precision - scale).subtract(BigDecimal.ONE.movePointLeft(scale));
+      decimal.put("minimum", limit.negate().toPlainString()); decimal.put("maximum", limit.toPlainString());
+    }
+    if (schema != null) {
+      if (!schema.minimum().isEmpty()) decimal.put("minimum", schema.minimum());
+      if (!schema.maximum().isEmpty()) decimal.put("maximum", schema.maximum());
+      if (schema.exclusiveMinimum()) decimal.put("exclusiveMinimum", true);
+      if (schema.exclusiveMaximum()) decimal.put("exclusiveMaximum", true);
+    }
+    ObjectNode ui = attributes.get("x-ui") instanceof ObjectNode object ? object : attributes.putObject("x-ui");
+    if (!ui.hasNonNull("widget")) ui.put("widget", "Decimal");
   }
 
   private static void applyExtensions(ObjectNode attributes, Schema schema) {

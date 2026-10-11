@@ -253,7 +253,11 @@ final class DnaJdbcConnection implements Connection {
   @Override
   public void setReadOnly(final boolean readOnly) throws SQLException {
     ensureOpen();
-    // DNA connections are always read-only; silently accept both true and false
+    if (!readOnly) {
+      throw new SQLFeatureNotSupportedException(
+          "DNA JDBC connections are read-only; use the DNA Runtime Record API for writes"
+      );
+    }
   }
 
   @Override
@@ -265,7 +269,11 @@ final class DnaJdbcConnection implements Connection {
   @Override
   public void setAutoCommit(final boolean autoCommit) throws SQLException {
     ensureOpen();
-    // DNA connections are always auto-commit; silently accept both true and false
+    if (!autoCommit) {
+      throw new SQLFeatureNotSupportedException(
+          "DNA JDBC transactions are not supported; use the DNA Runtime transaction API"
+      );
+    }
   }
 
   @Override
@@ -287,7 +295,11 @@ final class DnaJdbcConnection implements Connection {
   @Override
   public void setTransactionIsolation(final int level) throws SQLException {
     ensureOpen();
-    // DNA connections have no transaction support; silently accept any level
+    if (level != Connection.TRANSACTION_NONE) {
+      throw new SQLFeatureNotSupportedException(
+          "DNA JDBC transactions are not supported; use the DNA Runtime transaction API"
+      );
+    }
   }
 
   // ----------------------------------------------------------------
@@ -424,19 +436,25 @@ final class DnaJdbcConnection implements Connection {
   @Override
   public void commit() throws SQLException {
     ensureOpen();
-    // auto-commit mode, no-op
+    throw new SQLFeatureNotSupportedException(
+        "DNA JDBC transactions are not supported; use the DNA Runtime transaction API"
+    );
   }
 
   @Override
   public void rollback() throws SQLException {
     ensureOpen();
-    // auto-commit mode, no-op
+    throw new SQLFeatureNotSupportedException(
+        "DNA JDBC transactions are not supported; use the DNA Runtime transaction API"
+    );
   }
 
   @Override
   public void rollback(final Savepoint savepoint) throws SQLException {
     ensureOpen();
-    // auto-commit mode, no-op
+    throw new SQLFeatureNotSupportedException(
+        "DNA JDBC transactions are not supported; use the DNA Runtime transaction API"
+    );
   }
 
   @Override

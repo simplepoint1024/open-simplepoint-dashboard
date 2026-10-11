@@ -1,0 +1,29 @@
+{
+  "userId": "verified-user",
+  "tenantId": "scope-tenant",
+  "roleId": null,
+  "version": null,
+  "dataScopeType": "CUSTOM",
+  "deptIds": [
+    "scope-organization"
+  ],
+  "includeSelf": false,
+  "fieldPermissions": null,
+  "resourceDataScopes": {
+    "organizations.view": {
+      "type": "CUSTOM",
+      "departmentIds": [
+        "scope-organization"
+      ],
+      "includeSelf": false,
+      "expressions": [
+        "name = \"可见组织\""
+      ]
+    }
+  },
+  "resourceFieldPermissions": {
+    "organizations.view": {
+      "org.simplepoint.plugin.rbac.tenant.api.entity.Organization#name": "VISIBLE"
+    }
+  }
+}

@@ -255,6 +255,7 @@ public class AiMcpServerDefinitionController
   @Operation(summary = "查询 MCP 工作台功能权限")
   public Response<?> workbenchPermissions(final Authentication authentication) {
     return ok(Map.ofEntries(
+        Map.entry("discoverServer", hasAuthority(authentication, "ai.workbench.mcp-servers.discover")),
         Map.entry("callTool", hasAuthority(
             authentication,
             "ai.workbench.tools.call"

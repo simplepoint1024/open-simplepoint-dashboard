@@ -1,3 +1,4 @@
+import {useEffect} from 'react';
 import type {WidgetProps} from '@rjsf/utils';
 import {Alert, Space, Typography} from 'antd';
 import AssignmentTable from '../../AssignmentTable';
@@ -12,7 +13,8 @@ const MAX_DRAFT_IDS = 2000;
 
 /** Selection is a form draft. Neither moving rows nor querying a side persists any grant. */
 export default function OrgTreeMultiSelect({value, disabled, readonly, onChange, rawErrors}: WidgetProps) {
-  const {t} = useI18n();
+  const {t, ensure, locale} = useI18n();
+  useEffect(() => {void ensure(['organizations', 'permissions']);}, [ensure, locale]);
   const ids = [...new Set(Array.isArray(value) ? value.map(String) : [])];
   const oversized = ids.length > MAX_DRAFT_IDS;
   return <div style={{border: rawErrors?.length ? '1px solid #ff4d4f' : undefined, borderRadius: 6}}>
@@ -31,8 +33,7 @@ export default function OrgTreeMultiSelect({value, disabled, readonly, onChange,
         assign: t('organizations.selector.addDraft', '加入选择'), unassign: t('organizations.selector.removeDraft', '移除选择')}}
       columns={[
         {key: 'name', dataIndex: 'name', title: t('organizations.title.name', '组织名称')},
-        {key: 'code', dataIndex: 'code', title: t('organizations.title.code', '组织编码')},
-        {key: 'type', dataIndex: 'type', title: t('organizations.title.type', '类型')},
+        {key: 'type', dataIndex: 'type', title: t('organizations.title.type', '类型'), render: value => t(`organizations.type.${String(value).toLowerCase()}`, t('permissions.unavailable', '名称暂不可用'))},
         {key: 'description', dataIndex: 'description', title: t('organizations.title.description', '描述')},
         {key: 'enabled', dataIndex: 'enabled', title: t('organizations.title.enabled', '启用'),
           render: value => value === true ? t('common.enabled', '启用') : value === false ? t('common.disabled', '停用') : value},

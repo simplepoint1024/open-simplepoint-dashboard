@@ -9,7 +9,7 @@ export default {
   'ai-workbench.models': {
     baseUrl: `${contextPath}/models`,
     debugUrl: (modelDefinitionId: string) =>
-      `${contextPath}/models/${modelDefinitionId}/debug/stream`,
+      `${contextPath}/models/${encodeURIComponent(modelDefinitionId)}/debug/stream`,
     i18nNamespaces: ['ai-common', 'ai-models', 'ai-model-debug'],
     name: 'ai-workbench-models',
   },
@@ -34,6 +34,7 @@ export default {
     baseUrl: `${contextPath}/catalog`,
     syncUrl: `${contextPath}/catalog/sync`,
     syncStatusUrl: `${contextPath}/catalog/sync-status`,
+    permissionsUrl: `${contextPath}/catalog/workbench-permissions`,
     i18nNamespaces: ['ai-catalog'],
     name: 'ai-workbench-catalog',
   },

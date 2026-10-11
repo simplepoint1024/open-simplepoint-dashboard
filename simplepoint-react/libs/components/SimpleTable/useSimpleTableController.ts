@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type {QueryFunctionContext} from '@tanstack/react-query';
 import type { IChangeEvent } from '@rjsf/core';
 import { App } from 'antd';
@@ -13,9 +13,14 @@ import {resolveSimpleTableOperationError} from './errorMessage';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {scopedPagePlaceholder} from '@simplepoint/shared/api/queryScope';
 import type {Page} from '@simplepoint/shared/types/request';
-import {usePageRetention} from '@simplepoint/shared/page/hooks';
+import {usePageActive, usePageRetention} from '@simplepoint/shared/page/hooks';
+import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
+import {hasRecordIdentity} from './recordIdentity';
+import {defaultCrudData} from './defaultCrudData';
 import {transportFilters} from '../Table/query';
 import {resolveSimpleTableLoadError} from './errorMessage';
+import {reachableServerPage} from './pagination';
+import {prepareFormSubmission, claimFormSubmission, startFormWrite, cancelFormPreparation, cancelFormValidation, finishFormSubmission, type FormSubmission} from './formSubmission';
 
 const nsLoadedCache = new Set<string>();
 
@@ -26,6 +31,8 @@ export type SimpleTableController<T> = {
     tableLoading: boolean;
     submitLoading: boolean;
     submitError?: string;
+    isSubmitting: () => boolean;
+    deleteOpen: boolean;
     drawerSchemaLoading: boolean;
     hasSchemaError: boolean;
     hasPageError: boolean;
@@ -50,24 +57,33 @@ export type SimpleTableController<T> = {
     onFilterChange: (filters: Record<string, string>) => void;
     refresh: () => void;
     refreshDisabled: boolean;
+    selectionResetKey: number;
   };
   drawer: {
     open: boolean;
     editingRecord: any | null;
     setOpen: (open: boolean) => void;
     close: () => void;
+    canClose: () => boolean;
   };
+  deletion: {open: boolean; count: number; error?: string; confirm: () => Promise<void>; cancel: () => void};
   actions: {
     defaultEvents: Record<string, (selectedRowKeys: React.Key[], selectedRows: T[], props?: TableButtonProps) => void>;
     handleFormSubmit: (event: IChangeEvent) => Promise<void>;
+    beginFormSubmit: () => boolean;
+    handleFormError: () => void;
     retryPage: () => Promise<unknown>;
   };
 };
 
 export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): SimpleTableController<T> {
   const scope = useQueryScope();
+  const resourceKey = JSON.stringify([props.baseUrl, props.name, props.queryContext ?? '']);
+  const session = JSON.stringify([scope, resourceKey]);
   const { t, ensure, locale, ready } = useI18n();
-  const {message, modal} = App.useApp();
+  const {message} = App.useApp();
+  const operation = useOperationScope(resourceKey);
+  const active = usePageActive(), activity = useRef(active); activity.current = active;
   const [i18nReady, setI18nReady] = useState(false);
   const [page, setPage] = useState<number>(1);
   const [size, setSize] = useState<number>(20);
@@ -80,9 +96,27 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   const [innerEditing, setInnerEditing] = useState<any | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
+  const [selectionResetKey, setSelectionResetKey] = useState(0);
   useEffect(() => {setSubmitError(undefined);}, [props.drawerOpen]);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deletion, setDeletion] = useState<{keys: React.Key[]; scope: string; error?: string}>();
+  const confirmingDelete = !!deletion && deletion.scope === session;
   const submissionLock = useRef(false);
+  const formSubmission = useRef<FormSubmission<{action: SimpleTableSubmitAction; editingRecord: any | null}> | undefined>(undefined);
+  useLayoutEffect(() => {
+    if (active && operation.selected) return;
+    const pending = cancelFormPreparation(formSubmission, session); if (!pending) return;
+    operation.finish(pending.request);
+    if (operation.current()) {submissionLock.current = false; setSubmitLoading(false);}
+  }, [active, operation.selected, session, operation.finish, operation.current]);
+  const previousScope = useRef(session);
+  useLayoutEffect(() => {
+    const next = session; if (previousScope.current === next) return;
+    previousScope.current = next; submissionLock.current = false; formSubmission.current = undefined;
+    setDeletion(undefined); setSubmitLoading(false); setSubmitError(undefined);
+    setSelectionResetKey(previous => previous + 1);
+    setInnerDrawerOpen(false); setInnerEditing(null); setPage(1); setFilters(props.initialFilters ?? {}); setSort(undefined);
+    props.onDrawerOpenChange?.(false); props.onEditingRecordChange?.(null);
+  }, [session]);
 
   const submitRefreshTargets = useMemo<Required<SimpleTableRefreshTargets>>(
     () => ({
@@ -124,17 +158,23 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     };
   }, [props.i18nNamespaces, ensure, locale]);
 
-  const { data: schemaData, isLoading: schemaLoading, error: schemaError, refetch: refetchSchema,
+  const { data: rawSchemaData, isLoading: schemaLoading, error: schemaError, refetch: refetchSchema,
     dictionariesLoading, dictionariesError, retryDictionaries } = useSchema(props.baseUrl, {staleTime: props.schemaStaleTime});
+  const schemaData = useMemo(() => rawSchemaData && props.schemaTransform
+    ? {...rawSchemaData, schema: props.schemaTransform(rawSchemaData.schema)} : rawSchemaData,
+  [rawSchemaData, props.schemaTransform]);
 
   const drawerOpen = props.drawerOpen ?? innerDrawerOpen;
+  const interactionLocked = drawerOpen || submitLoading || confirmingDelete;
+  useLayoutEffect(() => {props.onInteractionLockChange?.(interactionLocked);}, [props.onInteractionLockChange, interactionLocked]);
   // Custom routes remain protected unless their owner explicitly opts in.
-  usePageRetention(props.allowTabEviction === true && !drawerOpen && !submitLoading && !confirmingDelete,
-    drawerOpen || submitLoading || confirmingDelete);
-  const setDrawerOpen = (open: boolean) => {
+  usePageRetention(props.allowTabEviction === true && !interactionLocked, interactionLocked);
+  const updateDrawerOpen = (open: boolean) => {
     props.onDrawerOpenChange?.(open);
     if (props.drawerOpen === undefined) setInnerDrawerOpen(open);
   };
+  const canCloseDrawer = () => operation.current() && operation.isSelected() && !operation.isBusy();
+  const setDrawerOpen = (open: boolean) => {if (canCloseDrawer()) updateDrawerOpen(open);};
 
   const editingRecord = props.editingRecord ?? innerEditing;
   const setEditingRecord = (rec: any | null) => {
@@ -213,6 +253,11 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   }, [tenantId, roleId, contextId]);
 
   const bootLoading = !ready || !i18nReady || (schemaLoading && !schemaData) || (!pageData && pageLoading && !pageError);
+  useEffect(() => {
+    if (pageFetching || pageError) return;
+    const reachable = reachableServerPage(page, pageData?.page);
+    if (reachable !== page) setPage(reachable);
+  }, [page, pageData, pageFetching, pageError]);
   const tableLoading = !bootLoading && pageFetching;
   const drawerSchemaLoading = drawerOpen && ((schemaLoading && !schemaData) || dictionariesLoading);
   const hasSchemaError = !bootLoading && !!schemaError;
@@ -249,76 +294,108 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   const refreshPage = useCallback(() => {void refetchPage();}, [refetchPage]);
 
   const handleAdd = () => {
+    const button = schemaData?.buttons?.find((item: TableButtonProps) => item.key === 'add');
+    if (!button || schemaError || !operation.current() || !operation.isSelected() || operation.isBusy() || drawerOpen || confirmingDelete || props.isButtonDisabled?.(button, [], [])) return;
+    props.onInteractionLockChange?.(true);
     setEditingRecord(null);
     setDrawerOpen(true);
   };
 
   const handleEdit = (_keys: React.Key[], rows: any[]) => {
+    const button = schemaData?.buttons?.find((item: TableButtonProps) => item.key === 'edit');
+    if (!button || schemaError || !operation.current() || !operation.isSelected() || operation.isBusy() || drawerOpen || confirmingDelete
+      || rows?.length !== 1 || !hasRecordIdentity(rows[0]) || props.isButtonDisabled?.(button, _keys, rows)) return;
+    props.onInteractionLockChange?.(true);
     setEditingRecord(rows?.[0] ?? null);
     setDrawerOpen(true);
   };
 
-  const handleDelete = (keys: React.Key[]) => {
-    setConfirmingDelete(true);
-    modal.confirm({
-      afterClose: () => setConfirmingDelete(false),
-      title: t('table.confirmDeleteTitle', '确认删除'),
-      content: t('table.confirmDeleteContent', '确定要删除选中的 {count} 条数据吗？', { count: keys.length }),
-      onOk: async () => {
-        if (submissionLock.current) return;
-        submissionLock.current = true;
-        setSubmitLoading(true);
-        try {
-          await del(props.baseUrl, keys as any);
-          message.success(t('table.deleteSuccess', '删除成功'));
-          await refreshTargets(deleteRefreshTargets);
-        } catch (e: any) {
-          if (isHttpError(e) && e.status === 401) {
-            return;
-          }
-          const detail = resolveSimpleTableOperationError(
-            e,
-            'delete',
-            props.errorMessageResolver,
-            () => resolveApiErrorMessage(e, ''),
-          );
-          message.error(t('table.deleteFail', '删除失败: {msg}', {msg: detail}));
-        } finally {
-          submissionLock.current = false;
-          setSubmitLoading(false);
-        }
-      },
-    });
+  const handleDelete = (keys: React.Key[], rows: any[]) => {
+    const button = schemaData?.buttons?.find((item: TableButtonProps) => item.key === 'delete' || item.key === 'del');
+    if (!button || schemaError || !operation.current() || !operation.isSelected() || operation.isBusy() || drawerOpen || confirmingDelete
+      || !keys.length || rows?.length !== keys.length || rows.some(row => !hasRecordIdentity(row))
+      || props.isButtonDisabled?.(button, keys, rows)) return;
+    props.onInteractionLockChange?.(true);
+    setDeletion({keys: [...keys], scope: session});
   };
 
-  const handleFormSubmit = async ({ formData }: IChangeEvent) => {
-    setSubmitError(undefined);
-    if (submissionLock.current) return;
-    submissionLock.current = true;
-    setSubmitLoading(true);
+  const confirmDelete = async () => {
+    if (!deletion || !confirmingDelete || submissionLock.current || schemaError
+      || !schemaData?.buttons?.some((button: TableButtonProps) => button.key === 'delete' || button.key === 'del')) return;
+    const request = operation.begin(); if (!request) return;
+    submissionLock.current = true; setSubmitLoading(true); setDeletion({...deletion, error: undefined});
     try {
-      const action: SimpleTableSubmitAction = editingRecord ? 'edit' : 'add';
+      await del(props.baseUrl, deletion.keys as any, {signal: request.signal, notifyOnError: false});
+      if (!operation.current(request.signal)) return;
+      setDeletion(undefined);
+      setSelectionResetKey(previous => previous + 1);
+      if (operation.isSelected()) message.success(t('table.deleteSuccess', '删除成功'));
+      await refreshTargets(deleteRefreshTargets);
+    } catch (error) {
+      if (!operation.current(request.signal)) return;
+      const detail = resolveSimpleTableOperationError(error, 'delete', props.errorMessageResolver, () => resolveApiErrorMessage(error, ''));
+      setDeletion({...deletion, error: t('table.deleteFail', '删除失败: {msg}', {msg: detail})});
+    } finally {
+      if (operation.current()) submissionLock.current = false;
+      operation.finish(request);
+      if (operation.current()) setSubmitLoading(false);
+    }
+  };
+
+  const beginFormSubmit = () => {
+    if (!drawerOpen || !activity.current || !operation.current() || !operation.isSelected() || submissionLock.current || operation.isBusy()) return false;
+    const action: SimpleTableSubmitAction = editingRecord ? 'edit' : 'add';
+    if (schemaError || confirmingDelete || !schemaData?.buttons?.some((button: TableButtonProps) => button.key === action)) {
+      setSubmitError(t('table.actionUnavailable', '此操作暂不可用，请刷新页面后重试')); return false;
+    }
+    const request = operation.begin(); if (!request) return false;
+    if (!prepareFormSubmission(formSubmission, session, request, {action, editingRecord: editingRecord ? {...editingRecord} : null})) {
+      operation.finish(request); return false;
+    }
+    submissionLock.current = true;
+    setSubmitLoading(true); setSubmitError(undefined); return true;
+  };
+  const handleFormError = () => {
+    const pending = cancelFormValidation(formSubmission, session); if (!pending) return;
+    operation.finish(pending.request);
+    if (operation.current()) {submissionLock.current = false; setSubmitLoading(false);}
+  };
+  const handleFormSubmit = async ({ formData }: IChangeEvent) => {
+    // Only the callback belonging to an accepted pre-validation intent can write.
+    const submission = claimFormSubmission(formSubmission, session); if (!submission) return;
+    const {request, target: {action, editingRecord: capturedEditing}} = submission;
+    try {
+      if (!operation.current(request.signal)) return;
       const beforeSubmitContext: SimpleTableBeforeSubmitContext = {
         action,
         formData,
-        currentEditing: editingRecord,
+        currentEditing: capturedEditing,
         baseUrl: props.baseUrl,
+        signal: request.signal,
       };
       const normalizedFormData = props.beforeSubmit
         ? await props.beforeSubmit(beforeSubmitContext)
         : formData;
-      const submittedData = normalizedFormData ?? formData;
+      let submittedData = normalizedFormData ?? formData;
+      if (!operation.current(request.signal) || !operation.isSelected() || !activity.current || !startFormWrite(formSubmission, submission)) return;
 
       let result: unknown;
       if (props.onSubmit) {
-        result = await props.onSubmit(action, submittedData, editingRecord);
+        result = await props.onSubmit(action, submittedData, capturedEditing);
       } else if (action === 'edit') {
-        result = await put(props.baseUrl, { ...editingRecord, ...submittedData });
-        message.success(t('table.editSuccess', '修改成功'));
+        submittedData = defaultCrudData(schemaData?.schema, { ...capturedEditing, ...submittedData }, capturedEditing);
+        if (props.defaultSubmitDataTransform) submittedData = props.defaultSubmitDataTransform(submittedData, beforeSubmitContext);
+        if (!operation.current(request.signal) || !operation.isSelected() || !activity.current) return;
+        result = await put(props.baseUrl, submittedData, {signal: request.signal, notifyOnError: false});
+        if (operation.current(request.signal) && operation.isSelected()) message.success(t('table.editSuccess', '修改成功'));
       } else {
-        result = await post(props.baseUrl, submittedData);
-        message.success(t('table.addSuccess', '新增成功'));
+        submittedData = defaultCrudData(schemaData?.schema, submittedData);
+        if (props.defaultSubmitDataTransform) submittedData = props.defaultSubmitDataTransform(submittedData, beforeSubmitContext);
+        if (!operation.current(request.signal) || !operation.isSelected() || !activity.current) return;
+        result = await post(props.baseUrl, submittedData, {signal: request.signal, notifyOnError: false});
+        if (operation.current(request.signal) && operation.isSelected()) message.success(t('table.addSuccess', '新增成功'));
       }
+      if (!operation.current(request.signal)) return;
 
       const afterSubmitContext: SimpleTableAfterSubmitContext = {
         ...beforeSubmitContext,
@@ -333,14 +410,16 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
         }
       }
 
-      setDrawerOpen(false);
+      if (!operation.current(request.signal)) return;
+
+      updateDrawerOpen(false);
       setEditingRecord(null);
       await refreshTargets(submitRefreshTargets);
     } catch (e: any) {
+      if (!operation.current(request.signal)) return;
       if (isHttpError(e) && e.status === 401) {
         return;
       }
-      const action: SimpleTableSubmitAction = editingRecord ? 'edit' : 'add';
       const detail = resolveSimpleTableOperationError(
         e,
         action,
@@ -348,10 +427,12 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
         () => resolveApiErrorMessage(e, ''),
       );
       setSubmitError(detail);
-      message.error(t('table.actionFail', '操作失败: {msg}', {msg: detail}));
+      if (operation.isSelected()) message.error(t('table.actionFail', '操作失败: {msg}', {msg: detail}));
     } finally {
-      submissionLock.current = false;
-      setSubmitLoading(false);
+      const released = finishFormSubmission(formSubmission, submission);
+      if (released && operation.current()) submissionLock.current = false;
+      operation.finish(request);
+      if (released && operation.current()) setSubmitLoading(false);
     }
   };
 
@@ -381,6 +462,8 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
       tableLoading,
       submitLoading,
       submitError,
+      isSubmitting: operation.isBusy,
+      deleteOpen: confirmingDelete,
       drawerSchemaLoading,
       hasSchemaError,
       hasPageError,
@@ -405,13 +488,17 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
       onFilterChange: handleFilterChange,
       refresh: refreshPage,
       refreshDisabled: submitLoading,
+      selectionResetKey,
     },
     drawer: {
       open: drawerOpen,
       editingRecord,
       setOpen: setDrawerOpen,
       close: () => setDrawerOpen(false),
+      canClose: canCloseDrawer,
     },
+    deletion: {open: confirmingDelete, count: deletion?.keys.length ?? 0, error: deletion?.error, confirm: confirmDelete,
+      cancel: () => {if (!operation.isBusy()) setDeletion(undefined);}},
     actions: {
       defaultEvents: {
         add: handleAdd,
@@ -420,6 +507,8 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
         del: handleDelete,
       },
       handleFormSubmit,
+      beginFormSubmit,
+      handleFormError,
       retryPage: refetchPage,
     },
   };

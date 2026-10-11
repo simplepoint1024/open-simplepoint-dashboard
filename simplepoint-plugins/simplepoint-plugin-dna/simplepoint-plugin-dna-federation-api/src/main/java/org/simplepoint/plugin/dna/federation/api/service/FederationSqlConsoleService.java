@@ -38,8 +38,9 @@ public interface FederationSqlConsoleService {
   }
 
   /**
-   * Executes a DML statement (INSERT / UPDATE / DELETE / UPSERT) against a single physical datasource.
-   * The statement is pushed directly to the target database without Calcite optimization.
+   * Executes DML against a single physical datasource. Standard INSERT, UPDATE and DELETE
+   * use Calcite's JDBC adapter; MERGE, UPSERT and DML outside Calcite's supported grammar
+   * keep the native path.
    *
    * @param request SQL console request containing the DML statement
    * @return update result with affected row count

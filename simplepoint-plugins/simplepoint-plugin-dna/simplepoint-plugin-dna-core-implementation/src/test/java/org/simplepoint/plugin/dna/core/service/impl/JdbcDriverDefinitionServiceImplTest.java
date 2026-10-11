@@ -36,6 +36,32 @@ class JdbcDriverDefinitionServiceImplTest {
   private JdbcDataSourceDefinitionService dataSourceService;
 
   @Test
+  void forbiddenDriverActionsDoNotDownloadUploadOrDisconnect() {
+    var context = new org.simplepoint.core.AuthorizationContext(); context.setUserId("reader");
+    context.setResourceDataScopes(java.util.Map.of("drivers.view",
+        new org.simplepoint.core.ResourceDataScope("SELF", java.util.Set.of(), false)));
+    org.simplepoint.core.RequestContextHolder.setContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    org.simplepoint.core.ResourcePolicyContext.set("drivers.view");
+    try {
+      var row = new JdbcDriverDefinition(); row.setId("foreign"); row.setCreatedBy("other");
+      when(repository.findActiveById("foreign")).thenReturn(Optional.of(row));
+      when(repository.findAllByIds(java.util.List.of("foreign"))).thenReturn(java.util.List.of(row));
+      var service = new JdbcDriverDefinitionServiceImpl(repository, detailsProviderService, artifactManager, dataSourceService);
+      org.junit.jupiter.api.Assertions.assertThrows(org.springframework.security.access.AccessDeniedException.class,
+          () -> service.download("foreign"));
+      org.junit.jupiter.api.Assertions.assertThrows(org.springframework.security.access.AccessDeniedException.class,
+          () -> service.upload("foreign", new MockMultipartFile("file", new byte[0])));
+      org.junit.jupiter.api.Assertions.assertThrows(org.springframework.security.access.AccessDeniedException.class,
+          () -> service.removeByIds(java.util.List.of("foreign")));
+      org.mockito.Mockito.verifyNoInteractions(artifactManager, dataSourceService);
+      org.mockito.Mockito.verify(repository, org.mockito.Mockito.never()).deleteByIds(any());
+    } finally {
+      org.simplepoint.core.RequestContextHolder.clearContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+      org.simplepoint.core.ResourcePolicyContext.clear();
+    }
+  }
+
+  @Test
   void createShouldAutoFillMetadataFromDriverJar() {
     when(artifactManager.downloadDraft(any(JdbcDriverDefinition.class))).thenAnswer(invocation -> {
       JdbcDriverDefinition driver = invocation.getArgument(0);

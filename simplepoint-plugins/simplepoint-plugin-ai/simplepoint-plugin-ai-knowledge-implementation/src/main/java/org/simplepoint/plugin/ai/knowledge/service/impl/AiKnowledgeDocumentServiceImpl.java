@@ -89,6 +89,12 @@ public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentServic
 
   /** {@inheritDoc} */
   @Override
+  public Map<String, Long> ingestionLimits() {
+    return Map.of("maxUploadBytes", properties.getMaxUploadBytes());
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public Page<AiKnowledgeDocument> limit(
       final String knowledgeBaseId,
       final Map<String, String> attributes,
@@ -280,6 +286,7 @@ public class AiKnowledgeDocumentServiceImpl implements AiKnowledgeDocumentServic
     scopeAccessPolicy.assertCanManageOwnedResource(
         knowledgeBase.getScopeType(), knowledgeBase.getTenantId()
     );
+    org.simplepoint.core.permission.PageDataPermission.requireAccessible(knowledgeBase);
     return knowledgeBase;
   }
 

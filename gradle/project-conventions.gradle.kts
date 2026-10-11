@@ -5,6 +5,7 @@ val domainGroups = linkedMapOf(
     "simplepoint-plugins/simplepoint-plugin-ai/" to "org.simplepoint.plugins.ai",
     "simplepoint-plugins/simplepoint-plugin-dna/" to "org.simplepoint.plugins.dna",
     "simplepoint-plugins/simplepoint-plugin-notification/" to "org.simplepoint.plugins.notification",
+    "simplepoint-plugins/simplepoint-plugin-workflow/" to "org.simplepoint.plugins.workflow",
     "simplepoint-plugins/simplepoint-plugins-auditing/" to "org.simplepoint.plugins.audit",
     "simplepoint-plugins/simplepoint-plugins-i18n/" to "org.simplepoint.plugins.i18n",
     "simplepoint-plugins/simplepoint-plugins-oidc/" to "org.simplepoint.plugins.oidc",

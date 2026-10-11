@@ -62,8 +62,12 @@ public class TenantMemberServiceImpl implements TenantMemberService {
   @Override
   public java.util.Map<String, Boolean> capabilities() {
     Tenant tenant = tenant(false);
-    return java.util.Map.of("manage", AuthorizationScopeGuards.isTenantManager(
-        AuthorizationContextHolder.getContext(), tenant.getOwnerId()));
+    var context = AuthorizationContextHolder.getContext();
+    boolean manage = AuthorizationScopeGuards.isTenantManager(context, tenant.getOwnerId());
+    // Match both the assignment service's tenant-manager guard and UsersController's method authority.
+    boolean configureRoles = manage && (Boolean.TRUE.equals(context.getIsAdministrator())
+        || context.getResources().contains("users.config.role"));
+    return java.util.Map.of("manage", manage, "configureRoles", configureRoles);
   }
 
   @Override
@@ -269,6 +273,29 @@ public class TenantMemberServiceImpl implements TenantMemberService {
     if (command.enabled() != null) member.setEnabled(command.enabled());
     if (command.userType() != null) member.setUserType(userType(command.userType(), member.getUserType()));
     assertMemberAllowed(member);
+    versions.refreshTenant(tenant.getId());
+  }
+
+  @Override
+  @Transactional
+  public void removeFromOrganization(String userId,
+      org.simplepoint.plugin.rbac.core.api.pojo.command.OrganizationMemberRemoval command) {
+    Tenant tenant = tenant(true);
+    var context = AuthorizationContextHolder.getContext();
+    if (!Boolean.TRUE.equals(context.getIsAdministrator())
+        && !context.getResources().contains("organizations.members.remove"))
+      throw new AccessDeniedException("缺少移出组织权限");
+    if (command == null || command.revision() == null) throw new IllegalArgumentException("请刷新成员列表后重试");
+    requireOrganization(tenant.getId(), command.orgId());
+    TenantUserRelevance member = member(tenant.getId(), userId);
+    if (!Objects.equals(command.revision(), member.getRevision()))
+      throw new OptimisticLockingFailureException("成员已发生变更，请刷新后重试");
+    if (member.getOrgId() == null || !organizationSubtree(tenant.getId(), command.orgId()).contains(member.getOrgId()))
+      throw new AccessDeniedException("用户已不在所选组织及下级组织中");
+    assertMemberAllowed(member);
+    assertMemberWritable(member, new TenantMemberCommand(null, null, null, command.revision(), null));
+    // A deliberate departure may leave the caller's scope. Authorize the source before detaching.
+    member.setOrgId(null);
     versions.refreshTenant(tenant.getId());
   }
 

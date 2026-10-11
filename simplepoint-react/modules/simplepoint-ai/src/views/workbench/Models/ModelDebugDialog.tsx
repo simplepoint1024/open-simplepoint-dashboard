@@ -1,31 +1,34 @@
-import api from '@/api';
+import TableActions from "@simplepoint/components/Table/Actions";
+import api from "@/api";
 import {
   RobotOutlined,
   SendOutlined,
   StopOutlined,
   UserOutlined,
-} from '@simplepoint/shared/types/icon';
-import {post} from '@simplepoint/shared/api/methods';
-import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+} from "@simplepoint/shared/types/icon";
+import { post } from "@simplepoint/shared/api/methods";
+import { useI18n } from "@simplepoint/shared/hooks/useI18n";
+import {useOperationScope} from "@simplepoint/shared/hooks/useOperationScope";
+import {readSse, finalText, ModelDebugOperationError} from "./stream";
 import {
   Avatar,
-  App,
-  Button,
+  Alert,
   Empty,
   Input,
   Modal,
   Space,
   Spin,
   Typography,
-} from 'antd';
-import {useEffect, useRef, useState} from 'react';
+  theme,
+} from "antd";
+import { useEffect, useRef, useState } from "react";
 import {
   localizeWorkbenchError,
   resolveWorkbenchOperationError,
-} from '../workbenchErrorCodes';
+} from "../workbenchErrorCodes";
 
-const {Paragraph, Text} = Typography;
-const {TextArea} = Input;
+const { Paragraph, Text } = Typography;
+const { TextArea } = Input;
 
 export type DebugModel = {
   id: string;
@@ -33,98 +36,39 @@ export type DebugModel = {
   displayName?: string;
 };
 
-type GenerationResult = {
-  output?: Array<{type: string; text?: string}>;
-};
-
-type GenerationEvent = {
-  type: string;
-  textDelta?: string;
-  result?: GenerationResult;
-  errorCode?: string;
-};
-
 type ChatMessage = {
   id: string;
-  role: 'USER' | 'ASSISTANT';
+  role: "USER" | "ASSISTANT";
   content: string;
-  status: 'completed' | 'streaming' | 'failed' | 'cancelled';
+  status: "completed" | "streaming" | "failed" | "cancelled";
 };
 
 type ModelDebugDialogProps = {
   model?: DebugModel;
   open: boolean;
   onClose: () => void;
+  authorized: boolean;
 };
 
 let localId = 0;
 
 const debugOperationFallback = {
-  key: 'ai.model-debug.error.generate',
-  fallback: '模型调用失败',
+  key: "ai.model-debug.error.generate",
+  fallback: "模型调用失败",
 };
-
-class ModelDebugOperationError extends Error {
-  readonly code: string;
-
-  constructor(code: string) {
-    super('Model debug operation failed');
-    this.name = 'ModelDebugOperationError';
-    this.code = code;
-  }
-}
 
 const messageId = (role: string) => `${role}-${Date.now()}-${++localId}`;
 
-const finalText = (result?: GenerationResult) => (
-  result?.output
-    ?.filter((block) => block.type === 'TEXT' || block.type === 'REFUSAL')
-    .map((block) => block.text)
-    .filter(Boolean)
-    .join('\n\n') ?? ''
-);
-
-const readSse = async (
-  response: Response,
-  onEvent: (event: GenerationEvent) => void,
-) => {
-  if (!response.body) {
-    throw new ModelDebugOperationError('AI_MODEL_DEBUG_STREAM_UNAVAILABLE');
-  }
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  const consume = (frame: string) => {
-    const data = frame.split('\n')
-      .filter((line) => line.startsWith('data:'))
-      .map((line) => line.slice(5).trimStart())
-      .join('\n')
-      .trim();
-    if (data && data !== '[DONE]') onEvent(JSON.parse(data) as GenerationEvent);
-  };
-
-  while (true) {
-    const {done, value} = await reader.read();
-    buffer += decoder.decode(value, {stream: !done}).replace(/\r\n/g, '\n');
-    let boundary = buffer.indexOf('\n\n');
-    while (boundary >= 0) {
-      consume(buffer.slice(0, boundary));
-      buffer = buffer.slice(boundary + 2);
-      boundary = buffer.indexOf('\n\n');
-    }
-    if (done) break;
-  }
-  if (buffer.trim()) consume(buffer);
-};
-
-const ModelDebugDialog = ({model, open, onClose}: ModelDebugDialogProps) => {
-  const config = api['ai-workbench.models'];
-  const {t} = useI18n();
-  const {message} = App.useApp();
+const ModelDebugDialog = ({ model, open, onClose, authorized }: ModelDebugDialogProps) => {
+  const config = api["ai-workbench.models"];
+  const { t } = useI18n();
+  const {token} = theme.useToken();
+  const operation = useOperationScope(model?.id);
+  const submitting = operation.busy;
+  const [errorText, setErrorText] = useState('');
+  const openRef = useRef(open); openRef.current = open;
   const [conversation, setConversation] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [input, setInput] = useState("");
   const conversationRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef<AbortController | null>(null);
 
@@ -136,152 +80,194 @@ const ModelDebugDialog = ({model, open, onClose}: ModelDebugDialogProps) => {
   useEffect(() => () => requestRef.current?.abort(), []);
 
   const updateAssistant = (id: string, update: Partial<ChatMessage>) => {
-    setConversation((current) => current.map((item) => (
-      item.id === id ? {...item, ...update} : item
-    )));
+    setConversation((current) =>
+      current.map((item) => (item.id === id ? { ...item, ...update } : item)),
+    );
   };
 
   const close = () => {
-    requestRef.current?.abort();
-    requestRef.current = null;
+    if (!operation.current() || !operation.isSelected()) return;
+    const request = requestRef.current; requestRef.current = null;
+    request?.abort(); if (request) operation.finish(request);
     setConversation([]);
-    setInput('');
-    setSubmitting(false);
+    setInput("");
+    setErrorText("");
     onClose();
   };
 
   const send = async () => {
     const prompt = input.trim();
-    if (!model?.id || !prompt || submitting) return;
+    if (!model?.id || !prompt || !openRef.current || !authorized || requestRef.current) return;
+    const controller = operation.begin(); if (!controller) return;
+    requestRef.current = controller;
+    const current = () => operation.current() && requestRef.current === controller;
 
     const userMessage: ChatMessage = {
-      id: messageId('user'),
-      role: 'USER',
+      id: messageId("user"),
+      role: "USER",
       content: prompt,
-      status: 'completed',
+      status: "completed",
     };
-    const assistantId = messageId('assistant');
+    const assistantId = messageId("assistant");
     const assistantMessage: ChatMessage = {
       id: assistantId,
-      role: 'ASSISTANT',
-      content: '',
-      status: 'streaming',
+      role: "ASSISTANT",
+      content: "",
+      status: "streaming",
     };
-    const history = [...conversation.filter((item) => item.status === 'completed'), userMessage];
+    const history = [
+      ...conversation.filter((item) => item.status === "completed"),
+      userMessage,
+    ];
     setConversation((current) => [...current, userMessage, assistantMessage]);
-    setInput('');
-    setSubmitting(true);
-
-    const controller = new AbortController();
-    requestRef.current = controller;
-    let text = '';
+    setInput("");
+    setErrorText("");
+    let text = "";
     let completed = false;
 
     try {
-      const response = await post<Response>(config.debugUrl(model.id), {
-        messages: history.map((item) => ({
-          role: item.role,
-          content: [{type: 'TEXT', text: item.content}],
-        })),
-      }, {
-        responseType: 'response',
-        timeoutMs: 310_000,
-        signal: controller.signal,
-      });
+      const response = await post<Response>(
+        config.debugUrl(model.id),
+        {
+          messages: history.map((item) => ({
+            role: item.role,
+            content: [{ type: "TEXT", text: item.content }],
+          })),
+        },
+        {
+          responseType: "response",
+          timeoutMs: 310_000,
+          signal: controller.signal,
+          notifyOnError: false,
+        },
+      );
       await readSse(response, (event) => {
-        if (event.type === 'TEXT_DELTA' || event.type === 'REFUSAL_DELTA') {
-          text += event.textDelta || '';
-          updateAssistant(assistantId, {content: text});
-        } else if (event.type === 'COMPLETED') {
+        if (!current() || controller.signal.aborted) return;
+        if (event.type === "TEXT_DELTA" || event.type === "REFUSAL_DELTA") {
+          text += event.textDelta || "";
+          updateAssistant(assistantId, { content: text });
+        } else if (event.type === "COMPLETED") {
           completed = true;
           text ||= finalText(event.result);
-          updateAssistant(assistantId, {content: text, status: 'completed'});
-        } else if (event.type === 'ERROR') {
+          updateAssistant(assistantId, { content: text, status: "completed" });
+        } else if (event.type === "ERROR") {
           throw new ModelDebugOperationError(
-            event.errorCode || 'AI_MODEL_DEBUG_GENERATION_FAILED',
+            event.errorCode || "AI_MODEL_DEBUG_GENERATION_FAILED",
           );
         }
-      });
+      }, controller.signal);
+      if (!current()) return;
       if (!completed) {
-        throw new ModelDebugOperationError('AI_MODEL_DEBUG_INCOMPLETE');
+        throw new ModelDebugOperationError("AI_MODEL_DEBUG_INCOMPLETE");
       }
     } catch (error) {
+      if (!current()) return;
       if (controller.signal.aborted) {
         updateAssistant(assistantId, {
-          content: text || t('ai.model-debug.cancelled', '生成已停止'),
-          status: 'cancelled',
+          content: text || t("ai.model-debug.receivingStopped", "已停止接收响应"),
+          status: "cancelled",
         });
       } else {
         const errorText = localizeWorkbenchError(
           t,
           resolveWorkbenchOperationError(error, debugOperationFallback),
         );
-        updateAssistant(assistantId, {content: text || errorText, status: 'failed'});
-        message.error(errorText);
+        updateAssistant(assistantId, {
+          content: text || errorText,
+          status: "failed",
+        });
+        setErrorText(errorText);
       }
     } finally {
       if (requestRef.current === controller) requestRef.current = null;
-      setSubmitting(false);
+      operation.finish(controller);
     }
   };
 
   return (
     <Modal
-      open={open}
+      rootClassName="ai-model-debug"
+      open={open && operation.selected}
       width={760}
       footer={null}
       destroyOnHidden
-      title={model?.displayName || model?.modelId || t('ai.model-debug.title', '模型调试')}
+      title={
+        model?.displayName ||
+        model?.modelId ||
+        t("ai.model-debug.title", "模型调试")
+      }
       onCancel={close}
     >
+      <Alert type="info" showIcon style={{marginBottom: 12}}
+        title={t("ai.model-debug.billingNotice", "调试会实际调用模型，可能产生费用；停止接收响应不代表服务端已取消调用或计费。")}/>
+      {errorText && <Alert className="ai-model-debug-error" type="error" showIcon title={errorText} style={{marginBottom: 12}}/>}
       <div
         ref={conversationRef}
         style={{
           height: 480,
-          overflowY: 'auto',
-          padding: '16px 4px',
-          borderTop: '1px solid #f0f0f0',
-          borderBottom: '1px solid #f0f0f0',
+          overflowY: "auto",
+          padding: "16px 4px",
+          borderTop: `1px solid ${token.colorBorderSecondary}`,
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
         }}
       >
         {!conversation.length && (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={t('ai.model-debug.empty', '发送一条消息开始对话')}
-            style={{marginTop: 135}}
+            description={t("ai.model-debug.empty", "发送一条消息开始对话")}
+            style={{ marginTop: 135 }}
           />
         )}
-        <Space direction="vertical" size={18} style={{display: 'flex'}}>
+        <Space direction="vertical" size={18} style={{ display: "flex" }}>
           {conversation.map((item) => {
-            const user = item.role === 'USER';
+            const user = item.role === "USER";
             return (
               <div
                 key={item.id}
-                style={{display: 'flex', justifyContent: user ? 'flex-end' : 'flex-start', gap: 10}}
+                style={{
+                  display: "flex",
+                  justifyContent: user ? "flex-end" : "flex-start",
+                  gap: 10,
+                }}
               >
-                {!user && <Avatar icon={<RobotOutlined />} style={{background: '#1677ff'}} />}
-                <div style={{maxWidth: '82%'}}>
+                {!user && (
+                  <Avatar
+                    icon={<RobotOutlined />}
+                    style={{ background: token.colorPrimary }}
+                  />
+                )}
+                <div style={{ maxWidth: "82%" }}>
                   <div
                     style={{
-                      borderRadius: 12,
-                      padding: '10px 14px',
-                      background: user ? '#1677ff' : '#f5f5f5',
-                      color: user ? '#fff' : 'inherit',
+                      borderRadius: token.borderRadiusLG,
+                      padding: "10px 14px",
+                      background: user ? token.colorPrimary : token.colorFillAlter,
+                      color: user ? token.colorTextLightSolid : "inherit",
                     }}
                   >
-                    {item.status === 'streaming' && !item.content ? (
+                    {item.status === "streaming" && !item.content ? (
                       <Space size={8}>
                         <Spin size="small" />
-                        <Text type="secondary">{t('ai.model-debug.thinking', '正在生成…')}</Text>
+                        <Text type="secondary">
+                          {t("ai.model-debug.thinking", "正在生成…")}
+                        </Text>
                       </Space>
                     ) : (
-                      <Paragraph style={{margin: 0, whiteSpace: 'pre-wrap', color: 'inherit'}}>
+                      <Paragraph
+                        style={{
+                          margin: 0,
+                          whiteSpace: "pre-wrap",
+                          color: "inherit",
+                        }}
+                      >
                         {item.content}
                       </Paragraph>
                     )}
                   </div>
-                  {item.status === 'failed' && (
-                    <Text type="danger">{t('ai.model-debug.failed', '本轮调用失败')}</Text>
+                  {item.status === "failed" && (
+                    <Text type="danger">
+                      {t("ai.model-debug.failed", "本轮调用失败")}
+                    </Text>
                   )}
                 </div>
                 {user && <Avatar icon={<UserOutlined />} />}
@@ -290,12 +276,15 @@ const ModelDebugDialog = ({model, open, onClose}: ModelDebugDialogProps) => {
           })}
         </Space>
       </div>
-      <div style={{paddingTop: 16}}>
+      <div style={{ paddingTop: 16 }}>
         <TextArea
           value={input}
-          autoSize={{minRows: 3, maxRows: 7}}
+          autoSize={{ minRows: 3, maxRows: 7 }}
           disabled={submitting}
-          placeholder={t('ai.model-debug.placeholder', '输入消息，Enter 发送，Shift + Enter 换行')}
+          placeholder={t(
+            "ai.model-debug.placeholder",
+            "输入消息，Enter 发送，Shift + Enter 换行",
+          )}
           onChange={(event) => setInput(event.target.value)}
           onPressEnter={(event) => {
             if (!event.shiftKey && !event.nativeEvent.isComposing) {
@@ -304,20 +293,40 @@ const ModelDebugDialog = ({model, open, onClose}: ModelDebugDialogProps) => {
             }
           }}
         />
-        <div style={{display: 'flex', justifyContent: 'flex-end', marginTop: 10}}>
+        <div
+          style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}
+        >
           {submitting ? (
-            <Button danger icon={<StopOutlined />} onClick={() => requestRef.current?.abort()}>
-              {t('ai.model-debug.stop', '停止')}
-            </Button>
+            <TableActions
+              selectedKeys={[]}
+              selectedRows={[]}
+              buttons={[
+                {
+                  key: "stopReceiving",
+                  sort: 10,
+                  text: t("ai.model-debug.stopReceiving", "停止接收"),
+                  danger: true,
+                  icon: <StopOutlined />,
+                  onClick: () => requestRef.current?.abort(),
+                },
+              ]}
+            />
           ) : (
-            <Button
-              type="primary"
-              icon={<SendOutlined />}
-              disabled={!input.trim()}
-              onClick={() => void send()}
-            >
-              {t('ai.model-debug.send', '发送')}
-            </Button>
+            <TableActions
+              selectedKeys={[]}
+              selectedRows={[]}
+              buttons={[
+                {
+                  key: "send",
+                  sort: 20,
+                  text: t("ai.model-debug.send", "发送"),
+                  type: "primary",
+                  icon: <SendOutlined />,
+                  disabled: !authorized || !input.trim(),
+                  onClick: () => void send(),
+                },
+              ]}
+            />
           )}
         </div>
       </div>

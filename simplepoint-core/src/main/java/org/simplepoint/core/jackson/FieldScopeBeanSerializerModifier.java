@@ -19,8 +19,8 @@ import java.util.List;
  * A Jackson {@link BeanSerializerModifier} that wraps every {@link BeanPropertyWriter}
  * with a {@link FieldScopeBeanPropertyWriter}, enabling per-request field-level access control.
  *
- * <p>Only classes in the {@code org.simplepoint} package hierarchy are wrapped; framework and
- * third-party library types are left untouched to avoid unnecessary overhead.</p>
+ * <p>Application types and extension models using platform permission contracts are wrapped;
+ * unrelated framework and library types remain untouched.</p>
  */
 public class FieldScopeBeanSerializerModifier extends BeanSerializerModifier {
 
@@ -29,8 +29,7 @@ public class FieldScopeBeanSerializerModifier extends BeanSerializerModifier {
                                                     BeanDescription beanDesc,
                                                     List<BeanPropertyWriter> beanProperties) {
     // Only apply field-scope enforcement to application-owned types
-    if (!beanDesc.getBeanClass().getPackageName().startsWith("org.simplepoint.")
-        && !beanDesc.getBeanClass().isAnnotationPresent(org.simplepoint.core.annotation.PermissionResource.class)) {
+    if (!FieldPermissionPolicy.supports(beanDesc.getBeanClass())) {
       return beanProperties;
     }
     List<BeanPropertyWriter> wrapped = new ArrayList<>(beanProperties.size());

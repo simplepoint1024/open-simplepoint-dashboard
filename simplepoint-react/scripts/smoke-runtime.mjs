@@ -12,6 +12,8 @@ export async function smokeRuntime({clickMenu, clickReady, clickText, fill, poll
     await clickReady(`.nb-tab-panel-active .ant-tabs-tab[data-node-key="${spec.plural}"]`);
     const row = index => `${panel} tr[data-row-key="${kind}-${String(index).padStart(3, '0')}"]`;
     await poll(() => evaluate(`!!document.querySelector('${row(0)}')`), `${kind} real-schema initial page`);
+    assert.equal(await evaluate(`document.querySelectorAll('${panel} .ant-card').length`), 0, 'runtime lists reuse the platform layout without a second title card');
+    assert.equal(await evaluate(`document.querySelectorAll('${panel} .sp-data-table').length`), 1);
     await clickReady(`${panel} .ant-pagination-item-26`);
     await poll(() => evaluate(`!!document.querySelector('${row(519)}')`), `${kind} rows beyond previous 500 truncation`);
     const headerAction = selector => evaluate(`(() => {
@@ -56,24 +58,24 @@ export async function smokeRuntime({clickMenu, clickReady, clickText, fill, poll
   assert.ok(fixture.requests.every(request => Number(request.params.get('size')) <= 100));
   for (const [plural, button] of [['pools', '新建 Pool'], ['workloads', '提交测试 Workload']]) {
     await clickReady(`.nb-tab-panel-active .ant-tabs-tab[data-node-key="${plural}"]`);
-    await clickText(`.runtime-list-${plural} .ant-card-extra button`, button);
-    const modal = '.ant-modal:not([style*="display: none"])';
-    await poll(() => evaluate(`!!document.querySelector('${modal} input#serverId')`), 'remote runtime server selector');
-    await evaluate(`document.querySelector('${modal} input#serverId').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
-    await fill(`${modal} input#serverId`, 'Server519');
+    await clickText(`.runtime-list-${plural} .sp-data-table-toolbar-extra button`, button);
+    const modal = (plural === 'pools' ? '.mcp-pool-editor' : '.runtime-workload-submit') + ':not([style*="display: none"]) .ant-modal';
+    await poll(() => evaluate(`!!document.querySelector('${modal} input#root_serverId')`), 'remote runtime server selector');
+    await evaluate(`document.querySelector('${modal} input#root_serverId').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
+    await fill(`${modal} input#root_serverId`, 'Server519');
     await poll(() => evaluate(`!!document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option[title="Server519"]')`), 'server candidate beyond 500');
     await clickReady('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option[title="Server519"]');
-    await evaluate(`document.querySelector('${modal} input#secretIds').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
-    await fill(`${modal} input#secretIds`, 'Item519');
+    await evaluate(`document.querySelector('${modal} input#root_secretIds').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
+    await fill(`${modal} input#root_secretIds`, 'Item519');
     await poll(() => evaluate(`!!document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option[title="Item519"]')`), 'secret candidate beyond 500');
     await clickReady('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option[title="Item519"]');
-    await fill(`${modal} input#secretIds`, 'Item518');
+    await fill(`${modal} input#root_secretIds`, 'Item518');
     await poll(() => evaluate(`!!document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option[title="Item518"]')`), 'second off-page secret candidate');
     await clickReady('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option[title="Item518"]');
-    await evaluate(`document.querySelector('${modal} input#secretIds').blur()`);
+    await evaluate(`document.querySelector('${modal} input#root_secretIds').blur()`);
     assert.equal(await evaluate(`document.querySelectorAll('${modal} .ant-select-multiple .ant-select-selection-item').length`), 2, 'multi selection preserves values from distinct remote searches');
     await clickText(`${modal} .ant-modal-footer button`, '取消');
-    await poll(() => evaluate(`!document.querySelector('${modal} input#serverId')`), 'runtime draft cancelled without writes');
+    await poll(() => evaluate(`!document.querySelector('${modal} input#root_serverId')`), 'runtime draft cancelled without writes');
   }
   const pool = fixture.datasets.find(item => item.kind === 'Pool').rows[0];
   const originalDigest = pool.imageDigest;
@@ -87,12 +89,13 @@ export async function smokeRuntime({clickMenu, clickReady, clickText, fill, poll
   await poll(() => evaluate(`[...document.querySelectorAll('.runtime-list-pools tr[data-row-key="Pool-000"] button')].find(button=>button.textContent==='编辑')?.disabled===false`), 'readable pool can be edited');
   fixture.failNext('/ai/workbench/runtime/secrets');
   await clickText('.runtime-list-pools tr[data-row-key="Pool-000"] button', '编辑');
-  await poll(() => evaluate(`!!document.querySelector('.ant-modal .entity-select-lookup-error')`), 'multiple selected-value lookup failure is visible');
-  assert.equal(await evaluate(`document.querySelectorAll('.ant-modal .ant-select-multiple .ant-select-selection-item').length`), 2, 'lookup failure must not clear existing secret references');
-  await clickText('.ant-modal .entity-select-lookup-error button', '重试');
-  await poll(() => evaluate(`document.querySelector('.ant-modal .ant-select-multiple')?.textContent.includes('Item519') && document.querySelector('.ant-modal .ant-select-multiple')?.textContent.includes('Item518')`), 'batched exact selected-value retry resolves every reference');
-  await clickText('.ant-modal .ant-modal-footer button', '取消');
-  await poll(() => evaluate(`!document.querySelector('.ant-modal input#serverId')`), 'cancelled editing preserves server data');
+  const editor = '.mcp-pool-editor:not([style*="display: none"]) .ant-modal';
+  await poll(() => evaluate(`!!document.querySelector('${editor} .entity-select-lookup-error')`), 'multiple selected-value lookup failure is visible');
+  assert.equal(await evaluate(`document.querySelectorAll('${editor} .ant-select-multiple .ant-select-selection-item').length`), 2, 'lookup failure must not clear existing secret references');
+  await clickText(`${editor} .entity-select-lookup-error button`, '重试');
+  await poll(() => evaluate(`document.querySelector('${editor} .ant-select-multiple')?.textContent.includes('Item519') && document.querySelector('${editor} .ant-select-multiple')?.textContent.includes('Item518')`), 'batched exact selected-value retry resolves every reference');
+  await clickText(`${editor} .ant-modal-footer button`, '取消');
+  await poll(() => evaluate(`!document.querySelector('${editor} input#root_serverId')`), 'cancelled editing preserves server data');
   await clickReady('.nb-tabs-bar .ant-tabs-tab-active .ant-tabs-tab-remove');
   console.log('PASS: all four Runtime lists use actual schemas, database-bounded pages beyond 500, sort, intersected queries, views, failures, remote multi-selection and protected partial rows');
 }

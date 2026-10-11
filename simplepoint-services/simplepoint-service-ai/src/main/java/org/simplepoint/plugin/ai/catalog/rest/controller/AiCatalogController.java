@@ -17,11 +17,14 @@ import org.simplepoint.plugin.ai.catalog.api.model.CatalogSource;
 import org.simplepoint.plugin.ai.catalog.api.model.CatalogSyncMode;
 import org.simplepoint.plugin.ai.catalog.api.model.CatalogSyncStatus;
 import org.simplepoint.plugin.ai.catalog.api.service.AiCatalogService;
+import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
+import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,12 +43,35 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiCatalogController {
 
   private final AiCatalogService service;
+  private final AiScopeAccessPolicy scopePolicy;
 
   /**
    * Creates the controller.
    */
-  public AiCatalogController(final AiCatalogService service) {
+  public AiCatalogController(final AiCatalogService service, final AiScopeAccessPolicy scopePolicy) {
     this.service = service;
+    this.scopePolicy = scopePolicy;
+  }
+
+  /** UI capabilities use the same authorities and ownership boundary as the actual operations. */
+  @GetMapping("/workbench-permissions")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.catalog.view')")
+  public Response<?> workbenchPermissions(final Authentication authentication) {
+    boolean owned = false, platform = false;
+    try {
+      var scope = scopePolicy.currentManagementScope();
+      owned = true; platform = scope.scopeType() == AiResourceScope.SYSTEM;
+    } catch (AccessDeniedException ignored) {
+      // An unsupported request scope never grants a business operation.
+    }
+    boolean importAllowed = owned && authorized(authentication, "ai.workbench.catalog.import");
+    return Response.okay(Map.of("sync", platform && authorized(authentication, "ai.workbench.catalog.sync"),
+        "importRemote", importAllowed, "importRuntime", importAllowed));
+  }
+
+  private static boolean authorized(Authentication authentication, String authority) {
+    return authentication != null && authentication.isAuthenticated() && authentication.getAuthorities().stream()
+        .anyMatch(grant -> grant.getAuthority().equals(authority) || grant.getAuthority().equals("ROLE_Administrator"));
   }
 
   /**
@@ -91,6 +117,8 @@ public class AiCatalogController {
   public Response<?> sync() {
     try {
       return Response.okay(service.syncOfficialRegistry());
+    } catch (AccessDeniedException ex) {
+      throw ex;
     } catch (RuntimeException ex) {
       log.error("Official MCP Registry endpoint synchronization failed", ex);
       return Response.okay(new AiCatalogSyncResult(

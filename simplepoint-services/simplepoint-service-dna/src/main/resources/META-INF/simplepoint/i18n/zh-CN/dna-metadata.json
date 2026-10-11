@@ -1,4 +1,13 @@
 {
+  "dna.metadata.page.delete.cascade": "同时删除依赖对象（CASCADE）",
+  "dna.metadata.page.delete.warning": "此操作会修改物理数据库，无法在这里撤销。请确认数据源和目标对象后再继续。",
+  "dna.metadata.page.form.ordinary": "普通",
+  "dna.metadata.page.form.advanced": "高级 JSON",
+  "dna.metadata.page.validation.duplicateColumns": "字段名称不能重复。",
+  "dna.metadata.page.validation.invalidScale": "小数位数不能超过精度。",
+  "dna.metadata.page.validation.foreignKeyArity": "本地字段和引用字段的数量必须相同。",
+  "dna.metadata.page.validation.foreignKeyTable": "引用路径必须以数据表结尾。",
+  "dna.metadata.page.validation.unknownColumn": "约束引用了未定义的本地字段。",
   "dna.metadata.page.alert.browser.title": "DataGrip 风格树形浏览",
   "dna.metadata.page.alert.browser.description": "支持按 database / catalog / schema 层级懒加载展示，最末级为字段；右侧可查看表结构、约束和分页数据预览。",
   "dna.metadata.page.error.loadDataSources": "数据源列表加载失败",

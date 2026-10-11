@@ -10,6 +10,8 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
+import org.springframework.security.core.Authentication;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.dna.federation.api.constants.DnaFederationPaths;
 import org.simplepoint.plugin.dna.federation.api.service.FederationSqlConsoleService;
@@ -19,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,6 +50,24 @@ public class FederationSqlConsoleController {
   ) {
     this.service = service;
     this.objectMapper = objectMapper;
+  }
+
+  /** Independent capabilities mirror the authorities checked by the operation endpoints. */
+  @GetMapping("/workbench-permissions")
+  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('dna.federation.sql-console.view', "
+      + "'dna.federation.sql-console.execute', 'dna.federation.sql-console.explain')")
+  @Operation(summary = "查询 SQL 工作台权限")
+  public Response<?> workbenchPermissions(final Authentication authentication) {
+    return Response.okay(Map.of(
+        "canExecute", permitted(authentication, "dna.federation.sql-console.execute"),
+        "canExplain", permitted(authentication, "dna.federation.sql-console.explain")
+    ));
+  }
+
+  private boolean permitted(final Authentication authentication, final String authority) {
+    return authentication != null && authentication.isAuthenticated()
+        && authentication.getAuthorities().stream().anyMatch(granted ->
+            "ROLE_Administrator".equals(granted.getAuthority()) || authority.equals(granted.getAuthority()));
   }
 
   /**
@@ -95,7 +116,7 @@ public class FederationSqlConsoleController {
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.federation.sql-console.execute')")
   @Operation(
       summary = "智能执行 SQL",
-      description = "自动识别 SQL 类型并执行: SELECT → 联邦查询, DML → 直接下推, DDL → 直接下推, FLUSH CACHE → 清理缓存"
+      description = "自动识别 SQL 类型并执行: SELECT → Calcite 联邦查询, 标准 DML → Calcite JDBC 下推, 其他 DML/DDL → 物理库执行, FLUSH CACHE → 清理缓存"
   )
   public Response<?> execute(@RequestBody final FederationQueryModels.SqlConsoleRequest request) {
     try {

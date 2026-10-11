@@ -1,0 +1,16 @@
+{
+  "children": [],
+  "code": "common.view",
+  "component": "common/system/Resource",
+  "disabled": false,
+  "grantable": true,
+  "label": "资源管理契约测试",
+  "name": "资源管理契约测试",
+  "path": "/smoke/resource-management",
+  "publicAccess": false,
+  "requireOrgTenant": false,
+  "routeKind": "item",
+  "scopeTypes": ["PLATFORM"],
+  "sort": 0,
+  "type": "PAGE"
+}

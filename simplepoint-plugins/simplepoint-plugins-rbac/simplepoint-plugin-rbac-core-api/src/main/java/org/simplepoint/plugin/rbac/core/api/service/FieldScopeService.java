@@ -23,6 +23,9 @@ public interface FieldScopeService extends BaseService<FieldScope, String> {
   record PageFields(String title, java.util.List<org.simplepoint.core.permission.PermissionModelDescriptor> models) {}
 
   java.util.Map<String, PageFields> pageCatalog();
+  record ResourceNode(String id, String parentId, String title, String icon, String pageCode, boolean hasChildren) {}
+  org.springframework.data.domain.Page<ResourceNode> resourceNodes(String parentId, org.springframework.data.domain.Pageable pageable);
+  PageFields pageFields(String code);
 
   record Configuration(String name, String description, java.util.List<FieldScopeEntry> entries) {}
 

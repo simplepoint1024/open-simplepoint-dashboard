@@ -1,27 +1,24 @@
 import DataTable from '@simplepoint/components/DataTable';
-import EntitySelect from '@simplepoint/components/EntitySelect';
-import {useRuntimeServerNames, managedServerFilters, enabledSecretFilters} from './runtimeQueries';
+import TableActions from '@simplepoint/components/Table/Actions';
+import SForm from '@simplepoint/components/SForm/Lazy';
+import type {SFormHandle} from '@simplepoint/components/SForm';
+import {useRuntimeServerNames} from './runtimeQueries';
+import {useDeploymentSchema} from './useDeploymentSchema';
 import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
 import {post} from '@simplepoint/shared/api/methods';
+import {usePageRetention} from '@simplepoint/shared/page/hooks';
+import {useOperationScope} from './useOperationScope';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {
   Alert,
   App,
-  Button,
-  Card,
-  Col,
   Descriptions,
-  Form,
-  Input,
-  InputNumber,
   Modal,
-  Row,
-  Select,
   Space,
   Tag,
   Typography,
 } from 'antd';
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useMemo, useRef, useState} from 'react';
 import {
   runtimeErrorLabel,
   runtimeNetworkModeLabel,
@@ -72,30 +69,36 @@ const RuntimeWorkloads = ({
   canManage,
 }: RuntimeWorkloadsProps) => {
   const {t} = useI18n();
-  const {message, modal} = App.useApp();
-  const [form] = Form.useForm<WorkloadFormValues>();
-  const networkMode = Form.useWatch('networkMode', form);
+  const {message} = App.useApp();
+  const operation = useOperationScope();
+  const form = useRef<SFormHandle>(null);
+  const [formData, setFormData] = useState<Partial<WorkloadFormValues>>({});
+  const submittingRef = useRef(false);
+  const schema = useDeploymentSchema({serversUrl, secretsUrl, pool: false, networkMode: formData.networkMode});
   const list = useRemoteList<RuntimeWorkload>(workloadsUrl, active);
   const load = list.refresh;
   const loadError = list.error ? resolveErrorMessage(list.error, t('table.loadFail', '加载失败')) : undefined;
   const [submitOpen, setSubmitOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [detail, setDetail] = useState<RuntimeWorkload>();
+  const [stopping, setStopping] = useState<RuntimeWorkload>();
+  const [writeError, setWriteError] = useState('');
+  const attemptedExecution = useRef<string | undefined>(undefined);
+  const locked = operation.busy || submitOpen || !!detail || !!stopping;
+  usePageRetention(false, operation.busy || submitOpen || !!stopping);
 
 
   const serverNames = useRuntimeServerNames(serversUrl, list.page.content, active);
 
-  const submit = useCallback(async () => {
-    let values: WorkloadFormValues;
-    try {
-      values = await form.validateFields();
-    } catch {
-      return;
-    }
-    setSubmitting(true);
+  const submit = useCallback(async (values: WorkloadFormValues) => {
+    if (!canManage || !submitOpen || loadError || submittingRef.current) return;
+    const request = operation.begin(); if (!request) return;
+    attemptedExecution.current ??= values.executionId?.trim() || crypto.randomUUID();
+    if (!values.executionId?.trim()) setFormData(previous => ({...previous, executionId: attemptedExecution.current}));
+    submittingRef.current = true; setSubmitting(true); setWriteError('');
     try {
       await post(workloadsUrl, {
-        executionId: values.executionId || null,
+        executionId: attemptedExecution.current,
         serverId: values.serverId,
         imageReference: values.imageReference,
         imageDigest: values.imageDigest?.trim().toLowerCase() || null,
@@ -108,33 +111,34 @@ const RuntimeWorkloads = ({
           ? splitHosts(values.egressAllowlist)
           : [],
         secretIds: values.secretIds ?? [],
-      });
+      }, {signal: request.signal});
+      if (!operation.current(request.signal)) return;
       setSubmitOpen(false);
-      form.resetFields();
+      setFormData({});
       message.success(t('ai.runtime.success.workload.submitted', 'Runtime Workload 已提交'));
       await load();
     } catch (error) {
-      message.error(resolveErrorMessage(
+      if (!operation.current(request.signal)) return;
+      setWriteError(resolveErrorMessage(
         error,
         t('ai.runtime.error.workload.submit', 'Runtime Workload 提交失败'),
       ));
     } finally {
-      setSubmitting(false);
+      submittingRef.current = false; operation.finish(request); if (operation.current()) setSubmitting(false);
     }
-  }, [form, load, message, t, workloadsUrl]);
+  }, [canManage, load, loadError, submitOpen, message, t, workloadsUrl, operation.begin, operation.current, operation.finish]);
 
-  const stop = useCallback(async (workload: RuntimeWorkload) => {
+  const stop = async (workload: RuntimeWorkload) => {
+    if (!canManage || !workload.id || TERMINAL_STATUSES.has(workload.status) || loadError) return;
+    const request = operation.begin(); if (!request) return; setWriteError('');
     try {
-      await post(`${workloadsUrl}/${workload.id}/stop`, {});
-      message.success(t('ai.runtime.success.workload.stopped', '已请求停止 Workload'));
-      await load();
-    } catch (error) {
-      message.error(resolveErrorMessage(
-        error,
-        t('ai.runtime.error.workload.stop', 'Runtime Workload 停止失败'),
-      ));
-    }
-  }, [load, message, t, workloadsUrl]);
+      await post(workloadsUrl + '/' + encodeURIComponent(workload.id) + '/stop', {}, {signal: request.signal});
+      if (!operation.current(request.signal)) return;
+      setStopping(undefined); message.success(t('ai.runtime.success.workload.stopped', '已请求停止 Workload')); await load();
+    } catch (error) {if (operation.current(request.signal)) setWriteError(resolveErrorMessage(error,
+      t('ai.runtime.error.workload.stop', 'Runtime Workload 停止失败')));}
+    finally {operation.finish(request);}
+  };
 
   const columns = useMemo(() => [
     {
@@ -206,53 +210,24 @@ const RuntimeWorkloads = ({
       fixed: 'right' as const,
       width: 150,
       render: (_: unknown, workload: RuntimeWorkload) => (
-        <Space>
-          <Button type="link" size="small" onClick={() => setDetail(workload)}>
-            {t('ai.runtime.action.details', '详情')}
-          </Button>
-          <Button
-            type="link"
-            danger
-            size="small"
-            disabled={!canManage || TERMINAL_STATUSES.has(workload.status)}
-            onClick={() => modal.confirm({
-              title: t('ai.runtime.confirm.workload.stop', '确认停止该 Runtime Workload？'),
-              okButtonProps: {danger: true},
-              onOk: () => stop(workload),
-            })}
-          >
-            {t('ai.runtime.action.stop', '停止')}
-          </Button>
-        </Space>
+        <TableActions selectedKeys={[workload.id]} selectedRows={[workload]} buttons={[
+          {key: 'detail', sort: 1, text: t('ai.runtime.action.details', '详情'), type: 'link', size: 'small'},
+          {key: 'stop', sort: 2, text: t('ai.runtime.action.stop', '停止'), type: 'link', size: 'small', danger: true,
+            disabled: !canManage || TERMINAL_STATUSES.has(workload.status)},
+        ]} isButtonDisabled={() => locked || !operation.selected || !!loadError}
+          onButtonEvents={{detail: () => {if (!locked && operation.isSelected()) setDetail(structuredClone(workload));},
+          stop: () => {
+            if (locked || !canManage || !operation.isSelected() || !workload.id || TERMINAL_STATUSES.has(workload.status)) return;
+            setWriteError(''); setStopping(structuredClone(workload));
+          }}}/>
       ),
     },
-  ], [canManage, modal, serverNames, stop, t]);
+  ], [canManage, serverNames, t, locked, operation.selected, loadError]);
 
   return (
     <>
-      <Card className="runtime-list-workloads"
-        title={t('ai.runtime.workload.title', 'Runtime Workloads')}
-        extra={(
-          <Space>
-            {canManage && (
-              <Button type="primary" onClick={() => {
-                form.resetFields();
-                form.setFieldsValue({
-                  memoryMiB: 256,
-                  cpuCores: 0.5,
-                  pidsLimit: 128,
-                  timeoutSeconds: 3600,
-                  networkMode: 'none',
-                  secretIds: [],
-                });
-                setSubmitOpen(true);
-              }}>
-                {t('ai.runtime.action.workload.submit', '提交测试 Workload')}
-              </Button>
-            )}
-          </Space>
-        )}
-      >
+      <div className="runtime-list-workloads" style={{display: 'flex', flexDirection: 'column', minHeight: 0, gap: 12}}>
+        {writeError && !submitOpen && !stopping && <Alert type='error' showIcon title={writeError}/>}
         {loadError && (
           <Alert
             showIcon
@@ -261,8 +236,10 @@ const RuntimeWorkloads = ({
             message={t('ai.runtime.error.workloads.load', 'Runtime Workload 加载失败')}
             description={loadError}
             action={(
-              <Space><Button size="small" onClick={list.retry}>{t('table.retry', '重试')}</Button>
-                <Button size="small" onClick={list.reset}>{t('table.query.reset', '重置筛选与排序')}</Button></Space>
+              <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+                {key: 'retry', sort: 1, text: t('table.retry', '重试'), size: 'small'},
+                {key: 'reset', sort: 2, text: t('table.query.reset', '重置筛选与排序'), size: 'small'},
+              ]} onButtonEvents={{retry: list.retry, reset: list.reset}}/>
             )}
           />
         )}
@@ -278,119 +255,58 @@ const RuntimeWorkloads = ({
         />
         <DataTable<RuntimeWorkload>
           {...list.tableProps}
+          refresh={() => {if (!locked) void load();}}
+          pagination={list.tableProps.pagination && typeof list.tableProps.pagination === 'object' ? {...list.tableProps.pagination, disabled: locked} : list.tableProps.pagination}
+          toolbarExtra={<Space>
+            {canManage && (
+              <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+                {key: 'submit', sort: 1, text: t('ai.runtime.action.workload.submit', '提交测试 Workload'), type: 'primary', disabled: locked || !!loadError || !operation.selected},
+              ]} onButtonEvents={{submit: () => {
+                if (locked || !operation.isSelected() || loadError) return;
+                attemptedExecution.current = undefined; setWriteError('');
+                setFormData({
+                  executionId: crypto.randomUUID(),
+                  memoryMiB: 256,
+                  cpuCores: 0.5,
+                  pidsLimit: 128,
+                  timeoutSeconds: 3600,
+                  networkMode: 'none',
+                  secretIds: [],
+                });
+                setSubmitOpen(true);
+              }}}/>
+            )}
+          </Space>}
           query={list.tableProps.query}
           columns={list.columns(columns)}
           scroll={{x: 1800}}
         />
-      </Card>
+      </div>
       <Modal
-        open={submitOpen}
+        wrapClassName='runtime-workload-submit'
+        open={submitOpen && operation.selected}
         title={t('ai.runtime.workload.submit', '提交 Runtime Workload')}
         width={860}
         okText={t('ai.runtime.action.submit', '提交')}
         confirmLoading={submitting}
-        destroyOnHidden
+        closable={!submitting} maskClosable={!submitting} keyboard={!submitting}
+        destroyOnHidden={!submitOpen}
         onCancel={() => {
-          form.resetFields();
+          if (submittingRef.current) return;
+          setFormData({});
           setSubmitOpen(false);
         }}
-        onOk={() => void submit()}
+        onOk={() => form.current?.submit()}
       >
-        <Form form={form} layout="vertical">
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="executionId"
-                label={t('ai.runtime.field.executionId', 'Execution ID')}
-                extra={t('ai.runtime.executionId.help', '留空时由平台生成。')}
-              >
-                <Input maxLength={64}/>
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="serverId"
-                label={t('ai.runtime.field.server', 'MCP Server')}
-                rules={[{required: true}]}
-              >
-                <EntitySelect endpoint={serversUrl} filters={managedServerFilters}/>
-              </Form.Item>
-            </Col>
-            <Col span={24}>
-              <Form.Item
-                name="imageReference"
-                label={t('ai.runtime.field.imageReference', 'OCI 镜像')}
-                rules={[{required: true, max: 440}]}
-              >
-                <Input placeholder="docker.io/example/mcp-server:1.0.0"/>
-              </Form.Item>
-            </Col>
-            <Col span={24}>
-              <Form.Item
-                name="imageDigest"
-                label={t('ai.runtime.field.imageDigest', '镜像 Digest')}
-                rules={[{pattern: /^sha256:[a-fA-F0-9]{64}$/}]}
-                extra={t(
-                  'ai.runtime.imageDigest.help',
-                  '可选；留空时服务端会拉取镜像 Tag，并自动保存解析出的 Digest。',
-                )}
-              >
-                <Input placeholder={t(
-                  'ai.runtime.imageDigest.placeholder',
-                  '可选，留空自动解析',
-                )}/>
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={6}>
-              <Form.Item name="memoryMiB" label={t('ai.runtime.field.memory', '内存（MiB）')}>
-                <InputNumber min={32} max={16384} style={{width: '100%'}}/>
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={6}>
-              <Form.Item name="cpuCores" label={t('ai.runtime.field.cpu', 'CPU（核）')}>
-                <InputNumber min={0.01} max={16} step={0.1} style={{width: '100%'}}/>
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={6}>
-              <Form.Item name="pidsLimit" label={t('ai.runtime.field.pids', 'PID 上限')}>
-                <InputNumber min={1} max={4096} style={{width: '100%'}}/>
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={6}>
-              <Form.Item name="timeoutSeconds" label={t('ai.runtime.field.timeout', '超时（秒）')}>
-                <InputNumber min={1} max={86400} style={{width: '100%'}}/>
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item name="networkMode" label={t('ai.runtime.field.networkMode', '网络模式')}>
-                <Select options={[
-                  {value: 'none', label: t('ai.runtime.network.none', '禁止网络')},
-                  {value: 'bridge', label: t('ai.runtime.network.bridge', 'Bridge 网络')},
-                  {value: 'egress', label: t('ai.runtime.network.egress', '受控出口')},
-                ]}/>
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item name="secretIds" label={t('ai.runtime.field.secrets', 'Runtime Secrets')}>
-                <EntitySelect endpoint={secretsUrl} filters={enabledSecretFilters} multiple maxCount={16}/>
-              </Form.Item>
-            </Col>
-            {networkMode === 'egress' && (
-              <Col span={24}>
-                <Form.Item
-                  name="egressAllowlist"
-                  label={t('ai.runtime.field.egressAllowlist', '出口域名白名单')}
-                  rules={[{required: true}]}
-                >
-                  <Input.TextArea autoSize={{minRows: 3, maxRows: 8}}/>
-                </Form.Item>
-              </Col>
-            )}
-          </Row>
-        </Form>
+        {writeError && <Alert type='error' showIcon title={writeError}/>}
+<SForm ref={form} hideSubmit schema={schema} formData={formData} disabled={submitting}
+          uiSchema={{executionId: {'ui:readonly': !!attemptedExecution.current}}}
+          onChange={({formData}) => {if (!submittingRef.current) setFormData(formData ?? {});}}
+          onSubmit={({formData}) => void submit(formData as WorkloadFormValues)}/>
       </Modal>
       <Modal
-        open={Boolean(detail)}
+        open={Boolean(detail) && operation.selected}
+        destroyOnHidden={!detail}
         title={t('ai.runtime.workload.details', 'Workload 详情')}
         width={900}
         footer={null}
@@ -434,6 +350,17 @@ const RuntimeWorkloads = ({
             </Descriptions.Item>
           </Descriptions>
         )}
+      </Modal>
+      <Modal wrapClassName="runtime-workload-stop" open={!!stopping && operation.selected} destroyOnHidden={!stopping}
+        title={t('ai.runtime.confirm.workload.stop', '确认停止该 Runtime Workload？')}
+        closable={!operation.busy} maskClosable={!operation.busy} keyboard={!operation.busy}
+        onCancel={() => {if (!operation.busy) setStopping(undefined);}}
+        footer={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+          {key: 'cancel', sort: 1, text: t('ai.mcp.action.cancel', '取消'), disabled: operation.busy},
+          {key: 'confirm', sort: 2, text: t('ai.runtime.action.confirm', '确认'), type: 'primary', danger: true, loading: operation.busy, disabled: operation.busy},
+        ]} onButtonEvents={{cancel: () => {if (!operation.busy) setStopping(undefined);}, confirm: () => {if (stopping) void stop(stopping);}}}/>}>
+        <Text code>{stopping?.executionId || stopping?.id || '—'}</Text>
+        {writeError && <Alert type="error" showIcon title={writeError}/>}
       </Modal>
     </>
   );

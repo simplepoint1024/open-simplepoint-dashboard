@@ -6,6 +6,7 @@ import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
+import org.simplepoint.security.entity.ResourceType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,6 +38,15 @@ public class TenantResourceController {
       @RequestParam(required = false) String parentId,
       @RequestParam(defaultValue = "false") boolean rootsOnly, Pageable pageable) {
     return Response.okay(catalog.list(keyword, parentId, rootsOnly, pageable));
+  }
+
+  @GetMapping("/picker")
+  @Operation(summary = "分页搜索租户资源表单候选项")
+  public Response<Page<TenantResource>> picker(@RequestParam TenantResourceCatalog.PickerKind kind,
+      @RequestParam(required = false) ResourceType childType, @RequestParam(required = false) String excludedId,
+      @RequestParam(required = false) String keyword, @RequestParam(required = false) String selectedId,
+      Pageable pageable) {
+    return Response.okay(catalog.picker(kind, childType, excludedId, keyword, selectedId, pageable));
   }
 
   @PutMapping("/mode")

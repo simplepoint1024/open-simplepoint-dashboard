@@ -253,6 +253,7 @@ public class AiMcpPublicationServiceImpl
   }
 
   private void assertCanManage(final AiMcpPublication publication) {
+    assertAccessible(publication);
     scopeAccessPolicy.assertCanManageOwnedResource(
         publication.getScopeType(),
         publication.getTenantId()

@@ -8,6 +8,7 @@ import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
 import org.simplepoint.plugin.ai.core.api.model.AiModelType;
+import org.simplepoint.plugin.ai.core.api.model.AiEmbeddingModelOption;
 import org.simplepoint.plugin.ai.core.api.service.AiModelDefinitionService;
 import org.simplepoint.plugin.ai.knowledge.api.constants.AiKnowledgePaths;
 import org.simplepoint.plugin.ai.knowledge.api.entity.AiKnowledgeBase;
@@ -80,6 +81,23 @@ public class AiKnowledgeBaseController
     return ok(modelService.listAvailableModels().stream()
         .filter(model -> model.getModelType() == AiModelType.EMBEDDING)
         .toList());
+  }
+
+  /** Selector pages and selected-ID hydration share the same server-owned scope. */
+  @GetMapping("/embedding-model-options")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.view')")
+  @Operation(summary = "分页查询知识库可用的 Embedding 模型选项")
+  public Response<Page<AiEmbeddingModelOption>> embeddingModelOptions(
+      @RequestParam final Map<String, String> attributes, final Pageable pageable) {
+    return Response.limit(modelService.embeddingModelOptions(attributes, pageable), AiEmbeddingModelOption.class);
+  }
+
+  /** Advertises the configured upload bound, not a second hard-coded UI limit. */
+  @GetMapping("/document-limits")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.knowledge-bases.documents')")
+  @Operation(summary = "查询知识库文档上传限制")
+  public Response<?> documentLimits() {
+    return ok(documentService.ingestionLimits());
   }
 
   /**

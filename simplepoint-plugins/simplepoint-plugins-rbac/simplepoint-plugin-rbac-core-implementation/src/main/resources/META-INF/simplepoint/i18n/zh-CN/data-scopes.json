@@ -16,7 +16,7 @@
   "data-scopes.title.type.SELF": "仅本人",
   "data-scopes.description.type.SELF": "只能访问当前用户本人创建或归属的数据",
   "data-scopes.title.customDeptIds": "自定义部门",
-  "data-scopes.description.customDeptIds": "明确授权的部门 ID 集合；仅在范围类型为「自定义部门」时生效",
+  "data-scopes.description.customDeptIds": "选择允许访问的组织；仅在自定义组织范围下生效",
   "data-scopes.preview.title": "当前生效权限",
   "data-scopes.preview.boundary": "展示当前工作空间已保存的页面数据与字段规则，及兼容的角色默认范围。未配置页面规则时沿用接口默认权限，ALL 仍受租户隔离约束。",
   "data-scopes.preview.failed": "权限预览加载失败",
@@ -26,7 +26,7 @@
   "data-scopes.preview.allRoles": "全部有效角色合并",
   "data-scopes.preview.version": "权限版本",
   "data-scopes.preview.scope": "行范围",
-  "data-scopes.preview.depts": "组织 ID",
+  "data-scopes.preview.depts": "组织",
   "data-scopes.preview.self": "额外包含本人数据",
   "data-scopes.preview.field": "资源字段",
   "data-scopes.preview.access": "访问级别",
@@ -41,5 +41,8 @@
   "data-scopes.expression.visual": "可视化",
   "data-scopes.expression.literal": "固定值",
   "data-scopes.expression.apply": "应用可视化配置",
-  "data-scopes.expression.validate": "校验并格式化"
+  "data-scopes.expression.validate": "校验并格式化",
+  "data-scopes.expression.unapplied": "请先应用可视化配置，或继续编辑当前规则",
+  "data-scopes.preview.interrupted": "读取已中断，请刷新后查看当前权限",
+  "data-scopes.preview.close": "关闭"
 }

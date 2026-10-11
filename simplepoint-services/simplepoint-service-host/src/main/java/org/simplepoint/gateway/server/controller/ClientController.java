@@ -40,6 +40,7 @@ public class ClientController {
 
   private final ReactiveClientRegistrationRepository clientRegistrations;
 
+  /** Creates the browser client endpoint adapter. */
   public ClientController(ReactiveClientRegistrationRepository clientRegistrations) {
     this.clientRegistrations = clientRegistrations;
   }

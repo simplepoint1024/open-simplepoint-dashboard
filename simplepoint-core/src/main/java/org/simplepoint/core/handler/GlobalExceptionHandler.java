@@ -19,6 +19,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+  @ExceptionHandler(org.simplepoint.core.base.InvalidDecimalValueException.class)
+  public ResponseEntity<Map<String, String>> invalidDecimalValue(
+      org.simplepoint.core.base.InvalidDecimalValueException error) {
+    return ResponseEntity.badRequest()
+        .body(Map.of("code", "INVALID_DECIMAL_VALUE", "message", error.getMessage()));
+  }
+
   @ExceptionHandler(org.simplepoint.core.permission.InvalidPermissionPolicyException.class)
   public ResponseEntity<Map<String, String>> invalidPermissionPolicy(
       org.simplepoint.core.permission.InvalidPermissionPolicyException error) {

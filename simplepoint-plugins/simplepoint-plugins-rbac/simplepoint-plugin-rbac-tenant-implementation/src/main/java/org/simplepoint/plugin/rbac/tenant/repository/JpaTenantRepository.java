@@ -81,6 +81,27 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
 
   @Override
   @Query("""
+      select u.id from User u
+      where u.id in :userIds and u.deletedAt is null and coalesce(u.enabled, true) = true
+        and exists (select t.id from Tenant t where t.id = :tenantId and t.deletedAt is null
+          and (t.ownerId = u.id or exists (select m.id from TenantUserRelevance m
+            where m.tenantId = t.id and m.userId = u.id and m.deletedAt is null
+              and coalesce(m.enabled, true) = true)))
+      """)
+  Collection<String> resolveActiveUserIds(@Param("tenantId") String tenantId,
+                                        @Param("userIds") Collection<String> userIds);
+
+  @Override
+  @Query("""
+      select distinct r.authority from Role r
+      where r.tenantId = :tenantId and r.authority in :authorities and r.deletedAt is null
+        and exists (select t.id from Tenant t where t.id = :tenantId and t.deletedAt is null)
+      """)
+  Collection<String> resolveActiveRoleAuthorities(@Param("tenantId") String tenantId,
+                                                @Param("authorities") Collection<String> authorities);
+
+  @Override
+  @Query("""
       select case when count(t) > 0 then true else false end
       from Tenant t
       where lower(t.name) = lower(:name)

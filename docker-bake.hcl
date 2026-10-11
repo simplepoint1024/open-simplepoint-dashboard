@@ -38,6 +38,14 @@ variable "SIMPLEPOINT_AI_IMAGE" {
   default = "somesimpled/open-simplepoint-ai:local"
 }
 
+variable "SIMPLEPOINT_APP_IMAGE" {
+  default = "somesimpled/open-simplepoint-app:local"
+}
+
+variable "SIMPLEPOINT_WORKFLOW_IMAGE" {
+  default = "somesimpled/open-simplepoint-workflow:local"
+}
+
 variable "SIMPLEPOINT_MCP_GATEWAY_IMAGE" {
   default = "somesimpled/open-simplepoint-mcp-gateway:local"
 }
@@ -71,6 +79,8 @@ group "default" {
     "auditing",
     "dna",
     "ai",
+    "app",
+    "workflow",
     "mcp-gateway",
     "runtime-pki",
     "tool-egress-proxy",
@@ -133,6 +143,18 @@ target "ai" {
   inherits   = ["_java"]
   dockerfile = "simplepoint-services/simplepoint-service-ai/Dockerfile"
   tags       = [SIMPLEPOINT_AI_IMAGE]
+}
+
+target "app" {
+  inherits   = ["_java"]
+  dockerfile = "simplepoint-services/simplepoint-service-app/Dockerfile"
+  tags       = [SIMPLEPOINT_APP_IMAGE]
+}
+
+target "workflow" {
+  inherits   = ["_java"]
+  dockerfile = "simplepoint-services/simplepoint-service-workflow/Dockerfile"
+  tags       = [SIMPLEPOINT_WORKFLOW_IMAGE]
 }
 
 target "mcp-gateway" {

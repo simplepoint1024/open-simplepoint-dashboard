@@ -2,9 +2,11 @@ package org.simplepoint.plugin.ai.core.api.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.plugin.ai.core.api.entity.AiProviderDefinition;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
+import org.simplepoint.plugin.ai.core.api.vo.AiProviderOption;
 
 /**
  * Repository contract for AI provider configurations.
@@ -18,6 +20,9 @@ public interface AiProviderDefinitionRepository extends BaseRepository<AiProvide
    * @return provider
    */
   Optional<AiProviderDefinition> findActiveById(String id);
+
+  /** Bounded, credential-free selected-value projection with ownership/soft-delete enforced in SQL. */
+  List<AiProviderOption> findSelectedOptions(Set<String> ids, AiResourceScope scopeType, String tenantId);
 
   /**
    * Finds an active provider code inside one ownership scope.

@@ -15,8 +15,13 @@ public final class PermissionExpressionEvaluator {
     if (Set.of("and", "or", "not").contains(node.op())) {
       var values = node.children().stream().map(child -> evaluate(child, fields)).toList();
       if (node.op().equals("not")) return values.getFirst() == null ? null : !values.getFirst();
-      if (node.op().equals("and")) return values.contains(false) ? false : values.contains(null) ? null : true;
-      return values.contains(true) ? true : values.contains(null) ? null : false;
+      // Explicit boxed branches preserve SQL UNKNOWN without ternary boolean unboxing.
+      if (node.op().equals("and")) {
+        if (values.contains(Boolean.FALSE)) return Boolean.FALSE;
+        return values.contains(null) ? null : Boolean.TRUE;
+      }
+      if (values.contains(Boolean.TRUE)) return Boolean.TRUE;
+      return values.contains(null) ? null : Boolean.FALSE;
     }
     Object actual = fields.apply(node.field());
     if (node.op().equals("is:null")) return actual == null;

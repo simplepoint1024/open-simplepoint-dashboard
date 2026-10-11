@@ -110,6 +110,26 @@ class FederationDmlStatementProcessor {
   record DmlTarget(JdbcDataSourceDefinition dataSource) {
   }
 
+  /** The standard DML operations verified against Calcite's JDBC adapter. */
+  static boolean canExecuteWithCalcite(final String sql) {
+    try {
+      SqlNodeList statements = SqlParser.create(sql).parseStmtList();
+      if (statements.size() != 1) {
+        throw new IllegalArgumentException("只允许执行单条 SQL");
+      }
+      SqlNode statement = statements.get(0);
+      // Keep vendor UPSERT semantics on the physical driver until adapter behavior is verified per dialect.
+      if (statement instanceof SqlInsert insert && insert.isUpsert()) {
+        return false;
+      }
+      SqlKind kind = statement.getKind();
+      // Calcite 1.40's JDBC MERGE SQL is not accepted by every target dialect (verified with H2).
+      return kind == SqlKind.INSERT || kind == SqlKind.UPDATE || kind == SqlKind.DELETE;
+    } catch (SqlParseException ex) {
+      return false;
+    }
+  }
+
   /**
    * Rewrites DML SQL by stripping the federation datasource code prefix from table identifiers.
    * Uses position-based string replacement via Calcite SqlIdentifier positions.

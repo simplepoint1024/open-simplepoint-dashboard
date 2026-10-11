@@ -1,5 +1,6 @@
 import api from "@/api";
 import {post} from "@simplepoint/shared/api/methods";
+import type {RequestOptions} from '@simplepoint/shared/api/client';
 
 const {baseUrl} = api['rbac-users'];
 
@@ -17,14 +18,14 @@ export interface UserRoleRelevantDto {
  * 取消分配角色
  * @param data 请求数据
  */
-export async function fetchUnauthorized(data: UserRoleRelevantDto) {
-    return await post<UserRoleRelevantDto>(`${baseUrl}/unauthorized`, data);
+export async function fetchUnauthorized(data: UserRoleRelevantDto, options?: RequestOptions) {
+    return await post<UserRoleRelevantDto>(`${baseUrl}/unauthorized`, data, options);
 }
 
 /**
  * 分配角色
  * @param data
  */
-export async function fetchAuthorize(data: UserRoleRelevantDto) {
-    return await post<UserRoleRelevantDto>(`${baseUrl}/authorize`, data);
+export async function fetchAuthorize(data: UserRoleRelevantDto, options?: RequestOptions) {
+    return await post<UserRoleRelevantDto>(`${baseUrl}/authorize`, data, options);
 }

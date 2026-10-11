@@ -27,6 +27,7 @@ public class AnthropicProviderAdapter implements AiProviderAdapter {
   private static final String DEFAULT_API_VERSION = "2023-06-01";
 
   private final ObjectMapper objectMapper;
+  private final com.fasterxml.jackson.databind.ObjectReader catalogReader;
 
   private final ProviderHttpSupport http;
 
@@ -49,6 +50,7 @@ public class AnthropicProviderAdapter implements AiProviderAdapter {
       final AiProperties properties
   ) {
     this.objectMapper = objectMapper;
+    this.catalogReader = objectMapper.reader().with(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
     this.typeDetector = typeDetector;
     this.pricingParser = pricingParser;
     this.http = new ProviderHttpSupport(properties);
@@ -98,7 +100,7 @@ public class AnthropicProviderAdapter implements AiProviderAdapter {
           .build();
       String responseBody = http.send(request, connection.allowPrivateNetwork());
       try {
-        JsonNode root = objectMapper.readTree(responseBody);
+        JsonNode root = catalogReader.readTree(responseBody);
         JsonNode data = root.path("data");
         if (!data.isArray()) {
           throw new IllegalStateException("Anthropic 模型列表响应缺少 data 数组");

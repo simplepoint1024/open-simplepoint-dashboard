@@ -1,12 +1,22 @@
 import {resolveResourceLabel} from '@simplepoint/shared/i18n/resourceLabel';
-import {useCallback, useEffect, useRef, useState} from 'react';
-import type {Dispatch, Key, SetStateAction} from 'react';
-import {Alert, App as AntdApp, Button, Empty, Input, Pagination, Space, Spin, Tag, Tree, Typography} from 'antd';
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import type {Key} from 'react';
+import {Alert, Empty, Input, Pagination, Space, Spin, Tag, Tree, Typography} from 'antd';
+import TableActions from '@simplepoint/components/Table/Actions';
 import {DeleteOutlined, ReloadOutlined, SearchOutlined} from '@simplepoint/shared/types/icon';
 import type {DataNode} from 'antd/es/tree';
 import {createIcon} from '@simplepoint/shared/types/icon';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {fetchAssignedTree, fetchChildren, fetchSubtreeCodes, ResourceRelevantVo} from '@/api/system/resource';
+import type {RequestOptions} from '@simplepoint/shared/api/client';
+import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
+import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import {usePageRetention} from '@simplepoint/shared/page/hooks';
+import {reachableServerPage} from '@simplepoint/components/SimpleTable/pagination';
+import {assignmentKey} from '@simplepoint/components/AssignmentTable/identity';
+import {useOwnedReads} from '@simplepoint/shared/hooks/useOwnedReads';
+import {assignmentDelta, loadedBranchKeys, retainRootChildren} from './resourceTreeState';
 
 type Translate = (key: string, fallback?: string, params?: Record<string, unknown>) => string;
 
@@ -23,9 +33,10 @@ type ResourceTreeNode = DataNode & {
 export interface ResourceTreeTransferProps {
   enabled?: boolean;
   reloadKey?: string;
-  fetchAssignedCodes: () => Promise<string[]>;
-  onAssign: (codes: string[]) => Promise<unknown>;
-  onUnassign: (codes: string[]) => Promise<unknown>;
+  fetchAssignedCodes: (options: RequestOptions) => Promise<string[]>;
+  onAssign: (codes: string[], options: RequestOptions) => Promise<unknown>;
+  onUnassign: (codes: string[], options: RequestOptions) => Promise<unknown>;
+  onInteractionLockChange?: (locked: boolean) => void;
 }
 
 const TREE_PAGE_SIZE = 20;
@@ -41,13 +52,15 @@ const TYPE_COLOR: Record<string, string> = {
   API: 'purple',
 };
 
+let presentationSequence = 0;
 function resourceKey(resource: ResourceRelevantVo) {
-  return resource.code || resource.id;
+  const code = assignmentKey(resource.code), id = assignmentKey(resource.id);
+  return code !== undefined ? `resource:${code}` : id !== undefined ? `id:${id}` : `presentation:${++presentationSequence}`;
 }
 
 function assignableCode(resource?: ResourceRelevantVo) {
-  if (!resource?.code || resource.grantable === false || resource.disabled === true) return null;
-  return resource.code;
+  if (!assignmentKey(resource?.code) || resource?.grantable !== true || resource?.disabled !== false) return null;
+  return resource!.code;
 }
 
 function resourceDisplayName(resource?: Partial<ResourceRelevantVo>, t?: Translate) {
@@ -71,32 +84,16 @@ function resourceTypeLabel(resource: Partial<ResourceRelevantVo>, t: Translate) 
   return resource.type ? t(`resources.type.${resource.type}`, resource.type) : '-';
 }
 
-function rememberResources(
-  items: ResourceRelevantVo[],
-  setResourceByCode: Dispatch<SetStateAction<Map<string, ResourceRelevantVo>>>,
-) {
-  if (!items.length) return;
-  setResourceByCode((previous) => {
-    const next = new Map(previous);
-    items.forEach((item) => {
-      if (item.code) {
-        next.set(item.code, item);
-      }
-    });
-    return next;
-  });
-}
-
 function toTreeNode(resource: ResourceRelevantVo, t: Translate): ResourceTreeNode {
   const key = resourceKey(resource);
   const icon = renderResourceIcon(resource);
   return {
     key,
     isLeaf: !resource.hasChildren,
-    disableCheckbox: resource.disabled === true || ((!resource.code || resource.grantable === false) && !resource.hasChildren),
+    disableCheckbox: resource.disabled !== false || !assignmentKey(resource.id) || ((!assignmentKey(resource.code) || resource.grantable !== true) && !resource.hasChildren),
     resource,
     title: (
-      <Space size={8} wrap>
+      <Space size={8} wrap data-resource-id={assignmentKey(resource.id)}>
         {icon}
         <Typography.Text>{resourceDisplayName(resource, t)}</Typography.Text>
         <Tag color={TYPE_COLOR[resource.type] ?? 'default'}>
@@ -115,6 +112,7 @@ function toAssignedTreeNode(
   resource: ResourceRelevantVo,
   t: Translate,
   onRemove: (node: ResourceTreeNode) => void,
+  disabled = false,
 ): ResourceTreeNode {
   const key = resourceKey(resource);
   const code = assignableCode(resource);
@@ -126,7 +124,7 @@ function toAssignedTreeNode(
     disableCheckbox: true,
     resource,
     title: (
-      <Space size={8} wrap>
+      <Space size={8} wrap data-resource-id={assignmentKey(resource.id)}>
         {icon}
         <Typography.Text>{resourceDisplayName(resource, t)}</Typography.Text>
         <Tag color={TYPE_COLOR[resource.type] ?? 'default'}>
@@ -134,18 +132,13 @@ function toAssignedTreeNode(
         </Tag>
         {resource.code ? <Typography.Text type="secondary" code>{resource.code}</Typography.Text> : null}
         {assigned ? (
-          <Button
-            size="small"
-            danger
-            type="text"
-            icon={<DeleteOutlined />}
-            title={t('common.delete', '删除')}
-            aria-label={t('common.delete', '删除')}
-            onClick={(event) => {
+          <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{
+            key: 'remove', sort: 0, size: 'small', danger: true, disabled, type: 'text', icon: <DeleteOutlined/>, iconOnly: true,
+            text: t('common.delete', '删除'), onClick: event => {
               event.stopPropagation();
               onRemove(node);
-            }}
-          />
+            },
+          }]}/>
         ) : (
           <Tag color="default">{t('applications.resourceConfig.treeAncestor', '父级')}</Tag>
         )}
@@ -165,14 +158,14 @@ function toChildTreeNodes(
   const nodes = content.map((item) => nodeFactory(item, t));
   const currentPage = page.page?.number ?? 0;
   const totalPages = page.page?.totalPages ?? 0;
-  if (parent.resource?.id && currentPage + 1 < totalPages) {
+  if (assignmentKey(parent.resource?.id) && currentPage + 1 < totalPages) {
     nodes.push({
       key: `${LOAD_MORE_PREFIX}:${parent.key}:${currentPage + 1}`,
       isLeaf: true,
       selectable: true,
       disableCheckbox: true,
       loadMore: {
-        parentId: parent.resource.id,
+        parentId: parent.resource!.id,
         parentKey: parent.key,
         page: currentPage + 1,
       },
@@ -208,7 +201,7 @@ function appendNodeChildren(nodes: ResourceTreeNode[], key: Key, children: Resou
 }
 
 function uniqueCodes(codes: string[]) {
-  return Array.from(new Set(codes.filter(Boolean)));
+  return Array.from(new Set(codes.filter(code => assignmentKey(code) !== undefined)));
 }
 
 function collectLoadedSubtreeCodes(node: ResourceTreeNode) {
@@ -260,324 +253,216 @@ function findCodesByKeys(nodes: ResourceTreeNode[], keys: Key[]) {
   return Array.from(codes);
 }
 
-const ResourceTreeTransfer = ({
-  enabled = true,
-  reloadKey,
-  fetchAssignedCodes,
-  onAssign,
-  onUnassign,
-}: ResourceTreeTransferProps) => {
-  const {message} = AntdApp.useApp();
+type WriteIntent = {node: ResourceTreeNode; checked: boolean; relatedCodes: string[]; resolvedCodes?: string[]};
+
+function ResourceTransferSession({enabled = true, reloadKey, fetchAssignedCodes, onAssign, onUnassign,
+  onInteractionLockChange}: ResourceTreeTransferProps) {
   const {t, ensure, locale} = useI18n();
+  const operation = useOperationScope(reloadKey);
+  const reads = useOwnedReads(operation, enabled);
   const [treeData, setTreeData] = useState<ResourceTreeNode[]>([]);
   const [assignedTreeData, setAssignedTreeData] = useState<ResourceTreeNode[]>([]);
-  const treeDataRef = useRef<ResourceTreeNode[]>([]);
-  const assignedTreeDataRef = useRef<ResourceTreeNode[]>([]);
+  const treeDataRef = useRef(treeData), assignedTreeDataRef = useRef(assignedTreeData);
+  treeDataRef.current = treeData; assignedTreeDataRef.current = assignedTreeData;
   const [expandedKeys, setExpandedKeys] = useState<Key[]>([]);
   const [loadedKeys, setLoadedKeys] = useState<Key[]>([]);
   const [assignedExpandedKeys, setAssignedExpandedKeys] = useState<Key[]>([]);
   const [assignedLoadedKeys, setAssignedLoadedKeys] = useState<Key[]>([]);
-  const [, setResourceByCode] = useState<Map<string, ResourceRelevantVo>>(new Map());
   const [assignedCodes, setAssignedCodes] = useState<string[]>([]);
-  const [rootPage, setRootPage] = useState(1);
-  const [rootTotal, setRootTotal] = useState(0);
-  const [assignedRootPage, setAssignedRootPage] = useState(1);
-  const [assignedRootTotal, setAssignedRootTotal] = useState(0);
-  const [keywordInput, setKeywordInput] = useState('');
-  const [keyword, setKeyword] = useState('');
-  const [treeLoading, setTreeLoading] = useState(false);
-  const [assignedLoading, setAssignedLoading] = useState(false);
-  const [assignedTreeLoading, setAssignedTreeLoading] = useState(false);
-  const [treeSaving, setTreeSaving] = useState(false);
-  const [loadError, setLoadError] = useState(false);
+  const assignedCodesRef = useRef(assignedCodes); assignedCodesRef.current = assignedCodes;
+  const [rootPage, setRootPage] = useState(1), [rootTotal, setRootTotal] = useState(0);
+  const [assignedRootPage, setAssignedRootPage] = useState(1), [assignedRootTotal, setAssignedRootTotal] = useState(0);
+  const [keywordInput, setKeywordInput] = useState(''), [keyword, setKeyword] = useState('');
+  const [revision, setRevision] = useState(0);
+  const [treeRevision, setTreeRevision] = useState(0);
+  const treeContext = useRef(''), assignedContext = useRef('');
+  const [writeError, setWriteError] = useState<string>(), [retryWrite, setRetryWrite] = useState<WriteIntent>();
+  const inactive = !operation.selected;
+  const treeSaving = operation.busy;
+  const treeLoading = reads.loading.some(key => key.startsWith('tree'));
+  const assignedLoading = reads.loading.includes('codes');
+  const assignedTreeLoading = reads.loading.some(key => key.startsWith('assigned-tree'));
+  const loadError = Object.keys(reads.errors).length > 0;
+  const loadErrorRef = useRef(loadError); loadErrorRef.current = loadError;
+  usePageRetention(!treeSaving, treeSaving);
+  useEffect(() => {void ensure(['resources', 'table', 'common', 'applications']);}, [ensure, locale]);
+  useLayoutEffect(() => {
+    onInteractionLockChange?.(treeSaving);
+    return () => onInteractionLockChange?.(false);
+  }, [treeSaving, onInteractionLockChange]);
 
-  useEffect(() => {
-    void ensure(['resources', 'table', 'common', 'applications']);
-  }, [ensure, locale]);
-
-  useEffect(() => {
-    treeDataRef.current = treeData;
-  }, [treeData]);
-
-  useEffect(() => {
-    assignedTreeDataRef.current = assignedTreeData;
-  }, [assignedTreeData]);
-
-  const loadAssignedCodes = useCallback(async () => {
-    if (!enabled) {
-      setAssignedCodes([]);
-      setAssignedTreeData([]);
-      setAssignedRootTotal(0);
-      setAssignedExpandedKeys([]);
-      setAssignedLoadedKeys([]);
-      return;
-    }
-    setAssignedLoading(true);
-    try {
-      const codes = await fetchAssignedCodes();
-      setAssignedCodes(Array.from(new Set((codes ?? []).filter(Boolean))));
-      setAssignedRootPage(1);
-      setAssignedTreeData([]);
-      setAssignedRootTotal(0);
-      setAssignedExpandedKeys([]);
-      setAssignedLoadedKeys([]);
-      setLoadError(false);
-    } catch {
-      setLoadError(true);
-      message.error(t('applications.resourceConfig.loadFailed', '应用资源加载失败'));
-    } finally {
-      setAssignedLoading(false);
-    }
-  }, [enabled, fetchAssignedCodes, message, t]);
-
-  const loadRoot = useCallback(async () => {
-    if (!enabled) {
-      setTreeData([]);
-      setRootTotal(0);
-      setExpandedKeys([]);
-      setLoadedKeys([]);
-      return;
-    }
-    setTreeLoading(true);
-    try {
-      const page = await fetchChildren({
-        page: String(rootPage - 1),
-        size: String(TREE_PAGE_SIZE),
-        sort: 'sort,asc',
-        keyword,
-      });
-      rememberResources(page.content ?? [], setResourceByCode);
-      setTreeData((page.content ?? []).map((item) => toTreeNode(item, t)));
+  const loadAssignedCodes = useCallback(() => reads.run('codes',
+    signal => fetchAssignedCodes({signal, notifyOnError: false}),
+    codes => {
+      if (!Array.isArray(codes) || codes.some(code => assignmentKey(code) === undefined)) {
+        throw new Error(t('permissions.unavailable', '资源标识暂不可用'));
+      }
+      const unique = uniqueCodes(codes), incoming = new Set(unique);
+      setAssignedCodes(previous => previous.length === unique.length && previous.every(code => incoming.has(code)) ? previous : unique);
+    }), [reads.run, fetchAssignedCodes, t]);
+  const loadRoot = useCallback(() => {
+    if (!enabled || !reads.active || !operation.current() || !operation.isSelected()) return Promise.resolve();
+    const context = JSON.stringify([rootPage, keyword, revision, treeRevision, locale]);
+    reads.cancel('tree');
+    if (treeContext.current !== context) reads.clearErrors('tree');
+    return reads.run('tree:root', signal => fetchChildren({
+      page: String(rootPage - 1), size: String(TREE_PAGE_SIZE), sort: 'sort,asc', keyword,
+    }, {signal, notifyOnError: false}), page => {
+      const reachable = reachableServerPage(rootPage, page.page);
+      if (page.page.number === rootPage - 1 && reachable !== rootPage) {setRootPage(reachable); return;}
+      const nodes = (page.content ?? []).map(item => toTreeNode(item, t));
+      const retained = treeContext.current === context;
+      setTreeData(previous => retainRootChildren(previous, nodes, retained));
+      treeContext.current = context;
       setRootTotal(page.page.totalElements ?? 0);
-      setExpandedKeys([]);
-      setLoadedKeys([]);
-      setLoadError(false);
-    } catch {
-      setLoadError(true);
-      message.error(t('applications.resourceConfig.loadFailed', '应用资源加载失败'));
-    } finally {
-      setTreeLoading(false);
-    }
-  }, [enabled, keyword, message, rootPage, t]);
+      if (!retained) {setExpandedKeys([]); setLoadedKeys([]);}
+      else {
+        const loaded = loadedBranchKeys(treeDataRef.current);
+        setLoadedKeys(previous => previous.filter(key => loaded.has(key)));
+      }
+    });
+  }, [enabled, reads.active, operation.current, operation.isSelected, reads.cancel, reads.clearErrors, reads.run, rootPage, keyword, revision, treeRevision, locale, t]);
+  useEffect(() => {void loadAssignedCodes();}, [loadAssignedCodes, revision, operation.selected]);
+  useEffect(() => {void loadRoot();}, [loadRoot, revision, operation.selected]);
 
-  useEffect(() => {
-    void loadAssignedCodes();
-  }, [loadAssignedCodes, reloadKey]);
-
-  useEffect(() => {
-    void loadRoot();
-  }, [loadRoot, reloadKey]);
-
-  const loadChildren = useCallback(async (node: ResourceTreeNode) => {
+  const loadChildren = useCallback((node: ResourceTreeNode) => {
     const resource = node.resource;
-    if (!resource?.id || !resource.hasChildren || node.children?.length) return;
-    setTreeLoading(true);
+    if (!assignmentKey(resource?.id) || !resource?.hasChildren || node.children?.length) return Promise.resolve();
+    return reads.run('tree:child:' + node.key + ':0', signal => fetchChildren({
+      parentId: resource.id, page: '0', size: String(TREE_PAGE_SIZE), sort: 'sort,asc',
+    }, {signal, notifyOnError: false}), page => setTreeData(previous => replaceNodeChildren(
+      previous, node.key, toChildTreeNodes(page, node, t))));
+  }, [reads.run, t]);
+  const loadMoreChildren = useCallback((node: ResourceTreeNode) => {
+    const more = node.loadMore;
+    if (!more || !assignmentKey(more.parentId)) return Promise.resolve();
+    return reads.run('tree:child:' + more.parentKey + ':' + more.page, signal => fetchChildren({
+      parentId: more.parentId, page: String(more.page), size: String(TREE_PAGE_SIZE), sort: 'sort,asc',
+    }, {signal, notifyOnError: false}), page => setTreeData(previous => appendNodeChildren(
+      previous, more.parentKey, toChildTreeNodes(page, {key: more.parentKey,
+        resource: {id: more.parentId, type: 'GROUP'} as ResourceRelevantVo}, t))));
+  }, [reads.run, t]);
+
+  const updateAssignment = useCallback(async (intent: WriteIntent) => {
+    if (!enabled || reads.isBusy()) return;
+    const request = operation.begin(); if (!request) return;
+    onInteractionLockChange?.(true); setWriteError(undefined);
+    reads.cancel();
+    const captured: WriteIntent = {...intent, relatedCodes: [...intent.relatedCodes]};
+    const baseline = [...assignedCodesRef.current];
     try {
-      const page = await fetchChildren({
-        parentId: resource.id,
-        page: '0',
-        size: String(TREE_PAGE_SIZE),
-        sort: 'sort,asc',
-      });
-      rememberResources(page.content ?? [], setResourceByCode);
-      setTreeData((previous) => replaceNodeChildren(
-        previous,
-        node.key,
-        toChildTreeNodes(page, node, t),
-      ));
-    } catch {
-      message.error(t('applications.resourceConfig.loadFailed', '应用资源加载失败'));
+      let codes = captured.resolvedCodes;
+      if (!codes) {
+        const resource = captured.node.resource;
+        if (resource?.hasChildren && assignmentKey(resource.id)) {
+          const resolved = await fetchSubtreeCodes(resource.id, {signal: request.signal, notifyOnError: false});
+          if (!Array.isArray(resolved) || resolved.some(code => assignmentKey(code) === undefined)) {
+            throw new Error(t('permissions.unavailable', '资源标识暂不可用'));
+          }
+          codes = uniqueCodes(resolved);
+        } else codes = collectLoadedSubtreeCodes(captured.node);
+        if (!operation.current(request.signal)) return;
+        codes = assignmentDelta(baseline, uniqueCodes([...codes, ...captured.relatedCodes]), captured.checked);
+        captured.resolvedCodes = codes;
+      }
+      if (!codes.length) return;
+      const options = {signal: request.signal, notifyOnError: false};
+      if (captured.checked) await onAssign([...codes], options); else await onUnassign([...codes], options);
+      if (!operation.current(request.signal)) return;
+      const affected = new Set(codes);
+      setAssignedCodes(previous => captured.checked ? uniqueCodes([...previous, ...codes])
+        : previous.filter(code => !affected.has(code)));
+      setWriteError(undefined); setRetryWrite(undefined);
+    } catch (error) {
+      if (operation.current(request.signal)) {
+        setRetryWrite(captured);
+        setWriteError(resolveApiErrorMessage(error, t('applications.resourceConfig.updateFailed', '应用资源更新失败')));
+      }
     } finally {
-      setTreeLoading(false);
+      if (operation.current(request.signal)) {
+        operation.finish(request); onInteractionLockChange?.(false);
+        // Reads remain paused in inactive owners; the next activation revalidates the same target.
+        setRevision(value => value + 1);
+      } else operation.finish(request);
     }
-  }, [message, t]);
-
-  const loadMoreChildren = useCallback(async (node: ResourceTreeNode) => {
-    if (!node.loadMore) return;
-    setTreeLoading(true);
-    try {
-      const page = await fetchChildren({
-        parentId: node.loadMore.parentId,
-        page: String(node.loadMore.page),
-        size: String(TREE_PAGE_SIZE),
-        sort: 'sort,asc',
-      });
-      rememberResources(page.content ?? [], setResourceByCode);
-      const parentNode = {
-        key: node.loadMore.parentKey,
-        resource: {id: node.loadMore.parentId, code: node.loadMore.parentId, type: 'GROUP'} as ResourceRelevantVo,
-      } as ResourceTreeNode;
-      setTreeData((previous) => appendNodeChildren(
-        previous,
-        node.loadMore!.parentKey,
-        toChildTreeNodes(page, parentNode, t),
-      ));
-    } catch {
-      message.error(t('applications.resourceConfig.loadFailed', '应用资源加载失败'));
-    } finally {
-      setTreeLoading(false);
-    }
-  }, [message, t]);
-
-  const resolveNodeCodes = useCallback(async (node: ResourceTreeNode) => {
-    if (node.resource?.id && (node.resource.hasChildren || (node.children?.length ?? 0) > 0)) {
-      const codes = await fetchSubtreeCodes(node.resource.id);
-      return uniqueCodes(codes ?? []);
-    }
-    return collectLoadedSubtreeCodes(node);
-  }, []);
-
-  const updateAssignment = useCallback(async (node: ResourceTreeNode, checked: boolean, checkedTreeKeys: Key[] = []) => {
-    const previous = assignedCodes;
-    setTreeSaving(true);
-    let codes: string[] = [];
-    try {
-      codes = await resolveNodeCodes(node);
-      if (checked && checkedTreeKeys.length > 0) {
-        codes = uniqueCodes([...codes, ...findCodesByKeys(treeDataRef.current, checkedTreeKeys)]);
-      }
-      if (!checked) {
-        codes = uniqueCodes([...codes, ...findAncestorCodes([...treeDataRef.current, ...assignedTreeDataRef.current], node.key)]);
-      }
-      if (!codes.length) {
-        return;
-      }
-
-      const next = checked
-        ? uniqueCodes([...assignedCodes, ...codes])
-        : assignedCodes.filter((item) => !codes.includes(item));
-
-      setAssignedCodes(next);
-      if (checked) {
-        await onAssign(codes);
-      } else {
-        await onUnassign(codes);
-      }
-      setLoadError(false);
-      message.success(t('applications.resourceConfig.updateSuccess', '应用资源已更新'));
-    } catch {
-      setAssignedCodes(previous);
-      message.error(t('applications.resourceConfig.updateFailed', '应用资源更新失败'));
-    } finally {
-      setTreeSaving(false);
-    }
-  }, [assignedCodes, message, onAssign, onUnassign, resolveNodeCodes, t]);
-
+  }, [enabled, reads.isBusy, reads.cancel, operation.begin, operation.current, operation.finish,
+    onAssign, onUnassign, onInteractionLockChange, t]);
   const handleCheck = useCallback((keys: unknown, info: {checked?: boolean; node?: ResourceTreeNode}) => {
-    if (!info.node?.resource) return;
-    const checkedTreeKeys = Array.isArray(keys) ? keys : [];
-    void updateAssignment(info.node, info.checked !== false, checkedTreeKeys);
-  }, [updateAssignment]);
-
+    if (!info.node?.resource || loadError || reads.isBusy() || operation.isBusy()) return;
+    const node = info.node, checked = info.checked !== false;
+    const relatedCodes = checked ? findCodesByKeys(treeDataRef.current, Array.isArray(keys) ? keys : [])
+      : findAncestorCodes([...treeDataRef.current, ...assignedTreeDataRef.current], node.key);
+    void updateAssignment({node, checked, relatedCodes});
+  }, [updateAssignment, loadError, reads.isBusy, operation.isBusy]);
   const handleSelect = useCallback((_: Key[], info: {node?: ResourceTreeNode}) => {
-    if (info.node?.loadMore) {
-      void loadMoreChildren(info.node);
-    }
+    if (info.node?.loadMore) void loadMoreChildren(info.node);
   }, [loadMoreChildren]);
-
   const handleAssignedRemove = useCallback((node: ResourceTreeNode) => {
-    if (!node.resource) return;
-    void updateAssignment(node, false);
-  }, [updateAssignment]);
-
+    if (!node.resource || loadErrorRef.current || reads.isBusy() || operation.isBusy()) return;
+    void updateAssignment({node, checked: false,
+      relatedCodes: findAncestorCodes([...treeDataRef.current, ...assignedTreeDataRef.current], node.key)});
+  }, [updateAssignment, reads.isBusy, operation.isBusy]);
   const buildAssignedTreeNode = useCallback(
     (resource: ResourceRelevantVo, translate: Translate) => toAssignedTreeNode(resource, translate, handleAssignedRemove),
-    [handleAssignedRemove],
-  );
-
-  const loadAssignedTreeRoot = useCallback(async () => {
-    if (!enabled || assignedCodes.length === 0) {
-      setAssignedTreeData([]);
-      setAssignedRootTotal(0);
-      setAssignedExpandedKeys([]);
-      setAssignedLoadedKeys([]);
-      return;
+    [handleAssignedRemove]);
+  const loadAssignedTreeRoot = useCallback(() => {
+    if (!enabled || !reads.active || !operation.current() || !operation.isSelected()) return Promise.resolve();
+    const context = JSON.stringify([assignedCodes, assignedRootPage, revision, locale]);
+    reads.cancel('assigned-tree');
+    if (assignedContext.current !== context) reads.clearErrors('assigned-tree');
+    if (assignedCodes.length === 0) {
+      setAssignedTreeData([]); setAssignedRootTotal(0); setAssignedRootPage(1);
+      setAssignedExpandedKeys([]); setAssignedLoadedKeys([]); return Promise.resolve();
     }
-    setAssignedTreeLoading(true);
-    try {
-      const page = await fetchAssignedTree(assignedCodes, {
-        page: String(assignedRootPage - 1),
-        size: String(ASSIGNED_TREE_PAGE_SIZE),
-        sort: 'sort,asc',
-      });
-      rememberResources(page.content ?? [], setResourceByCode);
-      setAssignedTreeData((page.content ?? []).map((item) => buildAssignedTreeNode(item, t)));
+    return reads.run('assigned-tree:root', signal => fetchAssignedTree(assignedCodes, {
+      page: String(assignedRootPage - 1), size: String(ASSIGNED_TREE_PAGE_SIZE), sort: 'sort,asc',
+    }, {signal, notifyOnError: false}), page => {
+      const reachable = reachableServerPage(assignedRootPage, page.page);
+      if (page.page.number === assignedRootPage - 1 && reachable !== assignedRootPage) {setAssignedRootPage(reachable); return;}
+      const nodes = (page.content ?? []).map(item => buildAssignedTreeNode(item, t));
+      const retained = assignedContext.current === context;
+      setAssignedTreeData(previous => retainRootChildren(previous, nodes, retained));
+      assignedContext.current = context;
       setAssignedRootTotal(page.page.totalElements ?? 0);
-      setAssignedExpandedKeys([]);
-      setAssignedLoadedKeys([]);
-      setLoadError(false);
-    } catch {
-      setLoadError(true);
-      message.error(t('applications.resourceConfig.loadFailed', '应用资源加载失败'));
-    } finally {
-      setAssignedTreeLoading(false);
-    }
-  }, [assignedCodes, assignedRootPage, buildAssignedTreeNode, enabled, message, t]);
-
-  const loadAssignedChildren = useCallback(async (node: ResourceTreeNode) => {
+      if (!retained) {setAssignedExpandedKeys([]); setAssignedLoadedKeys([]);}
+      else setAssignedLoadedKeys([]);
+    });
+  }, [enabled, reads.active, operation.current, operation.isSelected, reads.cancel, reads.clearErrors, reads.run, assignedCodes, assignedRootPage, revision, locale, buildAssignedTreeNode, t]);
+  useEffect(() => {void loadAssignedTreeRoot();}, [loadAssignedTreeRoot, revision, operation.selected]);
+  const loadAssignedChildren = useCallback((node: ResourceTreeNode) => {
     const resource = node.resource;
-    if (!resource?.id || !resource.hasChildren || node.children?.length || assignedCodes.length === 0) return;
-    setAssignedTreeLoading(true);
-    try {
-      const page = await fetchAssignedTree(assignedCodes, {
-        parentId: resource.id,
-        page: '0',
-        size: String(ASSIGNED_TREE_PAGE_SIZE),
-        sort: 'sort,asc',
-      });
-      rememberResources(page.content ?? [], setResourceByCode);
-      setAssignedTreeData((previous) => replaceNodeChildren(
-        previous,
-        node.key,
-        toChildTreeNodes(page, node, t, buildAssignedTreeNode),
-      ));
-    } catch {
-      message.error(t('applications.resourceConfig.loadFailed', '应用资源加载失败'));
-    } finally {
-      setAssignedTreeLoading(false);
-    }
-  }, [assignedCodes, buildAssignedTreeNode, message, t]);
-
-  const loadMoreAssignedChildren = useCallback(async (node: ResourceTreeNode) => {
-    if (!node.loadMore || assignedCodes.length === 0) return;
-    setAssignedTreeLoading(true);
-    try {
-      const page = await fetchAssignedTree(assignedCodes, {
-        parentId: node.loadMore.parentId,
-        page: String(node.loadMore.page),
-        size: String(ASSIGNED_TREE_PAGE_SIZE),
-        sort: 'sort,asc',
-      });
-      rememberResources(page.content ?? [], setResourceByCode);
-      const parentNode = {
-        key: node.loadMore.parentKey,
-        resource: {id: node.loadMore.parentId, code: node.loadMore.parentId, type: 'GROUP'} as ResourceRelevantVo,
-      } as ResourceTreeNode;
-      setAssignedTreeData((previous) => appendNodeChildren(
-        previous,
-        node.loadMore!.parentKey,
-        toChildTreeNodes(page, parentNode, t, buildAssignedTreeNode),
-      ));
-    } catch {
-      message.error(t('applications.resourceConfig.loadFailed', '应用资源加载失败'));
-    } finally {
-      setAssignedTreeLoading(false);
-    }
-  }, [assignedCodes, buildAssignedTreeNode, message, t]);
-
+    if (!assignmentKey(resource?.id) || !resource?.hasChildren || node.children?.length || !assignedCodes.length) return Promise.resolve();
+    return reads.run('assigned-tree:child:' + node.key + ':0', signal => fetchAssignedTree(assignedCodes, {
+      parentId: resource.id, page: '0', size: String(ASSIGNED_TREE_PAGE_SIZE), sort: 'sort,asc',
+    }, {signal, notifyOnError: false}), page => setAssignedTreeData(previous => replaceNodeChildren(
+      previous, node.key, toChildTreeNodes(page, node, t, buildAssignedTreeNode))));
+  }, [assignedCodes, reads.run, buildAssignedTreeNode, t]);
+  const loadMoreAssignedChildren = useCallback((node: ResourceTreeNode) => {
+    const more = node.loadMore;
+    if (!more || !assignmentKey(more.parentId) || !assignedCodes.length) return Promise.resolve();
+    return reads.run('assigned-tree:child:' + more.parentKey + ':' + more.page, signal => fetchAssignedTree(assignedCodes, {
+      parentId: more.parentId, page: String(more.page), size: String(ASSIGNED_TREE_PAGE_SIZE), sort: 'sort,asc',
+    }, {signal, notifyOnError: false}), page => setAssignedTreeData(previous => appendNodeChildren(
+      previous, more.parentKey, toChildTreeNodes(page, {key: more.parentKey,
+        resource: {id: more.parentId, type: 'GROUP'} as ResourceRelevantVo}, t, buildAssignedTreeNode))));
+  }, [assignedCodes, reads.run, buildAssignedTreeNode, t]);
   const handleAssignedSelect = useCallback((_: Key[], info: {node?: ResourceTreeNode}) => {
-    if (info.node?.loadMore) {
-      void loadMoreAssignedChildren(info.node);
-    }
+    if (info.node?.loadMore) void loadMoreAssignedChildren(info.node);
   }, [loadMoreAssignedChildren]);
-
-  useEffect(() => {
-    void loadAssignedTreeRoot();
-  }, [loadAssignedTreeRoot, reloadKey]);
-
+  const refresh = () => {
+    if (!operation.current() || !operation.isSelected() || operation.isBusy()) return;
+    reads.cancel(); setRevision(value => value + 1);
+  };
   const refreshLoading = treeLoading || assignedLoading || assignedTreeLoading || treeSaving;
-  const leftDisabled = treeLoading || assignedLoading || treeSaving;
-  const assignedDisabled = assignedLoading || assignedTreeLoading || treeSaving;
+  const leftDisabled = inactive || refreshLoading || loadError;
+  const assignedDisabled = inactive || refreshLoading || loadError;
+  const assignedDisplayTree = useMemo(() => {
+    const decorate = (nodes: ResourceTreeNode[]): ResourceTreeNode[] => nodes.map(node => ({
+      ...node, ...(node.resource ? {title: toAssignedTreeNode(node.resource, t, handleAssignedRemove, assignedDisabled).title} : {}),
+      ...(node.children ? {children: decorate(node.children)} : {}),
+    }));
+    return decorate(assignedTreeData);
+  }, [assignedTreeData, t, handleAssignedRemove, assignedDisabled]);
 
   if (!enabled) {
     return <div style={{flex: 1, minHeight: 0}}/>;
@@ -592,53 +477,59 @@ const ResourceTreeTransfer = ({
             {t('applications.resourceConfig.selectedCount', '已分配 {count} 项资源', {count: assignedCodes.length})}
           </div>
         </div>
-        <Button
-          icon={<ReloadOutlined />}
-          loading={refreshLoading}
-          onClick={() => {
-            void loadAssignedCodes();
-            void loadRoot();
-          }}
-        >
-          {t('common.refresh', '刷新')}
-        </Button>
+        <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'refresh', sort: 0,
+          icon: <ReloadOutlined/>, loading: refreshLoading, disabled: inactive || treeSaving, text: t('common.refresh', '刷新'), onClick: () => {
+            refresh();
+          },
+        }]}/>
       </div>
 
       {loadError ? (
         <Alert
           type="error"
           showIcon
-          message={t('applications.resourceConfig.loadFailed', '应用资源加载失败')}
+          className="application-resource-load-error"
+          title={t('applications.resourceConfig.loadFailed', '应用资源加载失败')}
+          description={Object.values(reads.errors).map(error => resolveApiErrorMessage(error, t('applications.resourceConfig.loadFailed', '应用资源加载失败'))).join('；')}
           action={
-            <Button size="small" onClick={() => {
-              void loadAssignedCodes();
-              void loadRoot();
-            }}>
-              {t('table.retry', '重试')}
-            </Button>
+            <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', sort: 0, size: 'small',
+              disabled: refreshLoading || inactive, text: t('table.retry', '重试'), onClick: () => {
+              refresh();
+            }}]}/>
           }
         />
       ) : null}
 
+      {writeError && <Alert className="application-resource-write-error" type="error" showIcon
+        title={t('applications.resourceConfig.updateFailed', '应用资源更新失败')} description={writeError}
+        action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry-write', sort: 0, size: 'small',
+          disabled: inactive || refreshLoading || loadError, text: t('table.retry', '重试'),
+          onClick: () => {if (retryWrite) void updateAssignment(retryWrite);}}]}/>}/>}
       <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: 12, flex: 1, minHeight: 0, overflow: 'auto'}}>
         <section style={{display: 'flex', flexDirection: 'column', minHeight: 0, border: '1px solid var(--ant-color-border-secondary)', borderRadius: 6, background: 'var(--ant-color-bg-container)'}}>
           <div style={{padding: 12, borderBottom: '1px solid var(--ant-color-border-secondary)'}}>
             <Input.Search
+              disabled={inactive || treeSaving}
               allowClear
               prefix={<SearchOutlined />}
               placeholder={t('resources.tree.search', '搜索资源编码、路径或名称')}
               value={keywordInput}
               onChange={(event) => {
                 const value = event.target.value;
+                if (!operation.current() || !operation.isSelected() || operation.isBusy()) return;
                 setKeywordInput(value);
                 if (!value.trim() && keyword) {
+                  reads.cancel('tree');
                   setKeyword('');
                   setRootPage(1);
                 }
               }}
               onSearch={(value) => {
+                if (!operation.current() || !operation.isSelected() || operation.isBusy()) return;
+                reads.cancel('tree');
                 setKeyword(value.trim());
                 setRootPage(1);
+                setTreeRevision(previous => previous + 1);
               }}
             />
           </div>
@@ -648,9 +539,11 @@ const ResourceTreeTransfer = ({
             ) : treeData.length ? (
               <Tree
                 checkable
+                virtual
+                height={360}
                 blockNode
                 treeData={treeData}
-                checkedKeys={assignedCodes}
+                checkedKeys={assignedCodes.map(code => `resource:${code}`)}
                 expandedKeys={expandedKeys}
                 loadedKeys={loadedKeys}
                 disabled={leftDisabled}
@@ -672,7 +565,8 @@ const ResourceTreeTransfer = ({
               total={rootTotal}
               showSizeChanger={false}
               showTotal={(total) => t('table.total', '共 {total} 条', {total})}
-              onChange={setRootPage}
+              disabled={inactive || treeSaving}
+              onChange={next => {if (!operation.isSelected() || operation.isBusy()) return; reads.cancel('tree'); setRootPage(next);}}
             />
           </div>
         </section>
@@ -689,7 +583,7 @@ const ResourceTreeTransfer = ({
                 blockNode
                 virtual
                 height={360}
-                treeData={assignedTreeData}
+                treeData={assignedDisplayTree}
                 expandedKeys={assignedExpandedKeys}
                 loadedKeys={assignedLoadedKeys}
                 disabled={assignedDisabled}
@@ -710,7 +604,8 @@ const ResourceTreeTransfer = ({
               total={assignedRootTotal}
               showSizeChanger={false}
               showTotal={(total) => t('table.total', '共 {total} 条', {total})}
-              onChange={setAssignedRootPage}
+              disabled={inactive || treeSaving}
+              onChange={next => {if (!operation.isSelected() || operation.isBusy()) return; reads.cancel('assigned-tree'); setAssignedRootPage(next);}}
             />
           </div>
         </section>
@@ -719,4 +614,6 @@ const ResourceTreeTransfer = ({
   );
 };
 
-export default ResourceTreeTransfer;
+export default function ResourceTreeTransfer(props: ResourceTreeTransferProps) {
+  return <ResourceTransferSession key={JSON.stringify([useQueryScope(), props.reloadKey])} {...props}/>;
+}

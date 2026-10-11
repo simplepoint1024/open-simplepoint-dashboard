@@ -37,6 +37,8 @@ class AiBillingControllerTest {
     controller = new AiBillingController(billingQueryService);
     mockMvc = MockMvcBuilders
         .standaloneSetup(controller)
+        .setMessageConverters(new org.springframework.http.converter.json.JacksonJsonHttpMessageConverter(
+            tools.jackson.databind.json.JsonMapper.builder().addModule(new org.simplepoint.core.jackson.FieldScopeJackson3Module()).build()))
         .build();
   }
 
@@ -64,6 +66,23 @@ class AiBillingControllerTest {
         .andExpect(status().isOk());
 
     verify(billingQueryService).summarize(null, null);
+  }
+
+  @Test
+  void actualHttpMapperKeepsTwelveDigitBillingTotalsAndIntegerCountsDistinct() throws Exception {
+    var total = new java.math.BigDecimal("999999999999.123456789012");
+    var tiny = new java.math.BigDecimal("0.000000000001");
+    var currency = new org.simplepoint.plugin.ai.core.api.vo.AiBillingModels.CurrencySummary("USD", 1, 2, 3, 4,
+        tiny, total, java.math.BigDecimal.ZERO, null, total);
+    var model = new org.simplepoint.plugin.ai.core.api.vo.AiBillingModels.ModelSummary("model", "actual-model", "USD", 1, 2, 3, total);
+    when(billingQueryService.summarize(null, null)).thenReturn(new BillingSummary(null, null, 1, 1, 0, List.of(currency), List.of(model)));
+    mockMvc.perform(get("/workbench/billing/summary")).andExpect(status().isOk())
+        .andExpect(jsonPath("$.invocationCount").value(1))
+        .andExpect(jsonPath("$.currencies[0].inputCost").value("0.000000000001"))
+        .andExpect(jsonPath("$.currencies[0].cachedInputCost").value("999999999999.123456789012"))
+        .andExpect(jsonPath("$.currencies[0].outputCost").value("0"))
+        .andExpect(jsonPath("$.currencies[0].requestCost").doesNotExist())
+        .andExpect(jsonPath("$.models[0].totalCost").value("999999999999.123456789012"));
   }
 
   @Test

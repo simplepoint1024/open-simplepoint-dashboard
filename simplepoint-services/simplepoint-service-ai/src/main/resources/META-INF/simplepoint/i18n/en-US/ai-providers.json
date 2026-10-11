@@ -53,5 +53,17 @@
   "ai.providers.title.lastTestedAt": "Last tested",
   "ai.providers.title.name": "Access name",
   "ai.providers.title.scopeType": "Ownership scope",
-  "ai.providers.title.tenantId": "Tenant ID"
+  "ai.providers.title.tenantId": "Tenant ID",
+  "ai.providers.page.operation.invalidResponse": "Invalid response. Refresh the status before retrying.",
+  "ai.providers.page.operation.close": "Close",
+  "ai.providers.page.operation.confirmSync": "Confirm synchronization",
+  "ai.providers.page.operation.again": "Run again",
+  "ai.providers.page.operation.discoveryReadOnly": "Discovery only reads the remote catalog; it does not change local models.",
+  "ai.providers.page.operation.testWritesStatus": "A connection test updates provider status but does not synchronize local models.",
+  "ai.providers.page.operation.syncChanges": "Synchronization adds or updates local models and marks previously discovered models absent from the remote catalog as unavailable. Manually configured types and prices are preserved.",
+  "ai.providers.page.operation.discovered": "Discovered",
+  "ai.providers.page.operation.created": "Created",
+  "ai.providers.page.operation.updated": "Updated",
+  "ai.providers.page.operation.unavailable": "Marked unavailable",
+  "ai.providers.page.operation.interrupted": "Model discovery was interrupted. Retry to continue."
 }

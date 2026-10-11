@@ -1,0 +1,15 @@
+.field-permission-layout {display:grid;grid-template-columns:minmax(260px, 30%) minmax(0, 1fr);gap:20px;height:100%;min-height:0}
+.field-permission-form,.field-permission-form-content {display:flex;flex-direction:column;height:100%;min-height:0}
+.field-permission-form-content>.ant-form-item {flex:none}
+.field-permission-form-content>.field-permission-form-content {flex:1}
+.field-permission-sidebar,.field-permission-fields {min-width:0;min-height:0;display:flex;flex-direction:column;gap:12px}
+.field-permission-sidebar {border-right:1px solid var(--ant-color-border,#eee);padding-right:20px}
+.field-permission-basic .ant-form-item {margin-bottom:12px}
+.field-permission-tree {flex:1;min-height:100px;overflow:auto}
+.field-resource-node {display:flex;align-items:center;min-height:40px;border-radius:6px}
+.field-resource-node.is-selected {background:var(--ant-control-item-bg-active,#e6f4ff)}
+.field-resource-node>button:not(.ant-btn) {display:flex;align-items:center;gap:8px;flex:1;min-width:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer;padding:6px}
+.field-resource-node small {display:block;color:var(--ant-color-text-secondary,#888);font-size:12px}
+.field-permission-field-table {flex:1;min-height:0;overflow:hidden}
+.field-permission-field-table .ant-radio-group {display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:700px){.field-permission-layout{grid-template-columns:minmax(180px,38%) minmax(0,1fr);gap:12px}.field-permission-sidebar{padding-right:12px}}

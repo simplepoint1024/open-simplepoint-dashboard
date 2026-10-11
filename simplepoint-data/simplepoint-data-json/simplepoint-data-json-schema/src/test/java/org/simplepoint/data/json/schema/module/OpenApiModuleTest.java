@@ -14,8 +14,40 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.api.schema.DictionaryField;
 import org.simplepoint.api.schema.UploadField;
+import java.math.BigDecimal;
+import jakarta.persistence.Column;
 
 class OpenApiModuleTest {
+
+  @Test
+  void decimalSchemasUseExactTextWithRealDatabasePrecisionAndNumericBounds() {
+    var config = new SchemaGeneratorConfigBuilder(new ObjectMapper(), SchemaVersion.DRAFT_7, OptionPreset.PLAIN_JSON);
+    config.with(new OpenApiModule());
+    var schema = new SchemaGenerator(config.build()).generateSchema(DecimalEntity.class);
+    var price = schema.path("properties").path("price");
+    assertEquals("string", price.path("type").isArray() ? price.path("type").get(0).asText() : price.path("type").asText(), price.toString());
+    assertEquals(19, price.path("x-decimal").path("precision").asInt());
+    assertEquals(8, price.path("x-decimal").path("scale").asInt());
+    assertEquals("0", price.path("x-decimal").path("minimum").asText());
+    assertEquals("99999999999.99999999", price.path("x-decimal").path("maximum").asText());
+    assertEquals(true, price.path("x-ui").path("x-list-visible").asBoolean());
+    assertEquals(false, price.has("minimum"));
+    var cost = schema.path("properties").path("cost");
+    assertEquals(12, cost.path("x-decimal").path("scale").asInt());
+    assertEquals("999999999999.999999999999", cost.path("x-decimal").path("maximum").asText());
+    assertEquals(true, java.util.regex.Pattern.matches(price.path("pattern").asText(), "99999999999.99999999"));
+    assertEquals(true, java.util.regex.Pattern.matches(price.path("pattern").asText(), "1E-8"));
+    assertEquals(false, java.util.regex.Pattern.matches(price.path("pattern").asText(), "NaN"));
+  }
+
+  static class DecimalEntity {
+    @Column(precision = 19, scale = 8)
+    @Schema(minimum = "0", extensions = @Extension(name = "x-ui", properties =
+        @ExtensionProperty(name = "x-list-visible", value = "true", parseValue = true)))
+    public BigDecimal price;
+    @Column(precision = 24, scale = 12)
+    public BigDecimal cost;
+  }
 
   @Test
   void dictionaryFieldAddsStableDictionaryMetadataAndKeepsExistingUiOptions() {

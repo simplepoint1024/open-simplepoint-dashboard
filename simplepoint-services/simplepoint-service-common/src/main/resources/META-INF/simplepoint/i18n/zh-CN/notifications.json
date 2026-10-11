@@ -29,7 +29,7 @@
   "notifications.status.DRAFT": "草稿",
   "notifications.status.PUBLISHED": "已发布",
   "notifications.status.REVOKED": "已撤回",
-  "notifications.description.audienceId": "目标类型为租户或用户时必填，填写对应租户 ID 或用户 ID。",
+  "notifications.description.audienceId": "目标类型为租户或用户时，请选择对应的租户或用户。",
   "notifications.confirm.publish.title": "发布系统通知",
   "notifications.confirm.publish.content": "发布后将立即主动推送给目标用户，且通知内容不可再修改。确定继续吗？",
   "notifications.confirm.revoke.title": "撤回系统通知",

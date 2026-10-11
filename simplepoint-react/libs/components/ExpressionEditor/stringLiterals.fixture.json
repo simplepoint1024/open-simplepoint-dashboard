@@ -1,0 +1,13 @@
+[
+  {"id": "empty", "value": "", "literal": "\"\""},
+  {"id": "plain", "value": "ordinary", "literal": "\"ordinary\""},
+  {"id": "quotes", "value": "single' and \"double\"", "literal": "\"single' and \\\"double\\\"\""},
+  {"id": "slashes", "value": "C:\\one\\two", "literal": "\"C:\\\\one\\\\two\""},
+  {"id": "lf", "value": "alpha\nbeta", "literal": "\"alpha\nbeta\""},
+  {"id": "cr", "value": "alpha\rbeta", "literal": "\"alpha\rbeta\""},
+  {"id": "tab", "value": "alpha\tbeta", "literal": "\"alpha\tbeta\""},
+  {"id": "xml", "value": "<>& ]]> 中文 👋", "literal": "\"<>& ]]> 中文 👋\""},
+  {"id": "escape-text", "value": "\\n\\t\\u0041", "literal": "\"\\\\n\\\\t\\\\u0041\""},
+  {"id": "reflection-text", "value": "task() ['class']", "literal": "\"task() ['class']\""},
+  {"id": "role-marker", "value": "${literal-role}", "literal": "\"${literal-role}\""}
+]

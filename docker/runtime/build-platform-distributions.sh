@@ -11,6 +11,8 @@ if [[ "$#" -eq 0 ]]; then
     :simplepoint-services:simplepoint-service-auditing:installDist
     :simplepoint-services:simplepoint-service-dna:installDist
     :simplepoint-services:simplepoint-service-ai:installDist
+    :simplepoint-services:simplepoint-service-app:installDist
+    :simplepoint-services:simplepoint-service-workflow:installDist
     :simplepoint-services:simplepoint-service-mcp-gateway:installDist
     :simplepoint-services:simplepoint-service-host:installDist
   )

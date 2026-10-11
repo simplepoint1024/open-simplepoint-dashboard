@@ -10,4 +10,5 @@ dependencies {
     implementation("org.springframework:spring-tx")
     implementation("io.micrometer:micrometer-core")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("com.h2database:h2")
 }

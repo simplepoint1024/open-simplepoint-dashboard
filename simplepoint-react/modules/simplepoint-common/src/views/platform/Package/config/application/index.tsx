@@ -8,9 +8,10 @@ import type {ApplicationRelevantVo} from '@/api/platform/application';
 
 export interface PackageApplicationConfigProps {
   packageCode: string;
+  onInteractionLockChange?: (locked: boolean) => void;
 }
 
-const App = ({packageCode}: PackageApplicationConfigProps) => {
+const App = ({packageCode, onInteractionLockChange}: PackageApplicationConfigProps) => {
   const {t, messages, ensure, locale} = useI18n();
   useEffect(() => {void ensure(['applications', 'table', 'common']);}, [ensure, locale]);
   const columns = useMemo<TableColumnsType<ApplicationRelevantVo>>(() => [
@@ -21,9 +22,10 @@ const App = ({packageCode}: PackageApplicationConfigProps) => {
   if (!packageCode) return <div/>;
   return <AssignmentTable<ApplicationRelevantVo> endpoint={`${api['platform.applications'].baseUrl}/items`}
     parent={{packageCode}} itemKey="code" columns={columns} storageKey="platform.applications.assignment"
-    onMove={(selected, keys) => selected
-      ? fetchUnauthorized({packageCode, applicationCodes: keys})
-      : fetchAuthorize({packageCode, applicationCodes: keys})}/>;
+    onInteractionLockChange={onInteractionLockChange}
+    onMove={(selected, keys, options) => selected
+      ? fetchUnauthorized({packageCode, applicationCodes: keys}, options)
+      : fetchAuthorize({packageCode, applicationCodes: keys}, options)}/>;
 };
 
 export default App;

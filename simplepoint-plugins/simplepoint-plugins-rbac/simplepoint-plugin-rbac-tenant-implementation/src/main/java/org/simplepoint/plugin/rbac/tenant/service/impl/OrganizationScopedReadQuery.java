@@ -36,13 +36,24 @@ public class OrganizationScopedReadQuery {
   /** A visible forest starts at a row whose parent is outside the same authorized scope. */
   public Page<Organization> tree(String tenantId, String parentId, Map<String, String> filters,
       Pageable page, DataScopeCondition scope) {
+    return page(tenantId, parentId, filters, page, scope, true);
+  }
+
+  /** Read-only flat view when structural identifiers cannot be exposed. */
+  public Page<Organization> flat(String tenantId, Map<String, String> filters, Pageable page,
+      DataScopeCondition scope) {
+    return page(tenantId, null, filters, page, scope, false);
+  }
+
+  private Page<Organization> page(String tenantId, String parentId, Map<String, String> filters,
+      Pageable page, DataScopeCondition scope, boolean level) {
     checkPage(page);
     var input = ProjectionQuery.prepare(Organization.class, filters, page);
     var cb = em.getCriteriaBuilder();
     var data = cb.createQuery(Organization.class);
     var root = data.from(Organization.class);
     var fields = fields(root);
-    data.select(root).where(cb.and(base(data, root, tenantId, scope, parentId, true),
+    data.select(root).where(cb.and(base(data, root, tenantId, scope, parentId, level),
         input.predicate(cb, fields)));
     data.orderBy(input.orders(cb, fields, root.get("id")));
     var rows = em.createQuery(data).setFirstResult((int) page.getOffset())
@@ -50,7 +61,7 @@ public class OrganizationScopedReadQuery {
     var count = cb.createQuery(Long.class);
     var counted = count.from(Organization.class);
     count.select(cb.count(counted)).where(cb.and(
-        base(count, counted, tenantId, scope, parentId, true),
+        base(count, counted, tenantId, scope, parentId, level),
         input.predicate(cb, fields(counted))));
     return new PageImpl<>(rows, page, em.createQuery(count).getSingleResult());
   }

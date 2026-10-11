@@ -21,6 +21,8 @@ public interface TenantResourceCatalog {
   record SyncPreview(int added, int refreshed, int deactivated,
       List<SyncItem> additions, List<SyncItem> deactivations, boolean overwrite) {}
 
+  enum PickerKind { PARENT, PAGE_TARGET }
+
   TenantResourceMode mode(String tenantId);
 
   TenantResourceMode selectMode(TenantResourceMode mode);
@@ -30,6 +32,10 @@ public interface TenantResourceCatalog {
   SyncPreview previewSynchronization(boolean overwrite);
 
   Page<TenantResource> list(String keyword, String parentId, boolean rootsOnly, Pageable pageable);
+
+  /** Paged eligible form choices, with the same eligibility for bounded selected-ID lookup. */
+  Page<TenantResource> picker(PickerKind kind, ResourceType childType, String excludedId,
+      String keyword, String selectedId, Pageable pageable);
 
   TenantResource get(String id);
 
@@ -41,6 +47,12 @@ public interface TenantResourceCatalog {
 
   /** Active catalog entries; includes structural ancestors. */
   List<TenantResource> activeResources(String tenantId);
+
+  /** Held navigation nodes and required active ancestors, with backing pages suppressed for selected aliases. */
+  List<TenantResource> navigationResources(String tenantId, Collection<String> heldCodes);
+
+  /** Selected metadata with valid alias targets/ancestors; does not suppress backing pages for non-navigation views. */
+  List<TenantResource> selectedResources(String tenantId, Collection<String> codes);
 
   /** Codes which may be granted by roles in custom mode. */
   Set<String> grantableCodes(String tenantId, Collection<String> requested);

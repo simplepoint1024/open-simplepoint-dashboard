@@ -39,5 +39,6 @@
   "ai.models.type.MULTIMODAL": "多模态",
   "ai.models.type.OTHER": "其他",
   "ai.models.type.RERANK": "重排序",
-  "ai.models.type.UNKNOWN": "未知模型类型"
+  "ai.models.type.UNKNOWN": "未知模型类型",
+  "ai.models.page.providerLookupInvalid": "接入回读结果无效，请重试。"
 }

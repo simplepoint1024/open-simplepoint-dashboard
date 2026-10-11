@@ -11,12 +11,16 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.simplepoint.data.calcite.core.query.CalciteQueryAnalysis;
 import org.simplepoint.data.calcite.core.query.CalciteQueryEngine;
 import org.simplepoint.data.calcite.core.query.CalciteQueryRequest;
 import org.simplepoint.data.calcite.core.query.CalciteQueryResult;
+import org.simplepoint.data.calcite.core.query.CalciteUpdateRequest;
+import org.simplepoint.data.calcite.core.query.CalciteUpdateResult;
 import org.simplepoint.data.datasource.jdbc.SimpleDataSource;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
@@ -213,13 +217,20 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       throw new IllegalArgumentException("SQL 长度不能超过 " + FederationSqlAuditor.SQL_TEXT_MAX_LENGTH + " 个字符");
     }
     String normalizedSql = FederationSqlAnalysisUtils.normalizeQualifiedIdentifiers(sql);
+    String executableSql = FederationSqlAnalysisUtils.stripLeadingComments(normalizedSql);
+    if (!SMART_DML_PATTERN.matcher(executableSql).lookingAt()) {
+      throw new IllegalArgumentException("仅支持 INSERT、UPDATE、DELETE、MERGE、UPSERT 语句");
+    }
     JdbcDataSourceDefinition resolvedDataSource = resolveDataSource(dataSourceId, catalogCode);
-    TableReferenceSummary references = FederationSqlAnalysisUtils.collectTableReferences(normalizedSql);
+    TableReferenceSummary references = FederationSqlAnalysisUtils.collectTableReferences(executableSql);
     DmlTarget dmlTarget = dmlProcessor.resolve(resolvedDataSource, references);
+    if (FederationDmlStatementProcessor.canExecuteWithCalcite(executableSql)) {
+      return executeCalciteUpdate(catalogCode, normalizedSql, executableSql, request, dmlTarget);
+    }
     SimpleDataSource simpleDataSource = dataSourceService.requireSimpleDataSource(
         requireValue(dmlTarget.dataSource().getId(), "数据源ID不能为空")
     );
-    String pushedSql = FederationDmlStatementProcessor.rewrite(normalizedSql, dmlTarget.dataSource().getCode());
+    String pushedSql = FederationDmlStatementProcessor.rewrite(executableSql, dmlTarget.dataSource().getCode());
     LOGGER.debug("DML 下推到物理数据源 [{}]: {}", dmlTarget.dataSource().getCode(), pushedSql);
     long startedAt = System.nanoTime();
     try (Connection connection = simpleDataSource.getConnection();
@@ -257,6 +268,48 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       );
       throw new IllegalStateException("DML 执行失败: " + ex.getMessage(), ex);
     }
+  }
+
+  private FederationQueryModels.SqlUpdateResult executeCalciteUpdate(
+      final String catalogCode,
+      final String auditSql,
+      final String executableSql,
+      final FederationQueryModels.SqlConsoleRequest request,
+      final DmlTarget target
+  ) {
+    JdbcDataSourceDefinition dataSource = target.dataSource();
+    String targetCode = requireValue(dataSource.getCode(), "数据源编码不能为空");
+    long startedAt = System.nanoTime();
+    CalciteUpdateResult result;
+    Map<String, Set<String>> requestedCatalogs = FederationSqlAnalysisUtils.requestedCatalogs(
+        executableSql,
+        request == null ? null : request.defaultSchema(),
+        targetCode,
+        List.of(targetCode)
+    );
+    try (var assembly = catalogAssembler.assemble(
+        targetCode,
+        List.of(dataSource),
+        requestedCatalogs
+    )) {
+      result = queryEngine.executeUpdate(
+          new CalciteUpdateRequest(executableSql,
+              resolveDefaultSchema(request.defaultSchema(), targetCode, List.of(dataSource)),
+              DDL_DML_STATEMENT_TIMEOUT_SECONDS * 1_000,
+              request.parameters()),
+          assembly.schemaConfigurer()
+      );
+    } catch (IllegalArgumentException | IllegalStateException ex) {
+      sqlAuditor.persist(catalogCode, auditSql, "FAILED", FederationSqlAuditor.toElapsedMs(startedAt),
+          null, "Calcite DML 执行失败 - 目标数据源: " + targetCode,
+          FederationSqlAuditor.resolveMessage(ex));
+      throw ex;
+    }
+    String pushedSql = result.pushedSqls().isEmpty() ? executableSql : result.pushedSqls().get(0);
+    sqlAuditor.persist(catalogCode, auditSql, "SUCCESS", result.executionTimeMs(),
+        (long) result.affectedRows(), "DML 经 Calcite 下推到物理数据源: " + targetCode, null);
+    return new FederationQueryModels.SqlUpdateResult(catalogCode, targetCode,
+        result.affectedRows(), result.executionTimeMs(), pushedSql);
   }
 
   /** {@inheritDoc} */
@@ -345,18 +398,19 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   ) {
     String sql = requireValue(request == null ? null : request.sql(), "SQL 不能为空");
     String trimmed = sql.strip();
+    String classificationSql = FederationSqlAnalysisUtils.stripLeadingComments(trimmed);
 
-    if (SMART_FLUSH_CACHE_PATTERN.matcher(trimmed).matches()) {
+    if (SMART_FLUSH_CACHE_PATTERN.matcher(classificationSql).matches()) {
       long metadataEntries = metadataCacheService.flushAll();
       long schemaEntries = catalogAssembler.flushSchemaCache();
       return FederationQueryModels.SqlExecuteResult.flushCache(
           "缓存已刷新，元数据缓存清除 " + metadataEntries + " 条，Calcite Schema 缓存清除 " + schemaEntries + " 条"
       );
     }
-    if (FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher(trimmed).lookingAt()) {
+    if (FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher(classificationSql).lookingAt()) {
       return FederationQueryModels.SqlExecuteResult.ddl(executeDdl(request));
     }
-    if (SMART_DML_PATTERN.matcher(trimmed).lookingAt()) {
+    if (SMART_DML_PATTERN.matcher(classificationSql).lookingAt()) {
       return FederationQueryModels.SqlExecuteResult.dml(executeUpdate(request));
     }
     return FederationQueryModels.SqlExecuteResult.query(execute(request));

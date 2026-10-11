@@ -11,6 +11,7 @@ package org.simplepoint.plugin.rbac.core.base.repository;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserPickerItem;
@@ -19,6 +20,7 @@ import org.simplepoint.security.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -34,6 +36,15 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
   @Override
   @Query(value = "select * from simpoint_ac_users where id = :userId", nativeQuery = true)
   Optional<User> findByIdForAuthorization(@Param("userId") String userId);
+
+  @Override
+  @Modifying(flushAutomatically = true, clearAutomatically = true)
+  @Query("""
+      update User u set u.picture = :picture, u.updatedAt = :updatedAt, u.updatedBy = :userId
+      where u.id = :userId and u.deletedAt is null
+      """)
+  int updateCurrentPicture(@Param("userId") String userId, @Param("picture") String picture,
+      @Param("updatedAt") Instant updatedAt);
 
   @Override
   @Query("select u from User u where u.id in :userIds and u.deletedAt is null")
@@ -79,10 +90,10 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
         u.picture
       )
       from User u
-      where u.enabled = true
+      where u.enabled = true and u.deletedAt is null
         and (
-          lower(coalesce(u.email, '')) like concat(lower(:keyword), '%')
-          or coalesce(u.phoneNumber, '') like concat(:keyword, '%')
+          lower(coalesce(u.email, '')) like concat(lower(replace(replace(replace(:keyword, '!', '!!'), '%', '!%'), '_', '!_')), '%') escape '!'
+          or coalesce(u.phoneNumber, '') like concat(replace(replace(replace(:keyword, '!', '!!'), '%', '!%'), '_', '!_'), '%') escape '!'
         )
       order by coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id), u.id
       """)
@@ -98,7 +109,7 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
         u.picture
       )
       from User u
-      where u.id in :userIds
+      where u.id in :userIds and u.deletedAt is null
       """)
   Collection<UserPickerItem> findPickerItemsByIds(@Param("userIds") Collection<String> userIds);
 }

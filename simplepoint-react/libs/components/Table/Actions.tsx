@@ -1,4 +1,4 @@
-import {Button, Space} from 'antd';
+import {Button, Space, Tooltip} from 'antd';
 import type {Key} from 'react';
 import {createIcon} from '@simplepoint/shared/types/icon';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
@@ -21,22 +21,33 @@ export default function TableActions<T>({buttons, selectedKeys, selectedRows, on
   };
   return <Space className="sp-table-button-group" size={[8, 8]} wrap>
     {buttons?.map(button => {
-      const {argumentMinSize: min, argumentMaxSize: max, sort: _sort, color, variant, text, icon, title,
+      const {argumentMinSize: min, argumentMaxSize: max, sort: _sort, color, variant, text, icon, title, iconOnly, children,
         authority: _authority, path: _path, ...rest} = button as TableButtonProps & {authority?: string; path?: string};
       const size = selectedKeys.length;
       const disabled = button.disabled || selectedRows.length !== size
         || (typeof min === 'number' && min !== -1 && size < min)
         || (typeof max === 'number' && max !== -1 && size > max)
         || !!isButtonDisabled?.(button, selectedKeys, selectedRows);
-      return <Button {...rest} key={button.key}
+      const unavailable = !button.onClick && !onButtonEvents?.[button.key];
+      const reason = unavailable ? t('table.actionUnavailable', '此操作暂不可用，请刷新页面后重试')
+        : selectedRows.length !== size ? t('table.selectionExpired', '所选记录已不可用，请重新选择')
+        : typeof min === 'number' && min !== -1 && size < min
+          ? t('table.selectAtLeast', '请至少选择 {count} 条记录', {count: min})
+          : typeof max === 'number' && max !== -1 && size > max
+            ? t('table.selectAtMost', '最多选择 {count} 条记录', {count: max}) : undefined;
+      const actionLabel = text == null
+        ? t(`table.button.${button.key}`, label(title, button.key))
+        : label(text, button.key);
+      return <Tooltip key={button.key} title={reason || (iconOnly ? actionLabel : undefined)}><span style={{display: 'inline-flex'}}><Button {...rest}
         className={['sp-table-button', rest.className].filter(Boolean).join(' ')}
         danger={rest.danger || color === 'danger'} ghost={variant === 'outlined' || rest.ghost}
         title={title ? t(`table.button.${button.key}.title`, label(title, button.key)) : undefined}
-        icon={typeof icon === 'string' ? createIcon(icon) : icon} disabled={disabled}
+        aria-label={iconOnly || children != null ? rest['aria-label'] ?? actionLabel : rest['aria-label']}
+        icon={typeof icon === 'string' ? createIcon(icon) : icon} disabled={disabled || unavailable}
         onClick={button.onClick ?? (() => onButtonEvents?.[button.key]?.(selectedKeys, selectedRows, button))}>
-        {typeof (text ?? title) === 'string' && String(text ?? title).startsWith('i18n:')
-          ? label(text ?? title, button.key) : t(`table.button.${button.key}`, label(text ?? title, button.key))}
-      </Button>;
+        {/* Rich record actions still use the same availability/selection/label contract. */}
+        {iconOnly ? null : children ?? actionLabel}
+      </Button></span></Tooltip>;
     })}
   </Space>;
 }

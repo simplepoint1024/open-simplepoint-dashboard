@@ -2,17 +2,24 @@
 // backend writes). MF_SMOKE_EDGE tests deployed remotes; MF_SMOKE_HOST_DIST
 // points to static/ extracted from the running host JAR (its HTTP paths require login).
 import assert from 'node:assert/strict';
+import {createPageReloader, createReadyControlClicker} from './cdp-navigation.mjs';
+import {smokeWorkflowFormCommit} from './smoke-workflow-form-commit.mjs';
 import {personalNavigation, createPersonalFixture} from './personal-fixture.mjs';
 const personalFixture = createPersonalFixture();
 import {createAssignmentFixture} from './assignment-fixture.mjs';
 import {smokeAssignment} from './smoke-assignment.mjs';
 import {createOrganizationFixture, organizationRoute} from './organization-fixture.mjs';
 import {smokeOrganization} from './smoke-organization.mjs';
+import {smokeOrganizationMembers} from './smoke-organization-members.mjs';
 const organizationFixture = createOrganizationFixture();
 const assignmentFixture = createAssignmentFixture();
 import {createMemberFixture, memberRoute} from './member-fixture.mjs';
 import {smokeMembers, smokeMemberViewPersistence} from './smoke-members.mjs';
+import {smokeMemberLifecycle} from './smoke-member-lifecycle.mjs';
 const memberFixture = createMemberFixture();
+import {createOrganizationPickerFixture} from './organization-picker-fixture.mjs';
+import {smokeOrganizationPicker} from './smoke-organization-picker.mjs';
+const organizationPickerFixture = createOrganizationPickerFixture(memberFixture);
 import {createRoleAssignmentFixture} from './role-assignment-fixture.mjs';
 import {smokeRoleAssignment} from './smoke-role-assignment.mjs';
 const roleAssignmentFixture = createRoleAssignmentFixture();
@@ -21,15 +28,99 @@ import {smokeOrganizationSelection, smokeReadonlyOrganizationSelection} from './
 const organizationSelectionFixture = createOrganizationSelectionFixture();
 import {createCommonMainFixture, commonMainRoutes} from './common-main-fixture.mjs';
 import {smokeCommonMain} from './smoke-common-main.mjs';
+import {smokeFieldMatrix, smokeFieldPolicy, smokeFieldLifecycle, smokeFieldProtected} from './smoke-field-matrix.mjs';
 const commonMainFixture = createCommonMainFixture();
+import {createDictionaryLifecycleFixture} from './dictionary-lifecycle-fixture.mjs';
+import {smokeDictionaryLifecycle} from './smoke-dictionary-lifecycle.mjs';
+const dictionaryLifecycleFixture = createDictionaryLifecycleFixture();
+import {createUserPickerFixture} from './user-picker-fixture.mjs';
+import {smokeUserPicker} from './smoke-user-picker.mjs';
+const userPickerFixture = createUserPickerFixture();
+import {createConfigurationLifecycleFixture} from './configuration-lifecycle-fixture.mjs';
+import {smokeConfigurationLifecycle} from './smoke-configuration-lifecycle.mjs';
+const configurationLifecycleFixture = createConfigurationLifecycleFixture();
+import {applicationResourceRoute, createApplicationResourceFixture} from './application-resource-fixture.mjs';
+import {smokeApplicationResources} from './smoke-application-resources.mjs';
+const applicationResourceFixture = createApplicationResourceFixture();
+import {createResourceManagementFixture, resourceManagementRoute} from './resource-management-fixture.mjs';
+import {smokeResourceManagement} from './smoke-resource-management.mjs';
+const resourceManagementFixture = createResourceManagementFixture();
+import {createRoleLifecycleFixture} from './role-lifecycle-fixture.mjs';
+import {smokeRoleLifecycle} from './smoke-role-lifecycle.mjs';
+const roleLifecycleFixture = createRoleLifecycleFixture();
+import {createNotificationLifecycleFixture} from './notification-lifecycle-fixture.mjs';
+import {smokeNotificationLifecycle} from './smoke-notification-lifecycle.mjs';
+const notificationLifecycleFixture = createNotificationLifecycleFixture();
+import {createCatalogFixture, catalogRoute} from './catalog-fixture.mjs';
+import {smokeCatalog} from './smoke-catalog.mjs';
+const catalogFixture = createCatalogFixture();
+import {createBillingFixture, billingRoute} from './billing-fixture.mjs';
+import {smokeBilling} from './smoke-billing.mjs';
+const billingFixture = createBillingFixture();
+import {createMcpLifecycleFixture, mcpLifecycleRoute} from './mcp-lifecycle-fixture.mjs';
+import {smokeMcpLifecycle} from './smoke-mcp-lifecycle.mjs';
+const mcpLifecycleFixture = createMcpLifecycleFixture();
 import {createRuntimeFixture, runtimeRoute} from './runtime-fixture.mjs';
 import {smokeRuntime} from './smoke-runtime.mjs';
+import {smokeRuntimeMutations} from './smoke-runtime-mutations.mjs';
+import {createMcpCapabilitiesFixture, mcpCapabilitiesRoute} from './mcp-capabilities-fixture.mjs';
+import {smokeMcpCapabilities} from './smoke-mcp-capabilities.mjs';
+const mcpCapabilitiesFixture = createMcpCapabilitiesFixture();
+import {createJdbcUserFixture, jdbcUserRoute} from './jdbc-user-fixture.mjs';
+import {smokeJdbcUsers} from './smoke-jdbc-users.mjs';
+const jdbcUserFixture = createJdbcUserFixture();
+import {createStorageCrudFixture, storageCrudRoutes} from './storage-crud-fixture.mjs';
+import {smokeStorageCrud} from './smoke-storage-crud.mjs';
+const storageCrudFixture = createStorageCrudFixture();
+import {createDnaWorkbenchFixture, metadataRoute} from './dna-workbench-fixture.mjs';
+import {smokeDnaWorkbench} from './smoke-dna-workbench.mjs';
+const dnaWorkbenchFixture = createDnaWorkbenchFixture();
+import {createJdbcArtifactFixture, jdbcArtifactRoutes} from './jdbc-artifact-fixture.mjs';
+import {smokeJdbcArtifacts} from './smoke-jdbc-artifacts.mjs';
+const jdbcArtifactFixture = createJdbcArtifactFixture();
+import {createAppWorkbenchFixture, appWorkbenchRoute} from './app-workbench-fixture.mjs';
+import {smokeAppWorkbench} from './smoke-app-workbench.mjs';
+const appWorkbenchFixture = createAppWorkbenchFixture();
 import {createRedisFixture, redisRoute} from './redis-fixture.mjs';
 import {smokeRedis} from './smoke-redis.mjs';
+import {smokeRedisMutations} from './smoke-redis-mutations.mjs';
+import {createKnowledgeFixture, knowledgeRoute} from './knowledge-fixture.mjs';
+import {smokeKnowledge} from './smoke-knowledge.mjs';
+import {createApiKeyFixture, apiKeyRoute} from './api-key-fixture.mjs';
+import {smokeApiKeys} from './smoke-api-keys.mjs';
+import {smokeFormSubmission} from './smoke-form-submission.mjs';
+import {createDataScopeFixture} from './data-scope-fixture.mjs';
+import {smokeDataScope} from './smoke-data-scope.mjs';
+const dataScopeFixture = createDataScopeFixture();
+import {createIdentityProviderFixture} from './identity-provider-fixture.mjs';
+import {smokeIdentityProvider} from './smoke-identity-provider.mjs';
+const identityProviderFixture = createIdentityProviderFixture();
+import {createAiConfigurationFixture, aiProviderRoute} from './ai-configuration-fixture.mjs';
+import {smokeAiConfiguration} from './smoke-ai-configuration.mjs';
+const aiConfigurationFixture = createAiConfigurationFixture();
+import {createExactDecimalFixture, exactDecimalRoute} from './exact-decimal-fixture.mjs';
+import {smokeExactDecimal} from './smoke-exact-decimal.mjs';
+const exactDecimalFixture = createExactDecimalFixture();
+const apiKeyFixture = createApiKeyFixture();
+const knowledgeFixture = createKnowledgeFixture();
 const redisFixture = createRedisFixture();
 const runtimeFixture = createRuntimeFixture();
 import {createEntitySelectFixture} from './entity-select-fixture.mjs';
 import {smokeEntitySelect} from './smoke-entity-select.mjs';
+import {createWorkflowFixture, workflowRoutes} from './workflow-fixture.mjs';
+import {smokeWorkflow} from './smoke-workflow.mjs';
+import {smokeWorkflowLifecycle} from './smoke-workflow-lifecycle.mjs';
+import {smokeExpressionModes} from './smoke-expression-modes.mjs';
+import {smokeConditionModes} from './smoke-condition-modes.mjs';
+import {smokeHostPreferences} from './smoke-host-preferences.mjs';
+import {createProfileAccessFixture} from './profile-access-fixture.mjs';
+import {smokeProfileAccess} from './smoke-profile-access.mjs';
+const profileAccessFixture = createProfileAccessFixture();
+import {smokeHomeCustomization} from './smoke-home-customization.mjs';
+import {createTenantResourceFixture, tenantResourceRoutes} from './tenant-resource-fixture.mjs';
+import {smokeTenantResources} from './smoke-tenant-resources.mjs';
+const tenantResourceFixture = createTenantResourceFixture();
+const workflowFixture = createWorkflowFixture();
 const entitySelectFixture = createEntitySelectFixture();
 import {createUserAssignmentFixture, tenantAssignmentRoute} from './user-assignment-fixture.mjs';
 import {smokeUserAssignment} from './smoke-user-assignment.mjs';
@@ -51,6 +142,7 @@ const pages = [
   {remote: 'dna', module: 'dna', expose: 'platform/JdbcDataSource', api: '/dna/platform/dna/data-sources', label: '数据源'},
   {remote: 'ai', module: 'ai', expose: 'workbench/Models', api: '/ai/workbench/models', label: '模型管理'},
 ];
+const remotes = [...pages, {remote: 'workflow', module: 'workflow'}, {remote: 'app', module: 'app'}];
 const cacheTestRoutes = Array.from({length: 10}, (_, i) => ({
   id: `cache-${i}`, code: 'common.view', type: 'PAGE', routeKind: 'item',
   path: `/smoke/cache-${i}`, component: 'common/platform/Package', title: '',
@@ -77,6 +169,11 @@ const personalTablePreferences = new Map();
 let homeSaveFailure = false;
 let queryViewFailure = false;
 let homeSaveCount = 0;
+let homeExtra = false, homeExtraFailure = false, notificationDelay = 0, notificationPending = 0;
+const homeWrites = [], notificationWrites = [], notificationStates = new Map();
+const homeFixture = {preferences: homePreferences, writes: homeWrites, notificationWrites, tenantId: tenantResourceFixture.tenantId,
+  enable() {homeExtra = true; tenantResourceFixture.enable();}, disable() {homeExtra = false; notificationDelay = 0; tenantResourceFixture.disable();},
+  failWrite() {homeExtraFailure = true;}, notificationDelay(value) {notificationDelay = value;}, pendingNotifications() {return notificationPending;}};
 let notificationRead = false;
 const notification = {id: 'home-notice', title: '首页通知测试', content: '通知正文：请检查工作空间设置。', category: 'SYSTEM', priority: 'NORMAL', publishAt: '2026-09-18T01:00:00Z', linkUrl: '/profile'};
 let rejectDictionary = process.env.MF_SMOKE_DICTIONARY_FAILURE === '1';
@@ -86,6 +183,11 @@ let saveStatus = 200;
 let invalidUpload = false;
 const uploads = [];
 const profileSaves = [];
+let currentProfile = {id: 'smoke', nickname: 'Smoke user', enabled: true,
+  birthdate: '1990-01-02T12:30:41.123Z', gender: 'custom-value', locale: 'fr-FR', zoneinfo: 'UTC'};
+const profileFixture = {profileSaves, passwordSaves: [], pictureSaves: [], delay: 0,
+  failSave: status => {saveStatus = status;}, failUpload: status => {uploadStatus = status;},
+  invalidUpload: value => {invalidUpload = value;}, profile: () => currentProfile};
 const expectedUploadFailures = [];
 const json = (res, data, status = 200) => {
   res.writeHead(status, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'});
@@ -98,10 +200,36 @@ const server = createServer(async (req, res) => {
     const record = {url: req.url, method: req.method, start: performance.now()};
     const respond = (data, status = 200) => {record.end = performance.now(); json(res, data, status);};
     if (!/\.(js|css|ico|woff2?|png|svg|json|map)$/.test(pathname)) apiRequests.push(record);
+    if (await dataScopeFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await exactDecimalFixture.handle(req, url, respond)) return;
+    if (await aiConfigurationFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}),
+      payload => {record.end = performance.now(); res.writeHead(200, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store'}); res.end(payload);})) return;
+    if (await identityProviderFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await organizationPickerFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await notificationLifecycleFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await roleLifecycleFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await applicationResourceFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await resourceManagementFixture.handle(req, url, respond)) return;
+    if (await configurationLifecycleFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await userPickerFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await tenantResourceFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await workflowFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await dnaWorkbenchFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await jdbcArtifactFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await appWorkbenchFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await mcpCapabilitiesFixture.handle(req, url, respond)) return;
+    if (await jdbcUserFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await storageCrudFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await redisFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await knowledgeFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await dictionaryLifecycleFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await apiKeyFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await runtimeFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await entitySelectFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await commonMainFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await catalogFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await billingFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await mcpLifecycleFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await personalFixture.handle(req, url, respond)) return;
     if (await assignmentFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await organizationFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
@@ -109,10 +237,16 @@ const server = createServer(async (req, res) => {
     if (await organizationSelectionFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await roleAssignmentFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await userAssignmentFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (pathname === '/common/platform/tenants/users/capabilities') return respond({canConfigureMembers: false});
+    if (pathname === '/common/data-scopes/presentation') return respond({pages: {}, dataRules: {'preview-old': '原组织范围', 'preview-new': '新组织范围'}, fieldRules: {}, organizations: {}});
     if (pathname === '/common/data-scopes/expression/catalog') return respond({});
     if (pathname === '/userinfo') return respond({sub: 'smoke', preferred_username: 'smoke', name: 'MF smoke'});
+    if (pathname === '/dna/platform/dna/federation/sql-console/workbench-permissions') return respond({canExecute: true, canExplain: true});
     if (pathname === '/common/platform/object-storage/providers') return respond([]);
-    if (pathname === '/common/platform/object-storage/provider-configs/schema') return respond(commonMainFixture.datasets.find(dataset => dataset.name === 'StorageProvider').schema);
+    if (pathname === '/common/platform/object-storage/provider-configs/schema') return respond({
+      ...commonMainFixture.datasets.find(dataset => dataset.name === 'StorageProvider').schema,
+      buttons: [{key: 'test', title: '测试连接', sort: 0, argumentMinSize: 1, argumentMaxSize: 1}],
+    });
     if (pathname === '/common/platform/object-storage/provider-configs') return respond({
       content: [{id: 'provider-smoke', name: 'Smoke OSS', code: 'smoke', type: 'MINIO', bucket: 'smoke', enabled: true}],
       page: {number: 0, size: 10, totalElements: 1, totalPages: 1},
@@ -136,42 +270,41 @@ const server = createServer(async (req, res) => {
       }
       return respond(invalidUpload ? {} : {id: 'smoke-upload', originalFileName: 'smoke.txt'});
     }
-    if (pathname === '/common/users/me') {
-      const current = {id: 'smoke', nickname: 'Smoke user', enabled: true};
+    if (pathname === '/common/users/change-password' && req.method === 'POST') {
+      const chunks = []; for await (const chunk of req) chunks.push(chunk);
+      profileFixture.passwordSaves.push(JSON.parse(Buffer.concat(chunks).toString()));
+      await delay(profileFixture.delay); return respond({});
+    }
+    if (pathname === '/common/users/me' || pathname === '/common/users/me/picture') {
       if (req.method === 'PUT') {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
         const values = JSON.parse(Buffer.concat(chunks).toString());
         profileSaves.push(values);
+        if (pathname.endsWith('/picture')) profileFixture.pictureSaves.push(values);
+        await delay(profileFixture.delay);
         if (saveStatus !== 200) {
           expectedUploadFailures.push({url: origin + req.url, status: saveStatus});
           return json(res, {message: '头像资料保存失败（测试）'}, saveStatus);
         }
-        return respond({...current, ...values});
+        currentProfile = {...currentProfile, ...values};
+        return respond(currentProfile);
       }
-      return respond(current);
+      return respond(currentProfile);
     }
-    if (pathname === '/common/users/me/access/resources') return respond({
-      content: [{code: 'common.view', label: '资源目录', type: 'PAGE',
-        directory: ['系统管理', '资源配置'], icon: 'AppstoreOutlined', effective: true, available: true}],
-      page: {number: 0, size: 24, totalElements: 1, totalPages: 1},
-    });
-    if (pathname === '/common/users/me/access/page-detail') return respond({
-      page: {code: 'common.view', label: '资源目录', type: 'PAGE', directory: ['系统管理', '资源配置'], effective: true, available: true},
-      operations: [{code: 'common.edit', label: '编辑资源', type: 'ACTION', effective: true, available: true}],
-      dataPermissionSupported: false, fieldPermissionSupported: false,
-    });
+    if (profileAccessFixture.handle(req, url, respond)) return;
     if (pathname === '/account/security-links') return json(res, {twoFactor: `${origin}/account/2fa`,
       externalIdentities: `${origin}/account/external-identities`});
-    if (pathname === '/common/users/me/organization') return respond({id: null, name: null, path: []});
     if (pathname === '/common/tenants/current') return respond([{tenantId: '__platform__', tenantCode: '__platform__', tenantName: '平台', tenantType: 'PLATFORM'}]);
     if (pathname.includes('current-roles')) return respond([]);
     if (pathname.includes('authorization-context-id')) return respond('smoke-context');
     if (pathname === '/common/resources/service-routes') return respond({
-      services: pages.map(p => ({name: p.remote, entry: `/${p.remote}/mf/mf-manifest.json`})),
+      services: remotes.map(p => ({name: p.remote, entry: `/${p.remote}/mf/mf-manifest.json`})),
       entryPoint: '/mf/mf-manifest.json',
-      authorizationContext: {scopeType: 'PLATFORM', actorRole: 'PLATFORM_ADMIN', resources: pages.map(p => `${p.remote}.view`)},
-      routes: [...personalNavigation, ...pages.map((p, id) => ({id: String(id + 1), code: `${p.remote}.view`, type: 'PAGE', routeKind: 'item', path: `/smoke/${p.remote}`, component: `${p.remote}/${p.expose}`, title: '', label: p.label, icon: 'AppstoreOutlined', scopeTypes: ['PLATFORM']})), ...cacheTestRoutes, storageRoute, sqlRoute, organizationRoute, memberRoute, tenantAssignmentRoute, organizationSelectionRoute, ...commonMainRoutes, runtimeRoute, redisRoute],
+      authorizationContext: {scopeType: req.headers['x-tenant-id'] === tenantResourceFixture.tenantId ? 'TENANT' : 'PLATFORM',
+        actorRole: req.headers['x-tenant-id'] === tenantResourceFixture.tenantId ? 'TENANT_OWNER' : 'PLATFORM_ADMIN',
+        resources: [...new Set([...remotes.map(p => `${p.remote}.view`), ...(req.headers['x-tenant-id'] === tenantResourceFixture.tenantId ? tenantResourceRoutes.map(route => route.code) : [])])]},
+      routes: [...personalNavigation, ...workflowRoutes, ...pages.map((p, id) => ({id: String(id + 1), code: `${p.remote}.view`, type: 'PAGE', routeKind: 'item', path: `/smoke/${p.remote}`, component: `${p.remote}/${p.expose}`, title: '', label: p.label, icon: 'AppstoreOutlined', scopeTypes: ['PLATFORM']})), ...cacheTestRoutes, storageRoute, sqlRoute, organizationRoute, memberRoute, tenantAssignmentRoute, organizationSelectionRoute, ...commonMainRoutes, aiProviderRoute, exactDecimalRoute, applicationResourceRoute, resourceManagementRoute, runtimeRoute, redisRoute, knowledgeRoute, apiKeyRoute, mcpCapabilitiesRoute, jdbcUserRoute, ...storageCrudRoutes, metadataRoute, ...jdbcArtifactRoutes, appWorkbenchRoute, catalogRoute, billingRoute, mcpLifecycleRoute, ...(tenantResourceFixture.isActive() ? tenantResourceRoutes : [])],
     });
     if (pathname === '/common/i18n/languages/mapping') return respond({'zh-CN': '简体中文', 'en-US': 'English'});
     if (pathname === '/common/i18n/messages/mapping') {
@@ -180,9 +313,15 @@ const server = createServer(async (req, res) => {
       if (url.searchParams.get('ns')?.includes('packages')) await delay(700);
       return respond({...Object.assign({}, ...Object.values(bundles)), 'smoke.column': locale === 'en-US' ? 'Smoke name' : '测试名称'});
     }
-    if (pathname === '/common/notifications/unread-count') return respond({count: notificationRead ? 0 : 1});
-    if (pathname === '/common/notifications/inbox') return respond({content: [{...notification, read: notificationRead}], page: {number: 0, size: 20, totalElements: 1, totalPages: 1}});
-    if (pathname === '/common/notifications/home-notice/read' || pathname === '/common/notifications/read-all') { notificationRead = true; return respond(null); }
+    const notificationIsRead = homeExtra ? !!notificationStates.get(req.headers['x-tenant-id']) : notificationRead;
+    if (pathname === '/common/notifications/unread-count') return respond({count: notificationIsRead ? 0 : 1});
+    if (pathname === '/common/notifications/inbox') return respond({content: [{...notification, read: notificationIsRead}], page: {number: 0, size: 20, totalElements: 1, totalPages: 1}});
+    if (pathname === '/common/notifications/home-notice/read' || pathname === '/common/notifications/read-all') {
+      if (homeExtra) {notificationWrites.push({tenantId: req.headers['x-tenant-id'], path: pathname}); notificationStates.set(req.headers['x-tenant-id'], true);
+        notificationPending++; try {await delay(notificationDelay);} finally {notificationPending--;}}
+      else notificationRead = true;
+      return respond(null);
+    }
     if (pathname === '/common/notifications/stream') {
       activeStreams++;
       res.once('close', () => activeStreams--);
@@ -232,9 +371,9 @@ const server = createServer(async (req, res) => {
         buttons: [{key: 'add', title: '新增', icon: 'PlusOutlined', sort: 1, argumentMaxSize: 0}, {key: 'edit', title: '编辑', icon: 'EditOutlined', sort: 2, argumentMinSize: 1, argumentMaxSize: 1},
           ...(page.remote === 'common' ? [{key: 'config.application', title: '配置应用', sort: 3, argumentMinSize: 1, argumentMaxSize: 1}] : [])],
       });
-      if (page.remote === 'dna' && url.searchParams.get('size') === '200') return respond({
+      if (page.remote === 'dna' && (url.searchParams.get('size') === '200' || url.searchParams.has('enabled'))) return respond({
         content: [{id: 'smoke-row-0', code: 'smoke', name: 'smoke-dna', enabled: true}],
-        page: {number: 0, size: 200, totalElements: 1, totalPages: 1},
+        page: {number: 0, size: Number(url.searchParams.get('size')), totalElements: 1, totalPages: 1},
       });
       const pageNumber = Number(url.searchParams.get('page') ?? 0);
       const payload = {content: [{id: `smoke-row-${pageNumber}`, code: 'smoke', name: `smoke-${page.remote}${pageNumber ? '-page2' : ''}`, status: 'active'}], totalElements: 40, totalPages: 2, size: 20, number: pageNumber};
@@ -262,7 +401,9 @@ const server = createServer(async (req, res) => {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
         homeSaveCount++;
-        if (homeSaveFailure) {
+        if (homeExtra) {homeWrites.push({key, body: JSON.parse(Buffer.concat(chunks).toString()), tenantId: req.headers['x-tenant-id']}); await delay(250);}
+        if (homeSaveFailure || homeExtraFailure) {
+          homeExtraFailure = false;
           expectedUploadFailures.push({url: origin + req.url, status: 500});
           return json(res, {message: '首页保存失败（测试）'}, 500);
         }
@@ -273,7 +414,7 @@ const server = createServer(async (req, res) => {
     }
     if (/^\/(common|auditing|dna|ai)\//.test(pathname) && !pathname.includes('/mf/')) return respond([]);
 
-    const remote = pages.find(p => pathname.startsWith(`/${p.remote}/mf/`));
+    const remote = remotes.find(p => pathname.startsWith(`/${p.remote}/mf/`));
     if (pathname === '/common/mf/mf-manifest.json') await delay(500);
     if (process.env.MF_SMOKE_EDGE && remote) {
       const target = new URL(req.url, process.env.MF_SMOKE_EDGE);
@@ -334,6 +475,7 @@ try {
   let sequence = 0;
   socket.addEventListener('message', ({data}) => {
     const message = JSON.parse(data);
+    navigation.onEvent(message);
     if (message.id) {
       const handlers = pending.get(message.id);
       pending.delete(message.id);
@@ -353,6 +495,8 @@ try {
     pending.set(id, {resolve, reject});
     socket.send(JSON.stringify({id, method, params}));
   });
+  const navigation = createPageReloader({send, poll});
+  const {reload} = navigation;
   const evaluate = async expression => {
     const result = await send('Runtime.evaluate', {expression, returnByValue: true, awaitPromise: true});
     if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails));
@@ -363,15 +507,13 @@ try {
     await poll(() => evaluate(`!!(${match})`), 'enabled visible action ' + text);
     await evaluate(`(${match}).click()`);
   };
-  const clickReady = async selector => {
-    await poll(() => evaluate(`(() => {const button=document.querySelector(${JSON.stringify(selector)}); return !!button && !button.disabled && !button.classList.contains('ant-btn-loading');})()`), 'enabled non-loading control ' + selector);
-    await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
-  };
+  const clickReady = createReadyControlClicker({evaluate, poll});
   const fill = async (selector, value) => evaluate(`(() => {const e=document.querySelector(${JSON.stringify(selector)});Object.getOwnPropertyDescriptor(e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
   await send('Runtime.enable');
   await send('Network.enable');
   await send('Network.setCacheDisabled', {cacheDisabled: true});
   await send('Page.enable');
+  await send('Page.setLifecycleEventsEnabled', {enabled: true});
   await send('Page.addScriptToEvaluateOnNewDocument', {source: `
     localStorage.setItem('sp.tenantId', '__platform__');
     localStorage.setItem('sp.contextId:__platform__', 'smoke-context');
@@ -392,21 +534,382 @@ try {
       input.dispatchEvent(new Event('change', {bubbles: true}));
     })()`);
   };
-  if (process.env.MF_SMOKE_RESOURCE_ONLY === '1') {
-    await send('Emulation.setDeviceMetricsOverride', {width: 1600, height: 1100, deviceScaleFactor: 1, mobile: false});
-    commonMainFixture.enable();
-    await smokeEntitySelect({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: entitySelectFixture, common: commonMainFixture});
+  if (process.env.MF_SMOKE_DATA_SCOPE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeDataScope({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: dataScopeFixture});
     assert.deepEqual(exceptions, []);
-    if (process.env.MF_SMOKE_RESOURCE_SCREENSHOT) {
-      await clickMenu('选择器资源中心');
-      await poll(() => evaluate(`!!document.querySelector('.nb-tab-panel-active .role-resource-list [data-resource-id="resource-root"]')`), 'resource editor screenshot ready');
-      await clickReady('.nb-tab-panel-active .role-resource-list button[aria-label="展开 测试资源目录"]');
-      await clickReady('.nb-tab-panel-active .role-resource-list [data-resource-id="resource-001"] .role-resource-node-label');
-      await poll(() => evaluate(`!!document.querySelector('.nb-tab-panel-active .role-resource-detail .role-resource-detail-title input[type=checkbox]')`), 'resource details rendered');
-      await delay(1500);
-      const screenshot = await send('Page.captureScreenshot', {format: 'png'});
-      await writeFile(process.env.MF_SMOKE_RESOURCE_SCREENSHOT, Buffer.from(screenshot.data, 'base64'));
-    }
+    assert.ok(warnings.every(message => message.startsWith('[API]') && expectedUploadFailures.some(failure => message.includes(new URL(failure.url).pathname))));
+    assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: targeted DataScope lifecycle with genuine production form engine, exported actual HTTP contracts and isolated writes');
+  } else if (process.env.MF_SMOKE_EXACT_DECIMAL_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeExactDecimal({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: exactDecimalFixture, ai: aiConfigurationFixture});
+    assert.deepEqual(exceptions, []); assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(record => record.status >= 400), []);
+    console.log('PASS: targeted exact decimal production forms, queries and protected default CRUD');
+  } else if (process.env.MF_SMOKE_AI_CONFIGURATION_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeAiConfiguration({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: aiConfigurationFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && expectedUploadFailures.some(failure => message.includes(new URL(failure.url).pathname))));
+    assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: targeted AI provider/model ownership, real native forms, bounded selector and SSE lifecycle');
+  } else if (process.env.MF_SMOKE_IDENTITY_PROVIDER_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeIdentityProvider({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: identityProviderFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && expectedUploadFailures.some(failure => message.includes(new URL(failure.url).pathname))));
+    assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: targeted IdentityProvider lifecycle with actual production components and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_FORM_SUBMISSION_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeFormSubmission({clickMenu, clickReady, clickText, fill, poll, evaluate,
+      fixture: apiKeyFixture, dictionaryFixture: dictionaryLifecycleFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/(?:platform\/dictionar|ai\/workbench\/api-keys)/.test(message)));
+    assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: targeted shared SForm/SimpleTable prevalidation lifecycle with actual production resource pages');
+  } else if (process.env.MF_SMOKE_NOTIFICATION_LIFECYCLE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeNotificationLifecycle({clickMenu, clickReady, clickText, fill, poll, evaluate, reload, fixture: notificationLifecycleFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/(system\/notifications|users\/picker)/.test(message)));
+    assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: targeted Notification lifecycle with actual production components and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_MEMBER_LIFECYCLE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeMemberLifecycle({clickMenu, clickReady, clickText, fill, poll, evaluate, reload,
+      fixture: memberFixture, roles: roleAssignmentFixture, requests: apiRequests});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/(tenant-members|users\/(authorize|unauthorized))/.test(message)));
+    assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: targeted TenantMembers retained lifecycle with real production components and isolated HTTP fixtures');
+  } else if (process.env.MF_SMOKE_ROLE_LIFECYCLE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeRoleLifecycle({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: roleLifecycleFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/role-resource-configuration\//.test(message)));
+    assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: targeted Role retained lifecycle with actual production components and isolated HTTP fixtures');
+  } else if (process.env.MF_SMOKE_RESOURCE_MANAGEMENT_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeResourceManagement({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: resourceManagementFixture});
+    assert.deepEqual(exceptions, []); assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: targeted management Resource production page with actual schema and query contracts');
+  } else if (process.env.MF_SMOKE_APPLICATION_RESOURCES_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeApplicationResources({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: applicationResourceFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/(platform\/applications|resources)/.test(message)));
+    assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: targeted application resource lifecycle with production artifacts and actual HTTP contracts');
+  } else if (process.env.MF_SMOKE_CONFIGURATION_LIFECYCLE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeConfigurationLifecycle({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: configurationLifecycleFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message=>message.startsWith('[API]') && /\/platform\/(tenants|packages|applications)/.test(message)));
+    assert.deepEqual(network.filter(record=>record.status >= 400 && !expectedUploadFailures.some(f=>f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: targeted shared configuration lifecycle with actual backend schemas and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_ORGANIZATION_PICKER_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeOrganizationPicker({clickMenu, clickReady, clickText, fill, poll, evaluate,
+      fixture: organizationPickerFixture, member: memberFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/organizations/options')));
+    assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: targeted OrganizationSelect with actual production components and isolated count-free HTTP pages');
+  } else if (process.env.MF_SMOKE_USER_PICKER_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeUserPicker({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: userPickerFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/users\/picker\//.test(message)));
+    assert.deepEqual(network.filter(r=>r.status >= 400 && !expectedUploadFailures.some(f=>f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted UserPicker with production artifacts and actual single/multiple schema contracts');
+  } else if (process.env.MF_SMOKE_DICTIONARY_LIFECYCLE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeDictionaryLifecycle({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: dictionaryLifecycleFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/platform\/(dictionaries|dictionary-items)/.test(message)));
+    assert.deepEqual(network.filter(r=>r.status >= 400 && !expectedUploadFailures.some(f=>f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted Dictionary configuration lifecycle with actual schemas and isolated fixtures');
+  } else if (process.env.MF_SMOKE_API_KEYS_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeApiKeys({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: apiKeyFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/(api-keys|platform\/dictionaries)/.test(message)));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted API keys and shared default CRUD lifecycle with isolated fixtures');
+  } else if (process.env.MF_SMOKE_KNOWLEDGE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeKnowledge({clickMenu, clickReady, clickText, fill, poll, evaluate, chooseFile, fixture: knowledgeFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/knowledge-bases/.test(message)));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted knowledge lifecycle with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_REDIS_MUTATIONS_ONLY === '1' || process.env.MF_SMOKE_REDIS_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    if (process.env.MF_SMOKE_REDIS_MUTATIONS_ONLY === '1') await smokeRedisMutations({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: redisFixture});
+    else await smokeRedis({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: redisFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/redis\/entries/.test(message)));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted Redis production artifacts with isolated API fixtures');
+  } else if (process.env.MF_SMOKE_APP_WORKBENCH_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeAppWorkbench({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: appWorkbenchFixture, workspace: tenantResourceFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/app\/applications/.test(message)));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted application workbench with production artifacts and isolated tenant API fixtures');
+  } else if (process.env.MF_SMOKE_JDBC_ARTIFACTS_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeJdbcArtifacts({clickMenu, clickReady, clickText, fill, poll, evaluate, chooseFile, fixture: jdbcArtifactFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/dna\/(drivers|dialects)/.test(message)));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted JDBC artifact lifecycle with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_RUNTIME_MUTATIONS_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeRuntimeMutations({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: runtimeFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/runtime\/(pools|workloads|secrets)/.test(message)));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted Runtime writes with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_RUNTIME_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeRuntime({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: runtimeFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/runtime\/(nodes|pools|workloads|secrets)/.test(message)));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted Runtime standard layout and queries with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_MCP_LIFECYCLE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeMcpLifecycle({clickMenu, clickReady, clickText, poll, evaluate, fixture: mcpLifecycleFixture, workspace: tenantResourceFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/(mcp\/servers\/workbench-permissions|runtime\/pools\/actual-pool\/redeploy)/.test(message)));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted MCP lifecycle with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_BILLING_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeBilling({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: billingFixture, workspace: tenantResourceFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/billing/summary')));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted billing with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_WORKFLOW_LIFECYCLE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeWorkflowLifecycle({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/workflow\/(definitions\/definition1\/versions\/1\/copy-to-draft|tasks\/task1\/complete|instances\/instance1\/cancel)/.test(message)));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted workflow lifecycle with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_CATALOG_ONLY) {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeCatalog({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: catalogFixture,
+      mode: process.env.MF_SMOKE_CATALOG_ONLY, workspace: tenantResourceFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/catalog')));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted catalog with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_ORGANIZATION_MEMBERS_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeOrganizationMembers({clickMenu, clickReady, clickText, fill, poll, evaluate, send, reload, fixture: memberFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/tenant-members/by-organization/')));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted organization members with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_HOME_CUSTOMIZATION_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeHomeCustomization({clickMenu, clickReady, clickText, fill, poll, evaluate, reload, fixture: homeFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/users/preferences')));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted home customization with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_FIELD_PROTECTED_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeFieldProtected({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: commonMainFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/field-scopes')));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted protected field matrix and native metadata-only CRUD');
+  } else if (process.env.MF_SMOKE_FIELD_LIFECYCLE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeFieldLifecycle({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: commonMainFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/field-scopes/')));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted native field matrix lifecycle and actual HTTP metadata contracts');
+  } else if (process.env.MF_SMOKE_FIELD_POLICY_ONLY) {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeFieldPolicy({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: commonMainFixture, mode: process.env.MF_SMOKE_FIELD_POLICY_ONLY});
+    assert.deepEqual(exceptions, []);
+    assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+    console.log('PASS: targeted field policies with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_FIELD_MATRIX_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeFieldMatrix({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: commonMainFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/field-scopes/configuration')));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted field matrix with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_TENANT_RESOURCES_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeTenantResources({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: tenantResourceFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/tenants/current-')));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted tenant resources with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_PROFILE_ACCESS_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeProfileAccess({clickMenu, clickReady, poll, evaluate, send, fixture: profileAccessFixture});
+    assert.deepEqual(exceptions, []);
+    assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+    console.log('PASS: targeted profile access with production artifacts and native HTTP contracts');
+  } else if (process.env.MF_SMOKE_HOST_PREFERENCES_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeHostPreferences({clickMenu, clickReady, clickText, fill, poll, evaluate, send, chooseFile, fixture: profileFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && (message.includes('/users/me') || message.includes('/object-storage/upload'))));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted host preferences with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_ROLE_AUTHORITY_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeExpressionModes({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture, roleOnly: true});
+    assert.deepEqual(exceptions, []); assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+    console.log('PASS: unsupported comma-delimited role authority cannot be misselected as distinct native groups');
+  } else if (process.env.MF_SMOKE_DUE_DATE_CALENDAR_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeExpressionModes({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture, calendarOnly: true});
+    assert.deepEqual(exceptions, []); assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+    console.log('PASS: existing calendar spelling is preserved without browser-specific date normalization');
+  } else if (process.env.MF_SMOKE_DUE_DATE_LITERAL_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeExpressionModes({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture, dueDateOnly: true});
+    assert.deepEqual(exceptions, []); assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+    console.log('PASS: actual due-date input/save rejects native-invalid scalars without changing temporal expressions');
+  } else if (process.env.MF_SMOKE_PRIORITY_LITERAL_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeExpressionModes({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture, priorityOnly: true});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && expectedUploadFailures.some(failure => message.includes(new URL(failure.url).pathname))));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: priority literal ordinary preview matches the native task field conversion');
+  } else if (process.env.MF_SMOKE_WORKFLOW_FORM_COMMIT_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeWorkflowFormCommit({clickMenu, clickText, poll, evaluate, fixture: workflowFixture});
+    assert.deepEqual(exceptions, []); assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+    console.log('PASS: actual workflow runtime form input and submission share a consistent commit boundary');
+  } else if (process.env.MF_SMOKE_EXPRESSION_NUMERIC_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeExpressionModes({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture, numericOnly: true});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && expectedUploadFailures.some(failure => message.includes(new URL(failure.url).pathname))));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+    console.log('PASS: targeted numeric identities with real workflow designer and isolated APIs');
+  } else if (process.env.MF_SMOKE_EXPRESSION_STRINGS_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeConditionModes({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture, stringsOnly: true});
+    assert.deepEqual(exceptions, []); assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+    console.log('PASS: targeted expression strings with real workflow designer and isolated APIs');
+  } else if (process.env.MF_SMOKE_CONDITION_MODES_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeConditionModes({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture});
+    assert.deepEqual(exceptions, []); assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+    console.log('PASS: targeted condition modes with real workflow designer, draft requests and isolated APIs');
+  } else if (process.env.MF_SMOKE_EXPRESSION_MODES_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeExpressionModes({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture});
+    assert.deepEqual(exceptions, []); assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+    console.log('PASS: targeted expression modes with real workflow designer, draft requests and isolated APIs');
+  } else if (process.env.MF_SMOKE_WORKFLOW_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeWorkflow({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture,
+      capturePreview: process.env.MF_SMOKE_WORKFLOW_SCREENSHOT ? async () => {
+        const screenshot = await send('Page.captureScreenshot', {format: 'png'});
+        await writeFile(process.env.MF_SMOKE_WORKFLOW_SCREENSHOT, Buffer.from(screenshot.data, 'base64'));
+      } : undefined});
+    assert.deepEqual(exceptions, []);
+    console.log('PASS: targeted workflow production artifacts with isolated API fixtures');
+    assert.deepEqual(warnings, [], 'workflow interaction must not emit unexpected warnings');
+  } else if (process.env.MF_SMOKE_DNA_WORKBENCH_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeDnaWorkbench({clickMenu, clickReady, clickText, fill, poll, evaluate, send, reload, fixture: dnaWorkbenchFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/metadata/')));
+    console.log('PASS: targeted DNA workbench production artifacts with isolated API fixtures');
+  } else if (process.env.MF_SMOKE_COMMON_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeCommonMain({clickMenu, clickReady, clickText, fill, poll, evaluate, reload, fixture: commonMainFixture});
+    assert.deepEqual(exceptions, []);
+    console.log('PASS: targeted Common resource production artifacts with isolated API fixtures');
+  } else if (process.env.MF_SMOKE_STORAGE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeStorageCrud({clickMenu, clickReady, clickText, fill, poll, evaluate, reload, fixture: storageCrudFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/provider-configs')));
+    console.log('PASS: targeted storage CRUD production artifacts with isolated API fixtures');
+  } else if (process.env.MF_SMOKE_JDBC_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeJdbcUsers({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: jdbcUserFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/permissions')));
+    console.log('PASS: targeted JDBC assignment production artifacts with isolated API fixtures');
+  } else if (process.env.MF_SMOKE_MCP_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeMcpCapabilities({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: mcpCapabilitiesFixture});
+    assert.deepEqual(exceptions, []); assert.deepEqual(warnings, []);
+    console.log('PASS: targeted MCP production artifacts with isolated API fixtures');
+  } else if (process.env.MF_SMOKE_RESOURCE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    commonMainFixture.enable();
+    await smokeEntitySelect({clickMenu, clickReady, clickText, fill, poll, evaluate, reload, fixture: entitySelectFixture, common: commonMainFixture,
+      capturePreview: process.env.MF_SMOKE_RESOURCE_SCREENSHOT ? async () => {
+        await delay(300);
+        const screenshot = await send('Page.captureScreenshot', {format: 'png'});
+        await writeFile(process.env.MF_SMOKE_RESOURCE_SCREENSHOT, Buffer.from(screenshot.data, 'base64'));
+      } : undefined});
+    assert.deepEqual(exceptions, []);
     console.log('PASS: targeted role resource workflow; production frontend artifacts and isolated API fixtures');
   } else {
   await poll(() => evaluate(`!![...document.querySelectorAll('.ant-menu-item')].find(e => e.textContent.trim() === ${JSON.stringify(pages[0].label)})`), 'restored tab navigation ready');
@@ -433,6 +936,14 @@ try {
   heldDictionary();
   await poll(() => evaluate(`!!document.querySelector('.ant-drawer-open form')`), 'lazy RJSF form');
   assert.ok(await evaluate(`document.querySelector('.ant-drawer-open form').textContent.includes('测试名称')`));
+  await fill('.ant-drawer-open #root_name', 'Draft survives locale change');
+  await evaluate(`window.spI18n.setLocale('en-US')`);
+  await poll(() => evaluate(`window.spI18n.locale === 'en-US' && document.querySelector('.ant-drawer-open form')?.textContent.includes('Smoke name')`), 'English form labels without remount');
+  assert.equal(await evaluate(`document.querySelector('.ant-drawer-open #root_name')?.value`), 'Draft survives locale change');
+  await evaluate(`window.spI18n.setLocale('zh-CN')`);
+  await poll(() => evaluate(`window.spI18n.locale === 'zh-CN' && document.querySelector('.ant-drawer-open form')?.textContent.includes('测试名称')`), 'Chinese form labels restored');
+  assert.equal(await evaluate(`document.querySelector('.ant-drawer-open #root_name')?.value`), 'Draft survives locale change');
+  console.log('PASS: language changes update open form labels and retain unsaved values without remounting');
   uploadStatus = 413;
   await chooseFile('.ant-drawer-open input[type=file]', 2 * 1024 * 1024, 'text/plain', 'smoke.txt');
   await poll(() => evaluate(`document.querySelector('.ant-drawer-open [role=alert]')?.textContent.includes('服务端上传大小限制')`), 'file upload 413 inline error');
@@ -442,6 +953,8 @@ try {
   assert.ok(uploads.every(upload => upload.size > 2 * 1024 * 1024 && upload.contentType.startsWith('multipart/form-data; boundary=')));
   console.log('PASS: 2 MB attachment uses multipart boundary, shows HTTP 413 inline and retries successfully');
   await evaluate(`document.querySelector('.ant-drawer-open .ant-drawer-close').click()`);
+  await poll(()=>evaluate(`!!document.querySelector('.sp-simple-table-discard .ant-modal')`), 'real Package unsaved draft confirmation');
+  await clickText('.sp-simple-table-discard button', '放弃修改');
   console.log('PASS: Package create drawer loads RJSF and dictionary controls');
   await poll(() => evaluate(`!document.querySelector('.ant-drawer-open') && getComputedStyle(document.body).overflow !== 'hidden'`), 'drawer close transition');
   await smokeAssignment({evaluate, poll, clickReady, clickText, fill, fixture: assignmentFixture, requests: apiRequests, preferences: personalTablePreferences});
@@ -526,12 +1039,13 @@ try {
     await send('Emulation.setDeviceMetricsOverride', {...viewport, deviceScaleFactor: 1, mobile: false});
   }
   await clickReady('.nb-tab-panel-active .profile-nav-links button:nth-child(2)');
-  await poll(() => evaluate(`document.querySelector('.nb-tab-panel-active .profile-permission-grid')?.textContent.includes('common.view')`), 'effective access');
+  await poll(() => evaluate(`document.querySelector('.nb-tab-panel-active .profile-permission-grid')?.textContent.includes('原生权限页面')`), 'effective access');
   assert.equal(await evaluate(`document.querySelector('.nb-tab-panel-active .profile-permission-grid')?.textContent.includes('platform.access')`), false);
-  assert.equal(await evaluate(`document.querySelector('.nb-tab-panel-active .profile-permission-directory')?.textContent.includes('系统管理 / 资源配置')`), true);
+  assert.equal(await evaluate(`document.querySelector('.nb-tab-panel-active .profile-permission-directory')?.textContent.includes('原生权限目录')`), true);
   await clickReady('.nb-tab-panel-active .profile-permission-item');
-  await poll(() => evaluate(`document.querySelector('.profile-access-detail')?.textContent.includes('common.edit')`), 'page access detail');
+  await poll(() => evaluate(`document.querySelector('.profile-access-detail')?.textContent.includes('编辑权限')`), 'page access detail');
   assert.equal(await evaluate(`document.querySelector('.profile-access-detail')?.textContent.includes('规则能力暂未开放')`), true);
+  assert.equal(await evaluate(`/profile-(page|second|edit)|i18n:/.test(document.querySelector('.profile-access-detail')?.textContent ?? '')`), false);
   await clickReady('.ant-drawer-close');
   await clickReady('.nb-tab-panel-active .profile-nav-links button:nth-child(3)');
   await poll(() => evaluate(`document.querySelector('.nb-tab-panel-active .profile-workspaces-group')?.textContent.includes('平台')`), 'organization section');
@@ -563,7 +1077,7 @@ try {
   await chooseFile(imageInput, 6 * 1024 * 1024, 'image/png', 'oversized.png');
   await poll(() => evaluate(`document.querySelector('.nb-tab-panel-active .oss-image-upload [role=alert]')?.textContent.includes('5 MB')`), 'client size error visible');
   assert.equal(uploads.length, uploadedBefore, 'client rejects oversized image before sending');
-  await fill('.nb-tab-panel-active .profile-detail-form input#nickname', 'Smoke user edited');
+  await fill('.nb-tab-panel-active .profile-detail-form input#root_nickname', 'Smoke user edited');
   await poll(() => evaluate(`!document.querySelector('.nb-tab-panel-active .profile-detail-actions button')?.disabled`),
     'detail save enables after editing');
   await clickReady('.nb-tab-panel-active .profile-detail-actions button');
@@ -610,6 +1124,7 @@ try {
   await smokeOrganizationSelection({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: organizationSelectionFixture});
   await evaluate(`location.hash = '#/system/object-storage'`);
   await poll(() => evaluate(`document.querySelector('.nb-tab-panel-active')?.textContent.includes('Smoke OSS')`), 'storage provider list');
+  await clickReady('.nb-tab-panel-active tr[data-row-key="provider-smoke"] input[type="checkbox"]');
   await evaluate(`[...document.querySelectorAll('.nb-tab-panel-active button')].find(e => e.textContent.includes('测试连接')).click()`);
   await poll(() => evaluate(`[...document.querySelectorAll('.ant-message-error')].some(e => e.textContent.includes('测试连接失败'))`), 'HTTP 200 business failure remains a failure');
   connectionTestSuccess = true;
@@ -618,7 +1133,7 @@ try {
   console.log('PASS: storage connection business failure is visible and can be retried without unhandled promises');
   await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
   await evaluate(`location.hash = '#/smoke/sql'`);
-  await poll(() => evaluate(`!!document.querySelector('.dna-sql-editor .cm-content') && !document.querySelector('.dna-sql-run').disabled`), 'SQL console ready from datasource API');
+  await poll(() => evaluate(`!!document.querySelector('.dna-sql-editor .cm-content') && document.querySelector('.dna-sql-run')?.disabled===false`), 'SQL console ready from datasource API');
   assert.equal(apiRequests.some(request => request.url.startsWith('/dna/platform/dna/federation/catalogs')), false, 'console never loads retired catalog selector');
   assert.equal(await evaluate(`Math.round(document.querySelector('.ant-layout-sider').getBoundingClientRect().width)`), 240, 'wider default navigation');
   const setSql = async (text, from, to = from) => evaluate(`(() => {
@@ -690,8 +1205,11 @@ try {
   await evaluate(`document.querySelector('.dna-sql-tree .ant-tree-treenode:last-child .ant-tree-node-content-wrapper').dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))`);
   assert.ok(await evaluate(`document.querySelector('.dna-sql-editor .cm-content').textContent.includes('"demo.table"')`), 'metadata insertion quotes identifiers');
   await poll(() => evaluate(`(() => {
-    const output=document.querySelector('.dna-sql-output').getBoundingClientRect();
-    const pager=document.querySelector('.dna-sql-output .ant-pagination').getBoundingClientRect();
+    const outputElement=document.querySelector('.dna-sql-output');
+    const pagerElement=document.querySelector('.dna-sql-output .ant-pagination');
+    if (!outputElement || !pagerElement) return false;
+    const output=outputElement.getBoundingClientRect();
+    const pager=pagerElement.getBoundingClientRect();
     return pager.bottom <= output.bottom + 1;
   })()`), 'SQL pagination stays inside results pane');
   const beforeDrag = await evaluate(`document.querySelector('.dna-sql-editor').getBoundingClientRect().height`);
@@ -780,16 +1298,17 @@ try {
   await poll(() => evaluate(`document.querySelector('.sp-home-calendar tbody button[aria-pressed="true"]')?.dataset.day === ${JSON.stringify(todayDay)}`), 'calendar returns to today');
   console.log('PASS: home calendar month navigation, fixed six-week layout, date selection, roving keyboard focus and today shortcut');
   await evaluate(`[...document.querySelectorAll('.sp-home button')].find(e=>e.textContent.includes('自定义首页')).click()`);
-  await poll(() => evaluate(`!!document.querySelector('.sp-home-editor')`), 'home settings editor');
+  await poll(() => evaluate(`!!document.querySelector('.sp-home-editor form.rjsf')`), 'home settings editor');
   await evaluate(`[...document.querySelectorAll('.sp-home-editor button')].find(e=>e.textContent.includes('添加分组')).click()`);
-  await evaluate(`(() => {const input=document.querySelector('.sp-home-editor input[aria-label="分组名称"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'我的工作');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+  await poll(() => evaluate(`!!document.querySelector('.sp-home-editor input#root_groups_0_name')`), 'new standard home group field');
+  await fill('.sp-home-editor input#root_groups_0_name', '我的工作');
   await evaluate(`document.querySelector('.sp-home-edit-group .ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
   await poll(() => evaluate(`[...document.querySelectorAll('.ant-select-item-option')].some(e=>e.textContent.includes('套餐包管理'))`), 'authorized app selector');
-  await evaluate(`[...document.querySelectorAll('.ant-select-item-option')].find(e=>e.textContent.includes('套餐包管理')).click();document.querySelector('.sp-home-editor input[aria-label="分组名称"]').focus()`);
+  await evaluate(`[...document.querySelectorAll('.ant-select-item-option')].find(e=>e.textContent.includes('套餐包管理')).click();document.querySelector('.sp-home-editor input#root_groups_0_name').focus()`);
   homeSaveFailure = true;
   await evaluate(`[...document.querySelectorAll('.ant-modal-footer button')].find(e=>e.textContent.replaceAll(' ','')==='保存').click()`);
   await poll(() => evaluate(`document.querySelector('.sp-home-editor .ant-alert-error')?.textContent.includes('首页保存失败')`), 'home save error stays visible');
-  assert.equal(await evaluate(`document.querySelector('.sp-home-editor input[aria-label="分组名称"]').value`), '我的工作', 'failed save retains draft');
+  assert.equal(await evaluate(`document.querySelector('.sp-home-editor input#root_groups_0_name').value`), '我的工作', 'failed save retains draft');
   assert.equal(homePreferences.size, 0);
   homeSaveFailure = false;
   await evaluate(`[...document.querySelectorAll('.ant-modal-footer button')].find(e=>e.textContent.replaceAll(' ','')==='保存').click()`);
@@ -808,7 +1327,7 @@ try {
   }
   memberFixture.reorderSchema();
   organizationSelectionFixture.readonly();
-  await send('Page.reload', {ignoreCache: true});
+  await reload();
   await poll(() => evaluate(`document.querySelector('.sp-home-group h3')?.textContent === '我的工作'`), 'home preferences survive reload');
   await poll(() => activeStreams === 1, 'reload keeps one live notification stream');
   await poll(() => evaluate(`document.querySelectorAll('.sp-home-app').length === 1`), 'authorized favorites restore after route bootstrap');
@@ -1051,10 +1570,21 @@ try {
   console.log('PASS: draft close cancellation and inactive-overlay protection; bounded local navigation diagnostics');
   await smokeMemberViewPersistence({clickMenu, clickReady, clickText, poll, evaluate, fixture: memberFixture});
   await smokeReadonlyOrganizationSelection({clickMenu, clickReady, clickText, poll, evaluate});
-  await smokeCommonMain({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: commonMainFixture});
+  await smokeCommonMain({clickMenu, clickReady, clickText, fill, poll, evaluate, reload, fixture: commonMainFixture});
+  await smokeWorkflow({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture});
   await smokeRuntime({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: runtimeFixture});
+  await smokeMcpCapabilities({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: mcpCapabilitiesFixture});
+  await smokeStorageCrud({clickMenu, clickReady, clickText, fill, poll, evaluate, reload, fixture: storageCrudFixture});
+  await smokeJdbcUsers({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: jdbcUserFixture});
+  await smokeDnaWorkbench({clickMenu, clickReady, clickText, fill, poll, evaluate, send, reload, fixture: dnaWorkbenchFixture});
   await smokeRedis({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: redisFixture});
-  await smokeEntitySelect({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: entitySelectFixture, common: commonMainFixture});
+  await smokeEntitySelect({clickMenu, clickReady, clickText, fill, poll, evaluate, reload, fixture: entitySelectFixture, common: commonMainFixture});
+  // Route-heavy preference checks follow retained-page tests to keep their original tab preconditions.
+  await smokeHostPreferences({clickMenu, clickReady, clickText, fill, poll, evaluate, send, chooseFile, fixture: profileFixture});
+  await smokeFieldMatrix({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: commonMainFixture});
+  await smokeHomeCustomization({clickMenu, clickReady, clickText, fill, poll, evaluate, reload, fixture: homeFixture});
+  await smokeOrganizationMembers({clickMenu, clickReady, clickText, fill, poll, evaluate, send, reload, fixture: memberFixture});
+  await smokeTenantResources({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: tenantResourceFixture});
   simulateNewRelease = true;
   await evaluate(`window.__smokeDateNow = Date.now; Date.now = () => window.__smokeDateNow() + 301000; document.dispatchEvent(new Event('visibilitychange'));`);
   await poll(() => evaluate(`document.body.textContent.includes('有新版本可用')`), 'release update prompt');
@@ -1075,6 +1605,7 @@ try {
   console.log(`Artifacts: ${process.env.MF_SMOKE_EDGE ? 'remotes through deployed edge' : 'local production remotes'}, ${process.env.MF_SMOKE_HOST_DIST ? 'extracted deployed host' : 'local production host'}; APIs: isolated fixtures; cache: disabled`);
   }
 } catch (error) {
+  console.error('Browser exception descriptions:', exceptions.map(exception => exception.exception?.description ?? exception.text));
   console.error({sqlTreeCalls, sqlExecutions, exceptions, warnings, mfResponses: network.filter(r => r.url.includes('/mf/')), failedHttp: network.filter(r => r.status >= 400), apiRequests});
   console.error(stderr.slice(-2000));
   throw error;

@@ -10,6 +10,10 @@ export const managedServerFilters = {
   enabled,
 };
 export const enabledSecretFilters = {enabled};
+export const readyServerFilters = {
+  status: JSON.stringify({version: 1, where: {field: 'status', op: 'equals', value: 'READY'}}),
+  enabled,
+};
 
 /** Decorate only the current page; no all-server catalog and no per-row request waterfall. */
 export function useRuntimeServerNames(endpoint: string, rows: readonly {serverId: string}[], active = true) {

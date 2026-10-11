@@ -16,6 +16,16 @@ public interface JpaFederationJdbcConnectionUserRepository
     extends BaseRepository<FederationJdbcConnectionUser, String>, FederationJdbcConnectionUserRepository {
 
   @Override
+  @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("""
+      update FederationJdbcConnectionUser u
+      set u.operationPermissions = :permissions, u.updatedAt = :updatedAt, u.updatedBy = :updatedBy
+      where u.id = :id and u.deletedAt is null
+      """)
+  int updateOperationPermissions(@Param("id") String id, @Param("permissions") java.util.Set<String> permissions,
+      @Param("updatedAt") java.time.Instant updatedAt, @Param("updatedBy") String updatedBy);
+
+  @Override
   @Query("""
       select u
       from FederationJdbcConnectionUser u

@@ -1,5 +1,6 @@
-import {get, put} from '@simplepoint/shared/api/methods';
+import {get, post, put} from '@simplepoint/shared/api/methods';
 import api from '@/api';
+import type {RequestOptions} from '@simplepoint/shared/api/client';
 
 const {baseUrl} = api['rbac-role-resource-configuration'];
 
@@ -43,7 +44,7 @@ export async function fetchResourcePolicyOptions(roleId: string, resourceCode: s
   const {normalizePage} = await import('@simplepoint/shared/types/request');
   const raw = await get<import('@simplepoint/shared/types/request').RawPage<ResourcePolicyOption>>(
     `${baseUrl}/roles/${encodeURIComponent(roleId)}/policy-options`,
-    {resourceCode, kind, keyword, page: 0, size: 50}, {signal});
+    {resourceCode, kind, keyword, page: 0, size: 50}, {signal, notifyOnError: false});
   return normalizePage(raw, 50);
 }
 
@@ -53,12 +54,16 @@ export async function fetchRoleResources(roleId: string, params: {
 }, signal?: AbortSignal) {
   const {normalizePage} = await import('@simplepoint/shared/types/request');
   const page = await get<import('@simplepoint/shared/types/request').RawPage<RoleResourceRow>>(
-    `${baseUrl}/roles/${encodeURIComponent(roleId)}/resources`, params, {signal});
+    `${baseUrl}/roles/${encodeURIComponent(roleId)}/resources`, params, {signal, notifyOnError: false});
   return normalizePage(page, params.size);
 }
 
-export async function saveRoleResourceChanges(roleId: string, changes: RoleResourceChange[]) {
-  return put<void>(`${baseUrl}/roles/${encodeURIComponent(roleId)}/resource-changes`, {changes});
+export async function saveRoleResourceChanges(roleId: string, changes: RoleResourceChange[], options?: RequestOptions) {
+  return put<void>(`${baseUrl}/roles/${encodeURIComponent(roleId)}/resource-changes`, {changes}, options);
+}
+
+export async function fetchRoleResourceContext(roleId: string, ids: string[], options?: RequestOptions) {
+  return post<RoleResourceRow[]>(`${baseUrl}/roles/${encodeURIComponent(roleId)}/resource-context`, ids, options);
 }
 
 export interface RoleResourceBulkPreview {
@@ -74,9 +79,9 @@ export async function previewRoleResourceSubtree(roleId: string, resourceId: str
     {resourceId, granted});
 }
 
-export async function fetchRoleResourceSubtreeRows(roleId: string, resourceId: string) {
+export async function fetchRoleResourceSubtreeRows(roleId: string, resourceId: string, options?: RequestOptions) {
   return get<RoleResourceRow[]>(`${baseUrl}/roles/${encodeURIComponent(roleId)}/resource-subtree/resources`,
-    {resourceId});
+    {resourceId}, options);
 }
 
 export async function saveRoleResourceSubtree(roleId: string, preview: RoleResourceBulkPreview) {

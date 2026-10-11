@@ -1,134 +1,92 @@
-import SimpleTable from "@simplepoint/components/SimpleTable";
+import SimpleTable from '@simplepoint/components/SimpleTable';
+import ResourceDrawer from '@simplepoint/components/ResourceDrawer';
+import TableActions from '@simplepoint/components/Table/Actions';
+import {hasRecordIdentity} from '@simplepoint/components/SimpleTable/recordIdentity';
 import api from '@/api/index';
-import React, {lazy, Suspense, useCallback, useEffect, useState} from 'react';
-import {App as AntdApp, Drawer, Spin} from "antd";
+import {lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type Key} from 'react';
+import {Modal, Spin} from 'antd';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {usePageSelected} from '@simplepoint/shared/page/hooks';
+import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import {useSchema} from '@simplepoint/shared/hooks/useSchema';
+import type {EditorState} from './config/resource';
+import {normalizeRoleMetadata, RoleMetadataError} from './metadata';
 
 const ResourceConfig = lazy(() => import('./config/resource'));
-
-// 获取基础表格配置
 const baseConfig = api['rbac-roles'];
 const resourceConfigNamespaces = [...baseConfig.i18nNamespaces, 'data-scopes', 'field-scopes', 'table', 'common'];
+const defaultHeight = () => typeof window === 'undefined' ? 620
+  : Math.min(Math.max(560, Math.round(window.innerHeight * 0.72)), window.innerHeight - 64);
+type RoleRow = {id: string};
+const emptyEditor: EditorState = {dirty: false, saving: false, locked: false};
 
-const getDefaultDrawerHeight = () => {
-    if (typeof window === 'undefined') return 620;
-    return Math.min(Math.max(560, Math.round(window.innerHeight * 0.72)), window.innerHeight - 64);
-};
+function RoleSession() {
+  const operation = useOperationScope();
+  const {t, ensure, locale} = useI18n();
+  const [configuration, setConfiguration] = useState<RoleRow>();
+  const configurationRef = useRef<RoleRow | undefined>(undefined);
+  const [editorState, setEditorState] = useState(emptyEditor);
+  const editorRef = useRef(emptyEditor);
+  const [discardFor, setDiscardFor] = useState<string>();
+  const discardRef = useRef<string | undefined>(undefined);
+  const [formOpen, setFormOpen] = useState(false);
+  const rootLock = useRef(false);
+  const [height] = useState(defaultHeight);
+  const permissions = useSchema(baseConfig.baseUrl, {staleTime: 30_000, retry: false});
+  useEffect(() => {void ensure(resourceConfigNamespaces);}, [ensure, locale]);
+  const editorChanged = useCallback((state: EditorState) => {editorRef.current = state; setEditorState(state);}, []);
+  const rootInteraction = useCallback((locked: boolean) => {rootLock.current = locked;}, []);
+  const canInteract = useCallback(() => operation.current() && operation.isSelected() && !discardRef.current,
+    [operation.current, operation.isSelected]);
+  const close = useCallback(() => {
+    if (!operation.current() || !operation.isSelected() || editorRef.current.saving) return;
+    configurationRef.current = undefined; discardRef.current = undefined;
+    setConfiguration(undefined); setDiscardFor(undefined); editorChanged(emptyEditor);
+  }, [operation.current, operation.isSelected, editorChanged]);
+  const requestClose = useCallback(() => {
+    if (!operation.current() || !operation.isSelected() || editorRef.current.locked || discardRef.current) return;
+    if (!editorRef.current.dirty) {close(); return;}
+    const id = configurationRef.current?.id; if (!id) return;
+    discardRef.current = id; setDiscardFor(id);
+  }, [operation.current, operation.isSelected, close]);
+  const cancelDiscard = () => {
+    if (!operation.current() || !operation.isSelected()) return;
+    discardRef.current = undefined; setDiscardFor(undefined);
+  };
+  const customButtonEvents = useMemo(() => ({
+    'config.resource': (_keys: Key[], rows: RoleRow[]) => {
+      if (!operation.current() || !operation.isSelected() || configurationRef.current || rootLock.current
+        || permissions.error || !permissions.data?.buttons.some(button => button.key === 'config.resource')
+        || rows.length !== 1 || !hasRecordIdentity(rows[0])) return;
+      const captured = structuredClone(rows[0]); configurationRef.current = captured; setConfiguration(captured);
+    },
+  }), [operation.current, operation.isSelected, permissions.data, permissions.error]);
+  return <div style={{height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column'}}>
+    <SimpleTable {...baseConfig} schemaStaleTime={30_000} allowTabEviction={!configuration} confirmDiscard
+      customButtonEvents={customButtonEvents} drawerOpen={formOpen} onDrawerOpenChange={setFormOpen}
+      onInteractionLockChange={rootInteraction}
+      isButtonDisabled={() => !!configurationRef.current || rootLock.current || !operation.selected || !!permissions.error || !permissions.data}
+      rowSelection={{isRowSelectable: () => !configurationRef.current && !rootLock.current}}
+      beforeSubmit={({formData}) => {
+        try {return normalizeRoleMetadata(formData, permissions.data?.schema.properties ?? {});}
+        catch (error) {if (error instanceof RoleMetadataError) throw new Error(t('roles.validation.blankMetadata', '角色名称和权限标识不能只包含空白')); throw error;}
+      }}
+      submitRefreshTargets={{page: true, schema: false}} deleteRefreshTargets={{page: true, schema: false}}/>
+    <ResourceDrawer rootClassName="role-resource-drawer" title={t('roles.config.resource', '资源授权')}
+      open={!!configuration} locked={editorState.locked || !!discardFor} onClose={requestClose}
+      defaultHeight={height} minHeight={420} bodyPadding={0}>
+      {configuration && <Suspense fallback={<div className="role-resource-loading"><Spin/></div>}>
+        <ResourceConfig roleId={configuration.id} disabled={!!discardFor} canInteract={canInteract} onStateChange={editorChanged}/>
+      </Suspense>}
+    </ResourceDrawer>
+    {discardFor && operation.selected && <Modal rootClassName="role-resource-close-discard" open destroyOnHidden maskClosable={false}
+      title={t('roles.resourceConfig.discardOnClose', '存在未保存修改，确定放弃并关闭？')} onCancel={cancelDiscard}
+      footer={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+        {key: 'cancel', sort: 0, text: t('action.cancel', '取消'), onClick: cancelDiscard},
+        {key: 'discard', sort: 1, danger: true, text: t('roles.resourceConfig.discardResourcesButton', '放弃修改'),
+          onClick: () => {if (discardRef.current === configurationRef.current?.id) close();}},
+      ]}/>}/>}
+  </div>;
+}
 
-const App = () => {
-    const pageSelected = usePageSelected();
-    const {modal} = AntdApp.useApp();
-    const [editorState, setEditorState] = useState({dirty: false, saving: false});
-    const [openRoleConfig, setOpenRoleConfig] = useState(false);
-    const [roleId, setRoleId] = useState<string>('');
-    // 支持拖拽高度
-    const [drawerHeight, setDrawerHeight] = useState<number>(() => getDefaultDrawerHeight());
-
-    // 国际化
-    const {t, ensure, locale} = useI18n();
-    // 确保本页所需命名空间加载（roles），语言切换后也会自动增量加载
-    useEffect(() => {
-        void ensure(resourceConfigNamespaces);
-    }, [ensure, locale]);
-
-    // 关闭时重置高度，避免下次打开异常
-    useEffect(() => {
-        if (!openRoleConfig) {
-            setDrawerHeight(getDefaultDrawerHeight());
-        }
-    }, [openRoleConfig]);
-
-    // 拖拽句柄事件（bottom 抽屉，向上拖动增加高度）
-    const startResize = useCallback((e: React.MouseEvent) => {
-        e.preventDefault();
-        const startY = e.clientY;
-        const startHeight = drawerHeight;
-        const minHeight = 420;
-        const maxHeight = Math.max(320, window.innerHeight - 80);
-
-        const onMove = (me: MouseEvent) => {
-            const delta = startY - me.clientY;
-            let next = startHeight + delta;
-            if (next < minHeight) next = minHeight;
-            if (next > maxHeight) next = maxHeight;
-            setDrawerHeight(next);
-        };
-        const onUp = () => {
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
-        };
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
-    }, [drawerHeight]);
-
-    // 自定义按钮事件
-    const customButtonEvents = {
-        'config.resource': (_keys: React.Key[], rows: any[]) => {
-            if (!rows[0]?.id) return;
-            setRoleId(rows[0].id);
-            setOpenRoleConfig(true);
-        },
-    };
-
-    return (
-        <div>
-            <SimpleTable
-                {...baseConfig}
-                customButtonEvents={customButtonEvents}
-                beforeSubmit={({formData}) => {
-                    const next = {...formData};
-                    ['name', 'authority', 'description'].forEach((key) => {
-                        if (typeof next[key] === 'string') {
-                            next[key] = next[key].trim();
-                        }
-                    });
-                    return next;
-                }}
-                submitRefreshTargets={{page: true, schema: false}}
-                deleteRefreshTargets={{page: true, schema: false}}
-            />
-            <Drawer
-                className="role-resource-drawer"
-                title={t("roles.config.resource", "资源授权")}
-                open={openRoleConfig && pageSelected}
-                onClose={async () => {
-                    if (editorState.saving) return;
-                    if (editorState.dirty && !await modal.confirm({
-                        title: t('roles.resourceConfig.discardOnClose', '存在未保存修改，确定放弃并关闭？'),
-                    })) return;
-                    setOpenRoleConfig(false);
-                    setRoleId('');
-                    setEditorState({dirty: false, saving: false});
-                }}
-                placement={"bottom"}
-                maskClosable={false}
-                // width 对 bottom 抽屉无效，使用 height 控制高度
-                height={drawerHeight}
-                destroyOnHidden
-                styles={{body: {position: 'relative', padding: 0}}}
-            >
-                {/* 顶部拖拽条 */}
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: 8,
-                        cursor: 'ns-resize',
-                        zIndex: 10
-                    }}
-                    onMouseDown={startResize}
-                />
-                {openRoleConfig && roleId ? (
-                    <Suspense fallback={<div style={{display: 'flex', justifyContent: 'center', padding: 24}}><Spin/></div>}>
-                        <ResourceConfig roleId={roleId} onStateChange={setEditorState}/>
-                    </Suspense>
-                ) : null}
-            </Drawer>
-        </div>
-    );
-};
-
-export default App;
+export default function Role() {return <RoleSession key={JSON.stringify(useQueryScope())}/>;}

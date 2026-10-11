@@ -158,6 +158,13 @@ public interface BaseRepository<T extends BaseEntity<I>, I extends Serializable>
     throw new UnsupportedOperationException("Membership query is not implemented by this repository");
   }
 
+  /** Applies fixed reference memberships without loading an assignment catalog into memory. */
+  default <S extends T> Page<S> limitReferencedScoped(
+      Map<String, String> attributes, Map<String, String> required,
+      List<QueryReferenceMembership> memberships, Pageable pageable) {
+    throw new UnsupportedOperationException("Reference query is not implemented by this repository");
+  }
+
   /**
    * select data is exists.
    *

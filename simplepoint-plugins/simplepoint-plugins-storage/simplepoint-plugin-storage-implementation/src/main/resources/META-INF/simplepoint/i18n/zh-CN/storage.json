@@ -20,6 +20,7 @@
   "storage.object.sourceService": "来源服务",
   "storage.object.sourceService.desc": "上传该对象的来源服务名",
   "storage.quota.tenantId": "租户ID",
+  "storage.quota.tenantName": "租户名称",
   "storage.quota.tenantId.desc": "当前配额所属租户 ID",
   "storage.quota.quotaBytes": "配额字节数",
   "storage.quota.quotaBytes.desc": "租户可使用的最大对象存储字节数，留空表示不限额",
@@ -90,6 +91,8 @@
   "storage.upload.drag": "点击或拖拽文件到此区域上传",
   "storage.upload.defaultProvider": "文件将通过统一上传入口写入系统默认 OSS，并自动加入当前租户目录。",
   "storage.quota.limitMb": "配额（MB，留空表示不限额）",
+  "storage.quota.invalidLimit": "配额数值超出安全范围",
+  "storage.provider.endpointRequired": "当前平台必须配置 Endpoint",
   "storage.contentType": "内容类型",
   "storage.accessUrl": "访问地址",
   "storage.eTag": "ETag"

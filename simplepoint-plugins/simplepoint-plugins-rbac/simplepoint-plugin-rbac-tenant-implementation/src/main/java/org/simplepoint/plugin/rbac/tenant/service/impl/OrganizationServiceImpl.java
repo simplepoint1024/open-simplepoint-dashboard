@@ -133,7 +133,11 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
       return Page.empty(pageable);
     }
     if (!QueryCapabilities.readable(Organization.class, "id")) {
-      throw new org.springframework.security.access.AccessDeniedException("当前字段权限不允许展示组织标识");
+      if (trimToNull(parentId) != null)
+        throw new org.springframework.security.access.AccessDeniedException("当前字段权限不允许按组织标识浏览");
+      return scopedReadQuery.flat(tenantId, filters, pageable, organizationScope()).map(row ->
+          new OrganizationOptionVo(row.getId(), row.getName(), row.getCode(), row.getParentId(),
+              row.getType(), row.getDescription(), row.getSort(), !Boolean.FALSE.equals(row.getEnabled()), false));
     }
     String parent = trimToNull(parentId);
     if (pageable.isPaged() && pageable.getSort().isUnsorted()) {

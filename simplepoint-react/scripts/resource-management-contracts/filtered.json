@@ -1,0 +1,47 @@
+{
+  "content": [
+    {
+      "children": [],
+      "code": "management-520",
+      "component": "common/system/Resource",
+      "description": "Actual description 520",
+      "disabled": false,
+      "grantable": true,
+      "id": "management-520",
+      "label": "Management520",
+      "name": "Management520",
+      "publicAccess": false,
+      "requireOrgTenant": false,
+      "scopeTypes": [
+        "PLATFORM"
+      ],
+      "sort": 520,
+      "type": "PAGE"
+    }
+  ],
+  "empty": false,
+  "first": true,
+  "last": true,
+  "number": 0,
+  "numberOfElements": 1,
+  "pageable": {
+    "offset": 0,
+    "pageNumber": 0,
+    "pageSize": 20,
+    "paged": true,
+    "sort": {
+      "empty": false,
+      "sorted": true,
+      "unsorted": false
+    },
+    "unpaged": false
+  },
+  "size": 20,
+  "sort": {
+    "empty": false,
+    "sorted": true,
+    "unsorted": false
+  },
+  "totalElements": 1,
+  "totalPages": 1
+}

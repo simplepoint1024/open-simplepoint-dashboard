@@ -8,20 +8,17 @@
 
 package org.simplepoint.gateway.server.config;
 
-import java.util.Locale;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
-import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.RequestPredicate;
 import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
-import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 /**
@@ -36,10 +33,6 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 public class AiSpaRouteConfig {
 
   private static final String AI_WORKBENCH_PATH = "/ai/workbench/**";
-
-  private static final String FETCH_DESTINATION_HEADER = "Sec-Fetch-Dest";
-
-  private static final String DOCUMENT_DESTINATION = "document";
 
   private final Resource indexHtml;
 
@@ -62,27 +55,11 @@ public class AiSpaRouteConfig {
   @Bean
   public RouterFunction<ServerResponse> aiSpaNavigationRoute() {
     RequestPredicate navigationRequest = RequestPredicates.GET(AI_WORKBENCH_PATH)
-        .and(AiSpaRouteConfig::isDocumentNavigation);
+        .and(SpaNavigationRequest::isDocumentNavigation);
     return RouterFunctions.route(navigationRequest, request -> ServerResponse.ok()
         .contentType(MediaType.TEXT_HTML)
         .cacheControl(CacheControl.noStore())
         .body(BodyInserters.fromResource(indexHtml)));
   }
 
-  static boolean isDocumentNavigation(final ServerRequest request) {
-    String fetchDestination = request.headers().firstHeader(FETCH_DESTINATION_HEADER);
-    if (fetchDestination != null
-        && DOCUMENT_DESTINATION.equals(fetchDestination.trim().toLowerCase(Locale.ROOT))) {
-      return true;
-    }
-
-    try {
-      return request.headers().accept().stream()
-          .filter(mediaType -> mediaType.getQualityValue() > 0)
-          .filter(mediaType -> !mediaType.isWildcardType() && !mediaType.isWildcardSubtype())
-          .anyMatch(MediaType.TEXT_HTML::isCompatibleWith);
-    } catch (InvalidMediaTypeException ignored) {
-      return false;
-    }
-  }
 }

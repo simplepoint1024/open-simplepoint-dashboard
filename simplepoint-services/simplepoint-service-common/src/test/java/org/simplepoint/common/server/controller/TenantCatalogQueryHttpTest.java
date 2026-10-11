@@ -65,6 +65,7 @@ class TenantCatalogQueryHttpTest {
   private TenantPackageRelevanceRepository grants;
   private PackageApplicationRelevanceRepository assignments;
   private TenantRepository candidateTenants;
+  private TenantUserRelevanceRepository tenantMembers;
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   void setup(String name) throws Exception {
@@ -103,7 +104,7 @@ class TenantCatalogQueryHttpTest {
         java.util.stream.IntStream.range(0, 150).mapToObj(i -> "unused-" + i)).toList());
     when(grants.findApplicationCodesByTenantId("tenant-a")).thenReturn(codes);
     when(grants.authorized("tenant-a")).thenReturn(codes);
-    var members = mock(TenantUserRelevanceRepository.class);
+    var members = mock(TenantUserRelevanceRepository.class); tenantMembers = members;
     if (repository instanceof TenantRepository tenants) {
       doReturn(Optional.of((Tenant) first)).when(tenants).findPersonalTenantByOwnerId("reader");
       doReturn(Set.of(new NamedTenantVo(first.getId(), "match-a", TenantType.PERSONAL),
@@ -129,6 +130,8 @@ class TenantCatalogQueryHttpTest {
     path = controller.getAnnotation(RequestMapping.class).value()[0];
     mvc = MockMvcBuilders.standaloneSetup(controller.getConstructors()[0].newInstance(service))
         .setControllerAdvice(new GlobalExceptionHandler())
+        .setMessageConverters(new org.springframework.http.converter.json.JacksonJsonHttpMessageConverter(
+            tools.jackson.databind.json.JsonMapper.builder().addModule(new org.simplepoint.core.jackson.FieldScopeJackson3Module()).build()))
         .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver()).build();
   }
 
@@ -138,6 +141,14 @@ class TenantCatalogQueryHttpTest {
     context.setIsAdministrator(administrator);
     context.setDataScopeType("ALL");
     context.setAttributes(Map.of("X-Tenant-Id", "tenant-a"));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+  }
+
+  private void platformPriceEditor() {
+    // Context identity/administrator/attributes are write-once: use a fresh actual platform scope.
+    context = new AuthorizationContext(); context.setUserId("price-editor"); context.setIsAdministrator(true);
+    context.setScopeType(org.simplepoint.core.AuthorizationScopeType.PLATFORM); context.setDataScopeType("ALL");
+    context.setAttributes(Map.of("X-Tenant-Id", "__platform__"));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
   }
 
@@ -229,6 +240,134 @@ class TenantCatalogQueryHttpTest {
     authorize(true);
     mvc.perform(get(path).requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
         .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(name.equals("Organization") ? 2 : 3));
+  }
+
+  @org.junit.jupiter.api.Test
+  void tenantOwnerReadOnlySchemaPreservesTheRealPickerAndIndependentEditGrant() throws Exception {
+    setup("Tenant");
+    context.setResources(Set.of("tenants.edit"));
+    context.setFieldPermissions(Map.of(Tenant.class.getName() + "#ownerId", "VISIBLE"));
+    var response = mvc.perform(get(path + "/schema").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.schema.properties.ownerId.readOnly").value(true))
+        .andExpect(jsonPath("$.schema.properties.ownerId['x-field-access']").value("VISIBLE"))
+        .andExpect(jsonPath("$.schema.properties.ownerId['x-ui'].widget").value("UserPicker"))
+        .andExpect(jsonPath("$.buttons.length()").value(1))
+        .andExpect(jsonPath("$.buttons[0].key").value("edit")).andReturn();
+    var mapper = new ObjectMapper();
+    org.junit.jupiter.api.Assertions.assertEquals(
+        mapper.readTree(java.nio.file.Path.of("../../simplepoint-react/scripts/tenant-readonly-owner-schema.fixture.json").toFile()),
+        mapper.readTree(response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)),
+        "Browser form contract must match the actual permission-filtered HTTP schema");
+    var output = java.nio.file.Path.of("build/generated-test-resources/tenant-readonly-owner-schema.json");
+    java.nio.file.Files.createDirectories(output.getParent());
+    java.nio.file.Files.writeString(output, response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+  }
+
+  @org.junit.jupiter.api.Test
+  void omittedReadOnlyTenantOwnerSurvivesActualMetadataHttpWrites() throws Exception {
+    setup("Tenant"); platformPriceEditor();
+    context.setFieldPermissions(Map.of(Tenant.class.getName() + "#ownerId", "VISIBLE"));
+    var tenant = session.createQuery("from Tenant where name = 'match-a'", Tenant.class).getSingleResult();
+    String id = tenant.getId(), owner = tenant.getOwnerId(); tenant.setLogo(null); tenant.setBackgroundImage(null); session.flush(); session.clear();
+    when(tenantMembers.existingUserIds(Set.of(owner))).thenReturn(Set.of(owner));
+    var mapper = new ObjectMapper();
+    var row = mapper.readTree(mvc.perform(get(path).param("name", "equals:match-a")
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).path("content").get(0);
+    var payload = mapper.convertValue(row, new com.fasterxml.jackson.core.type.TypeReference<Map<String,Object>>() {});
+    payload.remove("ownerId"); payload.put("description", "Metadata without owner reassignment");
+    mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(path).contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(payload)).requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)).andExpect(status().isOk());
+    session.flush(); session.clear();
+    var persisted = session.find(Tenant.class, id); org.junit.jupiter.api.Assertions.assertEquals(owner, persisted.getOwnerId());
+    org.junit.jupiter.api.Assertions.assertEquals("Metadata without owner reassignment", persisted.getDescription());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"Tenant", "Package", "Application"})
+  void configurationBrowserSchemasComeFromActualPermissionFilteredHttpContracts(String name) throws Exception {
+    setup(name);
+    context.setResources(name.equals("Tenant") ? Set.of("tenants.edit", "tenants.config.package")
+        : name.equals("Package") ? Set.of("packages.config.application") : Set.of());
+    if (name.equals("Tenant")) context.setFieldPermissions(Map.of(Tenant.class.getName() + "#ownerId", "VISIBLE"));
+    var response = mvc.perform(get(path + "/schema").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.schema['x-query'].version").value(1))
+        .andExpect(jsonPath("$.buttons.length()").value(name.equals("Tenant") ? 2 : name.equals("Package") ? 1 : 0)).andReturn();
+    var output = java.nio.file.Path.of("build/generated-test-resources/configuration-" + name.toLowerCase() + "-schema.json");
+    java.nio.file.Files.createDirectories(output.getParent());
+    java.nio.file.Files.writeString(output, response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+    var mapper = new ObjectMapper();
+    org.junit.jupiter.api.Assertions.assertEquals(
+        mapper.readTree(java.nio.file.Path.of("../../simplepoint-react/scripts/configuration-" + name.toLowerCase() + "-schema.fixture.json").toFile()),
+        mapper.readTree(response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)),
+        "Configuration browser fixtures must match their real permission-filtered HTTP schemas");
+  }
+
+  @org.junit.jupiter.api.Test
+  void packagePriceSchemaAndHttpQueryKeepTheExactDatabaseBoundary() throws Exception {
+    setup("Package");
+    platformPriceEditor();
+    var pkg = session.createQuery("from Package where code = 'code-1'", org.simplepoint.plugin.rbac.tenant.api.entity.Package.class).getSingleResult();
+    pkg.setPrice(new BigDecimal("99999999999999999.99")); session.flush(); session.clear();
+    mvc.perform(get(path).param("price", "{\"version\":1,\"where\":{\"field\":\"price\",\"op\":\"equals\",\"value\":\"99999999999999999.99\"}}")
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)).andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(1)).andExpect(jsonPath("$.content[0].price").isString())
+        .andExpect(jsonPath("$.content[0].price").value("99999999999999999.99"));
+    var response = mvc.perform(get(path + "/schema").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.schema.properties.price['x-decimal'].scale").value(2))
+        .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+    var output = java.nio.file.Path.of("build/generated-test-resources/exact-decimal-package-schema.json");
+    java.nio.file.Files.createDirectories(output.getParent()); java.nio.file.Files.writeString(output, response);
+    var fixture = java.nio.file.Path.of("../../simplepoint-react/scripts/exact-decimal-package-schema.fixture.json");
+    var mapper = new ObjectMapper(); org.junit.jupiter.api.Assertions.assertEquals(mapper.readTree(fixture.toFile()), mapper.readTree(response));
+    context.setFieldPermissions(Map.of(org.simplepoint.plugin.rbac.tenant.api.entity.Package.class.getName() + "#price", "MASKED"));
+    mvc.perform(get(path).param("code", "equals:code-1").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].price").value("***"));
+    var masked = mvc.perform(get(path + "/schema").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.schema.properties.price.readOnly").value(true))
+        .andExpect(jsonPath("$.schema.properties.price['x-field-access']").value("MASKED"))
+        .andExpect(jsonPath("$.schema.properties.price.pattern").value("^\\*+$")).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+    java.nio.file.Files.writeString(java.nio.file.Path.of("build/generated-test-resources/exact-decimal-package-masked-schema.json"), masked);
+    org.junit.jupiter.api.Assertions.assertEquals(mapper.readTree(java.nio.file.Path.of("../../simplepoint-react/scripts/exact-decimal-package-masked-schema.fixture.json").toFile()), mapper.readTree(masked));
+  }
+
+  @org.junit.jupiter.api.Test
+  void packagePriceWritesRejectDatabaseRoundingButProtectedPricesSurviveMetadataEdits() throws Exception {
+    setup("Package"); platformPriceEditor();
+    var pkg = session.createQuery("from Package where code = 'code-1'", org.simplepoint.plugin.rbac.tenant.api.entity.Package.class).getSingleResult();
+    var id = pkg.getId(); pkg.setPrice(new BigDecimal("99999999999999999.99")); session.flush(); session.clear();
+    var mapper = new ObjectMapper(); var row = mapper.readTree(mvc.perform(get(path).param("code", "equals:code-1")
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)).andReturn().getResponse().getContentAsString()).path("content").get(0);
+    var payload = mapper.convertValue(row, new com.fasterxml.jackson.core.type.TypeReference<Map<String,Object>>() {});
+    payload.put("price", "0.001");
+    mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(path).contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(payload)).requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_DECIMAL_VALUE"));
+    org.junit.jupiter.api.Assertions.assertEquals(new BigDecimal("99999999999999999.99"), session.find(org.simplepoint.plugin.rbac.tenant.api.entity.Package.class, id).getPrice());
+    context.setFieldPermissions(Map.of(org.simplepoint.plugin.rbac.tenant.api.entity.Package.class.getName() + "#price", "VISIBLE"));
+    payload.remove("price"); payload.put("description", "Protected exact metadata");
+    mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(path).contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(payload)).requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk());
+    session.flush(); session.clear();
+    org.junit.jupiter.api.Assertions.assertEquals(new BigDecimal("99999999999999999.99"), session.find(org.simplepoint.plugin.rbac.tenant.api.entity.Package.class, id).getPrice());
+  }
+
+  @org.junit.jupiter.api.Test
+  void applicationResourceBrowserUsesTheActualConfigurationActionContract() throws Exception {
+    setup("Application");
+    context.setResources(Set.of("applications.config.resource"));
+    var response = mvc.perform(get(path + "/schema").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.buttons.length()").value(1))
+        .andExpect(jsonPath("$.buttons[0].key").value("config.resource")).andReturn();
+    var output = java.nio.file.Path.of("build/generated-test-resources/application-resource-root-schema.json");
+    java.nio.file.Files.createDirectories(output.getParent());
+    java.nio.file.Files.writeString(output, response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+    var mapper = new ObjectMapper();
+    org.junit.jupiter.api.Assertions.assertEquals(
+        mapper.readTree(java.nio.file.Path.of("../../simplepoint-react/scripts/application-resource-root-schema.fixture.json").toFile()),
+        mapper.readTree(response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)),
+        "The resource configuration browser must use the actual permission-filtered application schema");
   }
 
   @org.junit.jupiter.api.Test

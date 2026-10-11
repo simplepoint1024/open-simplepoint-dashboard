@@ -47,6 +47,27 @@ public class TenantMemberController {
     service.capabilities();
     return Response.okay(schemas.schema(TenantMemberView.class, org.simplepoint.core.AuthorizationContextHolder.getContext()));
   }
+  @GetMapping("/by-organization/capabilities")
+  @PreAuthorize("hasAuthority('organizations.view')")
+  public Response<java.util.Map<String, Boolean>> organizationCapabilities() {
+    var context = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    boolean manage = Boolean.TRUE.equals(service.capabilities().get("manage"));
+    boolean remove = context != null && (Boolean.TRUE.equals(context.getIsAdministrator())
+        || context.getResources().contains("organizations.members.remove"));
+    return Response.okay(java.util.Map.of("manage", manage, "remove", manage && remove));
+  }
+
+  @GetMapping("/by-organization/schema")
+  @PreAuthorize("hasAuthority('organizations.view')")
+  public Response<java.util.Map<String, Object>> organizationSchema() { return schema(); }
+
+  @DeleteMapping("/by-organization/{userId}")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('organizations.members.remove')")
+  public Response<Void> removeOrganizationMember(@PathVariable("userId") String userId,
+      @RequestBody org.simplepoint.plugin.rbac.core.api.pojo.command.OrganizationMemberRemoval command) {
+    service.removeFromOrganization(userId, command); return Response.okay(null);
+  }
+
   @PostMapping
   @PreAuthorize("hasAuthority('users.view')")
   public Response<Void> add(@RequestBody TenantMemberCommand command) { service.add(command); return Response.okay(null); }
@@ -64,4 +85,12 @@ public class TenantMemberController {
   @DeleteMapping("/{userId}")
   @PreAuthorize("hasAuthority('users.view')")
   public Response<Void> remove(@PathVariable("userId") String userId) { service.remove(userId); return Response.okay(null); }
+  @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+  public org.springframework.http.ResponseEntity<java.util.Map<String, String>> staleMember(
+      org.springframework.dao.OptimisticLockingFailureException error) {
+    return org.springframework.http.ResponseEntity.status(409)
+        .body(java.util.Map.of("code", "MEMBER_CHANGED", "message", "成员已发生变更，请刷新后重试"));
+  }
+
+
 }

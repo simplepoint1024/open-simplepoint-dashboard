@@ -244,6 +244,9 @@ AI 用户与运维指南：
 ## ⭐ 当前推荐优先阅读
 
 - DNA 联邦查询平台设计：`doc/design/dna_federated_query_platform.md`
+- DNA 表单引擎数据底座实施计划：`doc/design/dna_form_engine_data_foundation_plan.md`
+- 流程中心设计与交付基线：`doc/design/workflow_center.md`
+- DNA 表单 Runtime 支持矩阵与运维指南：`doc/architecture/dna_form_runtime_operations.md`
 - 服务拓扑：`doc/architecture/service_topology.md`
 - 授权流程：`doc/design/authorization_flow.md`
 

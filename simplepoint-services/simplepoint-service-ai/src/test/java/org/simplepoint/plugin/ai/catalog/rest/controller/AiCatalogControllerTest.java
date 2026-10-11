@@ -31,7 +31,7 @@ class AiCatalogControllerTest {
   void setUp() {
     service = mock(AiCatalogService.class);
     mockMvc = MockMvcBuilders.standaloneSetup(
-        new AiCatalogController(service)
+        new AiCatalogController(service, mock(org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy.class))
     ).build();
   }
 

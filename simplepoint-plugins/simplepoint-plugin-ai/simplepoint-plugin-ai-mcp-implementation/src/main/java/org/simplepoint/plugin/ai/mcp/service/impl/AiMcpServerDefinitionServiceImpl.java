@@ -67,6 +67,7 @@ import org.simplepoint.plugin.ai.mcp.api.gateway.McpToolDescriptor;
 import org.simplepoint.plugin.ai.mcp.api.model.McpAuthenticationType;
 import org.simplepoint.plugin.ai.mcp.api.model.McpCapabilitySnapshotDetails;
 import org.simplepoint.plugin.ai.mcp.api.model.McpCapabilitySnapshotSummary;
+import org.simplepoint.plugin.ai.mcp.api.model.McpCatalogRegistration;
 import org.simplepoint.plugin.ai.mcp.api.model.McpCapabilityType;
 import org.simplepoint.plugin.ai.mcp.api.model.McpOauthAuthorizationStart;
 import org.simplepoint.plugin.ai.mcp.api.model.McpOauthCallbackCommand;
@@ -200,6 +201,20 @@ public class AiMcpServerDefinitionServiceImpl
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public Page<McpCatalogRegistration> findCatalog(final String query, final Pageable pageable) {
+    if (pageable == null || pageable.isUnpaged() || pageable.getPageSize() > 100
+        || pageable.getOffset() > Integer.MAX_VALUE || pageable.getSort().isSorted()) {
+      throw new IllegalArgumentException("Catalog page must be bounded and use its stable server order");
+    }
+    String keyword = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+    if (keyword.length() > 200) throw new IllegalArgumentException("Catalog query must not exceed 200 characters");
+    if (!keyword.isEmpty()) keyword = "%" + keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+    ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
+    return repository.findCatalogInScope(scope.scopeType(), scope.tenantId(), keyword, pageable);
+  }
+
+  @Override
   public Optional<AiMcpServerDefinition> findActiveById(final String id) {
     Optional<AiMcpServerDefinition> server = repository.findActiveById(requireId(id));
     server.ifPresent(this::assertCanRead);
@@ -236,6 +251,7 @@ public class AiMcpServerDefinitionServiceImpl
     entity.setScopeType(scope.scopeType());
     entity.setTenantId(scope.tenantId());
     normalizeAndValidate(entity, null);
+    requireCredentialFieldsWritable(entity);
     String credential = encryptCredentialForCreate(entity);
     entity.setCredentialCiphertext(credential);
     entity.setBearerToken(null);
@@ -262,6 +278,7 @@ public class AiMcpServerDefinitionServiceImpl
     entity.setScopeType(current.getScopeType());
     entity.setTenantId(current.getTenantId());
     normalizeAndValidate(entity, current.getId());
+    requireCredentialFieldsWritable(entity);
     String credential = resolveUpdatedCredential(entity, current);
     entity.setCredentialCiphertext(credential);
     entity.setBearerToken(null);
@@ -1351,6 +1368,13 @@ public class AiMcpServerDefinitionServiceImpl
     });
   }
 
+  private void requireCredentialFieldsWritable(AiMcpServerDefinition entity) {
+    if (trimToNull(entity.getBearerToken()) != null)
+      org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(AiMcpServerDefinition.class, "bearerToken");
+    if (trimToNull(entity.getOauthClientSecret()) != null)
+      org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(AiMcpServerDefinition.class, "oauthClientSecret");
+  }
+
   private String encryptCredentialForCreate(final AiMcpServerDefinition entity) {
     if (entity.getAuthenticationType() == McpAuthenticationType.NONE) {
       return null;
@@ -1866,6 +1890,7 @@ public class AiMcpServerDefinitionServiceImpl
   }
 
   private void assertCanRead(final AiMcpServerDefinition server) {
+    assertAccessible(server);
     scopeAccessPolicy.assertCanReadManagedResource(
         server.getScopeType(),
         server.getTenantId()

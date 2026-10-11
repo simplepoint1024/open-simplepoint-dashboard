@@ -12,11 +12,13 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@org.simplepoint.core.annotation.PermissionResource(Resource.class)
 public class ResourceNode extends Resource {
   private List<ResourceNode> children = new ArrayList<>();
   private Boolean hasChildren;
 
   /** Scope boundary inherited from the direct parent, used by resource management forms. */
   @Schema(hidden = true)
+  @org.simplepoint.core.annotation.PermissionFields(resource = Resource.class, value = "scopeTypes")
   private Set<ResourceScopeType> parentScopeTypes;
 }

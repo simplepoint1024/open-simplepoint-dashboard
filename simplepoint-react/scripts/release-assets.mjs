@@ -1,5 +1,5 @@
 export function isRetainedAsset(file) {
-  return /^(?:assets\/|(?:common|auditing|dna|ai)\/mf\/)(?:[\w-]+\/)*[\w.-]+\.[a-f0-9]{8,}\.(?:js|css|svg|woff2?)$/i.test(file);
+  return /^(?:assets\/|(?:common|auditing|dna|ai|app|workflow)\/mf\/)(?:[\w-]+\/)*[\w.-]+\.[a-f0-9]{8,}\.(?:js|css|svg|woff2?)$/i.test(file);
 }
 
 export function retainReleases(previous, current, keep = 3) {

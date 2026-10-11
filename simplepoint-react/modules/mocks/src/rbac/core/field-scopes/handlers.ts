@@ -131,8 +131,7 @@ const schema = {
   },
 };
 
-export default [
-  http.get(`${base}/page-catalog`, () => HttpResponse.json({
+const pages: Record<string, {title: string; models: Array<{model: string; properties: Record<string, {title: string; type: string}>}>}> = {
     'users.view': {title: 'i18n:users.title', models: [{model: 'org.simplepoint.security.entity.User', properties: {
       email: {title: '邮箱', type: 'java.lang.String'},
       phoneNumber: {title: '手机号', type: 'java.lang.String'},
@@ -142,7 +141,21 @@ export default [
       name: {title: '组织名称', type: 'java.lang.String'},
       code: {title: '组织编码', type: 'java.lang.String'},
     }}]},
-  })),
+  };
+
+export default [
+  http.get(`${base}/page-catalog`, () => HttpResponse.json(pages)),
+  http.get(`${base}/resources`, ({request}) => {
+    const url = new URL(request.url);
+    const parent = url.searchParams.get('parentId');
+    return HttpResponse.json(pageFromUrl(url, parent === 'workspace' ? Object.entries(pages).map(([code, page]) => ({
+      id: code, parentId: 'workspace', title: page.title, pageCode: code, hasChildren: false,
+    })) : parent ? [] : [{id: 'workspace', parentId: '', pageCode: '', title: 'i18n:permissions.resources', hasChildren: true}]));
+  }),
+  http.get(`${base}/page-fields`, ({request}) => {
+    const code = new URL(request.url).searchParams.get('code') ?? '';
+    return pages[code] ? HttpResponse.json(pages[code]) : HttpResponse.json({}, {status: 404});
+  }),
   http.post(`${base}/configuration`, async ({request}) => {
     const payload = await request.json() as Partial<FieldScopeItem>;
     return HttpResponse.json(store.create({entries: [], ...payload}));

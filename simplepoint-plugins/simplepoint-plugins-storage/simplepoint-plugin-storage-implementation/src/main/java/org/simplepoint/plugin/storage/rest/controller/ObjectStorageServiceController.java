@@ -37,6 +37,7 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * Service-facing HTTP API for object storage.
  */
+@org.simplepoint.core.permission.PermissionPage(value = "storage.objects.view", model = org.simplepoint.plugin.storage.api.entity.ObjectStorageObject.class)
 @RestController
 @RequestMapping({ObjectStoragePaths.GLOBAL_BASE, ObjectStoragePaths.REMOTE_BASE})
 @Tag(name = "统一对象存储接口", description = "系统内统一上传文件并获取租户隔离的元信息")

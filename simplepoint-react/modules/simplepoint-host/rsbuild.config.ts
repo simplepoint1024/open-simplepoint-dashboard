@@ -3,6 +3,8 @@ import {defineConfig} from '@rsbuild/core';
 import {pluginReact} from '@rsbuild/plugin-react';
 
 export default defineConfig({
+  // A successful production build must reflect current sources, not a stale persistent module graph.
+  performance: {buildCache: false},
   html: {
     title: 'Simple·Point Platform',
   },

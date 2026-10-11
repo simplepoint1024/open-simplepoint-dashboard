@@ -74,11 +74,19 @@ class ResourceQueryHttpTest {
             provider(),
             provider(),
             provider());
+    try {
+      var field = ResourceServiceImpl.class.getDeclaredField("permissionEntityManager"); field.setAccessible(true); field.set(service, session);
+    } catch (ReflectiveOperationException exception) {throw new AssertionError(exception);}
     mvc =
         MockMvcBuilders.standaloneSetup(new ResourcesController(service))
+            .setMessageConverters(new org.springframework.http.converter.json.JacksonJsonHttpMessageConverter(
+                tools.jackson.databind.json.JsonMapper.builder().addModule(new org.simplepoint.core.jackson.FieldScopeJackson3Module()).build()))
             .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
             .build();
     context = new AuthorizationContext();
+    context.setUserId("verified-user");
+    context.setScopeType(org.simplepoint.core.AuthorizationScopeType.PLATFORM);
+    context.setAttributes(java.util.Map.of("X-Tenant-Id", "__platform__"));
     context.setIsAdministrator(true);
     context.setDataScopeType("ALL");
   }
@@ -163,5 +171,29 @@ class ResourceQueryHttpTest {
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.code").value("INVALID_QUERY"))
         .andExpect(jsonPath("$.message").value("筛选值与字段类型不匹配"));
+  }
+
+  @Test void resourceTreeNodesUseTheOwningResourceFieldPolicyInsteadOfExposingProtectedValues() throws Exception {
+    context.setFieldPermissions(java.util.Map.of(Resource.class.getName() + "#name", "MASKED", Resource.class.getName() + "#code", "HIDDEN"));
+    mvc.perform(get("/resources").param("page", "0").param("size", "20")
+        .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].name").value("***"))
+        .andExpect(jsonPath("$.content[0].label").value("***"))
+        .andExpect(jsonPath("$.content[0].code").doesNotExist()).andExpect(jsonPath("$.content[1].code").doesNotExist());
+  }
+
+  @Test void inheritedParentScopeProjectionAndBothJsonConvertersRespectTheResourcePolicy() throws Exception {
+    context.setFieldPermissions(java.util.Map.of(Resource.class.getName() + "#scopeTypes", "HIDDEN", Resource.class.getName() + "#name", "MASKED"));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    var node = new org.simplepoint.security.entity.ResourceNode(); node.setName("不可泄露的名称");
+    node.setScopeTypes(Set.of(ResourceScopeType.PLATFORM)); node.setParentScopeTypes(Set.of(ResourceScopeType.TENANT));
+    var modernMapper = tools.jackson.databind.json.JsonMapper.builder().addModule(new org.simplepoint.core.jackson.FieldScopeJackson3Module()).build();
+    var legacyMapper = new com.fasterxml.jackson.databind.ObjectMapper().registerModule(new org.simplepoint.core.jackson.FieldScopeJacksonModule());
+    var modern = modernMapper.readTree(modernMapper.writeValueAsString(node));
+    var legacy = legacyMapper.readTree(legacyMapper.writeValueAsString(node));
+    org.junit.jupiter.api.Assertions.assertFalse(modern.has("scopeTypes")); org.junit.jupiter.api.Assertions.assertFalse(modern.has("parentScopeTypes"));
+    org.junit.jupiter.api.Assertions.assertFalse(legacy.has("scopeTypes")); org.junit.jupiter.api.Assertions.assertFalse(legacy.has("parentScopeTypes"));
+    org.junit.jupiter.api.Assertions.assertEquals("***", modern.path("name").asText());
+    org.junit.jupiter.api.Assertions.assertEquals("***", legacy.path("name").asText());
   }
 }

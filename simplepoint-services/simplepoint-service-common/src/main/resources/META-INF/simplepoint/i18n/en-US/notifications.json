@@ -29,7 +29,7 @@
   "notifications.status.DRAFT": "Draft",
   "notifications.status.PUBLISHED": "Published",
   "notifications.status.REVOKED": "Revoked",
-  "notifications.description.audienceId": "Required for tenant or user audiences. Enter the corresponding tenant ID or user ID.",
+  "notifications.description.audienceId": "For tenant or user audiences, select the corresponding tenant or user.",
   "notifications.confirm.publish.title": "Publish System Notification",
   "notifications.confirm.publish.content": "Publishing immediately pushes this notification to its audience and locks its content. Continue?",
   "notifications.confirm.revoke.title": "Revoke System Notification",

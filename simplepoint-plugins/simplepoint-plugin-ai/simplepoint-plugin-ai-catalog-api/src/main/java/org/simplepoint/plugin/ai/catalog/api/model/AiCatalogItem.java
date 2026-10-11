@@ -21,6 +21,8 @@ public record AiCatalogItem(
     String repositoryUrl,
     String websiteUrl,
     boolean importable,
+    boolean remoteImportable,
+    boolean runtimeImportable,
     Instant updatedAt
 ) {
 }

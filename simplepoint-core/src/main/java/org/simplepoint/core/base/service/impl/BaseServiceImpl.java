@@ -41,6 +41,7 @@ import org.simplepoint.core.datascopeannotation.DataScopeCondition;
 import org.simplepoint.core.datascopeannotation.DataScopeContext;
 import org.simplepoint.core.datascopeannotation.DataScopeFilter;
 import org.simplepoint.core.schema.AnnotatedTableSchemaProvider;
+import org.simplepoint.core.base.DecimalColumnPolicy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -197,6 +198,7 @@ public class BaseServiceImpl
     applyCurrentTenantIdIfNecessary(entity);
     applyCreationAuditContext(entity);
     assertCreateAccessible(entity);
+    DecimalColumnPolicy.validate(entity);
     S save = repository.save(entity);
     getModifyDataAuditingServices().forEach(service -> service.save(Set.of(save), repository.getDomainClass()));
     return save;
@@ -216,6 +218,7 @@ public class BaseServiceImpl
         applyCurrentTenantIdIfNecessary(e);
         applyCreationAuditContext(e);
         assertCreateAccessible(e);
+        DecimalColumnPolicy.validate(e);
       });
     }
     List<T> save = repository.saveAll(entities);
@@ -349,6 +352,7 @@ public class BaseServiceImpl
       BeanUtil.copyProperties(db, entity, options);
       applyModificationAuditContext(entity);
       assertAccessible(entity);
+      DecimalColumnPolicy.validate(entity);
 
       // Audit diff between db (before) and entity (after merge)
       getModifyDataAuditingServices().forEach(svc -> svc.modify(db, entity, repository.getDomainClass()));
@@ -550,6 +554,22 @@ public class BaseServiceImpl
     return result;
   }
 
+  /** Adds server-owned EXISTS restrictions while retaining the ordinary data-scope policy. */
+  protected <S extends T> Page<S> limitReferencedScoped(
+      Map<String, String> attributes, Map<String, String> required,
+      List<org.simplepoint.api.base.QueryReferenceMembership> memberships, Pageable pageable) {
+    Map<String, String> filters = new LinkedHashMap<>();
+    if (attributes != null) filters.putAll(attributes);
+    filters.remove("deletedAt");
+    validatePublicFilters(filters);
+    Map<String, String> mandatory = new LinkedHashMap<>(required);
+    mandatory.put("deletedAt", "is:null");
+    Page<S> result = runWithDefaultDataScope(() ->
+        repository.limitReferencedScoped(filters, mandatory, memberships, pageable));
+    validate(result.getContent());
+    return result;
+  }
+
   private void validatePublicFilters(Map<String, String> safeAttributes) {
     // Public list adapters opt in explicitly. Legacy services keep their domain-specific semantics.
     if (org.simplepoint.core.query.QueryCapabilities.declaration(repository.getDomainClass())
@@ -647,7 +667,7 @@ public class BaseServiceImpl
    * @param entityClass the entity class; used to build the {@code "SimpleClassName#fieldName"} lookup key
    * @return names of non-writable fields, or an empty set when no field permissions apply
    */
-  private Set<String> getNonWritableFieldNames(Class<?> entityClass) {
+  protected final Set<String> getNonWritableFieldNames(Class<?> entityClass) {
     AuthorizationContext ctx = getAuthorizationContext();
     if (ctx == null) {
       return Set.of();
@@ -675,7 +695,7 @@ public class BaseServiceImpl
    *
    * @param entity the entity being created
    */
-  private void clearNonEditableFieldsForCreate(Object entity) {
+  protected final void clearNonEditableFieldsForCreate(Object entity) {
     if (entity == null) {
       return;
     }
@@ -711,6 +731,14 @@ public class BaseServiceImpl
       }
       clazz = clazz.getSuperclass();
     }
+  }
+
+  /** Domain validation must inspect the same ACL-correct values that the generic writer persists. */
+  protected final void restoreNonWritableFields(T current, T proposed) {
+    Set<String> protectedFields = getNonWritableFieldNames(proposed.getClass());
+    if (protectedFields.isEmpty()) return;
+    BeanUtil.copyProperties(current, proposed, CopyOptions.create().setIgnoreNullValue(false)
+        .setIgnoreError(true).setFieldNameEditor(name -> protectedFields.contains(name) ? name : null));
   }
 
   private <V> V runWithDefaultDataScope(Supplier<V> supplier) {
@@ -779,6 +807,10 @@ public class BaseServiceImpl
     if (!hasApplicableDataScope()) {
       return false;
     }
+    AuthorizationContext context = getAuthorizationContext();
+    if (context != null && context.activeDataScope() != null) {
+      return buildDefaultDataScopeCondition() != null;
+    }
     DataScopeCondition condition = DataScopeContext.get();
     if (condition != null) {
       return !condition.isAllData();
@@ -786,7 +818,7 @@ public class BaseServiceImpl
     return buildDefaultDataScopeCondition() != null;
   }
 
-  private void assertAccessible(T entity) {
+  protected final void assertAccessible(T entity) {
     if (!isAccessible(entity)) {
       throw new AccessDeniedException("Data scope denies access to entity: " + entity.getId());
     }
@@ -811,9 +843,8 @@ public class BaseServiceImpl
     if (scopeType == null || scopeType.isBlank()) {
       return false;
     }
-    if (resourceScope != null && resourceScope.condition(dataScopeDeptField(), dataScopeOwnerField(), ctx)
-        .getExpressions().stream().anyMatch(node -> org.simplepoint.core.permission.PermissionExpressionEvaluator.matches(
-            node, field -> permissionFieldValue(entity, field)))) return true;
+    if (resourceScope != null) return resourceScope.allows(dataScopeDeptField(), dataScopeOwnerField(), ctx,
+        field -> permissionFieldValue(entity, field));
     return switch (scopeType) {
       case DATA_SCOPE_SELF -> {
         Object owner = readFieldValue(entity, dataScopeOwnerField());

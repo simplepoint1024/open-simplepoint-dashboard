@@ -138,6 +138,7 @@ const schema = {
 };
 
 export default [
+  http.get(`${base}/presentation`, () => HttpResponse.json({pages: {}, dataRules: {}, fieldRules: {}, organizations: {}})),
   http.get(`${base}/schema`, () => HttpResponse.json(schema)),
   http.get(base, ({ request }) => HttpResponse.json(pageFromUrl(new URL(request.url), store.all()))),
   http.post(base, async ({ request }) => {

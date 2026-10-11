@@ -61,6 +61,31 @@ class ServiceInvocationDispatcherTest {
   }
 
   @Test
+  void dispatchesGenericCollectionAsSecondArgument() {
+    RoutedServiceMetadata metadata = RoutedServiceMetadataResolver.resolve(MemberLookupService.class).orElseThrow();
+    LocalRoutedService local = new LocalRoutedService(
+        metadata,
+        MemberLookupServiceImpl::new,
+        MemberLookupService.class
+    );
+    ServiceInvocationDispatcher dispatcher = new ServiceInvocationDispatcher(
+        new SingleServiceRegistry(local),
+        new ObjectMapper()
+    );
+
+    RemoteResponse response = dispatcher.dispatch(new RemoteRequest(
+        "sample.MemberLookupService",
+        "1.0",
+        "resolve",
+        List.of("tenant-1", List.of("user-1", "user-2")),
+        "trace-1"
+    ));
+
+    assertThat(response.success()).isTrue();
+    assertThat(response.data()).isEqualTo(List.of("tenant-1:user-1", "tenant-1:user-2"));
+  }
+
+  @Test
   void dispatchUnwrapsOptionalReturnValue() {
     RoutedServiceMetadata metadata = RoutedServiceMetadataResolver.resolve(LookupService.class).orElseThrow();
     LocalRoutedService local = new LocalRoutedService(metadata, LookupServiceImpl::new, LookupService.class);
@@ -123,6 +148,13 @@ class ServiceInvocationDispatcherTest {
     Optional<LookupValue> find(String id);
   }
 
+  @RoutedService(name = "sample.MemberLookupService")
+  interface MemberLookupService {
+
+    @RoutedMethod("resolve")
+    Collection<String> resolve(String tenantId, Collection<String> userIds);
+  }
+
   static class GreetingServiceImpl implements GreetingService {
 
     @Override
@@ -151,6 +183,14 @@ class ServiceInvocationDispatcherTest {
         return Optional.empty();
       }
       return Optional.of(new LookupValue(id, "Ada"));
+    }
+  }
+
+  static class MemberLookupServiceImpl implements MemberLookupService {
+
+    @Override
+    public Collection<String> resolve(final String tenantId, final Collection<String> userIds) {
+      return userIds.stream().map(userId -> tenantId + ":" + userId).toList();
     }
   }
 

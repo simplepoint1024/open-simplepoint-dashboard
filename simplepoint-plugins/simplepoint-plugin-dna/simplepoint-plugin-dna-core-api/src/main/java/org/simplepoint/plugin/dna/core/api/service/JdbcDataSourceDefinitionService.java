@@ -11,6 +11,10 @@ import org.simplepoint.plugin.dna.core.api.vo.JdbcDataSourceConnectionResult;
  */
 public interface JdbcDataSourceDefinitionService extends BaseService<JdbcDataSourceDefinition, String> {
 
+  /** Pages enabled candidates, excluding this user's grants in SQL rather than loading all IDs. */
+  org.springframework.data.domain.Page<JdbcDataSourceDefinition> assignmentCandidates(
+      java.util.Map<String, String> filters, String userId, org.springframework.data.domain.Pageable pageable);
+
   /**
    * Finds an active datasource definition by id.
    *

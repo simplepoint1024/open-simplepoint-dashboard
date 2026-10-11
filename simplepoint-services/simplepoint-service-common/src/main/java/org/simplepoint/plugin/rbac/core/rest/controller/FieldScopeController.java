@@ -58,6 +58,18 @@ public class FieldScopeController extends BaseController<FieldScopeService, Fiel
     return ok(service.pageCatalog());
   }
 
+  @GetMapping("/resources")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('field-scope.create') or hasAuthority('field-scope.edit')")
+  public Response<Page<FieldScopeService.ResourceNode>> resourceNodes(@RequestParam(name = "parentId", required = false) String parentId, Pageable pageable) {
+    return ok(service.resourceNodes(parentId, pageable));
+  }
+
+  @GetMapping("/page-fields")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('field-scope.create') or hasAuthority('field-scope.edit')")
+  public Response<FieldScopeService.PageFields> pageFields(@RequestParam("code") String code) {
+    return ok(service.pageFields(code));
+  }
+
   @PostMapping("/configuration")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('field-scope.create')")
   public Response<FieldScope> createConfigured(@RequestBody FieldScopeService.Configuration configuration) {

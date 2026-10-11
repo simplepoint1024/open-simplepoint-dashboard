@@ -61,6 +61,12 @@ public interface TenantRepository extends BaseRepository<Tenant, String> {
    */
   boolean hasUser(String tenantId, String userId);
 
+  /** Resolves active accounts and active memberships, including the owner, within one tenant. */
+  Collection<String> resolveActiveUserIds(String tenantId, Collection<String> userIds);
+
+  /** Resolves non-deleted role authorities belonging to an active tenant. */
+  Collection<String> resolveActiveRoleAuthorities(String tenantId, Collection<String> authorities);
+
   /**
    * Checks whether another active tenant already uses the supplied name.
    *

@@ -73,5 +73,6 @@
   "dna.drivers.page.form.jar.label": "Driver Jar",
   "dna.drivers.page.form.jar.required": "Upload a driver jar file.",
   "dna.drivers.page.form.jar.dragText": "Click or drag a driver jar here to upload",
-  "dna.drivers.page.form.jar.hint": "Only one JDBC driver jar file is supported"
+  "dna.drivers.page.form.jar.hint": "Only one JDBC driver jar file is supported",
+  "dna.drivers.page.action.close": "Close"
 }

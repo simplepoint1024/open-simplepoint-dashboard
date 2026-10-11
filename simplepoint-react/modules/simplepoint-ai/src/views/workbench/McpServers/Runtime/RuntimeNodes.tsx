@@ -1,10 +1,10 @@
 import DataTable from '@simplepoint/components/DataTable';
+import TableActions from '@simplepoint/components/Table/Actions';
 import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {usePageSelected, usePageRetention} from '@simplepoint/shared/page/hooks';
 import {
   Alert,
-  Button,
-  Card,
   Descriptions,
   Modal,
   Progress,
@@ -24,6 +24,10 @@ import {
 } from './utils';
 
 const {Paragraph, Text} = Typography;
+const SecurityTag = ({value, inactiveColor, label}: {value: unknown; inactiveColor: string; label: string}) =>
+  <Tag color={value === true ? 'green' : value === false ? inactiveColor : 'default'}>
+    {label}{typeof value === 'boolean' ? '' : ' · —'}
+  </Tag>;
 
 type RuntimeNodesProps = {
   active?: boolean;
@@ -32,9 +36,11 @@ type RuntimeNodesProps = {
 
 const RuntimeNodes = ({active = true, nodesUrl}: RuntimeNodesProps) => {
   const {t} = useI18n();
+  const selected = usePageSelected();
   const list = useRemoteList<RuntimeNode>(nodesUrl, active);
   const loadError = list.error ? resolveErrorMessage(list.error, t('table.loadFail', '加载失败')) : undefined;
   const [detail, setDetail] = useState<RuntimeNode>();
+  usePageRetention(!detail);
 
 
   const columns = useMemo(() => [
@@ -62,6 +68,8 @@ const RuntimeNodes = ({active = true, nodesUrl}: RuntimeNodesProps) => {
       key: 'capacity',
       width: 210,
       render: (_: unknown, node: RuntimeNode) => {
+        if (typeof node.maxWorkloads !== 'number' || typeof node.runningWorkloads !== 'number'
+          || !Number.isFinite(node.maxWorkloads) || !Number.isFinite(node.runningWorkloads)) return <Text>—</Text>;
         const percent = node.maxWorkloads > 0
           ? Math.round((node.runningWorkloads / node.maxWorkloads) * 100)
           : 0;
@@ -79,7 +87,7 @@ const RuntimeNodes = ({active = true, nodesUrl}: RuntimeNodesProps) => {
       key: 'resources',
       width: 210,
       render: (_: unknown, node: RuntimeNode) => (
-        `${node.cpuCores} CPU · ${formatBytes(node.memoryBytes)}`
+        `${typeof node.cpuCores === 'number' && Number.isFinite(node.cpuCores) ? node.cpuCores : '—'} CPU · ${formatBytes(node.memoryBytes)}`
       ),
     },
     {
@@ -103,10 +111,10 @@ const RuntimeNodes = ({active = true, nodesUrl}: RuntimeNodesProps) => {
       width: 260,
       render: (_: unknown, node: RuntimeNode) => (
         <Space wrap size={4}>
-          <Tag color={node.seccompEnforced ? 'green' : 'red'}>{t('ai.runtime.node.security.seccomp', 'seccomp')}</Tag>
-          <Tag color={node.appArmorEnforced ? 'green' : 'default'}>{t('ai.runtime.node.security.appArmor', 'AppArmor')}</Tag>
-          <Tag color={node.requireSupplyChainAdmission ? 'green' : 'gold'}>{t('ai.runtime.node.security.supplyChainAdmission', '供应链准入')}</Tag>
-          <Tag color={node.requireImageDigest ? 'green' : 'red'}>{t('ai.runtime.node.security.imageDigestRequired', '必须使用镜像 Digest')}</Tag>
+          <SecurityTag value={node.seccompEnforced} inactiveColor="red" label={t('ai.runtime.node.security.seccomp', 'seccomp')}/>
+          <SecurityTag value={node.appArmorEnforced} inactiveColor="default" label={t('ai.runtime.node.security.appArmor', 'AppArmor')}/>
+          <SecurityTag value={node.requireSupplyChainAdmission} inactiveColor="gold" label={t('ai.runtime.node.security.supplyChainAdmission', '供应链准入')}/>
+          <SecurityTag value={node.requireImageDigest} inactiveColor="red" label={t('ai.runtime.node.security.imageDigestRequired', '必须使用镜像 Digest')}/>
         </Space>
       ),
     },
@@ -114,7 +122,7 @@ const RuntimeNodes = ({active = true, nodesUrl}: RuntimeNodesProps) => {
       title: t('ai.runtime.node.cachedImages', '缓存镜像'),
       dataIndex: 'cachedImageDigests',
       width: 105,
-      render: (value?: string[]) => value?.length ?? 0,
+      render: (value?: string[]) => Array.isArray(value) ? value.length : '—',
     },
     {
       title: t('ai.runtime.field.lastHeartbeat', '最后心跳'),
@@ -137,18 +145,17 @@ const RuntimeNodes = ({active = true, nodesUrl}: RuntimeNodesProps) => {
       fixed: 'right' as const,
       width: 90,
       render: (_: unknown, node: RuntimeNode) => (
-        <Button type="link" size="small" onClick={() => setDetail(node)}>
-          {t('ai.runtime.action.details', '详情')}
-        </Button>
+        <TableActions selectedKeys={[node.id]} selectedRows={[node]} buttons={[
+          {key: 'detail', sort: 1, text: t('ai.runtime.action.details', '详情'), type: 'link', size: 'small'},
+        ]} isButtonDisabled={() => !selected || !!detail || !!loadError}
+          onButtonEvents={{detail: () => {if (selected && !detail && !loadError) setDetail(structuredClone(node));}}}/>
       ),
     },
-  ], [t]);
+  ], [t, selected, detail, loadError]);
 
   return (
     <>
-      <Card className="runtime-list-nodes"
-        title={t('ai.runtime.node.title', 'Runtime Nodes')}
-      >
+      <div className="runtime-list-nodes" style={{display: 'flex', flexDirection: 'column', minHeight: 0, gap: 12}}>
         <Alert
           showIcon
           type="info"
@@ -170,8 +177,10 @@ const RuntimeNodes = ({active = true, nodesUrl}: RuntimeNodesProps) => {
             )}
             description={loadError}
             action={(
-              <Space><Button size="small" onClick={list.retry}>{t('table.retry', '重试')}</Button>
-                <Button size="small" onClick={list.reset}>{t('table.query.reset', '重置筛选与排序')}</Button></Space>
+              <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+                {key: 'retry', sort: 1, text: t('table.retry', '重试'), size: 'small'},
+                {key: 'reset', sort: 2, text: t('table.query.reset', '重置筛选与排序'), size: 'small'},
+              ]} onButtonEvents={{retry: list.retry, reset: list.reset}}/>
             )}
           />
         )}
@@ -181,9 +190,11 @@ const RuntimeNodes = ({active = true, nodesUrl}: RuntimeNodesProps) => {
           columns={list.columns(columns)}
           scroll={{x: 1800}}
         />
-      </Card>
+      </div>
       <Modal
-        open={Boolean(detail)}
+        wrapClassName="runtime-node-details"
+        open={Boolean(detail) && selected}
+        destroyOnHidden={!detail}
         title={`${t('ai.runtime.node.details', 'Runtime Node 详情')} · ${detail?.displayName ?? ''}`}
         width={920}
         footer={null}

@@ -159,6 +159,33 @@ class AiMcpServerDefinitionServiceImplTest {
   }
 
   @Test
+  void pageScopeRejectsForeignSnapshotReadsBeforeLoadingCapabilities() {
+    var context = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    context.setResourceDataScopes(Map.of("ai.mcp.servers.view",
+        new org.simplepoint.core.ResourceDataScope("SELF", java.util.Set.of(), false)));
+    org.simplepoint.core.ResourcePolicyContext.set("ai.mcp.servers.view");
+    server.setCreatedBy("other");
+    try {
+      assertThatThrownBy(() -> service.listSnapshots("server-a", PageRequest.of(0, 20)))
+          .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+      org.mockito.Mockito.verifyNoInteractions(snapshotRepository, gatewayOperations, credentialCipher);
+    } finally { org.simplepoint.core.ResourcePolicyContext.clear(); }
+  }
+
+  @Test
+  void readOnlyBearerTokenCannotBeReplacedThroughTheEncryptedField() {
+    var context = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    context.setFieldPermissions(Map.of(AiMcpServerDefinition.class.getName() + "#bearerToken", "VISIBLE"));
+    var input = new AiMcpServerDefinition(); input.setId("server-a");
+    input.setName("Test"); input.setCode("test"); input.setEndpointUrl("https://mcp.example.com/mcp");
+    input.setAuthenticationType(McpAuthenticationType.BEARER); input.setBearerToken("replacement");
+    assertThatThrownBy(() -> service.modifyById(input))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    org.mockito.Mockito.verifyNoInteractions(credentialCipher, gatewayOperations);
+    verify(repository, org.mockito.Mockito.never()).save(any());
+  }
+
+  @Test
   void listsSafeSnapshotSummaries() {
     PageRequest pageable = PageRequest.of(0, 20);
     when(snapshotRepository.findAllActiveByServerId("server-a", pageable))

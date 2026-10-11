@@ -48,6 +48,16 @@
   "external-idp.page.form.secret.edit": "Leave blank to keep the existing encrypted credential",
   "external-idp.page.callback": "Callback URL: {url}",
   "external-idp.page.test.callback": "Callback URL",
+  "external-idp.page.callbackInstruction": "Test the configuration, then register the server-returned callback URL with the external platform. It must match the authorization service's public address.",
+  "external-idp.page.test.invalidResponse": "The configuration test returned an invalid result. Please retry.",
+  "external-idp.page.test.failedTitle": "Configuration test failed",
+  "external-idp.page.test.again": "Test again",
+  "external-idp.page.test.close": "Close",
+  "external-idp.page.test.noLogin": "This test does not verify client credentials, complete a real sign-in, or modify the configuration.",
+  "external-idp.page.test.loading": "Testing configuration…",
+  "external-idp.page.test.relativeCallback": "The server returned only a relative callback path. Configure the authorization service's public address, then test again for the full callback URL.",
+  "external-idp.page.test.interrupted": "The configuration test was interrupted. Please retry.",
   "external-idp.page.github.title": "GitHub integration checklist",
-  "external-idp.page.github.description": "The GitHub OAuth App Authorization callback URL must exactly match the authorization service. Keep the read:user,user:email scopes. Configuration testing validates endpoint shape and reachability; complete one real sign-in to verify the Client ID and secret."
+  "external-idp.page.github.configurationDescription": "The GitHub OAuth App Authorization callback URL must exactly match the authorization service. Keep the read:user,user:email scopes. Configuration testing validates endpoint shape only; complete one real sign-in to verify the Client ID and secret.",
+  "external-idp.page.github.description": "The GitHub OAuth App Authorization callback URL must exactly match the authorization service. Keep the read:user,user:email scopes. Configuration testing validates endpoint shape only; complete one real sign-in to verify the Client ID and secret."
 }

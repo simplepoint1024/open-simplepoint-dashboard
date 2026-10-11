@@ -9,6 +9,7 @@
   "home.invalid": "请填写分组名称，并检查地区和时区设置。",
   "home.saveError": "保存失败，设置已保留，请重试。",
   "home.editorHint": "设置保存在当前账号和工作空间中。仅显示当前角色有权限的应用。",
+  "home.unavailableApps": "保留 {count} 个当前角色不可访问的入口。",
   "home.groupName": "分组名称",
   "home.moveUp": "上移分组",
   "home.moveDown": "下移分组",

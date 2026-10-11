@@ -2,14 +2,19 @@ import api from '@/api';
 import type {TableButtonProps} from '@simplepoint/components/Table';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import DataTable from '@simplepoint/components/DataTable';
+import TableActions from '@simplepoint/components/Table/Actions';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
-import {get} from '@simplepoint/shared/api/methods';
+import {get, useData} from '@simplepoint/shared/api/methods';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import {usePageSelected, usePageRetention} from '@simplepoint/shared/page/hooks';
+import {entityLookupBatches} from '@simplepoint/components/EntitySelect/query';
+import {readyServerFilters} from './Runtime/runtimeQueries';
+import type {SimpleTablePageRequest} from '@simplepoint/components/SimpleTable/types';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import type {Page} from '@simplepoint/shared/types/request';
+import {normalizePage, type RawPage} from '@simplepoint/shared/types/request';
 import {
   Alert,
   App,
-  Button,
   Descriptions,
   Modal,
   Tabs,
@@ -17,12 +22,11 @@ import {
   Typography,
 } from 'antd';
 import type {Key} from 'react';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {resourceScopeLabel} from '../modelLabels';
 import {localizeWorkbenchOperationError} from '../workbenchErrorCodes';
 import {
   mcpPublicationStatusLabel,
-  mcpServerStatusLabel,
 } from './labels';
 
 const {Link, Text} = Typography;
@@ -39,6 +43,8 @@ type McpPublicationRow = {
   id: string;
   code?: string;
   status?: string;
+  upstreamServerId?: string;
+  upstreamServerName?: string;
 };
 
 type McpCapability = {
@@ -70,9 +76,11 @@ const McpPublications = () => {
   const config = api['ai-workbench.mcp-servers'];
   const {t, ensure, locale} = useI18n();
   const {message} = App.useApp();
-  const [servers, setServers] = useState<McpServerOption[]>([]);
+  const selected = usePageSelected();
   const [manifest, setManifest] = useState<McpPublicationManifest>();
-  const [serverLoadError, setServerLoadError] = useState<string>();
+  usePageRetention(false, !!manifest);
+  const manifestRequest = useRef<AbortController | undefined>(undefined);
+  useEffect(() => () => manifestRequest.current?.abort(), []);
 
   const tableErrorMessageResolver = useCallback((error: unknown) => (
     localizeWorkbenchOperationError(t, error, {
@@ -80,61 +88,40 @@ const McpPublications = () => {
       fallback: 'MCP Publication 操作失败，请稍后重试',
     })
   ), [t]);
-  const [serverLoading, setServerLoading] = useState(true);
+  const eligible = useData(['mcp-publication-eligible', config.baseUrl], async ({signal}) =>
+    normalizePage(await get<RawPage<McpServerOption>>(config.baseUrl,
+      {page: 0, size: 1, ...readyServerFilters}, {signal})), {retry: false});
+  const serverLoadError = eligible.error;
+  const serverLoading = eligible.isPending;
+  const hasReadyServer = (eligible.data?.page.totalElements ?? 0) > 0;
 
   useEffect(() => {
     void ensure(config.i18nNamespaces);
   }, [config.i18nNamespaces, ensure, locale]);
 
-  const loadServers = useCallback(async () => {
-    setServerLoading(true);
-    setServerLoadError(undefined);
+  const loadPage = useCallback(async ({page, size, filters, sort, signal}: SimpleTablePageRequest) => {
+    const result = normalizePage(await get<RawPage<McpPublicationRow>>(config.publicationsUrl,
+      {page, size, ...filters, ...(sort ? {sort} : {})}, {signal}));
+    const names = new Map<string, string>();
     try {
-      const page = await get<Page<McpServerOption>>(
-        config.baseUrl,
-        {page: 0, size: 500},
-      );
-      setServers(page.content ?? []);
+      for (const params of entityLookupBatches(result.content.map(row => row.upstreamServerId ?? ''))) {
+        const servers = normalizePage(await get<RawPage<McpServerOption>>(config.baseUrl, params, {signal}));
+        servers.content.forEach(server => names.set(server.id, server.name || server.code || server.id));
+      }
     } catch (error) {
-      setServers([]);
-      setServerLoadError(resolveApiErrorMessage(
-        error,
-        t('ai.mcp.publications.error.loadServers', 'READY MCP Server 列表加载失败'),
-      ));
-    } finally {
-      setServerLoading(false);
+      if (signal?.aborted) throw error;
+      // Display enrichment must not make the publication list unavailable.
     }
-  }, [config.baseUrl, t]);
+    return {...result, content: result.content.map(row => ({...row,
+      upstreamServerName: names.get(row.upstreamServerId ?? '')}))};
+  }, [config.baseUrl, config.publicationsUrl]);
 
-  useEffect(() => {
-    void loadServers();
-  }, [loadServers]);
-
-  const readyServers = useMemo(() => servers.filter((server) => (
-    server.status === 'READY' && server.enabled !== false
-  )), [servers]);
-
-  const serverNames = useMemo(() => new Map(
-    servers.map((server) => [
-      server.id,
-      server.name || server.code || server.id,
-    ]),
-  ), [servers]);
-
-  const formSchemaTransform = useCallback((schema: any, editingRecord: any) => {
+  const formSchemaTransform = useCallback((schema: any) => {
     const nextSchema = structuredClone(schema ?? {});
     const properties = nextSchema?.properties ?? {};
     if (properties.upstreamServerId) {
-      const options = servers.filter((server) => (
-        (server.status === 'READY' && server.enabled !== false)
-        || server.id === editingRecord?.upstreamServerId
-      ));
-      properties.upstreamServerId.oneOf = options.map((server) => ({
-        const: server.id,
-        title: `${server.name || server.code || server.id}${server.status === 'READY'
-          ? ''
-          : ` (${mcpServerStatusLabel(t, server.status)})`}`,
-      }));
+      delete properties.upstreamServerId.oneOf;
+      delete properties.upstreamServerId.enum;
     }
     if (properties.requiredScopes) {
       properties.requiredScopes.default = 'mcp.invoke';
@@ -157,7 +144,11 @@ const McpPublications = () => {
     delete properties.authorizationServerUri;
     delete properties.status;
     return nextSchema;
-  }, [servers, t]);
+  }, [t]);
+  const formUiSchema = useMemo(() => ({upstreamServerId: {
+    'ui:widget': 'EntitySelect',
+    'ui:options': {endpoint: config.baseUrl, filters: readyServerFilters, lookupFilters: {}},
+  }}), [config.baseUrl]);
 
   const columnOverrides = useMemo(() => ({
     scopeType: {
@@ -170,7 +161,8 @@ const McpPublications = () => {
     },
     upstreamServerId: {
       width: 220,
-      render: (value: string) => serverNames.get(value) || value || '-',
+      render: (value: string, row: McpPublicationRow) => row.upstreamServerName
+        || (value ? t('form.remoteSelect.selectedUnavailable', '已选项不可用') : '-'),
     },
     canonicalResourceUri: {
       width: 360,
@@ -206,11 +198,11 @@ const McpPublications = () => {
         </Tag>
       ),
     },
-  }), [serverNames, t]);
+  }), [t]);
 
   const loadManifest = useCallback(async (rows: McpPublicationRow[]) => {
     const publication = rows?.[0];
-    if (!publication?.id) return;
+    if (!publication?.id || !selected) return;
     if (publication.status !== 'PUBLISHED') {
       message.warning(t(
         'ai.mcp.publications.warning.published',
@@ -218,11 +210,17 @@ const McpPublications = () => {
       ));
       return;
     }
+    manifestRequest.current?.abort();
+    const request = new AbortController();
+    manifestRequest.current = request;
     try {
-      setManifest(await get<McpPublicationManifest>(
+      const next = await get<McpPublicationManifest>(
         `${config.publicationsUrl}/${publication.id}/manifest`,
-      ));
+        undefined, {signal: request.signal},
+      );
+      if (!request.signal.aborted && manifestRequest.current === request) setManifest(next);
     } catch (error) {
+      if (request.signal.aborted) return;
       message.error(resolveApiErrorMessage(
         error,
         t('ai.mcp.publications.error.manifest', '发布清单加载失败'),
@@ -290,15 +288,16 @@ const McpPublications = () => {
           type="error"
           style={{marginBottom: 16, flexShrink: 0}}
           message={t('ai.mcp.publications.error.loadServers', 'READY MCP Server 列表加载失败')}
-          description={serverLoadError}
+          description={resolveApiErrorMessage(serverLoadError,
+            t('ai.mcp.publications.error.loadServers', 'READY MCP Server 列表加载失败'))}
           action={(
-            <Button size="small" onClick={() => void loadServers()}>
-              {t('ai.mcp.action.retry', '重试')}
-            </Button>
+            <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+              {key: 'retry', sort: 1, text: t('ai.mcp.action.retry', '重试'), size: 'small'},
+            ]} onButtonEvents={{retry: () => void eligible.refetch()}}/>
           )}
         />
       )}
-      {!serverLoading && !serverLoadError && readyServers.length === 0 && (
+      {!serverLoading && !serverLoadError && !hasReadyServer && (
         <Alert
           showIcon
           type="warning"
@@ -318,19 +317,21 @@ const McpPublications = () => {
           customButtonEvents={customButtonEvents}
           errorMessageResolver={tableErrorMessageResolver}
           formSchemaTransform={formSchemaTransform}
+          formUiSchema={formUiSchema}
+          loadPage={loadPage}
           columnOverrides={columnOverrides}
           isButtonDisabled={(button) => (
-            (button.key === 'add' && (Boolean(serverLoadError) || readyServers.length === 0))
-            || (button.key === 'edit' && Boolean(serverLoadError))
+            button.key === 'add' && (serverLoading || Boolean(serverLoadError) || !hasReadyServer)
           )}
         />
       </div>
       <Modal
-        open={Boolean(manifest)}
+        open={Boolean(manifest) && selected}
+        destroyOnHidden={!manifest}
         title={`${t('ai.mcp.publications.manifest.title', '最终发布清单')} · ${manifest?.name ?? ''}`}
         width={980}
         footer={null}
-        onCancel={() => setManifest(undefined)}
+        onCancel={() => {manifestRequest.current?.abort(); setManifest(undefined);}}
       >
         {manifest && (
           <>
@@ -412,4 +413,7 @@ const McpPublications = () => {
   );
 };
 
-export default McpPublications;
+export default function ScopedMcpPublications() {
+  const scope = useQueryScope();
+  return <McpPublications key={JSON.stringify(scope)}/>;
+}

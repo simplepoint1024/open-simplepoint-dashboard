@@ -1,6 +1,7 @@
 import api from '@/api';
 import {get, post} from '@simplepoint/shared/api/methods';
 import {Page} from '@simplepoint/shared/types/request';
+import type {RequestOptions} from '@simplepoint/shared/api/client';
 
 const {baseUrl} = api['platform.packages'];
 
@@ -24,10 +25,10 @@ export async function fetchAuthorized(params: Pick<PackageApplicationsRelevanceD
   return await get<string[]>(`${baseUrl}/authorized`, params as Record<string, string>);
 }
 
-export async function fetchAuthorize(data: PackageApplicationsRelevanceDto) {
-  return await post<PackageApplicationsRelevanceDto>(`${baseUrl}/authorize`, data);
+export async function fetchAuthorize(data: PackageApplicationsRelevanceDto, options?: RequestOptions) {
+  return await post<PackageApplicationsRelevanceDto>(`${baseUrl}/authorize`, data, options);
 }
 
-export async function fetchUnauthorized(data: PackageApplicationsRelevanceDto) {
-  return await post<PackageApplicationsRelevanceDto>(`${baseUrl}/unauthorized`, data);
+export async function fetchUnauthorized(data: PackageApplicationsRelevanceDto, options?: RequestOptions) {
+  return await post<PackageApplicationsRelevanceDto>(`${baseUrl}/unauthorized`, data, options);
 }

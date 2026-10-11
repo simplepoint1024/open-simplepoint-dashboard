@@ -2,6 +2,7 @@ import {DatePicker, Input, InputNumber, Select, Space} from 'antd';
 import dayjs from 'dayjs';
 import {arrayOps, nullOps, type Scalar} from './query';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {isNumericQueryType, queryScalar} from './queryValue';
 
 export interface QueryValueProps {
   op: string;
@@ -10,20 +11,21 @@ export interface QueryValueProps {
   type?: string;
   javaType?: string;
   format?: string;
+  multiline?: boolean;
   options?: Array<{value: string; label: string}>;
 }
 
 /** Typed input shared by header filters and the condition-tree editor. Dates use browser timezone. */
-export default function QueryValue({op, value, onChange, type, javaType, format, options}: QueryValueProps) {
+export default function QueryValue({op, value, onChange, type, javaType, format, options, multiline}: QueryValueProps) {
   const {t} = useI18n();
   if (nullOps.includes(op)) return null;
-  const numeric = type === 'number' || type === 'integer';
+  const numeric = isNumericQueryType(type, javaType);
   const boolean = type === 'boolean';
   const date = type === 'date' || format === 'date' || format === 'date-time';
   const range = op.includes('between');
   const multiple = arrayOps.includes(op);
   const enumOptions = boolean ? [{value: 'true', label: t('common.yes', '是')}, {value: 'false', label: t('common.no', '否')}] : options;
-  const normalize = (v: string): Scalar => boolean ? v === 'true' : numeric && Number.isSafeInteger(Number(v)) ? Number(v) : v;
+  const normalize = (v: string): Scalar => queryScalar(v, type, javaType);
   if (enumOptions && !range) return <Select style={{width: '100%'}} allowClear showSearch optionFilterProp="label"
     mode={multiple ? 'multiple' : undefined} options={enumOptions}
     value={Array.isArray(value) ? value.map(String) : value === undefined ? undefined : String(value)}
@@ -38,7 +40,9 @@ export default function QueryValue({op, value, onChange, type, javaType, format,
           : javaType === 'LocalDateTime' ? d.format('YYYY-MM-DDTHH:mm:ss') : d.toISOString())} />
     : numeric ? <InputNumber style={{width: '100%'}} stringMode precision={type === 'integer' ? 0 : undefined}
         value={v === undefined ? null : String(v)} onChange={n => change(n == null ? undefined : normalize(String(n)))} />
-    : <Input value={v === undefined ? '' : String(v)} maxLength={2000} allowClear onChange={e => change(e.target.value)} />;
+    : multiline ? <Input.TextArea value={v === undefined ? '' : String(v)} maxLength={2000} allowClear
+        autoSize={{minRows: 1, maxRows: 4}} onChange={e => change(e.target.value)}/>
+      : <Input value={v === undefined ? '' : String(v)} maxLength={2000} allowClear onChange={e => change(e.target.value)} />;
   if (range) {
     const values = Array.isArray(value) ? value : [];
     return <Space.Compact style={{width: '100%'}}>

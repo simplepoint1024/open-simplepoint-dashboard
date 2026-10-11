@@ -2,20 +2,16 @@ package org.simplepoint.plugin.dna.federation.rest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
 import org.simplepoint.plugin.dna.core.api.vo.DataSourceHealthStatus;
 import org.simplepoint.plugin.dna.federation.api.constants.DnaFederationPaths;
-import org.simplepoint.plugin.dna.federation.api.entity.DataQualityRule;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationQueryAudit;
 import org.simplepoint.plugin.dna.federation.api.service.DataAssetService;
 import org.simplepoint.plugin.dna.federation.api.service.DataQualityRuleService;
@@ -96,7 +92,7 @@ public class DashboardController {
     auditAttrs.put("deletedAt", "is:null");
     Page<FederationQueryAudit> recentAudits = auditService.limit(
         auditAttrs,
-        PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt"))
+        PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "executedAt"))
     );
     summary.put("recentAudits", recentAudits.getContent());
     summary.put("totalQueries", recentAudits.getTotalElements());
@@ -122,48 +118,40 @@ public class DashboardController {
     }).toList();
     summary.put("healthOverview", healthList);
 
-    // Query trend - last 7 days grouped by date (UTC)
-    Instant sevenDaysAgo = Instant.now().minus(7, ChronoUnit.DAYS);
-    Map<String, String> trendAttrs = new LinkedHashMap<>();
-    trendAttrs.put("deletedAt", "is:null");
-    Page<FederationQueryAudit> trendPage = auditService.limit(
-        trendAttrs,
-        PageRequest.of(0, 500, Sort.by(Sort.Direction.DESC, "createdAt")));
-    Map<String, Long> trendByDate = trendPage.getContent().stream()
-        .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(sevenDaysAgo))
-        .collect(Collectors.groupingBy(
-            a -> a.getCreatedAt().atZone(ZoneOffset.UTC).toLocalDate().toString(),
-            Collectors.counting()
-        ));
+    // Count each UTC day in SQL. Fetching a fixed number of audit rows would truncate busy days.
     List<Map<String, Object>> queryTrend = new ArrayList<>();
     for (int i = 6; i >= 0; i--) {
-      String day = LocalDate.now(ZoneOffset.UTC).minusDays(i).toString();
+      LocalDate day = LocalDate.now(ZoneOffset.UTC).minusDays(i);
+      String start = day.atStartOfDay().toInstant(ZoneOffset.UTC).toString();
+      String end = day.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC).minusNanos(1).toString();
+      long count = auditService.limit(Map.of("executedAt", "between:" + start + "," + end),
+          PageRequest.of(0, 1)).getTotalElements();
       Map<String, Object> point = new LinkedHashMap<>();
-      point.put("date", day);
-      point.put("count", trendByDate.getOrDefault(day, 0L));
+      point.put("date", day.toString());
+      point.put("count", count);
       queryTrend.add(point);
     }
     summary.put("queryTrend", queryTrend);
 
-    // Quality stats - count active rules by last run status
-    Map<String, String> qualityAttrs = new LinkedHashMap<>();
-    qualityAttrs.put("deletedAt", "is:null");
-    Page<DataQualityRule> qualityPage = qualityRuleService.limit(
-        qualityAttrs,
-        PageRequest.of(0, 1000));
-    Map<String, Long> qualityByStatus = qualityPage.getContent().stream()
-        .collect(Collectors.groupingBy(
-            r -> r.getLastRunStatus() != null ? r.getLastRunStatus() : "NOT_RUN",
-            Collectors.counting()
-        ));
+    // Count status groups without requesting a page larger than the published query contract.
+    long qualityTotal = qualityCount(null);
+    long qualityPassed = qualityCount("equals:PASSED");
+    long qualityFailed = qualityCount("equals:FAILED");
+    long qualityError = qualityCount("equals:ERROR");
+    long qualityNotRun = qualityCount("is:null") + qualityCount("equals:NOT_RUN");
     Map<String, Object> qualityStats = new LinkedHashMap<>();
-    qualityStats.put("total", qualityPage.getTotalElements());
-    qualityStats.put("passed", qualityByStatus.getOrDefault("PASSED", 0L));
-    qualityStats.put("failed", qualityByStatus.getOrDefault("FAILED", 0L));
-    qualityStats.put("error", qualityByStatus.getOrDefault("ERROR", 0L));
-    qualityStats.put("notRun", qualityByStatus.getOrDefault("NOT_RUN", 0L));
+    qualityStats.put("total", qualityTotal);
+    qualityStats.put("passed", qualityPassed);
+    qualityStats.put("failed", qualityFailed);
+    qualityStats.put("error", qualityError);
+    qualityStats.put("notRun", qualityNotRun);
     summary.put("qualityStats", qualityStats);
 
     return Response.okay(summary);
+  }
+
+  private long qualityCount(String status) {
+    Map<String, String> filters = status == null ? Map.of() : Map.of("lastRunStatus", status);
+    return qualityRuleService.limit(filters, PageRequest.of(0, 1)).getTotalElements();
   }
 }

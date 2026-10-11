@@ -1,0 +1,47 @@
+{
+  "content": [
+    {
+      "checked": true,
+      "children": [],
+      "code": "resource.code.501",
+      "disabled": false,
+      "grantable": true,
+      "hasChildren": false,
+      "id": "resource-501",
+      "label": "Resource501",
+      "name": "Resource501",
+      "publicAccess": false,
+      "requireOrgTenant": true,
+      "scopeTypes": [
+        "TENANT"
+      ],
+      "sort": 501,
+      "type": "PAGE"
+    }
+  ],
+  "empty": false,
+  "first": false,
+  "last": true,
+  "number": 25,
+  "numberOfElements": 1,
+  "pageable": {
+    "offset": 500,
+    "pageNumber": 25,
+    "pageSize": 20,
+    "paged": true,
+    "sort": {
+      "empty": false,
+      "sorted": true,
+      "unsorted": false
+    },
+    "unpaged": false
+  },
+  "size": 20,
+  "sort": {
+    "empty": false,
+    "sorted": true,
+    "unsorted": false
+  },
+  "totalElements": 501,
+  "totalPages": 26
+}

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-export async function smokeRoleResources({clickReady, clickText, fill, poll, evaluate, fixture}) {
+export async function smokeRoleResources({clickReady, clickText, fill, poll, evaluate, fixture, capturePreview}) {
   const list = '.role-resource-list';
   const detailGrant = '.role-resource-detail .role-resource-detail-title input[type="checkbox"]';
   await poll(() => evaluate(`!!document.querySelector('${list} [data-resource-id="resource-root"]')`), 'root resource loads');
@@ -31,14 +31,15 @@ export async function smokeRoleResources({clickReady, clickText, fill, poll, eva
   assert.equal(await evaluate(`!!document.querySelector('.role-resource-config .role-resource-scope')`), false,
     'removed role-wide scope editor must not render');
   await clickReady(`${list} [data-resource-id="resource-root"] .role-resource-node-label`);
-  await poll(() => evaluate(`document.querySelectorAll('.role-resource-detail .role-resource-child-row').length === 240`),
-    'right panel renders the complete first level without pagination');
+  await poll(() => evaluate(`document.querySelectorAll('.role-resource-detail .role-resource-child-row').length > 0
+    && document.querySelectorAll('.role-resource-detail .role-resource-child-row').length < 35`),
+    'right panel retains the complete first level behind a bounded virtual viewport, without pagination');
   assert.equal(await evaluate(`document.querySelector('.role-resource-detail')?.textContent.includes('直属子资源')`), false);
   assert.equal(await evaluate(`document.querySelector('.role-resource-detail-title')?.textContent.includes('全部')`), true);
   assert.equal(await evaluate(`!!document.querySelector('.role-resource-children .ant-pagination')`), false);
-  await clickReady('.role-resource-detail .role-resource-child-row[data-resource-id="resource-001"] .role-resource-expander');
-  await poll(() => evaluate(`document.querySelectorAll('.role-resource-detail .role-resource-child-row').length === 242`),
-    'nested operations expand locally from the complete subtree');
+  await clickReady('.role-resource-detail .ant-tree-treenode:has(.role-resource-child-row[data-resource-id="resource-001"]) .ant-tree-switcher');
+  await poll(() => evaluate(`!!document.querySelector('.role-resource-detail .role-resource-child-row[data-resource-id="resource-operation-0"]')`),
+    'nested operations expand locally from the complete subtree while virtual display remains bounded');
   const cardRects = await evaluate(`[...document.querySelectorAll('.role-resource-detail .role-resource-setting')]
     .map(node=>{const rect=node.getBoundingClientRect(); return {top:rect.top,bottom:rect.bottom,height:rect.height,width:rect.width};})`);
   assert.equal(cardRects.length, 3, 'three permission settings render');
@@ -68,10 +69,14 @@ export async function smokeRoleResources({clickReady, clickText, fill, poll, eva
   await poll(() => evaluate(`document.querySelector('.role-resource-detail')?.textContent.includes('测试操作 0')
     && document.querySelector('.role-resource-detail')?.textContent.includes('测试操作 1')`),
     'operations remain available in the right grant panel');
-  await clickReady('.role-resource-detail input[aria-label$="resource.operation.0"]');
-  assert.equal(await evaluate(`document.querySelector('.role-resource-detail input[aria-label$="resource.operation.0"]').checked`), true);
-  await clickReady('.role-resource-detail input[aria-label$="resource.operation.0"]');
+  await clickReady('.role-resource-detail input[aria-label$="测试操作 0"]');
+  assert.equal(await evaluate(`document.querySelector('.role-resource-detail input[aria-label$="测试操作 0"]').checked`), true);
+  await clickReady('.role-resource-detail input[aria-label$="测试操作 0"]');
   await clickReady(detailGrant);
+  assert.equal(await evaluate(`document.querySelector('.role-resource-detail input[aria-label$="测试操作 0"]').checked`), false,
+    'page access can be granted without its write operations');
+  assert.equal(await evaluate(`document.querySelector('.role-resource-detail input[aria-label$="测试操作 1"]').checked`), false,
+    'page access does not grant API operations');
   await clickReady(`${list} .role-resource-subtree .ant-pagination-item-12`);
   await poll(() => evaluate(`!!document.querySelector('${list} [data-resource-id="resource-239"] .role-resource-node-label')`), 'last child page beyond 200');
   await clickReady(`${list} [data-resource-id="resource-239"] .role-resource-node-label`);
@@ -89,16 +94,20 @@ export async function smokeRoleResources({clickReady, clickText, fill, poll, eva
     'expanded tree and child page survive search');
   assert.equal(fixture.resourceSaves.length, 0, 'selection and reserved slots do not save');
   await clickReady('.role-resource-drawer .ant-drawer-close');
-  await poll(() => evaluate(`!!document.querySelector('.ant-modal-confirm')`), 'resource draft close confirmation');
-  await clickReady('.ant-modal-confirm .ant-btn-default');
+  await poll(() => evaluate(`!!document.querySelector('.role-resource-close-discard .ant-modal')`), 'owned resource draft close confirmation');
+  await clickText('.role-resource-close-discard button', '取消');
   fixture.conflictResources();
   await clickText('.role-resource-footer button', '预览保存');
-  await poll(() => evaluate(`document.querySelector('.role-resource-preview')?.textContent.includes('资源授权预览')`), 'flat save preview');
+  await poll(() => evaluate(`document.querySelector('.role-resource-preview')?.textContent.includes('资源授权预览')`), 'hierarchical save preview');
+  await poll(() => evaluate(`!!document.querySelector('.role-resource-preview-tree [data-resource-id="resource-001"][data-change="added"]')`), 'added page shown under its directory');
+  assert.equal(await evaluate(`document.querySelector('.role-resource-preview-tree')?.textContent.includes('测试资源目录')`), true);
+  assert.equal(await evaluate(`!!document.querySelector('.role-resource-preview-tree [data-resource-id="resource-operation-0"]')`), false,
+    'read-only page grant does not imply operation grants in preview');
   await clickText('.role-resource-preview button', '确认提交');
   await poll(() => evaluate(`document.querySelector('.role-resource-config .ant-alert-error')?.textContent.includes('所有修改仍保留')`), 'conflict preserves draft');
   assert.equal(await evaluate(`document.querySelector('${detailGrant}').checked`), true);
   assert.deepEqual(fixture.resourceSaves[0].changes.map(change => change.resourceCode).sort(),
-    ['resource.001', 'resource.239', 'resource.operation.0', 'resource.operation.1']);
+    ['resource.001', 'resource.239']);
   assert.ok(fixture.resourceSaves[0].changes.every(change => change.revision === '1' && change.granted));
   await clickText('.role-resource-preview button', '取消');
   await clickText('.role-resource-footer button', '预览保存');
@@ -115,7 +124,7 @@ export async function smokeRoleResources({clickReady, clickText, fill, poll, eva
     'all unloaded descendants staged');
   await clickText('.role-resource-footer button', '预览保存');
   await poll(() => evaluate(`document.querySelector('.role-resource-preview')?.textContent.includes('共 242 项授权')`),
-    'flat preview includes all projected grants');
+    'tree preview counts all projected grants');
   await clickText('.role-resource-preview button', '确认提交');
   await poll(() => fixture.resourceSaves.length === 3, 'directory grant saved after preview');
   await poll(() => evaluate(`!!document.querySelector('.role-resource-detail .ant-empty')`), 'directory save refreshed the editor');
@@ -127,9 +136,43 @@ export async function smokeRoleResources({clickReady, clickText, fill, poll, eva
     'directory revoke stages every descendant');
   await clickText('.role-resource-footer button', '预览保存');
   await poll(() => evaluate(`document.querySelector('.role-resource-preview')?.textContent.includes('共 0 项授权')`),
-    'revoke preview shows empty final grants');
+    'revoke preview counts empty resulting grants');
+  await poll(() => evaluate(`!!document.querySelector('.role-resource-preview-tree [data-change="removed"]')`),
+    'revoked grants remain visible with directory context before confirmation');
+  await clickText('.role-resource-preview .ant-segmented-item', '保存后全部授权');
+  await poll(() => evaluate(`document.querySelector('.role-resource-preview-tree')?.textContent.includes('保存后没有已授权资源')`),
+    'result mode distinguishes an empty final grant set from the revocation tree');
+  await clickText('.role-resource-preview .ant-segmented-item', '本次变更');
+  await poll(() => evaluate(`!!document.querySelector('.role-resource-preview-tree [data-change="removed"]')`), 'changes preserved across preview modes');
   await clickText('.role-resource-preview button', '确认提交');
   await poll(() => fixture.resourceSaves.length === 4, 'directory revoke saved');
   assert.equal(fixture.resourceRows.filter(row => row.grantable && row.granted).length, 0);
-  console.log('PASS: paged resource hierarchy, narrowed directory, staged full-subtree checkbox and flat confirmation preview');
+  const policyPage = fixture.resourceRows.find(row => row.id === 'resource-000');
+  policyPage.granted = true;
+  policyPage.dataPermission = {supported: true, policyId: 'preview-old'};
+  await clickReady('.role-resource-list button[aria-label="刷新资源"]');
+  await fill('.role-resource-list .ant-input-search .ant-input', 'resource.000');
+  await clickReady('.role-resource-list .ant-input-search-btn');
+  await clickReady(`${list} .role-resource-result[data-resource-id="resource-000"]`);
+  await poll(() => evaluate(`!!document.querySelector('.role-resource-policy-select input[aria-label="数据权限"]')`), 'page data policy selector');
+  await evaluate(`document.querySelector('.role-resource-policy-select input[aria-label="数据权限"]').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown', {bubbles:true}))`);
+  await fill('.role-resource-policy-select input[aria-label="数据权限"]', '范围规则520');
+  await poll(() => evaluate(`document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')?.textContent.includes('范围规则520')`), 'permission policy beyond the first 500 remains searchable');
+  assert.ok(fixture.policyRequests.some(params => params.get('keyword') === '范围规则520' && params.get('size') === '20'));
+  await fill('.role-resource-policy-select input[aria-label="数据权限"]', '新组织范围');
+  await poll(() => evaluate(`document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')?.textContent.includes('新组织范围')`), 'policy search uses the same bounded directory');
+  assert.ok(fixture.policyRequests.some(params => params.get('selectedId') === 'preview-old' && params.get('size') === '1'),
+    'existing policy hydration is an exact scoped read, not a fake option or first-page scan');
+  await clickText('.ant-select-dropdown .ant-select-item-option-content', '新组织范围');
+  await clickText('.role-resource-footer button', '预览保存');
+  await poll(() => evaluate(`!!document.querySelector('.role-resource-preview-tree [data-resource-id="resource-000"][data-change="updated"]')`),
+    'policy-only change is labelled updated rather than added');
+  assert.equal(await evaluate(`document.querySelector('.role-resource-preview-tree')?.textContent.includes('原组织范围')
+    && document.querySelector('.role-resource-preview-tree')?.textContent.includes('新组织范围')`), true,
+    'policy preview shows before and after translated names');
+  await capturePreview?.();
+  await clickText('.role-resource-preview button', '确认提交');
+  await poll(() => fixture.resourceSaves.length === 5, 'policy-only change confirmed');
+  assert.deepEqual(fixture.resourceSaves[4].changes[0].dataPermission, {policyId: 'preview-new'});
+  console.log('PASS: paged resource hierarchy, narrowed directory, independent page access, staged subtree checkbox and hierarchical confirmation preview');
 }

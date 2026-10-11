@@ -38,6 +38,8 @@
 .sp-home-clock dd .ant-tag { margin: 0; }
 .sp-home-actions { display: grid; gap: 10px; margin-top: 20px; }
 .sp-home-actions .ant-btn { justify-content: start; }
+.sp-home-actions>.sp-table-button-group {display:grid}
+.sp-home-actions .sp-table-button-group>.ant-space-item>span,.sp-home-actions .ant-btn {width:100%}
 .sp-home-calendar-nav { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 10px; }
 .sp-home-calendar table { table-layout: fixed; border-collapse: separate; border-spacing: 2px; width: 100%; }
 .sp-home-calendar th { font-size: 12px; font-weight: 400; color: var(--home-muted); text-align: center; padding-bottom: 6px; }
@@ -54,6 +56,8 @@
 .sp-home-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .sp-home-edit-group { padding: 12px; border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-radius: 8px; margin-bottom: 12px; }
 .sp-home-group-tools { display: flex; gap: 8px; margin-bottom: 10px; }
+.sp-home-group-tools>.ant-form-item {flex:1;min-width:0;margin-bottom:0}
+.sp-home-group-tools>.sp-table-button-group {align-self:flex-end;flex-shrink:0}
 .sp-home-editor .ant-select { width: 100%; }
 .sp-home-location-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
 .sp-home-location-fields label { display: grid; gap: 8px; }

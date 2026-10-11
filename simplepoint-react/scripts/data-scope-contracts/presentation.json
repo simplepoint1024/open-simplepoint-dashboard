@@ -1,0 +1,203 @@
+{
+  "pages": {
+    "organizations.view": {
+      "title": "组织管理",
+      "models": [
+        {
+          "model": "org.simplepoint.plugin.rbac.tenant.api.entity.Organization",
+          "data": true,
+          "fields": true,
+          "owner": "createdBy",
+          "department": "id",
+          "properties": {
+            "parentId": {
+              "type": "java.lang.String",
+              "title": "上级组织",
+              "operators": [
+                "like",
+                "not:like",
+                "equals",
+                "not:equals",
+                "in",
+                "not:in",
+                "between",
+                "not:between",
+                "than:greater",
+                "than:less",
+                "than:equal:greater",
+                "than:equal:less",
+                "is:null",
+                "is:not:null"
+              ],
+              "values": []
+            },
+            "id": {
+              "type": "java.lang.String",
+              "title": "id",
+              "operators": [
+                "equals",
+                "not:equals",
+                "in",
+                "not:in",
+                "is:null",
+                "is:not:null"
+              ],
+              "values": []
+            },
+            "code": {
+              "type": "java.lang.String",
+              "title": "组织编码",
+              "operators": [
+                "like",
+                "not:like",
+                "equals",
+                "not:equals",
+                "in",
+                "not:in",
+                "between",
+                "not:between",
+                "than:greater",
+                "than:less",
+                "than:equal:greater",
+                "than:equal:less",
+                "is:null",
+                "is:not:null"
+              ],
+              "values": []
+            },
+            "type": {
+              "type": "java.lang.String",
+              "title": "i18n:organizations.title.type",
+              "operators": [
+                "like",
+                "not:like",
+                "equals",
+                "not:equals",
+                "in",
+                "not:in",
+                "between",
+                "not:between",
+                "than:greater",
+                "than:less",
+                "than:equal:greater",
+                "than:equal:less",
+                "is:null",
+                "is:not:null"
+              ],
+              "values": []
+            },
+            "createdBy": {
+              "type": "java.lang.String",
+              "title": "createdBy",
+              "operators": [
+                "equals",
+                "not:equals",
+                "in",
+                "not:in",
+                "is:null",
+                "is:not:null"
+              ],
+              "values": []
+            },
+            "createdAt": {
+              "type": "java.time.Instant",
+              "title": "createdAt",
+              "operators": [],
+              "values": []
+            },
+            "description": {
+              "type": "java.lang.String",
+              "title": "描述",
+              "operators": [
+                "like",
+                "not:like",
+                "equals",
+                "not:equals",
+                "in",
+                "not:in",
+                "between",
+                "not:between",
+                "than:greater",
+                "than:less",
+                "than:equal:greater",
+                "than:equal:less",
+                "is:null",
+                "is:not:null"
+              ],
+              "values": []
+            },
+            "updatedAt": {
+              "type": "java.time.Instant",
+              "title": "updatedAt",
+              "operators": [],
+              "values": []
+            },
+            "enabled": {
+              "type": "java.lang.Boolean",
+              "title": "启用",
+              "operators": [
+                "equals",
+                "not:equals",
+                "in",
+                "not:in",
+                "is:null",
+                "is:not:null"
+              ],
+              "values": []
+            },
+            "sort": {
+              "type": "java.lang.Integer",
+              "title": "排序",
+              "operators": [
+                "equals",
+                "not:equals",
+                "in",
+                "not:in",
+                "between",
+                "not:between",
+                "than:greater",
+                "than:less",
+                "than:equal:greater",
+                "than:equal:less",
+                "is:null",
+                "is:not:null"
+              ],
+              "values": []
+            },
+            "name": {
+              "type": "java.lang.String",
+              "title": "组织名称",
+              "operators": [
+                "like",
+                "not:like",
+                "equals",
+                "not:equals",
+                "in",
+                "not:in",
+                "between",
+                "not:between",
+                "than:greater",
+                "than:less",
+                "than:equal:greater",
+                "than:equal:less",
+                "is:null",
+                "is:not:null"
+              ],
+              "values": []
+            }
+          }
+        }
+      ]
+    }
+  },
+  "userName": "验证用户",
+  "tenantName": "验证工作空间",
+  "roleName": "",
+  "dataRules": {
+    "scope-policy": "真实表达式策略"
+  },
+  "fieldRules": {},
+  "organizations": {
+    "scope-organization": "已授权组织"
+  }
+}

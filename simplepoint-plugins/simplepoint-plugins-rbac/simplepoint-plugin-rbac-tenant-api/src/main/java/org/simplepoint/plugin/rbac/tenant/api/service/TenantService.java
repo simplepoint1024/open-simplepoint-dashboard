@@ -152,6 +152,20 @@ public interface TenantService extends BaseService<Tenant, String> {
    */
   Collection<String> authorizedUsers(String tenantId);
 
+  /** Capability for the selected tenant, using exactly the member-management write policy; never lists accounts. */
+  Map<String, Boolean> userManagementCapabilities(String tenantId);
+
+  /**
+   * Resolves the requested IDs that are active members of a tenant.
+   *
+   * <p>This narrow lookup supports tenant-safe assignee and copied-user validation without
+   * exposing the full member directory to ordinary members.</p>
+   */
+  Collection<String> resolveActiveMemberIds(String tenantId, Collection<String> userIds);
+
+  /** Resolves existing, non-deleted role authorities within a tenant, in bounded batches. */
+  Collection<String> resolveActiveRoleAuthorities(String tenantId, Collection<String> authorities);
+
   /**
    * Adds tenant members.
    *

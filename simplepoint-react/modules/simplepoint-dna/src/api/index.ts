@@ -1,6 +1,16 @@
 import {contextPath} from '@/services';
 
 export default {
+  'platform.dna-runtime': {
+    baseUrl: `${contextPath}/platform/dna/runtime`,
+    i18nNamespaces: ['dna-runtime'],
+    name: 'dna-runtime'
+  },
+  'platform.dna-data-models': {
+    baseUrl: `${contextPath}/platform/dna/models/data-models`,
+    i18nNamespaces: ['dna-data-models'],
+    name: 'dna-data-models'
+  },
   'platform.dna-drivers': {
     baseUrl: `${contextPath}/platform/dna/drivers`,
     i18nNamespaces: ['dna-drivers'],

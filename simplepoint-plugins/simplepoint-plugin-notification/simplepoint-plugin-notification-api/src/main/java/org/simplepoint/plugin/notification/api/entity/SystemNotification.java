@@ -9,6 +9,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.time.Instant;
 import lombok.Data;
@@ -35,6 +36,9 @@ import org.springframework.core.annotation.Order;
         columnList = "status, publish_at, expire_at"),
     @Index(name = "idx_simpoint_notification_audience",
         columnList = "audience_type, audience_id")
+}, uniqueConstraints = {
+    @UniqueConstraint(name = "uk_simpoint_notification_external",
+        columnNames = {"source", "external_key"})
 })
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -158,4 +162,12 @@ public class SystemNotification extends BaseEntityImpl<String> {
       accessMode = Schema.AccessMode.READ_ONLY)
   @Column(name = "published_at")
   private Instant publishedAt;
+
+  @Schema(hidden = true)
+  @Column(length = 64)
+  private String source;
+
+  @Schema(hidden = true)
+  @Column(name = "external_key", length = 200)
+  private String externalKey;
 }

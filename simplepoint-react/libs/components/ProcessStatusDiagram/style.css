@@ -1,0 +1,72 @@
+.process-status-diagram {
+  display: flex;
+  min-height: 360px;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--ant-color-border, #d9d9d9);
+  border-radius: 8px;
+  background: var(--ant-color-bg-container, #fff);
+}
+
+.process-status-diagram__toolbar {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+}
+
+.process-status-diagram__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.process-status-diagram__legend i {
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentcolor;
+  border-radius: 50%;
+}
+
+.process-status-diagram__legend .is-active { color: #1677ff; background: #e6f4ff; }
+.process-status-diagram__legend .is-completed { color: #52c41a; background: #f6ffed; }
+.process-status-diagram__legend .is-canceled { color: #ff4d4f; background: #fff2f0; }
+
+.process-status-diagram__canvas {
+  min-height: 0;
+  flex: 1;
+  background: var(--ant-color-bg-layout, #f5f5f5);
+}
+
+.process-status-diagram__error {
+  margin: 8px;
+}
+
+.process-status-diagram .workflow-status-active .djs-visual > :first-child {
+  fill: #e6f4ff !important;
+  stroke: #1677ff !important;
+  stroke-width: 4px !important;
+}
+
+.process-status-diagram .workflow-status-completed .djs-visual > :first-child {
+  fill: #f6ffed !important;
+  stroke: #52c41a !important;
+  stroke-width: 3px !important;
+}
+
+.process-status-diagram .workflow-status-canceled .djs-visual > :first-child,
+.process-status-diagram .workflow-status-failed .djs-visual > :first-child {
+  fill: #fff2f0 !important;
+  stroke: #ff4d4f !important;
+  stroke-width: 3px !important;
+}
+
+.process-status-diagram .workflow-status-active .djs-outline {
+  stroke: #1677ff !important;
+  stroke-dasharray: 4 3;
+  stroke-width: 2px !important;
+}

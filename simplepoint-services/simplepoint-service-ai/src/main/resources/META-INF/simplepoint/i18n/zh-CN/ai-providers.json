@@ -53,5 +53,17 @@
   "ai.providers.title.lastTestedAt": "最近测试时间",
   "ai.providers.title.name": "接入名称",
   "ai.providers.title.scopeType": "归属范围",
-  "ai.providers.title.tenantId": "租户 ID"
+  "ai.providers.title.tenantId": "租户 ID",
+  "ai.providers.page.operation.invalidResponse": "返回结果无效，请刷新状态后重试。",
+  "ai.providers.page.operation.close": "关闭",
+  "ai.providers.page.operation.confirmSync": "确认同步",
+  "ai.providers.page.operation.again": "重新执行",
+  "ai.providers.page.operation.discoveryReadOnly": "发现模型只读取远端目录，不修改本地模型。",
+  "ai.providers.page.operation.testWritesStatus": "连接测试会更新接入状态，不同步本地模型。",
+  "ai.providers.page.operation.syncChanges": "同步会新增或更新本地模型，并将远端已移除的发现模型标为不可用；手工设置的类型和价格会保留。",
+  "ai.providers.page.operation.discovered": "远端发现",
+  "ai.providers.page.operation.created": "新增",
+  "ai.providers.page.operation.updated": "更新",
+  "ai.providers.page.operation.unavailable": "标为不可用",
+  "ai.providers.page.operation.interrupted": "模型发现已中断，请重试。"
 }

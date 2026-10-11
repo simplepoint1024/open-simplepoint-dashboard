@@ -6,6 +6,15 @@ export async function smokeRoleAssignment({clickMenu, clickReady, clickText, fil
   const right = '.sp-assignment-panel[data-selected="true"]';
   const dropdown = '.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown';
   const hasRow = (panel, id) => evaluate(`!!document.querySelector('${panel} tr[data-row-key="${id}"]')`);
+  const selectMember = async id => {
+    const row = `${root} tr[data-row-key="${id}"]`;
+    // A retained/just-returned row may render before its read settles. Cell clicks
+    // correctly refuse selection while the real radio is disabled; wait for the
+    // same availability contract as a user, then verify actual row-click selection.
+    await poll(() => evaluate(`(()=>{const input=document.querySelector('${row} input[type="radio"]');return !!input&&!input.disabled;})()`), 'member selection is available ' + id);
+    await clickReady(row + ' td:nth-child(2)');
+    await poll(() => evaluate(`document.querySelector('${row} input[type="radio"]')?.checked===true`), 'actual row-click selection ' + id);
+  };
   const filter = async (panel, value) => {
     await poll(() => evaluate(`!document.querySelector('${dropdown}')`), 'old role filter closed');
     await evaluate(`[...document.querySelectorAll('${panel} th')].find(e=>e.textContent.includes('角色名称')).querySelector('.ant-table-filter-trigger').click()`);
@@ -15,10 +24,10 @@ export async function smokeRoleAssignment({clickMenu, clickReady, clickText, fil
   };
   await clickMenu('成员查询测试');
   await poll(() => hasRow(root, 'member-144'), 'member view retained');
-  await clickReady(`${root} tr[data-row-key="member-144"] td:nth-child(2)`);
+  await selectMember('member-144');
   await clickText(`${root} .sp-member-table-scroll .sp-table-button-group button`, '配置角色');
   await poll(() => hasRow(right, 'role-000'), 'role assignment loaded with real schema');
-  assert.equal(await evaluate(`!!document.querySelector('.ant-drawer-bottom .tenant-member-role-drawer')`), true,
+  assert.equal(await evaluate(`!!document.querySelector('.tenant-member-role-drawer.ant-drawer-bottom.ant-drawer-open')`), true,
     'tenant member role configuration opens from the bottom');
   assert.equal(await evaluate(`document.querySelector('${left} button[aria-label="筛选与视图"]').textContent`), '', 'role query button is icon-only');
   await clickReady(`${right} .ant-pagination-item-6`);
@@ -64,7 +73,7 @@ export async function smokeRoleAssignment({clickMenu, clickReady, clickText, fil
   await poll(() => evaluate(`!document.querySelector('.sp-assignment-panel')`), 'role drawer disposed');
   await clickReady(`${root} button[aria-label="清除全部筛选"]`);
   await poll(() => hasRow(root, 'member-143'), 'second member visible');
-  await clickReady(`${root} tr[data-row-key="member-143"] td:nth-child(2)`);
+  await selectMember('member-143');
   await clickText(`${root} .sp-member-table-scroll .sp-table-button-group button`, '配置角色');
   await poll(() => hasRow(right, 'role-001'), 'second member role assignment');
   assert.equal(await evaluate(`document.querySelectorAll('${right} tr[data-row-key]').length`), 1, 'no prior member assignment data reused');

@@ -1,0 +1,18 @@
+[
+  {
+    "value": "SYSTEM",
+    "label": "i18n:resources.scope.SYSTEM"
+  },
+  {
+    "value": "PLATFORM",
+    "label": "i18n:resources.scope.PLATFORM"
+  },
+  {
+    "value": "TENANT",
+    "label": "i18n:resources.scope.TENANT"
+  },
+  {
+    "value": "PERSONAL",
+    "label": "i18n:resources.scope.PERSONAL"
+  }
+]

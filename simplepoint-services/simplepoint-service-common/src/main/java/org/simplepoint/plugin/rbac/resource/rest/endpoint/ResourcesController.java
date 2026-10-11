@@ -84,7 +84,7 @@ public class ResourcesController extends BaseController<ResourceService, Resourc
   @PreAuthorize("hasRole('Administrator') or hasAuthority('resources.view')")
   @Operation(summary = "按编码查询资源", description = "根据资源编码批量查询资源明细")
   public Response<Collection<Resource>> byCodes(@RequestBody Set<String> codes) {
-    return ok(service.findAllByCodes(codes));
+    return ok(service.findDirectoryResourcesByCodes(codes));
   }
 
   /** Returns grantable resource codes in the requested subtree. */

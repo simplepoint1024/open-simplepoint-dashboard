@@ -39,6 +39,7 @@ import org.simplepoint.core.permission.PermissionPageDescriptor;
 import org.simplepoint.security.entity.FieldScope;
 import org.simplepoint.security.ResourceScopePolicy;
 import org.simplepoint.security.entity.Resource;
+import org.simplepoint.security.entity.ResourceAncestor;
 import org.simplepoint.security.entity.ResourceScopeType;
 import org.simplepoint.security.entity.ResourceType;
 import org.simplepoint.security.entity.Role;
@@ -131,7 +132,7 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
 
   @Override
   public Page<PolicyOption> policies(String roleId, String resourceCode, String kind,
-      String keyword, Pageable page) {
+      String keyword, Pageable page, String selectedId) {
     String tenant = requireRole(roleId);
     boolean data = "data".equals(kind);
     if ((!data && !"field".equals(kind)) || page == null || page.isUnpaged()
@@ -145,6 +146,9 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
     }
     String search = keyword == null ? "" : keyword.trim();
     if (search.length() > 100) throw badRequest("规则搜索词过长");
+    if (selectedId != null && (selectedId.isBlank() || selectedId.length() > 64 || !selectedId.equals(selectedId.trim()))) {
+      throw badRequest("规则标识无效");
+    }
     String pattern = "%" + search.replace("!", "!!").replace("%", "!%")
         .replace("_", "!_").toLowerCase(java.util.Locale.ROOT) + "%";
     if (data) {
@@ -153,12 +157,14 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
       var root = query.from(DataScope.class);
       query.select(root).where(cb.equal(root.get("tenantId"), tenant), cb.isNull(root.get("deletedAt")),
           cb.like(cb.lower(root.get("name")), pattern, '!'),
+          selectedId == null ? cb.conjunction() : cb.equal(root.get("id"), selectedId),
           cb.or(cb.notEqual(root.get("type"), org.simplepoint.security.entity.DataScopeType.EXPRESSION), cb.equal(root.get("resourceCode"), resourceCode)))
           .orderBy(cb.asc(root.get("name")), cb.asc(root.get("id")));
       var count = cb.createQuery(Long.class);
       var counted = count.from(DataScope.class);
       count.select(cb.count(counted)).where(cb.equal(counted.get("tenantId"), tenant),
           cb.isNull(counted.get("deletedAt")), cb.like(cb.lower(counted.get("name")), pattern, '!'),
+          selectedId == null ? cb.conjunction() : cb.equal(counted.get("id"), selectedId),
           cb.or(cb.notEqual(counted.get("type"), org.simplepoint.security.entity.DataScopeType.EXPRESSION), cb.equal(counted.get("resourceCode"), resourceCode)));
       List<PolicyOption> values = em.createQuery(query).setFirstResult((int) page.getOffset())
           .setMaxResults(page.getPageSize()).getResultList().stream()
@@ -171,13 +177,15 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
     var query = cb.createQuery(FieldScope.class);
     var root = query.from(FieldScope.class);
     query.select(root).where(cb.equal(root.get("tenantId"), tenant), cb.isNull(root.get("deletedAt")),
-        cb.like(cb.lower(root.get("name")), pattern, '!'), fieldEntryExists(cb, query, root, tenant, model))
+        cb.like(cb.lower(root.get("name")), pattern, '!'), fieldEntryExists(cb, query, root, tenant, model),
+        selectedId == null ? cb.conjunction() : cb.equal(root.get("id"), selectedId))
         .orderBy(cb.asc(root.get("name")), cb.asc(root.get("id")));
     var count = cb.createQuery(Long.class);
     var counted = count.from(FieldScope.class);
     count.select(cb.count(counted)).where(cb.equal(counted.get("tenantId"), tenant),
         cb.isNull(counted.get("deletedAt")), cb.like(cb.lower(counted.get("name")), pattern, '!'),
-        fieldEntryExists(cb, count, counted, tenant, model));
+        fieldEntryExists(cb, count, counted, tenant, model),
+        selectedId == null ? cb.conjunction() : cb.equal(counted.get("id"), selectedId));
     List<PolicyOption> values = em.createQuery(query).setFirstResult((int) page.getOffset())
         .setMaxResults(page.getPageSize()).getResultList().stream()
         .map(scope -> new PolicyOption(scope.getId(), scope.getName(), null)).toList();
@@ -633,6 +641,45 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
         .setParameter("tenant", tenant).setParameter("role", roleId).getSingleResult() > 0;
   }
 
+  @Override
+  public List<Row> contextRows(String roleId, List<String> resourceIds) {
+    String tenant = requireRole(roleId);
+    requireReadable(Resource.class, "parentId");
+    if (resourceIds == null || resourceIds.size() > QUERY_BATCH
+        || resourceIds.stream().anyMatch(id -> id == null || id.isBlank() || id.length() > 128)) {
+      throw badRequest("每次最多查询 200 项资源的上级目录");
+    }
+    boolean custom = custom(tenant);
+    Set<String> seen = new LinkedHashSet<>();
+    List<String> pending = resourceIds.stream().distinct().toList();
+    List<Row> result = new ArrayList<>();
+    while (!pending.isEmpty()) {
+      seen.addAll(pending);
+      if (seen.size() > MAX_SUBTREE) throw badRequest("资源层级超过预览限制");
+      List<String> parents = new ArrayList<>();
+      for (int start = 0; start < pending.size(); start += QUERY_BATCH) {
+        var ids = pending.subList(start, Math.min(start + QUERY_BATCH, pending.size()));
+        List<Row> level;
+        if (custom) {
+          var entries = em.createQuery("select r from TenantResource r where r.tenantId = :tenant"
+              + " and r.enabled = true and r.id in :ids", TenantResource.class)
+              .setParameter("tenant", tenant).setParameter("ids", ids).getResultList();
+          level = rowsCustom(entries, tenant, roleId);
+        } else {
+          var cb = em.getCriteriaBuilder();
+          var query = cb.createQuery(Resource.class);
+          var resource = query.from(Resource.class);
+          query.select(resource).where(resource.get("id").in(ids), visible(cb, query, resource, tenant));
+          level = rows(em.createQuery(query).getResultList(), tenant, roleId);
+        }
+        result.addAll(level);
+        level.stream().map(Row::parentId).filter(Objects::nonNull).forEach(parents::add);
+      }
+      pending = parents.stream().filter(id -> !seen.contains(id)).distinct().toList();
+    }
+    return result;
+  }
+
   private String requireRole(String roleId) {
     final String tenant = roles.requireManagementTenant();
     requireReadable(Role.class, "id");
@@ -697,6 +744,24 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
 
   private Predicate visible(CriteriaBuilder cb, CommonAbstractCriteria query, Root<Resource> r,
       String tenant) {
+    Predicate subscription = subscribed(cb, query, r, tenant);
+    if (!AuthorizationScopeGuards.isPlatformAdministrator(AuthorizationContextHolder.getContext())) {
+      // Packages license permission points; structural ancestors need not belong to an application.
+      // Include those ancestors for navigation only, retaining direct entitlement for grantable rows.
+      var sub = query.subquery(Integer.class);
+      var relation = sub.from(ResourceAncestor.class);
+      var descendant = sub.from(Resource.class);
+      sub.select(cb.literal(1)).where(cb.equal(relation.get("ancestorId"), r.get("id")),
+          cb.equal(relation.get("childId"), descendant.get("id")),
+          activeInScope(cb, descendant), subscribed(cb, sub, descendant, tenant));
+      subscription = cb.or(subscription, cb.and(
+          r.get("type").in(ResourceType.GROUP, ResourceType.MODULE),
+          cb.isFalse(r.get("grantable")), cb.exists(sub)));
+    }
+    return cb.and(activeInScope(cb, r), subscription);
+  }
+
+  private Predicate activeInScope(CriteriaBuilder cb, Root<Resource> r) {
     var context = AuthorizationContextHolder.getContext();
     List<Predicate> scopes = new ArrayList<>();
     ResourceScopeType[] values = ResourceScopeType.values();
@@ -714,8 +779,13 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
     if (ResourceScopePolicy.isAccessible(null, context)) {
       scopes.add(cb.isNull(r.get("scopeTypes")));
     }
-    Predicate subscription = cb.conjunction();
-    if (!AuthorizationScopeGuards.isPlatformAdministrator(context)) {
+    return cb.and(cb.isNull(r.get("deletedAt")), cb.isFalse(r.get("disabled")),
+        cb.or(scopes.toArray(Predicate[]::new)));
+  }
+
+  private Predicate subscribed(CriteriaBuilder cb, CommonAbstractCriteria query, Root<Resource> r,
+      String tenant) {
+    if (!AuthorizationScopeGuards.isPlatformAdministrator(AuthorizationContextHolder.getContext())) {
       var sub = query.subquery(Integer.class);
       var tp = sub.from(TenantPackageRelevance.class);
       var pa = sub.from(PackageApplicationRelevance.class);
@@ -726,11 +796,9 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
           cb.equal(ar.get("resourceCode"), r.get("code")),
           cb.isNull(tp.get("deletedAt")), cb.isNull(pa.get("deletedAt")),
           cb.isNull(ar.get("deletedAt")));
-      subscription = cb.or(cb.isTrue(r.get("publicAccess")), cb.exists(sub));
+      return cb.or(cb.isTrue(r.get("publicAccess")), cb.exists(sub));
     }
-    return cb.and(cb.isNull(r.get("deletedAt")),
-        cb.isFalse(r.get("disabled")),
-        cb.or(scopes.toArray(Predicate[]::new)), subscription);
+    return cb.conjunction();
   }
 
   private static Predicate navigationType(CriteriaBuilder cb, Root<Resource> resource) {

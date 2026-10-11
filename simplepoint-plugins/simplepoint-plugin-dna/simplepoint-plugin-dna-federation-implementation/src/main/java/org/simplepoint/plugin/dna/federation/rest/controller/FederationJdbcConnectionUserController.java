@@ -14,6 +14,7 @@ import org.simplepoint.plugin.dna.federation.api.entity.FederationJdbcConnection
 import org.simplepoint.plugin.dna.federation.api.pojo.dto.FederationJdbcUserDataSourceAssignDto;
 import org.simplepoint.plugin.dna.federation.api.service.FederationJdbcConnectionUserService;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcUserDataSourceItemVo;
+import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcUserOptionVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -63,6 +64,23 @@ public class FederationJdbcConnectionUserController
     return limit(service.limit(attributes, pageable), FederationJdbcConnectionUser.class);
   }
 
+  @Override
+  @GetMapping("/schema")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.federation.jdbc-users.view')")
+  public Response<Map<String, Object>> schema() {
+    return super.schema();
+  }
+
+  /** A bounded picker for creating grants; it never lists the whole user directory. */
+  @GetMapping("/user-options")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.federation.jdbc-users.create')")
+  public Response<Page<FederationJdbcUserOptionVo>> userOptions(
+      @RequestParam(name = "keyword", required = false) final String keyword,
+      final Pageable pageable
+  ) {
+    return ok(service.searchUserOptions(keyword, pageable));
+  }
+
   /**
    * Pages datasource options for one-user multi-datasource assignment.
    *
@@ -78,6 +96,26 @@ public class FederationJdbcConnectionUserController
       final Pageable pageable
   ) {
     return ok(service.dataSourceItems(attributes, pageable));
+  }
+
+  @GetMapping("/items/schema")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.federation.jdbc-users.view')")
+  public Response<Object> itemsSchema() {
+    return ok(service.dataSourceItemsSchema());
+  }
+
+  /** The assigned pane is a grant read model with its own honest query and field policy. */
+  @GetMapping("/assigned")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.federation.jdbc-users.view')")
+  public Response<Page<FederationJdbcConnectionUser>> assigned(
+      @RequestParam("userId") String userId, @RequestParam Map<String, String> attributes, Pageable pageable) {
+    return limit(service.assignedDataSources(userId, attributes, pageable), FederationJdbcConnectionUser.class);
+  }
+
+  @GetMapping("/assigned/schema")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.federation.jdbc-users.view')")
+  public Response<Map<String, Object>> assignedSchema() {
+    return super.schema();
   }
 
   /**
@@ -138,12 +176,7 @@ public class FederationJdbcConnectionUserController
       @RequestBody final Set<String> permissions
   ) {
     try {
-      var grant = service.findById(grantId).orElse(null);
-      if (grant == null) {
-        return badRequest("授权记录不存在: " + grantId);
-      }
-      grant.setOperationPermissions(permissions);
-      return ok(service.modifyById(grant));
+      return ok(service.updateOperationPermissions(grantId, permissions));
     } catch (IllegalArgumentException ex) {
       return badRequest(ex.getMessage());
     }

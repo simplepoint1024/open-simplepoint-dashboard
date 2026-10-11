@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {commonMainPages} from './common-main-fixture.mjs';
 
-export async function smokeCommonMain({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture}) {
+export async function smokeCommonMain({clickMenu, clickReady, clickText, fill, poll, evaluate, reload, fixture}) {
   const root = '.nb-tab-panel-active';
   const dropdown = '.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown';
   const queryDrawer = '.sp-query-drawer';
@@ -32,7 +32,8 @@ export async function smokeCommonMain({clickMenu, clickReady, clickText, fill, p
     for (let i=0; i<2; i++) await headerAction(panel, dataset, '.ant-table-column-sorters');
     await poll(() => evaluate(`document.querySelector('${panel} .ant-pagination-item-active')?.textContent==='1'`), `${dataset.name} sort resets pagination`);
     await filter(panel, dataset, `${dataset.field}-${String(target).padStart(3, '0')}`);
-    await poll(() => hasRow(panel, dataset.name, target), `${dataset.name} off-page header search`);
+    await poll(async () => await hasRow(panel, dataset.name, target)
+      && await evaluate(`!document.querySelector('${panel} .ant-spin-spinning')`), `${dataset.name} off-page header search`);
     await clickReady(`${panel} button[aria-label="筛选与视图"]`);
     await clickText(`${queryDrawer} button`, '添加条件');
     const firstField = Object.keys(dataset.schema.schema['x-query'].fields)[0];
@@ -43,7 +44,14 @@ export async function smokeCommonMain({clickMenu, clickReady, clickText, fill, p
     await clickReady(`${panel} button[aria-label="筛选与视图"]`);
     await clickText(`${queryDrawer} .ant-drawer-footer button`, '清空高级条件');
     await clickText(`${queryDrawer} .ant-drawer-footer button`, '应用');
-    await poll(() => hasRow(panel, dataset.name, target), `${dataset.name} header retained`);
+    try {
+      await poll(() => hasRow(panel, dataset.name, target), `${dataset.name} header retained`);
+    } catch (error) {
+      console.error('Common query diagnostics', {name: dataset.name,
+        requests: fixture.requests.filter(request => request.name === dataset.name).slice(-8).map(request => request.params.toString()),
+        page: await evaluate(`document.querySelector('${panel}')?.innerText`)});
+      throw error;
+    }
     await clickReady(`${panel} button[aria-label="筛选与视图"]`);
     await fill(`${queryDrawer} input[placeholder*="视图名称"]`, `${dataset.name} 视图`);
     await clickText(`${queryDrawer} button`, '保存当前视图');
@@ -66,11 +74,31 @@ export async function smokeCommonMain({clickMenu, clickReady, clickText, fill, p
   };
   fixture.enable();
   // Reset query/schema caches: earlier tests deliberately supply different permissions for DataScope.
-  await evaluate(`location.hash='#/smoke/common-main/Role'; location.reload()`);
+  await evaluate(`location.hash='#/smoke/common-main/Role'`);
+  await reload();
   for (const spec of commonMainPages) {
     await clickMenu(`契约测试 ${spec.name}`);
     const dataset = fixture.datasets.find(value => value.name === spec.name);
     await exercise(root, dataset, 0, 239);
+    if (spec.name === 'Role') {
+      const row = dataset.rows[239];
+      const id = row.id;
+      delete row.id;
+      await clickReady(`${root} button[aria-label="刷新"]`);
+      await poll(() => evaluate(`document.querySelector('${root} .ant-alert-info')?.textContent.includes('标识不可用')`), 'hidden role identifiers explain unavailable operations');
+      assert.equal(await evaluate(`document.querySelector('${root} .ant-table-row .ant-checkbox-input')?.disabled`), true,
+        'hidden record cannot create a synthetic selection key for server actions');
+      row.id = id;
+      await clickReady(`${root} button[aria-label="刷新"]`);
+      await poll(() => hasRow(root, 'Role', 239), 'owner-visible role identifier restores row actions');
+      await clickReady(`${root} tr[data-row-key="Role-239"] td:nth-child(2)`);
+      const buttons = await evaluate(`[...document.querySelectorAll('${root} .sp-table-toolbar-main button')].map(b=>({name:b.textContent,disabled:b.disabled}))`);
+      assert.ok(buttons.some(b => /编辑|修改/.test(b.name) && !b.disabled), 'editable owner role action is enabled');
+      await clickText(`${root} .sp-table-toolbar-main button`, buttons.find(b => /编辑|修改/.test(b.name)).name);
+      await poll(() => evaluate(`!!document.querySelector('.sp-simple-table-drawer.ant-drawer-open input#root_roleName')`), 'role edit opens instead of silently returning');
+      await clickReady('.sp-simple-table-drawer.ant-drawer-open .ant-drawer-close');
+      await poll(() => evaluate(`!document.querySelector('.sp-simple-table-drawer.ant-drawer-open')`), 'role edit cancelled without writes');
+    }
     if (spec.name.startsWith('Storage')) {
       fixture.failNext(dataset.base);
       await filter(root, dataset, `${dataset.field}-238`);

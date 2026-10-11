@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Types;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -141,6 +142,52 @@ class JdbcMetadataBrowserServiceImplTest {
         eq("public"),
         eq("orders"),
         eq("%")
+    );
+  }
+
+  @Test
+  void completionCatalog_returnsCompactQualifiedRelationsAndDialectContext() throws Exception {
+    JdbcMetadataBrowserServiceImpl service = createService();
+    JdbcDatabaseDialect.MetadataResult tableMetadata = new JdbcDatabaseDialect.MetadataResult(
+        List.of(
+            new JdbcDatabaseDialect.MetadataColumn("TABLE_CAT", "VARCHAR", Types.VARCHAR),
+            new JdbcDatabaseDialect.MetadataColumn("TABLE_SCHEM", "VARCHAR", Types.VARCHAR),
+            new JdbcDatabaseDialect.MetadataColumn("TABLE_NAME", "VARCHAR", Types.VARCHAR),
+            new JdbcDatabaseDialect.MetadataColumn("TABLE_TYPE", "VARCHAR", Types.VARCHAR),
+            new JdbcDatabaseDialect.MetadataColumn("REMARKS", "VARCHAR", Types.VARCHAR)
+        ),
+        List.of(
+            List.of("app_suite", "public", "用户表", "TABLE", "用户信息"),
+            List.of("app_suite", "reporting", "monthly_orders", "VIEW", "月度订单")
+        )
+    );
+    when(dialect.loadTables(any(), any(), any(), any(), any(), any(), any()))
+        .thenReturn(tableMetadata);
+    when(dialect.catalogNodeType()).thenReturn(JdbcMetadataModels.NodeType.DATABASE);
+    when(dialect.code()).thenReturn("postgresql");
+    when(dialect.name()).thenReturn("PostgreSQL");
+    when(dialect.resolveIdentifierQuoteString(any())).thenReturn("\"");
+
+    JdbcMetadataModels.SqlCompletionCatalog result = service.completionCatalog("ds-1");
+
+    assertEquals("postgresql", result.dialectCode());
+    assertEquals("PostgreSQL", result.dialectName());
+    assertEquals("\"", result.identifierQuote());
+    assertEquals("app_suite", result.currentCatalog());
+    assertEquals("public", result.currentSchema());
+    assertEquals(2, result.relations().size());
+    JdbcMetadataModels.SqlCompletionRelation view = result.relations().stream()
+        .filter(relation -> JdbcMetadataModels.NodeType.VIEW.equals(relation.type()))
+        .findFirst().orElseThrow();
+    JdbcMetadataModels.SqlCompletionRelation table = result.relations().stream()
+        .filter(relation -> JdbcMetadataModels.NodeType.TABLE.equals(relation.type()))
+        .findFirst().orElseThrow();
+    assertEquals("monthly_orders", view.path().get(2).name());
+    assertEquals("用户表", table.path().get(2).name());
+    assertEquals("用户信息", table.remarks());
+
+    verify(dialect).loadTables(
+        eq(connection), eq(metaData), any(), eq(null), eq(null), eq(null), eq(List.of("TABLE", "VIEW"))
     );
   }
 

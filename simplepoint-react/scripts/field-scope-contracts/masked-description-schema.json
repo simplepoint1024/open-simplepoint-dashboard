@@ -1,0 +1,203 @@
+{
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "description": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:field-scopes.title.description",
+        "description": "i18n:field-scopes.description.description",
+        "x-field-access": "MASKED",
+        "readOnly": true
+      },
+      "entries": {
+        "title": "i18n:field-scopes.title.entries",
+        "description": "i18n:field-scopes.description.entries",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "access": {
+              "type": "string",
+              "enum": [
+                "HIDDEN",
+                "MASKED",
+                "VISIBLE",
+                "EDITABLE"
+              ],
+              "title": "i18n:field-scopes.title.entry.access",
+              "description": "i18n:field-scopes.description.entry.access"
+            },
+            "field": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "title": "i18n:field-scopes.title.entry.field",
+              "description": "i18n:field-scopes.description.entry.field"
+            },
+            "fieldScopeId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "title": "i18n:field-scopes.title.entry.fieldScopeId",
+              "description": "i18n:field-scopes.description.entry.fieldScopeId"
+            },
+            "resource": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "title": "i18n:field-scopes.title.entry.resource",
+              "description": "i18n:field-scopes.description.entry.resource"
+            }
+          },
+          "title": "i18n:field-scopes.title.entries",
+          "description": "i18n:field-scopes.description.entries"
+        }
+      },
+      "name": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:field-scopes.title.name",
+        "description": "i18n:field-scopes.description.name"
+      }
+    },
+    "x-query": {
+      "version": 1,
+      "maxPageSize": 200,
+      "maxNodes": 32,
+      "maxDepth": 4,
+      "maxSort": 3,
+      "fields": {
+        "id": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "name": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "createdAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "updatedAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        }
+      },
+      "relations": []
+    }
+  },
+  "buttons": [
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "field-scope.create",
+      "variant": "outlined",
+      "icon": "PlusCircleOutlined",
+      "argumentMaxSize": 1,
+      "sort": 0,
+      "type": "primary",
+      "title": "i18n:table.button.create",
+      "danger": false,
+      "argumentMinSize": 0,
+      "key": "add"
+    },
+    {
+      "path": "[default]",
+      "color": "orange",
+      "authority": "field-scope.edit",
+      "variant": "outlined",
+      "icon": "EditOutlined",
+      "argumentMaxSize": 1,
+      "sort": 1,
+      "type": "primary",
+      "title": "i18n:table.button.edit",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "edit"
+    },
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "field-scope.edit",
+      "variant": "outlined",
+      "icon": "SafetyOutlined",
+      "argumentMaxSize": 1,
+      "sort": 3,
+      "type": "primary",
+      "title": "i18n:field-scopes.button.config.entries",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "config.entries"
+    }
+  ]
+}

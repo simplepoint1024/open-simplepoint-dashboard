@@ -10,10 +10,14 @@ package org.simplepoint.plugin.rbac.core.api.pojo.vo;
  * @param picture OSS avatar URL
  */
 public record UserPickerItem(
+    @org.simplepoint.core.annotation.PermissionFields(resource = org.simplepoint.security.entity.User.class, value = "id")
     String id,
     String name,
+    @org.simplepoint.core.annotation.PermissionFields(resource = org.simplepoint.security.entity.User.class, value = "email")
     String email,
+    @org.simplepoint.core.annotation.PermissionFields(resource = org.simplepoint.security.entity.User.class, value = "phoneNumber")
     String phoneNumber,
+    @org.simplepoint.core.annotation.PermissionFields(resource = org.simplepoint.security.entity.User.class, value = "picture")
     String picture
 ) {
 }

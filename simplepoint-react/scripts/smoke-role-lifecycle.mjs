@@ -1,0 +1,81 @@
+import assert from 'node:assert/strict';
+
+export async function smokeRoleLifecycle({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture}) {
+  fixture.enable();
+  const root = '.nb-tab-panel-active [data-resource="/common/roles"]', panel = '.role-resource-drawer.ant-drawer-open';
+  const preview = '.role-resource-preview', checkbox = panel + ' .role-resource-detail-title input[type="checkbox"]';
+  const open = async role => {
+    const selector = root + ' [data-row-key="' + role + '"] .ant-checkbox-input';
+    await poll(() => evaluate(`!!document.querySelector('${selector}')`), 'real role selection'); await clickReady(selector);
+    await clickText(root + ' button', '资源授权'); await poll(() => evaluate(`!!document.querySelector('${panel} .role-resource-config')`), 'captured role editor');
+  };
+  const choose = async id => {await clickReady(panel + ' .role-resource-list [data-resource-id="' + id + '"] .role-resource-node-label');};
+  const search = async keyword => {
+    if (!await evaluate(`!!document.querySelector('${panel} .role-resource-list .ant-input-search input')`)) await clickReady(panel + ' .role-resource-list button[aria-label="搜索资源"]');
+    await fill(panel + ' .role-resource-list .ant-input-search input', keyword); await clickReady(panel + ' .role-resource-list .ant-input-search-btn');
+  };
+  const hide = async () => {await evaluate(`location.hash='#/profile'`); await poll(() => evaluate(`!!document.querySelector('.nb-tab-panel-active .profile-nav-links') && !document.querySelector('${panel}') && !document.querySelector('${preview}')`), 'role owner hides every overlay');};
+  const show = async () => {await clickMenu('契约测试 Role'); await poll(() => evaluate(`!!document.querySelector('${panel}')`), 'same role owner returns');};
+  const pendingCount = count => evaluate(`document.querySelector('${panel} .role-resource-footer')?.textContent.includes('待保存资源变更：${count}')`);
+  const startPreview = async () => {
+    await poll(() => evaluate(`(()=>{const button=[...document.querySelectorAll('${panel} .role-resource-footer button')].find(element=>element.textContent.replaceAll(' ','')==='预览保存');return !!button && !button.disabled;})()`), 'actual enabled preview');
+    await evaluate(`(()=>{const button=[...document.querySelectorAll('${panel} .role-resource-footer button')].find(element=>element.textContent.replaceAll(' ','')==='预览保存');const close=document.querySelector('${panel} .ant-drawer-close');button.click();button.click();close?.click();})()`);
+  };
+  await clickMenu('契约测试 Role'); await open('role-owned-a');
+  fixture.failDirectory(); await choose('owned-root');
+  await poll(() => evaluate(`document.querySelector('${panel} .role-resource-directory-error')?.textContent.includes('角色目录读取失败')`), 'directory failure is explicit and owned');
+  await clickText(panel + ' .role-resource-directory-error button', '重试'); await poll(() => evaluate(`document.querySelectorAll('${panel} .role-resource-child-row').length>0`), 'current complete subtree retries');
+  assert.ok(await evaluate(`document.querySelectorAll('${panel} .role-resource-child-row').length`) < 35, '521-row subtree has bounded virtual DOM');
+  await clickReady(panel + ' .role-resource-list .role-resource-expander'); await clickReady(panel + ' .role-resource-subtree .ant-pagination-item-27');
+  await choose('owned-resource-520'); await clickReady(checkbox); await poll(() => pendingCount(1), 'off-page real draft is staged');
+  await hide(); await show(); assert.equal(await evaluate(`document.querySelector('${checkbox}').checked`), false, 'returning does not unmount or reset the actual off-page draft');
+  assert.equal(await evaluate(`!!document.querySelector('${panel} .role-resource-list [data-resource-id="owned-resource-520"]')`), true, 'navigation page and expansion survive');
+  await clickReady(panel + ' .ant-drawer-close'); await poll(() => evaluate(`!!document.querySelector('.role-resource-close-discard .ant-modal')`), 'dirty parent close owns its confirmation');
+  await hide(); assert.equal(await evaluate(`!!document.querySelector('.role-resource-close-discard .ant-modal')`), false); await show();
+  await poll(() => evaluate(`!!document.querySelector('.role-resource-close-discard .ant-modal')`), 'ordinary close confirmation returns with its owner');
+  await clickText('.role-resource-close-discard button', '取消'); assert.equal(await pendingCount(1), true);
+  fixture.holdPreview(); await startPreview(); await poll(() => fixture.reads.some(read => read.params.get('size') === '100' && !read.completed), 'preview has one pending first page');
+  assert.equal(await evaluate(`!!document.querySelector('${panel}') && !document.querySelector('.role-resource-close-discard .ant-modal')`), true, 'same-frame preview and parent close cannot discard the draft');
+  await hide(); const inactiveReads = fixture.reads.length; fixture.releasePreview(); await poll(() => fixture.reads.every(read => read.completed), 'cancelled old preview settles');
+  assert.equal(fixture.reads.length, inactiveReads, 'cancelled preview does not load later pages or ancestors'); await show(); assert.equal(await pendingCount(1), true);
+  fixture.failPreview(); await startPreview(); await poll(() => evaluate(`document.querySelector('${panel} .ant-alert-error')?.textContent.includes('角色预览读取失败')`), 'failed preview retains the same real draft');
+  await startPreview(); await poll(() => evaluate(`document.querySelector('${preview}')?.textContent.includes('共 520 项授权')`), 'complete 521-grant preview captures the off-page removal');
+  assert.deepEqual([...new Set(fixture.reads.filter(read => read.params.get('size') === '100' && read.completed).map(read => Number(read.params.get('page'))))], [0, 1, 2, 3, 4, 5]);
+  await hide(); await show(); await poll(() => evaluate(`!!document.querySelector('${preview}')`), 'finished preview returns only with its own page');
+  fixture.failSave(); const startWrites = fixture.writes.length;
+  await evaluate(`(()=>{const buttons=[...document.querySelectorAll('${preview} button')];const save=buttons.find(button=>button.textContent.replaceAll(' ','')==='确认提交'),cancel=buttons.find(button=>button.textContent.replaceAll(' ','')==='取消'),close=document.querySelector('${preview} .ant-modal-close');save.click();save.click();cancel.click();close?.click();})()`);
+  await poll(() => fixture.writes.length === startWrites + 1, 'duplicate save is atomically one request'); assert.equal(await evaluate(`!!document.querySelector('${preview}')`), true);
+  await hide(); const afterHide = fixture.reads.length; await poll(() => fixture.writes.at(-1).completed, 'inactive failed write settles');
+  assert.equal(fixture.reads.length, afterHide); assert.equal(await evaluate(`!!document.querySelector('.ant-message-notice-error') || !!document.querySelector('.ant-message-notice-success')`), false);
+  await show(); await poll(() => evaluate(`document.querySelector('${preview} .ant-alert-error')?.textContent.includes('角色资源保存失败')`), 'failed save and immutable preview snapshot survive returning');
+  await clickText(preview + ' button', '确认提交'); await poll(() => pendingCount(0), 'captured snapshot retry succeeds');
+  assert.equal(fixture.writes.length, startWrites + 2); assert.equal(fixture.writes.at(-1).role, 'role-owned-a');
+  assert.deepEqual(fixture.writes.at(-1).data, {changes: [{resourceId: 'owned-resource-520', resourceCode: 'owned.resource.520', revision: 'v1', granted: false}]});
+  console.log('PASS: Role owned directory/read retry, bounded 521-row subtree, off-page draft/navigation retention, owned close confirmation, cancelled/captured full preview and inactive single-flight save/retry');
+
+  fixture.holdDirectory(); await choose('owned-root'); await poll(() => fixture.reads.some(read => read.kind === 'resource-subtree/resources' && !read.completed), 'old directory request is pending');
+  const directoryReads = fixture.reads.filter(read => read.kind === 'resource-subtree/resources').length;
+  await choose('owned-root'); assert.equal(fixture.reads.filter(read => read.kind === 'resource-subtree/resources').length, directoryReads, 'reselecting the same pending directory cannot cancel it without restarting or issue a duplicate');
+  await search('真实资源000'); await clickReady(panel + ' .role-resource-result[data-resource-id="owned-resource-000"]'); fixture.releaseDirectory();
+  await poll(() => fixture.reads.every(read => read.completed), 'old subtree returns after another selection');
+  assert.equal(await evaluate(`document.querySelector('${panel} .role-resource-detail-title')?.textContent.includes('真实资源000')`), true);
+  assert.equal(await evaluate(`document.querySelectorAll('${panel} .role-resource-child-row').length`), 0, 'late directory cannot replace the selected leaf');
+  await clickReady(checkbox); await clickText(panel + ' .role-resource-footer button', '放弃修改'); await poll(() => evaluate(`!!document.querySelector('.role-resource-discard .ant-modal')`), 'local discard owns its modal');
+  await hide(); await show(); await clickText('.role-resource-discard button', '取消'); assert.equal(await pendingCount(1), true);
+  await clickText(panel + ' .role-resource-footer button', '放弃修改'); await clickText('.role-resource-discard button', '放弃修改'); await poll(() => pendingCount(0), 'explicit discard changes only the current editor draft');
+  await search(''); await choose('owned-root'); await poll(() => evaluate(`document.querySelectorAll('${panel} .role-resource-child-row').length>0`), 'full fresh subtree');
+  await clickReady(checkbox); await poll(() => pendingCount(1), 'mixed subtree stages its actual missing grant');
+  await clickReady(checkbox); await poll(() => pendingCount(520), 'complete off-page subtree revocation is staged without truncation');
+  await clickText(panel + ' .role-resource-footer button', '放弃修改'); await clickText('.role-resource-discard button', '放弃修改');
+  await poll(() => pendingCount(0), 'explicit subtree discard preserves the original mixed grants');
+  await clickReady(panel + ' .ant-drawer-close'); await clickReady(root + ' [data-row-key="role-owned-a"] .ant-checkbox-input'); await open('role-owned-b');
+  await search('真实资源000'); await clickReady(panel + ' .role-resource-result[data-resource-id="owned-resource-000"]'); await clickReady(checkbox);
+  await startPreview(); await poll(() => evaluate(`document.querySelector('${preview}')?.textContent.includes('共 0 项授权')`), 'new role has only its own preview'); fixture.failSave(); await clickText(preview + ' button', '确认提交');
+  await poll(() => fixture.writes.at(-1)?.role === 'role-owned-b', 'new role save reaches its captured real target');
+  const oldWrite = fixture.writes.at(-1); fixture.mode('viewer');
+  await evaluate(`localStorage.setItem('sp.contextId:__platform__','role-viewer');window.dispatchEvent(new CustomEvent('sp-set-context-id',{detail:{tenantId:'__platform__',contextId:'role-viewer'}}));`);
+  await poll(() => oldWrite.completed && evaluate(`!document.querySelector('${panel}') && !document.querySelector('${preview}') && !document.querySelector('.role-resource-discard .ant-modal')`), 'old role scope and its pending result are disposed');
+  assert.equal(await evaluate(`document.body.textContent.includes('角色资源保存失败')`), false);
+  assert.equal(await evaluate(`[...document.querySelectorAll('${root} button')].some(button=>button.textContent.includes('资源授权'))`), false);
+  console.log('PASS: Role late-directory isolation, owned discard/cancel, complete subtree undo, independent parent snapshots and old-scope pending-write suppression');
+}

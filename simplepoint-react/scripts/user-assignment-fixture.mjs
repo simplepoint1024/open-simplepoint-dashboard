@@ -23,6 +23,7 @@ export function createUserAssignmentFixture() {
       if (url.pathname === base) return respond({content: tenants, page: {number: 0, size: 20, totalElements: 2, totalPages: 1}}), true;
       if (!url.pathname.startsWith(`${base}/users/`)) return false;
       const parent = url.searchParams.get('tenantId');
+      if (url.pathname.endsWith('/capabilities')) return respond({canConfigureMembers: grants.has(parent)}), true;
       if (url.pathname.endsWith('/items/schema')) {
         if (!grants.has(parent)) throw Error('Assignment schema request omitted the target tenant');
         return respond(schema), true;

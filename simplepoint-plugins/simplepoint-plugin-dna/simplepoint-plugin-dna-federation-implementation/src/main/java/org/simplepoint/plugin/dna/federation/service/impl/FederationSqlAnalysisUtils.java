@@ -148,6 +148,48 @@ final class FederationSqlAnalysisUtils {
     return FederationSqlIdentifierNormalizer.normalize(sql);
   }
 
+  /** Returns the executable prefix used for statement classification without changing audited SQL. */
+  static String stripLeadingComments(final String sql) {
+    if (sql == null || sql.isEmpty()) {
+      return sql;
+    }
+    int index = 0;
+    while (index < sql.length()) {
+      while (index < sql.length() && Character.isWhitespace(sql.charAt(index))) {
+        index++;
+      }
+      if (index + 1 >= sql.length()) {
+        break;
+      }
+      if (sql.charAt(index) == '-' && sql.charAt(index + 1) == '-') {
+        index += 2;
+        while (index < sql.length() && sql.charAt(index) != '\n' && sql.charAt(index) != '\r') {
+          index++;
+        }
+        continue;
+      }
+      if (sql.charAt(index) == '/' && sql.charAt(index + 1) == '*') {
+        int depth = 1;
+        index += 2;
+        while (index < sql.length() && depth > 0) {
+          if (index + 1 < sql.length() && sql.charAt(index) == '/' && sql.charAt(index + 1) == '*') {
+            depth++;
+            index += 2;
+          } else if (index + 1 < sql.length()
+              && sql.charAt(index) == '*' && sql.charAt(index + 1) == '/') {
+            depth--;
+            index += 2;
+          } else {
+            index++;
+          }
+        }
+        continue;
+      }
+      break;
+    }
+    return sql.substring(index).stripLeading();
+  }
+
   static String buildPushdownSummary(
       final CalciteQueryAnalysis analysis,
       final List<String> dataSources

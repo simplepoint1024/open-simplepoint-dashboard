@@ -29,18 +29,62 @@ export function createRuntimeFixture() {
   });
   const servers = Array.from({length: 520}, (_, index) => ({id: `Server-${String(index).padStart(3, '0')}`,
     name: `Server${String(index).padStart(3, '0')}`, code: `server-${index}`, deploymentType: 'MANAGED_OCI', enabled: true}));
-  const requests = [];
-  let enabled = false, failBase;
-  return {datasets, requests, enable() {enabled = true;}, failNext(base) {failBase = base;},
+  const requests = [], writes = [], createdWorkloads = new Map();
+  let enabled = false, failBase, mutations = false, failWrite, failAfterCommit = false, readonly = false;
+  return {datasets, requests, writes, createdWorkloads, enable() {enabled = true;}, failNext(base) {failBase = base;},
+    enableWrites() {
+      enabled = true; mutations = true;
+      Object.assign(datasets.find(item=>item.kind==='Pool').rows[0], {minReplicas: 2, maxReplicas: 5, desiredReplicas: 3, status: 'READY', currentReplicas: 0, readyReplicas: 0});
+      Object.assign(datasets.find(item=>item.kind==='Node').rows[0], {seccompEnforced: undefined, appArmorEnforced: '***',
+        requireSupplyChainAdmission: undefined, requireImageDigest: undefined, maxWorkloads: undefined, cachedImageDigests: undefined});
+    },
+    failWrite(path) {failWrite = path;}, failAfterCommit() {failAfterCommit = true;}, setReadonly(value) {readonly = value;},
     async handle(req, url, respond, expectedFailure) {
       if (!enabled) return false;
       if (url.pathname === '/ai/workbench/mcp/servers/workbench-permissions') {
-        respond({viewRuntime: true, viewNodes: true, managePools: true, manageWorkloads: true, manageSecrets: true}); return true;
+        respond({viewRuntime: true, viewNodes: true, managePools: !readonly, manageWorkloads: !readonly, manageSecrets: !readonly}); return true;
       }
-      const dataset = datasets.find(item => url.pathname === item.base || url.pathname === `${item.base}/schema`);
+      const dataset = datasets.find(item => url.pathname === item.base || url.pathname.startsWith(item.base + '/'));
       const server = url.pathname === '/ai/workbench/mcp/servers';
       if (!dataset && !server) return false;
-      if (req.method !== 'GET') throw Error('Runtime query smoke must not mutate runtime resources');
+      if (req.method !== 'GET') {
+        if (!mutations || readonly) throw Error('Runtime query smoke must not mutate runtime resources');
+        let raw = ''; for await (const chunk of req) raw += chunk;
+        const data = JSON.parse(raw), path = url.pathname;
+        writes.push({path, method: req.method, data});
+        await new Promise(resolve => setTimeout(resolve, 230));
+        if (path === failWrite) {failWrite = undefined; expectedFailure(503); return respond({message: 'Runtime 写入失败（测试）'}, 503), true;}
+        const suffix = path.slice(dataset.base.length);
+        if (dataset.kind === 'Pool') {
+          const [id, action] = suffix.slice(1).split('/'), row = dataset.rows.find(item=>item.id===id);
+          if (action === 'scale') {
+            if (!Number.isInteger(data.desiredReplicas) || data.desiredReplicas < row.minReplicas || data.desiredReplicas > row.maxReplicas) throw Error('Invalid captured pool bounds');
+            row.desiredReplicas = data.desiredReplicas;
+          } else if (action === 'disable') row.status = 'DISABLED';
+          else if (action === 'redeploy' || action === 'activate') row.status = 'READY';
+          else if (req.method === 'DELETE') {dataset.rows.splice(dataset.rows.indexOf(row), 1); return respond(true), true;}
+          else throw Error('Unexpected pool mutation');
+          return respond(row), true;
+        }
+        if (dataset.kind === 'Secret') {
+          if (suffix.endsWith('/rotate')) return respond(dataset.rows.find(row=>row.id===suffix.split('/')[1])), true;
+          if (req.method === 'DELETE') {data.forEach(id=>{const index=dataset.rows.findIndex(row=>row.id===id); if(index>=0) dataset.rows.splice(index,1);}); return respond(true), true;}
+          if (suffix !== '' || !data.code || !data.name.trim() || !data.value) throw Error('Invalid secret creation');
+          const row = {id: 'secret-created', name: data.name, code: data.code, hasValue: true, enabled: data.enabled};
+          dataset.rows.unshift(row); return respond(row), true;
+        }
+        if (dataset.kind === 'Workload') {
+          if (suffix.endsWith('/stop')) {const row=dataset.rows.find(row=>row.id===suffix.split('/')[1]); row.status='CANCELLED'; return respond(row), true;}
+          if (suffix !== '' || !data.executionId) throw Error('Workload retries require a real stable execution ID');
+          if (!createdWorkloads.has(data.executionId)) {
+            const row = {id: 'workload-created', executionId: data.executionId, serverId: data.serverId, status: 'PENDING', imageReference: data.imageReference};
+            createdWorkloads.set(data.executionId, row); dataset.rows.unshift(row);
+          }
+          if (failAfterCommit) {failAfterCommit = false; expectedFailure(503); return respond({message: 'Runtime 提交后响应失败（测试）'}, 503), true;}
+          return respond(createdWorkloads.get(data.executionId)), true;
+        }
+        throw Error('Unexpected Runtime mutation');
+      }
       if (url.pathname.endsWith('/schema')) return respond(dataset.schema), true;
       requests.push({kind: dataset?.kind ?? 'Server', params: new URLSearchParams(url.searchParams)});
       if (failBase === url.pathname) {failBase = undefined; expectedFailure(400); respond({code: 'INVALID_QUERY', message: '测试条件失效'}, 400); return true;}

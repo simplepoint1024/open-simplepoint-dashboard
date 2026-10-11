@@ -55,6 +55,10 @@ class BaseServiceImplTest {
     private String updatedBy;
     private String createOrgDeptId;
     private String orgId;
+    @jakarta.persistence.Column(precision = 19, scale = 2)
+    private java.math.BigDecimal amount;
+    public java.math.BigDecimal getAmount() {return amount;}
+    public void setAmount(java.math.BigDecimal value) {amount = value;}
 
     @Override
     public String getId() {
@@ -658,6 +662,25 @@ class BaseServiceImplTest {
   }
 
   @Test
+  void decimalValidationRejectsAllDataScopeUpdatesBeforeAuditOrRepositoryWrites() {
+    var om = new com.fasterxml.jackson.databind.ObjectMapper();
+    setupSchemaGeneratorMocks(StubEntity.class, om);
+    var generator = detailsProviderService.getDialect(JsonSchemaGenerator.class);
+    generator.generateSchema(StubEntity.class).withObject("/properties").putObject("amount").put("type", "string");
+    var before = new StubEntity(); before.setId("exact-price"); before.setAmount(new java.math.BigDecimal("99999999999999999.99"));
+    var incoming = new StubEntity(); incoming.setId(before.getId()); incoming.setAmount(new java.math.BigDecimal("0.001"));
+    when(repository.findById(before.getId())).thenReturn(Optional.of(before));
+    var audit = mock(ModifyDataAuditingService.class);
+    when(detailsProviderService.getDialects(ModifyDataAuditingService.class)).thenReturn(Set.of(audit));
+    assertThatThrownBy(() -> service.modifyById(incoming)).isInstanceOf(org.simplepoint.core.base.InvalidDecimalValueException.class);
+    assertThat(before.getAmount()).isEqualByComparingTo("99999999999999999.99");
+    verify(repository, never()).updateById(any()); verify(audit, never()).modify(any(), any(), any());
+    assertThatThrownBy(() -> service.create(incoming)).isInstanceOf(org.simplepoint.core.base.InvalidDecimalValueException.class);
+    assertThatThrownBy(() -> service.create(List.of(incoming))).isInstanceOf(org.simplepoint.core.base.InvalidDecimalValueException.class);
+    verify(repository, never()).save(any()); verify(repository, never()).saveAll(any());
+  }
+
+  @Test
   void removeByIds_whenDataNotEmpty_callsAuditService() {
     StubEntity entity = new StubEntity();
     entity.setId("del-1");
@@ -812,6 +835,27 @@ class BaseServiceImplTest {
     } finally {
       ResourcePolicyContext.clear();
       org.simplepoint.core.datascopeannotation.DataScopeContext.clear();
+    }
+  }
+
+  @Test
+  void pageRestrictionCannotBeBypassedByInheritedAllScopeDuringBulkDeletion() {
+    service.injectedContext = new AuthorizationContext();
+    service.injectedContext.setUserId("reader");
+    service.injectedContext.setResourceDataScopes(Map.of("test.page",
+        new org.simplepoint.core.ResourceDataScope("SELF", Set.of(), false)));
+    var other = new StubEntity(); other.setId("other"); other.setCreatedBy("someone-else");
+    when(repository.findAllByIds(List.of("other"))).thenReturn(List.of(other));
+    ResourcePolicyContext.set("test.page");
+    org.simplepoint.core.datascopeannotation.DataScopeContext.set(
+        new org.simplepoint.core.datascopeannotation.DataScopeCondition("ALL", "createOrgDeptId", "createdBy", "reader", Set.of()));
+    try {
+      assertThatThrownBy(() -> service.removeByIds(List.of("other"))).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+      assertThatThrownBy(service::removeAll).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+      verify(repository, never()).deleteAll();
+      verify(repository, never()).deleteByIds(any());
+    } finally {
+      ResourcePolicyContext.clear(); org.simplepoint.core.datascopeannotation.DataScopeContext.clear();
     }
   }
 

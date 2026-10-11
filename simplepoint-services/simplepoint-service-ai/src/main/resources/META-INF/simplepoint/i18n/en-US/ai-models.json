@@ -39,5 +39,6 @@
   "ai.models.type.MULTIMODAL": "Multimodal",
   "ai.models.type.OTHER": "Other",
   "ai.models.type.RERANK": "Rerank",
-  "ai.models.type.UNKNOWN": "Unknown model type"
+  "ai.models.type.UNKNOWN": "Unknown model type",
+  "ai.models.page.providerLookupInvalid": "Invalid provider lookup response. Please retry."
 }

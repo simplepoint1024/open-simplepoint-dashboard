@@ -60,6 +60,8 @@ registerFrontendBuildTask("buildHostFrontend", "build:host", "simplepoint-host")
 registerFrontendBuildTask("buildAuditFrontend", "build:audit", "simplepoint-audit")
 registerFrontendBuildTask("buildDnaFrontend", "build:dna", "simplepoint-dna")
 registerFrontendBuildTask("buildAiFrontend", "build:ai", "simplepoint-ai")
+registerFrontendBuildTask("buildAppFrontend", "build:app", "simplepoint-app")
+registerFrontendBuildTask("buildWorkflowFrontend", "build:workflow", "simplepoint-workflow")
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))

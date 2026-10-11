@@ -33,6 +33,7 @@ public class OpenAiProviderAdapter implements AiProviderAdapter {
   private static final int MAX_RATE_LIMIT_RETRIES = 3;
 
   private final ObjectMapper objectMapper;
+  private final com.fasterxml.jackson.databind.ObjectReader catalogReader;
 
   private final AiModelTypeDetector typeDetector;
 
@@ -48,6 +49,7 @@ public class OpenAiProviderAdapter implements AiProviderAdapter {
       final AiProperties properties
   ) {
     this.objectMapper = objectMapper;
+    this.catalogReader = objectMapper.reader().with(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
     this.typeDetector = typeDetector;
     this.pricingParser = pricingParser;
     this.http = new ProviderHttpSupport(properties);
@@ -145,7 +147,7 @@ public class OpenAiProviderAdapter implements AiProviderAdapter {
     addAuthentication(request, connection);
     String responseBody = sendCatalogRequest(connection, request.build());
     try {
-      return objectMapper.readTree(responseBody);
+      return catalogReader.readTree(responseBody);
     } catch (JsonProcessingException ex) {
       throw new IllegalStateException("无法解析供应商模型列表响应", ex);
     }

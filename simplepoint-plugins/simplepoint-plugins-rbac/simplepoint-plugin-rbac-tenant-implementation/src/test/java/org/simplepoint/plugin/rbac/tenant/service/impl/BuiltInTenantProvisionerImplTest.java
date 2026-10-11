@@ -99,6 +99,46 @@ class BuiltInTenantProvisionerImplTest {
   }
 
   @Test
+  void applicationWorkbenchResourcesBelongToTheirOwnApplication() {
+    provisioner.provisionApplicationResources(
+        "app",
+        Set.of("app.workbench.view", "app.templates.view", "app.marketplace.view"),
+        Set.of()
+    );
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Iterable<ApplicationResourceRelevance>> captor = ArgumentCaptor.forClass(Iterable.class);
+    verify(applicationResourceRepository).saveAll(captor.capture());
+    List<ApplicationResourceRelevance> saved = new ArrayList<>();
+    captor.getValue().forEach(saved::add);
+    assertThat(saved).extracting(ApplicationResourceRelevance::getApplicationCode)
+        .containsOnly(BuiltInTenantCodes.APP_APPLICATION);
+    assertThat(saved).extracting(ApplicationResourceRelevance::getResourceCode)
+        .containsExactlyInAnyOrder("app.workbench.view", "app.templates.view", "app.marketplace.view");
+    verify(authorizationVersions).refreshByApplicationCodes(Set.of(BuiltInTenantCodes.APP_APPLICATION));
+  }
+
+  @Test
+  void dnaRuntimeResourcesBelongToTheApplicationWorkbench() {
+    provisioner.provisionApplicationResources(
+        "dna",
+        Set.of("dna.runtime.models.view", "dna.runtime.models.retry", "dna.data-sources.view"),
+        Set.of()
+    );
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Iterable<ApplicationResourceRelevance>> captor = ArgumentCaptor.forClass(Iterable.class);
+    verify(applicationResourceRepository).saveAll(captor.capture());
+    List<ApplicationResourceRelevance> saved = new ArrayList<>();
+    captor.getValue().forEach(saved::add);
+    assertThat(saved).extracting(ApplicationResourceRelevance::getApplicationCode)
+        .containsOnly(BuiltInTenantCodes.APP_APPLICATION);
+    assertThat(saved).extracting(ApplicationResourceRelevance::getResourceCode)
+        .containsExactlyInAnyOrder("dna.runtime.models.view", "dna.runtime.models.retry");
+    verify(authorizationVersions).refreshByApplicationCodes(Set.of(BuiltInTenantCodes.APP_APPLICATION));
+  }
+
+  @Test
   void existingApplicationResourcesAreNotDuplicated() {
     when(applicationResourceRepository.authorized(BuiltInTenantCodes.AI_APPLICATION))
         .thenReturn(List.of("ai.knowledge-bases.view"));

@@ -9,6 +9,7 @@
 package org.simplepoint.core.jackson;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import java.math.BigDecimal;
 
 /**
  * A Jackson {@link com.fasterxml.jackson.databind.Module} that enables field-level access control
@@ -26,6 +27,13 @@ public class FieldScopeJacksonModule extends SimpleModule {
    */
   public FieldScopeJacksonModule() {
     super("FieldScopeJacksonModule");
+    addSerializer(BigDecimal.class, new com.fasterxml.jackson.databind.ser.std.StdScalarSerializer<BigDecimal>(BigDecimal.class) {
+      @Override
+      public void serialize(BigDecimal value, com.fasterxml.jackson.core.JsonGenerator generator,
+          com.fasterxml.jackson.databind.SerializerProvider provider) throws java.io.IOException {
+        generator.writeString(DecimalWireValue.text(value));
+      }
+    });
     setSerializerModifier(new FieldScopeBeanSerializerModifier());
   }
 }

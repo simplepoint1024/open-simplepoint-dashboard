@@ -17,10 +17,10 @@ import java.util.stream.Stream;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.AuthorizationScopeType;
+import org.simplepoint.core.jackson.FieldPermissionPolicy;
 import org.simplepoint.plugin.rbac.core.api.service.CurrentUserAccessService;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
@@ -42,7 +42,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Transactional(readOnly = true)
 public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
   private static final int MAX_PAGE_SIZE = 60;
-  private static final int LOOKUP_BATCH_SIZE = 200;
+  private static final int LOOKUP_BATCH_SIZE = 100;
   private static final int MAX_DETAIL_NODES = 5000;
   private final EntityManager em;
   private final TenantService tenants;
@@ -82,25 +82,26 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
     Set<String> effectiveCodes = normalize(context.getResources());
     Set<String> codes = selectedCodes(context, roleId);
     if (codes.isEmpty()) return new PageImpl<>(List.of(), pageable, 0);
-    // The PAGE view must not hydrate thousands of ACTION/API resources before pagination.
-    Set<String> lookupCodes = selectedType.equals("PAGE") ? pageCodes(codes) : codes;
-    Map<String, Resource> metadata = visibleResources(lookupCodes);
-    List<ResourceAccess> matches = lookupCodes.stream()
-        .map(code -> project(code, metadata.get(code), effectiveCodes.contains(code)))
-        .filter(row -> selectedType.equals("ALL") || selectedType.equals(row.type()))
-        .filter(row -> search.isEmpty() || Stream.of(row.code(), row.label(), row.path())
+    var snapshot = new AccessSnapshot(context);
+    if (!selectedType.equals("ALL")) requireReadable(snapshot.sourceType, "type");
+    // The global PAGE lookup excludes ACTION/API metadata. The custom lookup
+    // retains selected aliases/targets and ancestors, without scanning unrelated entries.
+    Set<String> lookupCodes = selectedType.equals("PAGE") ? pageCodes(codes, snapshot) : codes;
+    Map<String, Resource> metadata = snapshot.visible(lookupCodes);
+    List<AccessEntry> matches = lookupCodes.stream()
+        .map(code -> new AccessEntry(code, metadata.get(code), project(code, metadata.get(code), effectiveCodes.contains(code), snapshot.sourceType)))
+        .filter(entry -> selectedType.equals("ALL") || selectedType.equals(entry.view().type()))
+        .filter(entry -> search.isEmpty() || Stream.of(entry.view().code(), entry.view().label(), entry.view().path())
             .filter(Objects::nonNull).anyMatch(value -> value.toLowerCase(Locale.ROOT).contains(search)))
-        .sorted(Comparator.comparing((ResourceAccess row) -> typeRank(row.type()))
-            .thenComparing(ResourceAccess::label, String.CASE_INSENSITIVE_ORDER)
-            .thenComparing(ResourceAccess::code))
+        .sorted(Comparator.comparing(AccessEntry::view, accessOrder()))
         .toList();
     int from = (int) Math.min(pageable.getOffset(), matches.size());
     int to = Math.min(from + pageable.getPageSize(), matches.size());
-    List<ResourceAccess> content = matches.subList(from, to);
+    List<AccessEntry> page = matches.subList(from, to);
+    List<ResourceAccess> content = page.stream().map(AccessEntry::view).toList();
     if (selectedType.equals("PAGE")) {
-      Map<String, List<String>> directories = directories(content.stream()
-          .map(row -> metadata.get(row.code())).filter(Objects::nonNull).toList());
-      content = content.stream().map(row -> withDirectory(row, directories.get(row.code()))).toList();
+      Map<String, List<String>> directories = directories(page.stream().map(AccessEntry::metadata).filter(Objects::nonNull).toList(), snapshot);
+      content = page.stream().map(entry -> withDirectory(entry.view(), directories.get(entry.code()))).toList();
     }
     return new PageImpl<>(content, pageable, matches.size());
   }
@@ -111,76 +112,38 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
     if (code == null || code.isBlank()) throw badRequest("页面编码不能为空");
     Set<String> selected = selectedCodes(context, roleId);
     if (!selected.contains(code)) throw new AccessDeniedException("没有该页面的授权");
-    Resource page = visibleResources(List.of(code)).get(code);
+    var snapshot = new AccessSnapshot(context); requireReadable(snapshot.sourceType, "code");
+    requireReadable(snapshot.sourceType, "type");
+    Resource page = snapshot.visible(List.of(code)).get(code);
     if (page == null || page.getType() != ResourceType.PAGE) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "页面资源不存在");
     }
     Set<String> effective = normalize(context.getResources());
-    Map<String, List<String>> directory = directories(List.of(page));
-    ResourceAccess pageAccess = withDirectory(project(code, page, effective.contains(code)), directory.get(code));
+    Map<String, List<String>> directory = directories(List.of(page), snapshot);
+    ResourceAccess pageAccess = withDirectory(project(code, page, effective.contains(code), snapshot.sourceType), directory.get(code));
     List<ResourceAccess> operations = new ArrayList<>();
-    if (customCatalog(context)) {
-      Map<String, List<TenantResource>> childrenByParent = new HashMap<>();
-      TenantResource selectedPage = null;
-      for (TenantResource entry : tenantResourceCatalog.activeResources(tenantId(context))) {
-        if (code.equals(entry.getCode())) selectedPage = entry;
-        childrenByParent.computeIfAbsent(entry.getParentId() == null ? "" : entry.getParentId(),
-            ignored -> new ArrayList<>()).add(entry);
-      }
-      Set<String> seenCustom = new HashSet<>();
-      List<String> queue = selectedPage != null && selectedPage.getTargetResourceId() != null
-          ? List.of(page.getId(), selectedPage.getTargetResourceId()) : List.of(page.getId());
-      int visited = 0;
-      while (!queue.isEmpty()) {
-        List<String> next = new ArrayList<>();
-        for (String parent : queue) {
-          for (TenantResource entry : childrenByParent.getOrDefault(parent, List.of())) {
-            if (!seenCustom.add(entry.getId())) continue;
-            if (++visited > MAX_DETAIL_NODES) throw new ResponseStatusException(
-                HttpStatus.UNPROCESSABLE_ENTITY, "页面下级资源过多，请收窄资源层级");
-            if (entry.getType() == ResourceType.PAGE) continue;
-            if (selected.contains(entry.getCode()) && entry.getType() != ResourceType.GROUP
-                && entry.getType() != ResourceType.MODULE) {
-              operations.add(project(entry.getCode(), virtual(entry), effective.contains(entry.getCode())));
-            }
-            next.add(entry.getId());
-          }
-        }
-        queue = next;
-      }
-      operations.sort(Comparator.comparing(ResourceAccess::label, String.CASE_INSENSITIVE_ORDER)
-          .thenComparing(ResourceAccess::code));
-      return new PageAccessDetail(pageAccess, List.copyOf(operations), false, false);
-    }
     Set<String> seen = new HashSet<>();
-    List<String> frontier = List.of(page.getId());
+    TenantResource selectedPage = snapshot.tenantEntries.get(page.getId());
+    List<String> frontier = selectedPage != null && selectedPage.getTargetResourceId() != null
+        ? List.of(page.getId(), selectedPage.getTargetResourceId()) : List.of(page.getId());
     int total = 0;
     while (!frontier.isEmpty()) {
-      List<Resource> children = new ArrayList<>();
-      for (int start = 0; start < frontier.size(); start += LOOKUP_BATCH_SIZE) {
-        children.addAll(em.createQuery("select r from Resource r where r.parentId in :parents"
-            + " and r.deletedAt is null and r.disabled = false", Resource.class)
-            .setParameter("parents", frontier.subList(start, Math.min(start + LOOKUP_BATCH_SIZE, frontier.size())))
-            .getResultList());
-      }
+      var children = new CurrentUserAccessReadQuery(em).children(frontier, snapshot.custom ? snapshot.tenant : null, MAX_DETAIL_NODES - total);
       total += children.size();
       if (total > MAX_DETAIL_NODES) throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
           "页面下级资源过多，请收窄资源层级");
-      Map<String, Resource> visible = visibleResources(children.stream().map(Resource::getCode).toList());
+      Map<String, Resource> visible = snapshot.visible(children.stream().map(CurrentUserAccessReadQuery.Edge::code).toList());
       List<String> next = new ArrayList<>();
-      for (Resource child : children) {
-        if (!seen.add(child.getId()) || !visible.containsKey(child.getCode())
-            || child.getType() == ResourceType.PAGE) continue;
-        if (selected.contains(child.getCode()) && child.getType() != ResourceType.GROUP
-            && child.getType() != ResourceType.MODULE) {
-          operations.add(project(child.getCode(), child, effective.contains(child.getCode())));
+      for (var child : children) {
+        if (!seen.add(child.id()) || !visible.containsKey(child.code()) || child.type() == ResourceType.PAGE) continue;
+        if (selected.contains(child.code()) && child.type() != ResourceType.GROUP && child.type() != ResourceType.MODULE) {
+          operations.add(project(child.code(), visible.get(child.code()), effective.contains(child.code()), snapshot.sourceType));
         }
-        next.add(child.getId());
+        next.add(child.id());
       }
       frontier = next;
     }
-    operations.sort(Comparator.comparing(ResourceAccess::label, String.CASE_INSENSITIVE_ORDER)
-        .thenComparing(ResourceAccess::code));
+    operations.sort(accessOrder());
     return new PageAccessDetail(pageAccess, List.copyOf(operations), false, false);
   }
 
@@ -196,9 +159,10 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
     return normalize(users.loadResourcesInRoleIds(List.of(ownRoleId)));
   }
 
-  private Set<String> pageCodes(Set<String> codes) {
-    if (customCatalog(requireContext())) {
-      List<TenantResource> active = tenantResourceCatalog.activeResources(tenantId(requireContext()));
+  private Set<String> pageCodes(Set<String> codes, AccessSnapshot snapshot) {
+    if (snapshot.custom) {
+      snapshot.load(codes);
+      var active = snapshot.tenantEntries.values();
       Set<String> aliasedPlatformPages = active.stream()
           .filter(item -> codes.contains(item.getCode()))
           .map(TenantResource::getTargetResourceId).filter(java.util.Objects::nonNull)
@@ -219,35 +183,34 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
     return pages;
   }
 
-  private Map<String, Resource> visibleResources(Collection<String> codes) {
-    if (customCatalog(requireContext())) {
-      Set<String> requested = new HashSet<>(codes);
-      Map<String, Resource> custom = new HashMap<>();
-      for (TenantResource entry : tenantResourceCatalog.activeResources(tenantId(requireContext()))) {
-        if (requested.contains(entry.getCode())) custom.put(entry.getCode(), virtual(entry));
-      }
-      return custom;
-    }
-    Map<String, Resource> result = new HashMap<>();
-    List<String> all = List.copyOf(new LinkedHashSet<>(codes));
-    for (int start = 0; start < all.size(); start += LOOKUP_BATCH_SIZE) {
-      Collection<Resource> loaded = resources.findAllByCodes(all.subList(start,
-          Math.min(start + LOOKUP_BATCH_SIZE, all.size())));
-      if (loaded == null) continue;
-      for (Resource resource : loaded) {
-        if (resource.getDeletedAt() == null && !Boolean.TRUE.equals(resource.getDisabled())) {
-          result.put(resource.getCode(), resource);
+  /** Request-owned only: no service-level cache can cross users, roles, tenants or field policies. */
+  private final class AccessSnapshot {
+    final boolean custom; final String tenant; final Class<?> sourceType;
+    final Map<String, Resource> byCode = new HashMap<>(); final Map<String, Resource> byId = new HashMap<>();
+    final Map<String, TenantResource> tenantEntries = new HashMap<>(); final Set<String> lookedUp = new HashSet<>();
+    AccessSnapshot(AuthorizationContext context) {custom = customCatalog(context); tenant = tenantId(context); sourceType = custom ? TenantResource.class : Resource.class;}
+    void load(Collection<String> requested) {
+      var missing = requested.stream().filter(Objects::nonNull).filter(code -> !lookedUp.contains(code)).distinct().toList();
+      if (missing.isEmpty()) return; lookedUp.addAll(missing);
+      if (custom) {
+        for (var entry : tenantResourceCatalog.selectedResources(tenant, missing)) {
+          tenantEntries.put(entry.getId(), entry); remember(virtual(entry)); lookedUp.add(entry.getCode());
+        }
+      } else {
+        for (int start = 0; start < missing.size(); start += LOOKUP_BATCH_SIZE) {
+          var loaded = resources.findAllByCodes(missing.subList(start, Math.min(start + LOOKUP_BATCH_SIZE, missing.size())));
+          if (loaded != null) for (var row : loaded) if (row.getDeletedAt() == null && !Boolean.TRUE.equals(row.getDisabled())) remember(row);
         }
       }
     }
-    return result;
+    void remember(Resource row) {byCode.put(row.getCode(), row); if (row.getId() != null) byId.put(row.getId(), row);}
+    Map<String, Resource> visible(Collection<String> requested) {load(requested); var result = new HashMap<String, Resource>();
+      for (String code : requested) if (byCode.containsKey(code)) result.put(code, byCode.get(code)); return result;}
   }
 
-  private Map<String, List<String>> directories(List<Resource> pages) {
-    if (customCatalog(requireContext())) {
-      Map<String, TenantResource> catalog = new HashMap<>();
-      tenantResourceCatalog.activeResources(tenantId(requireContext()))
-          .forEach(entry -> catalog.put(entry.getId(), entry));
+  private Map<String, List<String>> directories(List<Resource> pages, AccessSnapshot snapshot) {
+    if (snapshot.custom) {
+      var catalog = snapshot.tenantEntries;
       Map<String, List<String>> result = new HashMap<>();
       for (Resource page : pages) {
         List<String> names = new ArrayList<>();
@@ -256,7 +219,8 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
         while (cursor != null && seen.add(cursor) && names.size() < 20) {
           TenantResource parent = catalog.get(cursor);
           if (parent == null) break;
-          names.add(parent.getName());
+          var readable = FieldPermissionPolicy.project(TenantResource.class, Map.of("name", parent.getName()));
+          names.add(readable.get("name") instanceof String name && !name.isBlank() ? name : "i18n:permissions.unavailable");
           cursor = parent.getParentId();
         }
         Collections.reverse(names);
@@ -264,23 +228,20 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
       }
       return result;
     }
-    Map<String, Resource> ancestry = new HashMap<>();
+    Map<String, Resource> ancestry = new HashMap<>(snapshot.byId);
+    Set<String> expanded = new HashSet<>();
     pages.forEach(page -> ancestry.put(page.getId(), page));
     Set<String> frontier = new LinkedHashSet<>();
     pages.stream().map(Resource::getParentId).filter(Objects::nonNull).forEach(frontier::add);
     for (int depth = 0; depth < 20 && !frontier.isEmpty(); depth++) {
       Set<String> next = new LinkedHashSet<>();
       List<String> ids = List.copyOf(frontier);
-      List<Resource> parents = new ArrayList<>();
-      for (int start = 0; start < ids.size(); start += LOOKUP_BATCH_SIZE) {
-        parents.addAll(em.createQuery("select r from Resource r where r.id in :ids"
-            + " and r.deletedAt is null and r.disabled = false", Resource.class)
-            .setParameter("ids", ids.subList(start, Math.min(start + LOOKUP_BATCH_SIZE, ids.size())))
-            .getResultList());
-      }
-      Map<String, Resource> visible = visibleResources(parents.stream().map(Resource::getCode).toList());
-      for (Resource parent : parents) {
-        if (!visible.containsKey(parent.getCode()) || ancestry.putIfAbsent(parent.getId(), parent) != null) continue;
+      var parents = new CurrentUserAccessReadQuery(em).parents(ids);
+      Map<String, Resource> visible = snapshot.visible(parents.stream().map(CurrentUserAccessReadQuery.Edge::code).toList());
+      for (var edge : parents) {
+        Resource parent = visible.get(edge.code());
+        if (parent == null || !expanded.add(parent.getId())) continue;
+        ancestry.putIfAbsent(parent.getId(), parent);
         if (parent.getParentId() != null) next.add(parent.getParentId());
       }
       frontier = next;
@@ -294,7 +255,8 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
         Resource parent = ancestry.get(id);
         if (parent == null) break;
         if (parent.getType() == ResourceType.GROUP || parent.getType() == ResourceType.MODULE) {
-          names.add(resourceLabel(parent));
+          String label = resourceLabel(parent, Resource.class);
+          names.add(label == null || label.equals(parent.getCode()) ? "i18n:permissions.unavailable" : label);
         }
         id = parent.getParentId();
       }
@@ -334,56 +296,67 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
   public OrganizationInfo organization() {
     AuthorizationContext context = requireContext();
     String tenantId = tenantId(context);
-    if (tenantId == null || context.getScopeType() == AuthorizationScopeType.PLATFORM) {
+    if (tenantId == null || tenantId.isBlank() || context.getScopeType() == AuthorizationScopeType.PLATFORM) {
       return new OrganizationInfo(null, null, List.of());
     }
-    List<TenantUserRelevance> memberships = em.createQuery(
-        "select m from TenantUserRelevance m where m.tenantId = :tenant"
-            + " and m.userId = :user and m.deletedAt is null and m.enabled = true",
-        TenantUserRelevance.class)
-        .setParameter("tenant", tenantId).setParameter("user", context.getUserId())
-        .setMaxResults(1).getResultList();
-    if (memberships.isEmpty() || memberships.getFirst().getOrgId() == null) {
+    var query = new CurrentUserAccessReadQuery(em);
+    String id = query.assignedOrganization(tenantId, context.getUserId());
+    if (id == null) {
       return new OrganizationInfo(null, null, List.of());
     }
     List<String> path = new ArrayList<>();
     Set<String> seen = new HashSet<>();
-    String id = memberships.getFirst().getOrgId();
     String leafId = null;
     String leafName = null;
     while (id != null && seen.add(id) && path.size() < 20) {
-      List<Organization> found = em.createQuery("select o from Organization o"
-          + " where o.id = :id and o.tenantId = :tenant and o.deletedAt is null"
-          + " and o.enabled = true", Organization.class)
-          .setParameter("id", id).setParameter("tenant", tenantId)
-          .setMaxResults(1).getResultList();
-      if (found.isEmpty()) break;
-      Organization node = found.getFirst();
-      if (leafId == null) {
-        leafId = node.getId();
-        leafName = node.getName();
+      var node = query.organization(tenantId, id);
+      if (node == null) break;
+      var fields = new java.util.LinkedHashMap<String, Object>(); fields.put("id", node.id()); fields.put("name", node.name());
+      var readable = FieldPermissionPolicy.project(Organization.class, fields);
+      // A protected display ID can be null; it must not control which node is the leaf.
+      if (path.isEmpty()) {
+        leafId = (String) readable.get("id");
+        leafName = (String) readable.get("name");
       }
-      path.add(node.getName());
-      id = node.getParentId();
+      path.add(readable.get("name") instanceof String name && !name.isBlank() ? name : "i18n:permissions.unavailable");
+      id = node.parent();
     }
     java.util.Collections.reverse(path);
     return new OrganizationInfo(leafId, leafName, List.copyOf(path));
   }
 
-  private static ResourceAccess project(String code, Resource resource, boolean effective) {
-    if (resource == null) return new ResourceAccess(code, code, "OTHER", null, null, effective, false, List.of());
-    return new ResourceAccess(code, resourceLabel(resource),
-        resource.getType() == null ? "OTHER" : resource.getType().name(),
-        resource.getPath(), resource.getIcon(), effective, true, List.of());
+  private record AccessEntry(String code, Resource metadata, ResourceAccess view) {}
+
+  private static ResourceAccess project(String code, Resource resource, boolean effective, Class<?> sourceType) {
+    var values = new java.util.LinkedHashMap<String, Object>(); values.put("code", code);
+    if (resource != null) {
+      values.put("alias", resource.getAlias()); values.put("name", resource.getName()); values.put("label", resource.getLabel()); values.put("title", resource.getTitle());
+      values.put("type", resource.getType() == null ? "OTHER" : resource.getType().name()); values.put("path", resource.getPath()); values.put("icon", resource.getIcon());
+    }
+    var readable = FieldPermissionPolicy.project(sourceType, values);
+    String label = Stream.of("alias", "name", "label", "title", "code").map(readable::get).filter(String.class::isInstance).map(String.class::cast)
+        .filter(value -> !value.isBlank()).findFirst().orElse(null);
+    return new ResourceAccess((String) readable.get("code"), label, resource == null ? "OTHER" : (String) readable.get("type"),
+        (String) readable.get("path"), (String) readable.get("icon"), effective, resource != null, List.of());
   }
 
-  private static String resourceLabel(Resource resource) {
-    return Stream.of(resource.getAlias(), resource.getName(), resource.getLabel(),
-        resource.getTitle(), resource.getCode()).filter(value -> value != null && !value.isBlank())
-        .findFirst().orElse(resource.getCode());
+  private static String resourceLabel(Resource resource, Class<?> sourceType) {
+    return project(resource.getCode(), resource, false, sourceType).label();
+  }
+
+  private static Comparator<ResourceAccess> accessOrder() {
+    return Comparator.comparing((ResourceAccess row) -> typeRank(row.type()))
+        .thenComparing(ResourceAccess::label, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+        .thenComparing(ResourceAccess::code, Comparator.nullsLast(String::compareTo));
+  }
+
+  private static void requireReadable(Class<?> source, String field) {
+    String access = FieldPermissionPolicy.access(source, field);
+    if ("MASKED".equals(access) || FieldPermissionPolicy.hidden(access)) throw new AccessDeniedException("资源字段当前不可用于公开查询");
   }
 
   private static int typeRank(String type) {
+    if (type == null) return 6;
     return switch (type) {
       case "GROUP" -> 0;
       case "MODULE" -> 1;

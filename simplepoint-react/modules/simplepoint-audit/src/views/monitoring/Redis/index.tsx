@@ -1,12 +1,14 @@
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
-import {Alert, App as AntApp, Button, Descriptions, Form, Input, InputNumber, Modal, Space, Spin, Switch, Tag, Typography} from 'antd';
+import {Alert, App as AntApp, Descriptions, Input, Modal, Space, Spin, Tag, Typography} from 'antd';
+import SForm from '@simplepoint/components/SForm/Lazy';
+import type {SFormHandle} from '@simplepoint/components/SForm';
 import DataTable, {type ColumnsType} from '@simplepoint/components/DataTable';
 import TableActions from '@simplepoint/components/Table/Actions';
 import {resolveSimpleTableLoadError} from '@simplepoint/components/SimpleTable/errorMessage';
 import {get, post, put} from '@simplepoint/shared/api/methods';
 import {request, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {useActionFeedback} from '@simplepoint/shared/hooks/useActionFeedback';
+import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
 import {canEditRedisDetail} from './snapshot';
@@ -29,42 +31,49 @@ function ScopedRedisPage() {
   const {ensure, locale, t} = useI18n();
   const [pattern, setPattern] = useState('*');
   const [draft, setDraft] = useState('*');
+  const [blocked, setBlocked] = useState(false);
+  const selected = usePageSelected();
   useEffect(() => {void ensure(baseConfig.i18nNamespaces);}, [ensure, locale]);
   return <div className="monitoring-redis-page">
     <Space className="monitoring-redis-scope" wrap>
       <label htmlFor="redis-scan-pattern">{t('monitoring.redis.scanScope', '扫描范围（Redis glob）')}</label>
-      <Input id="redis-scan-pattern" maxLength={512} value={draft} style={{width: 300}}
-        onChange={event => setDraft(event.target.value)}
-        onPressEnter={() => setPattern(draft || '*')} placeholder="simplepoint:*"/>
-      <Button onClick={() => setPattern(draft || '*')} disabled={(draft || '*') === pattern}>
-        {t('monitoring.redis.applyScope', '应用范围')}
-      </Button>
+      <Input id="redis-scan-pattern" maxLength={512} value={draft} style={{width: 300}} disabled={blocked || !selected}
+        onChange={event => {if (!blocked && selected) setDraft(event.target.value);}}
+        onPressEnter={() => {if (!blocked && selected) setPattern(draft || '*');}} placeholder="simplepoint:*"/>
+      <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'applyScope', sort: 10,
+        text: t('monitoring.redis.applyScope', '应用范围'), disabled: blocked || !selected || (draft || '*') === pattern,
+        onClick: () => {if (!blocked && selected) setPattern(draft || '*');}}]}/>
       <Text type="secondary">{t('monitoring.redis.queryScopeHint', '表头筛选和视图作用于当前扫描范围；值内容按需查看。')}</Text>
     </Space>
-    <RedisTable key={pattern} pattern={pattern}/>
+    <RedisTable key={pattern} pattern={pattern} onBlockedChange={setBlocked}/>
   </div>;
 }
 
-function RedisTable({pattern}: {pattern: string}) {
+function RedisTable({pattern, onBlockedChange}: {pattern: string; onBlockedChange: (blocked: boolean) => void}) {
   const {locale, t} = useI18n();
-  const {message, modal} = AntApp.useApp();
-  const feedback = useActionFeedback();
-  const selected = usePageSelected();
+  const {message} = AntApp.useApp();
+  const operation = useOperationScope(), selected = operation.selected, saving = operation.busy;
   const query = useRedisQuery(baseConfig.baseUrl, pattern);
-  const [form] = Form.useForm<Editor>();
-  const persistent = Form.useWatch('persistent', form);
+  const form = useRef<SFormHandle>(null);
+  const [formData, setFormData] = useState<Partial<Editor>>({});
+  const persistent = formData.persistent;
   const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create');
   const [editorOpen, setEditorOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<RedisDetail>();
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string>();
-  const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [discard, setDiscard] = useState(false);
+  const [deleting, setDeleting] = useState<RedisRow>();
+  const [writeError, setWriteError] = useState('');
   const reader = useRef<{controller: AbortController; key: string; editing: boolean} | undefined>(undefined);
   const panel = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(320);
-  usePageRetention(!editorOpen && !saving, dirty || saving);
+  const locked = editorOpen || detailOpen || !!deleting || saving;
+  usePageRetention(!locked, editorOpen || !!deleting || saving);
+  useLayoutEffect(() => {onBlockedChange(locked); return () => onBlockedChange(false);}, [locked, onBlockedChange]);
+  const allowed = (key: string) => !query.error && query.buttons.some(button => button.key === key);
   useEffect(() => () => reader.current?.controller.abort(), []);
   useLayoutEffect(() => {
     const update = () => setScrollY(Math.max(120, (panel.current?.clientHeight ?? 300) - 110));
@@ -80,31 +89,33 @@ function RedisTable({pattern}: {pattern: string}) {
   };
   const discardEditor = () => {
     reader.current?.controller.abort();
-    setEditorOpen(false); setDirty(false); form.resetFields();
+    setEditorOpen(false); setDirty(false); setFormData({}); setDiscard(false); setWriteError('');
   };
   const closeEditor = () => {
-    if (saving) return;
+    if (saving || !operation.isSelected()) return;
     if (!dirty) return discardEditor();
-    modal.confirm({title: t('monitoring.redis.unsavedChanges', '放弃未保存的修改？'),
-      okText: t('monitoring.redis.discard', '放弃'), cancelText: t('action.cancel', '取消'), onOk: discardEditor});
+    setDiscard(true);
   };
   const create = () => {
+    if (locked || !operation.isSelected() || !allowed('add')) return;
     reader.current?.controller.abort();
     setDetail(undefined); setDetailError(undefined); setDetailLoading(false);
-    setEditorMode('create'); setEditorOpen(true); setDirty(false);
-    form.setFieldsValue({key: '', value: '', persistent: true, ttlSeconds: null});
+    setEditorMode('create'); setEditorOpen(true); setDirty(false); setWriteError('');
+    setFormData({key: '', value: '', persistent: true});
   };
-  const read = useCallback(async (key: string, editing: boolean) => {
+  const read = useCallback(async (key: string, editing: boolean, retry = false) => {
+    if (!operation.isSelected() || saving || !key || query.error || !query.buttons.some(button => button.key === (editing ? 'edit' : 'view'))
+      || locked && !(retry && reader.current?.key === key && reader.current.editing === editing)) return;
     reader.current?.controller.abort();
     const current = {key, editing, controller: new AbortController()};
     reader.current = current;
-    setDetail(undefined); setDetailError(undefined); setDetailLoading(true);
+    setDetail(undefined); setDetailError(undefined); setDetailLoading(true); setWriteError('');
     if (editing) {
-      form.resetFields(); setDirty(false); setEditorMode('edit'); setEditorOpen(true);
+      setFormData({}); setDirty(false); setEditorMode('edit'); setEditorOpen(true);
     } else setDetailOpen(true);
     try {
       const loaded = await get<RedisDetail>(baseConfig.baseUrl + '/detail', {key}, {signal: current.controller.signal});
-      if (current !== reader.current || current.controller.signal.aborted) return;
+      if (current !== reader.current || !operation.current(current.controller.signal)) return;
       if (loaded.key !== key) throw new Error(t('monitoring.redis.identityMismatch', '返回的键名与请求不一致，已阻止操作。'));
       setDetail(loaded);
       if (editing) {
@@ -112,46 +123,50 @@ function RedisTable({pattern}: {pattern: string}) {
           setDetailError(t('monitoring.redis.incompleteEdit', '当前值不可完整编辑，请查看详情；不会用摘要或脱敏值覆盖原值。'));
           return;
         }
-        form.setFieldsValue({key: loaded.key, value: loaded.value!, persistent: loaded.persistent as boolean,
-          ttlSeconds: loaded.persistent === true ? null : loaded.ttlSeconds as number});
+        setFormData({key: loaded.key, value: loaded.value!, persistent: loaded.persistent as boolean,
+          ttlSeconds: loaded.persistent === true ? undefined : loaded.ttlSeconds as number});
       }
     } catch (error) {
-      if (current === reader.current && !current.controller.signal.aborted) {
+      if (current === reader.current && operation.current(current.controller.signal)) {
         setDetailError(resolveApiErrorMessage(error, t('monitoring.redis.detailFailed', '键详情加载失败，请重试。')));
       }
     } finally {
-      if (current === reader.current && !current.controller.signal.aborted) setDetailLoading(false);
+      if (current === reader.current && operation.current(current.controller.signal)) setDetailLoading(false);
     }
-  }, [form, t]);
+  }, [t, saving, locked, query.error, query.buttons, operation.isSelected, operation.current]);
 
-  const submit = () => feedback('redis.save', async () => {
-    const values = await form.validateFields();
+  const submit = async (values: Editor) => {
+    if (!editorOpen || detailLoading || detailError || !allowed(editorMode === 'create' ? 'add' : 'edit')) return;
     if (editorMode === 'edit' && (!canEditRedisDetail(detail) || detail?.key !== values.key)) {
-      throw new Error(t('monitoring.redis.incompleteEdit', '当前值不可完整编辑，请查看详情；不会用摘要或脱敏值覆盖原值。'));
+      setWriteError(t('monitoring.redis.incompleteEdit', '当前值不可完整编辑，请查看详情；不会用摘要或脱敏值覆盖原值。')); return;
     }
-    setSaving(true);
+    const controller = operation.begin(); if (!controller) return; setWriteError('');
     try {
       const payload = {...values, ttlSeconds: values.persistent ? null : values.ttlSeconds};
-      if (editorMode === 'create') await post(baseConfig.baseUrl, payload);
-      else await put(baseConfig.baseUrl, payload);
+      if (editorMode === 'create') await post(baseConfig.baseUrl, payload, {signal: controller.signal, notifyOnError: false});
+      else await put(baseConfig.baseUrl, payload, {signal: controller.signal, notifyOnError: false});
+      if (!operation.current(controller.signal)) return;
       message.success(editorMode === 'create' ? t('table.addSuccess', '新增成功') : t('table.editSuccess', '修改成功'));
       discardEditor();
       query.refresh();
-    } finally {setSaving(false);}
-  });
+    } catch (error) {
+      if (operation.current(controller.signal)) setWriteError(resolveApiErrorMessage(error, t('error.operationFailed', '操作失败，请重试')));
+    } finally {operation.finish(controller);}
+  };
   const remove = (row: RedisRow) => {
-    modal.confirm({title: t('table.confirmDeleteTitle', '确认删除'),
-      content: <Text code>{row.key}</Text>, okButtonProps: {danger: true},
-      okText: t('table.button.delete', '删除'), cancelText: t('action.cancel', '取消'),
-      onOk: async () => {
-        const outcome = await feedback('redis.delete:' + row.key, async () => {
-          await request(baseConfig.baseUrl, {method: 'DELETE', params: {keys: row.key}});
-          message.success(t('table.deleteSuccess', '删除成功'));
-          query.refresh();
-        });
-        // Keep the confirmation open after failure; the platform feedback already explains why.
-        if (outcome.status !== 'success') return Promise.reject(new Error('Redis delete not completed'));
-      }});
+    if (locked || !operation.isSelected() || !allowed('delete') || !row.key) return;
+    setWriteError(''); setDeleting(structuredClone(row));
+  };
+  const confirmDelete = async () => {
+    if (!deleting?.key || !allowed('delete')) return;
+    const captured = deleting.key, controller = operation.begin(); if (!controller) return; setWriteError('');
+    try {
+      await request(baseConfig.baseUrl, {method: 'DELETE', params: {keys: captured}, signal: controller.signal, notifyOnError: false});
+      if (!operation.current(controller.signal)) return;
+      setDeleting(undefined); message.success(t('table.deleteSuccess', '删除成功')); query.refresh();
+    } catch (error) {
+      if (operation.current(controller.signal)) setWriteError(resolveApiErrorMessage(error, t('error.operationFailed', '操作失败，请重试')));
+    } finally {operation.finish(controller);}
   };
   const shownBoolean = (value: unknown) => typeof value === 'boolean'
     ? value ? t('common.yes', '是') : t('common.no', '否') : String(value ?? '--');
@@ -173,7 +188,7 @@ function RedisTable({pattern}: {pattern: string}) {
     {title: t('monitoring.redis.actions', '操作'), key: 'actions', width: 300,
       render: (_, row) => <TableActions<RedisRow> selectedKeys={[row.key]} selectedRows={[row]}
         buttons={query.buttons.filter(button => button.key !== 'add')}
-        isButtonDisabled={button => button.key === 'edit' && row.editable !== true}
+        isButtonDisabled={button => locked || !selected || !!query.error || button.key === 'edit' && row.editable !== true}
         onButtonEvents={{view: () => {void read(row.key, false);}, edit: () => {void read(row.key, true);},
           delete: () => remove(row)}}/>},
   ];
@@ -187,9 +202,10 @@ function RedisTable({pattern}: {pattern: string}) {
     : failed ? t('monitoring.redis.scanUnavailable', '扫描结果不可用')
     : t('monitoring.redis.scanPreparing', '正在准备查询');
   const detailsError = detailError && <Alert type="error" showIcon title={detailError}
-    action={<Button onClick={() => {
-      if (reader.current) void read(reader.current.key, reader.current.editing);
-    }}>{t('table.retry', '重试')}</Button>}/>;
+    action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retryDetail', sort: 10,
+      text: t('table.retry', '重试'), onClick: () => {
+      if (reader.current) void read(reader.current.key, reader.current.editing, true);
+    }}]}/>}/>;
   return <>
     <Alert className="redis-scan-status" data-scan-status={status ?? 'INITIAL'} showIcon
       type={failed || query.error ? 'error' : 'info'} title={query.error ? t('table.loadFail', '加载失败') : scanTitle}
@@ -199,49 +215,47 @@ function RedisTable({pattern}: {pattern: string}) {
         {query.scan?.expiresAt && <span>{t('monitoring.redis.expiresAt', '有效期至')}：{time(query.scan.expiresAt)}</span>}
         <span>{t('monitoring.redis.snapshotNotice', '这是扫描时的元数据，不是实时事务快照；刷新会重新扫描。')}</span>
       </Space>}
-      action={(failed || query.error) && <Space>
-        <Button onClick={query.error ? query.retry : query.refresh}>{t('table.retry', '重试')}</Button>
-        <Button onClick={query.reset}>{t('table.query.reset', '重置筛选与排序')}</Button>
-      </Space>}/>
+      action={(failed || query.error) && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+        {key: 'retry', sort: 10, text: t('table.retry', '重试'), onClick: query.error ? query.retry : query.refresh},
+        {key: 'reset', sort: 20, text: t('table.query.reset', '重置筛选与排序'), onClick: query.reset},
+      ]}/>}/>
     <div ref={panel} className="monitoring-redis-table-panel">
       <DataTable<RedisRow> className="monitoring-redis-table" rowKey="key" storageKey="monitoring.redis"
         columns={columns} dataSource={query.error ? [] : query.page?.content ?? []}
-        refresh={query.refresh} loading={query.loading} includeToolbarInScroll scroll={{x: 'max-content', y: scrollY}}
+        refresh={() => {if (!locked) query.refresh();}} loading={query.loading} includeToolbarInScroll scroll={{x: 'max-content', y: scrollY}}
         locale={!query.page ? {emptyText: t('monitoring.redis.pendingPage', '等待完整扫描结果；当前不显示分页总数。')} : undefined}
         query={query.schema ? {mode: 'remote', schema: query.schema, state: query.state,
-          contextKey: pattern, onChange: query.change} : undefined}
+          contextKey: pattern, onChange: next => {if (!locked) query.change(next);}} : undefined}
         pagination={query.page ? {current: query.pagination.page + 1, pageSize: query.pagination.size,
-          total: query.page.page.totalElements, showSizeChanger: true,
-          onChange: (page, size) => query.setPagination({page: page - 1, size})} : false}
+          total: query.page.page.totalElements, showSizeChanger: true, disabled: locked,
+          onChange: (page, size) => {if (!locked) query.setPagination({page: page - 1, size});}} : false}
         toolbarExtra={<TableActions<RedisRow> selectedKeys={[]} selectedRows={[]}
           buttons={query.buttons.filter(button => button.key === 'add')}
+          isButtonDisabled={() => locked || !selected || !!query.error}
           onButtonEvents={{add: create}}/>}/>
     </div>
-    <Modal open={editorOpen && selected} onCancel={closeEditor} onOk={() => {void submit();}}
+    <Modal wrapClassName="redis-entry-editor" open={editorOpen && selected} destroyOnHidden={!editorOpen} onCancel={closeEditor} onOk={() => form.current?.submit()}
       title={editorMode === 'create' ? t('monitoring.redis.createTitle', '新增 Redis 键值') : t('monitoring.redis.editTitle', '编辑 Redis 键值')}
       confirmLoading={saving} closable={!saving} maskClosable={false} width={720}
-      okButtonProps={{disabled: detailLoading || !!detailError || editorMode === 'edit' && !canEditRedisDetail(detail)}}>
+      keyboard={!saving} cancelButtonProps={{disabled: saving}}
+      okButtonProps={{disabled: detailLoading || !!detailError || !allowed(editorMode === 'create' ? 'add' : 'edit') || editorMode === 'edit' && !canEditRedisDetail(detail)}}>
       {detailsError}
+      {writeError && <Alert type="error" showIcon title={writeError}/>}
       <Spin spinning={detailLoading}>
-        <Form form={form} layout="vertical" onValuesChange={() => setDirty(true)}>
-          <Form.Item name="key" label={t('monitoring.redis.key', 'Key')}
-            rules={[{required: true, message: t('form.required', '这是必填项')}]}><Input disabled={editorMode === 'edit' || saving}/></Form.Item>
-          <Form.Item name="value" label={t('monitoring.redis.value', 'Value')}
-            rules={[{validator: async (_, value) => {
-              if (typeof value !== 'string') throw new Error(t('form.required', '这是必填项'));
-            }}]}><Input.TextArea disabled={saving || detailLoading} autoSize={{minRows: 8, maxRows: 16}}/></Form.Item>
-          <Space align="start">
-            <Form.Item name="persistent" valuePropName="checked" label={t('monitoring.redis.persistent', 'Permanent')}>
-              <Switch disabled={saving}/></Form.Item>
-            {persistent === false && <Form.Item name="ttlSeconds" label={t('monitoring.redis.ttlSeconds', 'TTL Seconds')}
-              rules={[{validator: async (_, value) => {
-                if (!Number.isSafeInteger(value) || value <= 0) throw new Error(t('monitoring.redis.ttlRule', 'TTL 必须是大于 0 的秒数'));
-              }}]}><InputNumber min={1} precision={0} disabled={saving}/></Form.Item>}
-          </Space>
-        </Form>
+        <SForm ref={form} hideSubmit disabled={saving || detailLoading} schema={{type: 'object',
+          required: ['key', 'value', 'persistent', ...(persistent === false ? ['ttlSeconds'] : [])], properties: {
+            key: {type: 'string', minLength: 1, title: t('monitoring.redis.key', 'Key')},
+            value: {type: 'string', title: t('monitoring.redis.value', 'Value')},
+            persistent: {type: 'boolean', title: t('monitoring.redis.persistent', 'Permanent')},
+            ...(persistent === false ? {ttlSeconds: {type: 'integer' as const, minimum: 1,
+              maximum: Number.MAX_SAFE_INTEGER, title: t('monitoring.redis.ttlSeconds', 'TTL Seconds')}} : {}),
+          }}} uiSchema={{key: {'ui:readonly': editorMode === 'edit'},
+            value: {'ui:widget': 'textarea', 'ui:options': {emptyValue: '', autoSize: {minRows: 8, maxRows: 16}}}}}
+          formData={formData} onChange={({formData}) => {if (!saving) {setFormData(formData ?? {}); setDirty(true);}}}
+          onSubmit={({formData}) => {void submit(formData as Editor);}}/>
       </Spin>
     </Modal>
-    <Modal open={detailOpen && selected} title={t('monitoring.redis.detailTitle', 'Redis 键详情')}
+    <Modal wrapClassName="redis-entry-details" open={detailOpen && selected} destroyOnHidden={!detailOpen} title={t('monitoring.redis.detailTitle', 'Redis 键详情')}
       footer={null} onCancel={closeDetail} width={820}>
       {detailsError}
       <Spin spinning={detailLoading}>
@@ -259,6 +273,21 @@ function RedisTable({pattern}: {pattern: string}) {
           <Input.TextArea readOnly value={detail.value ?? ''} autoSize={{minRows: 10, maxRows: 20}}/>
         </Space>}
       </Spin>
+    </Modal>
+    <Modal wrapClassName="redis-discard-draft" open={discard && selected} destroyOnHidden={!discard}
+      title={t('monitoring.redis.unsavedChanges', '放弃未保存的修改？')} onCancel={() => setDiscard(false)}
+      footer={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+        {key: 'cancel', sort: 1, text: t('action.cancel', '取消')},
+        {key: 'discard', sort: 2, text: t('monitoring.redis.discard', '放弃'), type: 'primary', danger: true},
+      ]} onButtonEvents={{cancel: () => setDiscard(false), discard: discardEditor}}/>}/>
+    <Modal wrapClassName="redis-entry-delete" open={!!deleting && selected} destroyOnHidden={!deleting}
+      title={t('table.confirmDeleteTitle', '确认删除')} onCancel={() => {if (!saving) setDeleting(undefined);}}
+      closable={!saving} maskClosable={!saving} keyboard={!saving}
+      footer={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+        {key: 'cancel', sort: 1, text: t('action.cancel', '取消'), disabled: saving},
+        {key: 'delete', sort: 2, text: t('table.button.delete', '删除'), type: 'primary', danger: true, loading: saving, disabled: saving || !allowed('delete')},
+      ]} onButtonEvents={{cancel: () => {if (!saving) setDeleting(undefined);}, delete: () => void confirmDelete()}}/>}>
+      <Text code>{deleting?.key}</Text>{writeError && <Alert type="error" showIcon title={writeError}/>}
     </Modal>
   </>;
 }

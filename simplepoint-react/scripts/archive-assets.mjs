@@ -24,7 +24,7 @@ const readOptional = async file => {
   try { return await readFile(file); } catch (error) { if (error.code === 'ENOENT') return undefined; throw error; }
 };
 try {
-  for (const service of ['host', 'common', 'auditing', 'dna', 'ai']) {
+  for (const service of ['host', 'common', 'auditing', 'dna', 'ai', 'app', 'workflow']) {
     const container = `${values.project}-${service}-1`;
     const imageId = run('docker', ['inspect', container, '--format', '{{.Image}}']).trim();
     digest.update(`${service}:${imageId}\n`);

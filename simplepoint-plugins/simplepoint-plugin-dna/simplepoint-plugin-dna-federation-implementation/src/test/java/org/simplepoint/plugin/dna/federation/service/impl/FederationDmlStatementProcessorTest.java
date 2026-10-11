@@ -1,7 +1,9 @@
 package org.simplepoint.plugin.dna.federation.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -80,6 +82,17 @@ class FederationDmlStatementProcessorTest {
   }
 
   @Test
+  void insertSelectMustNotReadAnotherSourceForAWrite() {
+    JdbcDataSourceDefinition selected = dataSource("ds-1", "ds1");
+    JdbcDataSourceDefinition other = dataSource("ds-2", "ds2");
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(selected, other));
+    TableReferenceSummary references = FederationSqlAnalysisUtils.collectTableReferences(
+        "INSERT INTO ds1.orders (id) SELECT id FROM ds2.orders");
+
+    assertThrows(IllegalArgumentException.class, () -> processor.resolve(selected, references));
+  }
+
+  @Test
   void resolveShouldFallBackToSelectedDataSourceWhenCodeNotFound() {
     JdbcDataSourceDefinition selected = dataSource("ds-1", "ds1");
     // Qualified identifier whose prefix doesn't match any known datasource
@@ -92,6 +105,24 @@ class FederationDmlStatementProcessorTest {
   }
 
   // ----- rewrite() -----
+
+  @Test
+  void calciteCompatibilityAcceptsSingleStandardDml() {
+    assertTrue(FederationDmlStatementProcessor.canExecuteWithCalcite(
+        "INSERT INTO ds1.orders (id) VALUES (1)"));
+    assertTrue(FederationDmlStatementProcessor.canExecuteWithCalcite(
+        "UPDATE ds1.orders SET id = 2 WHERE id = 1"));
+    assertTrue(FederationDmlStatementProcessor.canExecuteWithCalcite(
+        "DELETE FROM ds1.orders WHERE id = 1"));
+    assertFalse(FederationDmlStatementProcessor.canExecuteWithCalcite(
+        "UPSERT INTO ds1.orders (id) VALUES (1)"));
+    assertFalse(FederationDmlStatementProcessor.canExecuteWithCalcite(
+        "MERGE INTO ds1.orders AS target USING ds1.incoming AS source ON target.id = source.id "
+            + "WHEN MATCHED THEN UPDATE SET id = source.id"));
+    assertThrows(IllegalArgumentException.class, () ->
+        FederationDmlStatementProcessor.canExecuteWithCalcite(
+            "DELETE FROM ds1.orders; DELETE FROM ds1.orders"));
+  }
 
   @Test
   void rewriteShouldStripDataSourcePrefixFromInsert() {

@@ -5,6 +5,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,6 +99,63 @@ public class JdbcMetadataBrowserServiceImpl extends AbstractJdbcMetadataService
               tablePath.schema(),
               tablePath.objectName()
           )
+      );
+    });
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public JdbcMetadataModels.SqlCompletionCatalog completionCatalog(final String dataSourceId) {
+    return withContext(dataSourceId, null, context -> {
+      JdbcDatabaseDialect.MetadataResult metadata = context.dialect().loadTables(
+          context.connection(),
+          context.metaData(),
+          context.supportContext(),
+          null,
+          null,
+          null,
+          List.of("TABLE", "VIEW")
+      );
+      Map<String, JdbcMetadataModels.SqlCompletionRelation> relations = new LinkedHashMap<>();
+      for (List<Object> row : metadata.rows()) {
+        String relationName = stringValue(metadata, row, "TABLE_NAME");
+        if (relationName == null) {
+          continue;
+        }
+        String catalog = stringValue(metadata, row, "TABLE_CAT");
+        String schema = stringValue(metadata, row, "TABLE_SCHEM");
+        String tableType = stringValue(metadata, row, "TABLE_TYPE");
+        JdbcMetadataModels.NodeType relationType = "VIEW".equalsIgnoreCase(tableType)
+            ? JdbcMetadataModels.NodeType.VIEW
+            : JdbcMetadataModels.NodeType.TABLE;
+        List<JdbcMetadataModels.PathSegment> path = new ArrayList<>();
+        if (catalog != null) {
+          path.add(new JdbcMetadataModels.PathSegment(context.dialect().catalogNodeType(), catalog));
+        }
+        if (schema != null) {
+          path.add(new JdbcMetadataModels.PathSegment(JdbcMetadataModels.NodeType.SCHEMA, schema));
+        }
+        path.add(new JdbcMetadataModels.PathSegment(relationType, relationName));
+        String pathKey = key(path);
+        relations.putIfAbsent(pathKey, new JdbcMetadataModels.SqlCompletionRelation(
+            path,
+            relationType,
+            stringValue(metadata, row, "REMARKS")
+        ));
+      }
+      List<JdbcMetadataModels.SqlCompletionRelation> sortedRelations = relations.values().stream()
+          .sorted(Comparator.comparing(
+              relation -> key(relation.path()),
+              String.CASE_INSENSITIVE_ORDER
+          ))
+          .toList();
+      return new JdbcMetadataModels.SqlCompletionCatalog(
+          context.dialect().code(),
+          context.dialect().name(),
+          context.dialect().resolveIdentifierQuoteString(context.supportContext()),
+          context.supportContext().currentCatalog(),
+          context.supportContext().currentSchema(),
+          sortedRelations
       );
     });
   }

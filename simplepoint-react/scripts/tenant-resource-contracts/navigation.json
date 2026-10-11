@@ -1,0 +1,34 @@
+[
+  {
+    "children": [],
+    "code": "tenant.settings.view",
+    "component": "host/TenantHome",
+    "disabled": false,
+    "grantable": true,
+    "label": "租户设置标准测试",
+    "name": "租户设置标准测试",
+    "path": "/tenant/settings",
+    "publicAccess": false,
+    "requireOrgTenant": true,
+    "routeKind": "item",
+    "scopeTypes": ["TENANT"],
+    "sort": 0,
+    "type": "PAGE"
+  },
+  {
+    "children": [],
+    "code": "common.view",
+    "component": "host/TenantHome",
+    "disabled": false,
+    "grantable": true,
+    "label": "租户资源标准测试",
+    "name": "租户资源标准测试",
+    "path": "/tenant/resources",
+    "publicAccess": false,
+    "requireOrgTenant": true,
+    "routeKind": "item",
+    "scopeTypes": ["TENANT"],
+    "sort": 0,
+    "type": "PAGE"
+  }
+]

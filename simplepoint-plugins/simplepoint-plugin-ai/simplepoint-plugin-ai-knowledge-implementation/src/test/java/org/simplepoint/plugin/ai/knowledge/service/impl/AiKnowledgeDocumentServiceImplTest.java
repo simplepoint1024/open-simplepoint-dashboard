@@ -48,6 +48,8 @@ class AiKnowledgeDocumentServiceImplTest {
 
   private AiKnowledgeDocumentServiceImpl service;
 
+  private AiKnowledgeProperties properties;
+
   @BeforeEach
   void setUp() {
     knowledgeBaseRepository = mock(AiKnowledgeBaseRepository.class);
@@ -56,6 +58,7 @@ class AiKnowledgeDocumentServiceImplTest {
     extractor = mock(KnowledgeDocumentExtractor.class);
     indexCoordinator = mock(KnowledgeIndexCoordinator.class);
     objectStorageRemoteService = mock(ObjectStorageRemoteService.class);
+    properties = new AiKnowledgeProperties();
     service = new AiKnowledgeDocumentServiceImpl(
         knowledgeBaseRepository,
         documentRepository,
@@ -64,10 +67,17 @@ class AiKnowledgeDocumentServiceImplTest {
         mock(AiScopeAccessPolicy.class),
         extractor,
         indexCoordinator,
-        new AiKnowledgeProperties(),
+        properties,
         new ObjectMapper(),
         objectStorageRemoteService
     );
+  }
+
+  @Test
+  void ingestionLimitsExposeActualConfiguredUploadBoundWithoutReadingDocuments() {
+    properties.setMaxUploadBytes(65536L);
+    assertThat(service.ingestionLimits()).containsEntry("maxUploadBytes", 65536L);
+    org.mockito.Mockito.verifyNoInteractions(knowledgeBaseRepository, documentRepository, objectStorageRemoteService);
   }
 
   @Test

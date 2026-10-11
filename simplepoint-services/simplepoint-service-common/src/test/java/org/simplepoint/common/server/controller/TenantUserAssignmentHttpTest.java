@@ -130,6 +130,49 @@ class TenantUserAssignmentHttpTest {
   }
 
   @Test
+  void selectedTenantCapabilityUsesTheActualWriteGuardWithoutInventingAResourceGrant() throws Exception {
+    var capability = get("/platform/tenants/users/capabilities").param("tenantId", tenant.getId());
+    mvc.perform(capability.requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.canConfigureMembers").value(true));
+    authorize(false, tenant.getId());
+    context.setActorRole(AuthorizationActorRole.TENANT_MEMBER);
+    SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(users.getFirst().getId(), "unused", List.of()));
+    mvc.perform(get("/platform/tenants/users/capabilities").param("tenantId", tenant.getId())
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.canConfigureMembers").value(true));
+    mvc.perform(post("/platform/tenants/users/authorize").contentType("application/json")
+            .content(new ObjectMapper().writeValueAsString(Map.of("tenantId", tenant.getId(), "userIds", List.of())))
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)).andExpect(status().isOk());
+    // The owner requires no fictional tenants.config.user grant; an ordinary nonowner still cannot manage members.
+    context = new AuthorizationContext(); context.setUserId(users.get(1).getId()); context.setIsAdministrator(false);
+    context.setScopeType(AuthorizationScopeType.TENANT); context.setActorRole(AuthorizationActorRole.TENANT_MEMBER);
+    context.setAttributes(Map.of("X-Tenant-Id", tenant.getId()));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(context.getUserId(), "unused", List.of()));
+    mvc.perform(get("/platform/tenants/users/capabilities").param("tenantId", tenant.getId())
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.canConfigureMembers").value(false));
+    var denied = assertThrows(jakarta.servlet.ServletException.class, () -> mvc.perform(items(false)));
+    assertInstanceOf(AccessDeniedException.class, denied.getCause());
+    var writeDenied = assertThrows(jakarta.servlet.ServletException.class, () -> mvc.perform(
+        post("/platform/tenants/users/authorize").contentType("application/json")
+            .content(new ObjectMapper().writeValueAsString(Map.of("tenantId", tenant.getId(), "userIds", List.of())))
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)));
+    assertInstanceOf(AccessDeniedException.class, writeDenied.getCause());
+    authorize(false, "another-tenant");
+    mvc.perform(get("/platform/tenants/users/capabilities").param("tenantId", tenant.getId())
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.canConfigureMembers").value(false));
+    authorize(true, tenant.getId()); tenant.setTenantType(TenantType.PERSONAL);
+    mvc.perform(get("/platform/tenants/users/capabilities").param("tenantId", tenant.getId())
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.canConfigureMembers").value(false));
+    mvc.perform(get("/platform/tenants/users/capabilities").param("tenantId", "missing")
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.canConfigureMembers").value(false));
+  }
+
+  @Test
   void bothSidesAreSqlPagedBeyondOneHundredAndOwnerIsImplicitlyAssigned() throws Exception {
     mvc.perform(items(true).param("sort", "name,asc").param("page", "5").param("size", "20"))
         .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(120))

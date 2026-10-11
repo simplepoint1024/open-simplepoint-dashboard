@@ -16,4 +16,11 @@ class GlobalExceptionHandlerTest {
     GlobalExceptionHandler handler = new GlobalExceptionHandler();
     assertThat(handler).isNotNull();
   }
+
+  @Test
+  void decimalFailureHasAStableSafeClientError() {
+    var response = new GlobalExceptionHandler().invalidDecimalValue(new org.simplepoint.core.base.InvalidDecimalValueException());
+    assertThat(response.getStatusCode().value()).isEqualTo(400);
+    assertThat(response.getBody()).containsEntry("code", "INVALID_DECIMAL_VALUE");
+  }
 }

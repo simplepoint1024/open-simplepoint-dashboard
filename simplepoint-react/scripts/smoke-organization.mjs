@@ -21,6 +21,23 @@ export async function smokeOrganization({clickMenu, clickReady, clickText, fill,
   await poll(() => evaluate(`!!document.querySelector('.ant-modal tr[data-row-key="member-0"]')`),
     'candidate picker searches existing tenant users');
   await clickReady('.ant-modal .ant-modal-close');
+  await clickReady('.organization-members-panel tr[data-row-key="org-user-20"] td:nth-child(2)');
+  await clickText('.organization-members-panel button', '移出组织');
+  await poll(() => evaluate(`document.querySelector('.organization-member-removal .ant-modal')?.textContent.includes('保留租户成员身份')`),
+    'organization removal explains its boundary');
+  await clickText('.organization-member-removal .ant-modal-footer button', '取消');
+  await poll(() => evaluate(`!document.querySelector('.organization-member-removal .ant-modal')`), 'cancelled confirmation is removed');
+  assert.equal(requests.some(r => r.method === 'DELETE' && r.url.includes('/tenant-members/by-organization/')), false);
+  await clickText('.organization-members-panel button', '移出组织');
+  await poll(() => evaluate(`!!document.querySelector('.organization-member-removal .ant-modal .ant-btn-dangerous')`), 'new removal confirmation');
+  await clickReady('.organization-member-removal .ant-modal .ant-btn-dangerous');
+  await poll(() => evaluate(`!document.querySelector('.organization-members-panel tr[data-row-key="org-user-20"]')
+    && document.querySelector('.organization-members-panel .ant-pagination-total-text')?.textContent === '共 124 条'`),
+    'confirmed removal refreshes the counted member page');
+  assert(requests.some(r => r.method === 'DELETE' && r.url.includes('/tenant-members/by-organization/org-user-20')));
+  assert(!requests.some(r => r.method === 'DELETE' && /\/tenant-members\/org-user-/.test(r.url)),
+    'organization removal never calls tenant membership deletion');
+
   await clickReady(`${first} td:nth-child(2)`);
   await poll(() => evaluate(`document.querySelector('.organization-members-panel')?.textContent.includes('请从左侧选择组织')`),
     'clicking the selected organization deselects it');

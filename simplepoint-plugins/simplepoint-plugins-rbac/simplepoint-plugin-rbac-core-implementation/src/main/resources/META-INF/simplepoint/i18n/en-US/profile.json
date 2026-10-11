@@ -3,6 +3,7 @@
   "profile.saveSuccess": "Saved successfully",
   "profile.saveFailed": "Failed to save profile",
   "profile.noEmail": "No email bound",
+  "profile.preferenceUnset": "Not set",
   "field.username": "Username",
   "field.nickname": "Nickname",
   "field.email": "Email",

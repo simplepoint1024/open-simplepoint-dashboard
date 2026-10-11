@@ -268,8 +268,14 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
     authorizationContext.setScopeType(scopeType);
     authorizationContext.setActorRole(actorRole);
 
-    // Resolve data scope and field permissions for the user's roles
-    if (!roleIds.isEmpty()) {
+    // Ownership is resolved from the current tenant, never from a role name or client header.
+    // Owners retain full management inside that tenant; resource/package boundaries above still apply.
+    if (tenantOwner) {
+      authorizationContext.setDataScopeType(DataScopeType.ALL.name());
+      authorizationContext.setFieldPermissions(Map.of());
+      authorizationContext.setResourceDataScopes(Map.of());
+      authorizationContext.setResourceFieldPermissions(Map.of());
+    } else if (!roleIds.isEmpty()) {
       User scopeUser = new User();
       scopeUser.setOrgId(userOrgId);
       resolveDataAndFieldScope(roleIds, userId, resolvedTenantId, scopeUser, authorizationContext);

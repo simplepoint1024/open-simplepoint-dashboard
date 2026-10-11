@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.core.AuthorizationContext;
@@ -37,6 +38,37 @@ class FieldScopeJackson3ModuleTest {
   record Alias(String name, String phone, String secret) {}
 
   record Projection(@PermissionFields(resource = Entity.class, value = "phone") String display) {}
+
+  record AmountRow(BigDecimal amount, BigDecimal absent, int count, double ratio) {}
+
+  @Test
+  void exactDecimalsUseStringsInBeansMapsAndArraysButOtherNumbersRemainNumbers() {
+    var amount = new BigDecimal("99999999999.99999999");
+    var row = new AmountRow(amount, null, 42, 0.25);
+    var json = mapper.readTree(mapper.writeValueAsString(row));
+    assertThat(json.path("amount").isString()).isTrue();
+    assertThat(json.path("amount").asText()).isEqualTo("99999999999.99999999");
+    assertThat(json.path("absent").isNull()).isTrue();
+    assertThat(json.path("count").isNumber()).isTrue();
+    assertThat(json.path("ratio").isNumber()).isTrue();
+    assertThat(mapper.writeValueAsString(Map.of("amount", amount))).isEqualTo("{\"amount\":\"99999999999.99999999\"}");
+    assertThat(mapper.writeValueAsString(List.of(new BigDecimal("1E-12"), new BigDecimal("1E+12"))))
+        .isEqualTo("[\"0.000000000001\",\"1000000000000\"]");
+    assertThat(mapper.writeValueAsString(new BigDecimal("1E+100000000"))).isEqualTo("\"1E+100000000\"");
+    assertThat(mapper.readValue(mapper.writeValueAsString(row), AmountRow.class).amount()).isEqualByComparingTo(amount);
+    assertThat(mapper.readValue("{\"amount\":99999999999.99999999,\"count\":42,\"ratio\":0.25}", AmountRow.class).amount())
+        .isEqualByComparingTo(amount);
+  }
+
+  @Test
+  void decimalFieldPermissionsAreAppliedBeforeExactSerialization() {
+    permissions(Map.of("AmountRow#amount", "MASKED"));
+    assertThat(mapper.readTree(mapper.writeValueAsString(new AmountRow(new BigDecimal("0.12345678"), null, 1, 0)))
+        .path("amount").asText()).isEqualTo("***");
+    permissions(Map.of("AmountRow#amount", "HIDDEN"));
+    assertThat(mapper.readTree(mapper.writeValueAsString(new AmountRow(new BigDecimal("0.12345678"), null, 1, 0)))
+        .has("amount")).isFalse();
+  }
 
   @JsonFormat(shape = JsonFormat.Shape.ARRAY)
   @PermissionResource(Entity.class)

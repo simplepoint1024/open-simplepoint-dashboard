@@ -26,7 +26,8 @@ class ResourceScopeHandlerInterceptorTest {
   private final MockHttpServletResponse response = new MockHttpServletResponse();
   private final ClasspathResourceScopeRegistry registry = new ClasspathResourceScopeRegistry(Map.of(
       "system.read", Set.of(ResourceScopeType.SYSTEM),
-      "tenant.read", Set.of(ResourceScopeType.TENANT)
+      "tenant.read", Set.of(ResourceScopeType.TENANT),
+      "tenant.page.view", Set.of(ResourceScopeType.TENANT)
   ), Map.of("tenant.read", "tenant.page.view"));
   private final ResourceScopeHandlerInterceptor interceptor =
       new ResourceScopeHandlerInterceptor(registry);
@@ -78,6 +79,47 @@ class ResourceScopeHandlerInterceptorTest {
 
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handler("unknown")))
         .isInstanceOf(AccessDeniedException.class);
+  }
+
+  @org.simplepoint.core.permission.PermissionPage(value = "tenant.page.view", model = String.class)
+  private static class DeclaredPage {
+    public void list() {}
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  private static class AuthenticatedOrders extends org.simplepoint.core.base.controller.BaseController<
+      org.simplepoint.api.base.BaseService<org.simplepoint.security.entity.Role, String>, org.simplepoint.security.entity.Role, String> {
+    AuthenticatedOrders() { super(org.mockito.Mockito.mock(org.simplepoint.api.base.BaseService.class)); }
+    @org.springframework.web.bind.annotation.GetMapping @PreAuthorize("hasAuthority('tenant.read')")
+    public void list() {}
+  }
+
+  @Test
+  void inheritedMetadataSelectsItsPageEvenWithAuthenticationOnlyOnTheClass() throws Exception {
+    bindContext(AuthorizationScopeType.TENANT, false, Set.of("tenant.read"));
+    var handler = new HandlerMethod(new AuthenticatedOrders(), "schema");
+    assertThat(interceptor.preHandle(request, response, handler)).isTrue();
+    assertThat(ResourcePolicyContext.get()).isEqualTo("tenant.page.view");
+  }
+
+  @Test
+  void inheritedMetadataRejectsMissingPageGrantsAndWrongWorkspace() throws Exception {
+    var handler = new HandlerMethod(new AuthenticatedOrders(), "schema");
+    bindContext(AuthorizationScopeType.TENANT, false);
+    assertThatThrownBy(() -> interceptor.preHandle(request, response, handler)).isInstanceOf(AccessDeniedException.class);
+    bindContext(AuthorizationScopeType.PLATFORM, true, Set.of("tenant.read"));
+    assertThatThrownBy(() -> interceptor.preHandle(request, response, handler)).isInstanceOf(AccessDeniedException.class);
+    assertThat(ResourcePolicyContext.get()).isNull();
+  }
+
+  @Test
+  void explicitPageMetadataWorksWithoutPreAuthorizeAndCleansTheWorkerContext() throws Exception {
+    bindContext(AuthorizationScopeType.TENANT, false, Set.of("tenant.read"));
+    var handler = new HandlerMethod(new DeclaredPage(), "list");
+    assertThat(interceptor.preHandle(request, response, handler)).isTrue();
+    assertThat(ResourcePolicyContext.get()).isEqualTo("tenant.page.view");
+    interceptor.afterConcurrentHandlingStarted(request, response, handler);
+    assertThat(ResourcePolicyContext.get()).isNull();
   }
 
   private void bindContext(AuthorizationScopeType scopeType, boolean administrator) {

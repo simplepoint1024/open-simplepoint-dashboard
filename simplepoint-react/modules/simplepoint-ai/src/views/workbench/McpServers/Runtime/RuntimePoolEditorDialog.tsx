@@ -1,19 +1,16 @@
 import {post} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import EntitySelect from '@simplepoint/components/EntitySelect';
-import {managedServerFilters, enabledSecretFilters} from './runtimeQueries';
+import SForm from '@simplepoint/components/SForm/Lazy';
+import type {SFormHandle} from '@simplepoint/components/SForm';
+import {useDeploymentSchema} from './useDeploymentSchema';
+import {useOperationScope} from './useOperationScope';
+import {usePageRetention} from '@simplepoint/shared/page/hooks';
 import {
   Alert,
   App,
-  Col,
-  Form,
-  Input,
-  InputNumber,
   Modal,
-  Row,
-  Select,
 } from 'antd';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import type {
   RuntimePool,
   RuntimePoolFormValues,
@@ -48,16 +45,22 @@ const RuntimePoolEditorDialog = ({
 }: RuntimePoolEditorDialogProps) => {
   const {t} = useI18n();
   const {message} = App.useApp();
-  const [form] = Form.useForm<RuntimePoolFormValues>();
+  const operation = useOperationScope();
+  const [submitError, setSubmitError] = useState('');
+  usePageRetention(false, open);
+  const form = useRef<SFormHandle>(null);
+  const [formData, setFormData] = useState<Partial<RuntimePoolFormValues>>({});
   const [submitting, setSubmitting] = useState(false);
-  const networkMode = Form.useWatch('networkMode', form);
+  const submittingRef = useRef(false);
+  const schema = useDeploymentSchema({serversUrl, secretsUrl, fixedServer, pool: true, networkMode: formData.networkMode});
 
 
   useEffect(() => {
     if (!open) return;
+    setSubmitError('');
     const defaultCode = `${fixedServer?.code ?? 'mcp'}-pool`.slice(0, 64);
     const defaultName = `${fixedServer?.name ?? 'MCP'} Runtime Pool`.slice(0, 128);
-    form.setFieldsValue({
+    setFormData({
       code: pool?.code ?? defaultCode,
       name: pool?.name ?? defaultName,
       serverId: pool?.serverId ?? fixedServer?.id,
@@ -77,16 +80,10 @@ const RuntimePoolEditorDialog = ({
       idleTimeoutSeconds: pool?.idleTimeoutSeconds ?? 300,
       replicaLifetimeSeconds: pool?.replicaLifetimeSeconds ?? 3600,
     });
-  }, [fixedServer, form, open, pool]);
+  }, [fixedServer, open, pool]);
 
-  const submit = async () => {
-    if (pool && !canEditPool(pool)) return;
-    let values: RuntimePoolFormValues;
-    try {
-      values = await form.validateFields();
-    } catch {
-      return;
-    }
+  const submit = async (values: RuntimePoolFormValues) => {
+    if (!open || submittingRef.current || pool && !canEditPool(pool)) return;
     if (values.minReplicas > values.maxReplicas
         || values.desiredReplicas < values.minReplicas
         || values.desiredReplicas > values.maxReplicas
@@ -99,7 +96,8 @@ const RuntimePoolEditorDialog = ({
       ));
       return;
     }
-    setSubmitting(true);
+    const request = operation.begin(); if (!request) return;
+    submittingRef.current = true; setSubmitting(true); setSubmitError('');
     try {
       const result = await post<RuntimePool>(poolsUrl, {
         code: values.code,
@@ -122,36 +120,41 @@ const RuntimePoolEditorDialog = ({
         prewarmNodes: values.prewarmNodes,
         idleTimeoutSeconds: values.idleTimeoutSeconds,
         replicaLifetimeSeconds: values.replicaLifetimeSeconds,
-      });
+      }, {signal: request.signal});
+      if (!operation.current(request.signal)) return;
       message.success(t(
         'ai.runtime.success.pool.saved',
         'Runtime Pool 已保存，调度器正在协调副本',
       ));
       onSaved(result);
     } catch (error) {
-      message.error(resolveErrorMessage(
+      if (!operation.current(request.signal)) return;
+      setSubmitError(resolveErrorMessage(
         error,
         t('ai.runtime.error.pool.save', 'Runtime Pool 保存失败'),
       ));
     } finally {
-      setSubmitting(false);
+      submittingRef.current = false; operation.finish(request); if (operation.current()) setSubmitting(false);
     }
   };
 
   return (
     <Modal
-      open={open}
+      wrapClassName="mcp-pool-editor"
+      open={open && operation.selected}
       title={pool
         ? t('ai.runtime.pool.edit', '编辑 Runtime Pool')
         : t('ai.runtime.pool.create', '部署托管 OCI MCP Server')}
       width={920}
       okText={t('ai.runtime.action.saveDeploy', '保存并部署')}
       confirmLoading={submitting}
+      closable={!submitting} maskClosable={!submitting} keyboard={!submitting}
       okButtonProps={{disabled: !!pool && !canEditPool(pool)}}
-      destroyOnHidden
-      onCancel={onCancel}
-      onOk={() => void submit()}
+      destroyOnHidden={!open}
+      onCancel={() => {if (!submittingRef.current) onCancel();}}
+      onOk={() => form.current?.submit()}
     >
+      {submitError && <Alert type="error" showIcon title={submitError} style={{marginBottom: 12}}/>}
       <Alert
         showIcon
         type="info"
@@ -162,178 +165,10 @@ const RuntimePoolEditorDialog = ({
           '镜像必须使用独立 sha256 Digest，并包含 stdio MCP 与协议版本标签。',
         )}
       />
-      <Form form={form} layout="vertical">
-        <Row gutter={16}>
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="code"
-              label={t('ai.runtime.field.code', '编码')}
-              rules={[
-                {required: true},
-                {pattern: /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/},
-              ]}
-            >
-              <Input disabled={Boolean(pool)} maxLength={64}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="name"
-              label={t('ai.runtime.field.name', '名称')}
-              rules={[{required: true, max: 128}]}
-            >
-              <Input maxLength={128}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="serverId"
-              label={t('ai.runtime.field.server', 'MCP Server')}
-              rules={[{required: true}]}
-            >
-              {fixedServer ? <Select disabled options={[{value: fixedServer.id, label: fixedServer.name || fixedServer.code || fixedServer.id}]}/> :
-                <EntitySelect endpoint={serversUrl} filters={managedServerFilters}/>}
-
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="networkMode"
-              label={t('ai.runtime.field.networkMode', '网络模式')}
-              rules={[{required: true}]}
-            >
-              <Select
-                options={[
-                  {value: 'none', label: t('ai.runtime.network.none', '禁止网络')},
-                  {value: 'bridge', label: t('ai.runtime.network.bridge', 'Bridge 网络')},
-                  {value: 'egress', label: t('ai.runtime.network.egress', '受控出口')},
-                ]}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={24}>
-            <Form.Item
-              name="imageReference"
-              label={t('ai.runtime.field.imageReference', 'OCI 镜像')}
-              rules={[{required: true, max: 440}]}
-              extra={t(
-                'ai.runtime.imageReference.help',
-                '例如 docker.io/example/weather-mcp:1.0.0；不要包含 @sha256。',
-              )}
-            >
-              <Input placeholder="docker.io/example/mcp-server:1.0.0"/>
-            </Form.Item>
-          </Col>
-          <Col span={24}>
-            <Form.Item
-              name="imageDigest"
-              label={t('ai.runtime.field.imageDigest', '镜像 Digest')}
-              rules={[{pattern: /^sha256:[a-fA-F0-9]{64}$/}]}
-              extra={t(
-                'ai.runtime.imageDigest.help',
-                '可选；留空时服务端会拉取镜像 Tag，并自动保存解析出的 Digest。',
-              )}
-            >
-              <Input placeholder={t(
-                'ai.runtime.imageDigest.placeholder',
-                '可选，留空自动解析',
-              )}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="memoryMiB"
-              label={t('ai.runtime.field.memory', '内存上限（MiB）')}
-              rules={[{required: true}]}
-            >
-              <InputNumber min={32} max={16384} precision={0} style={{width: '100%'}}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="cpuCores"
-              label={t('ai.runtime.field.cpu', 'CPU 上限（核）')}
-              rules={[{required: true}]}
-            >
-              <InputNumber min={0.01} max={16} step={0.1} style={{width: '100%'}}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="pidsLimit"
-              label={t('ai.runtime.field.pids', 'PID 上限')}
-              rules={[{required: true}]}
-            >
-              <InputNumber min={1} max={4096} precision={0} style={{width: '100%'}}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item name="minReplicas" label={t('ai.runtime.field.minReplicas', '最小副本')}>
-              <InputNumber min={0} max={256} precision={0} style={{width: '100%'}}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item name="maxReplicas" label={t('ai.runtime.field.maxReplicas', '最大副本')}>
-              <InputNumber min={1} max={256} precision={0} style={{width: '100%'}}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item name="desiredReplicas" label={t('ai.runtime.field.desiredReplicas', '目标副本')}>
-              <InputNumber min={0} max={256} precision={0} style={{width: '100%'}}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item name="activationReplicas" label={t('ai.runtime.field.activationReplicas', '激活副本')}>
-              <InputNumber min={1} max={256} precision={0} style={{width: '100%'}}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item name="prewarmNodes" label={t('ai.runtime.field.prewarmNodes', '预热节点')}>
-              <InputNumber min={0} max={256} precision={0} style={{width: '100%'}}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="idleTimeoutSeconds"
-              label={t('ai.runtime.field.idleTimeout', '空闲回收（秒）')}
-              extra={t('ai.runtime.idleTimeout.help', '0 表示不按空闲时间回收。')}
-            >
-              <InputNumber min={0} max={86400} precision={0} style={{width: '100%'}}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="replicaLifetimeSeconds"
-              label={t('ai.runtime.field.replicaLifetime', '副本寿命（秒）')}
-            >
-              <InputNumber min={60} max={86400} precision={0} style={{width: '100%'}}/>
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={16}>
-            <Form.Item
-              name="secretIds"
-              label={t('ai.runtime.field.secrets', 'Runtime Secrets')}
-            >
-              <EntitySelect endpoint={secretsUrl} filters={enabledSecretFilters} multiple maxCount={16}/>
-            </Form.Item>
-          </Col>
-          {networkMode === 'egress' && (
-            <Col span={24}>
-              <Form.Item
-                name="egressAllowlist"
-                label={t('ai.runtime.field.egressAllowlist', '出口域名白名单')}
-                rules={[{required: true}]}
-                extra={t(
-                  'ai.runtime.egress.help',
-                  '使用换行、空格或逗号分隔域名；支持 *.example.com。',
-                )}
-              >
-                <Input.TextArea autoSize={{minRows: 3, maxRows: 8}}/>
-              </Form.Item>
-            </Col>
-          )}
-        </Row>
-      </Form>
+<SForm ref={form} hideSubmit schema={schema} formData={formData} disabled={submitting || !!pool && !canEditPool(pool)}
+        uiSchema={{code: {'ui:readonly': Boolean(pool)}, ...(fixedServer ? {serverId: {'ui:readonly': true}} : {})}}
+        onChange={({formData}) => {if (!submittingRef.current) setFormData(formData ?? {});}}
+        onSubmit={({formData}) => void submit(formData as RuntimePoolFormValues)}/>
     </Modal>
   );
 };

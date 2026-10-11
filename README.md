@@ -47,6 +47,8 @@
 | `simplepoint-service-auditing` | 见服务配置 | 审计日志、限流规则、运维相关能力 |
 | `simplepoint-service-dna` | 见服务配置 | 数据接入、JDBC 驱动、方言与 DNA 相关能力 |
 | `simplepoint-service-ai` | `2888` | AI 模型接入、独立知识库、pgvector 混合检索与 AI 工作台 remote |
+| `simplepoint-service-app` | `2999` | 应用工作台 remote；承载应用与表单编排边界 |
+| `simplepoint-service-workflow` | `2666` | 独立流程中心、Flowable 执行引擎、任务/事项与流程微前端 |
 | `simplepoint-service-mcp-gateway` | `2890`（内部） | 独立 MCP 协议终止、远程 Server 连接与工具调用 |
 | `simplepoint-service-tool-runtime-node` | `2891`（内部） | 独立 Go OCI MCP Server 节点运行时与容器沙箱 |
 | `simplepoint-service-tool-egress-proxy` | `2892`（内部） | 独立的工作负载出站域名策略代理 |

@@ -27,6 +27,14 @@ Java code should follow conventional package naming under each module's `src/mai
 
 Frontend code uses TypeScript and React. Prefer `PascalCase` for components, `camelCase` for functions/hooks, and colocate feature-specific files inside the owning app or library. Use 2-space indentation for TypeScript/TSX and keep shared logic in `libs/*` instead of duplicating it across apps.
 
+## Mandatory Platform UI Standards
+All new features and changes to existing features must use the platform UI component and interaction contracts wherever they cover the requirement. Do not use native Ant Design table, button, form, picker, or pagination components in business pages to recreate behavior already provided by a platform component.
+
+- Use `SimpleTable` for resource CRUD list pages with a server `/schema`, server pagination and query contract, and permission-filtered buttons. Keep the list, filters, sorting, selection, refresh, and standard create/edit actions in its controller. Use `DataTable` for feature-specific, composite, or in-memory tables that do not have a resource CRUD contract; do not use raw Ant Design `Table` for these pages.
+- Define resource CRUD actions in the server schema. For composite pages without that contract, derive action descriptors from server permissions or capabilities. Render list toolbar, record, and detail actions through `SimpleTable` or the shared `TableActions` renderer. Do not hand-code native Ant Design `Button` controls for actions that the platform action renderer supports. Keep action permission checks on the server.
+- Use shared platform form and selection controls, such as `SForm` and `EntitySelect`, when their behavior matches the field. A native Ant Design control is allowed only when no platform component covers the interaction, such as a specialized editor or a dialog's confirmation controls. Document the reason in code when the exception is not obvious.
+- When adding or reviewing a feature, check the existing platform components in `simplepoint-react/libs/components` first. Do not add a parallel local table, action toolbar, or selection implementation for behavior the platform already owns.
+
 ## Testing Guidelines
 Run backend tests with `./gradlew test`. Place Java tests in the matching module test tree, mirroring production package names, and name test classes with a `*Test` suffix.
 

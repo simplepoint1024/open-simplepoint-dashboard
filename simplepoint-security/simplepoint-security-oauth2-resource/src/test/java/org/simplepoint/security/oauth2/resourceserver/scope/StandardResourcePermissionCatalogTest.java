@@ -46,10 +46,17 @@ class StandardResourcePermissionCatalogTest {
     var request = new org.springframework.mock.web.MockHttpServletRequest();
     var response = new org.springframework.mock.web.MockHttpServletResponse();
     var handler = new HandlerMethod(controller, "schema");
+    var context = new org.simplepoint.core.AuthorizationContext();
+    context.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT);
+    context.setResources(Set.of("example.orders.view"));
+    org.simplepoint.core.RequestContextHolder.setContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     try {
       assertThat(interceptor.preHandle(request, response, handler)).isTrue();
       assertThat(ResourcePolicyContext.get()).isEqualTo("example.orders.view");
-    } finally { interceptor.afterCompletion(request, response, handler, null); }
+    } finally {
+      interceptor.afterCompletion(request, response, handler, null);
+      org.simplepoint.core.RequestContextHolder.clearContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+    }
     assertThat(ResourcePolicyContext.get()).isNull();
   }
 }

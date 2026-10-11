@@ -21,6 +21,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.simplepoint.api.security.generator.JsonSchemaGenerator;
@@ -167,6 +168,18 @@ class DnaTableQueryHttpTest {
     context.setUserId("user-a");
     context.setDataScopeType(scope);
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+  }
+
+  @Test
+  void auditDashboardDateFilterAndSortUseThePublishedContract() throws Exception {
+    setup(new Endpoint("federation", "FederationQueryAudit", "catalogCode"));
+    mvc.perform(get(path)
+            .param("executedAt", "between:2026-09-19T00:00:00Z,2026-09-19T23:59:59.999999999Z")
+            .param("page", "0").param("size", "1")
+            .param("sort", "executedAt,desc")
+            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(3));
   }
 
   @ParameterizedTest

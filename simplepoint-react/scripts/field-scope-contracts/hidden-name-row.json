@@ -1,0 +1,11 @@
+{
+  "id": "own-policy",
+  "description": "真实配置提交",
+  "entries": [
+    {
+      "access": "MASKED",
+      "field": "name",
+      "resource": "org.simplepoint.remote.Person"
+    }
+  ]
+}

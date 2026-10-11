@@ -7,6 +7,7 @@ import org.simplepoint.api.base.BaseService;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationJdbcConnectionUser;
 import org.simplepoint.plugin.dna.federation.api.pojo.dto.FederationJdbcUserDataSourceAssignDto;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcUserDataSourceItemVo;
+import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcUserOptionVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -42,6 +43,19 @@ public interface FederationJdbcConnectionUserService extends BaseService<Federat
    * @return paged datasource items
    */
   Page<FederationJdbcUserDataSourceItemVo> dataSourceItems(Map<String, String> attributes, Pageable pageable);
+
+  /** Schema for the bounded, credential-free candidate projection. */
+  Object dataSourceItemsSchema();
+
+  /** Independently pages one user's enabled grants under the grant's data-scope policy. */
+  Page<FederationJdbcConnectionUser> assignedDataSources(
+      String userId, Map<String, String> attributes, Pageable pageable);
+
+  /** Updates only operation permissions, after row and field guards, without rewriting grant metadata. */
+  FederationJdbcConnectionUser updateOperationPermissions(String grantId, java.util.Set<String> permissions);
+
+  /** Searches enabled system users by email or phone prefix when adding JDBC access. */
+  Page<FederationJdbcUserOptionVo> searchUserOptions(String keyword, Pageable pageable);
 
   /**
    * Returns datasource items for the supplied ids.

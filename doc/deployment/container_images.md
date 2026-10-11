@@ -13,6 +13,8 @@
 | `auditing` | `somesimpled/open-simplepoint-auditing:local` |
 | `dna` | `somesimpled/open-simplepoint-dna:local` |
 | `ai` | `somesimpled/open-simplepoint-ai:local` |
+| `app` | `somesimpled/open-simplepoint-app:local` |
+| `workflow` | `somesimpled/open-simplepoint-workflow:local` |
 | `mcp-gateway` | `somesimpled/open-simplepoint-mcp-gateway:local` |
 | `tool-egress-proxy` | `somesimpled/open-simplepoint-tool-egress-proxy:local` |
 | `tool-image-verifier` | `somesimpled/open-simplepoint-tool-image-verifier:local` |
@@ -34,6 +36,8 @@ simplepoint-services/simplepoint-service-common/Dockerfile
 simplepoint-services/simplepoint-service-auditing/Dockerfile
 simplepoint-services/simplepoint-service-dna/Dockerfile
 simplepoint-services/simplepoint-service-ai/Dockerfile
+simplepoint-services/simplepoint-service-app/Dockerfile
+simplepoint-services/simplepoint-service-workflow/Dockerfile
 simplepoint-services/simplepoint-service-mcp-gateway/Dockerfile
 simplepoint-services/simplepoint-service-tool-egress-proxy/Dockerfile
 simplepoint-services/simplepoint-service-tool-image-verifier/Dockerfile

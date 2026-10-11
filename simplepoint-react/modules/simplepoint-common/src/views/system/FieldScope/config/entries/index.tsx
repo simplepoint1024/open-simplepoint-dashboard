@@ -1,103 +1,137 @@
-import {Alert, Button, Empty, Select, Space, Table, Tag, Typography, type SelectProps} from 'antd';
-import {DeleteOutlined, PlusOutlined, ReloadOutlined} from '@simplepoint/shared/types/icon';
-import {useEffect, useMemo, useState} from 'react';
-import {fetchFieldPageCatalog, type FieldScopeEntryDto} from '@/api/system/field-scope';
+import {Alert, Button, Empty, Pagination, Radio, Space, Spin, Typography} from 'antd';
+import Table from '@simplepoint/components/DataTable';
+import {DownOutlined, RightOutlined, FolderOutlined, FileOutlined, createIcon} from '@simplepoint/shared/types/icon';
+import TableActions from '@simplepoint/components/Table/Actions';
+import {useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {fetchFieldResourceNodes, fetchPageFields, type FieldResourceNode, type FieldScopeEntryDto} from '@/api/system/field-scope';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {useData} from '@simplepoint/shared/api/methods';
+import {permissionLabels, accessTypes} from '@simplepoint/shared/i18n/permissionLabels';
+import {useOwnedData} from '@simplepoint/shared/hooks/useOwnedData';
+import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
+import {usePageActive} from '@simplepoint/shared/page/hooks';
+import './index.css';
 
-const ACCESS = ['EDITABLE', 'VISIBLE', 'MASKED', 'HIDDEN'];
 const keyOf = (entry: Pick<FieldScopeEntryDto, 'resource' | 'field'>) => `${entry.resource}#${entry.field}`;
 const EMPTY: FieldScopeEntryDto[] = [];
 
-/** Controlled editor shared by creation, editing and the registered configuration action. */
-export default function FieldEntries({value = EMPTY, onChange, disabled, onPendingChange}: {
-  value?: FieldScopeEntryDto[]; onChange?: (entries: FieldScopeEntryDto[]) => void; disabled?: boolean;
-  onPendingChange?: (pending: boolean) => void;
+// Compact hierarchy navigation owns a counted 15-node page per branch; TreeTable is a data grid, not this sidebar.
+// These controls only navigate locally. Rule writes and retries remain platform TableActions/SForm operations.
+function ResourceBranch({parentId, selected, choose, disabled, canInteract, depth = 0}: {
+  parentId?: string; selected?: string; choose: (node: FieldResourceNode) => void; disabled?: boolean; canInteract: () => boolean; depth?: number;
 }) {
   const {t, ensure, locale} = useI18n();
-  const [page, setPage] = useState<string>();
-  const [selected, setSelected] = useState<string[]>([]);
-  const [access, setAccess] = useState('VISIBLE');
-  const {data: catalog, isFetching, error, refetch} = useData(['fieldScopePageCatalog'], fetchFieldPageCatalog, {staleTime: 30_000});
-  const label = (text: string, fallback: string) => text?.startsWith('i18n:') ? t(text.slice(5), fallback) : text || fallback;
-  const accessOptions = ACCESS.map(value => ({value, label: t(`field-scopes.title.entry.access.${value}`, value)}));
-  const metadata = useMemo(() => {
-    const fields = new Map<string, {title: string; model: string; pages: string[]}>();
-    Object.entries(catalog ?? {}).forEach(([code, page]) => page.models.forEach(model =>
-      Object.entries(model.properties).forEach(([field, property]) => {
-        const key = keyOf({resource: model.model, field});
-        const item = fields.get(key) ?? {title: property.title, model: model.model, pages: []};
-        item.pages.push(code); fields.set(key, item);
-      })));
-    return fields;
-  }, [catalog]);
+  const [page, setPage] = useState(1), pageRef = useRef(page); pageRef.current = page;
+  const operation = useOperationScope(JSON.stringify([parentId, page])), active = usePageActive();
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const query = useOwnedData(['field-resource-tree', parentId, page], ({signal}) => fetchFieldResourceNodes(parentId, page - 1, signal),
+    {enabled: !disabled, staleTime: 30_000, retry: false});
+  const labels = useMemo(() => permissionLabels(t), [t]);
+  const current = () => !disabled && active && operation.current() && operation.isSelected() && pageRef.current === page && canInteract();
+  const expand = (id: string) => {
+    if (!current()) return;
+    setExpanded(previous => {const next = new Set(previous); next.has(id) ? next.delete(id) : next.add(id); return next;});
+  };
   useEffect(() => {
-    const titles = [
-      ...Object.values(catalog ?? {}).map(item => item.title),
-      ...(catalog?.[page ?? '']?.models ?? []).flatMap(model => Object.values(model.properties).map(field => field.title)),
-      ...value.map(entry => metadata.get(keyOf(entry))?.title ?? ''),
-    ];
-    const namespaces = [...new Set(titles.filter(title => title.startsWith('i18n:')).map(title => title.slice(5).split('.')[0]))];
-    if (namespaces.length) void ensure(namespaces);
-  }, [catalog, page, value, metadata, ensure, locale]);
-  const configured = useMemo(() => new Set(value.map(keyOf)), [value]);
-  const pageOptions = Object.entries(catalog ?? {}).map(([code, item]) => ({value: code, label: `${label(item.title, code)} · ${code}`}));
-  const modelOptions = (catalog?.[page ?? '']?.models ?? []).map(model => ({
-    label: model.model.split('.').pop(),
-    options: Object.entries(model.properties).map(([field, property]) => ({
-      value: keyOf({resource: model.model, field}), label: `${label(property.title, field)} · ${field}`,
-      disabled: configured.has(keyOf({resource: model.model, field})),
-    })),
-  }));
-  const fieldOptions: SelectProps['options'] = modelOptions.length === 1 ? modelOptions[0].options : modelOptions;
-  const missing = !error && !!catalog && value.some(entry => !metadata.has(keyOf(entry)));
-  return <div style={{display: 'grid', gap: 12, minWidth: 0}}>
-    <Typography.Text type="secondary">{t('field-scopes.editor.hint', '选择页面资源后批量添加字段；未配置的字段沿用原有权限。规则保存后仍需在角色资源配置中绑定。')}</Typography.Text>
-    {error && <Alert type="error" title={t('field-scopes.message.catalogFailed', '字段目录加载失败，请刷新后重试')}
-      action={<Button icon={<ReloadOutlined />} onClick={() => void refetch()}>{t('table.retry', '重试')}</Button>} />}
-    {missing && <Alert type="warning" title={t('field-scopes.editor.unavailable', '部分已有字段的元数据当前不可用，配置会保留；可以移除，但不能修改其访问级别。')} />}
-    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12}}>
-      <Select aria-label={t('field-scopes.editor.resource', '页面资源')} showSearch optionFilterProp="label"
-        placeholder={t('field-scopes.editor.resource', '页面资源')} value={page} options={pageOptions}
-        loading={isFetching} disabled={disabled || !!error} onChange={code => {setPage(code); setSelected([]); onPendingChange?.(false);}} />
-      <Select aria-label={t('field-scopes.editor.fields', '选择字段')} mode="multiple" showSearch optionFilterProp="label"
-        placeholder={t('field-scopes.editor.fields', '选择字段')} value={selected} options={fieldOptions}
-        maxTagCount="responsive" disabled={disabled || !page || !!error}
-        onChange={keys => {setSelected(keys); onPendingChange?.(keys.length > 0);}} />
-      <Space.Compact style={{width: '100%'}}>
-        <Select aria-label={t('field-scopes.title.entry.access', '访问级别')} value={access} options={accessOptions}
-          style={{flex: 1}} disabled={disabled} onChange={setAccess} />
-        <Button icon={<PlusOutlined />} disabled={disabled || !!error || !selected.length || value.length + selected.length > 500}
-          onClick={() => {
-            const added = selected.filter(key => !configured.has(key)).map(key => {
-              const index = key.lastIndexOf('#'); return {resource: key.slice(0, index), field: key.slice(index + 1), access};
-            });
-            onChange?.([...value, ...added]); setSelected([]); onPendingChange?.(false);
-          }}>{t('field-scopes.editor.addFields', '添加字段')}</Button>
-      </Space.Compact>
-    </div>
-    {!!selected.length && <Typography.Text type="secondary">{t('field-scopes.editor.pending', '请点击“添加字段”，或清空已选字段后保存。')}</Typography.Text>}
-    {!isFetching && catalog && !pageOptions.length && <Empty description={t('field-scopes.editor.empty', '当前没有已授权且支持字段权限的页面资源')} />}
-    <Table size="small" rowKey={keyOf} dataSource={value} pagination={{pageSize: 8, showSizeChanger: false, hideOnSinglePage: true}}
-      scroll={{x: 680}} columns={[
-        {title: t('field-scopes.editor.resource', '页面资源'), width: '35%', render: (_, row) => {
-          const item = metadata.get(keyOf(row));
-          return <Space orientation="vertical" size={2}>
-            <span>{item?.pages.map(code => label(catalog![code].title, code)).join(' / ') || t('field-scopes.editor.legacy', '已有配置')}</span>
-            {(!item || item.pages.some(code => catalog![code].models.length > 1)) &&
-              <Typography.Text type="secondary">{row.resource.split('.').pop()}</Typography.Text>}
-          </Space>;
-        }},
-        {title: t('field-scopes.title.entry.field', '字段'), render: (_, row) => <Space wrap>
-          {label(metadata.get(keyOf(row))?.title ?? '', row.field)}<Tag>{row.field}</Tag>
-        </Space>},
-        {title: t('field-scopes.title.entry.access', '访问级别'), width: 150, render: (_, row) =>
-          <Select aria-label={`${row.field} ${t('field-scopes.title.entry.access', '访问级别')}`} value={row.access}
-            options={accessOptions} style={{width: '100%'}} disabled={disabled || !metadata.has(keyOf(row))}
-            onChange={access => onChange?.(value.map(entry => keyOf(entry) === keyOf(row) ? {...entry, access} : entry))} />},
-        {title: '', width: 56, render: (_, row) => <Button type="text" danger icon={<DeleteOutlined />}
-          aria-label={t('field-scopes.editor.remove', '移除字段')} disabled={disabled}
-          onClick={() => onChange?.(value.filter(entry => keyOf(entry) !== keyOf(row)))} />},
-      ]} />
+    const titles = query.data?.content.map(row => row.title) ?? [];
+    void ensure(['permissions', ...titles.filter(title => title.startsWith('i18n:')).map(title => title.slice(5).split('.')[0])]);
+  }, [query.data, ensure, locale]);
+  return <div role="group">
+    {query.error && <Alert type="error" title={t('field-scopes.message.catalogFailed', '字段目录加载失败，请刷新后重试')}
+      action={<TableActions selectedKeys={[]} selectedRows={[]}
+        buttons={[{key: 'retry', sort: 0, text: t('table.retry', '重试')}]}
+        onButtonEvents={{retry: () => {if (current()) void query.refetch({cancelRefetch: false});}}}/>} />}
+    {query.isFetching && <Spin size="small" />}
+    {query.data?.content.map(row => <div key={row.id}>
+      <div className={`field-resource-node${selected === row.id ? ' is-selected' : ''}`} style={{paddingLeft: depth * 14 + 4}}>
+        {row.hasChildren ? <Button type="text" size="small" icon={expanded.has(row.id) ? <DownOutlined /> : <RightOutlined />}
+          disabled={disabled} aria-label={t('permissions.expand', '展开或收起资源')} onClick={() => expand(row.id)} /> : <span style={{width: 24, flexShrink: 0}} />}
+        <button type="button" disabled={disabled} onClick={() => {if (current()) {if (row.pageCode) choose(row); else expand(row.id);}}}>
+          {row.icon ? createIcon(row.icon) : row.hasChildren ? <FolderOutlined /> : <FileOutlined />}
+          <span>{labels.title(row.title)}{row.pageCode && <small>{t('permissions.viewPoint', '查看权限')}</small>}</span>
+        </button>
+      </div>
+      {row.hasChildren && expanded.has(row.id) && <ResourceBranch parentId={row.id} selected={selected} choose={choose} disabled={disabled} canInteract={canInteract} depth={depth + 1} />}
+    </div>)}
+    {!!query.data && query.data.page.totalElements > 15 && <Pagination simple size="small" current={page} pageSize={15}
+      total={query.data.page.totalElements} showSizeChanger={false} disabled={disabled} onChange={next => {if (current()) {pageRef.current = next; setPage(next);}}} />}
+    {!parentId && query.data && !query.data.content.length && <Empty description={t('field-scopes.editor.empty', '当前没有已授权且支持字段权限的页面资源')} />}
+  </div>;
+}
+
+export default function FieldEntries({value = EMPTY, onChange, disabled, canInteract, basicInfo, readOnlyEntries, readOnlyAccess, allowNew = true}: {
+  value?: FieldScopeEntryDto[]; onChange?: (entries: FieldScopeEntryDto[]) => void; disabled?: boolean; basicInfo?: ReactNode;
+  canInteract: () => boolean; readOnlyEntries?: boolean; readOnlyAccess?: boolean; allowNew?: boolean;
+}) {
+  const {t, ensure, locale} = useI18n();
+  const [selected, setSelected] = useState<FieldResourceNode>(), selectedRef = useRef(selected); selectedRef.current = selected;
+  const entriesRef = useRef(value); entriesRef.current = value;
+  const operation = useOperationScope(selected?.pageCode), active = usePageActive();
+  const selectedPage = useOwnedData(['field-page-fields', selected?.pageCode], ({signal}) => fetchPageFields(selected!.pageCode!, signal),
+    {enabled: !disabled && !!selected?.pageCode, staleTime: 30_000, retry: false});
+  const labels = useMemo(() => permissionLabels(t), [t]);
+  const current = () => !disabled && active && operation.current() && operation.isSelected() && canInteract();
+  const choose = (node: FieldResourceNode) => {if (current()) {selectedRef.current = node; setSelected(node);}};
+  const container = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(360);
+  useEffect(() => {
+    if (!container.current) return;
+    const observer = new ResizeObserver(([entry]) => setHeight(Math.max(120, entry.contentRect.height - 40)));
+    observer.observe(container.current); return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    const titles = selectedPage.data?.models.flatMap(model => Object.values(model.properties).map(field => field.title)) ?? [];
+    void ensure(['permissions', ...(selected?.pageCode ? [selected.pageCode.split('.')[0]] : []),
+      ...titles.filter(title => title.startsWith('i18n:')).map(title => title.slice(5).split('.')[0])]);
+  }, [selectedPage.data, selected?.pageCode, ensure, locale]);
+  const configured = useMemo(() => new Map(value.map(entry => [keyOf(entry), entry])), [value]);
+  const rows = useMemo(() => selectedPage.data?.models.flatMap((model, group) => Object.entries(model.properties).map(([field, metadata]) => ({
+    pageCode: selected?.pageCode,
+    resource: model.model, field, title: labels.field(field, metadata, selected?.pageCode),
+    group: selectedPage.data!.models.length > 1 ? labels.model(model.model, group) : '',
+  }))) ?? [], [selectedPage.data, selected?.pageCode, labels]);
+  const options = useMemo(() => accessTypes.map(access => ({value: access, label: labels.access(access)})), [labels]);
+  const setAccess = (row: typeof rows[number], access?: string) => {
+    const previous = entriesRef.current, exists = previous.some(entry => keyOf(entry) === keyOf(row));
+    if (!current() || row.pageCode !== selectedRef.current?.pageCode || readOnlyEntries
+      || access && (readOnlyAccess || !exists && (!allowNew || previous.length >= 500))) return;
+    const next = previous.filter(entry => keyOf(entry) !== keyOf(row));
+    if (access) next.push({resource: row.resource, field: row.field, access});
+    entriesRef.current = next; onChange?.(next);
+  };
+  return <div className="field-permission-layout">
+    <aside className="field-permission-sidebar">
+      <div className="field-permission-basic">{basicInfo}</div>
+      <strong>{t('permissions.resources', '资源目录')}</strong>
+      <div className="field-permission-tree"><ResourceBranch selected={selected?.id} choose={choose} disabled={disabled} canInteract={canInteract} /></div>
+      <Typography.Text type="secondary">{t('permissions.configuredCount', '已设置 {count} 个字段', {count: value.length})}</Typography.Text>
+    </aside>
+    <section className="field-permission-fields">
+      <strong>{selected ? labels.title(selected.title) : t('field-scopes.title.entries', '字段规则')}</strong>
+      <Typography.Text type="secondary">{t('permissions.fieldHint', '选择左侧资源后设置字段权限。未选择的字段沿用原有权限；切换资源会保留当前修改。')}</Typography.Text>
+      {selectedPage.error && <Alert type="error" title={t('field-scopes.message.catalogFailed', '字段目录加载失败，请刷新后重试')}
+        action={<TableActions selectedKeys={[]} selectedRows={[]}
+          buttons={[{key: 'retry', sort: 0, text: t('table.retry', '重试')}]}
+          onButtonEvents={{retry: () => {if (current() && selectedRef.current?.pageCode === selected?.pageCode) void selectedPage.refetch({cancelRefetch: false});}}}/>} />}
+      <div className="field-permission-field-table" ref={container}>
+        {!selected ? <Empty description={t('permissions.selectResource', '请从左侧选择资源权限点')} /> :
+          <Table virtual size="small" rowKey={keyOf} dataSource={rows} loading={selectedPage.isFetching}
+            settings={false} pagination={false}
+            scroll={{x: 680, y: height}} columns={[
+              {title: t('field-scopes.title.entry.field', '字段'), width: 230, render: (_, row) => <Space orientation="vertical" size={0}>
+                {row.title}{row.group && <Typography.Text type="secondary">{row.group}</Typography.Text>}
+              </Space>},
+              {title: t('field-scopes.title.entry.access', '访问级别'), width: 400, render: (_, row) =>
+                <Radio.Group name={keyOf(row)} aria-label={row.title} value={configured.get(keyOf(row))?.access}
+                  disabled={disabled || readOnlyEntries || readOnlyAccess || (!configured.has(keyOf(row)) && (!allowNew || value.length >= 500))}
+                  options={options}
+                  onChange={event => setAccess(row, event.target.value)} />},
+              {title: '', width: 50, render: (_, row) => <TableActions selectedKeys={[keyOf(row)]} selectedRows={[row]}
+                buttons={[{key: 'clearField', sort: 0, type: 'text', size: 'small', icon: 'UndoOutlined', iconOnly: true,
+                  title: t('permissions.clearField', '清除字段设置'), argumentMinSize: 1, argumentMaxSize: 1}]}
+                isButtonDisabled={() => disabled || readOnlyEntries || !configured.has(keyOf(row))}
+                onButtonEvents={{clearField: () => setAccess(row)}}/>},
+            ]} />}
+      </div>
+    </section>
   </div>;
 }

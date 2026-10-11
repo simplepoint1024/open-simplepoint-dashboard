@@ -5,6 +5,7 @@ import static org.simplepoint.plugin.dna.federation.service.support.FederationSe
 import static org.simplepoint.plugin.dna.federation.service.support.FederationServiceSupport.requireValue;
 import static org.simplepoint.plugin.dna.federation.service.support.FederationServiceSupport.trimToNull;
 
+import jakarta.persistence.EntityManager;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -23,10 +24,12 @@ import org.simplepoint.plugin.dna.federation.api.pojo.dto.FederationJdbcUserData
 import org.simplepoint.plugin.dna.federation.api.repository.FederationJdbcConnectionUserRepository;
 import org.simplepoint.plugin.dna.federation.api.service.FederationJdbcConnectionUserService;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcUserDataSourceItemVo;
+import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcUserOptionVo;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.security.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +48,8 @@ public class FederationJdbcConnectionUserServiceImpl
 
   private final UsersService usersService;
 
+  private final EntityManager entityManager;
+
   /**
    * Creates a JDBC connection-user service implementation.
    *
@@ -57,12 +62,14 @@ public class FederationJdbcConnectionUserServiceImpl
       final FederationJdbcConnectionUserRepository repository,
       final DetailsProviderService detailsProviderService,
       final JdbcDataSourceDefinitionService dataSourceService,
-      final UsersService usersService
+      final UsersService usersService,
+      final EntityManager entityManager
   ) {
     super(repository, detailsProviderService);
     this.repository = repository;
     this.dataSourceService = dataSourceService;
     this.usersService = usersService;
+    this.entityManager = entityManager;
   }
 
   @Override
@@ -97,24 +104,110 @@ public class FederationJdbcConnectionUserServiceImpl
       final Map<String, String> attributes,
       final Pageable pageable
   ) {
-    String keyword = trimToNull(attributes == null ? null : attributes.get("keyword"));
-    Set<String> excludedDataSourceIds = resolveExcludedDataSourceIds(attributes);
-    List<FederationJdbcUserDataSourceItemVo> items = dataSourceService.limit(
-            Map.of("enabled", "equals:true"),
-            Pageable.unpaged()
-        )
-        .getContent()
-        .stream()
-        .filter(dataSource -> dataSource != null && !excludedDataSourceIds.contains(dataSource.getId()))
-        .map(FederationJdbcConnectionUserServiceImpl::toDataSourceItem)
-        .filter(item -> matchesKeyword(item, keyword))
-        .toList();
-    if (pageable == null || pageable.isUnpaged()) {
-      return new PageImpl<>(items);
+    var filters = new LinkedHashMap<String, String>();
+    if (attributes != null) filters.putAll(attributes);
+    String userId = trimToNull(filters.remove("userId"));
+    filters.remove("selected");
+    String keyword = trimToNull(filters.remove("keyword"));
+    if (keyword != null) {
+      // Keep the former keyword API, but execute its OR before the SQL count/limit. Header filters
+      // remain independent AND predicates. Values are JSON literals, not interpolated JPQL.
+      var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+      var terms = mapper.createArrayNode();
+      List.of("code", "name", "databaseProductName").forEach(field ->
+          terms.add(mapper.createObjectNode().put("op", "like").put("field", field).put("value", keyword)));
+      var where = mapper.createObjectNode().put("op", "or").set("children", terms);
+      if (filters.containsKey(org.simplepoint.core.query.QueryDocument.PARAMETER)) {
+        String existing = filters.get(org.simplepoint.core.query.QueryDocument.PARAMETER);
+        org.simplepoint.core.query.QueryDocument.parse(existing);
+        try {
+          where = mapper.createObjectNode().put("op", "and").set("children",
+              mapper.createArrayNode().add(where).add(mapper.readTree(existing).get("where")));
+        } catch (com.fasterxml.jackson.core.JsonProcessingException error) {
+          throw new org.simplepoint.core.query.InvalidQueryException("无效的结构化查询");
+        }
+      }
+      filters.put(org.simplepoint.core.query.QueryDocument.PARAMETER,
+          mapper.valueToTree(Map.of("version", 1, "where", where)).toString());
     }
-    int fromIndex = Math.toIntExact(Math.min(pageable.getOffset(), items.size()));
-    int toIndex = Math.min(fromIndex + pageable.getPageSize(), items.size());
-    return new PageImpl<>(items.subList(fromIndex, toIndex), pageable, items.size());
+    Pageable bounded = pageable == null || pageable.isUnpaged() ? PageRequest.of(0, 20) : pageable;
+    org.simplepoint.core.query.ProjectionQueries.validate(FederationJdbcUserDataSourceItemVo.class,
+        filters, bounded);
+    return dataSourceService.assignmentCandidates(filters, userId, bounded)
+        .map(FederationJdbcConnectionUserServiceImpl::toDataSourceItem);
+  }
+
+  @Override
+  public Object dataSourceItemsSchema() {
+    return getTableSchemaProvider().schema(FederationJdbcUserDataSourceItemVo.class, getAuthorizationContext());
+  }
+
+  @Override
+  public Page<FederationJdbcConnectionUser> assignedDataSources(
+      String userId, Map<String, String> attributes, Pageable pageable) {
+    var user = requireActiveUser(userId);
+    var filters = new LinkedHashMap<String, String>();
+    if (attributes != null) filters.putAll(attributes);
+    filters.remove("userId");
+    filters.remove("selected");
+    Pageable bounded = pageable == null || pageable.isUnpaged() ? PageRequest.of(0, 20) : pageable;
+    return limitScoped(filters, Map.of("userId", "equals:" + user.getId(), "enabled", "equals:true"), bounded);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public FederationJdbcConnectionUser updateOperationPermissions(String grantId, Set<String> permissions) {
+    if (!org.simplepoint.core.jackson.FieldPermissionPolicy.writable(getAuthorizationContext(),
+        FederationJdbcConnectionUser.class, "operationPermissions")) {
+      throw new org.springframework.security.access.AccessDeniedException("当前字段权限不允许修改操作权限");
+    }
+    if (permissions == null || permissions.size() > FederationJdbcOperation.values().length) {
+      throw new IllegalArgumentException("JDBC 操作权限集合无效");
+    }
+    var current = repository.findByIdAndDeletedAtIsNull(requireValue(grantId, "授权ID不能为空"))
+        .orElseThrow(() -> new IllegalArgumentException("授权记录不存在"));
+    assertAccessible(current);
+    var normalized = resolveOperationPermissions(permissions, current);
+    var changed = new FederationJdbcConnectionUser();
+    org.springframework.beans.BeanUtils.copyProperties(current, changed);
+    changed.setOperationPermissions(normalized);
+    changed.setUpdatedAt(java.time.Instant.now());
+    applyModificationAuditContext(changed);
+    getModifyDataAuditingServices().forEach(auditing ->
+        auditing.modify(current, changed, FederationJdbcConnectionUser.class));
+    if (repository.updateOperationPermissions(current.getId(), normalized,
+        changed.getUpdatedAt(), changed.getUpdatedBy()) != 1) {
+      throw new IllegalArgumentException("授权记录已删除，请刷新后重试");
+    }
+    // The bulk update clears the persistence context. The detached snapshot contains only the
+    // authorized field change and is serialized under the existing field policy.
+    return changed;
+  }
+
+  @Override
+  public Page<FederationJdbcUserOptionVo> searchUserOptions(final String keyword, final Pageable pageable) {
+    Pageable bounded = pageable == null || pageable.isUnpaged()
+        ? PageRequest.of(0, 20)
+        : PageRequest.of(Math.min(pageable.getPageNumber(), Integer.MAX_VALUE / Math.min(pageable.getPageSize(), 50)),
+            Math.min(pageable.getPageSize(), 50));
+    String search = trimToNull(keyword);
+    if (search == null || search.length() < 3) {
+      return Page.empty(bounded);
+    }
+    String pattern = search.toLowerCase(Locale.ROOT)
+        .replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+    String condition = "u.deletedAt is null and u.enabled = true and "
+        + "(lower(u.email) like :pattern escape '!' or u.phoneNumber like :pattern escape '!')";
+    var query = entityManager.createQuery("select new " + FederationJdbcUserOptionVo.class.getName()
+        + "(u.id, coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id), u.email, u.phoneNumber) "
+        + "from User u where " + condition
+        + " order by coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id), u.id",
+        FederationJdbcUserOptionVo.class);
+    var count = entityManager.createQuery("select count(u) from User u where " + condition, Long.class);
+    query.setParameter("pattern", pattern);
+    count.setParameter("pattern", pattern);
+    return new PageImpl<>(query.setFirstResult((int) bounded.getOffset())
+        .setMaxResults(bounded.getPageSize()).getResultList(), bounded, count.getSingleResult());
   }
 
   @Override
@@ -160,6 +253,7 @@ public class FederationJdbcConnectionUserServiceImpl
       Optional<FederationJdbcConnectionUser> existing = repository.findByCatalogIdAndUserIdAndDeletedAtIsNull(dataSourceId, user.getId());
       if (existing.isPresent()) {
         FederationJdbcConnectionUser current = existing.get();
+        assertAccessible(current);
         if (Boolean.TRUE.equals(current.getEnabled())) {
           grants.add(current);
           continue;
@@ -326,36 +420,14 @@ public class FederationJdbcConnectionUserServiceImpl
     if (dataSourceIds == null || dataSourceIds.isEmpty()) {
       return Set.of();
     }
+    if (dataSourceIds.size() > 100 || dataSourceIds.stream()
+        .anyMatch(value -> value == null || value.isBlank() || value.trim().length() > 64)) {
+      throw new IllegalArgumentException("每次最多处理100个有效数据源ID");
+    }
     return dataSourceIds.stream()
         .map(value -> trimToNull(value))
         .filter(value -> value != null && !value.isBlank())
         .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-  }
-
-  private Set<String> resolveExcludedDataSourceIds(final Map<String, String> attributes) {
-    String userId = trimToNull(attributes == null ? null : attributes.get("userId"));
-    if (userId == null) {
-      return Set.of();
-    }
-    return repository.findAllByUserIdAndDeletedAtIsNull(userId).stream()
-        .filter(grant -> Boolean.TRUE.equals(grant.getEnabled()))
-        .map(FederationJdbcConnectionUser::getCatalogId)
-        .filter(value -> value != null && !value.isBlank())
-        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-  }
-
-  private static boolean matchesKeyword(final FederationJdbcUserDataSourceItemVo item, final String keyword) {
-    if (keyword == null) {
-      return true;
-    }
-    String normalized = keyword.toLowerCase(Locale.ROOT);
-    return containsIgnoreCase(item.code(), normalized)
-        || containsIgnoreCase(item.name(), normalized)
-        || containsIgnoreCase(item.databaseProductName(), normalized);
-  }
-
-  private static boolean containsIgnoreCase(final String value, final String normalizedKeyword) {
-    return value != null && value.toLowerCase(Locale.ROOT).contains(normalizedKeyword);
   }
 
   private static FederationJdbcUserDataSourceItemVo toDataSourceItem(final JdbcDataSourceDefinition dataSource) {

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "referencePages": [
+    "modules/simplepoint-common/src/views/system/Role/index.tsx",
+    "modules/simplepoint-common/src/views/platform/Application/index.tsx"
+  ],
+  "requirements": [
+    "Audit every business page and feature dialog for platform table, action, form, selection and pagination contracts",
+    "Correct business actions through the shared platform renderer, retaining server permission checks",
+    "Use SimpleTable for resource CRUD and DataTable for composite projections; keep filtering and sorting honest to the query scope",
+    "Unify page layout with mature Common pages and the host-provided content frame",
+    "Separate workflow basic-information editing, process design and published version history",
+    "Open version history from the list version field and support immutable preview and historical copy/start",
+    "Use real current-tenant user and role selection in design and runtime, preserving existing persisted selections",
+    "Provide ordinary structured and advanced expression modes with lossless switching and server validation",
+    "Reserve versioned form-engine and variable-schema integration contracts for start/task/design without inert placeholder controls",
+    "Verify bounded pagination, debouncing, cancellation, tenant cache isolation, selected hydration, lazy loading and canvas lifecycle",
+    "Verify backend security and runtime behavior, frontend types/build/i18n and rendered browser interactions",
+    "Deploy the verified changes to the previously authorized current environment with backup and rollback materials"
+  ]
+}

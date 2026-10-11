@@ -37,6 +37,20 @@ import org.simplepoint.plugin.storage.api.model.ObjectStoragePlatformType;
 @AllArgsConstructor
 @Tag(name = "OSS 配置", description = "系统全局对象存储连接配置")
 @Schema(title = "OSS 配置", description = "系统全局对象存储连接配置")
+@org.simplepoint.core.annotation.ButtonDeclarations({
+  @org.simplepoint.core.annotation.ButtonDeclaration(key = "add", title = "i18n:storage.provider.add",
+      icon = "PlusCircleOutlined", sort = 0, argumentMinSize = 0, argumentMaxSize = 0,
+      authority = "storage.providers.create"),
+  @org.simplepoint.core.annotation.ButtonDeclaration(key = "edit", title = "i18n:table.button.edit",
+      icon = "EditOutlined", sort = 1, argumentMinSize = 1, argumentMaxSize = 1,
+      authority = "storage.providers.edit"),
+  @org.simplepoint.core.annotation.ButtonDeclaration(key = "delete", title = "i18n:table.button.delete",
+      icon = "MinusCircleOutlined", sort = 2, argumentMinSize = 1, argumentMaxSize = 10, danger = true,
+      authority = "storage.providers.delete"),
+  @org.simplepoint.core.annotation.ButtonDeclaration(key = "test", title = "i18n:storage.provider.test",
+      icon = "SafetyOutlined", sort = 3, argumentMinSize = 1, argumentMaxSize = 1,
+      authority = "storage.providers.test")
+})
 @org.simplepoint.core.query.TableQuery({
   @org.simplepoint.core.query.QueryField("code"),
   @org.simplepoint.core.query.QueryField("name"),

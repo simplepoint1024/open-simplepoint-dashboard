@@ -13,6 +13,9 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public interface AiKnowledgeDocumentService {
 
+  /** Public ingestion limits from the same configuration used by server validation. */
+  Map<String, Long> ingestionLimits();
+
   /** Pages active documents inside an owned knowledge base. */
   Page<AiKnowledgeDocument> limit(
       String knowledgeBaseId,

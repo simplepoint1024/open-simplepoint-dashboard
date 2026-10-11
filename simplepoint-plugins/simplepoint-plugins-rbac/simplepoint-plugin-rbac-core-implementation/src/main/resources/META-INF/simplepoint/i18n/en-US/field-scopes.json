@@ -1,4 +1,5 @@
 {
+  "field-scopes.editor.metadataOnly": "This form saves basic information only and leaves field rules unchanged.",
   "field-scopes.action.addEntry": "Add Rule",
   "field-scopes.action.saveEntries": "Save",
   "field-scopes.button.config.entries": "Configure Field Rules",

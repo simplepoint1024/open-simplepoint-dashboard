@@ -1,7 +1,8 @@
 import api from '@/api';
 import {get} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {App as AntApp, Badge, Button, Card, Col, Row, Spin, Statistic, Typography} from 'antd';
+import {App as AntApp, Badge, Card, Col, Row, Spin, Statistic, Typography} from 'antd';
+import TableActions from '@simplepoint/components/Table/Actions';
 import {useCallback, useEffect, useState} from 'react';
 import {resolveErrorMessage} from '../shared';
 
@@ -67,7 +68,9 @@ const App = () => {
       </Row>
 
       <div style={{marginBottom: 16, display: 'flex', justifyContent: 'flex-end'}}>
-        <Button type="primary" onClick={loadHealth} loading={loading}>{t('action.refresh', '刷新')}</Button>
+        <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+          {key: 'refresh', sort: 1, text: t('action.refresh', '刷新'), type: 'primary', loading},
+        ]} onButtonEvents={{refresh: loadHealth}}/>
       </div>
 
       <Row gutter={[16, 16]}>

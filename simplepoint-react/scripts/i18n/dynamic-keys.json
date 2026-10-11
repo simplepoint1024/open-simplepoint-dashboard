@@ -32,7 +32,7 @@
     {
       "file": "modules/simplepoint-ai/src/views/workbench/Catalog/index.tsx",
       "expression": "notice.key",
-      "expectedOccurrences": 2,
+      "expectedOccurrences": 1,
       "mode": "finite",
       "resolvedKeys": [
         "ai.catalog.error.syncDescriptor",
@@ -48,6 +48,8 @@
       "mode": "finite",
       "resolvedKeys": [
         "ai.catalog.error.import",
+        "ai.catalog.error.load",
+        "ai.catalog.error.syncUnknown",
         "ai.catalog.error.operationFailed",
         "ai.catalog.error.operationUnavailable",
         "ai.catalog.error.requestInvalid"
@@ -108,7 +110,7 @@
     {
       "file": "modules/simplepoint-ai/src/views/workbench/Providers/index.tsx",
       "expression": "descriptor.key",
-      "expectedOccurrences": 7,
+      "expectedOccurrences": 3,
       "mode": "finite",
       "resolvedKeys": [
         "ai.common.notTested",
@@ -159,7 +161,7 @@
     {
       "file": "modules/simplepoint-common/src/views/platform/ObjectStorage/index.tsx",
       "expression": "`storage.provider.type.${value}`",
-      "expectedOccurrences": 2,
+      "expectedOccurrences": 1,
       "mode": "finite",
       "resolvedKeys": [
         "storage.provider.type.ALIYUN_OSS",
@@ -168,18 +170,6 @@
         "storage.provider.type.QINIU_KODO",
         "storage.provider.type.S3",
         "storage.provider.type.TENCENT_COS"
-      ]
-    },
-    {
-      "file": "modules/simplepoint-common/src/views/system/FieldScope/config/entries/index.tsx",
-      "expression": "`field-scopes.title.entry.access.${value}`",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "field-scopes.title.entry.access.EDITABLE",
-        "field-scopes.title.entry.access.VISIBLE",
-        "field-scopes.title.entry.access.MASKED",
-        "field-scopes.title.entry.access.HIDDEN"
       ]
     },
     {
@@ -266,19 +256,7 @@
       ]
     },
     {
-      "file": "modules/simplepoint-dna/src/views/platform/JdbcMetadata/index.tsx",
-      "expression": "`dna.metadata.page.constraintType.${type}`",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "dna.metadata.page.constraintType.CHECK",
-        "dna.metadata.page.constraintType.FOREIGN_KEY",
-        "dna.metadata.page.constraintType.PRIMARY_KEY",
-        "dna.metadata.page.constraintType.UNIQUE"
-      ]
-    },
-    {
-      "file": "modules/simplepoint-dna/src/views/platform/JdbcMetadata/index.tsx",
+      "file": "modules/simplepoint-dna/src/views/platform/JdbcMetadata/forms.ts",
       "expression": "`dna.metadata.page.option.namespace.${type}`",
       "expectedOccurrences": 1,
       "mode": "finite",
@@ -541,18 +519,119 @@
       "reason": "Dictionary item labels are supplied by the registered tenant member user type dictionary."
     },
     {
-      "file": "libs/components/SForm/widgets/PermissionExpression.tsx",
-      "expression": "field.title.slice(5)",
+      "file": "libs/shared/i18n/permissionLabels.ts",
+      "expression": "key",
       "expectedOccurrences": 1,
       "mode": "runtime",
-      "reason": "Trusted registered field metadata supplies i18n keys; the field name remains the fallback."
+      "reason": "Trusted permission metadata supplies translated resource, model and field titles; missing labels use localized text instead of identifiers."
     },
     {
-      "file": "modules/simplepoint-common/src/views/system/FieldScope/config/entries/index.tsx",
-      "expression": "text.slice(5)",
+      "file": "libs/shared/i18n/permissionLabels.ts",
+      "expression": "`permissions.fields.${name}`",
       "expectedOccurrences": 1,
-      "mode": "runtime",
-      "reason": "Page and field titles come from trusted registered resource metadata, with readable fallbacks."
+      "mode": "finite",
+      "resolvedKeys": [
+        "permissions.fields.id",
+        "permissions.fields.name",
+        "permissions.fields.code",
+        "permissions.fields.description",
+        "permissions.fields.enabled",
+        "permissions.fields.sort",
+        "permissions.fields.type",
+        "permissions.fields.createdAt",
+        "permissions.fields.updatedAt",
+        "permissions.fields.createdBy",
+        "permissions.fields.updatedBy",
+        "permissions.fields.createOrgDeptId",
+        "permissions.fields.tenantId",
+        "permissions.fields.orgId",
+        "permissions.fields.orgName",
+        "permissions.fields.userId",
+        "permissions.fields.revision",
+        "permissions.fields.parentId",
+        "permissions.fields.email",
+        "permissions.fields.deletedAt"
+      ]
+    },
+    {
+      "file": "libs/shared/i18n/permissionLabels.ts",
+      "expression": "`permissions.scope.${value}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "permissions.scope.ALL",
+        "permissions.scope.SELF",
+        "permissions.scope.DEPT",
+        "permissions.scope.DEPT_AND_BELOW",
+        "permissions.scope.CUSTOM",
+        "permissions.scope.EXPRESSION",
+        "permissions.scope.DENY"
+      ]
+    },
+    {
+      "file": "libs/shared/i18n/permissionLabels.ts",
+      "expression": "`permissions.access.${value}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "permissions.access.EDITABLE",
+        "permissions.access.VISIBLE",
+        "permissions.access.MASKED",
+        "permissions.access.HIDDEN"
+      ]
+    },
+    {
+      "file": "libs/shared/i18n/permissionLabels.ts",
+      "expression": "`permissions.context.${value}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "permissions.context.user.id",
+        "permissions.context.tenant.id",
+        "permissions.context.user.organizationId",
+        "permissions.context.user.organizationIds"
+      ]
+    },
+    {
+      "file": "libs/shared/i18n/permissionLabels.ts",
+      "expression": "`permissions.expression.${word}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "permissions.expression.AND",
+        "permissions.expression.OR",
+        "permissions.expression.NOT",
+        "permissions.expression.IN",
+        "permissions.expression.IS",
+        "permissions.expression.NULL",
+        "permissions.expression.CONTAINS",
+        "permissions.expression.TRUE",
+        "permissions.expression.FALSE",
+        "permissions.expression.UNKNOWN"
+      ]
+    },
+    {
+      "file": "libs/components/SForm/widgets/OrgTreeMultiSelect.tsx",
+      "expression": "`organizations.type.${String(value).toLowerCase()}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "organizations.type.group",
+        "organizations.type.unit",
+        "organizations.type.department",
+        "organizations.type.team"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-workflow/src/views/Instances/index.tsx",
+      "expression": "`workflow.instance.status.${value.toLowerCase()}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "workflow.instance.status.running",
+        "workflow.instance.status.completed",
+        "workflow.instance.status.canceled"
+      ]
     }
   ]
 }

@@ -29,6 +29,14 @@ public interface JdbcMetadataBrowserService {
   JdbcMetadataModels.TableStructure structure(String dataSourceId, JdbcMetadataRequests.PathRequest request);
 
   /**
+   * Returns the compact relation catalog used by contextual SQL completion.
+   *
+   * @param dataSourceId datasource id
+   * @return completion catalog
+   */
+  JdbcMetadataModels.SqlCompletionCatalog completionCatalog(String dataSourceId);
+
+  /**
    * Returns paged table/view data preview.
    *
    * @param dataSourceId datasource id

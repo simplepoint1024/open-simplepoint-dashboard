@@ -11,6 +11,10 @@ import org.simplepoint.plugin.dna.federation.api.entity.FederationJdbcConnection
  */
 public interface FederationJdbcConnectionUserRepository extends BaseRepository<FederationJdbcConnectionUser, String> {
 
+  /** Atomic field-only update; cannot overwrite a concurrent description, user or catalog change. */
+  int updateOperationPermissions(String id, java.util.Set<String> permissions,
+      java.time.Instant updatedAt, String updatedBy);
+
   /**
    * Finds one active grant by id.
    *

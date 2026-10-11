@@ -45,9 +45,12 @@ public interface ResourceService extends BaseService<Resource, String> {
   Page<ResourceNode> assignedTree(Collection<String> codes, Map<String, String> attributes, Pageable pageable);
 
   /**
-   * Finds resources by stable codes.
+   * Finds licensed resource snapshots inside the current runtime scope, not the cross-scope authoring directory.
    */
   Collection<Resource> findAllByCodes(Collection<String> codes);
+
+  /** Authoring snapshots: platform administrators retain every scope; runtime authorization must use the explicit-scope methods. */
+  Collection<Resource> findDirectoryResourcesByCodes(Collection<String> codes);
 
   /** Returns all resources visible inside the current authorization boundary. */
   Collection<Resource> findAllAccessible();

@@ -52,6 +52,24 @@ class JdbcDataSourceDefinitionServiceImplTest {
   private DatabaseMetaData metaData;
 
   @Test
+  void assignmentCandidatesUseSqlReferenceMembershipAndFixedEnabledScope() {
+    var page = org.springframework.data.domain.PageRequest.of(25, 20);
+    var filters = java.util.Map.of("name", "like:late");
+    var reference = new org.simplepoint.api.base.QueryReferenceMembership("id", "FederationJdbcConnectionUser",
+        "catalogId", java.util.Map.of("userId", "user-1", "enabled", true), false);
+    when(repository.getDomainClass()).thenReturn(JdbcDataSourceDefinition.class);
+    when(repository.limitReferencedScoped(org.mockito.ArgumentMatchers.eq(filters),
+        org.mockito.ArgumentMatchers.eq(java.util.Map.of("enabled", "equals:true", "deletedAt", "is:null")),
+        org.mockito.ArgumentMatchers.eq(List.of(reference)), org.mockito.ArgumentMatchers.eq(page)))
+        .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(), page, 521));
+    var service = new JdbcDataSourceDefinitionServiceImpl(repository, detailsProviderService,
+        driverRepository, artifactManager, List.of(), List.of());
+    assertEquals(521, service.assignmentCandidates(filters, "user-1", page).getTotalElements());
+    verify(repository, never()).findAll(any());
+    verify(repository, never()).limit(any(), any());
+  }
+
+  @Test
   void createShouldRejectJdbcUrlThatDoesNotMatchDriverPattern() {
     JdbcDriverDefinition driver = new JdbcDriverDefinition();
     driver.setId("driver-1");

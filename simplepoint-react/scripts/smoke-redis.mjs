@@ -6,7 +6,7 @@ export async function smokeRedis({clickMenu, clickReady, clickText, fill, poll, 
   const row = index => `${panel} tr[data-row-key="Item${String(index).padStart(3, '0')}"]`;
   const dropdown = '.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown';
   const drawer = '.sp-query-drawer';
-  const modal = '.ant-modal:not([style*="display: none"])';
+  let modal = '.redis-entry-details:not([style*="display: none"]) .ant-modal';
   fixture.snapshots.status('BUILDING');
   await clickMenu('Redis 查询测试');
   await poll(() => evaluate(`!!document.querySelector('${panel} [data-scan-status="BUILDING"]')`), 'Redis scan in progress');
@@ -85,6 +85,7 @@ export async function smokeRedis({clickMenu, clickReady, clickText, fill, poll, 
   await poll(() => evaluate(`document.querySelector('${modal} textarea')?.value==='AP8B'`), 'Redis binary preview');
   assert.equal(await evaluate(`document.querySelector('${modal}')?.textContent.includes('Base64')`), true, 'binary preview is explicitly identified, never silently decoded');
   await clickReady(`${modal} .ant-modal-close`);
+  modal = '.redis-entry-editor:not([style*="display: none"]) .ant-modal';
   for (const override of [{value: '***'}, {value: 'preview only', truncated: true}, {key: 'wrong-neighbour'}]) {
     fixture.detail(override);
     await clickText(`${row(0)} button`, '编辑');
@@ -97,8 +98,8 @@ export async function smokeRedis({clickMenu, clickReady, clickText, fill, poll, 
   await poll(() => evaluate(`document.querySelector('${modal} textarea')?.value==='full value'`), 'Redis full-value editor');
   await fill(`${modal} textarea`, 'unsaved draft');
   await clickText(`${modal} .ant-modal-footer button`, '取消');
-  await poll(() => evaluate(`!!document.querySelector('.ant-modal-confirm')`), 'Redis discard confirmation');
-  await clickText('.ant-modal-confirm button', '放弃');
+  await poll(() => evaluate(`!!document.querySelector('.redis-discard-draft .ant-modal')`), 'Redis discard confirmation');
+  await clickText('.redis-discard-draft button', '放弃');
   await poll(() => evaluate(`!document.querySelector('${modal} textarea')`), 'Redis draft discarded without writes');
   const beforeScope = fixture.requests.length;
   await fill(`${panel} #redis-scan-pattern`, 'Item51*');

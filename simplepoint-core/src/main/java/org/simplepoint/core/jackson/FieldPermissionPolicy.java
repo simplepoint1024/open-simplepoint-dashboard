@@ -11,6 +11,14 @@ import org.simplepoint.core.annotation.PermissionResource;
 public final class FieldPermissionPolicy {
   private FieldPermissionPolicy() {}
 
+  /** Platform contracts identify extension models independently of their Java package. */
+  public static boolean supports(Class<?> type) {
+    return type.getPackageName().startsWith("org.simplepoint.")
+        || org.simplepoint.api.base.BaseEntity.class.isAssignableFrom(type)
+        || type.isAnnotationPresent(org.simplepoint.core.permission.PermissionModel.class)
+        || type.isAnnotationPresent(PermissionResource.class);
+  }
+
   /** Resolves proxies and projection aliases to the permission-owning entity. */
   public static Class<?> resourceType(Class<?> type) {
     while (org.hibernate.proxy.HibernateProxy.class.isAssignableFrom(type)
@@ -41,7 +49,8 @@ public final class FieldPermissionPolicy {
     String legacy = permissions.get(resource.getSimpleName() + "#" + field);
     // An existing restrictive legacy policy must not be weakened by a second alias.
     String result = rank(canonical) >= rank(legacy) ? canonical : legacy;
-    for (Class<?> current = resource; current != null && current != Object.class; current = current.getSuperclass()) {
+    // A class alias governs ordinary fields, but derived-field annotations still belong to the original DTO.
+    for (Class<?> current = type; current != null && current != Object.class; current = current.getSuperclass()) {
       try {
         var projection = current.getDeclaredField(field)
             .getAnnotation(org.simplepoint.core.annotation.PermissionFields.class);
@@ -113,6 +122,13 @@ public final class FieldPermissionPolicy {
     return access == null || "EDITABLE".equals(access);
   }
 
+  /** Validates user-supplied input before converting it to another stored field (e.g. encryption). */
+  public static void requireWritable(Class<?> type, String field) {
+    if (!writable(type, field)) {
+      throw new org.springframework.security.access.AccessDeniedException("当前字段权限不允许修改该内容");
+    }
+  }
+
   /** Raw maps have no domain identity; query/projection adapters must call this explicitly. */
   public static Map<String, Object> project(Class<?> resource, Map<String, ?> values) {
     Map<String, Object> result = new LinkedHashMap<>();
@@ -153,6 +169,7 @@ public final class FieldPermissionPolicy {
         }
         if ("MASKED".equals(access)) {
           definition.remove(java.util.List.of("default", "examples", "example", "enum", "const"));
+          if (definition.has("x-decimal")) definition.put("pattern", "^\\*+$");
         }
       }
     }

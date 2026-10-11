@@ -1,0 +1,9 @@
+{
+  "expression": "name = \"可见组织\"",
+  "ast": {
+    "op": "equals",
+    "field": "name",
+    "value": "可见组织",
+    "children": []
+  }
+}

@@ -176,6 +176,54 @@ public final class JdbcMetadataModels {
   }
 
   /**
+   * Relation entry used to build an SQL editor completion catalog.
+   *
+   * @param path fully qualified metadata path
+   * @param type relation type
+   * @param remarks database remarks/comment
+   */
+  public record SqlCompletionRelation(
+      List<PathSegment> path,
+      NodeType type,
+      String remarks
+  ) {
+
+    /** Creates an immutable relation entry. */
+    public SqlCompletionRelation {
+      path = path == null ? List.of() : List.copyOf(path);
+    }
+  }
+
+  /**
+   * Compact datasource catalog used by contextual SQL completion.
+   *
+   * <p>Columns stay on the existing structure endpoint and are loaded only when an editor
+   * needs a relation's fields. This keeps the catalog useful for large databases without
+   * returning every column up front.</p>
+   *
+   * @param dialectCode resolved dialect code
+   * @param dialectName resolved dialect name
+   * @param identifierQuote identifier quote string reported by the database
+   * @param currentCatalog connection's current catalog/database
+   * @param currentSchema connection's current schema
+   * @param relations visible tables and views
+   */
+  public record SqlCompletionCatalog(
+      String dialectCode,
+      String dialectName,
+      String identifierQuote,
+      String currentCatalog,
+      String currentSchema,
+      List<SqlCompletionRelation> relations
+  ) {
+
+    /** Creates an immutable completion catalog. */
+    public SqlCompletionCatalog {
+      relations = relations == null ? List.of() : List.copyOf(relations);
+    }
+  }
+
+  /**
    * Paged data preview result.
    *
    * @param columns ordered column names

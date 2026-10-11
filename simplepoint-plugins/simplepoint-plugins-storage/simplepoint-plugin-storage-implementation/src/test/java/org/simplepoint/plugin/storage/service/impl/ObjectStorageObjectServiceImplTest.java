@@ -75,6 +75,7 @@ class ObjectStorageObjectServiceImplTest {
   @AfterEach
   void resetTenantContext() {
     authorizationContext = null;
+    org.simplepoint.core.ResourcePolicyContext.clear();
   }
 
   // ── providers() ──────────────────────────────────────────────────────────
@@ -319,6 +320,7 @@ class ObjectStorageObjectServiceImplTest {
   @Test
   void uploadShouldRejectMissingTenantContext() {
     authorizationContext = null;
+    org.simplepoint.core.ResourcePolicyContext.clear();
     ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
     MockMultipartFile file = new MockMultipartFile("file", "demo.txt", "text/plain", "hello".getBytes());
 
@@ -362,6 +364,7 @@ class ObjectStorageObjectServiceImplTest {
   @Test
   void limitShouldRejectMissingTenantContext() {
     authorizationContext = null;
+    org.simplepoint.core.ResourcePolicyContext.clear();
     ObjectStorageObjectServiceImpl service = buildService(configuredProperties(), "app");
 
     IllegalArgumentException ex = assertThrows(
@@ -693,6 +696,63 @@ class ObjectStorageObjectServiceImplTest {
 
     ObjectStorageObject result = service.upload(file, null);
     assertEquals("auto-minio", result.getProviderCode());
+  }
+
+  @Test
+  void hiddenFilenameIsNotLeakedThroughDownloadHeaders() {
+    authorizationContext.setResourceFieldPermissions(Map.of("storage.objects.view", Map.of(
+        ObjectStorageObject.class.getName() + "#originalFileName", "HIDDEN")));
+    org.simplepoint.core.ResourcePolicyContext.set("storage.objects.view");
+    var object = new ObjectStorageObject(); object.setId("file"); object.setProviderCode("minio");
+    object.setBucket("bucket"); object.setObjectKey("key"); object.setOriginalFileName("confidential.txt");
+    when(repository.findActiveByIdAndTenantId("file", "tenant-demo")).thenReturn(Optional.of(object));
+    when(driver.supports(ObjectStoragePlatformType.MINIO)).thenReturn(true);
+    var expected = new ObjectStorageReadResult(new ByteArrayInputStream(new byte[0]), "text/plain", 0L, "download");
+    when(driver.read(any(), eq("bucket"), eq("key"), eq("download"))).thenReturn(expected);
+    assertEquals(expected, buildService(configuredProperties(), "app").download("file"));
+  }
+
+  private void restrictToSelf() {
+    authorizationContext.setUserId("reader");
+    authorizationContext.setResourceDataScopes(Map.of("storage.objects.view",
+        new org.simplepoint.core.ResourceDataScope("SELF", Set.of(), false)));
+    org.simplepoint.core.ResourcePolicyContext.set("storage.objects.view");
+  }
+
+  @Test
+  void directDownloadAndLookupHonorTheSamePageScopeAsTheList() {
+    restrictToSelf();
+    var other = new ObjectStorageObject(); other.setId("other"); other.setCreatedBy("someone-else");
+    when(repository.findActiveByIdAndTenantId("other", "tenant-demo")).thenReturn(Optional.of(other));
+    var service = buildService(configuredProperties(), "app");
+    assertTrue(service.findActiveById("other").isEmpty());
+    assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> service.download("other"));
+    org.mockito.Mockito.verifyNoInteractions(driver);
+  }
+
+  @Test
+  void mixedBatchIsRejectedBeforeAnyPhysicalFileIsDeleted() {
+    restrictToSelf();
+    var own = new ObjectStorageObject(); own.setId("own"); own.setCreatedBy("reader");
+    var other = new ObjectStorageObject(); other.setId("other"); other.setCreatedBy("someone-else");
+    var ids = List.of("own", "other");
+    when(repository.findAllActiveByIdsAndTenantId(ids, "tenant-demo")).thenReturn(List.of(own, other));
+    var service = buildService(configuredProperties(), "app");
+    assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> service.removeByIds(ids));
+    org.mockito.Mockito.verifyNoInteractions(driver);
+    verify(repository, never()).deleteByIds(any());
+  }
+
+  @Test
+  void deniedUploadNeverCallsTheStorageDriver() {
+    authorizationContext.setResourceDataScopes(Map.of("storage.objects.view",
+        new org.simplepoint.core.ResourceDataScope("DENY", Set.of(), false)));
+    org.simplepoint.core.ResourcePolicyContext.set("storage.objects.view");
+    var service = buildService(configuredProperties(), "app");
+    var file = new MockMultipartFile("file", "file.txt", "text/plain", "body".getBytes());
+    assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> service.upload(file, null));
+    org.mockito.Mockito.verifyNoInteractions(driver);
+    verify(repository, never()).save(any());
   }
 
   // ── helpers ───────────────────────────────────────────────────────────────

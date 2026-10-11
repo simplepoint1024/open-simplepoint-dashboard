@@ -1,6 +1,7 @@
 dependencies {
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-federation-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-api"))
     implementation(project(":simplepoint-core"))
     implementation(project(":simplepoint-security:simplepoint-security-core"))
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")

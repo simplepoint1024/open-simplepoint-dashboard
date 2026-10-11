@@ -146,6 +146,50 @@ class NotificationManagementServiceImplTest {
   }
 
   @Test
+  void publishRetryAfterCommittedSuccessDoesNotRepublishOrEmitAnotherEvent() {
+    SystemNotification notification = draft(); notification.setId("notification-retry");
+    when(repository.findActiveById(notification.getId())).thenReturn(Optional.of(notification));
+    service.publish(notification.getId());
+    Instant publishedAt = notification.getPublishedAt();
+    assertThatThrownBy(() -> service.publish(notification.getId())).isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("草稿");
+    assertThat(notification.getPublishedAt()).isEqualTo(publishedAt);
+    verify(repository).save(notification);
+    verify(eventPublisher).publishEvent(any(NotificationChangedEvent.class));
+  }
+
+  @Test
+  void duplicateRetainsFutureExpiryAndAudienceButNeverChangesItsRevokedSource() {
+    SystemNotification source = draft(); source.setId("notification-source"); source.setStatus(NotificationStatus.REVOKED);
+    source.setAudienceType(NotificationAudienceType.USER); source.setAudienceId("actual-user");
+    source.setExpireAt(Instant.now().plus(java.time.Duration.ofDays(7)));
+    source.setPublishedAt(Instant.parse("2026-01-01T00:00:00Z")); source.setPublishAt(source.getPublishedAt());
+    when(repository.findActiveById(source.getId())).thenReturn(Optional.of(source));
+    SystemNotification duplicate = service.duplicateAsDraft(source.getId());
+    assertThat(duplicate.getAudienceType()).isEqualTo(NotificationAudienceType.USER);
+    assertThat(duplicate.getAudienceId()).isEqualTo("actual-user");
+    assertThat(duplicate.getExpireAt()).isEqualTo(source.getExpireAt());
+    assertThat(duplicate.getStatus()).isEqualTo(NotificationStatus.DRAFT);
+    assertThat(duplicate.getPublishAt()).isNull(); assertThat(duplicate.getPublishedAt()).isNull();
+    assertThat(source.getStatus()).isEqualTo(NotificationStatus.REVOKED);
+    assertThat(source.getTitle()).isEqualTo("  System maintenance  ");
+    assertThat(source.getPublishAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
+    verify(eventPublisher, never()).publishEvent(any(NotificationChangedEvent.class));
+  }
+
+  @Test
+  void targetedAudienceAndExpiryAreValidatedBeforeAnyNotificationPersistence() {
+    for (NotificationAudienceType type : List.of(NotificationAudienceType.USER, NotificationAudienceType.TENANT)) {
+      SystemNotification notification = draft(); notification.setAudienceType(type); notification.setAudienceId("  ");
+      assertThatThrownBy(() -> service.create(notification)).isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("目标 ID");
+    }
+    SystemNotification expired = draft(); expired.setExpireAt(Instant.now().minusSeconds(1));
+    assertThatThrownBy(() -> service.create(expired)).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("当前时间");
+    verify(repository, never()).save(any());
+  }
+
+  @Test
   void revokedNotificationCanBeDeleted() {
     SystemNotification revoked = draft();
     revoked.setId("notification-1");

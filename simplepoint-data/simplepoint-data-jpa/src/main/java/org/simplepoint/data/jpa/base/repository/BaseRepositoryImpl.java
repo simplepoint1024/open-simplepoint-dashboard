@@ -150,15 +150,19 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
       Map<String, String> attributes, Map<String, String> required, Pageable pageable) {
     // Snapshot server restrictions before constructing both the result and count specifications.
     Map<String, String> mandatory = Map.copyOf(required);
+    validateServerConditions(mandatory);
+    Specification<S> restriction = mandatory.isEmpty() ? null : (root, query, cb) ->
+        cb.and(getPredicates(mandatory, root, query, cb, EscapeCharacter.DEFAULT, true));
+    return limitWithRestriction(attributes, pageable, restriction);
+  }
+
+  private static void validateServerConditions(Map<String, String> mandatory) {
     mandatory.forEach((field, value) -> {
       if (Set.of("page", "size", "sort", QueryDocument.PARAMETER).contains(field)
           || value.startsWith("{")) {
         throw new IllegalArgumentException("Server restrictions must be scalar conditions");
       }
     });
-    Specification<S> restriction = mandatory.isEmpty() ? null : (root, query, cb) ->
-        cb.and(getPredicates(mandatory, root, query, cb, EscapeCharacter.DEFAULT, true));
-    return limitWithRestriction(attributes, pageable, restriction);
   }
 
   @Override
@@ -184,14 +188,74 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
   }
 
   private void validateMembershipField(String field) {
-    var member = entityManager.getMetamodel().entity(getDomainClass()).getAttribute(field);
+    validateStringField(getDomainClass(), field);
+  }
+
+  private void validateStringField(Class<?> type, String field) {
+    var member = entityManager.getMetamodel().entity(type).getAttribute(field);
     // Hibernate may expose the erased Serializable type for a generic BaseEntity<I>.id.
     Class<?> scalarType = member.getJavaMember() instanceof java.lang.reflect.Field javaField
-        ? org.springframework.core.ResolvableType.forField(javaField, getDomainClass()).resolve()
+        ? org.springframework.core.ResolvableType.forField(javaField, type).resolve()
         : member.getJavaType();
     if (member.isAssociation() || member.isCollection() || scalarType != String.class) {
       throw new IllegalArgumentException("Authorization scope requires a scalar string field");
     }
+  }
+
+  @Override
+  public <S extends T> Page<S> limitReferencedScoped(
+      Map<String, String> attributes, Map<String, String> required,
+      List<org.simplepoint.api.base.QueryReferenceMembership> memberships, Pageable pageable) {
+    var mandatory = Map.copyOf(required);
+    validateServerConditions(mandatory);
+    var references = List.copyOf(memberships);
+    var types = new java.util.LinkedHashMap<String, Class<?>>();
+    for (var reference : references) {
+      validateStringField(getDomainClass(), reference.field());
+      Class<?> type = entityManager.getMetamodel().getEntities().stream()
+          .filter(entity -> entity.getName().equals(reference.entityName()))
+          .map(jakarta.persistence.metamodel.EntityType::getJavaType).findFirst()
+          .orElseThrow(() -> new IllegalArgumentException("Unknown reference entity"));
+      if (!BaseEntityImpl.class.isAssignableFrom(type)) {
+        throw new IllegalArgumentException("Reference entity must support soft deletion");
+      }
+      validateStringField(type, reference.referenceField());
+      reference.equalities().forEach((field, value) -> {
+        var member = entityManager.getMetamodel().entity(type).getAttribute(field);
+        if (Set.of("deletedAt", "tenantId").contains(field) || member.isAssociation()
+            || member.isCollection() || !member.getJavaType().isInstance(value)
+            || !(value instanceof String || value instanceof Boolean)) {
+          throw new IllegalArgumentException("Reference conditions must be typed scalar literals");
+        }
+      });
+      types.put(reference.entityName(), type);
+    }
+    // Membership reads are server-owned, not public content reads: hidden grants must still exclude
+    // duplicate assignments. Outer records retain their normal tenant, field and data-scope policies.
+    return limitWithRestriction(attributes, pageable, (root, query, cb) -> {
+      var predicates = new ArrayList<>(Arrays.asList(
+          getPredicates(mandatory, root, query, cb, EscapeCharacter.DEFAULT, true)));
+      for (var reference : references) {
+        var subquery = query.subquery(Integer.class);
+        Class<?> type = types.get(reference.entityName());
+        var target = subquery.from(type);
+        var conditions = new ArrayList<Predicate>();
+        conditions.add(cb.equal(target.get(reference.referenceField()), root.get(reference.field())));
+        conditions.add(cb.isNull(target.get("deletedAt")));
+        reference.equalities().forEach((field, value) -> conditions.add(cb.equal(target.get(field), value)));
+        if (TenantBaseEntityImpl.class.isAssignableFrom(type)) {
+          var context = AuthorizationContextHolder.getContext();
+          String tenant = context == null ? null : context.getAttribute(TENANT_ID_ATTRIBUTE);
+          if (tenant == null || tenant.isBlank()) {
+            throw new IllegalStateException(TENANT_CONTEXT_REQUIRED_MESSAGE);
+          }
+          conditions.add(cb.equal(target.get("tenantId"), tenant.trim()));
+        }
+        subquery.select(cb.literal(1)).where(conditions.toArray(Predicate[]::new));
+        predicates.add(reference.included() ? cb.exists(subquery) : cb.not(cb.exists(subquery)));
+      }
+      return cb.and(predicates.toArray(Predicate[]::new));
+    });
   }
 
   @SuppressWarnings("unchecked")

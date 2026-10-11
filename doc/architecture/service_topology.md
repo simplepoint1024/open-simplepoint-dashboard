@@ -17,12 +17,14 @@
 | `simplepoint-service-auditing` | `org.simplepoint.auditing.server.Auditing` | Servlet MVC + JPA + Resource Server | 审计日志、限流规则、Redis 监控等运维/审计能力 | auditing logging/rate-limit/redis 插件模块 |
 | `simplepoint-service-dna` | `org.simplepoint.dna.server.DnaApplication` | Servlet MVC + JPA + Resource Server | JDBC 驱动、方言、数据源等 DNA 能力 | `simplepoint-plugin-dna` 系列模块 |
 | `simplepoint-service-ai` | `org.simplepoint.ai.server.AiApplication` | Servlet MVC + JPA + Resource Server | 模型接入、独立知识库、pgvector 混合检索与 AI 工作台 remote | `simplepoint-plugin-ai-core-*`、`simplepoint-plugin-ai-knowledge-*`、service-router、RBAC resource API、i18n API |
+| `simplepoint-service-app` | `org.simplepoint.app.server.ApplicationWorkbenchApplication` | Servlet MVC + JPA + Resource Server | 应用工作台、模板和市场页面；预留表单与工作流服务边界 | service-router、RBAC resource API、i18n API |
+| `simplepoint-service-workflow` | `org.simplepoint.workflow.server.WorkflowApplication` | Servlet MVC + JPA + Resource Server + Flowable | 流程定义与不可变版本、任务、事项、抄送、状态图和消息 outbox | `simplepoint-plugin-workflow-*`、Flowable 8、service-router、RBAC resource API、i18n API |
 
 ### 共同点
 
-- 六个服务入口都使用 `@Boot`，而不是原生 `@SpringBootApplication`。
+- 这些服务入口都使用 `@Boot`，而不是原生 `@SpringBootApplication`。
 - 业务服务通过 `@EnableServiceRouter(basePackages = "org.simplepoint")` 接入服务路由。
-- `common`、`auditing`、`dna`、`ai` 都是 Servlet 资源服务；`host` 是 WebFlux 边缘服务；`authorization` 是 OAuth2/OIDC 授权服务器。
+- `common`、`auditing`、`dna`、`ai`、`app`、`workflow` 都是 Servlet 资源服务；`host` 是 WebFlux 边缘服务；`authorization` 是 OAuth2/OIDC 授权服务器。
 
 ## 3. 前端应用与后端映射
 
@@ -35,6 +37,8 @@
 | `modules/simplepoint-audit` | `auditing` | `/auditing/mf` | `simplepoint-service-auditing/src/main/resources/static/{mf,esm,cjs}` | 审计与监控 remote |
 | `modules/simplepoint-dna` | `dna` | `/dna/mf` | `simplepoint-service-dna/src/main/resources/static/{mf,esm,cjs}` | DNA remote |
 | `modules/simplepoint-ai` | `ai` | `/ai/mf` | `simplepoint-service-ai/src/main/resources/static/{mf,esm,cjs}` | AI 工作台、模型供应商、模型目录和知识库 remote |
+| `modules/simplepoint-app` | `app` | `/app/mf` | `simplepoint-service-app/src/main/resources/static/{mf,esm,cjs}` | 应用工作台 remote |
+| `modules/simplepoint-workflow` | `workflow` | `/workflow/mf` | `simplepoint-service-workflow/src/main/resources/static/{mf,esm,cjs}` | 流程定义、任务中心和事项 remote |
 
 当前仓库里已经能看到这些静态资源目录：`common`、`auditing`、`dna` 服务下存在 `mf/`、`esm/`、`cjs/`，而 `host` 服务下存在 `index.html` 和壳应用静态资源。
 
@@ -49,7 +53,7 @@ sequenceDiagram
   participant HostSvc as service-host
   participant Common as service-common
   participant Auth as service-authorization
-  participant Remote as common/auditing/dna/ai remote
+  participant Remote as common/auditing/dna/ai/app/workflow remote
 
   Browser->>HostSvc: 访问 host
   HostSvc->>Auth: OAuth2/OIDC 登录跳转

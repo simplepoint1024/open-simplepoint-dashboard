@@ -144,6 +144,7 @@ public class ObjectStorageProviderConfigServiceImpl
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends ObjectStorageProviderConfig> S create(final S entity) {
+    org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(ObjectStorageProviderConfig.class, "secretKey");
     normalizeAndValidate(entity, null, true);
     String ciphertext = credentialCipher.encrypt(entity.getSecretKey().trim());
     entity.setSecretKey(null);
@@ -166,10 +167,22 @@ public class ObjectStorageProviderConfigServiceImpl
     }
     ObjectStorageProviderConfig current = repository.findActiveById(entity.getId())
         .orElseThrow(() -> new NoSuchElementException("OSS 配置不存在: " + entity.getId()));
+    // A masked/hidden configuration field may be absent from the table's edit draft. Restore
+    // protected values before domain validation; the generic merge runs after that validation.
+    var original = new org.springframework.beans.BeanWrapperImpl(current);
+    var incoming = new org.springframework.beans.BeanWrapperImpl(entity);
+    for (String field : List.of("name", "type", "endpoint", "region", "accessKey", "bucket", "basePath",
+        "pathStyleAccess", "publicBaseUrl", "enabled", "defaultProvider", "description")) {
+      if (!org.simplepoint.core.jackson.FieldPermissionPolicy.writable(
+          getAuthorizationContext(), ObjectStorageProviderConfig.class, field)) {
+        incoming.setPropertyValue(field, original.getPropertyValue(field));
+      }
+    }
     entity.setCode(current.getCode());
     normalizeAndValidate(entity, current.getId(), false);
     String ciphertext = current.getSecretKeyCiphertext();
     if (trimToNull(entity.getSecretKey()) != null) {
+      org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(ObjectStorageProviderConfig.class, "secretKey");
       ciphertext = credentialCipher.encrypt(entity.getSecretKey().trim());
     }
     entity.setSecretKey(null);
@@ -204,6 +217,7 @@ public class ObjectStorageProviderConfigServiceImpl
   public ObjectStorageConnectionTestResult testConnection(final String id) {
     ObjectStorageProviderConfig provider = repository.findActiveById(id)
         .orElseThrow(() -> new NoSuchElementException("OSS 配置不存在: " + id));
+    org.simplepoint.core.permission.PageDataPermission.requireAccessible(provider);
     ObjectStorageProperties.ProviderProperties runtimeProperties = toRuntimeProperties(provider);
     resolveDriver(provider.getType()).testConnection(runtimeProperties);
     return new ObjectStorageConnectionTestResult(true, "连接成功，Bucket 可访问");

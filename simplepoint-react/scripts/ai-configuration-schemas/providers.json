@@ -1,0 +1,554 @@
+{
+  "buttons": [
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "ai.workbench.providers.create",
+      "variant": "outlined",
+      "icon": "PlusCircleOutlined",
+      "argumentMaxSize": 1,
+      "sort": 0,
+      "type": "primary",
+      "title": "i18n:table.button.create",
+      "danger": false,
+      "argumentMinSize": 0,
+      "key": "add"
+    },
+    {
+      "path": "[default]",
+      "color": "orange",
+      "authority": "ai.workbench.providers.edit",
+      "variant": "outlined",
+      "icon": "EditOutlined",
+      "argumentMaxSize": 1,
+      "sort": 1,
+      "type": "primary",
+      "title": "i18n:table.button.edit",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "edit"
+    },
+    {
+      "path": "[default]",
+      "color": "danger",
+      "authority": "ai.workbench.providers.delete",
+      "variant": "outlined",
+      "icon": "MinusCircleOutlined",
+      "argumentMaxSize": 10,
+      "sort": 2,
+      "type": "primary",
+      "title": "i18n:table.button.delete",
+      "danger": true,
+      "argumentMinSize": 1,
+      "key": "delete"
+    },
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "ai.workbench.providers.test",
+      "variant": "outlined",
+      "icon": "SafetyOutlined",
+      "argumentMaxSize": 1,
+      "sort": 3,
+      "type": "primary",
+      "title": "i18n:ai.providers.button.test",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "test"
+    },
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "ai.workbench.providers.discover",
+      "variant": "outlined",
+      "icon": "CloudDownloadOutlined",
+      "argumentMaxSize": 1,
+      "sort": 4,
+      "type": "primary",
+      "title": "i18n:ai.providers.button.discover",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "discover"
+    },
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "ai.workbench.providers.sync",
+      "variant": "outlined",
+      "icon": "CloudSyncOutlined",
+      "argumentMaxSize": 1,
+      "sort": 5,
+      "type": "primary",
+      "title": "i18n:ai.providers.button.sync",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "sync"
+    }
+  ],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "scopeType": {
+        "type": "string",
+        "enum": [
+          "SYSTEM",
+          "TENANT"
+        ],
+        "title": "i18n:ai.providers.title.scopeType",
+        "description": "",
+        "readOnly": true,
+        "x-order": 0,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "tenantId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.providers.title.tenantId",
+        "description": "",
+        "readOnly": true,
+        "x-order": 1
+      },
+      "name": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.providers.title.name",
+        "description": "",
+        "minLength": 1,
+        "maxLength": 128,
+        "x-order": 2,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "code": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.providers.title.code",
+        "description": "",
+        "minLength": 1,
+        "maxLength": 128,
+        "x-order": 3,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "vendor": {
+        "type": "string",
+        "enum": [
+          "OPENAI",
+          "ANTHROPIC",
+          "GOOGLE_GEMINI",
+          "AZURE_OPENAI",
+          "MISTRAL",
+          "GROQ",
+          "DEEPSEEK",
+          "XAI",
+          "OPENROUTER",
+          "TOGETHER_AI",
+          "FIREWORKS_AI",
+          "ALIBABA_QWEN",
+          "MOONSHOT",
+          "MINIMAX",
+          "STEPFUN",
+          "ZHIPU_AI",
+          "BAIDU_QIANFAN",
+          "TENCENT_HUNYUAN",
+          "VOLCENGINE_DOUBAO",
+          "SILICONFLOW",
+          "NVIDIA_NIM",
+          "HUGGING_FACE",
+          "COHERE",
+          "OLLAMA",
+          "LM_STUDIO",
+          "VLLM",
+          "CUSTOM"
+        ],
+        "title": "i18n:ai.providers.title.vendor",
+        "description": "",
+        "x-order": 4,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "baseUrl": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.providers.title.baseUrl",
+        "description": "",
+        "maxLength": 2048,
+        "x-order": 5,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "modelDiscoveryUrl": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.providers.title.modelDiscoveryUrl",
+        "description": "i18n:ai.providers.description.modelDiscoveryUrl",
+        "maxLength": 2048,
+        "x-order": 6,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "apiKey": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.providers.title.apiKey",
+        "description": "",
+        "writeOnly": true,
+        "x-order": 7,
+        "x-ui": {
+          "widget": "password"
+        }
+      },
+      "allowPrivateNetwork": {
+        "type": "boolean",
+        "title": "i18n:ai.providers.title.allowPrivateNetwork",
+        "description": "i18n:ai.providers.description.allowPrivateNetwork",
+        "x-order": 8
+      },
+      "enabled": {
+        "type": "boolean",
+        "title": "i18n:ai.providers.title.enabled",
+        "description": "",
+        "x-order": 9,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "autoSyncEnabled": {
+        "type": "boolean",
+        "title": "i18n:ai.providers.title.autoSyncEnabled",
+        "description": "",
+        "x-order": 10,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "description": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.providers.title.description",
+        "description": "",
+        "maxLength": 512,
+        "x-order": 11
+      },
+      "hasApiKey": {
+        "type": "boolean",
+        "title": "i18n:ai.providers.title.hasApiKey",
+        "description": "",
+        "readOnly": true
+      },
+      "lastMessage": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.providers.title.lastMessage",
+        "description": "",
+        "readOnly": true,
+        "maxLength": 1024
+      },
+      "lastStatus": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:ai.providers.title.lastStatus",
+        "description": "",
+        "readOnly": true,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "lastSyncedAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time",
+        "title": "i18n:ai.providers.title.lastSyncedAt",
+        "description": "",
+        "readOnly": true,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "lastTestedAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time",
+        "title": "i18n:ai.providers.title.lastTestedAt",
+        "description": "",
+        "readOnly": true
+      }
+    },
+    "x-query": {
+      "version": 1,
+      "relations": [],
+      "fields": {
+        "scopeType": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "AiResourceScope"
+        },
+        "name": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "code": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "vendor": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "AiProviderVendor"
+        },
+        "baseUrl": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "modelDiscoveryUrl": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "allowPrivateNetwork": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "enabled": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "autoSyncEnabled": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        },
+        "description": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "lastStatus": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "lastMessage": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "lastTestedAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "lastSyncedAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        }
+      },
+      "maxSort": 3,
+      "maxDepth": 4,
+      "maxNodes": 32,
+      "maxPageSize": 500
+    }
+  }
+}

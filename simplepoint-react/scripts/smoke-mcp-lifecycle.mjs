@@ -1,0 +1,77 @@
+import assert from 'node:assert/strict';
+export async function smokeMcpLifecycle({clickMenu, clickReady, clickText, poll, evaluate, fixture, workspace}) {
+  fixture.enable(); fixture.failPermissions();
+  const root = '.nb-tab-panel-active .mcp-center', status = '.mcp-deployment-status .ant-modal', confirmation = '.mcp-deployment-confirmation .ant-modal';
+  const selectServer = async id => {
+    await poll(() => evaluate(`!!document.querySelector('${root} [data-row-key="${id}"] .ant-checkbox-input')`), 'real server row');
+    await evaluate(`[...document.querySelectorAll('${root} [data-row-key] .ant-checkbox-input:checked')].forEach(input=>input.click())`);
+    await poll(() => evaluate(`document.querySelectorAll('${root} [data-row-key] .ant-checkbox-input:checked').length===0`), 'selection reset');
+    await clickReady(`${root} [data-row-key="${id}"] .ant-checkbox-input`);
+  };
+  const visible = selector => evaluate(`!!document.querySelector(${JSON.stringify(selector)})?.getClientRects().length`);
+  await clickMenu('托管部署标准测试');
+  await poll(() => evaluate(`document.querySelector('${root} .ant-alert-error')?.textContent.includes('权限加载失败')`), 'MCP permissions failure');
+  assert.equal(await evaluate(`document.querySelectorAll('${root} [data-row-key]').length`), 0);
+  await clickText(`${root} .ant-alert-error button`, '重试');
+  await selectServer('managed-server');
+  const beforeDiscovery = fixture.writes.length;
+  await evaluate(`(() => {const button=[...document.querySelectorAll('${root} button')].find(button=>button.textContent.replaceAll(' ','')==='发现能力');button.click();button.click();})()`);
+  await poll(() => fixture.writes.length === beforeDiscovery + 1, 'MCP discovery single flight');
+  await poll(() => visible('.mcp-discovery .ant-modal'), 'owned discovery result');
+  await evaluate(`location.hash='#/profile'`);
+  await poll(async () => await evaluate(`!!document.querySelector('.nb-tab-panel-active .profile-nav-links')`) && !await visible('.mcp-discovery .ant-modal'), 'inactive discovery result hidden');
+  await clickMenu('托管部署标准测试'); await poll(() => visible('.mcp-discovery .ant-modal'), 'discovery result retained');
+  await clickText('.mcp-discovery .ant-modal-footer button', '关闭');
+  await selectServer('managed-server'); await clickText(`${root} button`, '部署');
+  await poll(async () => await visible(status) && await evaluate(`!!document.querySelector('${status} [data-row-key="workload-0"]') && !document.querySelector('${status} .ant-spin-spinning')`), 'counted deployment history');
+  const deletion = `${status} .ant-modal-footer button`;
+  assert.equal(await evaluate(`[...document.querySelectorAll('${deletion}')].find(button=>button.textContent.replaceAll(' ','')==='删除')?.disabled`), true,
+    'a nonterminal workload beyond the loaded history page still prohibits deletion');
+  await clickReady(`${status} .ant-pagination-item-27`);
+  await poll(() => evaluate(`!!document.querySelector('${status} [data-row-key="workload-520"]') && !document.querySelector('${status} .ant-spin-spinning')`), 'history beyond first 500 is reachable');
+  assert.equal(await evaluate(`document.querySelectorAll('${status} [data-row-key]').length`), 1);
+  const readCount = fixture.reads.length;
+  fixture.delay(700);
+  await evaluate(`(() => {const button=[...document.querySelectorAll('${status} .ant-modal-footer button')].find(button=>button.textContent.replaceAll(' ','')==='刷新');button.click();button.click();})()`);
+  await poll(() => fixture.reads.length >= readCount + 4, 'one status batch with independent active count');
+  await poll(() => evaluate(`![...document.querySelectorAll('${status} .ant-modal-footer button')].find(button=>button.textContent.replaceAll(' ','')==='刷新').disabled && !document.querySelector('${status} .ant-spin-spinning')`), 'serial status batch completes');
+  assert.ok(fixture.maxConcurrentReads() <= 4, 'poll/manual refresh never overlaps four bounded reads');
+  fixture.endActive(); fixture.delay(180);
+  await clickText(`${status} .ant-modal-footer button`, '刷新');
+  await poll(() => evaluate(`[...document.querySelectorAll('${deletion}')].find(button=>button.textContent.replaceAll(' ','')==='删除')?.disabled===false`), 'actual total active count is zero');
+  fixture.pool.status = 'IDLE';
+  await clickText(`${status} .ant-modal-footer button`, '刷新');
+  await clickText(`${status} .ant-modal-footer button`, '重新部署');
+  await poll(() => visible(confirmation), 'owned captured redeploy');
+  await evaluate(`location.hash='#/profile'`);
+  await poll(async () => await evaluate(`!!document.querySelector('.nb-tab-panel-active .profile-nav-links')`) && !await visible(confirmation), 'inactive parent and confirmation hidden');
+  const pausedReads = fixture.reads.length;
+  await new Promise(resolve => setTimeout(resolve, 2800));
+  assert.equal(fixture.reads.length, pausedReads, 'inactive owner does not keep polling');
+  await clickMenu('托管部署标准测试'); await poll(() => visible(confirmation), 'captured confirmation returns');
+  fixture.failWrite(); const before = fixture.writes.length;
+  await evaluate(`(() => {const button=document.querySelector('${confirmation} .ant-modal-footer .ant-btn-primary');button.click();button.click();})()`);
+  await poll(() => fixture.writes.length === before + 1, 'captured redeploy single flight');
+  assert.equal(await evaluate(`!!document.querySelector('${confirmation} .ant-modal-close')`), false);
+  await poll(() => evaluate(`!![...document.querySelectorAll('${confirmation} .ant-modal-footer button')].find(button=>button.textContent.replaceAll(' ','')==='确认' && !button.disabled)`), 'failed redeploy retains confirmation');
+  await clickText(`${confirmation} .ant-modal-footer button`, '确认');
+  await poll(() => visible(confirmation).then(value => !value), 'redeploy retry succeeds');
+  assert.equal(fixture.writes.at(-1).path, '/ai/workbench/runtime/pools/actual-pool/redeploy');
+  await clickText(`${status} .ant-modal-footer button`, '关闭');
+  await poll(() => visible(status).then(value => !value), 'deployment closed');
+  await selectServer('oauth-server'); await clickText(`${root} button`, 'OAuth 授权');
+  await poll(() => evaluate(`document.querySelector('${root} .ant-alert-error')?.textContent.includes('无法发起 MCP OAuth 授权')`), 'unsafe OAuth URL rejected without navigation');
+  if (workspace) {
+    await selectServer('managed-server'); await clickText(`${root} button`, '部署'); await poll(() => visible(status), 'old workspace deployment');
+    workspace.enable();
+    await evaluate(`localStorage.setItem('sp.tenantId',${JSON.stringify(workspace.tenantId)});window.dispatchEvent(new CustomEvent('sp-set-tenant',{detail:${JSON.stringify(workspace.tenantId)}}));`);
+    await poll(() => visible(status).then(value => !value), 'scope change discards deployment target');
+    await clickMenu('托管部署标准测试'); await selectServer('managed-server');
+    assert.equal(await evaluate(`[...document.querySelectorAll('${root} button')].find(button=>button.textContent.replaceAll(' ','')==='部署')?.disabled`), true);
+    assert.equal(fixture.reads.findLast(read => read.path.endsWith('/workbench-permissions')).tenant, workspace.tenantId);
+    await evaluate(`localStorage.setItem('sp.tenantId','__platform__');window.dispatchEvent(new CustomEvent('sp-set-tenant',{detail:'__platform__'}));`);
+    await clickMenu('托管部署标准测试'); workspace.disable();
+  }
+  assert.ok(fixture.reads.filter(read => read.path === '/ai/workbench/runtime/workloads').every(read => ['1', '20'].includes(read.params.get('size'))));
+  console.log('PASS: MCP actual permissions retry/scope isolation, owned discovery and deployment, single-flight four bounded status reads, 521-history/true active count, paused polling, captured redeploy retry and OAuth URL safety');
+}

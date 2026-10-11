@@ -151,6 +151,7 @@ public class AiKnowledgeBaseServiceImpl
     result.ifPresent(item -> scopeAccessPolicy.assertCanReadManagedResource(
         item.getScopeType(), item.getTenantId()
     ));
+    result.ifPresent(this::assertAccessible);
     result.ifPresent(this::decorate);
     return result;
   }
@@ -335,6 +336,7 @@ public class AiKnowledgeBaseServiceImpl
     scopeAccessPolicy.assertCanManageOwnedResource(
         knowledgeBase.getScopeType(), knowledgeBase.getTenantId()
     );
+    assertAccessible(knowledgeBase);
     return knowledgeBase;
   }
 

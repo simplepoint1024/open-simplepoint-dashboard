@@ -45,7 +45,7 @@
           "string",
           "null"
         ],
-        "title": "i18n:storage.quota.tenantId",
+        "title": "i18n:storage.quota.tenantName",
         "description": "",
         "readOnly": true
       },

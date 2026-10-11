@@ -3,6 +3,8 @@ import {pluginReact} from '@rsbuild/plugin-react';
 import {defineConfig} from '@rslib/core';
 
 export default defineConfig({
+  // A successful production build must reflect current sources, not a stale persistent module graph.
+  performance: {buildCache: false},
   server: {
     base: '/ai/mf',
     port: 3004,

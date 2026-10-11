@@ -3,6 +3,7 @@ package org.simplepoint.plugin.rbac.core.api.repository;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserPickerItem;
@@ -24,6 +25,9 @@ public interface UserRepository extends BaseRepository<User, String> {
    * @return the user when present
    */
   Optional<User> findByIdForAuthorization(String userId);
+
+  /** Writes only the authenticated account's avatar, never a stale full profile snapshot. */
+  int updateCurrentPicture(String userId, String picture, Instant updatedAt);
 
   /**
    * Loads users for trusted internal profile decoration without applying the active tenant view.

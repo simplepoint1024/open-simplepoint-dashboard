@@ -82,6 +82,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   private final ResourceGrantLogRemoteService resourceGrantLogRemoteService;
   private final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider;
   private final UserRoleCandidateQuery roleCandidateQuery;
+  private final UserPickerQuery pickerQuery;
 
   /**
      * Optional password encoder for encrypting user passwords.
@@ -108,7 +109,8 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
       final ResourceAuthorizationVersionService resourceAuthorizationVersionService,
       final ResourceGrantLogRemoteService resourceGrantLogRemoteService,
       final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider,
-      final UserRoleCandidateQuery roleCandidateQuery
+      final UserRoleCandidateQuery roleCandidateQuery,
+      final UserPickerQuery pickerQuery
   ) {
     super(usersRepository, detailsProviderService);
     this.passwordEncoder = passwordEncoder;
@@ -116,6 +118,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     this.tenantRepository = tenantRepository;
     this.tenantUserRelevanceRepository = tenantUserRelevanceRepository;
     this.roleRepository = roleRepository;
+    this.pickerQuery = pickerQuery;
     this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.resourceGrantLogRemoteService = resourceGrantLogRemoteService;
     this.builtInTenantProvisionerProvider = builtInTenantProvisionerProvider;
@@ -223,7 +226,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     if (normalizedKeyword == null || normalizedKeyword.length() < USER_PICKER_MIN_SEARCH_LENGTH) {
       return Page.empty(pageable);
     }
-    return getRepository().searchPickerItems(normalizedKeyword, pageable);
+    return pickerQuery.search(normalizedKeyword, pageable);
   }
 
   @Override
@@ -241,7 +244,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     if (normalizedIds.isEmpty()) {
       return List.of();
     }
-    Map<String, UserPickerItem> itemsById = getRepository().findPickerItemsByIds(normalizedIds)
+    Map<String, UserPickerItem> itemsById = pickerQuery.selected(normalizedIds)
         .stream()
         .collect(Collectors.toMap(UserPickerItem::id, item -> item));
     return normalizedIds.stream()
@@ -416,6 +419,20 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     user.setLocale(trimToNull(command.getLocale()));
     user.setZoneinfo(trimToNull(command.getZoneinfo()));
     return getRepository().updateById(user);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public User updateCurrentPicture(String userId, String picture) {
+    if (userId == null || userId.isBlank()) {
+      throw new IllegalArgumentException("当前用户不能为空");
+    }
+    String normalized = normalizePicture(picture);
+    if (getRepository().updateCurrentPicture(userId, normalized, Instant.now()) != 1) {
+      throw new IllegalArgumentException("用户不存在");
+    }
+    return getRepository().findByIdForAuthorization(userId)
+        .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
   }
 
   private String normalizePicture(String picture) {

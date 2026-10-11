@@ -119,7 +119,8 @@ public class AuthorizationContextResolver {
   private String verifiedCacheKey(String userId, String tenantId, String roleId, Long version, Long subjectVersion) {
     try {
       byte[] identity = objectMapper.writeValueAsBytes(new Object[]{userId, tenantId, roleId, version, subjectVersion});
-      return cacheKeyPrefix + "verified-v5:" + HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(identity));
+      // v6 invalidates role-restricted owner contexts calculated before ownership semantics changed.
+      return cacheKeyPrefix + "verified-v6:" + HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(identity));
     } catch (IOException | NoSuchAlgorithmException error) {
       throw new AuthenticationServiceException("无法生成权限缓存标识", error);
     }

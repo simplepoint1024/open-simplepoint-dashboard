@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {setResourceGrant, setResourcePolicy, resourceChanges, displayedGrant, displayedPolicy} from './resourceDraft.ts';
+import {setResourceGrant, setResourceGrants, setResourcePolicy, resourceChanges, displayedGrant, displayedPolicy} from './resourceDraft.ts';
 const row = (id, granted = false, revision = 'v1') => ({id, code: `code-${id}`, granted, revision,
   grantable: true, dataPermission: {supported: true, policyId: null},
   fieldPermission: {supported: true, policyId: null}});
@@ -53,4 +53,27 @@ test('removing a grant removes its policy edits and unsupported slots reject edi
     revision: 'v1', granted: false}]);
   assert.deepEqual(setResourcePolicy({}, {...baseline, fieldPermission: {supported: false,
     policyId: null}}, 'field', 'field-rule'), {});
+});
+
+test('complete 5000-row subtree staging preserves original baselines and does not mutate its input', () => {
+  const original = setResourcePolicy({}, {...row('kept', true), dataPermission: {supported: true, policyId: 'old'}}, 'data', 'new');
+  const rows = [row('kept', true, 'v2'), ...Array.from({length: 4999}, (_, i) => row('bulk-' + i))];
+  const draft = setResourceGrants(original, rows, true);
+  assert.equal(Object.keys(draft).length, 5000);
+  assert.equal(draft.kept.baseline.revision, 'v1'); assert.equal(draft.kept.dataScopeId, 'new');
+  assert.equal(Object.keys(original).length, 1); assert.equal(original.kept.dataScopeId, 'new');
+  assert.deepEqual(setResourceGrants({}, rows, false), {kept: {baseline: rows[0], granted: false}});
+});
+
+test('bulk staging has exactly the same undo and policy semantics as individual choices', () => {
+  const rows = [row('already', true), row('new'), {...row('structure'), grantable: false}];
+  const individual = rows.reduce((draft, current) => setResourceGrant(draft, current, true), {});
+  assert.deepEqual(setResourceGrants({}, rows, true), individual);
+  assert.deepEqual(setResourceGrants(individual, rows, false), rows.reduce((draft, current) => setResourceGrant(draft, current, false), individual));
+});
+
+test('unknown or masked Boolean capabilities never authorize a staged grant or policy edit', () => {
+  assert.deepEqual(setResourceGrants({}, [{...row('masked'), grantable: '***'}, {...row('unknown'), granted: '***'}], true), {});
+  assert.equal(displayedGrant({}, {...row('unknown'), granted: '***'}), false);
+  assert.deepEqual(setResourcePolicy({}, {...row('unknown', true), dataPermission: {supported: '***', policyId: null}}, 'data', 'new'), {});
 });

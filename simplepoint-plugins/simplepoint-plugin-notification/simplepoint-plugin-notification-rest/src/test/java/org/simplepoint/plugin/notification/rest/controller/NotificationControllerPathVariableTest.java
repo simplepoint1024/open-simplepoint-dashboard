@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,6 +73,22 @@ class NotificationControllerPathVariableTest {
         .andExpect(status().isOk());
 
     verify(managementService).duplicateAsDraft(notification.getId());
+  }
+
+  @Test
+  void changedLifecycleReturnsClientSafeBadRequestWithoutPretendingItSucceeded() throws Exception {
+    when(managementService.publish("notification-changed")).thenThrow(new IllegalStateException("仅草稿通知可以发布"));
+    managementMvc.perform(post("/system/notifications/{id}/publish", "notification-changed"))
+        .andExpect(status().isBadRequest()).andExpect(content().string("仅草稿通知可以发布"));
+    verify(managementService).publish("notification-changed");
+  }
+
+  @Test
+  void missingDuplicateSourceReturnsBadRequestAndKeepsItsCapturedPath() throws Exception {
+    when(managementService.duplicateAsDraft("notification-missing")).thenThrow(new java.util.NoSuchElementException("通知不存在"));
+    managementMvc.perform(post("/system/notifications/{id}/duplicate", "notification-missing"))
+        .andExpect(status().isBadRequest()).andExpect(content().string("通知不存在"));
+    verify(managementService).duplicateAsDraft("notification-missing");
   }
 
   @Test

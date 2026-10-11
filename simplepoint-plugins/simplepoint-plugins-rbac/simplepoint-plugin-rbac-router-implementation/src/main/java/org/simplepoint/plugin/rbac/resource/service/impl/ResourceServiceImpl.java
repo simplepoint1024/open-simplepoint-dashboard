@@ -258,8 +258,8 @@ public class ResourceServiceImpl
   @Override
   public ServiceResourceRouteResult routes() {
     AuthorizationContext context = getAuthorizationContext();
-    if (context == null) {
-      throw new IllegalArgumentException("User context is null or not logged in");
+    if (context == null || context.getUserId() == null || context.getUserId().isBlank()) {
+      throw new org.springframework.security.access.AccessDeniedException("授权上下文不可用");
     }
     String activeTenantId = context.getAttribute("X-Tenant-Id");
     if (tenantResourceCatalog != null && context.getScopeType() == AuthorizationScopeType.TENANT
@@ -268,28 +268,29 @@ public class ResourceServiceImpl
       return customRoutes(context, activeTenantId);
     }
     if (AuthorizationScopeGuards.isPlatformAdministrator(context)) {
+      boolean cacheable = resourceLabelsAreCacheable();
       ServiceResourceRouteResult cached = adminRoutesCache;
-      if (cached != null && System.currentTimeMillis() < adminRoutesCacheExpiry) {
+      if (cacheable && cached != null && System.currentTimeMillis() < adminRoutesCacheExpiry) {
         return withScopeContext(cached, context);
       }
       Set<ServiceResourceRouteResult.ServiceEntry> services = new HashSet<>();
       ServiceResourceRouteResult result = ServiceResourceRouteResult.of(
           services,
           buildResourceTree(
-              getRepository().findRouteResourcesAll().stream()
-                  .filter(resource -> isAccessible(resource, context))
-                  .toList(),
+              directoryQuery().navigation(Set.of(), true),
               services,
               true,
               loadRemoteEntriesByServiceName()
           )
       );
-      adminRoutesCache = result;
-      adminRoutesCacheExpiry = System.currentTimeMillis() + 30_000;
+      if (cacheable) {
+        adminRoutesCache = result;
+        adminRoutesCacheExpiry = System.currentTimeMillis() + 30_000;
+      }
       return withScopeContext(result, context);
     }
 
-    Set<String> resourceCodes = new LinkedHashSet<>(context.getResources());
+    Set<String> resourceCodes = normalizeCodes(context.getResources());
     resourceCodes.addAll(findPublicAccessCodes());
     resourceCodes.retainAll(filterAccessibleCodes(
         resourceCodes,
@@ -299,12 +300,7 @@ public class ResourceServiceImpl
     if (resourceCodes.isEmpty()) {
       return withScopeContext(ServiceResourceRouteResult.EMPTY, context);
     }
-    Set<String> routeIds = new LinkedHashSet<>(getRepository().findIdsByCodes(resourceCodes));
-    routeIds.addAll(resourceAncestorRepository.findAncestorIdsByChildIdIn(routeIds));
-    if (routeIds.isEmpty()) {
-      return withScopeContext(ServiceResourceRouteResult.EMPTY, context);
-    }
-    Collection<Resource> resources = getRepository().loadByIds(routeIds).stream()
+    Collection<Resource> resources = directoryQuery().navigation(resourceCodes, false).stream()
         .filter(this::isRouteResource)
         .toList();
     Set<ServiceResourceRouteResult.ServiceEntry> services = new HashSet<>();
@@ -315,32 +311,8 @@ public class ResourceServiceImpl
   }
 
   private ServiceResourceRouteResult customRoutes(AuthorizationContext context, String tenantId) {
-    Map<String, TenantResource> catalog = tenantResourceCatalog.activeResources(tenantId).stream()
-        .collect(Collectors.toMap(TenantResource::getId, item -> item));
-    Set<String> selected = new LinkedHashSet<>();
-    for (TenantResource item : catalog.values()) {
-      if (context.getResources().contains(item.getCode())) selected.add(item.getId());
-    }
-    // A tenant page alias grants access to its platform page. Show the alias as
-    // the navigation entry instead of also rendering the backing platform page.
-    Set<String> aliasedPlatformPages = selected.stream().map(catalog::get)
-        .map(TenantResource::getTargetResourceId).filter(Objects::nonNull)
-        .collect(Collectors.toSet());
-    selected.removeAll(aliasedPlatformPages);
-    for (String id : List.copyOf(selected)) {
-      String cursor = id;
-      Set<String> seen = new HashSet<>();
-      while (cursor != null && seen.add(cursor)) {
-        TenantResource item = catalog.get(cursor);
-        if (item == null) break;
-        selected.add(cursor);
-        cursor = item.getParentId();
-      }
-    }
     List<Resource> resources = new ArrayList<>();
-    for (String id : selected) {
-      TenantResource item = catalog.get(id);
-      if (item == null) continue;
+    for (TenantResource item : tenantResourceCatalog.navigationResources(tenantId, normalizeCodes(context.getResources()))) {
       Resource resource = new Resource();
       resource.setId(item.getId());
       resource.setCode(item.getCode());
@@ -362,17 +334,15 @@ public class ResourceServiceImpl
     }
     Set<ServiceResourceRouteResult.ServiceEntry> services = new HashSet<>();
     return withScopeContext(ServiceResourceRouteResult.of(services,
-        buildResourceTree(resources, services, true, loadRemoteEntriesByServiceName())), context);
+        buildResourceTree(resources, services, true, loadRemoteEntriesByServiceName(), TenantResource.class)), context);
   }
 
   @Override
   public Page<ResourceNode> limitTree(Map<String, String> attributes, Pageable pageable) {
-    Map<String, String> scopedAttributes = new HashMap<>(attributes == null ? Map.of() : attributes);
-    scopedAttributes.put("parentId", "is:null:");
-    Page<Resource> roots = limit(scopedAttributes, pageable);
+    var result = directoryQuery().management(attributes, pageable);
+    Page<Resource> roots = result.roots();
     List<String> rootIds = roots.map(Resource::getId).stream().toList();
-    Collection<String> childIds = resourceAncestorRepository.findChildIdsByAncestorIds(rootIds);
-    List<Resource> treeResources = new ArrayList<>(findAllByIds(childIds));
+    List<Resource> treeResources = new ArrayList<>(result.descendants());
     treeResources.addAll(roots.getContent());
     List<ResourceNode> tree = buildResourceTree(treeResources, new HashSet<>(), false, Map.of());
     // Navigation trees use natural menu order; this paginated management list must retain SQL order.
@@ -380,6 +350,8 @@ public class ResourceServiceImpl
     for (int index = 0; index < rootIds.size(); index++) {
       rootOrder.put(rootIds.get(index), index);
     }
+    // The navigation builder promotes orphans. A paginated management tree must expose only its counted roots.
+    tree.removeIf(node -> !rootOrder.containsKey(node.getId()));
     tree.sort(Comparator.comparingInt(node -> rootOrder.getOrDefault(node.getId(), Integer.MAX_VALUE)));
     return new PageImpl<>(
         tree,
@@ -390,64 +362,39 @@ public class ResourceServiceImpl
 
   @Override
   public Page<ResourceNode> children(Map<String, String> attributes, Pageable pageable) {
+    if (pageable.getPageSize() > 100) throw new org.simplepoint.core.query.InvalidQueryException("目录分页大小不能超过100");
     String parentId = firstNonBlank(attribute(attributes, "parentId"), attribute(attributes, "parent"));
     String keyword = firstNonBlank(attribute(attributes, "keyword"), attribute(attributes, "search"));
-    Page<Resource> page = hasText(keyword) && !hasText(parentId)
-        ? getRepository().findMatches(pageable, keyword)
-        : getRepository().findChildren(pageable, parentId, keyword);
-    List<ResourceNode> nodes = page.getContent().stream()
-        .map(this::toResourceNode)
-        .toList();
-    Set<String> parentIds = nodes.stream()
-        .map(ResourceNode::getId)
-        .filter(this::hasText)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
-    Collection<String> idsWithChildren = parentIds.isEmpty()
-        ? List.of()
-        : getRepository().findParentIdsWithChildren(parentIds);
-    Set<String> idsWithChildrenSet = new HashSet<>(idsWithChildren);
-    nodes.forEach(node -> node.setHasChildren(idsWithChildrenSet.contains(node.getId())));
+    var result = directoryQuery().children(parentId, keyword, pageable);
+    Page<Resource> page = result.page();
+    List<ResourceNode> nodes = page.getContent().stream().map(this::toResourceNode).toList();
+    nodes.forEach(node -> node.setHasChildren(result.parentsWithChildren().contains(node.getId())));
     return new PageImpl<>(nodes, pageable, page.getTotalElements());
+  }
+
+  private ResourceDirectoryQuery directoryQuery() {
+    var context = getAuthorizationContext();
+    if (context == null || context.getUserId() == null || context.getUserId().isBlank()) throw new org.springframework.security.access.AccessDeniedException("授权上下文不可用");
+    if (permissionEntityManager == null) throw new IllegalStateException("资源目录查询服务不可用");
+    String tenant = currentTenantId();
+    if (!hasText(tenant)) {
+      var tenants = tenantRepositoryProvider.getIfAvailable();
+      if (tenants != null) tenant = tenants.findPersonalTenantByOwnerId(context.getUserId()).map(org.simplepoint.plugin.rbac.tenant.api.entity.Tenant::getId).orElse(null);
+    }
+    return new ResourceDirectoryQuery(permissionEntityManager, context, tenant);
   }
 
   @Override
   public Page<ResourceNode> assignedTree(Collection<String> codes, Map<String, String> attributes, Pageable pageable) {
-    Set<String> normalizedCodes = normalizeCodes(codes);
-    if (normalizedCodes.isEmpty()) {
-      return Page.empty(pageable);
-    }
-    if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
-      Set<String> visibleCodes = visibleTenantResourceCodes();
-      normalizedCodes.retainAll(visibleCodes);
-      if (normalizedCodes.isEmpty()) {
-        return Page.empty(pageable);
-      }
-    }
-
-    Set<String> selectedIds = new LinkedHashSet<>(getRepository().findIdsByCodes(normalizedCodes));
-    if (selectedIds.isEmpty()) {
-      return Page.empty(pageable);
-    }
-    Set<String> includedIds = new LinkedHashSet<>(selectedIds);
-    includedIds.addAll(resourceAncestorRepository.findAncestorIdsByChildIdIn(selectedIds));
+    if (pageable.getPageSize() > 100) throw new org.simplepoint.core.query.InvalidQueryException("目录分页大小不能超过100");
     String parentId = firstNonBlank(attribute(attributes, "parentId"), attribute(attributes, "parent"));
-    Page<Resource> page = getRepository().findChildrenByIds(pageable, includedIds, parentId);
-    List<ResourceNode> nodes = page.getContent().stream()
-        .map(this::toResourceNode)
-        .toList();
-    Set<String> parentIds = nodes.stream()
-        .map(ResourceNode::getId)
-        .filter(this::hasText)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
-    Collection<String> idsWithChildren = parentIds.isEmpty()
-        ? List.of()
-        : getRepository().findParentIdsWithChildrenIn(includedIds, parentIds);
-    Set<String> idsWithChildrenSet = new HashSet<>(idsWithChildren);
+    var result = directoryQuery().assigned(normalizeCodes(codes), parentId, pageable);
+    List<ResourceNode> nodes = result.page().getContent().stream().map(this::toResourceNode).toList();
     nodes.forEach(node -> {
-      node.setHasChildren(idsWithChildrenSet.contains(node.getId()));
-      node.setChecked(hasText(node.getCode()) && normalizedCodes.contains(node.getCode()));
+      node.setHasChildren(result.parentsWithChildren().contains(node.getId()));
+      node.setChecked(result.checkedIds().contains(node.getId()));
     });
-    return new PageImpl<>(nodes, pageable, page.getTotalElements());
+    return new PageImpl<>(nodes, pageable, result.page().getTotalElements());
   }
 
   @Override
@@ -456,17 +403,18 @@ public class ResourceServiceImpl
     if (normalizedCodes.isEmpty()) {
       return List.of();
     }
-    AuthorizationContext context = getAuthorizationContext();
-    if (!AuthorizationScopeGuards.isPlatformAdministrator(context)) {
-      Set<String> visibleCodes = visibleTenantResourceCodes();
-      normalizedCodes.retainAll(visibleCodes);
-      if (normalizedCodes.isEmpty()) {
-        return List.of();
-      }
+    return directoryQuery().byCodes(normalizedCodes, false);
+  }
+
+  @Override
+  public Collection<Resource> findDirectoryResourcesByCodes(Collection<String> codes) {
+    Set<String> normalizedCodes = normalizeCodes(codes);
+    if (normalizedCodes.isEmpty()) return List.of();
+    var access = org.simplepoint.core.jackson.FieldPermissionPolicy.access(Resource.class, "code");
+    if ("MASKED".equals(access) || org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(access)) {
+      throw new org.springframework.security.access.AccessDeniedException("资源编码当前不可读取");
     }
-    return getRepository().findAllByCodes(normalizedCodes).stream()
-        .filter(resource -> isAccessible(resource, context))
-        .toList();
+    return directoryQuery().byCodes(normalizedCodes, true);
   }
 
   @Override
@@ -475,20 +423,7 @@ public class ResourceServiceImpl
     if (context == null) {
       return List.of();
     }
-    if (AuthorizationScopeGuards.isPlatformAdministrator(context)) {
-      return getRepository().loadAll().stream()
-          .filter(resource -> isAccessible(resource, context))
-          .toList();
-    }
-    Set<String> visibleCodes = visibleTenantResourceCodes();
-    if (visibleCodes.isEmpty()) {
-      return List.of();
-    }
-    Set<String> visibleIds = new LinkedHashSet<>(getRepository().findIdsByCodes(visibleCodes));
-    visibleIds.addAll(resourceAncestorRepository.findAncestorIdsByChildIdIn(visibleIds));
-    return getRepository().loadByIds(visibleIds).stream()
-        .filter(resource -> isAccessible(resource, context))
-        .toList();
+    return directoryQuery().allAccessible();
   }
 
   @Override
@@ -501,15 +436,7 @@ public class ResourceServiceImpl
     if (normalizedCodes.isEmpty() || scopeType == null) {
       return List.of();
     }
-    AuthorizationContext context = new AuthorizationContext();
-    context.setScopeType(scopeType);
-    context.setIsAdministrator(systemAdministrator);
-    return getRepository().findAllByCodes(normalizedCodes).stream()
-        .filter(resource -> isAccessible(resource, context))
-        .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
-        .map(Resource::getCode)
-        .filter(this::hasText)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
+    return runtimeQuery().filter(normalizedCodes, scopeType, systemAdministrator, false);
   }
 
   @Override
@@ -517,16 +444,8 @@ public class ResourceServiceImpl
       Collection<String> codes,
       AuthorizationScopeType scopeType
   ) {
-    Set<String> accessibleCodes = new LinkedHashSet<>(filterAccessibleCodes(codes, scopeType, false));
-    if (accessibleCodes.isEmpty()) {
-      return List.of();
-    }
-    return getRepository().findAllByCodes(accessibleCodes).stream()
-        .filter(resource -> Boolean.TRUE.equals(resource.getGrantable()))
-        .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
-        .map(Resource::getCode)
-        .filter(this::hasText)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
+    Set<String> normalizedCodes = normalizeCodes(codes);
+    return normalizedCodes.isEmpty() || scopeType == null ? List.of() : runtimeQuery().filter(normalizedCodes, scopeType, false, true);
   }
 
   @Override
@@ -537,15 +456,7 @@ public class ResourceServiceImpl
     if (scopeType == null) {
       return List.of();
     }
-    AuthorizationContext context = new AuthorizationContext();
-    context.setScopeType(scopeType);
-    context.setIsAdministrator(systemAdministrator);
-    return getRepository().loadAll().stream()
-        .filter(resource -> isAccessible(resource, context))
-        .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
-        .map(Resource::getCode)
-        .filter(this::hasText)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
+    return runtimeQuery().all(scopeType, systemAdministrator);
   }
 
   @Override
@@ -553,34 +464,22 @@ public class ResourceServiceImpl
     if (!hasText(rootId)) {
       return List.of();
     }
-    Set<String> ids = new LinkedHashSet<>();
-    ids.add(rootId);
-    ids.addAll(resourceAncestorRepository.findChildIdsByAncestorIds(Set.of(rootId)));
-    if (ids.isEmpty()) {
-      return List.of();
-    }
-
-    Set<String> visibleCodes = AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())
-        ? null
-        : visibleTenantResourceCodes();
-    return getRepository().loadByIds(ids).stream()
-        .filter(resource -> isAccessible(resource, getAuthorizationContext()))
-        .filter(resource -> Boolean.TRUE.equals(resource.getGrantable()))
-        .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
-        .map(Resource::getCode)
-        .filter(this::hasText)
-        .filter(code -> visibleCodes == null || visibleCodes.contains(code))
-        .collect(Collectors.toCollection(LinkedHashSet::new));
+    return directoryQuery().subtreeCodes(rootId);
   }
 
   @Override
   public Collection<String> findAllRequireOrgTenantCodes() {
-    return getRepository().findCodesByRequireOrgTenant();
+    return runtimeQuery().flagged("requireOrgTenant");
   }
 
   @Override
   public Collection<String> findPublicAccessCodes() {
-    return getRepository().findPublicAccessCodes();
+    return runtimeQuery().flagged("publicAccess");
+  }
+
+  private ResourceRuntimeQuery runtimeQuery() {
+    if (permissionEntityManager == null) throw new IllegalStateException("资源鉴权查询服务不可用");
+    return new ResourceRuntimeQuery(permissionEntityManager);
   }
 
   private void saveAncestors(Resource saved, boolean clearExisting) {
@@ -670,13 +569,26 @@ public class ResourceServiceImpl
       boolean clearRuntimeFields,
       Map<String, String> remoteEntries
   ) {
-    List<Resource> sorted = resources.stream().sorted(this::compareResources).toList();
+    return buildResourceTree(resources, services, clearRuntimeFields, remoteEntries, Resource.class);
+  }
+
+  private List<ResourceNode> buildResourceTree(
+      Collection<Resource> resources, Set<ServiceResourceRouteResult.ServiceEntry> services,
+      boolean clearRuntimeFields, Map<String, String> remoteEntries, Class<?> sourceType
+  ) {
+    Map<String, String> readableLabels = new HashMap<>();
+    for (Resource resource : resources) readableLabels.put(resource.getId(), readableResourceLabel(resource, sourceType));
+    String sortAccess = org.simplepoint.core.jackson.FieldPermissionPolicy.access(sourceType, "sort");
+    boolean readableSort = !"MASKED".equals(sortAccess) && !org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(sortAccess);
+    List<Resource> sorted = resources.stream().sorted(Comparator
+        .comparing((Resource resource) -> readableSort ? resource.getSort() : null, Comparator.nullsLast(Integer::compareTo))
+        .thenComparing(resource -> readableLabels.get(resource.getId()), Comparator.nullsLast(String::compareTo))).toList();
     Map<String, ResourceNode> nodeMap = new HashMap<>();
     for (Resource resource : sorted) {
       addServiceEntry(services, resource.getComponent(), remoteEntries);
-      ResourceNode node = new ResourceNode();
+      ResourceNode node = sourceType == TenantResource.class ? new org.simplepoint.plugin.rbac.tenant.api.vo.TenantResourceNode() : new ResourceNode();
       BeanUtils.copyProperties(resource, node);
-      node.setLabel(firstNonBlank(resource.getLabel(), resource.getName(), resource.getTitle(), resource.getCode()));
+      node.setLabel(readableLabels.get(resource.getId()));
       nodeMap.put(resource.getId(), node);
     }
     List<ResourceNode> roots = new ArrayList<>();
@@ -699,7 +611,7 @@ public class ResourceServiceImpl
   private ResourceNode toResourceNode(Resource resource) {
     ResourceNode node = new ResourceNode();
     BeanUtils.copyProperties(resource, node);
-    node.setLabel(firstNonBlank(resource.getLabel(), resource.getName(), resource.getTitle(), resource.getCode()));
+    node.setLabel(readableResourceLabel(resource));
     node.setChildren(List.of());
     node.setHasChildren(Boolean.FALSE);
     return node;
@@ -715,6 +627,26 @@ public class ResourceServiceImpl
     node.getChildren().forEach(this::clearRouteFields);
   }
 
+  /** Resolve display fallbacks only after source-field projection; otherwise a hidden name reappears through label. */
+  private String readableResourceLabel(Resource resource) {
+    return readableResourceLabel(resource, Resource.class);
+  }
+
+  private String readableResourceLabel(Resource resource, Class<?> sourceType) {
+    var source = new java.util.LinkedHashMap<String, Object>();
+    source.put("label", resource.getLabel()); source.put("name", resource.getName());
+    source.put("title", resource.getTitle()); source.put("code", resource.getCode());
+    var readable = org.simplepoint.core.jackson.FieldPermissionPolicy.project(sourceType, source);
+    return firstNonBlank((String) readable.get("label"), (String) readable.get("name"), (String) readable.get("title"), (String) readable.get("code"));
+  }
+
+  /** Ordinary administrator navigation retains its cache; request-specific redacted labels never enter or reuse it. */
+  private boolean resourceLabelsAreCacheable() {
+    return java.util.stream.Stream.of("label", "name", "title", "code")
+        .map(field -> org.simplepoint.core.jackson.FieldPermissionPolicy.access(Resource.class, field))
+        .noneMatch(access -> "MASKED".equals(access) || org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(access));
+  }
+
   private ServiceResourceRouteResult withScopeContext(ServiceResourceRouteResult result, AuthorizationContext context) {
     if (context == null) {
       return result;
@@ -725,38 +657,6 @@ public class ResourceServiceImpl
         "tenantId", context.getAttribute("X-Tenant-Id") == null ? "" : context.getAttribute("X-Tenant-Id"),
         "userId", context.getUserId() == null ? "" : context.getUserId()
     ));
-  }
-
-  private Set<String> visibleTenantResourceCodes() {
-    if (AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
-      return getRepository().loadAll().stream()
-          .filter(resource -> isAccessible(resource, getAuthorizationContext()))
-          .map(Resource::getCode)
-          .filter(this::hasText)
-          .collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-    String tenantId = currentTenantId();
-    if (!hasText(tenantId)) {
-      var tenantRepository = tenantRepositoryProvider.getIfAvailable();
-      var context = getAuthorizationContext();
-      if (tenantRepository != null && context != null && hasText(context.getUserId())) {
-        tenantId = tenantRepository.findPersonalTenantByOwnerId(context.getUserId())
-            .map(org.simplepoint.plugin.rbac.tenant.api.entity.Tenant::getId)
-            .orElse(null);
-      }
-    }
-    TenantPackageRelevanceRepository repository = tenantPackageRelevanceRepositoryProvider.getIfAvailable();
-    if (!hasText(tenantId) || repository == null) {
-      return new LinkedHashSet<>(findPublicAccessCodes());
-    }
-    Set<String> codes = new LinkedHashSet<>(repository.findResourceCodesByTenantId(tenantId));
-    codes.addAll(findPublicAccessCodes());
-    codes.retainAll(filterAccessibleCodes(
-        codes,
-        getAuthorizationContext().getScopeType(),
-        Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())
-    ));
-    return codes;
   }
 
   private Map<String, String> loadRemoteEntriesByServiceName() {
@@ -924,13 +824,6 @@ public class ResourceServiceImpl
 
   private boolean isRouteType(ResourceType type) {
     return type == ResourceType.GROUP || type == ResourceType.MODULE || type == ResourceType.PAGE;
-  }
-
-  private int compareResources(Resource left, Resource right) {
-    return Comparator
-        .comparing((Resource resource) -> resource.getSort(), Comparator.nullsLast(Integer::compareTo))
-        .thenComparing(resource -> firstNonBlank(resource.getLabel(), resource.getName(), resource.getTitle(), resource.getCode()))
-        .compare(left, right);
   }
 
   private Set<String> normalizeCodes(Collection<String> codes) {

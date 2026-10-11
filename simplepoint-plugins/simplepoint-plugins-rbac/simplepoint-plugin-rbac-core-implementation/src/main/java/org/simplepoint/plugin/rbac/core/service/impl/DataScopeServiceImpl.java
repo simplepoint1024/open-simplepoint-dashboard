@@ -53,6 +53,7 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends DataScope> S create(S entity) {
+    clearNonEditableFieldsForCreate(entity);
     validatePolicy(entity);
     entity.setTenantId(requireCurrentTenantId());
     S result = super.create(entity);
@@ -65,6 +66,7 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   public List<DataScope> create(Collection<DataScope> entities) {
     String tenantId = requireCurrentTenantId();
     entities.forEach(entity -> {
+      clearNonEditableFieldsForCreate(entity);
       validatePolicy(entity);
       entity.setTenantId(tenantId);
     });
@@ -76,13 +78,19 @@ public class DataScopeServiceImpl extends BaseServiceImpl<DataScopeRepository, D
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends DataScope> DataScope modifyById(S entity) {
-    var existing = getRepository().findByIdAndTenantIdAndDeletedAtIsNull(entity.getId(), requireCurrentTenantId())
-        .orElseThrow(() -> new org.simplepoint.core.permission.InvalidPermissionPolicyException("规则不存在"));
-    if (existing.getType() != entity.getType() || !java.util.Objects.equals(existing.getResourceCode(), entity.getResourceCode())) {
-      policyGuard.requireUnused(requireCurrentTenantId(), List.of(entity.getId()), true);
+    if (entity == null || entity.getId() == null) throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("规则标识不能为空");
+    DataScope current = super.findById(entity.getId()).orElseThrow(() ->
+        new org.simplepoint.core.permission.InvalidPermissionPolicyException("规则不存在或不属于当前工作空间"));
+    restoreNonWritableFields(current, entity);
+    var protectedFields = getNonWritableFieldNames(entity.getClass());
+    if (current.getType() != entity.getType() && !java.util.Collections.disjoint(protectedFields,
+        java.util.Set.of("customDeptIds", "resourceCode", "expression"))
+        || !java.util.Objects.equals(current.getResourceCode(), entity.getResourceCode()) && protectedFields.contains("expression")) {
+      throw new org.simplepoint.core.permission.InvalidPermissionPolicyException("受保护的规则依赖不能通过修改类型或目标页面改变");
     }
     validatePolicy(entity);
     entity.setTenantId(requireCurrentTenantId());
+    policyGuard.validateDataUpdate(requireCurrentTenantId(), entity);
     DataScope result = super.modifyById(entity);
     refreshCurrentTenantAuthorizationVersion();
     return result;

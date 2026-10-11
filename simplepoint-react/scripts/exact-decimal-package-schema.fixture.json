@@ -1,0 +1,290 @@
+{
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:packages.title.name",
+        "description": "i18n:packages.description.name",
+        "minLength": 1,
+        "maxLength": 128,
+        "x-order": 0,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "code": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:packages.title.code",
+        "description": "i18n:packages.description.code",
+        "minLength": 1,
+        "maxLength": 128,
+        "x-order": 1,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "price": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+        "title": "i18n:packages.title.price",
+        "description": "i18n:packages.description.price",
+        "x-order": 2,
+        "x-ui": {
+          "x-list-visible": "true",
+          "widget": "Decimal"
+        },
+        "x-decimal": {
+          "precision": 19,
+          "scale": 2,
+          "minimum": "-99999999999999999.99",
+          "maximum": "99999999999999999.99"
+        }
+      },
+      "durationDays": {
+        "type": "integer",
+        "title": "i18n:packages.title.durationDays",
+        "description": "i18n:packages.description.durationDays",
+        "x-order": 3,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "sort": {
+        "type": "integer",
+        "title": "i18n:packages.title.sort",
+        "description": "i18n:packages.description.sort",
+        "x-order": 4,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "enabled": {
+        "type": "boolean",
+        "title": "i18n:packages.title.enabled",
+        "description": "i18n:packages.description.enabled",
+        "x-order": 5,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      },
+      "description": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:packages.title.description",
+        "description": "i18n:packages.description.description",
+        "maxLength": 512,
+        "x-order": 6,
+        "x-ui": {
+          "x-list-visible": "true"
+        }
+      }
+    },
+    "x-query": {
+      "version": 1,
+      "maxPageSize": 200,
+      "maxNodes": 32,
+      "maxDepth": 4,
+      "maxSort": 3,
+      "fields": {
+        "name": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "code": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "description": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "price": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "BigDecimal"
+        },
+        "durationDays": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Integer"
+        },
+        "sort": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Integer"
+        },
+        "enabled": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Boolean"
+        }
+      },
+      "relations": []
+    }
+  },
+  "buttons": [
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "packages.create",
+      "variant": "outlined",
+      "icon": "PlusCircleOutlined",
+      "argumentMaxSize": 1,
+      "sort": 0,
+      "type": "primary",
+      "title": "i18n:table.button.create",
+      "danger": false,
+      "argumentMinSize": 0,
+      "key": "add"
+    },
+    {
+      "path": "[default]",
+      "color": "orange",
+      "authority": "packages.edit",
+      "variant": "outlined",
+      "icon": "EditOutlined",
+      "argumentMaxSize": 1,
+      "sort": 1,
+      "type": "primary",
+      "title": "i18n:table.button.edit",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "edit"
+    },
+    {
+      "path": "[default]",
+      "color": "danger",
+      "authority": "packages.delete",
+      "variant": "outlined",
+      "icon": "MinusCircleOutlined",
+      "argumentMaxSize": 10,
+      "sort": 2,
+      "type": "primary",
+      "title": "i18n:table.button.delete",
+      "danger": true,
+      "argumentMinSize": 1,
+      "key": "delete"
+    },
+    {
+      "path": "[default]",
+      "color": "orange",
+      "authority": "packages.config.application",
+      "variant": "outlined",
+      "icon": "SafetyOutlined",
+      "argumentMaxSize": 1,
+      "sort": 3,
+      "type": "primary",
+      "title": "i18n:packages.button.config.application",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "config.application"
+    }
+  ]
+}

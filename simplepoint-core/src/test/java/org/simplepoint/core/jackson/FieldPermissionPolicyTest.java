@@ -33,6 +33,25 @@ class FieldPermissionPolicyTest {
     String protectedValue;
   }
 
+  @PermissionResource(Person.class)
+  static class AliasedJoinedView {
+    @org.simplepoint.core.annotation.PermissionFields(resource = Person.class, value = {"name", "phone"})
+    public String display = "never disclose phone";
+    @org.simplepoint.core.annotation.PermissionFields(resource = Person.class, value = "secret")
+    public String protectedValue = "never disclose secret";
+  }
+
+  @Test void projectionAnnotationsAreNotLostWhenTheirDtoAlsoAliasesTheOwningEntity() throws Exception {
+    scope();
+    assertThat(FieldPermissionPolicy.access(AliasedJoinedView.class, "display")).isEqualTo("MASKED");
+    assertThat(FieldPermissionPolicy.access(AliasedJoinedView.class, "protectedValue")).isEqualTo("HIDDEN");
+    var legacy = mapper.readTree(mapper.writeValueAsString(new AliasedJoinedView()));
+    var modernMapper = tools.jackson.databind.json.JsonMapper.builder().addModule(new FieldScopeJackson3Module()).build();
+    var modern = modernMapper.readTree(modernMapper.writeValueAsString(new AliasedJoinedView()));
+    assertThat(legacy.path("display").asText()).isEqualTo("***"); assertThat(legacy.has("protectedValue")).isFalse();
+    assertThat(modern.path("display").asText()).isEqualTo("***"); assertThat(modern.has("protectedValue")).isFalse();
+  }
+
   @Test
   void computedProjectionsInheritTheStrictestSourcePolicy() {
     scope();
@@ -86,6 +105,24 @@ class FieldPermissionPolicyTest {
     assertThat(dto.get("phone").asText()).isEqualTo("***");
     assertThat(person.phone).isEqualTo("13812345678");
     assertThat(FieldPermissionPolicy.writable(Person.class, "phone")).isFalse();
+  }
+
+  @Test
+  void externalExtensionModelsCannotBypassEitherJsonConverter() throws Exception {
+    var type = com.example.permission.ExtensionRecord.class;
+    var context = new AuthorizationContext();
+    context.setResourceFieldPermissions(Map.of("extension.view", Map.of(
+        type.getName() + "#secret", "HIDDEN", type.getName() + "#name", "MASKED")));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    ResourcePolicyContext.set("extension.view");
+    var record = new com.example.permission.ExtensionRecord("private", "secret");
+    var legacy = mapper.readTree(mapper.writeValueAsString(record));
+    var modernMapper = tools.jackson.databind.json.JsonMapper.builder().addModule(new FieldScopeJackson3Module()).build();
+    var modern = modernMapper.readTree(modernMapper.writeValueAsString(record));
+    assertThat(legacy.has("secret")).isFalse();
+    assertThat(modern.has("secret")).isFalse();
+    assertThat(legacy.path("name").asText()).isEqualTo("***");
+    assertThat(modern.path("name").asText()).isEqualTo("***");
   }
 
   @Test

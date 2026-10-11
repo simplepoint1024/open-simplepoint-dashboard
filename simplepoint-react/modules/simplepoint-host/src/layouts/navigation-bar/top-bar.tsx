@@ -1,7 +1,9 @@
 import type {ItemType} from "antd/es/menu/interface";
 import {App as AntdApp, Avatar, Button, Dropdown, MenuProps, Tooltip, Popconfirm, Tag} from "antd";
-import {ApartmentOutlined, CreditCardOutlined, DeleteOutlined, DesktopOutlined, DownOutlined, EditOutlined, FontSizeOutlined, FullscreenExitOutlined, FullscreenOutlined, GithubOutlined, GlobalOutlined, HomeOutlined, LogoutOutlined, MoonOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SearchOutlined, SettingOutlined, SunOutlined, UserOutlined} from "@simplepoint/shared/types/icon";
+import {ApartmentOutlined, CreditCardOutlined, DesktopOutlined, DownOutlined, EditOutlined, FontSizeOutlined, FullscreenExitOutlined, FullscreenOutlined, GithubOutlined, GlobalOutlined, HomeOutlined, LogoutOutlined, MoonOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SearchOutlined, SettingOutlined, SunOutlined, UserOutlined} from "@simplepoint/shared/types/icon";
 import React, {useEffect, useRef, useState} from 'react';
+import TableActions from '@simplepoint/components/Table/Actions';
+import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import { useUserInfo } from '@/fetches/user';
 import { useCurrentRoles, useCurrentTenants, type CurrentRole, type CurrentTenant } from '@/fetches/tenants';
@@ -467,13 +469,20 @@ const ClearCacheButton = React.memo<{ type?: 'text'|'default' }>(({ type = 'defa
   const {message} = AntdApp.useApp();
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
+  const confirmWorkspaceChange = useNavigationGuard(), flight = useRef(false);
 
   const onConfirm = async () => {
+    if (flight.current) return;
+    flight.current = true;
     setLoading(true);
     try {
+      if (!await confirmWorkspaceChange()) return;
       await clearClientCaches({ preserveSessionContext: true, rebuildContextId: true });
       message.success(t('tools.clearDone','已清理全局缓存'));
+    } catch (error) {
+      message.error(resolveApiErrorMessage(error, t('error.operationFailed', '操作失败，请重试')));
     } finally {
+      flight.current = false;
       setLoading(false);
     }
   };
@@ -488,8 +497,10 @@ const ClearCacheButton = React.memo<{ type?: 'text'|'default' }>(({ type = 'defa
       onConfirm={onConfirm}
       disabled={loading}
     >
-      <Button type={type} size="small" icon={<DeleteOutlined/>} loading={loading}
-              style={{width:28,height:28,padding:0,borderRadius:4,margin: type==='text'?0:'0 4px'}}/>
+      <span style={{display: 'inline-flex'}}><TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'clearCache', sort: 0, type, size: 'small',
+        icon: 'DeleteOutlined', iconOnly: true, text: t('tools.clearCache','清理缓存'), loading, disabled: loading, onClick: () => {},
+        style: {width:28,height:28,padding:0,borderRadius:4,margin: type==='text'?0:'0 4px'},
+      }]}/></span>
     </Popconfirm>
   );
 });

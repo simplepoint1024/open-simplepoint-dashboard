@@ -93,7 +93,8 @@ class UserRoleAssignmentHttpTest {
     var service = new UsersServiceImpl(null, mock(UserRepository.class), details,
         new JpaRepositoryFactory(em).getRepository(JpaUserRoleRelevanceRepository.class), tenants,
         mock(TenantUserRelevanceRepository.class), roleRepository, mock(ResourceAuthorizationVersionService.class),
-        mock(ResourceGrantLogRemoteService.class), mock(ObjectProvider.class), (UserRoleCandidateQuery) queryProxy.getProxy());
+        mock(ResourceGrantLogRemoteService.class), mock(ObjectProvider.class), (UserRoleCandidateQuery) queryProxy.getProxy(),
+        new org.simplepoint.plugin.rbac.core.service.impl.UserPickerQuery(em));
     mvc = MockMvcBuilders.standaloneSetup(new UsersController(service)).setControllerAdvice(new GlobalExceptionHandler())
         .setMessageConverters(new org.springframework.http.converter.json.JacksonJsonHttpMessageConverter())
         .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver()).build();

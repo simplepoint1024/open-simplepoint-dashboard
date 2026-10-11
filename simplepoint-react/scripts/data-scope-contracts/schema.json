@@ -1,0 +1,215 @@
+{
+  "buttons": [
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "data-scope.create",
+      "variant": "outlined",
+      "icon": "PlusCircleOutlined",
+      "argumentMaxSize": 1,
+      "sort": 0,
+      "type": "primary",
+      "danger": false,
+      "title": "i18n:table.button.create",
+      "argumentMinSize": 0,
+      "key": "add"
+    },
+    {
+      "path": "[default]",
+      "color": "orange",
+      "authority": "data-scope.edit",
+      "variant": "outlined",
+      "icon": "EditOutlined",
+      "argumentMaxSize": 1,
+      "sort": 1,
+      "type": "primary",
+      "danger": false,
+      "title": "i18n:table.button.edit",
+      "argumentMinSize": 1,
+      "key": "edit"
+    }
+  ],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "customDeptIds": {
+        "title": "i18n:data-scopes.title.customDeptIds",
+        "description": "i18n:data-scopes.description.customDeptIds",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "title": "i18n:data-scopes.title.customDeptIds",
+          "description": "i18n:data-scopes.description.customDeptIds"
+        }
+      },
+      "description": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:data-scopes.title.description",
+        "description": "i18n:data-scopes.description.description"
+      },
+      "expression": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:data-scopes.title.expression",
+        "description": "",
+        "maxLength": 8192
+      },
+      "name": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:data-scopes.title.name",
+        "description": "i18n:data-scopes.description.name",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "resourceCode": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "title": "i18n:data-scopes.title.resourceCode",
+        "description": "",
+        "maxLength": 200
+      },
+      "type": {
+        "type": "string",
+        "enum": [
+          "SELF",
+          "EXPRESSION",
+          "CUSTOM",
+          "DEPT",
+          "DEPT_AND_BELOW",
+          "ALL"
+        ],
+        "title": "i18n:data-scopes.title.type",
+        "description": "i18n:data-scopes.description.type"
+      }
+    },
+    "x-query": {
+      "fields": {
+        "id": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "name": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "type": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "DataScopeType"
+        },
+        "description": {
+          "operators": [
+            "like",
+            "not:like",
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "String"
+        },
+        "createdAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        },
+        "updatedAt": {
+          "operators": [
+            "equals",
+            "not:equals",
+            "in",
+            "not:in",
+            "between",
+            "not:between",
+            "than:greater",
+            "than:less",
+            "than:equal:greater",
+            "than:equal:less",
+            "is:null",
+            "is:not:null"
+          ],
+          "sortable": true,
+          "javaType": "Instant"
+        }
+      },
+      "relations": [],
+      "version": 1,
+      "maxPageSize": 200,
+      "maxNodes": 32,
+      "maxDepth": 4,
+      "maxSort": 3
+    }
+  }
+}

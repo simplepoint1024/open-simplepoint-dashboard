@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -58,8 +59,9 @@ public class RoleResourceConfigurationController {
       @RequestParam("resourceCode") String resourceCode,
       @RequestParam("kind") String kind,
       @RequestParam(name = "keyword", defaultValue = "") String keyword,
+      @RequestParam(name = "selectedId", required = false) String selectedId,
       Pageable pageable) {
-    return Response.okay(service.policies(roleId, resourceCode, kind, keyword, pageable));
+    return Response.okay(service.policies(roleId, resourceCode, kind, keyword, pageable, selectedId));
   }
 
   /** Atomically applies explicit resource changes without replacing off-page grants. */
@@ -88,6 +90,14 @@ public class RoleResourceConfigurationController {
       @PathVariable("roleId") String roleId,
       @RequestParam("resourceId") String resourceId) {
     return Response.okay(service.subtreeRows(roleId, resourceId));
+  }
+
+  /** Resolves visible ancestor context without loading the entire resource catalog. */
+  @PostMapping("/resource-context")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('roles.config.resource')")
+  public Response<java.util.List<RoleResourceConfigurationService.Row>> contextRows(
+      @PathVariable("roleId") String roleId, @RequestBody java.util.List<String> resourceIds) {
+    return Response.okay(service.contextRows(roleId, resourceIds));
   }
 
   /** Atomically grants or revokes the previewed resource subtree. */

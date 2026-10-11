@@ -74,6 +74,16 @@ class StringUtilTest {
         .isInstanceOf(NumberFormatException.class);
   }
 
+  @Test
+  void commaSetsParseEveryValueDeduplicateAndPreserveRequestedOrder() {
+    assertThat(StringUtil.stringToSet(" u3,u1,u2,u3,u4 ")).containsExactly("u3", "u1", "u2", "u4");
+    assertThat(StringUtil.stringToLongSet(" 3,1,2,3,4 ")).containsExactly(3L, 1L, 2L, 4L);
+    assertThat(StringUtil.stringToSet(java.util.stream.IntStream.range(0, 100)
+        .mapToObj(index -> "u" + index).collect(java.util.stream.Collectors.joining(",")))).hasSize(100);
+    assertThatThrownBy(() -> StringUtil.stringToLongSet("1,2,not-a-number,3"))
+        .isInstanceOf(NumberFormatException.class);
+  }
+
   // -------- stringToSet --------
 
   @Test

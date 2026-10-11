@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
-import {Alert, Button, Tag} from 'antd';
+import {Alert, Tag} from 'antd';
+import TableActions from '@simplepoint/components/Table/Actions';
 import {useQueryClient} from '@tanstack/react-query';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {getQueryScopeSnapshot, scopedQueryKey} from '@simplepoint/shared/api/queryScope';
@@ -42,7 +43,9 @@ export function ErrorNotice({error, retry}: {error: unknown; retry?: () => void}
   const {t} = usePersonalLabels();
   if (!error) return null;
   return <Alert type="error" showIcon title={resolveApiErrorMessage(error, t('personal.failed', '操作失败，请重试'))}
-    action={retry && <Button onClick={retry}>{t('personal.retry', '重试')}</Button>} />;
+    action={retry && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+      {key: 'retry', sort: 1, text: t('personal.retry', '重试')},
+    ]} onButtonEvents={{retry}}/>} />;
 }
 
 /** Scope-bound, abortable single-flight writes; failures never discard the user's draft. */

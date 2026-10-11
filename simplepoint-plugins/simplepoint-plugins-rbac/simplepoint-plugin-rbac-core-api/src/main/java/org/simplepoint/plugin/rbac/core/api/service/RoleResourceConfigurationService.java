@@ -55,7 +55,12 @@ public interface RoleResourceConfigurationService {
       boolean rootsOnly, boolean navigationOnly, Pageable page);
 
   /** Paged tenant-owned policies that can be attached to the selected page. */
-  Page<PolicyOption> policies(String roleId, String resourceCode, String kind, String keyword, Pageable page);
+  default Page<PolicyOption> policies(String roleId, String resourceCode, String kind, String keyword, Pageable page) {
+    return policies(roleId, resourceCode, kind, keyword, page, null);
+  }
+
+  /** Exact selected-value hydration uses the same tenant and page-model eligibility as browsing. */
+  Page<PolicyOption> policies(String roleId, String resourceCode, String kind, String keyword, Pageable page, String selectedId);
 
   /** Checks resource revisions under the role lock before applying any changes. */
   void save(String roleId, Patch patch);
@@ -65,6 +70,9 @@ public interface RoleResourceConfigurationService {
 
   /** Lists every visible resource in a subtree, including structural nodes for tree display. */
   List<Row> subtreeRows(String roleId, String resourceId);
+
+  /** Resolves a bounded selection and its visible ancestors for a contextual preview. */
+  List<Row> contextRows(String roleId, List<String> resourceIds);
 
   /** Atomically applies a previewed subtree change under the role lock. */
   void saveSubtree(String roleId, BulkCommand command);

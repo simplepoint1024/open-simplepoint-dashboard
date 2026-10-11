@@ -464,6 +464,85 @@ class TypedQueryDatabaseTest {
     assertThat(next.getContent()).extracting(r -> r.title).containsExactly("Gamma");
   }
 
+  static class ReferenceService extends BaseServiceImpl<BaseRepositoryImpl<Row, String>, Row, String> {
+    ReferenceService(BaseRepositoryImpl<Row, String> repository) {super(repository, null);}
+
+    org.springframework.data.domain.Page<Row> candidates(
+        Map<String, String> filters, boolean included, org.springframework.data.domain.Pageable pageable) {
+      return limitReferencedScoped(filters, Map.of("enabled", "equals:true"), List.of(
+          new org.simplepoint.api.base.QueryReferenceMembership("id", "QueryLabel", "rowId",
+              Map.of("label", "user,1:literal"), included)), pageable);
+    }
+  }
+
+  @Test
+  void serverReferenceMembershipPagesInSqlWithoutDuplicatingRowsOrWeakeningScopes() {
+    var rows = service.<Row>limit(Map.of(), PageRequest.of(0, 10, Sort.by("amount"))).getContent();
+    // Duplicate assignments do not inflate counts. Deleted and foreign references do not match.
+    for (int index = 0; index < 4; index++) {
+      var label = new Label();
+      label.rowId = rows.get(index < 2 ? 0 : 2).getId();
+      label.label = "user,1:literal";
+      label.setTenantId(index == 2 ? "tenant-b" : "tenant-a");
+      label.setCreatedBy("user-b");
+      label.setDeletedAt(index == 3 ? Instant.now() : null);
+      session.persist(label);
+    }
+    session.flush();
+    session.clear();
+    var candidates = new ReferenceService(repository);
+    String broad = """
+        {"version":1,"where":{"op":"or","children":[
+          {"op":"equals","field":"enabled","value":true},
+          {"op":"equals","field":"enabled","value":false}]}}
+        """;
+    var available = candidates.candidates(Map.of("$query", broad), false, PageRequest.of(0, 1));
+    assertThat(available.getTotalElements()).isEqualTo(1);
+    assertThat(available.getContent()).extracting(row -> row.amount).containsExactly(100);
+    var selected = candidates.candidates(Map.of("$query", broad), true, PageRequest.of(0, 1));
+    assertThat(selected.getTotalElements()).isEqualTo(1);
+    assertThat(selected.getContent()).extracting(row -> row.amount).containsExactly(2);
+    scope("SELF");
+    assertThat(candidates.candidates(Map.of(), false, PageRequest.of(0, 1)).getTotalElements()).isEqualTo(1);
+    scope("NONE");
+    assertThat(candidates.candidates(Map.of(), false, PageRequest.of(0, 1)).getTotalElements()).isZero();
+    assertThat(candidates.candidates(Map.of(), true, PageRequest.of(0, 1)).getTotalElements()).isZero();
+  }
+
+  @Test
+  void serverReferenceMembershipKeepsCatalogAndAssignmentMaterializationBounded() {
+    for (int index = 0; index < 520; index++) {
+      var row = new Row();
+      row.title = "reference-bench-" + index;
+      row.amount = index + 1000;
+      row.enabled = true;
+      row.setTenantId("tenant-a");
+      row.setCreatedBy("user-a");
+      session.persist(row);
+      if (index % 2 == 0) {
+        var label = new Label();
+        label.rowId = row.getId();
+        label.label = "user,1:literal";
+        label.setTenantId("tenant-a");
+        session.persist(label);
+      }
+    }
+    session.flush();
+    session.clear();
+    var statistics = factory.getStatistics();
+    statistics.setStatisticsEnabled(true);
+    statistics.clear();
+    try {
+      var result = new ReferenceService(repository).candidates(Map.of("amount", "than:greater:500"),
+          false, PageRequest.of(12, 20, Sort.by("amount")));
+      assertThat(result.getTotalElements()).isEqualTo(260);
+      assertThat(result.getContent()).hasSize(20);
+      assertThat(result.getContent().getLast().amount).isEqualTo(1519);
+      assertThat(statistics.getPrepareStatementCount()).isLessThanOrEqualTo(2);
+      assertThat(statistics.getEntityLoadCount()).isLessThanOrEqualTo(20);
+    } finally {statistics.setStatisticsEnabled(false);}
+  }
+
   @Test
   void tenThousandRowBenchmarkKeepsPageAndStatementCountsBounded() {
     for (int i = 0; i < 10_000; i++) {

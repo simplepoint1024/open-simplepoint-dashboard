@@ -31,6 +31,7 @@ import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionServi
 import org.simplepoint.plugin.dna.core.api.service.JdbcDialectManagementService;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDriverDefinitionService;
 import org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -63,6 +64,8 @@ public class FederationCalciteCatalogAssembler {
 
   private final JdbcDialectManagementService dialectManagementService;
 
+  private final FederationMetadataCacheService metadataCacheService;
+
   /**
    * Creates a Calcite catalog assembler.
    *
@@ -70,14 +73,31 @@ public class FederationCalciteCatalogAssembler {
    * @param driverService driver service
    * @param dialectManagementService dialect service
    */
+  @Autowired
   public FederationCalciteCatalogAssembler(
       final JdbcDataSourceDefinitionService dataSourceService,
       final JdbcDriverDefinitionService driverService,
-      final JdbcDialectManagementService dialectManagementService
+      final JdbcDialectManagementService dialectManagementService,
+      final FederationMetadataCacheService metadataCacheService
   ) {
     this.dataSourceService = dataSourceService;
     this.driverService = driverService;
     this.dialectManagementService = dialectManagementService;
+    this.metadataCacheService = metadataCacheService;
+  }
+
+  /** Package-local constructor retained for focused tests without Redis. */
+  FederationCalciteCatalogAssembler(
+      final JdbcDataSourceDefinitionService dataSourceService,
+      final JdbcDriverDefinitionService driverService,
+      final JdbcDialectManagementService dialectManagementService
+  ) {
+    this(
+        dataSourceService,
+        driverService,
+        dialectManagementService,
+        new FederationMetadataCacheService()
+    );
   }
 
   /**
@@ -120,7 +140,10 @@ public class FederationCalciteCatalogAssembler {
       return assembly.toRuntimeAssembly(false, toElapsedMs(startedAt), true);
     }
     String cacheKey = schemaCacheKey(normalizedCatalogCode, normalizedDataSources)
-        + catalogScopeKey(requestedCatalogs);
+        + catalogScopeKey(requestedCatalogs)
+        + metadataCacheService.versionToken(
+        normalizedDataSources.stream().map(JdbcDataSourceDefinition::getId).toList()
+    );
     CachedCatalogAssembly cached = lookupCachedAssembly(cacheKey);
     if (cached != null) {
       return cached.toRuntimeAssembly(true, toElapsedMs(startedAt), false);
@@ -154,6 +177,30 @@ public class FederationCalciteCatalogAssembler {
     }
     entries.forEach(CachedCatalogAssembly::close);
     return entries.size();
+  }
+
+  /**
+   * Removes local Calcite assemblies containing one managed datasource.
+   *
+   * @param dataSourceId managed datasource id
+   * @return number of local assemblies closed
+   */
+  public long invalidateDataSource(final String dataSourceId) {
+    if (dataSourceId == null || dataSourceId.isBlank()) {
+      throw new IllegalArgumentException("dataSourceId is required");
+    }
+    List<CachedCatalogAssembly> removed = new ArrayList<>();
+    synchronized (schemaCacheMonitor) {
+      schemaCache.entrySet().removeIf(entry -> {
+        boolean matches = entry.getValue().containsDataSource(dataSourceId.trim());
+        if (matches) {
+          removed.add(entry.getValue());
+        }
+        return matches;
+      });
+    }
+    removed.forEach(CachedCatalogAssembly::close);
+    return removed.size();
   }
 
   private CachedCatalogAssembly buildCatalogAssembly(
@@ -839,6 +886,13 @@ public class FederationCalciteCatalogAssembler {
     @Override
     public void close() {
       closeDataSources(cleanupDataSources);
+    }
+
+    private boolean containsDataSource(final String dataSourceId) {
+      return jdbcSources.stream()
+          .map(ResolvedJdbcSource::definition)
+          .map(JdbcDataSourceDefinition::getId)
+          .anyMatch(dataSourceId::equals);
     }
   }
 

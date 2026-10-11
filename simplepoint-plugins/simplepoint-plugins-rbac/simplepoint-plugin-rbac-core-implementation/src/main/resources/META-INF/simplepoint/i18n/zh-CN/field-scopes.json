@@ -34,6 +34,7 @@
   "field-scopes.rule.duplicate": "同一资源字段不能重复配置",
   "field-scopes.message.catalogFailed": "字段目录加载失败，请刷新后重试",
   "field-scopes.editor.hint": "选择页面资源后批量添加字段；未配置的字段沿用原有权限。规则保存后仍需在角色资源配置中绑定。",
+  "field-scopes.editor.metadataOnly": "本表单仅保存基础信息，不修改字段规则。",
   "field-scopes.editor.unavailable": "部分已有字段的元数据当前不可用，配置会保留；可以移除，但不能修改其访问级别。",
   "field-scopes.editor.resource": "页面资源",
   "field-scopes.editor.fields": "选择字段",

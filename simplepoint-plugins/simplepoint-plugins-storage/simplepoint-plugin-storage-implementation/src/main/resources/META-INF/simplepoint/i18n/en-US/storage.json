@@ -20,6 +20,7 @@
   "storage.object.sourceService": "Source Service",
   "storage.object.sourceService.desc": "Service name that uploaded the object",
   "storage.quota.tenantId": "Tenant ID",
+  "storage.quota.tenantName": "Tenant name",
   "storage.quota.tenantId.desc": "Tenant identifier that owns this quota",
   "storage.quota.quotaBytes": "Quota Bytes",
   "storage.quota.quotaBytes.desc": "Maximum storage bytes available to the tenant; empty means unlimited",
@@ -90,6 +91,8 @@
   "storage.upload.drag": "Click or drag a file here to upload",
   "storage.upload.defaultProvider": "The file will use the unified upload endpoint, the system-default OSS connection, and the current tenant namespace.",
   "storage.quota.limitMb": "Quota (MB, leave empty for unlimited)",
+  "storage.quota.invalidLimit": "Quota exceeds the safe numeric range",
+  "storage.provider.endpointRequired": "This platform requires an Endpoint",
   "storage.contentType": "Content Type",
   "storage.accessUrl": "Access URL",
   "storage.eTag": "ETag"

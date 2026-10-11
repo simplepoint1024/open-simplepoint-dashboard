@@ -3,6 +3,7 @@
   "profile.saveSuccess": "保存成功",
   "profile.saveFailed": "个人资料保存失败",
   "profile.noEmail": "未绑定邮箱",
+  "profile.preferenceUnset": "未设置",
   "field.username": "用户名",
   "field.nickname": "昵称",
   "field.email": "邮箱",

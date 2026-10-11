@@ -37,6 +37,17 @@ public interface JpaAiCatalogEntryRepository
   Optional<AiCatalogEntry> findActiveById(@Param("id") String id);
 
   @Override
+  @Query("""
+      select count(entry) from AiCatalogEntry entry
+      where entry.source = :source and entry.status = :status and entry.deletedAt is null
+        and (:keyword = '' or lower(entry.registryName) like :keyword escape '!'
+          or lower(coalesce(entry.title, '')) like :keyword escape '!'
+          or lower(coalesce(entry.description, '')) like :keyword escape '!')
+      """)
+  long countActiveBySource(@Param("source") CatalogSource source,
+      @Param("status") CatalogEntryStatus status, @Param("keyword") String keyword);
+
+  @Override
   @Query(
       value = """
       select entry from AiCatalogEntry entry
@@ -45,11 +56,11 @@ public interface JpaAiCatalogEntryRepository
         and entry.deletedAt is null
         and (
           :keyword = ''
-          or lower(entry.registryName) like :keyword
-          or lower(coalesce(entry.title, '')) like :keyword
-          or lower(coalesce(entry.description, '')) like :keyword
+          or lower(entry.registryName) like :keyword escape '!'
+          or lower(coalesce(entry.title, '')) like :keyword escape '!'
+          or lower(coalesce(entry.description, '')) like :keyword escape '!'
         )
-      order by entry.registryUpdatedAt desc, entry.registryName asc
+      order by entry.registryUpdatedAt desc, entry.registryName asc, entry.id asc
       """,
       countQuery = """
       select count(entry) from AiCatalogEntry entry
@@ -58,9 +69,9 @@ public interface JpaAiCatalogEntryRepository
         and entry.deletedAt is null
         and (
           :keyword = ''
-          or lower(entry.registryName) like :keyword
-          or lower(coalesce(entry.title, '')) like :keyword
-          or lower(coalesce(entry.description, '')) like :keyword
+          or lower(entry.registryName) like :keyword escape '!'
+          or lower(coalesce(entry.title, '')) like :keyword escape '!'
+          or lower(coalesce(entry.description, '')) like :keyword escape '!'
         )
       """
   )

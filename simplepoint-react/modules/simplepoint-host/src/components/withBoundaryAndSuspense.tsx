@@ -1,6 +1,7 @@
 // src/components/withBoundaryAndSuspense.tsx
 import React from 'react';
-import {Button, Result} from 'antd';
+import {Result} from 'antd';
+import TableActions from '@simplepoint/components/Table/Actions';
 import {LoadingBoundary, LoadingPlaceholder} from '@simplepoint/components/LoadingFeedback';
 import {ErrorBoundary} from './ErrorBoundary';
 
@@ -33,7 +34,8 @@ export const BoundaryAndSuspense: React.FC<BoundaryAndSuspenseProps> = ({
             fallback={retry => (
                 <Result status="error" title={t('error.componentCrashed', '页面加载失败')}
                     subTitle={t('error.componentRetryHint', '当前页面出现异常，可重试加载，其他标签页不受影响。')}
-                    extra={<Button onClick={retry}>{t('action.retry', '重试')}</Button>}/>
+                    extra={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', sort: 0,
+                        text: t('action.retry', '重试'), onClick: retry}]}/>}/>
             )}
         >
             <Component key={`comp-${path}-${refreshKey}`} />

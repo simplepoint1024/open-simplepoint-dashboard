@@ -16,7 +16,7 @@
   "data-scopes.title.type.SELF": "Own Data Only",
   "data-scopes.description.type.SELF": "Access to data created by or belonging to the current user only",
   "data-scopes.title.customDeptIds": "Custom Departments",
-  "data-scopes.description.customDeptIds": "Set of department IDs explicitly granted access; only used when scope type is CUSTOM",
+  "data-scopes.description.customDeptIds": "Select the organizations allowed in a custom organization scope",
   "data-scopes.preview.title": "Current effective permissions",
   "data-scopes.preview.boundary": "Shows saved page data and field policies and legacy role defaults in this workspace. Pages without a policy retain their domain defaults. ALL remains tenant-scoped.",
   "data-scopes.preview.failed": "Failed to load permission preview",
@@ -26,7 +26,7 @@
   "data-scopes.preview.allRoles": "All effective roles combined",
   "data-scopes.preview.version": "Policy version",
   "data-scopes.preview.scope": "Row scope",
-  "data-scopes.preview.depts": "Organization IDs",
+  "data-scopes.preview.depts": "Organizations",
   "data-scopes.preview.self": "Include own rows additionally",
   "data-scopes.preview.field": "Resource field",
   "data-scopes.preview.access": "Access level",
@@ -41,5 +41,8 @@
   "data-scopes.expression.visual": "Visual editor",
   "data-scopes.expression.literal": "Literal value",
   "data-scopes.expression.apply": "Apply visual rule",
-  "data-scopes.expression.validate": "Validate and format"
+  "data-scopes.expression.validate": "Validate and format",
+  "data-scopes.expression.unapplied": "Apply the visual rule first, or continue editing it",
+  "data-scopes.preview.interrupted": "The read was interrupted. Refresh to view current permissions",
+  "data-scopes.preview.close": "Close"
 }

@@ -13,7 +13,8 @@ import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
  */
 @Data
 @Entity
-@Table(name = "simpoint_saas_tenant_package_rel")
+@Table(name = "simpoint_saas_tenant_package_rel", indexes = @jakarta.persistence.Index(
+    name = "idx_tenant_package_license", columnList = "tenantId,packageCode,deletedAt"))
 @EqualsAndHashCode(callSuper = true)
 public class TenantPackageRelevance extends BaseEntityImpl<String> {
   private String tenantId;

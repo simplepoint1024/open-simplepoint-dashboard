@@ -1,15 +1,15 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import type {RJSFSchema} from '@rjsf/utils';
 import {
   App as AntdApp,
+  Alert,
   Avatar,
-  Button,
   Card,
   Col,
   Descriptions,
   Drawer,
   Empty,
-  Form,
-  Input,
+  Modal,
   Row,
   Skeleton,
   Space,
@@ -17,11 +17,15 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import {ApartmentOutlined, EditOutlined, MailOutlined, PhoneOutlined, ReloadOutlined, UserOutlined} from '@simplepoint/shared/types/icon';
+import {ApartmentOutlined, MailOutlined, PhoneOutlined, UserOutlined} from '@simplepoint/shared/types/icon';
 import {useQueryClient} from '@tanstack/react-query';
-import {useLocation, useNavigate} from 'react-router';
-import {OssImageUpload} from '@simplepoint/components/SForm/widgets/OssImageUpload';
+import {useNavigate} from 'react-router';
+import SForm from '@simplepoint/components/SForm/Lazy';
+import type {SFormHandle} from '@simplepoint/components/SForm';
+import TableActions from '@simplepoint/components/Table/Actions';
+import {usePageLocation, usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
 import {put} from '@simplepoint/shared/api/methods';
+import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {scopedQueryKey} from '@simplepoint/shared/api/queryScope';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {type CurrentTenantProfile, useCurrentTenantProfile, useCurrentTenants} from '@/fetches/tenants.ts';
@@ -34,9 +38,14 @@ type TenantProfileForm = Pick<CurrentTenantProfile, 'name' | 'description' | 'lo
 const displayValue = (value?: string | null) => value?.trim() || '-';
 
 export const TenantHome: React.FC = () => {
-  const {message, modal} = AntdApp.useApp();
+  const scope = useQueryScope();
+  return <TenantHomeSession key={JSON.stringify(scope)}/>;
+};
+const TenantHomeSession: React.FC = () => {
+  const {message} = AntdApp.useApp();
   const {t} = useI18n();
-  const location = useLocation();
+  const pageLocation = usePageLocation(), selected = usePageSelected();
+  const location = useMemo(() => new URL(pageLocation, window.location.origin), [pageLocation]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const queryScope = useQueryScope();
@@ -44,8 +53,17 @@ export const TenantHome: React.FC = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [section, setSection] = useState('overview');
+  const [resourceBlocked, setResourceBlocked] = useState(false);
+  const resourceBlockedRef = useRef(false), flight = useRef(false), alive = useRef(true), modeOpenRef = useRef(false);
+  const onResourceBlocked = useCallback((value: boolean) => {resourceBlockedRef.current = value; setResourceBlocked(value);}, []);
+  const [modeOpen, setModeOpen] = useState(false);
+  const [modeTarget, setModeTarget] = useState<'PLATFORM' | 'CUSTOM'>('PLATFORM');
+  const [modeError, setModeError] = useState<string>(), [profileError, setProfileError] = useState<string>();
   const editWarningShown = useRef(false);
-  const [form] = Form.useForm<TenantProfileForm>();
+  const form = useRef<SFormHandle>(null);
+  const [draft, setDraft] = useState<TenantProfileForm>({name: ''});
+  usePageRetention(!editOpen && !saving && !modeOpen && !resourceBlocked, editOpen || saving || modeOpen || resourceBlocked);
+  useEffect(() => {alive.current = true; return () => {alive.current = false;};}, []);
   const {data: currentTenants, isLoading: tenantsLoading} = useCurrentTenants();
   const activeTenant = currentTenants?.find(tenant => tenant.tenantId === tenantId);
   const profileEnabled = !!tenantId && !!activeTenant && activeTenant.tenantType !== 'PLATFORM';
@@ -65,9 +83,10 @@ export const TenantHome: React.FC = () => {
   }, [queryScope, location.pathname, location.search]);
 
   useEffect(() => {
-    if (!data || !wantsEdit) return;
+    if (!data || !wantsEdit || editWarningShown.current) return;
     if (data.profileEditable) {
-      form.setFieldsValue({
+      editWarningShown.current = true;
+      setDraft({
         name: data.name,
         description: data.description,
         logo: data.logo,
@@ -81,11 +100,11 @@ export const TenantHome: React.FC = () => {
       message.warning(t('tenant.profile.noPermission', '当前账号无权修改租户资料'));
     }
     navigate('/tenant', {replace: true});
-  }, [data, form, message, navigate, t, wantsEdit]);
+  }, [data, message, navigate, t, wantsEdit]);
 
   const openEditor = () => {
-    if (!data?.profileEditable) return;
-    form.setFieldsValue({
+    if (!data?.profileEditable || flight.current || modeOpenRef.current || resourceBlockedRef.current) return;
+    setProfileError(undefined); setDraft({
       name: data.name,
       description: data.description,
       logo: data.logo,
@@ -95,15 +114,16 @@ export const TenantHome: React.FC = () => {
   };
 
   const closeEditor = () => {
-    if (saving) return;
+    if (flight.current) return;
     setEditOpen(false);
     if (wantsEdit) navigate('/tenant', {replace: true});
   };
 
-  const saveProfile = async () => {
+  const saveProfile = async (values: TenantProfileForm) => {
+    if (!data?.profileEditable || flight.current || modeOpenRef.current || resourceBlockedRef.current) return;
+    flight.current = true; setSaving(true);
+    setProfileError(undefined);
     try {
-      const values = await form.validateFields();
-      setSaving(true);
       const updated = await put<CurrentTenantProfile>(
         '/common/tenants/current-profile',
         values,
@@ -111,6 +131,7 @@ export const TenantHome: React.FC = () => {
       );
       queryClient.setQueryData(scopedQueryKey(queryScope, ['common', 'tenants', 'current-profile', tenantId]), updated);
       await queryClient.invalidateQueries({queryKey: ['common', 'tenants', 'current']});
+      if (!alive.current) return;
       try {
         Object.keys(sessionStorage)
           .filter(key => key.startsWith('sp.currentTenants'))
@@ -122,40 +143,42 @@ export const TenantHome: React.FC = () => {
       message.success(t('tenant.profile.saved', '租户资料已保存'));
       setEditOpen(false);
       navigate('/tenant', {replace: true});
-    } catch (error: any) {
-      if (error?.errorFields) return;
-      message.error(error?.message ?? t('tenant.profile.saveFailed', '租户资料保存失败'));
+    } catch (error) {
+      if (alive.current) setProfileError(resolveApiErrorMessage(error, t('tenant.profile.saveFailed', '租户资料保存失败')));
     } finally {
-      setSaving(false);
+      flight.current = false; if (alive.current) setSaving(false);
     }
   };
 
   const selectResourceMode = (mode: 'PLATFORM' | 'CUSTOM') => {
-    if (mode === (data?.resourceMode ?? 'PLATFORM')) return;
-    modal.confirm({
-      title: mode === 'CUSTOM'
-        ? t('tenant.settings.enableCustom', '启用租户自定义资源')
-        : t('tenant.settings.usePlatform', '改用平台内置资源'),
-      content: mode === 'CUSTOM'
-        ? t('tenant.settings.enableHint', '首次开启会自动拉取当前租户获授权的平台资源。之后角色授权与菜单会使用租户资源目录。')
-        : t('tenant.settings.platformHint', '租户自定义目录及角色授权会保留，切回平台模式后暂不生效。'),
-      okText: t('action.confirm', '确认'),
-      onOk: async () => {
-        try {
-          setSaving(true);
-          await put('/common/tenants/current-resources/mode', {mode},
-            {headers: tenantId ? {'X-Tenant-Id': tenantId} : undefined});
-          await refetch();
-          message.success(t('tenant.settings.modeSaved', '资源加载类型已更新'));
-          window.location.reload();
-        } catch (error: any) {
-          message.error(error?.message ?? t('tenant.settings.modeFailed', '资源加载类型切换失败'));
-        } finally {
-          setSaving(false);
-        }
-      },
-    });
+    if (!data?.profileEditable || flight.current || modeOpenRef.current || resourceBlockedRef.current || editOpen
+        || mode === (data?.resourceMode ?? 'PLATFORM')) return;
+    modeOpenRef.current = true; setModeTarget(mode); setModeError(undefined); setModeOpen(true);
   };
+  const closeMode = () => {if (!flight.current) {modeOpenRef.current = false; setModeOpen(false);}};
+  const saveMode = async () => {
+    if (!alive.current || flight.current || !modeOpenRef.current || !data?.profileEditable) return;
+    flight.current = true; setSaving(true); setModeError(undefined);
+    try {
+      await put('/common/tenants/current-resources/mode', {mode: modeTarget},
+        {headers: tenantId ? {'X-Tenant-Id': tenantId} : undefined});
+      await refetch();
+      if (!alive.current) return;
+      message.success(t('tenant.settings.modeSaved', '资源加载类型已更新')); window.location.reload();
+    } catch (error) {if (alive.current) setModeError(resolveApiErrorMessage(error, t('tenant.settings.modeFailed', '资源加载类型切换失败')));}
+    finally {flight.current = false; if (alive.current) setSaving(false);}
+  };
+  const blocked = saving || editOpen || modeOpen || resourceBlocked;
+  const actions = (buttons: React.ComponentProps<typeof TableActions>['buttons']) =>
+    <TableActions selectedKeys={[]} selectedRows={[]} buttons={buttons}/>;
+  const editActions = () => actions([{key: 'editTenant', sort: 0, type: 'primary', icon: 'EditOutlined', disabled: blocked,
+    text: t('tenant.profile.edit', '编辑租户资料'), onClick: openEditor}]);
+  const schema = useMemo<RJSFSchema>(() => ({type: 'object', additionalProperties: false, required: ['name'], properties: {
+    name: {type: 'string' as const, title: t('tenant.profile.name', '租户名称'), minLength: 1, maxLength: 128, pattern: '\\S'},
+    description: {type: ['string', 'null'], title: t('tenant.profile.description', '租户简介'), maxLength: 512},
+    logo: {type: ['string', 'null'], title: t('tenant.profile.logo', '租户 Logo'), maxLength: 1024},
+    backgroundImage: {type: ['string', 'null'], title: t('tenant.profile.background', '租户背景图片'), maxLength: 1024},
+  }}), [t]);
 
   if (activeTenant?.tenantType === 'PLATFORM') {
     return (
@@ -173,7 +196,7 @@ export const TenantHome: React.FC = () => {
     return (
       <div className="tenant-home-page tenant-home-empty">
         <Empty description={t('tenant.profile.unavailable', '当前工作空间没有可访问的租户资料')}>
-          <Button icon={<ReloadOutlined/>} onClick={() => void refetch()}>{t('action.retry', '重试')}</Button>
+          {actions([{key: 'retry', sort: 0, icon: 'ReloadOutlined', text: t('action.retry', '重试'), onClick: () => void refetch()}])}
         </Empty>
       </div>
     );
@@ -206,23 +229,21 @@ export const TenantHome: React.FC = () => {
           </div>
         </div>
         <Space className="tenant-home-actions" wrap>
-          <Button icon={<ReloadOutlined/>} onClick={() => void refetch()}>{t('action.refresh', '刷新')}</Button>
-          {data.profileEditable ? (
-            <Button type="primary" icon={<EditOutlined/>} onClick={openEditor}>
-              {t('tenant.profile.edit', '编辑租户资料')}
-            </Button>
-          ) : null}
+          {actions([{key: 'refresh', sort: 0, icon: 'ReloadOutlined', text: t('action.refresh', '刷新'), disabled: blocked, onClick: () => void refetch()}])}
+          {data.profileEditable ? editActions() : null}
         </Space>
       </section>
 
       <Tabs activeKey={section} onChange={next => {
+        if (blocked || resourceBlockedRef.current || flight.current) return;
         setSection(next);
         navigate(next === 'settings' ? '/tenant/settings'
           : next === 'resources' ? '/tenant/resources' : '/tenant');
       }} items={[
-        {key: 'overview', label: t('tenant.settings.overview', '空间概览')},
-        ...(data.profileEditable ? [{key: 'settings', label: t('tenant.settings.title', '空间设置')}] : []),
+        {key: 'overview', disabled: blocked, label: t('tenant.settings.overview', '空间概览')},
+        ...(data.profileEditable ? [{key: 'settings', disabled: blocked, label: t('tenant.settings.title', '空间设置')}] : []),
         ...(data.profileEditable && data.tenantType === 'ORGANIZATION' ? [{key: 'resources',
+          disabled: blocked,
           label: t('tenant.resources.title', '租户资源管理')}] : []),
       ]}/>
 
@@ -261,72 +282,54 @@ export const TenantHome: React.FC = () => {
             {displayValue(data.description)}
           </Descriptions.Item>
         </Descriptions>
-        {data.profileEditable && <Button icon={<EditOutlined/>} onClick={openEditor}>
-          {t('tenant.profile.edit', '编辑租户资料')}
-        </Button>}
+        {data.profileEditable && editActions()}
         {data.tenantType === 'ORGANIZATION' && <div className="tenant-resource-mode">
           <Typography.Title level={5}>{t('tenant.settings.resourceMode', '资源加载类型')}</Typography.Title>
           <Typography.Paragraph type="secondary">
             {t('tenant.settings.modeDescription', '默认使用平台内置资源；启用自定义后，本空间的菜单和角色授权以租户目录为准。')}
           </Typography.Paragraph>
-          <Space wrap>
-            <Button type={(data.resourceMode ?? 'PLATFORM') === 'PLATFORM' ? 'primary' : 'default'}
-              disabled={!data.profileEditable || saving} onClick={() => selectResourceMode('PLATFORM')}>
-              {t('tenant.settings.platform', '平台内置')}
-            </Button>
-            <Button type={data.resourceMode === 'CUSTOM' ? 'primary' : 'default'}
-              disabled={!data.profileEditable || saving} onClick={() => selectResourceMode('CUSTOM')}>
-              {t('tenant.settings.custom', '租户自定义')}
-            </Button>
-          </Space>
+          {actions([{key: 'platformMode', sort: 0, type: (data.resourceMode ?? 'PLATFORM') === 'PLATFORM' ? 'primary' : 'default',
+            text: t('tenant.settings.platform', '平台内置'), disabled: blocked, onClick: () => selectResourceMode('PLATFORM')},
+            {key: 'customMode', sort: 1, type: data.resourceMode === 'CUSTOM' ? 'primary' : 'default',
+              text: t('tenant.settings.custom', '租户自定义'), disabled: blocked, onClick: () => selectResourceMode('CUSTOM')}])}
         </div>}
       </Card>}
 
       {section === 'resources' && data.profileEditable && data.tenantType === 'ORGANIZATION' && (data.resourceMode === 'CUSTOM'
-        ? <TenantResourceManager tenantId={tenantId!}/>
+        ? <TenantResourceManager tenantId={tenantId!} onBlockedChange={onResourceBlocked}/>
         : <Card><Empty description={t('tenant.resources.disabled', '请先在空间设置中启用租户自定义资源')}>
-          {data.profileEditable && <Button type="primary" onClick={() => navigate('/tenant/settings')}>
-            {t('tenant.settings.title', '空间设置')}
-          </Button>}
+          {data.profileEditable && actions([{key: 'openSettings', sort: 0, type: 'primary', text: t('tenant.settings.title', '空间设置'),
+            onClick: () => navigate('/tenant/settings')}])}
         </Empty></Card>)}
 
       <Drawer
         title={t('tenant.profile.edit', '编辑租户资料')}
-        open={editOpen}
+        open={editOpen && selected}
         width={560}
         destroyOnHidden
         maskClosable={!saving}
         closable={!saving}
+        keyboard={!saving}
         onClose={closeEditor}
-        extra={<Button type="primary" loading={saving} onClick={() => void saveProfile()}>{t('action.save', '保存')}</Button>}
+        extra={actions([{key: 'saveTenant', sort: 0, type: 'primary', loading: saving, disabled: saving,
+          text: t('action.save', '保存'), onClick: () => {if (!flight.current) form.current?.submit();}}])}
       >
-        <Form form={form} layout="vertical" disabled={saving}>
-          <Form.Item name="name" label={t('tenant.profile.name', '租户名称')} rules={[{required: true}, {max: 128}]}>
-            <Input maxLength={128} showCount/>
-          </Form.Item>
-          <Form.Item name="description" label={t('tenant.profile.description', '租户简介')} rules={[{max: 512}]}>
-            <Input.TextArea rows={4} maxLength={512} showCount/>
-          </Form.Item>
-          <Form.Item name="logo" label={t('tenant.profile.logo', '租户 Logo')}>
-            <OssImageUpload
-              onChange={() => undefined}
-              directory="tenants/logos"
-              sourceServiceName="tenant-branding"
-              shape="square"
-              maxSizeMb={5}
-            />
-          </Form.Item>
-          <Form.Item name="backgroundImage" label={t('tenant.profile.background', '租户背景图片')}>
-            <OssImageUpload
-              onChange={() => undefined}
-              directory="tenants/backgrounds"
-              sourceServiceName="tenant-branding"
-              shape="square"
-              maxSizeMb={10}
-            />
-          </Form.Item>
-        </Form>
+        {profileError && <Alert type="error" showIcon title={profileError}/>}
+        <SForm ref={form} hideSubmit schema={schema} disabled={saving} formData={draft}
+          uiSchema={{description: {'ui:widget': 'textarea'}, logo: {'ui:widget': 'OssImage', 'ui:options': {
+            directory: 'tenants/logos', sourceServiceName: 'tenant-branding', shape: 'square', maxSizeMb: 5}},
+            backgroundImage: {'ui:widget': 'OssImage', 'ui:options': {directory: 'tenants/backgrounds',
+              sourceServiceName: 'tenant-branding', shape: 'square', maxSizeMb: 10}}}}
+          onChange={event => setDraft(event.formData ?? {name: ''})} onSubmit={event => void saveProfile(event.formData ?? {name: ''})}/>
       </Drawer>
+      <Modal wrapClassName="tenant-mode-confirmation" open={modeOpen && selected} onCancel={closeMode} onOk={() => void saveMode()}
+        destroyOnHidden closable={!saving} maskClosable={!saving} keyboard={!saving} okButtonProps={{loading: saving, disabled: saving}}
+        title={modeTarget === 'CUSTOM' ? t('tenant.settings.enableCustom', '启用租户自定义资源') : t('tenant.settings.usePlatform', '改用平台内置资源')}>
+        {modeError && <Alert type="error" showIcon title={modeError}/>}
+        {modeTarget === 'CUSTOM'
+          ? t('tenant.settings.enableHint', '首次开启会自动拉取当前租户获授权的平台资源。之后角色授权与菜单会使用租户资源目录。')
+          : t('tenant.settings.platformHint', '租户自定义目录及角色授权会保留，切回平台模式后暂不生效。')}
+      </Modal>
     </div>
   );
 };

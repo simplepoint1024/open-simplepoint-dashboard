@@ -1,6 +1,7 @@
 package org.simplepoint.core.jackson;
 
 import java.util.ArrayList;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -19,6 +20,12 @@ public final class FieldScopeJackson3Module extends SimpleModule {
   /** Keeps the Jackson 3 adapter separate from the still-used Jackson 2 schema mapper. */
   public FieldScopeJackson3Module() {
     super("SimplePointFieldScopeJackson3");
+    addSerializer(BigDecimal.class, new tools.jackson.databind.ser.std.StdScalarSerializer<BigDecimal>(BigDecimal.class) {
+      @Override
+      public void serialize(BigDecimal value, JsonGenerator generator, SerializationContext context) {
+        generator.writeString(DecimalWireValue.text(value));
+      }
+    });
     setSerializerModifier(new PolicyModifier());
   }
 
@@ -29,8 +36,7 @@ public final class FieldScopeJackson3Module extends SimpleModule {
         BeanDescription.Supplier description,
         List<BeanPropertyWriter> properties) {
       Class<?> type = description.getBeanClass();
-      if (!type.getPackageName().startsWith("org.simplepoint.")
-          && !type.isAnnotationPresent(PermissionResource.class)) {
+      if (!FieldPermissionPolicy.supports(type)) {
         return properties;
       }
       Map<String, String> names =

@@ -1,5 +1,6 @@
 {
   "ai.mcp.action.refresh": "Refresh",
+  "ai.mcp.action.cancel": "Cancel",
   "ai.mcp.action.retry": "Retry",
   "ai.mcp.auth.bearer": "Bearer token",
   "ai.mcp.auth.none": "None",

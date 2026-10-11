@@ -14,10 +14,12 @@
 }
 .dna-sql-toolwindow-title { font-weight: 600; font-size: 12px; }
 .dna-sql-explorer > .ant-input-group-wrapper { padding: 8px; }
+.dna-sql-tree-hint { display: flex; align-items: center; gap: 5px; padding: 0 9px 6px; font-size: 11px; }
 .dna-sql-tree { flex: 1; overflow: auto; padding: 4px; min-height: 0; }
 .dna-sql-tree .ant-tree { background: transparent; font-size: 12px; }
 .dna-sql-tree .ant-tag { font-size: 10px; padding-inline: 3px; margin: 0; line-height: 16px; }
 .dna-sql-tree .ant-tree-node-content-wrapper { white-space: nowrap; }
+.dna-sql-tree-node-title { display: inline-flex; min-width: 100%; }
 .dna-sql-tree .ant-tree-treenode.filter-node .ant-tree-title { text-decoration: underline; }
 .dna-sql-object-path { font-size: 11px; border-top: 1px solid var(--sql-border); border-bottom: 0; }
 .dna-sql-file-tab { background: var(--sql-panel); font-family: var(--sql-font); font-size: 12px; }
@@ -28,6 +30,7 @@
 .dna-sql-toolbar .ant-input-number { width: 90px; }
 .dna-sql-options { width: min(380px, 75vw); display: grid; gap: 12px; }
 .dna-sql-options label { display: grid; gap: 4px; }
+.dna-sql-options .dna-sql-option-switch { display: flex; align-items: center; justify-content: space-between; }
 .dna-sql-editor-split { flex: 1; min-height: 0; }
 .dna-sql-editor { height: 100%; overflow: hidden; }
 .dna-sql-output { padding: 0 8px 4px; }
@@ -36,6 +39,9 @@
 .dna-sql-progress { display: flex; gap: 8px; padding: 8px; }
 .dna-sql-statusbar { border-top: 1px solid var(--sql-border); border-bottom: 0; background: var(--sql-panel); font-size: 11px; color: var(--sql-muted); }
 .dna-sql-console-result-table { font-family: var(--sql-font); font-size: 12px; }
+.dna-sql-console-statement-table { flex: 0 0 auto; font-family: var(--sql-font); font-size: 12px; }
+.dna-sql-console-statement-table .ant-table-row { cursor: pointer; }
+.dna-sql-console-statement-table .dna-sql-console-statement-selected > td { background: var(--sql-panel); }
 
 .dna-sql-console-tabs {
   display: flex;
@@ -106,4 +112,31 @@
 
 .dna-sql-console-result-header {
   max-width: 260px;
+}
+
+.dna-sql-symbol-tooltip {
+  box-sizing: border-box;
+  max-width: 360px;
+  padding: 8px 10px;
+  color: var(--ant-color-text, inherit);
+}
+
+.dna-sql-symbol-tooltip-detail,
+.dna-sql-symbol-tooltip-info {
+  margin-top: 4px;
+  color: var(--ant-color-text-secondary, #666);
+  white-space: pre-wrap;
+}
+
+.dna-sql-symbol-tooltip-action {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  color: var(--ant-color-primary, #1677ff);
+  background: transparent;
+  cursor: pointer;
+}
+
+.dna-sql-symbol-tooltip-action:hover {
+  text-decoration: underline;
 }

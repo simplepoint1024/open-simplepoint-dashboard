@@ -1,5 +1,7 @@
 package org.simplepoint.plugin.oidc.service.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -12,6 +14,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.core.jackson.FieldPermissionPolicy;
 import org.simplepoint.plugin.oidc.api.entity.ExternalIdentityProvider;
 import org.simplepoint.plugin.oidc.api.model.ExternalIdentityMatchStrategy;
 import org.simplepoint.plugin.oidc.api.model.ExternalIdentityProviderConnectionTestResult;
@@ -98,6 +101,7 @@ public class ExternalIdentityProviderServiceImpl
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends ExternalIdentityProvider> S create(final S entity) {
+    requireSecretWrite(entity);
     applyPreset(entity, true);
     normalizeAndValidate(entity, null, true);
     String ciphertext = credentialCipher.encrypt(entity.getClientSecret());
@@ -122,8 +126,13 @@ public class ExternalIdentityProviderServiceImpl
     }
     ExternalIdentityProvider current = repository.findActiveById(entity.getId())
         .orElseThrow(() -> new NoSuchElementException("外部身份提供商不存在"));
+    requireSecretWrite(entity);
+    restoreProtectedFields(current, entity);
     entity.setRegistrationId(current.getRegistrationId());
     applyPreset(entity, entity.getPreset() != current.getPreset());
+    // Presets derive several fields. Validate the actual permission-correct configuration,
+    // not a temporary protocol/endpoints pair that the generic merge would later replace.
+    restoreProtectedFields(current, entity);
     normalizeAndValidate(entity, current.getId(), false);
 
     String ciphertext = current.getClientSecretCiphertext();
@@ -139,6 +148,21 @@ public class ExternalIdentityProviderServiceImpl
     }
     decorate(updated);
     return updated;
+  }
+
+  private static void requireSecretWrite(final ExternalIdentityProvider entity) {
+    if (entity != null && trimToNull(entity.getClientSecret()) != null) {
+      FieldPermissionPolicy.requireWritable(ExternalIdentityProvider.class, "clientSecret");
+    }
+  }
+
+  private static void restoreProtectedFields(
+      final ExternalIdentityProvider current,
+      final ExternalIdentityProvider candidate
+  ) {
+    BeanUtil.copyProperties(current, candidate, CopyOptions.create()
+        .setIgnoreNullValue(false)
+        .setFieldNameEditor(name -> FieldPermissionPolicy.writable(ExternalIdentityProvider.class, name) ? null : name));
   }
 
   @Override
@@ -189,7 +213,9 @@ public class ExternalIdentityProviderServiceImpl
     ClientRegistration.ProviderDetails details = registration.getProviderDetails();
     return new ExternalIdentityProviderConnectionTestResult(
         true,
-        "配置有效，身份提供商元数据可访问",
+        provider.getProtocol() == ExternalIdentityProviderProtocol.OIDC
+            ? "OIDC 配置有效，元数据已解析；未验证客户端凭据或真实登录"
+            : "OAuth2 配置与端点格式有效；未验证客户端凭据、端点可访问性或真实登录",
         details.getAuthorizationUri(),
         details.getTokenUri(),
         details.getUserInfoEndpoint().getUri(),

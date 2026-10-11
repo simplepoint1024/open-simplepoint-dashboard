@@ -54,6 +54,12 @@ public class JdbcMetadataManagementServiceImpl implements JdbcMetadataManagement
 
   /** {@inheritDoc} */
   @Override
+  public JdbcMetadataModels.SqlCompletionCatalog completionCatalog(final String dataSourceId) {
+    return browserService.completionCatalog(dataSourceId);
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public JdbcMetadataModels.DataPreviewPage preview(
       final String dataSourceId,
       final JdbcMetadataRequests.PathRequest request,

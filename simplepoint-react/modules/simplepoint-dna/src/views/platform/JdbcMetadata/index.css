@@ -1,0 +1,4 @@
+.dna-metadata-workbench { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 8px; }
+.dna-metadata-source { width: 320px; max-width: 100%; }
+.dna-metadata-split { flex: 1; min-height: 0; }
+.dna-metadata-pane { height: 100%; min-height: 0; overflow: auto; padding: 0 8px; }

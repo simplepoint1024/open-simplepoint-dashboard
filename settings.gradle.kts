@@ -61,6 +61,8 @@ val moduleDirectories = listOf(
     "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-api",
     "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation",
     "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-jdbc-driver",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation",
     "simplepoint-plugins/simplepoint-plugin-personal/simplepoint-plugin-personal-api",
     "simplepoint-plugins/simplepoint-plugin-personal/simplepoint-plugin-personal-implementation",
     "simplepoint-plugins/simplepoint-plugin-personal/simplepoint-plugin-personal-rest",
@@ -68,6 +70,8 @@ val moduleDirectories = listOf(
     "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-repository",
     "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-rest",
     "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-service",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-api",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation",
     "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-api",
     "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation",
     "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-monitor",
@@ -104,12 +108,14 @@ val moduleDirectories = listOf(
     "simplepoint-service-router/simplepoint-service-router-consul",
     "simplepoint-service-router/simplepoint-service-router-core",
     "simplepoint-services/simplepoint-service-ai",
+    "simplepoint-services/simplepoint-service-app",
     "simplepoint-services/simplepoint-service-auditing",
     "simplepoint-services/simplepoint-service-authorization",
     "simplepoint-services/simplepoint-service-common",
     "simplepoint-services/simplepoint-service-dna",
     "simplepoint-services/simplepoint-service-host",
     "simplepoint-services/simplepoint-service-mcp-gateway",
+    "simplepoint-services/simplepoint-service-workflow",
 )
 
 require(moduleDirectories.map { File(it).name }.distinct().size == moduleDirectories.size) {

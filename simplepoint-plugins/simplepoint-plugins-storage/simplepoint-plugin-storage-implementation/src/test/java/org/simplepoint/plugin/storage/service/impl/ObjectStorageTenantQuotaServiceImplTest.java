@@ -176,6 +176,37 @@ class ObjectStorageTenantQuotaServiceImplTest {
   // ── findActiveByTenantId ──────────────────────────────────────────────────
 
   @Test
+  void partialEditRetainsHiddenTenantAndQuotaBeforeDomainValidation() {
+    var context = new org.simplepoint.core.AuthorizationContext(); context.setUserId("editor");
+    context.setFieldPermissions(java.util.Map.of(ObjectStorageTenantQuota.class.getName() + "#tenantId", "HIDDEN",
+        ObjectStorageTenantQuota.class.getName() + "#quotaBytes", "HIDDEN"));
+    org.simplepoint.core.RequestContextHolder.setContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    try {
+      var current = existingQuota("q1"); current.setTenantId("t1"); current.setQuotaBytes(12345L); current.setEnabled(true);
+      var patch = new ObjectStorageTenantQuota(); patch.setId("q1"); patch.setEnabled(true); patch.setDescription("edited note");
+      when(repository.findActiveById("q1")).thenReturn(Optional.of(current));
+      when(repository.findById("q1")).thenReturn(Optional.of(current));
+      when(repository.findActiveByTenantId("t1")).thenReturn(Optional.of(current));
+      when(tenantRepository.findById("t1")).thenReturn(Optional.of(fakeTenant("t1")));
+      when(repository.getDomainClass()).thenReturn(ObjectStorageTenantQuota.class);
+      when(repository.updateById(any())).thenAnswer(invocation -> invocation.getArgument(0));
+      var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+      var schema = mapper.createObjectNode(); var fields = schema.putObject("properties");
+      for (var field : ObjectStorageTenantQuota.class.getDeclaredFields()) fields.putObject(field.getName());
+      var generator = mock(org.simplepoint.api.security.generator.JsonSchemaGenerator.class);
+      when(detailsProviderService.getDialect(JsonSchemaDetailsService.class)).thenReturn(mock(JsonSchemaDetailsService.class));
+      when(detailsProviderService.getDialect(org.simplepoint.api.security.generator.JsonSchemaGenerator.class)).thenReturn(generator);
+      when(generator.generateSchema(ObjectStorageTenantQuota.class)).thenReturn(schema);
+      var result = service.modifyById(patch);
+      assertEquals("edited note", result.getDescription());
+      assertEquals("t1", result.getTenantId());
+      assertEquals(12345L, result.getQuotaBytes());
+    } finally {
+      org.simplepoint.core.RequestContextHolder.clearContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+    }
+  }
+
+  @Test
   void findActiveByTenantIdShouldReturnEmptyWhenNotFound() {
     when(repository.findActiveByTenantId("unknown")).thenReturn(Optional.empty());
     assertTrue(service.findActiveByTenantId("unknown").isEmpty());

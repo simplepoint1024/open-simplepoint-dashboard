@@ -3,6 +3,7 @@ package org.simplepoint.plugin.rbac.tenant.service.impl;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +23,9 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceKey;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.PackageApplicationRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationResourceRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
@@ -57,8 +61,9 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
 
   @Override
   public TenantResourceMode mode(String tenantId) {
-    return tenants.findById(tenantId).map(Tenant::getResourceMode)
-        .filter(Objects::nonNull).orElse(TenantResourceMode.PLATFORM);
+    if (tenantId == null || tenantId.isBlank()) return TenantResourceMode.PLATFORM;
+    return em.createQuery("select t.resourceMode from Tenant t where t.id = :tenant", TenantResourceMode.class)
+        .setParameter("tenant", tenantId).setMaxResults(1).getResultList().stream().filter(Objects::nonNull).findFirst().orElse(TenantResourceMode.PLATFORM);
   }
 
   @Override
@@ -260,6 +265,70 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
     return resource;
   }
 
+  @Override
+  public Page<TenantResource> picker(PickerKind kind, ResourceType childType, String excludedId,
+      String keyword, String selectedId, Pageable pageable) {
+    Tenant tenant = customManagerTenant();
+    if (kind == null || kind == PickerKind.PARENT && childType == null) throw badRequest("候选项类型无效");
+    if (pageable == null || pageable.isUnpaged() || pageable.getPageSize() > 50
+        || pageable.getSort().isSorted() || pageable.getOffset() > Integer.MAX_VALUE) throw badRequest("候选项每页最多 50 条");
+    for (String id : new String[]{excludedId, selectedId}) {
+      if (id != null && (id.isBlank() || id.length() > 36 || !id.equals(id.trim()))) throw badRequest("资源 ID 无效");
+    }
+    String search = keyword == null ? "" : keyword.trim().toLowerCase(java.util.Locale.ROOT);
+    if (search.length() > 128) throw badRequest("搜索词过长");
+    var cb = em.getCriteriaBuilder();
+    var query = cb.createQuery(TenantResource.class); var root = query.from(TenantResource.class);
+    query.select(root).where(pickerFilter(cb, query, root, tenant.getId(), kind, childType, excludedId, search, selectedId));
+    query.orderBy(cb.asc(root.get("sort")), cb.asc(root.get("name")), cb.asc(root.get("id")));
+    var content = em.createQuery(query).setFirstResult((int) pageable.getOffset()).setMaxResults(pageable.getPageSize()).getResultList();
+    var count = cb.createQuery(Long.class); var counted = count.from(TenantResource.class);
+    count.select(cb.count(counted)).where(pickerFilter(cb, count, counted, tenant.getId(), kind, childType, excludedId, search, selectedId));
+    return new PageImpl<>(content, pageable, em.createQuery(count).getSingleResult());
+  }
+
+  private jakarta.persistence.criteria.Predicate pickerFilter(jakarta.persistence.criteria.CriteriaBuilder cb,
+      jakarta.persistence.criteria.CommonAbstractCriteria query, jakarta.persistence.criteria.Root<TenantResource> root,
+      String tenantId, PickerKind kind, ResourceType childType, String excludedId, String search, String selectedId) {
+    List<jakarta.persistence.criteria.Predicate> filters = new ArrayList<>();
+    filters.add(listFilter(cb, root, tenantId, search, null, false));
+    filters.add(cb.isTrue(root.get("enabled")));
+    if (excludedId != null) filters.add(cb.notEqual(root.get("id"), excludedId));
+    if (selectedId != null) filters.add(cb.equal(root.get("id"), selectedId));
+    if (kind == PickerKind.PARENT) {
+      filters.add(cb.not(root.get("type").in(ResourceType.ACTION, ResourceType.API)));
+      if (isNavigationType(childType)) filters.add(root.get("type").in(ResourceType.GROUP, ResourceType.MODULE, ResourceType.PAGE));
+    } else {
+      filters.add(cb.equal(root.get("type"), ResourceType.PAGE)); filters.add(cb.isTrue(root.get("grantable")));
+      filters.add(cb.isNotNull(root.get("platformResourceId")));
+      filters.add(cb.or(cb.isNull(root.get("routeKind")), cb.notEqual(cb.lower(root.get("routeKind")), "hidden")));
+      // Check live platform scope and entitlement before pagination/count; never hydrate an entire catalog.
+      var live = query.subquery(Integer.class); var resource = live.from(Resource.class);
+      List<jakarta.persistence.criteria.Predicate> scopes = new ArrayList<>();
+      ResourceScopeType[] values = ResourceScopeType.values();
+      for (int bits = 1; bits < (1 << values.length); bits++) {
+        Set<ResourceScopeType> set = EnumSet.noneOf(ResourceScopeType.class);
+        for (int i = 0; i < values.length; i++) if ((bits & (1 << i)) != 0) set.add(values[i]);
+        if (set.contains(ResourceScopeType.TENANT)) scopes.add(cb.equal(resource.get("scopeTypes"), set));
+      }
+      var subscribed = live.subquery(Integer.class);
+      var tp = subscribed.from(TenantPackageRelevance.class); var pa = subscribed.from(PackageApplicationRelevance.class);
+      var ar = subscribed.from(ApplicationResourceRelevance.class);
+      subscribed.select(cb.literal(1)).where(cb.equal(tp.get("tenantId"), tenantId),
+          cb.equal(tp.get("packageCode"), pa.get("packageCode")), cb.equal(pa.get("applicationCode"), ar.get("applicationCode")),
+          cb.equal(ar.get("resourceCode"), resource.get("code")), cb.isNull(tp.get("deletedAt")),
+          cb.isNull(pa.get("deletedAt")), cb.isNull(ar.get("deletedAt")));
+      live.select(cb.literal(1)).where(cb.equal(resource.get("id"), root.get("platformResourceId")),
+          cb.equal(resource.get("type"), ResourceType.PAGE), cb.isNull(resource.get("deletedAt")),
+          cb.or(cb.isNull(resource.get("disabled")), cb.isFalse(resource.get("disabled"))), cb.isTrue(resource.get("grantable")),
+          cb.or(cb.isNull(resource.get("routeKind")), cb.notEqual(cb.lower(resource.get("routeKind")), "hidden")),
+          cb.or(scopes.toArray(jakarta.persistence.criteria.Predicate[]::new)),
+          cb.or(cb.isTrue(resource.get("publicAccess")), cb.exists(subscribed)));
+      filters.add(cb.exists(live));
+    }
+    return cb.and(filters.toArray(jakarta.persistence.criteria.Predicate[]::new));
+  }
+
   private jakarta.persistence.criteria.Predicate listFilter(jakarta.persistence.criteria.CriteriaBuilder cb,
       jakarta.persistence.criteria.Root<TenantResource> root, String tenantId, String search,
       String parentId, boolean rootsOnly) {
@@ -326,7 +395,8 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
     TenantResource entry = find(tenant.getId(), id);
     if (entry == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "资源不存在");
     if (entry.isPlatformSource()) throw badRequest("平台来源资源不可删除，可停用或由平台撤销授权");
-    if (entries(tenant.getId()).stream().anyMatch(child -> Objects.equals(id, child.getParentId()))) {
+    if (!em.createQuery("select r.id from TenantResource r where r.tenantId = :tenant and r.parentId = :parent", String.class)
+        .setParameter("tenant", tenant.getId()).setParameter("parent", id).setMaxResults(1).getResultList().isEmpty()) {
       throw badRequest("请先移动或删除下级资源");
     }
     em.createQuery("update RoleResourceGrant g set g.deletedAt = :deletedAt"
@@ -386,8 +456,11 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
       if (path == null || path.length() > 200 || !path.matches("^/(?!/)[A-Za-z0-9/_-]+$")) {
         throw badRequest("页面路径必须以 / 开头，只能包含字母、数字、斜杠、下划线和连字符");
       }
-      if (entries(tenantId).stream().anyMatch(other -> !other.getId().equals(entry.getId())
-          && other.isEnabled() && path.equals(other.getPath()))) throw badRequest("页面路径已存在");
+      if (!em.createQuery("select r.id from TenantResource r where r.tenantId = :tenant and r.enabled = true"
+          + " and r.path = :path and r.id <> :id", String.class).setParameter("tenant", tenantId)
+          .setParameter("path", path).setParameter("id", entry.getId()).setMaxResults(1).getResultList().isEmpty()) {
+        throw badRequest("页面路径已存在");
+      }
       entry.setTargetResourceId(target.getId());
       entry.setPath(path);
       entry.setComponent(target.getComponent());
@@ -421,81 +494,27 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
 
   @Override
   public List<TenantResource> activeResources(String tenantId) {
-    Map<String, TenantResource> active = new HashMap<>();
-    em.createQuery("select r from TenantResource r where r.tenantId = :tenant and r.enabled = true",
-        TenantResource.class).setParameter("tenant", tenantId).getResultList()
-        .forEach(entry -> active.put(entry.getId(), entry));
-    return active.values().stream().filter(entry -> {
-      Set<String> visited = new HashSet<>();
-      TenantResource cursor = entry;
-      while (cursor.getParentId() != null) {
-        if (!visited.add(cursor.getId())) return false;
-        cursor = active.get(cursor.getParentId());
-        if (cursor == null) return false;
-      }
-      return true;
-    }).toList();
+    return new TenantResourceReadQuery(em, tenantId).activeResources();
+  }
+
+  @Override
+  public List<TenantResource> navigationResources(String tenantId, Collection<String> heldCodes) {
+    return new TenantResourceReadQuery(em, tenantId).navigationResources(heldCodes);
+  }
+
+  @Override
+  public List<TenantResource> selectedResources(String tenantId, Collection<String> codes) {
+    return new TenantResourceReadQuery(em, tenantId).selectedResources(codes);
   }
 
   @Override
   public Set<String> grantableCodes(String tenantId, Collection<String> requested) {
-    if (requested == null || requested.isEmpty()) return Set.of();
-    Set<String> codes = new HashSet<>(requested);
-    List<TenantResource> active = activeResources(tenantId);
-    Map<String, TenantResource> byId = new HashMap<>();
-    active.forEach(entry -> byId.put(entry.getId(), entry));
-    Set<String> livePlatformCodes = livePlatformCodes(tenantId, active.stream()
-        .filter(TenantResource::isPlatformSource).map(TenantResource::getCode).toList());
-    Set<String> result = new LinkedHashSet<>();
-    for (TenantResource entry : active) {
-      if (!entry.isGrantable() || !codes.contains(entry.getCode())) continue;
-      if (entry.isPlatformSource() && livePlatformCodes.contains(entry.getCode())) {
-        result.add(entry.getCode());
-      } else if (!entry.isPlatformSource() && entry.getTargetResourceId() != null) {
-        TenantResource target = byId.get(entry.getTargetResourceId());
-        if (target != null && target.isGrantable() && livePlatformCodes.contains(target.getCode())) {
-          result.add(entry.getCode());
-        }
-      }
-    }
-    return result;
+    return new TenantResourceReadQuery(em, tenantId).authorizationCodes(requested, false);
   }
 
   @Override
   public Set<String> effectivePlatformCodes(String tenantId, Collection<String> requested) {
-    if (requested == null || requested.isEmpty()) return Set.of();
-    Set<String> codes = new HashSet<>(requested);
-    Map<String, TenantResource> byId = new HashMap<>();
-    for (TenantResource entry : activeResources(tenantId)) byId.put(entry.getId(), entry);
-    Set<String> livePlatformCodes = livePlatformCodes(tenantId, byId.values().stream()
-        .filter(TenantResource::isPlatformSource).map(TenantResource::getCode).toList());
-    Set<String> result = new LinkedHashSet<>();
-    for (TenantResource entry : byId.values()) {
-      if (!entry.isGrantable() || !codes.contains(entry.getCode())) continue;
-      if (entry.isPlatformSource() && livePlatformCodes.contains(entry.getCode())) result.add(entry.getCode());
-      else if (entry.getTargetResourceId() != null) {
-        TenantResource target = byId.get(entry.getTargetResourceId());
-        if (target != null && target.isGrantable() && target.isPlatformSource()
-            && livePlatformCodes.contains(target.getCode())) result.add(target.getCode());
-      }
-    }
-    return result;
-  }
-
-  private Set<String> livePlatformCodes(String tenantId, Collection<String> candidateCodes) {
-    if (candidateCodes == null || candidateCodes.isEmpty()) return Set.of();
-    Set<String> entitled = packages.findResourceCodesByTenantId(tenantId);
-    Set<String> live = new HashSet<>();
-    Collection<Resource> current = platform.findAllByCodes(candidateCodes);
-    if (current == null) return live;
-    for (Resource resource : current) {
-      if (resource.getDeletedAt() == null && !Boolean.TRUE.equals(resource.getDisabled())
-          && ResourceScopePolicy.effectiveScopes(resource.getScopeTypes()).contains(ResourceScopeType.TENANT)
-          && (entitled.contains(resource.getCode()) || Boolean.TRUE.equals(resource.getPublicAccess()))) {
-        live.add(resource.getCode());
-      }
-    }
-    return live;
+    return new TenantResourceReadQuery(em, tenantId).authorizationCodes(requested, true);
   }
 
   private List<TenantResource> entries(String tenantId) {

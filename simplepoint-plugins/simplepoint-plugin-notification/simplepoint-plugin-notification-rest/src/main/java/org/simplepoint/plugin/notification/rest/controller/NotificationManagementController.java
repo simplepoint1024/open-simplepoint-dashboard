@@ -3,6 +3,7 @@ package org.simplepoint.plugin.notification.rest.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Map;
+import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "系统通知管理", description = "管理系统通知草稿、发布和撤回")
 public class NotificationManagementController
     extends BaseController<NotificationManagementService, SystemNotification, String> {
+  private static final MediaType CLIENT_ERROR_CONTENT_TYPE = new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8);
 
   /**
    * Creates the notification management controller.
@@ -112,7 +114,7 @@ public class NotificationManagementController
     } catch (IllegalArgumentException | IllegalStateException | NoSuchElementException ex) {
       return Response.of(
           ResponseEntity.badRequest()
-              .contentType(MediaType.TEXT_PLAIN)
+              .contentType(CLIENT_ERROR_CONTENT_TYPE)
               .body(ex.getMessage())
       );
     }

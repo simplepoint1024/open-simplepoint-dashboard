@@ -74,6 +74,8 @@ public class JdbcDriverDefinitionServiceImpl
   public JdbcDriverDefinition createByUpload(final MultipartFile file, final JdbcDriverUploadRequest request) {
     JdbcDriverDefinition entity = toEntity(request);
     normalizeAndValidateForUpload(entity, null);
+    applyCreationAuditContext(entity);
+    assertCreateAccessible(entity);
     artifactManager.uploadDraft(entity, file);
     if (entity.getEnabled() == null) {
       entity.setEnabled(true);
@@ -86,6 +88,7 @@ public class JdbcDriverDefinitionServiceImpl
   public JdbcDriverDownloadResult download(final String id) {
     JdbcDriverDefinition driver = repository.findActiveById(requireId(id))
         .orElseThrow(() -> new IllegalArgumentException("驱动不存在: " + id));
+    org.simplepoint.core.permission.PageDataPermission.requireAccessible(driver);
     JdbcDriverDefinition downloaded = artifactManager.download(driver);
     dataSourceService.disconnectByDriverId(downloaded.getId());
     return new JdbcDriverDownloadResult(
@@ -105,6 +108,7 @@ public class JdbcDriverDefinitionServiceImpl
   public JdbcDriverDefinition upload(final String id, final MultipartFile file) {
     JdbcDriverDefinition driver = repository.findActiveById(requireId(id))
         .orElseThrow(() -> new IllegalArgumentException("驱动不存在: " + id));
+    org.simplepoint.core.permission.PageDataPermission.requireAccessible(driver);
     JdbcDriverDefinition uploaded = artifactManager.upload(driver, file);
     dataSourceService.disconnectByDriverId(uploaded.getId());
     return uploaded;
@@ -128,6 +132,8 @@ public class JdbcDriverDefinitionServiceImpl
   @Override
   public <S extends JdbcDriverDefinition> S create(final S entity) {
     normalizeAndValidateForCreate(entity, null);
+    applyCreationAuditContext(entity);
+    assertCreateAccessible(entity);
     artifactManager.downloadDraft(entity);
     if (entity.getEnabled() == null) {
       entity.setEnabled(true);
@@ -140,6 +146,7 @@ public class JdbcDriverDefinitionServiceImpl
   public <S extends JdbcDriverDefinition> JdbcDriverDefinition modifyById(final S entity) {
     JdbcDriverDefinition current = repository.findActiveById(requireEntityId(entity))
         .orElseThrow(() -> new IllegalArgumentException("驱动不存在: " + entity.getId()));
+    org.simplepoint.core.permission.PageDataPermission.requireAccessible(current);
     boolean artifactRefreshRequired = artifactRefreshRequired(current, entity);
     normalizeAndValidateForModify(entity, current.getId());
     if (artifactRefreshRequired) {
@@ -164,8 +171,8 @@ public class JdbcDriverDefinitionServiceImpl
     if (ids == null || ids.isEmpty()) {
       return;
     }
-    ids.forEach(dataSourceService::disconnectByDriverId);
     super.removeByIds(ids);
+    ids.forEach(dataSourceService::disconnectByDriverId);
   }
 
   private void normalizeAndValidate(

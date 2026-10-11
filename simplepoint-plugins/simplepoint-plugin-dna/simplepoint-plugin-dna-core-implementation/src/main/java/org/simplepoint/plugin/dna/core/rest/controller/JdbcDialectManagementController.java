@@ -3,6 +3,8 @@ package org.simplepoint.plugin.dna.core.rest.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Set;
+import java.util.Map;
+import org.springframework.security.core.Authentication;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.core.utils.StringUtil;
@@ -38,6 +40,25 @@ public class JdbcDialectManagementController {
    */
   public JdbcDialectManagementController(final JdbcDialectManagementService service) {
     this.service = service;
+  }
+
+  /** Composite source actions use the same independent authorities as their operation endpoints. */
+  @GetMapping("/workbench-permissions")
+  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('dna.dialects.view', 'dna.dialects.create', "
+      + "'dna.dialects.upload', 'dna.dialects.delete')")
+  @Operation(summary = "查询方言工作台权限")
+  public Response<?> workbenchPermissions(final Authentication authentication) {
+    return BaseController.ok(Map.of(
+        "canCreateUrl", permitted(authentication, "dna.dialects.create"),
+        "canUpload", permitted(authentication, "dna.dialects.upload"),
+        "canDelete", permitted(authentication, "dna.dialects.delete")
+    ));
+  }
+
+  private boolean permitted(final Authentication authentication, final String authority) {
+    return authentication != null && authentication.isAuthenticated()
+        && authentication.getAuthorities().stream().anyMatch(granted ->
+            "ROLE_Administrator".equals(granted.getAuthority()) || authority.equals(granted.getAuthority()));
   }
 
   /**

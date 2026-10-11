@@ -1,9 +1,12 @@
 package org.simplepoint.data.calcite.core.query;
 
 /**
- * Read-only Calcite SQL execution engine.
+ * Calcite SQL execution engine for read-only queries and standard JDBC-backed DML.
  */
 public interface CalciteQueryEngine {
+
+  /** Executes one standard INSERT, UPDATE or DELETE through Calcite. */
+  CalciteUpdateResult executeUpdate(CalciteUpdateRequest request, CalciteSchemaConfigurer schemaConfigurer);
 
   /**
    * Produces an explain-plan analysis for the supplied read-only SQL.

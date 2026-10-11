@@ -4,7 +4,14 @@ import {fileURLToPath} from 'node:url';
 import test from 'node:test';
 import {collectPageExposes} from './module.exposes.ts';
 
-for (const [module, service] of [['common', 'common'], ['audit', 'auditing'], ['dna', 'dna'], ['ai', 'ai']]) {
+for (const [module, service] of [
+  ['common', 'common'],
+  ['audit', 'auditing'],
+  ['dna', 'dna'],
+  ['ai', 'ai'],
+  ['app', 'app'],
+  ['workflow', 'workflow'],
+]) {
   test(`${service}: every declared backend route remains exposed; private drawers do not`, () => {
     const directory = fileURLToPath(new URL(`../../../modules/simplepoint-${module}/`, import.meta.url));
     const exposes = collectPageExposes(directory);

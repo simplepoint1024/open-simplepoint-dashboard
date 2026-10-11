@@ -59,4 +59,32 @@ class AiDiscoveredPricingParserTest {
   void returnsNullWhenNoPricingMetadataExists() throws Exception {
     assertNull(parser.parse(objectMapper.readTree("{\"id\":\"opaque-model\"}")));
   }
+
+  @Test
+  void optionalPricesOutsidePersistableBoundsAreIgnoredInsteadOfBreakingTheCatalog() throws Exception {
+    for (String value : new String[]{"100000000000", "99999999999.999999995", "1000000000000"}) {
+      assertNull(parser.parse(objectMapper.readTree("{\"pricing\":{\"input_per_million\":\"" + value + "\"}}")));
+    }
+    var partial = parser.parse(objectMapper.readTree("{\"pricing\":{\"input_per_million\":\"1000000000000\",\"output_per_million\":\"0.123456785\"}}"));
+    assertNull(partial.inputTokenPrice()); assertEquals(new BigDecimal("0.12345679"), partial.outputTokenPrice());
+    var tier = parser.parse(objectMapper.readTree("""
+        {"prices":[{"prices":[
+          {"type":"input_token","price":"2","price_unit":"每百万tokens"},
+          {"type":"input_token","price":"1E+100000000","price_unit":"每百万tokens"}
+        ]}]}
+        """), AiProviderVendor.ALIBABA_QWEN);
+    assertEquals(new BigDecimal("2.00000000"), tier.inputTokenPrice(), "An invalid later tier entry cannot erase a valid price");
+  }
+
+  @Test
+  void normalizationBoundsHugeExponentsAndLiteralLengthsWithoutChangingValidHalfUp() throws Exception {
+    org.junit.jupiter.api.Assertions.assertTimeout(java.time.Duration.ofSeconds(2), () -> {
+      for (String value : new String[]{"1E+100000000", "1".repeat(2001)})
+        assertNull(parser.parse(objectMapper.readTree("{\"pricing\":{\"input_per_million\":\"" + value + "\"}}")));
+      for (String value : new String[]{"1E-100000000", "0E+100000000"})
+        assertEquals(new BigDecimal("0.00000000"), parser.parse(objectMapper.readTree("{\"pricing\":{\"input_per_million\":\"" + value + "\"}}" )).inputTokenPrice());
+    });
+    for (String value : new String[]{"99999999999.99999999", "99999999999.999999994"})
+      assertEquals(new BigDecimal("99999999999.99999999"), parser.parse(objectMapper.readTree("{\"pricing\":{\"input_per_million\":\"" + value + "\"}}" )).inputTokenPrice());
+  }
 }

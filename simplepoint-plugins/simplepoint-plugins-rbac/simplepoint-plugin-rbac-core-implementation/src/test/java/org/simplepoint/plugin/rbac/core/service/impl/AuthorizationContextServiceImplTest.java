@@ -292,6 +292,51 @@ class AuthorizationContextServiceImplTest {
   }
 
   @Test
+  void realOwnerIgnoresRoleRowAndFieldRestrictionsOnlyInsideOwnedTenant() {
+    User user = new User(); user.setSuperAdmin(false);
+    var tenants = mock(TenantRepository.class);
+    var tenant = new Tenant(); tenant.setOwnerId("u1"); tenant.setTenantType(TenantType.ORGANIZATION);
+    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
+    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenants);
+    when(tenants.findById("tenant1")).thenReturn(Optional.of(tenant));
+    when(tenants.hasUser("tenant1", "u1")).thenReturn(true);
+    when(usersService.loadRolesByUserId("tenant1", "u1"))
+        .thenReturn(List.of(new RoleGrantedAuthority("role1", "ROLE_TENANT_OWNER")));
+    when(usersService.loadResourcesInRoleIds(List.of("role1"))).thenReturn(Set.of("organizations.view", "roles.view"));
+    var grants = mock(RoleResourceGrantRepository.class);
+    when(roleResourceGrantRepositoryProvider.getIfAvailable()).thenReturn(grants);
+    var scopeRepo = mock(DataScopeRepository.class);
+    var fieldRepo = mock(FieldScopeRepository.class);
+    var grant = new RoleResourceGrant(); grant.setRoleId("role1"); grant.setTenantId("tenant1");
+    grant.setResourceCode("organizations.view"); grant.setDataScopeId("restricted"); grant.setFieldScopeId("hidden");
+    // These same bindings become effective immediately once this user is no longer the real owner.
+    org.mockito.Mockito.lenient().when(grants.findByRoleIdIn(List.of("role1"))).thenReturn(List.of(grant));
+    org.mockito.Mockito.lenient().when(dataScopeRepositoryProvider.getIfAvailable()).thenReturn(scopeRepo);
+    org.mockito.Mockito.lenient().when(fieldScopeRepositoryProvider.getIfAvailable()).thenReturn(fieldRepo);
+    var data = new DataScope(); data.setType(DataScopeType.SELF); data.setTenantId("tenant1");
+    org.mockito.Mockito.lenient().when(scopeRepo.findByIdAndTenantIdAndDeletedAtIsNull("restricted", "tenant1")).thenReturn(Optional.of(data));
+    var entry = new FieldScopeEntry(); entry.setTenantId("tenant1"); entry.setResource("Organization"); entry.setField("id"); entry.setAccess(FieldAccessType.HIDDEN);
+    var fields = new FieldScope(); fields.setEntries(List.of(entry)); fields.setTenantId("tenant1");
+    org.mockito.Mockito.lenient().when(fieldRepo.findByIdAndTenantIdAndDeletedAtIsNull("hidden", "tenant1")).thenReturn(Optional.of(fields));
+
+    var owner = service.calculate("tenant1", "u1", null, Map.of("X-Role-Id", "role1"));
+    assertThat(owner.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_OWNER);
+    assertThat(owner.getIsAdministrator()).isFalse();
+    assertThat(owner.getDataScopeType()).isEqualTo("ALL");
+    assertThat(owner.getResourceDataScopes()).isEmpty();
+    assertThat(owner.getFieldPermissions()).isEmpty();
+    assertThat(owner.getResourceFieldPermissions()).isEmpty();
+    org.mockito.Mockito.verifyNoInteractions(grants, scopeRepo, fieldRepo);
+
+    tenant.setOwnerId("new-owner");
+    var member = service.calculate("tenant1", "u1", null, Map.of("X-Actor-Role", "TENANT_OWNER"));
+    assertThat(member.getActorRole()).isNotEqualTo(AuthorizationActorRole.TENANT_OWNER);
+    assertThat(member.getResourceDataScopes().get("organizations.view").type()).isEqualTo("SELF");
+    assertThat(member.getResourceFieldPermissions().get("organizations.view")).containsEntry("Organization#id", "HIDDEN");
+    assertThatThrownBy(() -> service.calculate("other-tenant", "u1", null, null)).isInstanceOf(AccessDeniedException.class);
+  }
+
+  @Test
   void calculate_tenantOwner_addsPackageAndPublicResources() {
     User user = new User();
     user.setSuperAdmin(false);
@@ -357,7 +402,7 @@ class AuthorizationContextServiceImplTest {
   void pagePoliciesResolveOnlyForEffectiveTenantResources(String policyType) {
     User user = new User();
     Tenant tenant = new Tenant();
-    tenant.setOwnerId("u1"); tenant.setTenantType(TenantType.ORGANIZATION);
+    tenant.setOwnerId("actual-owner"); tenant.setTenantType(TenantType.ORGANIZATION);
     TenantRepository tenants = mock(TenantRepository.class);
     ResourceService resources = mock(ResourceService.class);
     RoleResourceGrantRepository grants = mock(RoleResourceGrantRepository.class);

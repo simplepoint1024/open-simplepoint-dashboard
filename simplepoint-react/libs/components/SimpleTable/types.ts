@@ -45,6 +45,8 @@ export type SimpleTableBeforeSubmitContext = {
   formData: any;
   currentEditing: any | null;
   baseUrl: string;
+  /** Read-only asynchronous preparation is cancelable before a real write is dispatched. */
+  signal: AbortSignal;
 };
 
 export type SimpleTableAfterSubmitContext = SimpleTableBeforeSubmitContext & {
@@ -67,6 +69,8 @@ export interface SimpleTableProps<T> {
   rowSelection?: TableProps<T>['rowSelection'];
   onSelectionChange?: TableProps<T>['onSelectionChange'];
   name: string;
+  /** Preserve a resource's established table preference key when migrating its CRUD controller. */
+  storageKey?: string;
   baseUrl: string;
   initialFilters?: Record<string, string>;
   customButtonEvents?: Record<string, (selectedRowKeys: React.Key[], selectedRows: T[], props: TableButtonProps) => void>;
@@ -78,14 +82,22 @@ export interface SimpleTableProps<T> {
   ) => boolean;
   drawerOpen?: boolean;
   onDrawerOpenChange?: (open: boolean) => void;
+  /** Let a containing configuration panel protect this table's nested editor/confirmation/write. */
+  onInteractionLockChange?: (locked: boolean) => void;
   editingRecord?: any | null;
   onEditingRecordChange?: (record: any | null) => void;
   initialValues?: any;
   onSubmit?: (action: SimpleTableSubmitAction, formData: any, currentEditing: any | null) => Promise<unknown> | unknown;
   beforeSubmit?: (context: SimpleTableBeforeSubmitContext) => Promise<any> | any;
+  /** Synchronous final projection for the default writer, after captured-record merging and field ACL filtering. */
+  defaultSubmitDataTransform?: (data: any, context: SimpleTableBeforeSubmitContext) => any;
   afterSubmit?: (context: SimpleTableAfterSubmitContext) => Promise<void> | void;
   formSchemaTransform?: (schema: any, editingRecord: any | null) => any;
-  formUiSchema?: Record<string, any> | ((formData: any) => Record<string, any>);
+  /** Shared presentation metadata for table filters and forms; query field identifiers stay unchanged. */
+  schemaTransform?: (schema: any) => any;
+  formUiSchema?: Record<string, any> | ((formData: any, schema: any) => Record<string, any>);
+  /** Genuine form-engine change hook, e.g. clear a typed selection when its directory discriminator changes. */
+  formDataTransform?: (next: any, previous: any) => any;
   columnOverrides?: Record<string, SimpleTableColumnOverride<T>>;
   i18nNamespaces: string[];
   submitRefreshTargets?: SimpleTableRefreshTargets;

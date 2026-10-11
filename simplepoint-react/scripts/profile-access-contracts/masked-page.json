@@ -1,0 +1,53 @@
+{
+  "content": [
+    {
+      "code": "***",
+      "label": "原生权限页面",
+      "type": "PAGE",
+      "path": "/actual/profile-page",
+      "icon": "FileOutlined",
+      "effective": true,
+      "available": true,
+      "directory": [
+        "原生权限目录"
+      ]
+    },
+    {
+      "code": "***",
+      "label": "第二权限页面",
+      "type": "PAGE",
+      "path": "/actual/profile-second",
+      "icon": "FileOutlined",
+      "effective": true,
+      "available": true,
+      "directory": [
+        "原生权限目录"
+      ]
+    }
+  ],
+  "empty": false,
+  "first": true,
+  "last": true,
+  "number": 0,
+  "numberOfElements": 2,
+  "pageable": {
+    "offset": 0,
+    "pageNumber": 0,
+    "pageSize": 24,
+    "paged": true,
+    "sort": {
+      "empty": true,
+      "sorted": false,
+      "unsorted": true
+    },
+    "unpaged": false
+  },
+  "size": 24,
+  "sort": {
+    "empty": true,
+    "sorted": false,
+    "unsorted": true
+  },
+  "totalElements": 2,
+  "totalPages": 1
+}

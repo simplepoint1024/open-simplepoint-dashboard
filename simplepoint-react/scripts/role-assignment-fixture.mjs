@@ -10,9 +10,9 @@ export function createRoleAssignmentFixture() {
     name: `Candidate${String(i).padStart(3, '0')}`, authority: `ROLE_${i}`, description: `Description ${i}`}));
   const grants = new Map([['member-144', new Set(rows.slice(0, 120).map(row => row.id))], ['member-143', new Set(['role-001'])]]);
   const fields = Object.fromEntries(['id', 'name', 'authority', 'description'].map(key => [key, {type: 'string'}]));
-  const moves = []; let fail = false;
+  const moves = []; let fail = false, moveDelay = 250;
   return {
-    grants, moves, failMove() {fail = true;},
+    grants, moves, failMove() {fail = true;}, moveDelay(value) {moveDelay = value;},
     async handle(req, url, respond, expectedFailure) {
       if (!url.pathname.startsWith('/common/users/')) return false;
       const base = '/common/users/role-candidates';
@@ -34,7 +34,7 @@ export function createRoleAssignmentFixture() {
         const chunks = []; for await (const chunk of req) chunks.push(chunk);
         const body = JSON.parse(Buffer.concat(chunks).toString()); moves.push(body);
         if (!grants.has(body.userId) || body.roleIds.length > 100) throw Error('Invalid role assignment mutation');
-        await delay(250);
+        await delay(moveDelay);
         if (fail) {fail = false; expectedFailure(503); return respond({message: '角色分配失败（测试）'}, 503), true;}
         for (const id of body.roleIds) {
           if (url.pathname.endsWith('/authorize')) grants.get(body.userId).add(id); else grants.get(body.userId).delete(id);

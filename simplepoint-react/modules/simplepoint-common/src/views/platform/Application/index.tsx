@@ -1,88 +1,55 @@
 import api from '@/api/index';
 import SimpleTable from '@simplepoint/components/SimpleTable';
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {App as AntdApp, Drawer} from 'antd';
+import ResourceDrawer from '@simplepoint/components/ResourceDrawer';
+import {hasRecordIdentity} from '@simplepoint/components/SimpleTable/recordIdentity';
+import {useCallback, useEffect, useMemo, useRef, useState, type Key} from 'react';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import {useSchema} from '@simplepoint/shared/hooks/useSchema';
 import ResourceConfig from './config/resource';
 
 const baseConfig = api['platform.applications'];
+type ApplicationRow = {id: string; code?: string};
+const usableCode = (row?: ApplicationRow) => typeof row?.code === 'string' && !!row.code.trim() && !/^\*+$/.test(row.code.trim());
 
-const App = () => {
-  const {message} = AntdApp.useApp();
-  const [openResourceConfig, setOpenResourceConfig] = useState(false);
-  const [applicationCode, setApplicationCode] = useState<string>('');
-  const [drawerHeight, setDrawerHeight] = useState<number>(480);
+function ApplicationSession() {
+  const operation = useOperationScope();
+  const [configuration, setConfiguration] = useState<ApplicationRow>();
+  const [formOpen, setFormOpen] = useState(false);
+  const [childLocked, setChildLocked] = useState(false);
+  const childLock = useRef(false);
+  const configurationLock = useRef<ApplicationRow | undefined>(undefined);
+  const rootLock = useRef(false);
   const {t, ensure, locale} = useI18n();
-
-  useEffect(() => {
-    void ensure([...baseConfig.i18nNamespaces, 'resources', 'table', 'common']);
-  }, [ensure, locale]);
-
-  useEffect(() => {
-    if (!openResourceConfig) {
-      setDrawerHeight(480);
-    }
-  }, [openResourceConfig]);
-
-  const startResize = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const startY = e.clientY;
-    const startHeight = drawerHeight;
-    const minHeight = 240;
-    const maxHeight = Math.max(320, window.innerHeight - 80);
-
-    const onMove = (me: MouseEvent) => {
-      const delta = startY - me.clientY;
-      let next = startHeight + delta;
-      if (next < minHeight) next = minHeight;
-      if (next > maxHeight) next = maxHeight;
-      setDrawerHeight(next);
-    };
-    const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-  }, [drawerHeight]);
-
+  const permissions = useSchema(baseConfig.baseUrl, {staleTime: 30_000, retry: false});
+  useEffect(() => {void ensure([...baseConfig.i18nNamespaces, 'applications', 'table', 'common']);}, [ensure, locale]);
+  const interactionLock = useCallback((locked: boolean) => {childLock.current = locked; setChildLocked(locked);}, []);
+  const rootInteraction = useCallback((locked: boolean) => {rootLock.current = locked;}, []);
+  const close = useCallback(() => {
+    if (!operation.current() || !operation.isSelected() || childLock.current) return;
+    configurationLock.current = undefined; setConfiguration(undefined); interactionLock(false);
+  }, [operation.current, operation.isSelected, interactionLock]);
   const customButtonEvents = useMemo(() => ({
-    'config.resource': (_keys: React.Key[], rows: any[]) => {
-      const nextApplicationCode = String(rows?.[0]?.code ?? '').trim();
-      if (!nextApplicationCode) {
-        message.warning(t('table.selectOne', '请先选择一条记录'));
-        return;
-      }
-      setApplicationCode(nextApplicationCode);
-      setOpenResourceConfig(true);
+    'config.resource': (_keys: Key[], rows: ApplicationRow[]) => {
+      if (!operation.current() || !operation.isSelected() || configurationLock.current || rootLock.current || formOpen || childLock.current || permissions.error
+        || !permissions.data?.buttons.some(button => button.key === 'config.resource') || rows.length !== 1
+        || !hasRecordIdentity(rows[0]) || !usableCode(rows[0])) return;
+      const captured = structuredClone(rows[0]); configurationLock.current = captured; setConfiguration(captured);
     },
-  }), [message, t]);
+  }), [operation.current, operation.isSelected, configuration, formOpen, permissions.data, permissions.error]);
+  return <div style={{height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column'}}>
+    <SimpleTable {...baseConfig} schemaStaleTime={30_000} allowTabEviction={!configuration} confirmDiscard
+      customButtonEvents={customButtonEvents} drawerOpen={formOpen} onDrawerOpenChange={setFormOpen}
+      onInteractionLockChange={rootInteraction}
+      isButtonDisabled={(button, _keys, rows: ApplicationRow[]) => !!configurationLock.current || rootLock.current || childLocked || formOpen || !operation.selected
+        || !!permissions.error || !permissions.data || button.key === 'config.resource' && (rows.length !== 1 || !usableCode(rows[0]))}
+      rowSelection={{isRowSelectable: () => !configurationLock.current && !rootLock.current && !formOpen}}/>
+    <ResourceDrawer rootClassName="application-resource-config" title={t('applications.button.config.resource', '配置资源')}
+      open={!!configuration} locked={childLocked} onClose={close}>
+      {configuration?.code && <ResourceConfig applicationCode={configuration.code} onInteractionLockChange={interactionLock}/>}
+    </ResourceDrawer>
+  </div>;
+}
 
-  return (
-    <div>
-      <SimpleTable {...baseConfig} customButtonEvents={customButtonEvents}/>
-      <Drawer
-        title={t('applications.button.config.resource', '配置资源')}
-        open={openResourceConfig}
-        onClose={() => {
-          setOpenResourceConfig(false);
-          setApplicationCode('');
-        }}
-        placement="bottom"
-        maskClosable={false}
-        height={drawerHeight}
-        destroyOnHidden
-        styles={{body: {position: 'relative', paddingTop: 12}}}
-      >
-        <div
-          style={{position: 'absolute', top: 0, left: 0, right: 0, height: 8, cursor: 'ns-resize', zIndex: 10}}
-          onMouseDown={startResize}
-        />
-        {/* 不使用 key 强制重建，避免闪退；组件内部通过 useEffect([applicationCode]) 重置状态 */}
-        {openResourceConfig && applicationCode ? <ResourceConfig applicationCode={applicationCode}/> : null}
-      </Drawer>
-    </div>
-  );
-};
-
-export default App;
+export default function Application() {return <ApplicationSession key={JSON.stringify(useQueryScope())}/>;}

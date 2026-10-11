@@ -10,10 +10,9 @@ export const MAX_RESOURCE_CHANGES = 5000;
 const has = (value: object, key: string) => Object.prototype.hasOwnProperty.call(value, key);
 
 /** Keep the original revision even when a page refreshes while editing. */
-export function setResourceGrant(draft: ResourceDraft, row: RoleResourceRow, granted: boolean): ResourceDraft {
-  const baseline = draft[row.id]?.baseline ?? row;
-  if (!baseline.grantable) return draft;
-  const next = {...draft};
+function applyResourceGrant(next: ResourceDraft, row: RoleResourceRow, granted: boolean) {
+  const baseline = next[row.id]?.baseline ?? row;
+  if (baseline.grantable !== true || typeof baseline.granted !== 'boolean') return;
   const previous = next[row.id];
   if (!granted) {
     if (baseline.granted) next[row.id] = {baseline, granted};
@@ -24,6 +23,17 @@ export function setResourceGrant(draft: ResourceDraft, row: RoleResourceRow, gra
   } else {
     next[row.id] = {...previous, baseline, granted};
   }
+}
+
+export function setResourceGrant(draft: ResourceDraft, row: RoleResourceRow, granted: boolean): ResourceDraft {
+  if ((draft[row.id]?.baseline ?? row).grantable !== true) return draft;
+  const next = {...draft}; applyResourceGrant(next, row, granted); return next;
+}
+
+/** Stage a complete real subtree with one copy, not one growing draft copy per resource. */
+export function setResourceGrants(draft: ResourceDraft, rows: readonly RoleResourceRow[], granted: boolean): ResourceDraft {
+  const next = {...draft};
+  for (const row of rows) applyResourceGrant(next, row, granted);
   return next;
 }
 
@@ -32,7 +42,7 @@ export function setResourcePolicy(draft: ResourceDraft, row: RoleResourceRow,
   const baseline = draft[row.id]?.baseline ?? row;
   const granted = draft[row.id]?.granted ?? row.granted;
   const supported = kind === 'data' ? baseline.dataPermission.supported : baseline.fieldPermission.supported;
-  if (!baseline.grantable || !granted || !supported) return draft;
+  if (baseline.grantable !== true || granted !== true || supported !== true) return draft;
   const property = kind === 'data' ? 'dataScopeId' : 'fieldScopeId';
   const original = kind === 'data' ? baseline.dataPermission.policyId : baseline.fieldPermission.policyId;
   const next = {...draft};
@@ -57,7 +67,7 @@ export function resourceChanges(draft: ResourceDraft): RoleResourceChange[] {
 }
 
 export function displayedGrant(draft: ResourceDraft, row: RoleResourceRow): boolean {
-  return draft[row.id]?.granted ?? row.granted;
+  return (draft[row.id]?.granted ?? row.granted) === true;
 }
 
 export function displayedPolicy(draft: ResourceDraft, row: RoleResourceRow,

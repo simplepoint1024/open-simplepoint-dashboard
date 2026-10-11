@@ -5,7 +5,7 @@ import {gzipSync} from 'node:zlib';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const limit = 512 * 1024;
-const representativePages = {common: 'platform/Package', audit: 'monitoring/LoginLog', dna: 'platform/JdbcDataSource', ai: 'workbench/Models'};
+const representativePages = {common: 'platform/Package', audit: 'monitoring/LoginLog', dna: 'platform/JdbcDataSource', ai: 'workbench/Models', app: 'Workbench', workflow: 'Definitions'};
 const hostProvidedShared = new Set([
   'react',
   'react/jsx-runtime',
@@ -21,7 +21,7 @@ const hostProvidedShared = new Set([
   '@simplepoint/shared/api/feedbackBridge',
 ]);
 let failed = false;
-for (const name of ['common', 'ai', 'dna', 'audit']) {
+for (const name of ['common', 'ai', 'dna', 'audit', 'app', 'workflow']) {
   const dir = path.join(root, 'modules', `simplepoint-${name}`, 'dist', 'mf');
   const manifest = JSON.parse(readFileSync(path.join(dir, 'mf-manifest.json'), 'utf8'));
   const entry = manifest.metaData.remoteEntry;
@@ -38,14 +38,17 @@ for (const name of ['common', 'ai', 'dna', 'audit']) {
     console.error(`${name}: private components leaked into MF exposes.`);
     failed = true;
   }
-  const representative = manifest.exposes.find(expose => expose.name === representativePages[name]);
-  if (!representative) throw new Error(`${name}: representative page is missing`);
-  const syncFiles = [...new Set(representative.assets.js.sync)];
-  const syncGzip = syncFiles.reduce((total, file) => total + gzipSync(readFileSync(path.join(dir, file))).length, 0);
-  console.log(`${name}: ${representative.name} synchronous JS ${syncFiles.length} requests, gzip ${syncGzip} bytes (excluding host/entry)`);
-  if (syncFiles.length > 8 || syncGzip > 90 * 1024) {
-    console.error(`${name}: representative table page exceeds 8 synchronous JS requests or 90 KiB gzip.`);
-    failed = true;
+  const pageNames = name === 'workflow' ? ['Definitions', 'Tasks', 'Instances'] : [representativePages[name]];
+  for (const page of pageNames) {
+    const representative = manifest.exposes.find(expose => expose.name === page);
+    if (!representative) throw new Error(`${name}: representative page ${page} is missing`);
+    const syncFiles = [...new Set(representative.assets.js.sync)];
+    const syncGzip = syncFiles.reduce((total, file) => total + gzipSync(readFileSync(path.join(dir, file))).length, 0);
+    console.log(`${name}: ${representative.name} synchronous JS ${syncFiles.length} requests, gzip ${syncGzip} bytes (excluding host/entry)`);
+    if (syncFiles.length > 8 || syncGzip > 90 * 1024) {
+      console.error(`${name}: ${page} exceeds 8 synchronous JS requests or 90 KiB gzip.`);
+      failed = true;
+    }
   }
   const source = readFileSync(path.join(dir, entry.path || '', entry.name));
   console.log(`${name}: entry ${source.length} bytes, gzip ${gzipSync(source).length} bytes`);

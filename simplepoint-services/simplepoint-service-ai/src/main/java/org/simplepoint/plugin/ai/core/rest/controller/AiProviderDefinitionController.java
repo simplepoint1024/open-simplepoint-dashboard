@@ -142,6 +142,18 @@ public class AiProviderDefinitionController
     );
   }
 
+  /** Bounded selected-value hydration under the same provider-view authority as the directory. */
+  @GetMapping("/selected")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.providers.view')")
+  public Response<?> selected(@RequestParam("ids") final String ids) {
+    return invokeCrud(() -> {
+      if (ids.length() > 6500) {
+        throw new IllegalArgumentException("接入标识请求过长");
+      }
+      return service.selectedOptions(StringUtil.stringToSet(ids));
+    });
+  }
+
   /**
    * Discovers remote models without persisting them.
    *

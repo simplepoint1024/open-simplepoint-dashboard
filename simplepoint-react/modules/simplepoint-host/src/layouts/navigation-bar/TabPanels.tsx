@@ -16,7 +16,8 @@ function TabPanel({tab, active, report, children}: {
   const reportRetention = useCallback((owner: string, value: boolean | undefined, blockClose = false) => {
     report(tab.key, owner, value, blockClose);
   }, [report, tab.key]);
-  const lifecycle = useMemo(() => ({active, reportRetention}), [active, reportRetention]);
+  const lifecycle = useMemo(() => ({active, reportRetention, location: tab.location || tab.key}),
+    [active, reportRetention, tab.location, tab.key]);
   return (
     <PageLifecycleContext.Provider value={lifecycle}>
       <div ref={element} className={`nb-tab-panel${active ? ' nb-tab-panel-active' : ''}`} hidden={!active} aria-hidden={!active}>

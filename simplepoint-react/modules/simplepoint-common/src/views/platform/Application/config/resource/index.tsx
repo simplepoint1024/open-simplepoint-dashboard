@@ -2,12 +2,14 @@ import {useCallback, useEffect} from 'react';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {fetchAuthorized, fetchAuthorize, fetchUnauthorized} from '@/api/platform/application';
 import ResourceTreeTransfer from '@/views/system/Resource/components/ResourceTreeTransfer';
+import type {RequestOptions} from '@simplepoint/shared/api/client';
 
 export interface ApplicationResourceConfigProps {
   applicationCode: string;
+  onInteractionLockChange?: (locked: boolean) => void;
 }
 
-const App = ({applicationCode}: ApplicationResourceConfigProps) => {
+const App = ({applicationCode, onInteractionLockChange}: ApplicationResourceConfigProps) => {
   const {ensure, locale} = useI18n();
 
   useEffect(() => {
@@ -15,17 +17,17 @@ const App = ({applicationCode}: ApplicationResourceConfigProps) => {
   }, [ensure, locale]);
 
   const fetchAssignedCodes = useCallback(
-    () => fetchAuthorized({applicationCode}),
+    (options: RequestOptions) => fetchAuthorized({applicationCode}, options),
     [applicationCode],
   );
 
   const handleAssign = useCallback(
-    (resourceCodes: string[]) => fetchAuthorize({applicationCode, resourceCodes}),
+    (resourceCodes: string[], options: RequestOptions) => fetchAuthorize({applicationCode, resourceCodes}, options),
     [applicationCode],
   );
 
   const handleUnassign = useCallback(
-    (resourceCodes: string[]) => fetchUnauthorized({applicationCode, resourceCodes}),
+    (resourceCodes: string[], options: RequestOptions) => fetchUnauthorized({applicationCode, resourceCodes}, options),
     [applicationCode],
   );
 
@@ -37,6 +39,7 @@ const App = ({applicationCode}: ApplicationResourceConfigProps) => {
       fetchAssignedCodes={fetchAssignedCodes}
       onAssign={handleAssign}
       onUnassign={handleUnassign}
+      onInteractionLockChange={onInteractionLockChange}
     />
   );
 };

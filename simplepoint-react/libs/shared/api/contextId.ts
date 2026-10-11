@@ -131,7 +131,7 @@ export function shouldUseTenantContext(url: string): boolean {
 export function resolveApiScope(url: string): ApiScope {
   const pathname = resolvePathname(url) ?? url;
   const matchedRule = API_SCOPE_RULES.find(
-    ({ prefix }) => pathname === prefix || pathname.startsWith(`${prefix}/`) || url.includes(prefix)
+    ({ prefix }) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
   return matchedRule?.scope ?? 'tenant';
 }

@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import TableActions from '@simplepoint/components/Table/Actions';
 import {
   CloseOutlined,
   CloseCircleOutlined,
@@ -842,9 +843,10 @@ const NavigateBar: React.FC<{
         style={{position: 'fixed', right: 24, bottom: 24, zIndex: 1100, maxWidth: 'calc(100vw - 48px)'}}
         type="info" showIcon closable title={t('nav.updateAvailable', '有新版本可用')}
         description={t('nav.updateHint', '可以继续使用当前页面，完成编辑后再刷新更新。')}
-        action={<Button onClick={async () => {
+        action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'update', sort: 0,
+          text: t('nav.updateNow', '刷新更新'), onClick: async () => {
           if (await confirmWorkspaceChange()) window.location.reload();
-        }}>{t('nav.updateNow', '刷新更新')}</Button>}
+        }}]}/>}
       />}
     </Layout>
     </NavigationGuardContext.Provider>

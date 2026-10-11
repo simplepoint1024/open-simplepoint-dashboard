@@ -83,6 +83,17 @@ public class JdbcDataSourceDefinitionServiceImpl
     return repository.findActiveById(id).map(this::decorate);
   }
 
+  @Override
+  public Page<JdbcDataSourceDefinition> assignmentCandidates(
+      Map<String, String> filters, String userId, Pageable pageable) {
+    var references = userId == null ? List.<org.simplepoint.api.base.QueryReferenceMembership>of()
+        : List.of(new org.simplepoint.api.base.QueryReferenceMembership("id", "FederationJdbcConnectionUser",
+            "catalogId", Map.of("userId", userId, "enabled", true), false));
+    // A registered entity name avoids a core -> federation dependency cycle. This query is called
+    // only by federation; no client controls the entity, join keys or membership conditions.
+    return limitReferencedScoped(filters, Map.of("enabled", "equals:true"), references, pageable);
+  }
+
   /** {@inheritDoc} */
   @Override
   public Optional<JdbcDataSourceDefinition> findActiveByCode(final String code) {
@@ -108,6 +119,7 @@ public class JdbcDataSourceDefinitionServiceImpl
   public JdbcDataSourceConnectionResult connect(final String id) {
     JdbcDataSourceDefinition definition = repository.findActiveById(requireId(id))
         .orElseThrow(() -> new IllegalArgumentException("数据源不存在: " + id));
+    org.simplepoint.core.permission.PageDataPermission.requireAccessible(definition);
     JdbcDriverDefinition driver = resolveDriver(definition.getDriverId());
     Instant testedAt = Instant.now();
     try {
@@ -250,8 +262,8 @@ public class JdbcDataSourceDefinitionServiceImpl
     if (ids == null || ids.isEmpty()) {
       return;
     }
-    ids.forEach(this::disconnect);
     super.removeByIds(ids);
+    ids.forEach(this::disconnect);
   }
 
   private void normalizeAndValidate(

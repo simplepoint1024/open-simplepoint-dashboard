@@ -2,11 +2,13 @@ package org.simplepoint.plugin.rbac.tenant.service.impl;
 
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.ADMIN_ROLE_AUTHORITY;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.AI_APPLICATION;
+import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.APP_APPLICATION;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.CORE_APPLICATION;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.MEMBER_ROLE_AUTHORITY;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.OWNER_ROLE_AUTHORITY;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.PERSONAL_PACKAGE;
 import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.STORAGE_APPLICATION;
+import static org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes.WORKFLOW_APPLICATION;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -42,7 +44,14 @@ public class BuiltInTenantProvisionerImpl implements BuiltInTenantProvisioner {
   private static final Set<String> MEMBER_STARTER_RESOURCES = Set.of(
       "dashboard.view",
       "storage.objects.view",
-      "ai.knowledge-bases.view"
+      "ai.knowledge-bases.view",
+      "workflow.definitions.view",
+      "workflow.tasks.view",
+      "workflow.tasks.claim",
+      "workflow.tasks.complete",
+      "workflow.instances.started.view",
+      "workflow.instances.start",
+      "workflow.instances.cancel"
   );
 
   private final ApplicationRepository applicationRepository;
@@ -108,6 +117,22 @@ public class BuiltInTenantProvisionerImpl implements BuiltInTenantProvisioner {
     }
     if ("ai".equals(owner)) {
       provisionApplicationResources(AI_APPLICATION, tenantCodes, personalCodes);
+      return;
+    }
+    if ("app".equals(owner)) {
+      provisionApplicationResources(APP_APPLICATION, tenantCodes, personalCodes);
+      return;
+    }
+    if ("workflow".equals(owner)) {
+      provisionApplicationResources(WORKFLOW_APPLICATION, tenantCodes, personalCodes);
+      return;
+    }
+    if ("dna".equals(owner)) {
+      provisionApplicationResources(
+          APP_APPLICATION,
+          selectByPrefix(tenantCodes, "dna.runtime."),
+          Set.of()
+      );
     }
   }
 

@@ -14,7 +14,8 @@ import org.simplepoint.security.entity.id.ResourceAncestorId;
 @Data
 @Entity
 @IdClass(ResourceAncestorId.class)
-@Table(name = "simpoint_ac_resource_ancestors_rel")
+@Table(name = "simpoint_ac_resource_ancestors_rel", indexes = @jakarta.persistence.Index(
+    name = "idx_resource_ancestor_children", columnList = "ancestorId,childId"))
 public class ResourceAncestor implements Serializable {
 
   @Id

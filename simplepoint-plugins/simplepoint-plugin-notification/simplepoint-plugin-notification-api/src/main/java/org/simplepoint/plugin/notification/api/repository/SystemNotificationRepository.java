@@ -10,4 +10,7 @@ public interface SystemNotificationRepository
 
   /** Finds a non-deleted notification by identifier. */
   Optional<SystemNotification> findActiveById(String id);
+
+  /** Finds an idempotently delivered notification by its producer identity. */
+  Optional<SystemNotification> findBySourceAndExternalKey(String source, String externalKey);
 }

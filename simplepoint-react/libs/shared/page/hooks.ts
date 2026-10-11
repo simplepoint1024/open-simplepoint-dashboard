@@ -10,6 +10,10 @@ const isDocumentVisible = () => document.visibilityState !== 'hidden';
 /** UI overlays follow the selected route, independent of browser window visibility. */
 export const usePageSelected = () => useContext(PageLifecycleContext)?.active ?? true;
 
+/** A retained page must use its own route, never the foreground tab's global hash. */
+export const usePageLocation = () => useContext(PageLifecycleContext)?.location
+  ?? (typeof window === 'undefined' ? '/' : window.location.hash.slice(1) || window.location.pathname);
+
 /** Foreground-only automatic reads; explicit saves must never depend on this flag. */
 export function usePageActive() {
   const page = useContext(PageLifecycleContext);

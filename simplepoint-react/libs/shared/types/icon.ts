@@ -13,7 +13,7 @@ export {
   CodeOutlined, CopyOutlined, CreditCardOutlined, DashboardOutlined, DatabaseOutlined,
   DeleteOutlined, DeploymentUnitOutlined, DesktopOutlined, DoubleLeftOutlined,
   DoubleRightOutlined, DownOutlined, DownloadOutlined, EditOutlined, ExperimentOutlined,
-  EyeOutlined, FileTextOutlined, FilterFilled, FilterOutlined, FontSizeOutlined,
+  EyeOutlined, FileOutlined, FolderOutlined, FileTextOutlined, FilterFilled, FilterOutlined, FontSizeOutlined,
   ForkOutlined, FormOutlined, FullscreenExitOutlined, FullscreenOutlined, GithubOutlined,
   GlobalOutlined, HistoryOutlined, HolderOutlined, HomeOutlined, IdcardOutlined,
   InboxOutlined, KeyOutlined, LayoutOutlined, LinkOutlined, LoadingOutlined, LockOutlined,

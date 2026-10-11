@@ -1,7 +1,10 @@
 import {resolveResourceLabel} from '@simplepoint/shared/i18n/resourceLabel';
 import {useEffect, useMemo, useState} from 'react';
 import {FileOutlined, FolderOutlined} from '@ant-design/icons';
-import {Alert, Button, Drawer, Empty, Input, Pagination, Spin, Tag, Typography} from 'antd';
+import {Alert, Drawer, Empty, Input, Pagination, Spin, Tag, Typography} from 'antd';
+import TableActions from '@simplepoint/components/Table/Actions';
+import {hasRecordIdentity} from '@simplepoint/components/SimpleTable/recordIdentity';
+import {usePageSelected} from '@simplepoint/shared/page/hooks';
 import {ApartmentOutlined, ApiOutlined, AppstoreOutlined,
   SafetyCertificateOutlined, createIcon} from '@simplepoint/shared/types/icon';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
@@ -20,11 +23,19 @@ function permissionIcon(row: ProfileResourceAccess) {
 }
 
 export function ProfileAccessSection() {
+  const scope = useQueryScope();
+  return <ProfileAccessSession key={JSON.stringify(scope)}/>;
+}
+function ProfileAccessSession() {
   const {t, ensure} = useI18n();
-  useEffect(() => {void ensure(['resources', 'table', 'common']);}, [ensure]);
-  const label = (row: ProfileResourceAccess) => resolveResourceLabel(row.label, row.code, t);
+  const selected = usePageSelected();
+  const retry = (refetch: () => unknown) => <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+    {key: 'refresh', sort: 0, size: 'small', text: t('action.refresh', '刷新'), onClick: () => {void refetch();}},
+  ]}/>;
+  useEffect(() => {void ensure(['resources', 'table', 'common', 'permissions']);}, [ensure]);
+  const label = (row: ProfileResourceAccess) => resolveResourceLabel(row.label === row.code ? undefined : row.label ?? undefined, t('permissions.unavailable', '名称暂不可用'), t);
   const directoryLabel = (directory?: string[]) => directory?.length
-    ? directory.map(entry => resolveResourceLabel(entry, entry.startsWith('i18n:') ? entry.slice(5).split('.').pop() || '-' : entry, t)).join(' / ')
+    ? directory.map(entry => resolveResourceLabel(entry, t('permissions.unavailable', '名称暂不可用'), t)).join(' / ')
     : t('profile.access.rootDirectory', '顶级页面');
   const scope = useQueryScope();
   const tenantId = scope[0] ?? undefined;
@@ -41,8 +52,7 @@ export function ProfileAccessSection() {
   }, [roleId, roles.data]);
   const query = useProfileResources({roleId, keyword, type: 'PAGE', page: page - 1, size: 24}, true);
   const detail = useProfilePageDetail(selectedCode, roleId, !!selectedCode);
-  const roleName = roles.data?.find(role => role.roleId === roleId)?.roleName ||
-    roles.data?.find(role => role.roleId === roleId)?.authority;
+  const roleName = roles.data?.find(role => role.roleId === roleId)?.roleName;
   const typeLabels = useMemo(() => ({
     GROUP: t('resources.type.GROUP', '目录'),
     MODULE: t('resources.type.MODULE', '模块'),
@@ -61,14 +71,14 @@ export function ProfileAccessSection() {
       {tenantId !== '__platform__' && roles.data?.map(role => <button type="button" role="tab" aria-selected={roleId === role.roleId}
         key={role.roleId} className={roleId === role.roleId ? 'active' : ''}
         onClick={() => {setRoleId(role.roleId); setPage(1); setSelectedCode(undefined);}}>
-        {role.roleName || role.authority || role.roleId}
+        {resolveResourceLabel(role.roleName, t('permissions.unavailable', '名称暂不可用'), t)}
       </button>)}
     </div>
     {tenantId !== '__platform__' && roles.isError && <Alert type="warning" showIcon title={t('profile.access.rolesFailed', '角色列表加载失败')}
-      action={<Button size="small" onClick={() => void roles.refetch()}>{t('action.refresh', '刷新')}</Button>}/>}
+      action={retry(roles.refetch)}/>}
     <div className="profile-access-content">
       <div className="profile-access-toolbar">
-        <div><Typography.Title level={5}>{roleId ? (roleName || roleId) : t('profile.access.effective', '当前生效')}
+        <div><Typography.Title level={5}>{roleId ? resolveResourceLabel(roleName, t('permissions.unavailable', '名称暂不可用'), t) : t('profile.access.effective', '当前生效')}
           <Tag color="blue" style={{marginInlineStart: 8}}>{t('profile.access.count', '共 {count} 项', {count: query.data?.page.totalElements ?? 0})}</Tag></Typography.Title>
           <Typography.Text type="secondary">{roleId
             ? t('profile.access.roleHint', '此处是该角色配置的授权；标记会说明它是否在当前会话生效。')
@@ -83,17 +93,18 @@ export function ProfileAccessSection() {
       </div>
       {query.isLoading && <div className="profile-access-loading"><Spin/></div>}
       {query.isError && <Alert type="error" showIcon title={t('profile.access.loadFailed', '资源权限加载失败')}
-        action={<Button size="small" onClick={() => void query.refetch()}>{t('action.refresh', '刷新')}</Button>}/>}
+        action={retry(query.refetch)}/>}
       {!query.isLoading && !query.isError && (query.data?.content.length ?? 0) === 0 &&
         <Empty description={t('profile.access.empty', '当前筛选条件下没有资源权限')}/>}
       {!!query.data?.content.length && <div className="profile-permission-grid">
-        {query.data.content.map(row => <button type="button" className="profile-permission-item" key={row.code}
-          onClick={() => {setOperationPage(1); setSelectedCode(row.code);}} aria-label={t('profile.access.openDetail', '查看 {name} 的权限详情', {name: label(row)})}>
+        {query.data.content.map((row, index) => <button type="button" className="profile-permission-item"
+          key={hasRecordIdentity({id: row.code}) ? row.code! : `unavailable-${page}-${index}`} disabled={!hasRecordIdentity({id: row.code})}
+          onClick={() => {if (hasRecordIdentity({id: row.code})) {setOperationPage(1); setSelectedCode(row.code!);}}}
+          aria-label={t('profile.access.openDetail', '查看 {name} 的权限详情', {name: label(row)})}>
           <div className="profile-permission-icon">{permissionIcon(row)}</div>
           <div className="profile-permission-copy">
             <div className="profile-permission-top"><strong>{label(row)}</strong>
-              <Tag>{typeLabels[row.type as keyof typeof typeLabels] || row.type}</Tag></div>
-            <Typography.Text code>{row.code}</Typography.Text>
+              <Tag>{typeLabels[row.type as keyof typeof typeLabels] || typeLabels.OTHER}</Tag></div>
             {roleId && <Tag className="profile-permission-status" color={row.effective ? 'success' : 'default'}>
               {row.effective ? t('profile.access.active', '当前会话生效') : t('profile.access.inactive', '当前会话未生效')}
             </Tag>}
@@ -111,21 +122,22 @@ export function ProfileAccessSection() {
         current={page} pageSize={24} total={query.data?.page.totalElements ?? 0}
         showSizeChanger={false} onChange={setPage}/>}
     </div>
-    <Drawer open={!!selectedCode} onClose={() => setSelectedCode(undefined)} width={620}
-      title={detail.data?.page ? label(detail.data.page) : selectedCode || t('profile.access.detail', '页面权限详情')} destroyOnHidden>
+    <Drawer open={!!selectedCode && selected} onClose={() => setSelectedCode(undefined)} width={620}
+      title={detail.data?.page ? label(detail.data.page) : t('profile.access.detail', '页面权限详情')} destroyOnHidden>
       {detail.isLoading && <div className="profile-access-loading"><Spin/></div>}
       {detail.isError && <Alert type="error" showIcon title={t('profile.access.detailFailed', '权限详情加载失败')}
-        action={<Button size="small" onClick={() => void detail.refetch()}>{t('action.refresh', '刷新')}</Button>}/>}
+        action={retry(detail.refetch)}/>}
       {detail.data && <div className="profile-access-detail">
-        <div className="profile-access-detail-header"><Typography.Text code>{detail.data.page.code}</Typography.Text>
+        <div className="profile-access-detail-header">
           <Typography.Text type="secondary"><FolderOutlined/> {directoryLabel(detail.data.page.directory)}</Typography.Text></div>
         <div className="profile-access-detail-section"><h3>{t('profile.access.operations', '操作权限')}
           <Tag>{detail.data.operations.length}</Tag></h3>
           {detail.data.operations.length ? <div className="profile-access-operations">
-            {detail.data.operations.slice((operationPage - 1) * 50, operationPage * 50).map(operation => <div className="profile-access-operation" key={operation.code}>
+            {detail.data.operations.slice((operationPage - 1) * 50, operationPage * 50).map((operation, index) => <div className="profile-access-operation"
+              key={hasRecordIdentity({id: operation.code}) ? operation.code! : `unavailable-operation-${operationPage}-${index}`}>
               <span className="profile-permission-icon">{permissionIcon(operation)}</span>
-              <span><strong>{label(operation)}</strong><small>{operation.code}</small></span>
-              <Tag>{typeLabels[operation.type as keyof typeof typeLabels] || operation.type}</Tag>
+              <span><strong>{label(operation)}</strong></span>
+              <Tag>{typeLabels[operation.type as keyof typeof typeLabels] || typeLabels.OTHER}</Tag>
               {roleId && <Tag color={operation.effective ? 'success' : 'default'}>{operation.effective
                 ? t('profile.access.active', '当前会话生效') : t('profile.access.inactive', '当前会话未生效')}</Tag>}
             </div>)}</div> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -145,7 +157,12 @@ export function ProfileAccessSection() {
 }
 
 export function ProfileOrganizationSection() {
-  const {t} = useI18n();
+  const {t, ensure} = useI18n();
+  useEffect(() => {void ensure(['permissions']);}, [ensure]);
+  const organizationLabel = (name: string | null | undefined) => resolveResourceLabel(name, t('permissions.unavailable', '名称暂不可用'), t);
+  const retry = (refetch: () => unknown) => <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+    {key: 'refresh', sort: 0, size: 'small', text: t('action.refresh', '刷新'), onClick: () => {void refetch();}},
+  ]}/>;
   const scope = useQueryScope();
   const tenants = useCurrentTenants();
   const organization = useProfileOrganization(true);
@@ -163,10 +180,10 @@ export function ProfileOrganizationSection() {
       <div className="profile-organization-group"><h3 className="profile-group-title"><ApartmentOutlined/> {t('profile.organization.department', '所属部门')}</h3>
         {organization.isLoading ? <Spin/> : organization.isError
           ? <Alert type="error" title={t('profile.organization.loadFailed', '组织信息加载失败')}
-            action={<Button size="small" onClick={() => void organization.refetch()}>{t('action.refresh', '刷新')}</Button>}/>
-          : organization.data?.name ? <>
-            <Typography.Title level={4}>{organization.data.name}</Typography.Title>
-            <Typography.Text type="secondary">{organization.data.path.join(' / ')}</Typography.Text>
+            action={retry(organization.refetch)}/>
+          : organization.data && (organization.data.name || organization.data.path.length > 0) ? <>
+            <Typography.Title level={4}>{organizationLabel(organization.data.name)}</Typography.Title>
+            <Typography.Text type="secondary">{organization.data.path.map(organizationLabel).join(' / ')}</Typography.Text>
           </> : <Typography.Text type="secondary">{scope[0] === '__platform__'
             ? t('profile.organization.noPlatformDepartment', '平台工作空间不关联租户部门')
             : t('profile.organization.unassigned', '当前工作空间尚未分配部门')}</Typography.Text>}
@@ -175,7 +192,7 @@ export function ProfileOrganizationSection() {
     <div className="profile-workspaces-group"><h3 className="profile-group-title">{t('profile.organization.workspaces', '可访问工作空间')}</h3>
       {tenants.isLoading ? <Spin/> : tenants.isError
         ? <Alert type="error" title={t('profile.organization.tenantsFailed', '工作空间加载失败')}
-          action={<Button size="small" onClick={() => void tenants.refetch()}>{t('action.refresh', '刷新')}</Button>}/>
+          action={retry(tenants.refetch)}/>
         : !tenants.data?.length ? <Empty description={t('profile.organization.empty', '暂无可访问工作空间')}/>
           : <div className="profile-workspace-list">{tenants.data.map(tenant =>
             <div className="profile-workspace-item" key={tenant.tenantId}>

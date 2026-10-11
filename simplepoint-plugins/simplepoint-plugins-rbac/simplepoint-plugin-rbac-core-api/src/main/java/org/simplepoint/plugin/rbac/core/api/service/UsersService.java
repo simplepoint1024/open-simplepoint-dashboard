@@ -110,6 +110,9 @@ public interface UsersService extends BaseService<User, String>, UserDetailsServ
    */
   User updateCurrentProfile(String userId, UserProfileUpdateCommand command);
 
+  /** Updates only the avatar field of the authenticated account. Null removes the avatar. */
+  User updateCurrentPicture(String userId, String picture);
+
   /**
      * Loads a user by their phone number or email address.
      *

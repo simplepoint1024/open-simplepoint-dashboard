@@ -1,4 +1,13 @@
 {
+  "dna.metadata.page.delete.cascade": "Also delete dependent objects (CASCADE)",
+  "dna.metadata.page.delete.warning": "This operation changes the physical database and cannot be undone here. Confirm the source and target before proceeding.",
+  "dna.metadata.page.form.ordinary": "Ordinary",
+  "dna.metadata.page.form.advanced": "Advanced JSON",
+  "dna.metadata.page.validation.duplicateColumns": "Column names must be unique.",
+  "dna.metadata.page.validation.invalidScale": "Scale cannot exceed precision.",
+  "dna.metadata.page.validation.foreignKeyArity": "Local and reference columns must have the same count.",
+  "dna.metadata.page.validation.foreignKeyTable": "The reference path must end with a table.",
+  "dna.metadata.page.validation.unknownColumn": "A constraint refers to an undefined local column.",
   "dna.metadata.page.alert.browser.title": "DataGrip-style tree browser",
   "dna.metadata.page.alert.browser.description": "Supports lazy loading by database / catalog / schema hierarchy down to columns, with structure, constraint, and paged data preview on the right.",
   "dna.metadata.page.error.loadDataSources": "Failed to load data sources.",

@@ -9,6 +9,10 @@ public final class BuiltInTenantCodes {
 
   public static final String AI_APPLICATION = "simplepoint-ai";
 
+  public static final String APP_APPLICATION = "simplepoint-app";
+
+  public static final String WORKFLOW_APPLICATION = "simplepoint-workflow";
+
   public static final String STORAGE_APPLICATION = "simplepoint-storage";
 
   public static final String ORGANIZATION_PACKAGE = "simplepoint-standard";

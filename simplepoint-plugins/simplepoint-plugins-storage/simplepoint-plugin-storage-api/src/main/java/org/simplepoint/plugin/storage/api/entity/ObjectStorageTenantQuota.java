@@ -30,6 +30,17 @@ import org.springframework.core.annotation.Order;
 @AllArgsConstructor
 @Tag(name = "对象存储租户配额", description = "用于限制租户对象存储容量")
 @Schema(title = "对象存储租户配额", description = "用于限制租户对象存储容量")
+@org.simplepoint.core.annotation.ButtonDeclarations({
+  @org.simplepoint.core.annotation.ButtonDeclaration(key = "add", title = "i18n:storage.quota.add",
+      icon = "PlusCircleOutlined", sort = 0, argumentMinSize = 0, argumentMaxSize = 0,
+      authority = "storage.quotas.create"),
+  @org.simplepoint.core.annotation.ButtonDeclaration(key = "edit", title = "i18n:table.button.edit",
+      icon = "EditOutlined", sort = 1, argumentMinSize = 1, argumentMaxSize = 1,
+      authority = "storage.quotas.edit"),
+  @org.simplepoint.core.annotation.ButtonDeclaration(key = "delete", title = "i18n:table.button.delete",
+      icon = "MinusCircleOutlined", sort = 2, argumentMinSize = 1, argumentMaxSize = 10, danger = true,
+      authority = "storage.quotas.delete")
+})
 @org.simplepoint.core.query.TableQuery({
   @org.simplepoint.core.query.QueryField("tenantId"),
   @org.simplepoint.core.query.QueryField("tenantName"),
@@ -68,7 +79,7 @@ public class ObjectStorageTenantQuota extends BaseEntityImpl<String> {
   private String description;
 
   @Transient
-  @Schema(title = "i18n:storage.quota.tenantId", accessMode = Schema.AccessMode.READ_ONLY)
+  @Schema(title = "i18n:storage.quota.tenantName", accessMode = Schema.AccessMode.READ_ONLY)
   @org.simplepoint.core.annotation.PermissionFields(
       resourceName = "org.simplepoint.plugin.rbac.tenant.api.entity.Tenant",
       value = "name")

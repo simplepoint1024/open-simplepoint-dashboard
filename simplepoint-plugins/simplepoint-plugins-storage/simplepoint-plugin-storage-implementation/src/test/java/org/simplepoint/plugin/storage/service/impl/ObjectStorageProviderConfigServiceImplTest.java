@@ -110,6 +110,38 @@ class ObjectStorageProviderConfigServiceImplTest {
     assertThrows(IllegalStateException.class, () -> service.removeByIds(List.of("provider-1")));
   }
 
+  @Test
+  void readOnlyCredentialCannotBeEncryptedAndSavedThroughTheCustomCreatePath() {
+    var context = new org.simplepoint.core.AuthorizationContext();
+    context.setFieldPermissions(Map.of(ObjectStorageProviderConfig.class.getName() + "#secretKey", "VISIBLE"));
+    org.simplepoint.core.RequestContextHolder.setContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    try {
+      var input = provider(); input.setSecretKey("replacement");
+      assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> service.create(input));
+      org.mockito.Mockito.verify(repository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
+      assertEquals("secret-value", cipher.decrypt(input.getSecretKeyCiphertext()));
+    } finally {
+      org.simplepoint.core.RequestContextHolder.clearContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+    }
+  }
+
+  @Test
+  void connectionTestCannotUseCredentialsOutsideThePageScope() {
+    var context = new org.simplepoint.core.AuthorizationContext(); context.setUserId("reader");
+    context.setResourceDataScopes(Map.of("storage.providers.view", new org.simplepoint.core.ResourceDataScope("SELF", java.util.Set.of(), false)));
+    org.simplepoint.core.RequestContextHolder.setContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    org.simplepoint.core.ResourcePolicyContext.set("storage.providers.view");
+    try {
+      var input = provider(); input.setCreatedBy("other");
+      when(repository.findActiveById("provider-1")).thenReturn(Optional.of(input));
+      assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> service.testConnection("provider-1"));
+      org.mockito.Mockito.verifyNoInteractions(driver);
+    } finally {
+      org.simplepoint.core.RequestContextHolder.clearContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+      org.simplepoint.core.ResourcePolicyContext.clear();
+    }
+  }
+
   private ObjectStorageProviderConfig provider() {
     ObjectStorageProviderConfig provider = new ObjectStorageProviderConfig();
     provider.setId("provider-1");
@@ -124,5 +156,41 @@ class ObjectStorageProviderConfigServiceImplTest {
     provider.setEnabled(true);
     provider.setDefaultProvider(true);
     return provider;
+  }
+
+  @Test
+  void partialEditRestoresProtectedConfigurationBeforeValidationAndRetainsTheSecret() {
+    var context = new org.simplepoint.core.AuthorizationContext();
+    context.setUserId("editor");
+    var permissions = new java.util.LinkedHashMap<String, String>();
+    List.of("name", "type", "endpoint", "region", "accessKey", "bucket", "enabled", "defaultProvider")
+        .forEach(field -> permissions.put(ObjectStorageProviderConfig.class.getName() + "#" + field, "MASKED"));
+    context.setFieldPermissions(permissions);
+    org.simplepoint.core.RequestContextHolder.setContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    try {
+      var current = provider();
+      var patch = new ObjectStorageProviderConfig(); patch.setId(current.getId()); patch.setDescription("edited note");
+      when(repository.findActiveById(current.getId())).thenReturn(Optional.of(current));
+      when(repository.findActiveByCode(current.getCode())).thenReturn(Optional.of(current));
+      when(repository.findById(current.getId())).thenReturn(Optional.of(current));
+      when(repository.getDomainClass()).thenReturn(ObjectStorageProviderConfig.class);
+      when(repository.updateById(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> invocation.getArgument(0));
+      var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+      var schema = mapper.createObjectNode(); var fields = schema.putObject("properties");
+      for (var field : ObjectStorageProviderConfig.class.getDeclaredFields()) fields.putObject(field.getName());
+      var generator = org.mockito.Mockito.mock(org.simplepoint.api.security.generator.JsonSchemaGenerator.class);
+      when(detailsProviderService.getDialect(org.simplepoint.api.security.service.JsonSchemaDetailsService.class))
+          .thenReturn(org.mockito.Mockito.mock(org.simplepoint.api.security.service.JsonSchemaDetailsService.class));
+      when(detailsProviderService.getDialect(org.simplepoint.api.security.generator.JsonSchemaGenerator.class)).thenReturn(generator);
+      when(generator.generateSchema(ObjectStorageProviderConfig.class)).thenReturn(schema);
+      var result = service.modifyById(patch);
+      assertEquals("edited note", result.getDescription());
+      assertEquals(current.getAccessKey(), result.getAccessKey());
+      assertEquals(current.getBucket(), result.getBucket());
+      assertEquals(current.getName(), result.getName());
+      assertEquals("secret-value", cipher.decrypt(result.getSecretKeyCiphertext()));
+    } finally {
+      org.simplepoint.core.RequestContextHolder.clearContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+    }
   }
 }

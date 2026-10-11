@@ -19,4 +19,14 @@ public interface JpaSystemNotificationRepository
       where n.id = :id and n.deletedAt is null
       """)
   Optional<SystemNotification> findActiveById(@Param("id") String id);
+
+  @Override
+  @Query("""
+      select n from SystemNotification n
+      where n.source = :source and n.externalKey = :externalKey and n.deletedAt is null
+      """)
+  Optional<SystemNotification> findBySourceAndExternalKey(
+      @Param("source") String source,
+      @Param("externalKey") String externalKey
+  );
 }

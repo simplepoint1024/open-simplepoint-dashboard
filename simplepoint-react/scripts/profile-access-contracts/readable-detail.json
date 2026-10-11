@@ -1,0 +1,28 @@
+{
+  "page": {
+    "code": "profile-page",
+    "label": "原生权限页面",
+    "type": "PAGE",
+    "path": "/actual/profile-page",
+    "icon": "FileOutlined",
+    "effective": true,
+    "available": true,
+    "directory": [
+      "原生权限目录"
+    ]
+  },
+  "operations": [
+    {
+      "code": "profile-edit",
+      "label": "编辑权限",
+      "type": "ACTION",
+      "path": null,
+      "icon": "FileOutlined",
+      "effective": true,
+      "available": true,
+      "directory": []
+    }
+  ],
+  "dataPermissionSupported": false,
+  "fieldPermissionSupported": false
+}

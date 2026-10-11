@@ -49,22 +49,26 @@ public class ResourceScopeHandlerInterceptor implements AsyncHandlerInterceptor 
     if (preAuthorize == null) {
       preAuthorize = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getBeanType(), PreAuthorize.class);
     }
-    if (preAuthorize == null) {
-      if (org.simplepoint.core.base.controller.BaseController.class.isAssignableFrom(handlerMethod.getBeanType())) {
-        registry.findControllerPage(handlerMethod.getBeanType()).ifPresent(ResourcePolicyContext::set);
-      }
-      return true;
-    }
-
-    Set<String> declaredAuthorities = extractAuthorities(preAuthorize.value());
     AuthorizationContext context = AuthorizationContextHolder.getContext();
-    if (declaredAuthorities.isEmpty()) {
-      var explicit = handlerMethod.getBeanType().getAnnotation(org.simplepoint.core.permission.PermissionPage.class);
-      if (explicit != null) ResourcePolicyContext.set(explicit.value());
-    }
-    if (declaredAuthorities.isEmpty() || context == null) {
+    boolean inheritedSchema = handlerMethod.getMethod().getDeclaringClass()
+        == org.simplepoint.core.base.controller.BaseController.class
+        && "schema".equals(handlerMethod.getMethod().getName());
+    if (inheritedSchema) {
+      // Inherited metadata has no method-security annotation: enforce its owning page here.
+      String page = registry.findControllerPage(handlerMethod.getBeanType())
+          .orElseThrow(() -> new AccessDeniedException("无法确定元数据所属页面"));
+      requirePageAccess(page, context);
+      ResourcePolicyContext.set(page);
       return true;
     }
+    Set<String> declaredAuthorities = preAuthorize == null ? Set.of() : extractAuthorities(preAuthorize.value());
+    if (declaredAuthorities.isEmpty()) {
+      var explicit = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getBeanType(),
+          org.simplepoint.core.permission.PermissionPage.class);
+      if (explicit != null) ResourcePolicyContext.set(explicit.value());
+      return true;
+    }
+    if (context == null) return true;
 
     boolean knownAuthority = false;
     for (String authority : declaredAuthorities) {
@@ -87,6 +91,17 @@ public class ResourceScopeHandlerInterceptor implements AsyncHandlerInterceptor 
       return true;
     }
     throw new AccessDeniedException("资源未声明或不属于当前工作空间");
+  }
+
+  private void requirePageAccess(String page, AuthorizationContext context) {
+    var scopes = registry.findScopes(page);
+    if (context == null || scopes.isEmpty() || !ResourceScopePolicy.isAccessible(scopes.get(), context))
+      throw new AccessDeniedException("当前工作空间不可访问该页面元数据");
+    Collection<String> resources = context.getResources();
+    boolean granted = resources != null && resources.stream().anyMatch(code -> page.equals(code)
+        || registry.findPage(code).filter(page::equals).isPresent());
+    if (!Boolean.TRUE.equals(context.getIsAdministrator()) && !granted)
+      throw new AccessDeniedException("缺少页面资源权限");
   }
 
   private void selectPage(Set<String> authorities, AuthorizationContext context, Class<?> controller) {

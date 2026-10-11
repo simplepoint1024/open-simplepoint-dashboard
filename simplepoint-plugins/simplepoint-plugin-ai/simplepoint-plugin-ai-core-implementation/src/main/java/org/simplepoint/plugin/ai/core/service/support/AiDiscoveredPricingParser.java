@@ -13,6 +13,10 @@ import org.springframework.stereotype.Component;
 public class AiDiscoveredPricingParser {
 
   private static final BigDecimal MILLION = new BigDecimal("1000000");
+  private static final BigDecimal PRICE_OVERFLOW = new BigDecimal("100000000000");
+  private static final BigDecimal MAX_PRICE = new BigDecimal("99999999999.99999999");
+  private static final BigDecimal ROUND_THRESHOLD = new BigDecimal("0.000000005");
+  private static final BigDecimal ZERO_PRICE = BigDecimal.ZERO.setScale(8);
 
   /** Parses pricing metadata, returning {@code null} when the endpoint exposes no prices. */
   public DiscoveredPricing parse(final JsonNode model) {
@@ -88,15 +92,17 @@ public class AiDiscoveredPricingParser {
       }
       String type = price.path("type").asText("").toLowerCase(Locale.ROOT);
       String unit = price.path("price_unit").asText("").toLowerCase(Locale.ROOT);
+      BigDecimal normalized = type.contains("token") || type.contains("cache") ? tokenPrice(value, unit) : normalize(value);
+      if (normalized == null) continue;
       if (type.contains("cached") || type.contains("cache")) {
-        cachedInput = tokenPrice(value, unit);
+        cachedInput = normalized;
       } else if (type.contains("input") && type.contains("token")) {
-        input = tokenPrice(value, unit);
+        input = normalized;
       } else if (type.contains("output") && type.contains("token")) {
-        output = tokenPrice(value, unit);
+        output = normalized;
       } else if (type.contains("request") || type.contains("number")
           || type.contains("image")) {
-        request = normalize(value);
+        request = normalized;
       }
     }
     DiscoveredPricing pricing = new DiscoveredPricing(
@@ -110,7 +116,8 @@ public class AiDiscoveredPricingParser {
       return null;
     }
     try {
-      BigDecimal value = new BigDecimal(node.asText().trim());
+      String text = node.asText().trim(); if (text.length() > 2000) return null;
+      BigDecimal value = new BigDecimal(text);
       return value.signum() < 0 ? null : value;
     } catch (NumberFormatException ignored) {
       return null;
@@ -134,18 +141,8 @@ public class AiDiscoveredPricingParser {
 
   private static BigDecimal first(final JsonNode root, final String... paths) {
     for (String path : paths) {
-      JsonNode node = at(root, path);
-      if (node == null || node.isNull() || node.isContainerNode()) {
-        continue;
-      }
-      try {
-        BigDecimal value = new BigDecimal(node.asText().trim());
-        if (value.signum() >= 0) {
-          return normalize(value);
-        }
-      } catch (NumberFormatException ignored) {
-        // A malformed optional price must not make the whole catalog unavailable.
-      }
+      BigDecimal value = decimal(at(root, path)); if (value == null) continue;
+      BigDecimal normalized = normalize(value); if (normalized != null) return normalized;
     }
     return null;
   }
@@ -173,6 +170,10 @@ public class AiDiscoveredPricingParser {
   }
 
   private static BigDecimal normalize(final BigDecimal value) {
-    return value.setScale(8, RoundingMode.HALF_UP);
+    // Bound before setScale: remote exponents must never expand into enormous powers of ten.
+    if (value.compareTo(PRICE_OVERFLOW) >= 0) return null;
+    if (value.compareTo(ROUND_THRESHOLD) < 0) return ZERO_PRICE;
+    BigDecimal normalized = value.setScale(8, RoundingMode.HALF_UP);
+    return normalized.compareTo(MAX_PRICE) > 0 ? null : normalized;
   }
 }

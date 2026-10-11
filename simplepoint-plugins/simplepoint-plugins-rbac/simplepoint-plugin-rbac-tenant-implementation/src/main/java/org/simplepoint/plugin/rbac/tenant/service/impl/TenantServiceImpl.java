@@ -18,8 +18,8 @@ import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.core.api.service.UsersService;
 import org.simplepoint.plugin.rbac.tenant.api.constants.TenantContextIds;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.command.TenantProfileUpdateCommand;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantPackagesRelevanceDto;
@@ -285,6 +285,18 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     return getTableSchemaProvider().schema(UserRelevanceVo.class, getAuthorizationContext());
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public Map<String, Boolean> userManagementCapabilities(String tenantId) {
+    try {
+      requireTenantMemberManager(tenantId);
+      return Map.of("canConfigureMembers", true);
+    } catch (AccessDeniedException | IllegalArgumentException unavailable) {
+      // A missing/inaccessible tenant and an ineligible manager have the same capability response.
+      return Map.of("canConfigureMembers", false);
+    }
+  }
+
   private String normalizeKeyword(String keyword) {
     if (keyword == null) {
       return null;
@@ -301,6 +313,40 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       userIds.add(tenant.getOwnerId());
     }
     return userIds;
+  }
+
+  @Override
+  public Collection<String> resolveActiveMemberIds(
+      final String tenantId,
+      final Collection<String> userIds
+  ) {
+    Tenant tenant = requireDirectoryValidationTenant(tenantId);
+    Set<String> requested = normalizeCodes(userIds);
+    if (requested.size() > 50) {
+      throw new IllegalArgumentException("每次最多校验 50 个租户成员");
+    }
+    return requested.isEmpty() ? Set.of() : getRepository().resolveActiveUserIds(tenant.getId(), requested);
+  }
+
+  @Override
+  public Collection<String> resolveActiveRoleAuthorities(final String tenantId, final Collection<String> authorities) {
+    Tenant tenant = requireDirectoryValidationTenant(tenantId);
+    Set<String> requested = normalizeCodes(authorities);
+    if (requested.size() > 50) {
+      throw new IllegalArgumentException("每次最多校验 50 个租户角色");
+    }
+    return requested.isEmpty() ? Set.of() : getRepository().resolveActiveRoleAuthorities(tenant.getId(), requested);
+  }
+
+  private Tenant requireDirectoryValidationTenant(final String tenantId) {
+    Tenant tenant = requireTenant(tenantId);
+    Authentication authentication = getRequiredAuthentication();
+    if (!isAdministrator(authentication)
+        && !isServiceRouterCaller(authentication)
+        && getRepository().resolveActiveUserIds(tenant.getId(), Set.of(authentication.getName())).isEmpty()) {
+      throw new AccessDeniedException("当前用户未加入指定租户");
+    }
+    return tenant;
   }
 
   @Override
@@ -742,6 +788,11 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   private static boolean isAdministrator(Authentication authentication) {
     return authentication.getAuthorities().stream()
         .anyMatch(authority -> "ROLE_Administrator".equals(authority.getAuthority()));
+  }
+
+  private static boolean isServiceRouterCaller(Authentication authentication) {
+    return authentication.getAuthorities().stream()
+        .anyMatch(authority -> "SCOPE_service-router.invoke".equals(authority.getAuthority()));
   }
 
   private static boolean hasPlatformAccess(Authentication authentication) {

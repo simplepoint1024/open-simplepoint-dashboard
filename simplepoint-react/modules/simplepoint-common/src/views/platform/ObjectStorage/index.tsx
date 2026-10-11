@@ -1,981 +1,238 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {App as AntdApp, Alert, Button, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Switch, Tabs, Tag, Typography, Upload} from 'antd';
-import Table from '@simplepoint/components/DataTable';
-import type { ColumnsType } from 'antd/es/table';
-import {useStorageList} from './useStorageList';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {Alert, App, Descriptions, Modal, Tag, Typography, Upload} from 'antd';
+import type {UploadFile} from 'antd/es/upload/interface';
+import {InboxOutlined} from '@simplepoint/shared/types/icon';
+import SimpleTable from '@simplepoint/components/SimpleTable';
+import type {SimpleTableColumnOverride} from '@simplepoint/components/SimpleTable/types';
+import LazySForm from '@simplepoint/components/SForm/Lazy';
+import type {SFormHandle} from '@simplepoint/components/SForm';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
-import type { UploadFile } from 'antd/es/upload/interface';
-import { DeleteOutlined, DownloadOutlined, EyeOutlined, InboxOutlined, PlusOutlined } from '@simplepoint/shared/types/icon';
-import { get, post, put } from '@simplepoint/shared/api/methods';
-import { request, resolveApiErrorMessage } from '@simplepoint/shared/api/client';
-import EntitySelect from '@simplepoint/components/EntitySelect';
-import { useI18n } from '@simplepoint/shared/hooks/useI18n';
+import {useSchema} from '@simplepoint/shared/hooks/useSchema';
+import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {useActionFeedback} from '@simplepoint/shared/hooks/useActionFeedback';
+import {usePageLocation, usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
+import {get, post} from '@simplepoint/shared/api/methods';
+import {request, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
+import {useQueryClient} from '@tanstack/react-query';
+import {providerCanCreate, providerFormSchema, providerPayload, quotaFormSchema, quotaPayload, writable} from './forms';
 import api from '@/api';
 
-const { Paragraph, Text } = Typography;
-const baseConfig = api['platform.object-storage'];
-const uploadConfig = api['object-storage'];
-const tenantsConfig = api['platform.tenants'];
-
-type StoragePlatformType = 'MINIO' | 'S3' | 'ALIYUN_OSS' | 'TENCENT_COS' | 'QINIU_KODO' | 'CEPH';
-type StorageSection = 'providers' | 'objects' | 'quotas';
-
-type ProviderDefinition = {
-  code: string;
-  name: string;
-  type: StoragePlatformType;
-  endpoint?: string | null;
-  bucket?: string | null;
-  defaultProvider?: boolean | null;
-};
-
-type ProviderConfig = {
-  id: string;
-  code: string;
-  name: string;
-  type: StoragePlatformType;
-  endpoint?: string | null;
-  region?: string | null;
-  accessKey: string;
-  bucket: string;
-  basePath?: string | null;
-  pathStyleAccess?: boolean | null;
-  publicBaseUrl?: string | null;
-  enabled: boolean;
-  defaultProvider: boolean;
-  description?: string | null;
-  secretConfigured?: boolean | null;
-};
-
-type StorageObject = {
-  id: string;
-  providerCode: string;
-  providerType: ProviderDefinition['type'];
-  bucket: string;
-  objectKey: string;
-  originalFileName: string;
-  contentType?: string | null;
-  contentLength?: number | null;
-  eTag?: string | null;
-  accessUrl?: string | null;
-  sourceServiceName?: string | null;
-  createdAt?: string | null;
-};
-
-type StorageQuota = {
-  id: string;
-  tenantId: string;
-  tenantName?: string | null;
-  quotaBytes?: number | null;
-  usedBytes?: number | null;
-  remainingBytes?: number | null;
-  enabled?: boolean | null;
-  description?: string | null;
-};
-
-type UploadFormValues = {
-  directory?: string;
-  file: UploadFile[];
-};
-
-type ProviderFormValues = Omit<ProviderConfig, 'id' | 'secretConfigured'> & {
-  id?: string;
-  secretKey?: string;
-};
-
-type QuotaFormValues = {
-  id?: string;
-  tenantId: string;
-  quotaMb?: number | null;
-  enabled: boolean;
-  description?: string;
-};
-
-const normalizeUploadEvent = (event: { fileList?: UploadFile[] } | UploadFile[]) => {
-  if (Array.isArray(event)) {
-    return event;
-  }
-  return event?.fileList ?? [];
-};
-
-const bytesToMb = (bytes?: number | null) => (bytes == null ? null : Number((bytes / 1024 / 1024).toFixed(2)));
-
-const formatBytes = (bytes?: number | null) => {
-  if (bytes == null) {
-    return '--';
-  }
-  if (typeof bytes !== 'number' || !Number.isFinite(bytes)) return String(bytes);
-  if (bytes === 0) {
-    return '0 B';
-  }
+type StorageRow = {id: string; [key: string]: any};
+type Section = 'provider-configs' | 'objects' | 'quotas';
+const base = api['platform.object-storage'];
+const uploadBase = api['object-storage'].baseUrl;
+const {Text} = Typography;
+const formatBytes = (value: unknown) => {
+  if (value == null) return '—';
+  if (typeof value !== 'number' || !Number.isFinite(value)) return String(value);
+  if (value === 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let value = bytes;
-  let unitIndex = 0;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex += 1;
-  }
-  return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`;
+  let amount = value, unit = 0;
+  while (amount >= 1024 && unit < units.length - 1) {amount /= 1024; unit++;}
+  return `${amount.toFixed(amount >= 10 || unit === 0 ? 0 : 2)} ${units[unit]}`;
 };
+const dateTime = (value: unknown) => typeof value === 'string' && !Number.isNaN(Date.parse(value))
+  ? new Date(value).toLocaleString() : String(value ?? '—');
 
-const formatDateTime = (value?: string | null) => {
-  if (!value) {
-    return '--';
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-};
-
-const App = () => {
+export default function ObjectStorage() {
   const scope = useQueryScope();
-  return <StoragePage key={JSON.stringify(scope)}/>;
-};
+  const route = usePageLocation();
+  const section: Section = route.includes('/system/object-storage') ? 'provider-configs'
+    : route.includes('/platform/storage-quotas') ? 'quotas' : 'objects';
+  return <StorageSession key={JSON.stringify([scope, section])} section={section}/>;
+}
 
-const StoragePage = () => {
-  const {message} = AntdApp.useApp();
-  const runAction = useActionFeedback();
-  const { ensure, locale, t } = useI18n();
-  const storageSection = useMemo<StorageSection>(() => {
-    const path = typeof window === 'undefined' ? '' : window.location.hash;
-    if (path.includes('/system/object-storage')) return 'providers';
-    if (path.includes('/platform/storage-quotas')) return 'quotas';
-    return 'objects';
-  }, []);
-  const [uploadForm] = Form.useForm<UploadFormValues>();
-  const [quotaForm] = Form.useForm<QuotaFormValues>();
-  const [providerForm] = Form.useForm<ProviderFormValues>();
-
-  const [providers, setProviders] = useState<ProviderDefinition[]>([]);
-  const providerList = useStorageList<ProviderConfig>(`${baseConfig.baseUrl}/provider-configs`, storageSection === 'providers');
-  const objectList = useStorageList<StorageObject>(`${baseConfig.baseUrl}/objects`, storageSection === 'objects');
-  const quotaList = useStorageList<StorageQuota>(`${baseConfig.baseUrl}/quotas`, storageSection === 'quotas');
-  const providerConfigsPage = providerList.page;
-  const loadProviderConfigs = providerList.refresh;
-  const refreshObjects = objectList.refresh;
-  const refreshQuotas = quotaList.refresh;
+function StorageSession({section}: {section: Section}) {
+  const {message} = App.useApp();
+  const {t} = useI18n();
+  const selected = usePageSelected();
+  const run = useActionFeedback();
+  const client = useQueryClient();
+  const endpoint = `${base.baseUrl}/${section}`;
+  const policy = useSchema(endpoint, {retry: false});
+  const schema = policy.data?.schema;
+  const can = (key: string) => !policy.error && !!policy.data?.buttons.some(button => button.key === key);
+  const [revision, setRevision] = useState(0);
+  const [testing, setTesting] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [quotaSaving, setQuotaSaving] = useState(false);
-  const [providerSaving, setProviderSaving] = useState(false);
-  const [providerTestingId, setProviderTestingId] = useState<string | null>(null);
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [quotaModalOpen, setQuotaModalOpen] = useState(false);
-  const [providerModalOpen, setProviderModalOpen] = useState(false);
-  const [quotaMode, setQuotaMode] = useState<'create' | 'edit'>('create');
-  const [providerMode, setProviderMode] = useState<'create' | 'edit'>('create');
-  const [detailOpen, setDetailOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadDraft, setUploadDraft] = useState<{directory?: string}>({});
+  const [files, setFiles] = useState<UploadFile[]>([]);
+  const [uploadError, setUploadError] = useState<string>();
+  const form = useRef<SFormHandle>(null);
+  const mutationLock = useRef(false);
+  const mounted = useRef(true);
+  const [detailId, setDetailId] = useState<string>();
+  const [detail, setDetail] = useState<StorageRow>();
+  const [detailError, setDetailError] = useState<string>();
   const [detailLoading, setDetailLoading] = useState(false);
-  const [selectedObject, setSelectedObject] = useState<StorageObject | null>(null);
-  const reportLoadError = useCallback((error: unknown) => {
-    message.error(resolveApiErrorMessage(error, t('error.requestFailed', '请求失败')));
-  }, [message, t]);
+  const detailRequest = useRef<AbortController | undefined>(undefined);
+  usePageRetention(!uploadOpen && !detailId && !testing && !uploading, uploadOpen || testing || uploading);
+  useEffect(() => {mounted.current = true; return () => {mounted.current = false; detailRequest.current?.abort();};}, []);
 
-  useEffect(() => {
-    void ensure(baseConfig.i18nNamespaces);
-  }, [ensure, locale]);
-
-  const loadProviders = useCallback(async () => {
-    try {
-      const data = await get<ProviderDefinition[]>(`${baseConfig.baseUrl}/providers`);
-      setProviders(data);
-    } catch (error) { reportLoadError(error); }
-  }, [reportLoadError]);
-
-  useEffect(() => {
-    if (storageSection === 'objects') void loadProviders();
-  }, [loadProviders, storageSection]);
-
-  const openUploadModal = useCallback(() => {
-    uploadForm.setFieldsValue({
-      directory: '',
-      file: [],
-    });
-    setUploadModalOpen(true);
-  }, [uploadForm]);
-
-  const openProviderCreateModal = useCallback(() => {
-    setProviderMode('create');
-    providerForm.setFieldsValue({
-      code: '',
-      name: '',
-      type: 'MINIO',
-      endpoint: '',
-      region: 'us-east-1',
-      accessKey: '',
-      secretKey: '',
-      bucket: '',
-      basePath: '',
-      pathStyleAccess: true,
-      publicBaseUrl: '',
-      enabled: true,
-      defaultProvider: providerConfigsPage.page.totalElements === 0,
-      description: '',
-    });
-    setProviderModalOpen(true);
-  }, [providerConfigsPage.page.totalElements, providerForm]);
-
-  const openProviderEditModal = useCallback((record: ProviderConfig) => {
-    setProviderMode('edit');
-    providerForm.setFieldsValue({
-      ...record,
-      secretKey: '',
-      endpoint: record.endpoint ?? '',
-      region: record.region ?? 'us-east-1',
-      basePath: record.basePath ?? '',
-      publicBaseUrl: record.publicBaseUrl ?? '',
-      description: record.description ?? '',
-    });
-    setProviderModalOpen(true);
-  }, [providerForm]);
-
-  const openQuotaCreateModal = useCallback(() => {
-    setQuotaMode('create');
-    quotaForm.setFieldsValue({
-      tenantId: undefined,
-      quotaMb: null,
-      enabled: true,
-      description: '',
-    });
-    setQuotaModalOpen(true);
-  }, [quotaForm]);
-
-  const openQuotaEditModal = useCallback((record: StorageQuota) => {
-    setQuotaMode('edit');
-    quotaForm.setFieldsValue({
-      id: record.id,
-      tenantId: record.tenantId,
-      quotaMb: bytesToMb(record.quotaBytes),
-      enabled: record.enabled !== false,
-      description: record.description ?? '',
-    });
-    setQuotaModalOpen(true);
-  }, [quotaForm]);
-
-  const openDetailModal = useCallback(async (record: StorageObject) => {
-    setDetailLoading(true);
-    setSelectedObject(null);
-    setDetailOpen(true);
-    try {
-      const detail = await get<StorageObject>(`${baseConfig.baseUrl}/objects/${record.id}`);
-      setSelectedObject(detail);
-    } finally {
-      setDetailLoading(false);
+  const visible = useMemo(() => section === 'provider-configs'
+    ? ['name', 'code', 'type', 'endpoint', 'bucket', 'region', 'secretConfigured', 'enabled', 'defaultProvider', 'description']
+    : section === 'quotas' ? ['tenantName', 'tenantId', 'quotaBytes', 'usedBytes', 'remainingBytes', 'enabled', 'description']
+      : ['providerCode', 'originalFileName', 'bucket', 'objectKey', 'contentLength', 'sourceServiceName', 'createdAt'],
+  [section]);
+  const tableSchema = useCallback((source: any) => {
+    const copy = structuredClone(source);
+    for (const [field, property] of Object.entries(copy.properties ?? {}) as [string, any][]) {
+      property['x-ui'] = {...property['x-ui'], 'x-list-visible': visible.includes(field)};
+      if (visible.includes(field)) property['x-order'] = visible.indexOf(field);
     }
-  }, []);
+    return copy;
+  }, [visible]);
+  const booleanTag = (value: unknown) => typeof value !== 'boolean' ? String(value ?? '—')
+    : <Tag color={value ? 'success' : 'default'}>{value ? t('storage.enabled', '启用') : t('storage.disabled', '停用')}</Tag>;
+  const overrides: Record<string, SimpleTableColumnOverride<StorageRow>> = section === 'provider-configs' ? {
+    name: {width: 190}, code: {width: 150}, bucket: {width: 160}, region: {width: 130},
+    type: {width: 150, render: (value: unknown) => typeof value === 'string'
+      ? <Tag>{t(`storage.provider.type.${value}`, value)}</Tag> : '—'},
+    endpoint: {render: (value: unknown) => value == null ? '—' : String(value)},
+    secretConfigured: {width: 110, render: (value: unknown) => typeof value !== 'boolean' ? String(value ?? '—')
+      : <Tag color={value ? 'success' : 'error'}>{value ? t('storage.provider.configured', '已配置')
+        : t('storage.provider.notConfigured', '未配置')}</Tag>},
+    enabled: {width: 100, render: booleanTag}, defaultProvider: {width: 100, render: (value: unknown) =>
+      value === true ? <Tag color="blue">{t('storage.provider.default', '系统默认')}</Tag>
+        : value === false ? '—' : String(value ?? '—')},
+  } : section === 'quotas' ? {
+    tenantName: {width: 200}, tenantId: {width: 170},
+    quotaBytes: {width: 140, render: (value: unknown) => value === null ? t('storage.unlimited', '不限额') : formatBytes(value)},
+    usedBytes: {width: 140, render: formatBytes},
+    remainingBytes: {width: 140, render: (value: unknown, row: StorageRow) =>
+      value === null && row.quotaBytes === null ? t('storage.unlimited', '不限额') : formatBytes(value)},
+    enabled: {width: 100, render: booleanTag},
+  } : {
+    providerCode: {width: 150}, originalFileName: {width: 220}, bucket: {width: 160},
+    objectKey: {width: 260, render: (value: unknown) => <Text code>{String(value ?? '—')}</Text>},
+    contentLength: {width: 130, render: formatBytes}, sourceServiceName: {width: 150},
+    createdAt: {width: 180, render: dateTime},
+  };
 
-  const handleUpload = useCallback(async () => {
-    const values = await uploadForm.validateFields().catch(() => undefined);
-    if (!values) return; // Form renders field validation errors inline.
-    const targetFile = values.file?.[0]?.originFileObj as File | undefined;
-    if (!targetFile) {
-      message.warning(t('form.required', '这是必填项'));
-      return;
-    }
-    const formData = new FormData();
-    formData.append('file', targetFile);
-    if (values.directory?.trim()) {
-      formData.append('directory', values.directory.trim());
-    }
-    setUploading(true);
+  const testProvider = async (row?: StorageRow) => {
+    if (!selected || !can('test') || !row?.id || mutationLock.current) return;
+    mutationLock.current = true;
+    setTesting(true);
     try {
-      const stored = await request<StorageObject>(`${uploadConfig.baseUrl}/upload`, {
-        method: 'POST',
-        body: formData,
+      await run('storage.test', async () => {
+        const result = await post<{success: boolean; message?: string}>(`${endpoint}/${row.id}/test`, {});
+        if (!result.success) throw new Error(result.message || t('error.operationFailed', '操作失败，请重试'));
+        if (mounted.current) message.success(t('storage.provider.testSuccess', '连接成功，Bucket 可访问'));
       });
-      if (!stored?.id) throw new Error(t('form.file.invalidResponse', '文件上传响应无效'));
-      message.success(t('table.addSuccess', '新增成功'));
-      setUploadModalOpen(false);
-      uploadForm.resetFields();
-      await refreshObjects();
-      await refreshQuotas();
+    } finally {mutationLock.current = false; if (mounted.current) setTesting(false);}
+  };
+  const closeDetail = () => {
+    detailRequest.current?.abort(); detailRequest.current = undefined;
+    setDetailId(undefined); setDetail(undefined); setDetailError(undefined); setDetailLoading(false);
+  };
+  const viewObject = async (row?: StorageRow) => {
+    if (!selected || !can('view') || !row?.id || uploadOpen || mutationLock.current) return;
+    detailRequest.current?.abort();
+    const controller = new AbortController(); detailRequest.current = controller;
+    setDetailId(row.id); setDetail(undefined); setDetailError(undefined); setDetailLoading(true);
+    try {
+      const result = await get<StorageRow>(`${endpoint}/${encodeURIComponent(row.id)}`, undefined, {signal: controller.signal});
+      if (mounted.current && !controller.signal.aborted) setDetail(result);
     } catch (error) {
-      message.error(resolveApiErrorMessage(error, t('form.file.uploadFailed', '文件上传或保存失败，请重试')));
-    } finally {
-      setUploading(false);
-    }
-  }, [message, refreshObjects, refreshQuotas, t, uploadForm]);
-
-  const handleSaveProvider = useCallback(() => runAction('provider.save', async () => {
-    const values = await providerForm.validateFields();
-    const payload = {
-      ...values,
-      endpoint: values.endpoint?.trim() || null,
-      region: values.region?.trim() || 'us-east-1',
-      accessKey: values.accessKey.trim(),
-      secretKey: values.secretKey?.trim() || null,
-      bucket: values.bucket.trim(),
-      basePath: values.basePath?.trim() || null,
-      publicBaseUrl: values.publicBaseUrl?.trim() || null,
-      description: values.description?.trim() || null,
-    };
-    setProviderSaving(true);
+      if (mounted.current && !controller.signal.aborted) setDetailError(resolveApiErrorMessage(error, t('table.loadFail', '加载失败')));
+    } finally {if (mounted.current && !controller.signal.aborted) setDetailLoading(false);}
+  };
+  const downloadObject = async (row?: StorageRow) => {
+    if (!selected || !can('download') || !row?.id || mutationLock.current) return;
+    mutationLock.current = true;
     try {
-      if (providerMode === 'create') {
-        await post<ProviderConfig>(`${baseConfig.baseUrl}/provider-configs`, payload);
+      await run('storage.download', async () => {
+        const blob = await request<Blob>(`${endpoint}/${encodeURIComponent(row.id)}/content`, {responseType: 'blob'});
+        if (!mounted.current) return;
+        const link = document.createElement('a'); const url = URL.createObjectURL(blob);
+        link.href = url; link.download = row.originalFileName || row.id;
+        link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+    } finally {mutationLock.current = false;}
+  };
+  const upload = async ({formData = {}}: {formData?: {directory?: string}}) => {
+    if (!selected || !uploadOpen || !can('upload') || mutationLock.current) return;
+    const file = files[0]?.originFileObj as File | undefined;
+    if (!file) {setUploadError(t('form.required', '这是必填项')); return;}
+    mutationLock.current = true; setUploading(true); setUploadError(undefined);
+    try {
+      const body = new FormData(); body.append('file', file);
+      if (formData.directory?.trim()) body.append('directory', formData.directory.trim());
+      const stored = await request<StorageRow>(`${uploadBase}/upload`, {method: 'POST', body});
+      if (!stored?.id) throw new Error(t('form.file.invalidResponse', '文件上传响应无效'));
+      if (mounted.current) {
         message.success(t('table.addSuccess', '新增成功'));
-      } else {
-        await put<ProviderConfig>(`${baseConfig.baseUrl}/provider-configs`, payload);
-        message.success(t('table.editSuccess', '修改成功'));
+        setUploadOpen(false); setFiles([]); setUploadDraft({}); setRevision(value => value + 1);
+        void client.invalidateQueries({predicate: query => query.queryKey.includes(`${base.baseUrl}/quotas`)});
       }
-      setProviderModalOpen(false);
-      providerForm.resetFields();
-      await loadProviderConfigs();
-    } finally {
-      setProviderSaving(false);
-    }
-  }), [runAction, baseConfig.baseUrl, loadProviderConfigs, message, providerForm, providerMode, t]);
+    } catch (error) {
+      if (mounted.current) setUploadError(resolveApiErrorMessage(error, t('form.file.uploadFailed', '文件上传或保存失败，请重试')));
+    } finally {mutationLock.current = false; if (mounted.current) setUploading(false);}
+  };
+  const renderFormSchema = (source: any, editing: StorageRow | null) => section === 'provider-configs'
+    ? providerFormSchema(source, editing, t) : section === 'quotas' ? quotaFormSchema(source, editing, t) : source;
+  const beforeSubmit = ({formData, currentEditing}: {formData: any; currentEditing: StorageRow | null}) =>
+    section === 'provider-configs' ? providerPayload(schema!, formData, currentEditing)
+      : quotaPayload(schema!, formData, currentEditing);
+  const detailLabels: Record<string, string> = {contentType: t('storage.contentType', '内容类型'),
+    eTag: t('storage.eTag', 'ETag'), accessUrl: t('storage.accessUrl', '访问地址')};
 
-  const handleDeleteProvider = useCallback((record: ProviderConfig) => runAction(`provider.delete:${record.id}`, async () => {
-    await request<string[]>(`${baseConfig.baseUrl}/provider-configs?ids=${encodeURIComponent(record.id)}`, {
-      method: 'DELETE',
-    });
-    message.success(t('table.deleteSuccess', '删除成功'));
-    await loadProviderConfigs();
-  }), [runAction, baseConfig.baseUrl, loadProviderConfigs, message, t]);
-
-  const handleTestProvider = useCallback((record: ProviderConfig) => runAction('provider.test', async () => {
-    setProviderTestingId(record.id);
-    try {
-      const result = await post<{ success: boolean; message: string }>(
-        `${baseConfig.baseUrl}/provider-configs/${record.id}/test`,
-        {}
-      );
-      if (!result.success) throw new Error(result.message || t('error.operationFailed', '操作失败，请重试'));
-      message.success(t('storage.provider.testSuccess', '连接成功，Bucket 可访问'));
-    } finally {
-      setProviderTestingId(null);
-    }
-  }), [runAction, baseConfig.baseUrl, message, t]);
-
-  const handleDeleteObject = useCallback((record: StorageObject) => runAction(`object.delete:${record.id}`, async () => {
-    await request<string[]>(`${baseConfig.baseUrl}/objects?ids=${encodeURIComponent(record.id)}`, {
-      method: 'DELETE',
-    });
-    message.success(t('table.deleteSuccess', '删除成功'));
-    await refreshObjects();
-    await refreshQuotas();
-  }), [runAction, baseConfig.baseUrl, message, refreshObjects, refreshQuotas, t]);
-
-  const handleSaveQuota = useCallback(() => runAction('quota.save', async () => {
-    const values = await quotaForm.validateFields();
-    const payload = {
-      id: values.id,
-      tenantId: values.tenantId,
-      quotaBytes: values.quotaMb == null ? null : Math.round(values.quotaMb * 1024 * 1024),
-      enabled: Boolean(values.enabled),
-      description: values.description?.trim() || null,
-    };
-    setQuotaSaving(true);
-    try {
-      if (quotaMode === 'create') {
-        await post<StorageQuota>(`${baseConfig.baseUrl}/quotas`, payload);
-        message.success(t('table.addSuccess', '新增成功'));
-      } else {
-        await put<StorageQuota>(`${baseConfig.baseUrl}/quotas`, payload);
-        message.success(t('table.editSuccess', '修改成功'));
-      }
-      setQuotaModalOpen(false);
-      quotaForm.resetFields();
-      await refreshQuotas();
-    } finally {
-      setQuotaSaving(false);
-    }
-  }), [runAction, baseConfig.baseUrl, message, quotaForm, quotaMode, refreshQuotas, t]);
-
-  const handleDeleteQuota = useCallback((record: StorageQuota) => runAction(`quota.delete:${record.id}`, async () => {
-    await request<string[]>(`${baseConfig.baseUrl}/quotas?ids=${encodeURIComponent(record.id)}`, {
-      method: 'DELETE',
-    });
-    message.success(t('table.deleteSuccess', '删除成功'));
-    await refreshQuotas();
-  }), [runAction, baseConfig.baseUrl, message, refreshQuotas, t]);
-
-  const objectColumns = useMemo<ColumnsType<StorageObject>>(() => [
-    {
-      title: t('storage.providers', '提供方'),
-      dataIndex: 'providerCode',
-      key: 'providerCode',
-      width: 140,
-      render: (value: string, record) => (
-        <Space direction="vertical" size={0}>
-          <Text strong>{value}</Text>
-          <Text type="secondary">{record.providerType}</Text>
-        </Space>
-      ),
-    },
-    {
-      title: t('storage.fileName', '文件名'),
-      dataIndex: 'originalFileName',
-      key: 'originalFileName',
-      width: 220,
-      render: (value: string) => <Text>{value}</Text>,
-    },
-    {
-      title: t('storage.bucket', 'Bucket'),
-      dataIndex: 'bucket',
-      key: 'bucket',
-      width: 160,
-      render: (value: string) => <Tag>{value}</Tag>,
-    },
-    {
-      title: t('storage.objectKey', '对象键'),
-      dataIndex: 'objectKey',
-      key: 'objectKey',
-      render: (value: string) => (
-        <Paragraph style={{ marginBottom: 0 }} ellipsis={{ rows: 2, tooltip: value }}>
-          <Text code>{value}</Text>
-        </Paragraph>
-      ),
-    },
-    {
-      title: t('storage.size', '大小'),
-      dataIndex: 'contentLength',
-      key: 'contentLength',
-      width: 120,
-      render: (value?: number | null) => formatBytes(value),
-    },
-    {
-      title: t('storage.sourceService', '来源服务'),
-      dataIndex: 'sourceServiceName',
-      key: 'sourceServiceName',
-      width: 140,
-      render: (value?: string | null) => value ?? '--',
-    },
-    {
-      title: t('storage.createdAt', '创建时间'),
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 180,
-      render: (value?: string | null) => formatDateTime(value),
-    },
-    {
-      title: t('table.action', '操作'),
-      key: 'action',
-      width: 180,
-      render: (_value, record) => (
-        <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => void openDetailModal(record)}>
-            {t('storage.detail', '详情')}
-          </Button>
-          <Button
-            type="link"
-            icon={<DownloadOutlined />}
-            onClick={() => window.open(`${baseConfig.baseUrl}/objects/${record.id}/content`, '_blank', 'noopener,noreferrer')}
-          >
-            {t('storage.download', '下载')}
-          </Button>
-          <Popconfirm
-            title={t('table.confirmDeleteTitle', '确认删除')}
-            description={t('table.confirmDeleteContent', '确定要删除选中的 {count} 条数据吗？', { count: 1 })}
-            onConfirm={() => handleDeleteObject(record)}
-          >
-            <Button danger type="link" icon={<DeleteOutlined />}>
-              {t('table.button.delete', '删除')}
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ], [baseConfig.baseUrl, handleDeleteObject, openDetailModal, t]);
-
-  const quotaColumns = useMemo<ColumnsType<StorageQuota>>(() => [
-    {
-      title: t('storage.quota.tenantId', '租户'),
-      dataIndex: 'tenantName',
-      key: 'tenantName',
-      width: 200,
-      render: (value: string, record) => (
-        <Space direction="vertical" size={0}>
-          <Text strong>{value || record.tenantId}</Text>
-          <Text type="secondary">{record.tenantId}</Text>
-        </Space>
-      ),
-    },
-    {
-      title: t('storage.quota.total', '总配额'),
-      dataIndex: 'quotaBytes',
-      key: 'quotaBytes',
-      width: 140,
-      render: (value?: number | null) => (value == null ? t('storage.unlimited', '不限额') : formatBytes(value)),
-    },
-    {
-      title: t('storage.quota.used', '已使用'),
-      dataIndex: 'usedBytes',
-      key: 'usedBytes',
-      width: 140,
-      render: (value?: number | null) => formatBytes(value),
-    },
-    {
-      title: t('storage.quota.remaining', '剩余'),
-      dataIndex: 'remainingBytes',
-      key: 'remainingBytes',
-      width: 140,
-      render: (value, record: StorageQuota) => record.quotaBytes === null && value === null ? t('storage.unlimited', '不限额') : formatBytes(value),
-    },
-    {
-      title: t('storage.enabled', '启用'),
-      dataIndex: 'enabled',
-      key: 'enabled',
-      width: 100,
-      render: (value?: boolean | null) => typeof value !== 'boolean' ? String(value ?? '--') : value === false
-        ? <Tag color="default">{t('storage.disabled', '停用')}</Tag>
-        : <Tag color="success">{t('storage.enabled', '启用')}</Tag>,
-    },
-    {
-      title: t('storage.description', '说明'),
-      dataIndex: 'description',
-      key: 'description',
-      render: (value?: string | null) => value ?? '--',
-    },
-    {
-      title: t('table.action', '操作'),
-      key: 'action',
-      width: 140,
-      render: (_value, record) => (
-        <Space>
-          <Button type="link" onClick={() => openQuotaEditModal(record)}>
-            {t('table.button.edit', '编辑')}
-          </Button>
-          <Popconfirm
-            title={t('table.confirmDeleteTitle', '确认删除')}
-            description={t('table.confirmDeleteContent', '确定要删除选中的 {count} 条数据吗？', { count: 1 })}
-            onConfirm={() => handleDeleteQuota(record)}
-          >
-            <Button danger type="link">
-              {t('table.button.delete', '删除')}
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ], [handleDeleteQuota, openQuotaEditModal, t]);
-
-  const providerColumns = useMemo<ColumnsType<ProviderConfig>>(() => [
-    {
-      title: t('storage.provider.name', '配置名称'),
-      dataIndex: 'name',
-      key: 'name',
-      width: 190,
-      render: (value: string, record) => (
-        <Space direction="vertical" size={0}>
-          <Space>
-            <Text strong>{value}</Text>
-            {record.defaultProvider === true ? <Tag color="blue">{t('storage.provider.default', '系统默认')}</Tag> : null}
-          </Space>
-          <Text type="secondary">{record.code}</Text>
-        </Space>
-      ),
-    },
-    {
-      title: t('storage.provider.type', '存储平台'),
-      dataIndex: 'type',
-      key: 'type',
-      width: 150,
-      render: (value: StoragePlatformType) => <Tag>{t(`storage.provider.type.${value}`, value)}</Tag>,
-    },
-    {
-      title: t('storage.provider.endpoint', '服务端点'),
-      dataIndex: 'endpoint',
-      key: 'endpoint',
-      render: (value?: string | null) => value || t('storage.provider.awsDefaultEndpoint', 'AWS 默认端点'),
-    },
-    {
-      title: t('storage.bucket', 'Bucket'),
-      dataIndex: 'bucket',
-      key: 'bucket',
-      width: 160,
-    },
-    {
-      title: t('storage.provider.region', '区域'),
-      dataIndex: 'region',
-      key: 'region',
-      width: 130,
-      render: (value?: string | null) => value || '--',
-    },
-    {
-      title: t('storage.provider.credential', '凭证'),
-      dataIndex: 'secretConfigured',
-      key: 'secretConfigured',
-      width: 100,
-      render: (value?: boolean | null) => typeof value !== 'boolean' ? String(value ?? '--') : value
-        ? <Tag color="success">{t('storage.provider.configured', '已配置')}</Tag>
-        : <Tag color="error">{t('storage.provider.notConfigured', '未配置')}</Tag>,
-    },
-    {
-      title: t('storage.enabled', '启用'),
-      dataIndex: 'enabled',
-      key: 'enabled',
-      width: 90,
-      render: (value: boolean) => typeof value !== 'boolean' ? String(value ?? '--') : value
-        ? <Tag color="success">{t('storage.enabled', '启用')}</Tag>
-        : <Tag>{t('storage.disabled', '停用')}</Tag>,
-    },
-    {
-      title: t('table.action', '操作'),
-      key: 'action',
-      width: 220,
-      render: (_value, record) => (
-        <Space>
-          <Button
-            type="link"
-            loading={providerTestingId === record.id}
-            onClick={() => void handleTestProvider(record)}
-          >
-            {t('storage.provider.test', '测试连接')}
-          </Button>
-          <Button type="link" onClick={() => openProviderEditModal(record)}>
-            {t('table.button.edit', '编辑')}
-          </Button>
-          <Popconfirm
-            title={t('table.confirmDeleteTitle', '确认删除')}
-            description={t('storage.provider.deleteConfirm', '已被文件引用的配置不能删除，确认继续吗？')}
-            onConfirm={() => handleDeleteProvider(record)}
-          >
-            <Button danger type="link">{t('table.button.delete', '删除')}</Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ], [handleDeleteProvider, handleTestProvider, openProviderEditModal, providerTestingId, t]);
-
-  return (
-    <div style={{height: '100%', overflow: 'auto', minHeight: 0}}>
-      <Tabs
-        activeKey={storageSection}
-        items={[
-          {
-            key: 'providers',
-            label: t('storage.page.providers', 'OSS 配置'),
-            children: (
-              <Space direction="vertical" style={{ width: '100%' }} size={16}>
-                <Alert
-                  type="info"
-                  closable
-                  showIcon
-                  message={t(
-                    'storage.provider.tip',
-                    '配置由系统管理员统一维护。系统默认配置会用于统一文件上传入口，Secret Key 将加密保存。'
-                  )}
-                />
-                <Space wrap>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={openProviderCreateModal}
-                  >
-                    {t('storage.provider.add', '新增 OSS 配置')}
-                  </Button>
-                </Space>
-                {providerList.error && <Alert type="error" showIcon title={t('table.loadFail', '加载失败')}
-                  action={<Space><Button onClick={providerList.retry}>{t('table.retry', '重试')}</Button>
-                    <Button onClick={providerList.reset}>{t('table.query.reset', '重置筛选与排序')}</Button></Space>}/>}
-                <Table<ProviderConfig> {...providerList.tableProps} columns={providerList.columns(providerColumns)} scroll={{x: 'max-content', y: 400}} />
-              </Space>
-            ),
-          },
-          {
-            key: 'objects',
-            label: t('storage.page.objects', '对象列表'),
-            children: (
-              <Space direction="vertical" style={{ width: '100%' }} size={16}>
-                {providers.length === 0 ? (
-                  <Alert
-                    type="warning"
-                    showIcon
-                    message={t('storage.page.noProviders', '当前没有可用的 OSS 配置，请先在“OSS 配置”页签新增并启用连接。')}
-                  />
-                ) : null}
-                <Space wrap>
-                  <Button type="primary" icon={<PlusOutlined />} disabled={providers.length === 0} onClick={openUploadModal}>
-                    {t('storage.upload', '上传对象')}
-                  </Button>
-                </Space>
-                {objectList.error && <Alert type="error" showIcon title={t('table.loadFail', '加载失败')}
-                  action={<Space><Button onClick={objectList.retry}>{t('table.retry', '重试')}</Button>
-                    <Button onClick={objectList.reset}>{t('table.query.reset', '重置筛选与排序')}</Button></Space>}/>}
-                <Table<StorageObject> {...objectList.tableProps} columns={objectList.columns(objectColumns)} scroll={{x: 'max-content', y: 400}} />
-              </Space>
-            ),
-          },
-          {
-            key: 'quotas',
-            label: t('storage.page.quotas', '租户配额'),
-            children: (
-              <Space direction="vertical" style={{ width: '100%' }} size={16}>
-                <Alert
-                  type="info"
-                  closable
-                  showIcon
-                  message={t('storage.quota.tip', '未配置配额或配额为空时表示租户对象存储不限额。')}
-                />
-                <Space wrap>
-                  <Button type="primary" icon={<PlusOutlined />} onClick={openQuotaCreateModal}>
-                    {t('storage.quota.add', '新增配额')}
-                  </Button>
-                </Space>
-                {quotaList.error && <Alert type="error" showIcon title={t('table.loadFail', '加载失败')}
-                  action={<Space><Button onClick={quotaList.retry}>{t('table.retry', '重试')}</Button>
-                    <Button onClick={quotaList.reset}>{t('table.query.reset', '重置筛选与排序')}</Button></Space>}/>}
-                <Table<StorageQuota> {...quotaList.tableProps} columns={quotaList.columns(quotaColumns)} scroll={{x: 'max-content', y: 400}} />
-              </Space>
-            ),
-          },
-        ].filter((item) => item.key === storageSection)}
-      />
-
-      <Modal
-        title={providerMode === 'create'
-          ? t('storage.provider.add', '新增 OSS 配置')
-          : t('storage.provider.edit', '编辑 OSS 配置')}
-        open={providerModalOpen}
-        width={760}
-        onCancel={() => {
-          setProviderModalOpen(false);
-          providerForm.resetFields();
-        }}
-        onOk={() => void handleSaveProvider()}
-        confirmLoading={providerSaving}
-        destroyOnHidden
-      >
-        <Form form={providerForm} layout="vertical">
-          <Form.Item name="id" hidden><Input /></Form.Item>
-          <Space align="start" style={{ width: '100%' }} size={16}>
-            <Form.Item
-              name="name"
-              label={t('storage.provider.name', '配置名称')}
-              rules={[{ required: true, message: t('form.required', '这是必填项') }]}
-              style={{ width: 230 }}
-            >
-              <Input placeholder={t('storage.provider.namePlaceholder', '生产环境对象存储')} />
-            </Form.Item>
-            <Form.Item
-              name="code"
-              label={t('storage.provider.code', '配置编码')}
-              rules={[
-                { required: true, message: t('form.required', '这是必填项') },
-                { pattern: /^[a-z0-9][a-z0-9._-]{1,63}$/, message: t('storage.provider.codeRule', '请输入小写字母、数字、点、下划线或短横线') },
-              ]}
-              style={{ width: 230 }}
-            >
-              <Input disabled={providerMode === 'edit'} placeholder="minio-prod" />
-            </Form.Item>
-            <Form.Item
-              name="type"
-              label={t('storage.provider.type', '存储平台')}
-              rules={[{ required: true }]}
-              style={{ width: 230 }}
-            >
-              <Select
-                options={(['MINIO', 'S3', 'ALIYUN_OSS', 'TENCENT_COS', 'QINIU_KODO', 'CEPH'] as StoragePlatformType[])
-                  .map((value) => ({ label: t(`storage.provider.type.${value}`, value), value }))}
-                onChange={(value: StoragePlatformType) => {
-                  if (value === 'MINIO' || value === 'CEPH') {
-                    providerForm.setFieldValue('pathStyleAccess', true);
-                  }
-                }}
-              />
-            </Form.Item>
-          </Space>
-          <Form.Item
-            name="endpoint"
-            label={t('storage.provider.endpoint', '服务端点')}
-            tooltip={t('storage.provider.endpointTip', 'AWS S3 可留空使用默认端点，其他平台请填写完整 HTTP(S) 地址')}
-          >
-            <Input placeholder="https://s3.example.com" />
-          </Form.Item>
-          <Space align="start" style={{ width: '100%' }} size={16}>
-            <Form.Item
-              name="region"
-              label={t('storage.provider.region', '区域')}
-              rules={[{ required: true }]}
-              style={{ width: 230 }}
-            >
-              <Input placeholder="us-east-1" />
-            </Form.Item>
-            <Form.Item
-              name="bucket"
-              label={t('storage.bucket', 'Bucket')}
-              rules={[{ required: true, message: t('form.required', '这是必填项') }]}
-              style={{ width: 230 }}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item name="pathStyleAccess" label={t('storage.provider.pathStyle', 'Path Style')} valuePropName="checked">
-              <Switch />
-            </Form.Item>
-          </Space>
-          <Space align="start" style={{ width: '100%' }} size={16}>
-            <Form.Item
-              name="accessKey"
-              label={t('storage.provider.accessKey', 'Access Key')}
-              rules={[{ required: true, message: t('form.required', '这是必填项') }]}
-              style={{ width: 350 }}
-            >
-              <Input autoComplete="off" />
-            </Form.Item>
-            <Form.Item
-              name="secretKey"
-              label={t('storage.provider.secretKey', 'Secret Key')}
-              tooltip={providerMode === 'edit' ? t('storage.provider.secretKeep', '留空表示保持现有凭证不变') : undefined}
-              rules={providerMode === 'create' ? [{ required: true, message: t('form.required', '这是必填项') }] : []}
-              style={{ width: 350 }}
-            >
-              <Input.Password autoComplete="new-password" />
-            </Form.Item>
-          </Space>
-          <Form.Item name="basePath" label={t('storage.provider.basePath', '存储根目录')}>
-            <Input placeholder="simplepoint" />
-          </Form.Item>
-          <Form.Item name="publicBaseUrl" label={t('storage.provider.publicBaseUrl', '公开访问地址')}>
-            <Input placeholder="https://cdn.example.com" />
-          </Form.Item>
-          <Space size={32}>
-            <Form.Item name="enabled" label={t('storage.enabled', '启用')} valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item
-              name="defaultProvider"
-              label={t('storage.provider.default', '系统默认')}
-              valuePropName="checked"
-              tooltip={t('storage.provider.defaultTip', '统一上传入口未指定连接时使用该配置')}
-            >
-              <Switch />
-            </Form.Item>
-          </Space>
-          <Form.Item name="description" label={t('storage.description', '说明')}>
-            <Input.TextArea rows={3} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={t('storage.upload', '上传对象')}
-        open={uploadModalOpen}
-        onCancel={() => {
-          setUploadModalOpen(false);
-          uploadForm.resetFields();
-        }}
-        onOk={() => void handleUpload()}
-        confirmLoading={uploading}
-        destroyOnHidden
-      >
-        <Form form={uploadForm} layout="vertical" initialValues={{ file: [] }}>
-          <Alert
-            type="info"
-            closable
-            showIcon
-            style={{ marginBottom: 16 }}
-            message={t('storage.upload.defaultProvider', '文件将通过统一上传入口写入系统默认 OSS，并自动加入当前租户目录。')}
-          />
-          <Form.Item name="directory" label={t('storage.directory', '目录前缀')}>
-            <Input placeholder={t('storage.directory.placeholder', '例如：avatars/user')} />
-          </Form.Item>
-          <Form.Item
-            name="file"
-            label={t('storage.file', '文件')}
-            valuePropName="fileList"
-            getValueFromEvent={normalizeUploadEvent}
-            rules={[{ required: true, message: t('form.required', '这是必填项') }]}
-          >
-            <Upload.Dragger beforeUpload={() => false} multiple={false} maxCount={1} name="file">
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined />
-              </p>
-              <p className="ant-upload-text">{t('storage.upload.drag', '点击或拖拽文件到此区域上传')}</p>
-            </Upload.Dragger>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={quotaMode === 'create' ? t('storage.quota.add', '新增配额') : t('storage.quota.edit', '编辑配额')}
-        open={quotaModalOpen}
-        onCancel={() => {
-          setQuotaModalOpen(false);
-          quotaForm.resetFields();
-        }}
-        onOk={() => void handleSaveQuota()}
-        confirmLoading={quotaSaving}
-        destroyOnHidden
-      >
-        <Form form={quotaForm} layout="vertical">
-          <Form.Item name="id" hidden>
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="tenantId"
-            label={t('storage.quota.tenantId', '租户ID')}
-            rules={[{ required: true, message: t('form.required', '这是必填项') }]}
-          >
-            <EntitySelect endpoint={tenantsConfig.baseUrl} allowClear={false}/>
-          </Form.Item>
-          <Form.Item name="quotaMb" label={t('storage.quota.limitMb', '配额（MB，留空表示不限额）')}>
-            <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-          </Form.Item>
-          <Form.Item name="enabled" label={t('storage.enabled', '启用')} valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item name="description" label={t('storage.description', '说明')}>
-            <Input.TextArea rows={3} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={t('storage.detail', '对象详情')}
-        open={detailOpen}
-        footer={null}
-        onCancel={() => {
-          setDetailOpen(false);
-          setSelectedObject(null);
-        }}
-        destroyOnHidden
-      >
-        {detailLoading ? (
-          <Text>{t('loading.resources', '资源加载中，请稍候...')}</Text>
-        ) : selectedObject ? (
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label={t('storage.fileName', '文件名')}>
-              {selectedObject.originalFileName}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('storage.providers', '提供方')}>
-              {selectedObject.providerCode} / {selectedObject.providerType}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('storage.bucket', 'Bucket')}>
-              {selectedObject.bucket}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('storage.objectKey', '对象键')}>
-              <Text code copyable={{ text: selectedObject.objectKey }}>{selectedObject.objectKey}</Text>
-            </Descriptions.Item>
-            <Descriptions.Item label={t('storage.size', '大小')}>
-              {formatBytes(selectedObject.contentLength)}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('storage.contentType', '内容类型')}>
-              {selectedObject.contentType || '--'}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('storage.eTag', 'ETag')}>{selectedObject.eTag || '--'}</Descriptions.Item>
-            <Descriptions.Item label={t('storage.sourceService', '来源服务')}>
-              {selectedObject.sourceServiceName || '--'}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('storage.createdAt', '创建时间')}>
-              {formatDateTime(selectedObject.createdAt)}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('storage.accessUrl', '访问地址')}>
-              {selectedObject.accessUrl ? (
-                <a href={selectedObject.accessUrl} target="_blank" rel="noreferrer">
-                  {selectedObject.accessUrl}
-                </a>
-              ) : (
-                '--'
-              )}
-            </Descriptions.Item>
-          </Descriptions>
-        ) : (
-          <Text type="secondary">{t('table.loadFail', '加载失败')}</Text>
-        )}
-      </Modal>
-    </div>
-  );
-};
-
-export default App;
+  return <>
+    <SimpleTable<StorageRow> {...base} baseUrl={endpoint} name={`${base.name}.${section}`} storageKey={endpoint}
+      allowTabEviction
+      queryContext={String(revision)} schemaTransform={tableSchema} columnOverrides={overrides}
+      confirmDiscard drawerWidth={section === 'provider-configs' ? 640 : 480}
+      formSchemaTransform={renderFormSchema} beforeSubmit={beforeSubmit}
+      errorMessageResolver={error => error instanceof RangeError && error.message === 'QUOTA_RANGE_EXCEEDED'
+        ? t('storage.quota.invalidLimit', '配额数值超出安全范围') : undefined}
+      initialValues={section === 'provider-configs' ? {type: 'MINIO', region: 'us-east-1',
+        pathStyleAccess: true, enabled: true, defaultProvider: false} : {enabled: true}}
+      formUiSchema={section === 'quotas' ? {tenantId: {'ui:widget': 'EntitySelect',
+        'ui:options': {endpoint: api['platform.tenants'].baseUrl, allowClear: false}}} : undefined}
+      formCustomValidate={section === 'provider-configs' ? ((data, errors) => {
+        if (data.type !== 'S3' && !data.endpoint?.trim() && (!data.id || writable(schema, 'endpoint'))) {
+          (errors.endpoint ?? errors).addError(t('storage.provider.endpointRequired', '当前平台必须配置 Endpoint'));
+        }
+        return errors;
+      }) : undefined}
+      isButtonDisabled={button => !selected || testing || uploading || uploadOpen || !!detailId || (button.key === 'add' &&
+        (section === 'provider-configs' ? !providerCanCreate(schema) : section === 'quotas' && !writable(schema, 'tenantId')))}
+      customButtonEvents={{test: (_keys, rows) => {void testProvider(rows[0]);},
+        view: (_keys, rows) => {void viewObject(rows[0]);},
+        download: (_keys, rows) => {void downloadObject(rows[0]);},
+        upload: () => {if (selected && can('upload') && !mutationLock.current && !uploadOpen && !detailId) {
+          setUploadDraft({}); setFiles([]); setUploadError(undefined); setUploadOpen(true);
+        }}}}/>
+    <Modal wrapClassName="object-storage-upload" open={uploadOpen && selected} title={t('storage.upload', '上传对象')} destroyOnHidden={!uploadOpen} confirmLoading={uploading}
+      closable={!uploading} maskClosable={!uploading} keyboard={!uploading}
+      onCancel={() => {if (!mutationLock.current) {setUploadOpen(false); setFiles([]); setUploadDraft({});}}}
+      onOk={() => form.current?.submit()} okButtonProps={{disabled: !can('upload')}}>
+      <Alert type="info" showIcon title={t('storage.upload.defaultProvider',
+        '文件将通过统一上传入口写入系统默认 OSS，并自动加入当前租户目录。')}/>
+      {uploadError && <Alert type="error" showIcon title={uploadError}/>}
+      <LazySForm ref={form} hideSubmit disabled={uploading} schema={{type: 'object', properties: {
+        directory: {type: 'string', maxLength: 512, title: t('storage.directory', '目录前缀')}}}}
+        formData={uploadDraft} onChange={event => {if (!mutationLock.current) setUploadDraft(event.formData ?? {});}} onSubmit={upload}/>
+      {/* Binary file selection is specialized; ordinary metadata still uses the platform form. */}
+      <Upload.Dragger beforeUpload={() => false} multiple={false} maxCount={1} fileList={files}
+        disabled={uploading || !selected} onChange={event => {if (!mutationLock.current && selected) setFiles(event.fileList);}}>
+        <p className="ant-upload-drag-icon"><InboxOutlined/></p>
+        <p className="ant-upload-text">{t('storage.upload.drag', '点击或拖拽文件到此区域上传')}</p>
+      </Upload.Dragger>
+    </Modal>
+    <Modal open={!!detailId && selected} title={t('storage.detail', '对象详情')} destroyOnHidden={!detailId} footer={null} onCancel={closeDetail}>
+      {detailLoading ? <Text>{t('loading.resources', '资源加载中，请稍候...')}</Text>
+        : detailError ? <Alert type="error" showIcon title={detailError}/>
+          : detail && <Descriptions column={1} bordered size="small">
+            {visible.filter(field => field in detail).map(field => <Descriptions.Item key={field}
+              label={typeof schema?.properties?.[field] === 'object' ? schema.properties[field].title || field : field}>
+              {field === 'contentLength' ? formatBytes(detail[field]) : field === 'createdAt'
+                ? dateTime(detail[field]) : String(detail[field] ?? '—')}
+            </Descriptions.Item>)}
+            {['contentType', 'eTag', 'accessUrl'].filter(field => field in detail).map(field =>
+              <Descriptions.Item key={field} label={detailLabels[field]}>{String(detail[field] ?? '—')}</Descriptions.Item>)}
+          </Descriptions>}
+    </Modal>
+  </>;
+}

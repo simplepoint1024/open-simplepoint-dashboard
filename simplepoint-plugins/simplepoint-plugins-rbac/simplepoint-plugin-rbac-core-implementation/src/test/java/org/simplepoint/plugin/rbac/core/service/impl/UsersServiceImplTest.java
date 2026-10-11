@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.argThat;
@@ -82,6 +84,8 @@ class UsersServiceImplTest {
 
   @Mock
   UserRoleCandidateQuery roleCandidateQuery;
+  @Mock
+  UserPickerQuery pickerQuery;
 
   @Mock
   ResourceGrantLogRemoteService resourceGrantLogRemoteService;
@@ -282,6 +286,38 @@ class UsersServiceImplTest {
     verify(userRepository, never()).updateById(any());
   }
 
+  @Test
+  void updateCurrentPicture_writesOnlyTheFieldAndReturnsFreshProfile() {
+    User fresh = new User();
+    fresh.setId("u1");
+    fresh.setNickname("Changed in another window");
+    when(userRepository.updateCurrentPicture(eq("u1"), eq("/common/object-storage/images/new"), any()))
+        .thenReturn(1);
+    when(userRepository.findByIdForAuthorization("u1")).thenReturn(Optional.of(fresh));
+    assertThat(service.updateCurrentPicture("u1", " /common/object-storage/images/new ")).isSameAs(fresh);
+    assertThat(fresh.getNickname()).isEqualTo("Changed in another window");
+    verify(userRepository, never()).updateById(any());
+  }
+
+  @Test
+  void updateCurrentPicture_rejectsInvalidUrlsBeforeAnyWrite() {
+    assertThatThrownBy(() -> service.updateCurrentPicture("u1", "data:image/png;base64,AAAA"))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> service.updateCurrentPicture("u1", "javascript:alert(1)"))
+        .isInstanceOf(IllegalArgumentException.class);
+    verify(userRepository, never()).updateCurrentPicture(any(), any(), any());
+  }
+
+  @Test
+  void updateCurrentPicture_supportsRemovalButNotMissingOrDeletedAccounts() {
+    when(userRepository.updateCurrentPicture(eq("u1"), isNull(), any())).thenReturn(0);
+    assertThatThrownBy(() -> service.updateCurrentPicture("u1", " "))
+        .isInstanceOf(IllegalArgumentException.class).hasMessage("用户不存在");
+    assertThatThrownBy(() -> service.updateCurrentPicture(" ", null))
+        .isInstanceOf(IllegalArgumentException.class).hasMessage("当前用户不能为空");
+    verify(userRepository, never()).updateById(any());
+  }
+
   // ── authorized ────────────────────────────────────────────────────────────
 
   @Test
@@ -326,6 +362,7 @@ class UsersServiceImplTest {
 
     assertThat(result).isEmpty();
     verify(userRepository, never()).searchPickerItems(anyString(), any());
+    verify(pickerQuery, never()).search(anyString(), any());
   }
 
   @Test
@@ -335,19 +372,20 @@ class UsersServiceImplTest {
         "u1", "Alice", "alice@example.com", "13800000000", null
     );
     Page<UserPickerItem> page = new PageImpl<>(List.of(item), pageable, 1);
-    when(userRepository.searchPickerItems("alice@", pageable)).thenReturn(page);
+    when(pickerQuery.search("alice@", pageable)).thenReturn(page);
 
     Page<UserPickerItem> result = service.searchPickerItems("  alice@  ", pageable);
 
     assertThat(result.getContent()).containsExactly(item);
-    verify(userRepository).searchPickerItems("alice@", pageable);
+    verify(pickerQuery).search("alice@", pageable);
+    verify(userRepository, never()).searchPickerItems(anyString(), any());
   }
 
   @Test
   void resolvePickerItems_preservesRequestedOrderAndDropsUnknownIds() {
     UserPickerItem first = new UserPickerItem("u1", "Alice", "alice@example.com", null, null);
     UserPickerItem second = new UserPickerItem("u2", "Bob", "bob@example.com", null, null);
-    when(userRepository.findPickerItemsByIds(any())).thenReturn(List.of(first, second));
+    when(pickerQuery.selected(any())).thenReturn(List.of(first, second));
 
     Collection<UserPickerItem> result = service.resolvePickerItems(List.of(" u2 ", "u1", "missing", "u2"));
 
@@ -364,6 +402,7 @@ class UsersServiceImplTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("100");
     verify(userRepository, never()).findPickerItemsByIds(any());
+    verify(pickerQuery, never()).selected(any());
   }
 
   // ── authorize ─────────────────────────────────────────────────────────────

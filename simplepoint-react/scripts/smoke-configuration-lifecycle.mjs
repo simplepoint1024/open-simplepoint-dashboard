@@ -1,0 +1,97 @@
+import assert from 'node:assert/strict';
+
+export async function smokeConfigurationLifecycle({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture}) {
+  fixture.enable();
+  const tenant = '.nb-tab-panel-active [data-resource="/common/platform/tenants"]', packages = '.nb-tab-panel-active [data-resource="/common/platform/packages"]';
+  const members = '.tenant-user-config.ant-drawer-open', tenantPackages = '.tenant-package-config.ant-drawer-open', applications = '.package-application-config.ant-drawer-open';
+  const side = (panel, selected) => panel + ' .sp-assignment-panel[data-selected="' + selected + '"]';
+  const select = async (root, id) => {
+    const selector = root + ' [data-row-key="' + id + '"] .ant-checkbox-input';
+    await poll(()=>evaluate(`!!document.querySelector('${selector}')`), 'real configuration selection ' + id);
+    if (!await evaluate(`document.querySelector('${selector}').checked`)) await clickReady(selector);
+  };
+  const hasRow = (root, id) => evaluate(`!!document.querySelector('${root} [data-row-key="${id}"]')`);
+  const transition = async mode => {
+    fixture.mode(mode); await evaluate(`localStorage.setItem('sp.contextId:__platform__',${JSON.stringify('configuration-' + mode)});window.dispatchEvent(new CustomEvent('sp-set-context-id',{detail:{tenantId:'__platform__',contextId:${JSON.stringify('configuration-' + mode)}}}));`);
+    await poll(()=>evaluate(`!document.querySelector('${members}') && !document.querySelector('${tenantPackages}') && !document.querySelector('${applications}')`), 'old configuration owner is disposed');
+  };
+  const doubleMove = async (root, label) => {
+    await poll(()=>evaluate(`(()=>{const button=[...document.querySelectorAll('${root} button')].find(element=>element.textContent.replaceAll(' ','')===${JSON.stringify(label)});return !!button && !button.disabled && !button.classList.contains('ant-btn-loading');})()`), 'settled real assignment action');
+    await evaluate(`(()=>{const button=[...document.querySelectorAll('${root} button')].find(element=>element.textContent.replaceAll(' ','')===${JSON.stringify(label)});const close=button.closest('.ant-drawer').querySelector('.ant-drawer-close');button.click();button.click();close?.click();})()`);
+  };
+  await clickMenu('租户成员分配测试'); await poll(()=>hasRow(tenant, fixture.tenants[0].id), 'actual tenant list');
+  assert.equal(fixture.reads.filter(read=>read.path.endsWith('/capabilities')).length, 0, 'no capabilities or account directory preloads before selecting a target');
+  fixture.failCapability(); await select(tenant, fixture.tenants[0].id);
+  await poll(()=>evaluate(`!!document.querySelector('${tenant}').parentElement.querySelector('.tenant-member-capability-error')`), 'capability failure remains explicit');
+  assert.equal(await evaluate(`[...document.querySelectorAll('${tenant} button')].some(button=>button.textContent.includes('配置成员'))`), false);
+  await clickText('.tenant-member-capability-error button', '重试');
+  await poll(()=>evaluate(`(()=>{const button=[...document.querySelectorAll('${tenant} button')].find(element=>element.textContent.replaceAll(' ','')==='配置成员');return !!button && !button.disabled;})()`), 'real member capability is granted');
+  await evaluate(`(()=>{const buttons=[...document.querySelectorAll('${tenant} button')];const members=buttons.find(button=>button.textContent.replaceAll(' ','')==='配置成员'),packages=buttons.find(button=>button.textContent.replaceAll(' ','')==='配置套餐');members.click();packages.click();})()`);
+  await poll(()=>hasRow(side(members, true), 'member-000'), 'captured tenant member assignment');
+  assert.equal(await evaluate(`!!document.querySelector('${tenantPackages}')`), false, 'same-frame configuration clicks cannot overwrite the first captured target');
+  assert.equal(await evaluate(`document.querySelector('${side(members, true)} [data-row-key="member-000"] .ant-checkbox-input').disabled`), true, 'existing owner protection is preserved');
+  assert.equal(fixture.reads.filter(read=>read.path.endsWith('/users/items/schema')).length, 1, 'two assignment sides share one actual schema read');
+  await clickReady(side(members, false) + ' .ant-pagination-item-21'); await poll(()=>hasRow(side(members, false), 'member-520'), 'member candidate beyond 500');
+  await select(side(members, false), 'member-520'); fixture.failWrite(); const initialWrites = fixture.writes.length;
+  await doubleMove(side(members, false), '分配');
+  await poll(()=>evaluate(`!document.querySelector('${members} .ant-drawer-close')`), 'parent cannot close during captured assignment');
+  await evaluate(`location.hash='#/profile'`); await poll(()=>evaluate(`!!document.querySelector('.nb-tab-panel-active .profile-nav-links') && !document.querySelector('${members}')`), 'member configuration follows its actual owner page');
+  const inactiveReads = fixture.reads.filter(read=>read.kind === 'members' && !read.path.endsWith('/schema')).length;
+  await poll(()=>fixture.writes.at(-1).completed, 'captured hidden-page write settles');
+  assert.equal(fixture.reads.filter(read=>read.kind === 'members' && !read.path.endsWith('/schema')).length, inactiveReads, 'inactive failure does not trigger background directory refreshes');
+  assert.equal(await evaluate(`!!document.querySelector('.ant-message-notice-error')`), false, 'hidden failure cannot toast over another page');
+  const settledReads = fixture.reads.filter(read=>read.kind === 'members' && !read.path.endsWith('/schema')).length;
+  await clickMenu('租户成员分配测试'); await poll(()=>evaluate(`document.querySelector('${members} .sp-assignment-write-error')?.textContent.includes('配置保存失败')`), 'failure and selected target survive returning to the owner');
+  assert.equal(fixture.writes.length, initialWrites + 1); assert.equal(fixture.writes.at(-1).data.tenantId, fixture.tenants[0].id);
+  assert.equal(await evaluate(`document.querySelector('${side(members, false)} [data-row-key="member-520"] .ant-checkbox-input').checked`), true);
+  await poll(()=>evaluate(`!document.querySelector('${members} .ant-spin-spinning')`), 'returning owner legitimately completes its revalidation');
+  assert.ok(fixture.reads.filter(read=>read.kind === 'members' && !read.path.endsWith('/schema')).length >= settledReads);
+  await doubleMove(side(members, false), '分配');
+  await poll(()=>evaluate(`document.querySelector('${side(members, false)} .ant-pagination-item-active')?.textContent==='20'`) && hasRow(side(members, false), 'member-519'), 'assignment of the last page row clamps using the settled server response');
+  assert.equal(fixture.writes.length, initialWrites + 2); assert.deepEqual(fixture.writes.at(-1).data.userIds, ['member-520']);
+  await clickReady(members + ' .ant-drawer-close'); await poll(()=>evaluate(`!document.querySelector('${members}')`), 'clean member configuration closes');
+  console.log('PASS: Tenant real lazy capabilities/retry, owner protection, 521 member pages, parent write barrier, retained owned failure, no inactive toast, captured retry and last-page clamp');
+
+  await clickText(tenant + ' button', '配置套餐'); await poll(()=>hasRow(side(tenantPackages, false), 'package-120'), 'tenant package assignment');
+  await select(side(tenantPackages, false), 'package-120'); await doubleMove(side(tenantPackages, false), '分配');
+  await poll(()=>fixture.writes.at(-1).completed && fixture.packageGrants.get(fixture.tenants[0].id).has('package-120'), 'actual captured package assignment');
+  assert.equal(fixture.writes.at(-1).data.tenantId, fixture.tenants[0].id); assert.deepEqual(fixture.writes.at(-1).data.packageCodes, ['package-120']);
+  await poll(()=>evaluate(`!!document.querySelector('${tenantPackages} .ant-drawer-close')`), 'successful child releases its own parent');
+  await clickReady(tenantPackages + ' .ant-drawer-close');
+  await clickMenu('套餐包管理'); await select(packages, fixture.parentPackages[0].id); await clickText(packages + ' button', '配置应用');
+  await poll(()=>hasRow(side(applications, false), 'application-120'), 'actual package application assignment');
+  await clickReady(side(applications, false) + ' .ant-pagination-item-21'); await poll(()=>hasRow(side(applications, false), 'application-520'), 'application candidate beyond 500');
+  await select(side(applications, false), 'application-520'); fixture.failWrite(); await doubleMove(side(applications, false), '分配');
+  await poll(()=>evaluate(`document.querySelector('${applications} .sp-assignment-write-error')?.textContent.includes('配置保存失败')`), 'package failure is owned and retryable');
+  await doubleMove(side(applications, false), '分配');
+  await poll(()=>evaluate(`document.querySelector('${side(applications, false)} .ant-pagination-item-active')?.textContent==='20'`), 'package last-page mutation settles');
+  assert.equal(fixture.writes.at(-1).data.packageCode, 'parent-a'); assert.deepEqual(fixture.writes.at(-1).data.applicationCodes, ['application-520']);
+  await clickReady(applications + ' .ant-drawer-close');
+  await clickReady(packages + ' [data-row-key="' + fixture.parentPackages[0].id + '"] .ant-checkbox-input');
+  await select(packages, fixture.parentPackages[1].id); await clickText(packages + ' button', '配置应用');
+  await poll(()=>hasRow(side(applications, true), 'application-001'), 'different package has only its own assigned side');
+  assert.equal(await evaluate(`document.querySelectorAll('${side(applications, true)} [data-row-key]').length`), 1);
+  await clickReady(applications + ' .ant-drawer-close');
+  console.log('PASS: Tenant package and Package application configurations use real schema actions, captured parent IDs/codes, bounded 521-row pages, failures/retry and independent parent sessions');
+
+  await clickMenu('租户成员分配测试'); await clickText(tenant + ' button', '配置成员');
+  await poll(()=>hasRow(side(members, false), 'member-120'), 'fresh captured member session'); await select(side(members, false), 'member-120');
+  fixture.failWrite(); await doubleMove(side(members, false), '分配'); const old = fixture.writes.at(-1);
+  await transition('viewer'); await poll(()=>old.completed && hasRow(tenant, fixture.tenants[0].id), 'old-scope callback is suppressed');
+  await select(tenant, fixture.tenants[0].id); await poll(()=>fixture.reads.some(read=>read.path.endsWith('/capabilities') && read.mode === 'viewer'), 'real viewer capability');
+  assert.equal(await evaluate(`[...document.querySelectorAll('${tenant} button')].some(button=>button.textContent.includes('配置成员'))`), false);
+  assert.equal(await evaluate(`document.body.textContent.includes('配置保存失败')`), false, 'old failure cannot enter a different authorization session');
+  await transition('restored'); await select(tenant, fixture.tenants[1].id); await clickText(tenant + ' button', '配置成员');
+  await poll(()=>hasRow(side(members, true), 'member-001'), 'fresh authorized parent'); await select(side(members, false), 'member-002');
+  await doubleMove(side(members, false), '分配'); await poll(()=>fixture.memberGrants.get(fixture.tenants[1].id).has('member-002'), 'old abort cannot release/block the new owner lock');
+  assert.equal(fixture.writes.at(-1).data.tenantId, fixture.tenants[1].id); await poll(()=>evaluate(`!!document.querySelector('${members} .ant-drawer-close')`), 'new owner unlocks'); await clickReady(members + ' .ant-drawer-close');
+  await transition('identity-masked'); await select(tenant, fixture.tenants[0].id); await clickText(tenant + ' button', '配置成员');
+  await poll(()=>evaluate(`document.querySelectorAll('${side(members, false)} [data-row-key]').length>0`), 'protected identities remain readable as a presentation page');
+  assert.equal(await evaluate(`[...document.querySelectorAll('${members} tbody .ant-checkbox-input')].every(input=>input.disabled)`), true, 'masked IDs cannot become assignment payloads');
+  const protectedKeys = await evaluate(`[...document.querySelectorAll('${side(members, false)} [data-row-key]')].map(row=>row.dataset.rowKey)`);
+  assert.equal(new Set(protectedKeys).size, protectedKeys.length, 'protected rows have unique presentation-only keys');
+  await clickReady(members + ' .ant-drawer-close'); await transition('package-masked'); await clickMenu('套餐包管理'); await select(packages, fixture.parentPackages[0].id);
+  await poll(()=>evaluate(`(()=>{const button=[...document.querySelectorAll('${packages} button')].find(element=>element.textContent.replaceAll(' ','')==='配置应用');return !!button && button.disabled;})()`), 'real action is disabled without a readable package code');
+  assert.ok(fixture.reads.filter(read=>read.kind && !read.path.endsWith('/schema')).every(read=>Number(read.params.get('size')) <= 20));
+  console.log('PASS: configuration scope/parent isolation, old pending write suppression, fresh owner recovery, real viewer denial and non-actionable unique protected identities');
+}

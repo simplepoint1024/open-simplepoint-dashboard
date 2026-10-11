@@ -1,9 +1,9 @@
-import {createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode} from 'react';
+import {createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'react';
 import {App} from 'antd';
 import {useQueryClient} from '@tanstack/react-query';
 import {get, put, useData} from '@simplepoint/shared/api/methods';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
-import {scopedQueryKey} from '@simplepoint/shared/api/queryScope';
+import {getQueryScopeSnapshot, scopedQueryKey} from '@simplepoint/shared/api/queryScope';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {normalizePage, type Page} from '@simplepoint/shared/types/request';
 import {useI18n} from '@/layouts/i18n/useI18n';
@@ -34,11 +34,16 @@ export function NotificationProvider({enabled, children}: {enabled: boolean; chi
     enabled, staleTime: 30_000, refetchInterval: 60_000, retry: 1,
   });
   useEffect(() => { void ensure(['common', 'notifications', 'host-dashboard']); }, [ensure, locale]);
-  useEffect(() => () => { controllerRef.current?.abort(); }, []);
+  useLayoutEffect(() => {
+    controllerRef.current?.abort(); controllerRef.current = null; busyRef.current = false;
+    setBusy(false); setOpen(false);
+    return () => {controllerRef.current?.abort();};
+  }, [scope, enabled]);
   useEffect(() => {
     if (!enabled || !scope[0]) return;
     const stream = new AbortController();
     void consumeNotificationStream(stream.signal, event => {
+      if (stream.signal.aborted || JSON.stringify(scope) !== getQueryScopeSnapshot()) return;
       void client.invalidateQueries({queryKey: scopedQueryKey(scope, ['notifications'])});
       if (event.type === 'PUBLISHED' && document.visibilityState === 'visible') {
         feedback.current.message.info(feedback.current.t('nav.notification.received', '收到一条新通知'));
@@ -48,22 +53,23 @@ export function NotificationProvider({enabled, children}: {enabled: boolean; chi
   }, [enabled, scope, client]);
 
   const markRead = useCallback(async (id?: string) => {
-    if (!enabled || busyRef.current) return false;
+    if (!enabled || busyRef.current || JSON.stringify(scope) !== getQueryScopeSnapshot()) return false;
     const controller = new AbortController();
     controllerRef.current = controller;
     busyRef.current = true;
     setBusy(true);
     try {
       await put(id ? `${BASE}/${encodeURIComponent(id)}/read` : `${BASE}/read-all`, {}, {signal: controller.signal});
-      if (controller.signal.aborted) return false;
+      if (controller.signal.aborted || JSON.stringify(scope) !== getQueryScopeSnapshot()) return false;
       await client.invalidateQueries({queryKey: scopedQueryKey(scope, ['notifications'])});
       return true;
     } catch (error) {
-      if (!controller.signal.aborted) message.error(resolveApiErrorMessage(error, t('error.operationFailed', '操作失败，请重试')));
+      if (!controller.signal.aborted && JSON.stringify(scope) === getQueryScopeSnapshot()) message.error(resolveApiErrorMessage(error, t('error.operationFailed', '操作失败，请重试')));
       return false;
     } finally {
-      busyRef.current = false;
-      if (!controller.signal.aborted) setBusy(false);
+      // A completed previous-workspace request must never unlock the current workspace's write.
+      if (controllerRef.current === controller) {controllerRef.current = null; busyRef.current = false;
+        if (!controller.signal.aborted) setBusy(false);}
     }
   }, [enabled, client, scope, message, t]);
 

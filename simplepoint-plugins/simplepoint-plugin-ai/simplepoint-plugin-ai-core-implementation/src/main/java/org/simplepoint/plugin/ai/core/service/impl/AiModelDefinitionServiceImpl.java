@@ -1,5 +1,11 @@
 package org.simplepoint.plugin.ai.core.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
+import org.simplepoint.core.jackson.FieldPermissionPolicy;
+import org.simplepoint.core.query.QueryCapabilities;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Currency;
@@ -14,11 +20,13 @@ import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.ai.core.api.entity.AiModelDefinition;
 import org.simplepoint.plugin.ai.core.api.entity.AiProviderDefinition;
 import org.simplepoint.plugin.ai.core.api.model.AiModelType;
+import org.simplepoint.plugin.ai.core.api.model.AiEmbeddingModelOption;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.core.api.repository.AiModelDefinitionRepository;
 import org.simplepoint.plugin.ai.core.api.repository.AiProviderDefinitionRepository;
 import org.simplepoint.plugin.ai.core.api.service.AiModelDefinitionService;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
+import org.simplepoint.plugin.ai.core.repository.AiEmbeddingModelOptionsQuery;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy.ScopeAssignment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +48,9 @@ public class AiModelDefinitionServiceImpl
   private final AiProviderDefinitionRepository providerRepository;
 
   private final AiScopeAccessPolicy scopeAccessPolicy;
+
+  @PersistenceContext
+  private EntityManager entityManager;
 
   /**
    * Creates the model service.
@@ -107,6 +118,9 @@ public class AiModelDefinitionServiceImpl
     AiModelDefinition current = repository.findActiveById(requireEntityId(entity))
         .orElseThrow(() -> new IllegalArgumentException("模型不存在: " + entity.getId()));
     scopeAccessPolicy.assertCanWriteResource(current.getScopeType(), current.getTenantId());
+    // Validation and derived manual/automatic flags must see the permission-correct values.
+    BeanUtil.copyProperties(current, entity, CopyOptions.create().setIgnoreNullValue(false)
+        .setFieldNameEditor(name -> FieldPermissionPolicy.writable(AiModelDefinition.class, name) ? null : name));
     normalizeAndValidate(entity, current.getId());
     entity.setAvailable(current.getAvailable());
     entity.setDiscovered(current.getDiscovered());
@@ -141,6 +155,7 @@ public class AiModelDefinitionServiceImpl
         item.getScopeType(),
         item.getTenantId()
     ));
+    model.ifPresent(this::assertAccessible);
     model.ifPresent(this::decorate);
     return model;
   }
@@ -152,8 +167,15 @@ public class AiModelDefinitionServiceImpl
     List<AiModelDefinition> models = scope.scopeType() == AiResourceScope.SYSTEM
         ? repository.findAllAvailableSystemModels()
         : repository.findAllAvailableForTenant(scope.tenantId());
+    models = models.stream().filter(this::isAccessible).toList();
     decorate(models);
     return models;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Page<AiEmbeddingModelOption> embeddingModelOptions(Map<String, String> attributes, Pageable pageable) {
+    return AiEmbeddingModelOptionsQuery.page(entityManager, scopeAccessPolicy.currentManagementScope(), attributes, pageable);
   }
 
   /** {@inheritDoc} */
@@ -259,18 +281,26 @@ public class AiModelDefinitionServiceImpl
   ) {
     return !Objects.equals(requested.getBillingEnabled(), current.getBillingEnabled())
         || !Objects.equals(requested.getBillingCurrency(), current.getBillingCurrency())
-        || !Objects.equals(requested.getInputTokenPrice(), current.getInputTokenPrice())
-        || !Objects.equals(
+        || !samePrice(requested.getInputTokenPrice(), current.getInputTokenPrice())
+        || !samePrice(
             requested.getCachedInputTokenPrice(), current.getCachedInputTokenPrice()
         )
-        || !Objects.equals(requested.getOutputTokenPrice(), current.getOutputTokenPrice())
-        || !Objects.equals(requested.getRequestPrice(), current.getRequestPrice());
+        || !samePrice(requested.getOutputTokenPrice(), current.getOutputTokenPrice())
+        || !samePrice(requested.getRequestPrice(), current.getRequestPrice());
+  }
+
+  private static boolean samePrice(final BigDecimal left, final BigDecimal right) {
+    return left == right || left != null && right != null && left.compareTo(right) == 0;
   }
 
   private void decorate(final Iterable<? extends AiModelDefinition> models) {
     Map<String, String> providerNames = new java.util.HashMap<>();
     for (AiModelDefinition model : models) {
       model.setScopeType(AiScopeAccessPolicy.effectiveScope(model.getScopeType()));
+      if (!QueryCapabilities.readable(AiModelDefinition.class, "providerId")) {
+        model.setProviderName(null);
+        continue;
+      }
       String name = providerNames.computeIfAbsent(model.getProviderId(), id -> providerRepository
           .findActiveById(id)
           .map(AiProviderDefinition::getName)

@@ -1,0 +1,16 @@
+{
+  "createOrgDeptId": null,
+  "createdAt": "2026-10-10T00:00:00Z",
+  "createdBy": null,
+  "customDeptIds": [],
+  "deletedAt": null,
+  "description": null,
+  "expression": "name = \"可见组织\"",
+  "id": "scope-policy",
+  "name": "真实表达式策略",
+  "resourceCode": "organizations.view",
+  "tenantId": "scope-tenant",
+  "type": "EXPRESSION",
+  "updatedAt": "2026-10-10T00:00:00Z",
+  "updatedBy": null
+}

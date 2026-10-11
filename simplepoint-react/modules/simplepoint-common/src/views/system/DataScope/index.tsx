@@ -1,56 +1,71 @@
 import SimpleTable from '@simplepoint/components/SimpleTable';
+import TableActions from '@simplepoint/components/Table/Actions';
 import api from '@/api/index';
-import {useCallback, useEffect} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Alert} from 'antd';
-import {get, post, useData} from '@simplepoint/shared/api/methods';
+import {get, post} from '@simplepoint/shared/api/methods';
+import {useOwnedData} from '@simplepoint/shared/hooks/useOwnedData';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
+import {usePageActive} from '@simplepoint/shared/page/hooks';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {usePermissionLabels} from '@simplepoint/shared/hooks/usePermissionLabels';
+import {expressionLabels, expressionWords, contextNames} from '@simplepoint/shared/i18n/permissionLabels';
 import EffectiveScopePreview from './EffectiveScopePreview';
+import {prepareScopeData, scopeFormSchema, scopeFormUiSchema, scopeTableSchema} from './model';
 
 const baseConfig = api['rbac-data-scopes'];
 const expressionBase = `${baseConfig.baseUrl}/expression`;
 
 export default function DataScopePage() {
+  return <DataScopeSession key={JSON.stringify(useQueryScope())} />;
+}
+function DataScopeSession() {
+  const operation = useOperationScope(), active = usePageActive();
   const {ensure, locale, t} = useI18n();
-  useEffect(() => {void ensure(baseConfig.i18nNamespaces);}, [ensure, locale]);
-  const {data: catalog, error} = useData<Record<string, unknown>>(['permission-expression-catalog'],
-    () => get(`${expressionBase}/catalog`), {staleTime: 30_000});
-  const formSchemaTransform = useCallback((schema: any) => {
-    const next = structuredClone(schema);
-    const props = next.properties;
-    if (!props?.type) return next;
-    const organization = {...props.customDeptIds, type: 'array', items: {type: 'string'}, uniqueItems: true, minItems: 1};
-    const pages = Object.keys(catalog ?? {});
-    const resource = {...props.resourceCode, type: 'string', ...(pages.length ? {enum: pages} : {readOnly: true})};
-    const expression = {...props.expression, type: 'string', minLength: 1, maxLength: 8192};
-    delete props.customDeptIds; delete props.resourceCode; delete props.expression;
-    next.required = [...new Set([...(next.required ?? []), 'name', 'type'])];
-    const types = props.type.enum ?? ['ALL', 'CUSTOM', 'DEPT', 'DEPT_AND_BELOW', 'SELF', 'EXPRESSION'];
-    next.dependencies = {...next.dependencies, type: {oneOf: [
-      {properties: {type: {enum: ['CUSTOM']}, customDeptIds: organization}, required: ['customDeptIds']},
-      {properties: {type: {enum: ['EXPRESSION']}, resourceCode: resource, expression}, required: ['resourceCode', 'expression']},
-      {properties: {type: {enum: types.filter((value: string) => !['CUSTOM', 'EXPRESSION'].includes(value))}}},
-    ]}};
-    return next;
-  }, [catalog]);
-  const beforeSubmit = useCallback(async ({formData}: any) => {
+  const preview = useRef(false), interaction = useRef(false);
+  const [previewOpen, setPreviewOpen] = useState(false), [locked, setLocked] = useState(false);
+  const onPreview = useCallback((open: boolean) => {preview.current = open; setPreviewOpen(open);}, []);
+  const onLock = useCallback((busy: boolean) => {interaction.current = busy; setLocked(busy);}, []);
+  const {labels, data: presentation} = usePermissionLabels();
+  useEffect(() => {void ensure([...baseConfig.i18nNamespaces, 'permissions']);}, [ensure, locale]);
+  const {data: catalog, error, refetch} = useOwnedData<Record<string, unknown>>(['permission-expression-catalog'],
+    ({signal}) => get(`${expressionBase}/catalog`, undefined, {signal, notifyOnError: false}), {staleTime: 30_000, retry: false});
+  const schemaTransform = useCallback((schema: any) => scopeTableSchema(schema, labels.scope), [labels]);
+  const displayExpression = (value: string, row: {resourceCode?: string}) => {
+    if (!value) return '—';
+    const fields = Object.assign({}, ...(presentation?.pages[row.resourceCode ?? '']?.models ?? []).map(model => model.properties));
+    return expressionLabels(Object.fromEntries(Object.entries(fields).map(([name, field]) => [name, labels.field(name, field as any, row.resourceCode)])),
+      Object.fromEntries(contextNames.map(name => [name, labels.context(name)])), expressionWords(t)).encode(value);
+  };
+  const pages = useMemo(() => Object.keys(catalog ?? {}).map(code => ({const: code, title: labels.page(code)})), [catalog, labels]);
+  const formSchemaTransform = useCallback((schema: any, editing: any) => scopeFormSchema(schema, editing, pages), [pages]);
+  const beforeSubmit = useCallback(async ({formData, signal}: any) => {
     if (formData?.type === 'EXPRESSION') {
       const result = await post<{expression: string}>(`${expressionBase}/validate`,
-        {resourceCode: formData.resourceCode, expression: formData.expression});
+        {resourceCode: formData.resourceCode, expression: formData.expression}, {signal, notifyOnError: false});
       return {...formData, expression: result.expression, customDeptIds: []};
     }
-    return {...formData, customDeptIds: formData?.type === 'CUSTOM' ? formData.customDeptIds : [], resourceCode: null, expression: null};
+    return prepareScopeData(formData);
   }, []);
-  return <div style={{height: '100%', width: '100%', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
-    <div style={{flexShrink: 0}}><EffectiveScopePreview /></div>
-    {error && <Alert type="error" title={t('data-scopes.expression.loadFailed', '字段元数据加载失败')} />}
+  return <div className="data-scope-page" style={{height: '100%', width: '100%', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
+    <div style={{flexShrink: 0}}><EffectiveScopePreview isBlocked={() => interaction.current || locked} onOpenChange={onPreview} /></div>
+    {error && <Alert type="error" title={t('data-scopes.expression.loadFailed', '字段元数据加载失败')}
+      action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', sort: 0, text: t('table.retry', '重试'), onClick: () => {
+        if (operation.current() && operation.isSelected() && active) void refetch();
+      }}]} />} />}
     <div style={{flex: 1, minHeight: 0, minWidth: 0}}>
       <SimpleTable {...baseConfig} drawerWidth="min(960px, 100vw)" confirmDiscard
+        schemaStaleTime={30_000} allowTabEviction={!previewOpen}
+        onInteractionLockChange={onLock} isButtonDisabled={() => preview.current}
+        rowSelection={{isRowSelectable: () => !preview.current}}
         initialValues={{type: 'SELF', customDeptIds: []}}
         submitRefreshTargets={{page: true, schema: false}} deleteRefreshTargets={{page: true, schema: false}}
+        schemaTransform={schemaTransform}
+        columnOverrides={{type: {render: value => labels.scope(value)}, expression: {render: displayExpression}}}
         formSchemaTransform={formSchemaTransform} beforeSubmit={beforeSubmit}
-        formUiSchema={(draft) => ({'ui:order': ['name', 'type', ...(draft.type === 'CUSTOM' ? ['customDeptIds'] : draft.type === 'EXPRESSION' ? ['resourceCode', 'expression'] : []), '*'],
-          customDeptIds: {'ui:widget': 'OrgTreeMultiSelect'}, expression: {'ui:widget': 'PermissionExpression'},
-          description: {'ui:widget': 'textarea'}})} />
+        formDataTransform={(next, previous) => next.resourceCode !== previous.resourceCode ? {...next, expression: ''} : next}
+        formUiSchema={scopeFormUiSchema} />
     </div>
   </div>;
 }
