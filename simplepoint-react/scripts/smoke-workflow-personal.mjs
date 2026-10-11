@@ -126,7 +126,18 @@ export async function smokeWorkflowPersonal({clickText, clickReady, fill, poll, 
     && location.hash.includes('instance=instance1')`), true);
   await poll(() => evaluate(`document.querySelector('${progress} .workflow-node-history')?.textContent.includes('材料完整，同意')`),
     'fresh personal deep link resolves actual historical processing details');
+  await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, screenWidth: 390, screenHeight: 844, deviceScaleFactor: 1, mobile: true});
+  await send('Emulation.setPageScaleFactor', {pageScaleFactor: 1});
+  await poll(() => evaluate(`(()=>{
+    const drawer=document.querySelector('${progress} .ant-drawer-content-wrapper')?.getBoundingClientRect();
+    const canvas=document.querySelector('${progress} .djs-container')?.getBoundingClientRect();
+    const node=document.querySelector('${progress} .djs-element[data-element-id="review"] .djs-visual')?.getBoundingClientRect();
+    return drawer && canvas && node && drawer.left>=0 && drawer.right<=document.documentElement.clientWidth+1
+      && drawer.bottom<=visualViewport.height+1 && node.left>=canvas.left-1 && node.right<=canvas.right+1;
+  })()`), 'phone viewport contains the whole drawer and automatically refitted approval node');
+  await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
   await clickReady(`${progress} .ant-drawer-close`);
+  console.log('PASS: real mobile emulation keeps the drawer on screen and refits the BPMN canvas after resize');
   console.log('PASS: first-visit workflow deep links open without a saved tab and preserve task/instance parameters');
   console.log('PASS: personal inbox approval/rejection/claim; real names and clickable node/audit details; retained drafts and retry; withdraw/cancel completed records; linked version-pinned resubmission and processed deep links');
 }

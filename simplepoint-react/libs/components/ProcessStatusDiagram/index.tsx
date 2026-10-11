@@ -7,6 +7,7 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import './style.css';
 import {activityMarkers, markerClass, type ProcessActivityState} from './state';
+import {observeDiagramViewport} from './viewport';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 export type {ProcessActivityState} from './state';
 
@@ -27,6 +28,7 @@ const STATE_MARKERS = ['workflow-status-active', 'workflow-status-completed', 'w
 type DiagramElement = {id: string; type?: string; businessObject?: {name?: string}};
 type RegistryApi = {get: (id: string) => DiagramElement | undefined; getAll: () => DiagramElement[]};
 type CanvasApi = {
+  resized: () => void;
   zoom: (scale?: number | 'fit-viewport') => number;
   scrollToElement: (element: DiagramElement) => void;
   addMarker: (id: string, marker: string) => void;
@@ -65,6 +67,7 @@ export default function ProcessStatusDiagram({
   useEffect(() => {
     if (!containerRef.current || !xml) return;
     let active = true;
+    let stopResize: (() => void) | undefined;
     setReady(false); setError(undefined); setNodes([]);
     const viewer = new NavigatedViewer({
       container: containerRef.current,
@@ -88,12 +91,21 @@ export default function ProcessStatusDiagram({
         const element = registry.get(viewport.current.activeActivityIds[0]);
         if (element) canvas.scrollToElement(element);
       }
+      stopResize = observeDiagramViewport(containerRef.current!, () => {
+        if (!active || viewerRef.current !== viewer) return;
+        canvas.resized();
+        canvas.zoom('fit-viewport');
+        if (viewport.current.fitActive && viewport.current.activeActivityIds.length === 1) {
+          const element = viewer.get<RegistryApi>('elementRegistry').get(viewport.current.activeActivityIds[0]);
+          if (element) canvas.scrollToElement(element);
+        }
+      });
       setReady(true);
     }).catch((reason: unknown) => {
       if (active) setError(reason instanceof Error ? reason.message : '流程图加载失败');
     });
     // A new source owns a new viewer. A slow old import must never replace the new instance's canvas.
-    return () => {active = false; viewer.destroy(); if (viewerRef.current === viewer) viewerRef.current = undefined;};
+    return () => {active = false; stopResize?.(); viewer.destroy(); if (viewerRef.current === viewer) viewerRef.current = undefined;};
   }, [xml]);
 
   useEffect(() => {

@@ -5,6 +5,15 @@
   min-width: 0;
 }
 
+/* Bound portals to the device viewport, even when the host has horizontal overflow. */
+.workflow-progress-detail.ant-drawer,
+.workflow-task-editor.ant-drawer {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  right: auto;
+}
+
 .workflow-task-editor .ant-drawer-body {
   display: flex;
   flex-direction: column;
