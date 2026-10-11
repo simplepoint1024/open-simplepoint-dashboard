@@ -249,6 +249,7 @@
   "tenant.resources.deleteFailed": "Delete failed",
   "tenant.resources.delete": "Delete Tenant Resource",
   "tenant.resources.name": "Resource",
+  "tenant.resources.code": "Resource code",
   "tenant.resources.type": "Type",
   "tenant.resources.origin": "Origin",
   "tenant.resources.platform": "Platform",

@@ -1,4 +1,5 @@
 import {compileLocalQuery, localQuerySchema} from '../libs/components/DataTable/localQuery.ts';
+import {fixtureSchema} from './query-fixture.mjs';
 
 export const knowledgeRoute = {id: 'knowledge-lifecycle', code: 'ai.workbench.knowledge-bases.view', type: 'PAGE', routeKind: 'item',
   path: '/smoke/knowledge-lifecycle', component: 'ai/workbench/KnowledgeBases', label: '知识库生命周期测试', scopeTypes: ['PLATFORM']};
@@ -6,6 +7,8 @@ const base = '/ai/workbench/knowledge-bases';
 const fields = {id: {type: 'string'}, name: {type: 'string'}, code: {type: 'string'}, embeddingModelId: {type: 'string'},
   retrievalMode: {type: 'string'}, enabled: {type: 'boolean'}, documentCount: {type: 'integer'}, chunkCount: {type: 'integer'}};
 const schema = localQuerySchema(fields); schema.required = ['name', 'code', 'embeddingModelId'];
+const documentFields = {name: {type: 'string'}, fileName: {type: 'string'}, sourceType: {type: 'string'},
+  status: {type: 'string'}, fileSize: {type: 'integer'}, chunkCount: {type: 'integer'}, createdAt: {type: 'date-time'}, processedAt: {type: 'date-time'}};
 Object.values(schema.properties).forEach(property => {property['x-ui'] = {'x-list-visible': true};});
 const page = (rows, url) => {
   const number = Number(url.searchParams.get('page') ?? 0), size = Number(url.searchParams.get('size') ?? 20);
@@ -50,10 +53,11 @@ export function createKnowledgeFixture() {
           if (!['all', 'documents'].includes(mode)) throw Error('Ingestion limits require actual documents authority');
           return respond({maxUploadBytes: 65536}), true;
         }
-        const match = path.match(/\/knowledge-bases\/(kb-\d+)\/documents$/);
+        const match = path.match(/\/knowledge-bases\/(kb-\d+)\/documents(\/schema)?$/);
         if (match) {
           if (!['all', 'documents'].includes(mode)) throw Error('Retrieve/view permission does not imply document access');
-          return respond(page(filter(documents.get(match[1]), {createdAt: {type: 'date-time'}}, url), url)), true;
+          if (match[2]) return respond(fixtureSchema(documentFields)), true;
+          return respond(page(filter(documents.get(match[1]), documentFields, url), url)), true;
         }
         throw Error('Unknown knowledge fixture read ' + path);
       }

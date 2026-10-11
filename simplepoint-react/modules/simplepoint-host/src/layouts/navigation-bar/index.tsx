@@ -36,6 +36,7 @@ import {
   migrateLegacyAiWorkspaceTabs,
   resolveLegacyAiWorkspaceTarget,
 } from '@/components/legacyAiWorkspace';
+import {migrateWorkflowLocation, migrateWorkflowTabs, resolveWorkflowTargets} from '@/components/legacyWorkflow';
 
 const {Header, Content, Footer, Sider} = Layout;
 const MAX_VISIBLE_TABS = 10;
@@ -213,6 +214,7 @@ const NavigateBar: React.FC<{
     () => resolveLegacyAiWorkspaceTarget(routeData),
     [routeData],
   );
+  const workflowTargets = useMemo(() => resolveWorkflowTargets(routeData), [routeData]);
 
   // 补充：对未在菜单中的内部路由，提供固定的名称与图标
   const extraTabs = useMemo(() => ([
@@ -354,30 +356,24 @@ const NavigateBar: React.FC<{
           : rootNormalizedKey,
       };
     });
-    const out = migrateLegacyAiWorkspaceTabs(
+    const out = migrateWorkflowTabs(migrateLegacyAiWorkspaceTabs(
       normalized,
       legacyAiWorkspaceTarget,
       routesReady,
-    ).map(tab => ({...tab, label: getTabLabel(tab.key)}));
+    ), workflowTargets, routesReady).map(tab => ({...tab, label: getTabLabel(tab.key)}));
     const dashboardTab = getDashboardTab();
     const filtered = out.filter(t => t.key !== DASHBOARD_PATH);
     return [dashboardTab, ...filtered];
-  }, [getDashboardTab, getTabLabel, legacyAiWorkspaceTarget, routesReady]);
+  }, [getDashboardTab, getTabLabel, legacyAiWorkspaceTarget, workflowTargets, routesReady]);
 
   // HashRouter 已将 hash 中的路径解析到 useLocation，Tab key 只使用 pathname，
   // query/hash 记录在 location 中，避免 /tenant 与 /tenant?edit=1 被拆成两个 Tab。
-  const getCurrentPath = useCallback(
-    () => migrateLegacyAiWorkspacePath(
-      normalizeRoutePath(location.pathname || '/'),
-      legacyAiWorkspaceTarget,
-      routesReady,
-    ),
-    [legacyAiWorkspaceTarget, location.pathname, routesReady],
-  );
   const getCurrentLocation = useCallback(
-    () => `${getCurrentPath()}${location.search || ''}${location.hash || ''}`,
-    [getCurrentPath, location.hash, location.search],
+    () => migrateWorkflowLocation(`${migrateLegacyAiWorkspacePath(normalizeRoutePath(location.pathname || '/'),
+      legacyAiWorkspaceTarget, routesReady)}${location.search || ''}${location.hash || ''}`, workflowTargets, routesReady),
+    [legacyAiWorkspaceTarget, workflowTargets, routesReady, location.pathname, location.hash, location.search],
   );
+  const getCurrentPath = useCallback(() => normalizeRoutePath(getCurrentLocation()), [getCurrentLocation]);
 
   // 页签状态：key 使用路由 path
   const [tabs, setTabs] = useState<NavigationTab[]>(() => {

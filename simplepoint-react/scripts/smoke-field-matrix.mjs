@@ -305,11 +305,15 @@ export async function smokeFieldLifecycle({clickMenu, clickReady, clickText, fil
   await evaluate(`(()=>{${rowsProbe}window.__matrixRows=rows;window.__matrixTranslator=window.spI18n?.t;return true;})()`);
   await evaluate(`(()=>{document.querySelector('${drawer} [data-row-key="${model}#name"] input[value="VISIBLE"]').click();document.querySelector('${drawer} [data-row-key="${model}#description"] input[value="MASKED"]').click();return true;})()`);
   await poll(() => evaluate(`document.querySelector('${drawer} [data-row-key="${model}#name"] input[value="VISIBLE"]').checked&&document.querySelector('${drawer} [data-row-key="${model}#description"] input[value="MASKED"]').checked`), 'same-frame field changes retain both values');
-  const sameRows = await evaluate(`(()=>{${rowsProbe}return rows===window.__matrixRows;})()`);
+  const sameRows = await evaluate(`(()=>{${rowsProbe}return rows.length===window.__matrixRows.length
+    && rows.every((row,index)=>row.metadata===window.__matrixRows[index].metadata);})()`);
   if (!sameRows) console.error('Field index input diagnostics', await evaluate(`(()=>{${rowsProbe}return {translatorUnchanged:window.__matrixTranslator===window.spI18n?.t,
     before:window.__matrixRows.map(row=>({field:row.field,title:row.title})),after:rows.map(row=>({field:row.field,title:row.title}))};})()`));
   assert.equal(await evaluate(`window.__matrixTranslator===window.spI18n?.t`), true, 'value-only memoization uses the same settled translator');
   assert.equal(sameRows, true, 'editing values does not rebuild the complete metadata field index');
+  assert.equal(await evaluate(`(()=>{${rowsProbe}return rows.find(row=>row.field==='name').accessName
+    !==window.__matrixRows.find(row=>row.field==='name').accessName;})()`), true,
+    'access header filtering receives the current edited value, not a frozen metadata snapshot');
   await fill(drawer + ' #root_description', '原生字段矩阵草稿');
   const releasePendingFields = matrix.hold('page-fields:matrix.page518');
   await evaluate(`(()=>{const input=document.querySelector('${drawer} [data-row-key="${model}#name"] input[type="radio"]');let fiber=input[Object.keys(input).find(k=>k.startsWith('__reactFiber$'))],change;

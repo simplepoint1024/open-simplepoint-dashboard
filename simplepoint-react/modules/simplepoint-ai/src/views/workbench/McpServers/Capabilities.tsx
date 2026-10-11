@@ -1,6 +1,7 @@
 import TableActions from "@simplepoint/components/Table/Actions";
 import api from "@/api";
 import DataTable from "@simplepoint/components/DataTable";
+import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
 import SForm from "@simplepoint/components/SForm/Lazy";
 import EntitySelect from "@simplepoint/components/EntitySelect";
 import { readyServerFilters } from "./Runtime/runtimeQueries";
@@ -127,8 +128,6 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
   const { message } = App.useApp();
   const operation = useOperationScope();
   const [serverId, setServerId] = useState<string | undefined>(initialServerId);
-  const [snapshotPage, setSnapshotPage] = useState(0);
-  const [snapshotSize, setSnapshotSize] = useState(20);
   const [callingTool, setCallingTool] = useState<McpTool>();
   const [toolArguments, setToolArguments] = useState<Record<string, unknown>>(
     {},
@@ -169,20 +168,17 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
     ]);
     return {tools, resources, resourceTemplates, prompts};
   }, {enabled: Boolean(serverId) && permissions.viewCapabilities, retry: false});
-  const history = useData(['mcp-capability-history', config.baseUrl, serverId, snapshotPage, snapshotSize], async ({signal}) =>
-    normalizePage(await get<RawPage<McpCapabilitySnapshotSummary>>(`${config.baseUrl}/${serverId}/snapshots`,
-      {page: snapshotPage, size: snapshotSize}, {signal})),
-  {enabled: Boolean(serverId) && permissions.viewCapabilities, retry: false});
+  const history = useRemoteList<McpCapabilitySnapshotSummary>(`${config.baseUrl}/${encodeURIComponent(serverId ?? '')}/snapshots`,
+    Boolean(serverId) && permissions.viewCapabilities && operation.selected);
   const tools = capabilities.data?.tools ?? [];
   const resources = capabilities.data?.resources ?? [];
   const resourceTemplates = capabilities.data?.resourceTemplates ?? [];
   const prompts = capabilities.data?.prompts ?? [];
-  const snapshots = history.data?.content ?? [];
   const loading = capabilities.isFetching;
   const capabilityLoadError = capabilities.error || history.error
     ? resolveApiErrorMessage(capabilities.error || history.error, t('ai.mcp.tools.error.load', 'MCP 能力快照加载失败'))
     : undefined;
-  const loadCapabilities = () => {void capabilities.refetch(); void history.refetch();};
+  const loadCapabilities = () => {void capabilities.refetch(); history.retry();};
   const argumentSchema = useMemo<RJSFSchema>(() => callingTool?.inputSchema as RJSFSchema
     ?? {type: 'object', additionalProperties: false,
       properties: Object.fromEntries((gettingPrompt?.arguments ?? []).map(argument => [argument.name,
@@ -212,7 +208,7 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
     setServerId(current => current ?? directory.data?.firstId);
   }, [directory.data?.firstId]);
   useEffect(() => {
-    setSnapshotPage(0);
+    history.reset();
     snapshotRequest.current?.abort();
     setSnapshotComparison(undefined); setSnapshotLoading(false);
     setCallingTool(undefined); setReadingResource(undefined); setGettingPrompt(undefined);
@@ -229,28 +225,17 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
       snapshotRequest.current = request;
       setSnapshotLoading(true);
       try {
-        const index = snapshots.findIndex(
-          (snapshot) => snapshot.id === summary.id,
-        );
-        const offset = snapshotPage * snapshotSize + index + 1;
-        let previousSummary = index >= 0 ? snapshots[index + 1] : undefined;
-        if (index >= 0 && !previousSummary && offset < (history.data?.page.totalElements ?? 0)) {
-          previousSummary = normalizePage(await get<RawPage<McpCapabilitySnapshotSummary>>(
-            `${config.baseUrl}/${serverId}/snapshots`, {page: offset, size: 1}, {signal: request.signal})).content[0];
-        }
         const [current, previous] = await Promise.all([
           get<McpCapabilitySnapshotDetails>(
-            `${config.baseUrl}/${serverId}/snapshots/${summary.id}`,
+            `${config.baseUrl}/${encodeURIComponent(serverId)}/snapshots/${encodeURIComponent(summary.id)}`,
             undefined, {signal: request.signal},
           ),
-          previousSummary
-            ? get<McpCapabilitySnapshotDetails>(
-                `${config.baseUrl}/${serverId}/snapshots/${previousSummary.id}`,
+          get<McpCapabilitySnapshotDetails | null>(
+                `${config.baseUrl}/${encodeURIComponent(serverId)}/snapshots/${encodeURIComponent(summary.id)}/previous`,
                 undefined, {signal: request.signal},
-              )
-            : Promise.resolve(undefined),
+              ),
         ]);
-        if (operation.current(request.signal)) setSnapshotComparison({ current, previous });
+        if (operation.current(request.signal)) setSnapshotComparison({ current, previous: previous ?? undefined });
       } catch (error) {
         if (!operation.current(request.signal)) return;
         message.error(
@@ -263,7 +248,7 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
         if (snapshotRequest.current === request && operation.current()) setSnapshotLoading(false);
       }
     },
-    [config.baseUrl, message, serverId, snapshots, snapshotPage, snapshotSize, history.data, t],
+    [config.baseUrl, message, serverId, snapshotLoading, operation.current, operation.isSelected, t],
   );
 
   const snapshotDiff = useMemo(() => {
@@ -852,17 +837,14 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
             },
             {
               key: "snapshots",
-              label: `${t("ai.mcp.snapshots.title", "发现历史")} (${history.data?.page.totalElements ?? 0})`,
+              label: `${t("ai.mcp.snapshots.title", "发现历史")} (${history.page.page.totalElements})`,
               children: (
                 <DataTable
+                  {...history.tableProps}
                   rowKey="id"
-                  loading={history.isFetching || snapshotLoading}
+                  loading={!!history.tableProps.loading || snapshotLoading}
                   storageKey="ai.mcp.capabilities.snapshots"
-                  dataSource={snapshots}
-                  pagination={{current: snapshotPage + 1, pageSize: snapshotSize,
-                    total: history.data?.page.totalElements ?? 0, showSizeChanger: true,
-                    onChange: (page, size) => {setSnapshotPage(page - 1); setSnapshotSize(size);}}}
-                  columns={[
+                  columns={history.columns([
                     {
                       title: t("ai.mcp.snapshots.discoveredAt", "发现时间"),
                       dataIndex: "discoveredAt",
@@ -871,15 +853,10 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
                         new Date(value).toLocaleString(),
                     },
                     {
-                      title: t("ai.mcp.snapshots.server", "服务版本"),
-                      key: "server",
-                      width: 230,
-                      render: (
-                        _value: unknown,
-                        snapshot: McpCapabilitySnapshotSummary,
-                      ) =>
-                        `${snapshot.remoteServerName} ${snapshot.remoteServerVersion}`,
+                      title: t("ai.mcp.snapshots.remoteServerName", "服务名称"),
+                      dataIndex: "remoteServerName", width: 160,
                     },
+                    {title: t("ai.mcp.snapshots.remoteServerVersion", "服务版本"), dataIndex: "remoteServerVersion", width: 120},
                     {
                       title: t("ai.mcp.gateway.protocol", "协议版本"),
                       dataIndex: "protocolVersion",
@@ -973,13 +950,14 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
                               sort: 70,
                               text: t("ai.mcp.snapshots.compare", "查看差异"),
                               type: "link",
+                              disabled: snapshotLoading || !!history.error,
                               onClick: () => void loadSnapshotDetails(snapshot),
                             },
                           ]}
                         />
                       ),
                     },
-                  ]}
+                  ])}
                 />
               ),
             },

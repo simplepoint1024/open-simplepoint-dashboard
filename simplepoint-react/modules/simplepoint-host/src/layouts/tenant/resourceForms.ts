@@ -2,7 +2,7 @@ import type {RJSFSchema} from '@rjsf/utils';
 export type ResourceType = 'GROUP' | 'MODULE' | 'PAGE' | 'FEATURE' | 'ACTION' | 'API';
 export type TenantResource = {id: string; platformResourceId?: string | null; targetResourceId?: string | null;
   parentId?: string | null; code: string; name: string; type: ResourceType; path?: string | null;
-  icon?: string | null; sort?: number | null; description?: string | null; enabled: boolean; grantable: boolean};
+  icon?: string | null; sort?: number | null; description?: string | null; enabled: boolean; grantable: boolean; origin?: 'PLATFORM' | 'TENANT'};
 export type ResourceDraft = Partial<Pick<TenantResource, 'name' | 'type' | 'path' | 'parentId' | 'icon' | 'sort' | 'description' | 'targetResourceId' | 'enabled'>>;
 type Translate = (key: string, fallback?: string) => string;
 export function resourceDraft(row: TenantResource | null): ResourceDraft {

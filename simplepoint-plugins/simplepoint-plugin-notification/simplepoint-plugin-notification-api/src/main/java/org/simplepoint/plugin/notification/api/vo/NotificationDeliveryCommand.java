@@ -12,6 +12,18 @@ public record NotificationDeliveryCommand(
     String content,
     String linkUrl,
     NotificationPriority priority,
-    Instant expireAt
-) {
+    Instant expireAt,
+    String tenantId) {
+  /** Existing unscoped deliveries retain the system-notification channel. */
+  public NotificationDeliveryCommand(
+      String source,
+      String externalKey,
+      String targetUserId,
+      String title,
+      String content,
+      String linkUrl,
+      NotificationPriority priority,
+      Instant expireAt) {
+    this(source, externalKey, targetUserId, title, content, linkUrl, priority, expireAt, null);
+  }
 }

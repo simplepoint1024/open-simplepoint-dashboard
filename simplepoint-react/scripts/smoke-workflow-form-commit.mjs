@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 /** Real runtime editor and SForm submit event in one browser task, without replacing the form engine. */
 export async function smokeWorkflowFormCommit({clickMenu, clickText, poll, evaluate, fixture}) {
   const page = '.nb-tab-panel-active', drawer = '.workflow-task-editor.ant-drawer-open';
-  const ready = scope => poll(() => evaluate(`(()=>{const button=[...document.querySelectorAll('${scope} button')].find(b=>b.textContent.replaceAll(' ','')==='提交');return button&&!button.disabled;})()`), 'current runtime variables can submit');
+  const ready = scope => poll(() => evaluate(`(()=>{const button=document.querySelector('${scope} form.rjsf button[type="submit"]');return button&&!button.disabled;})()`), 'current runtime variables can submit');
   const edit = (scope, source, submit = false) => evaluate(`(()=>{const view=document.querySelector('${scope} .cm-content').cmTile.root.view;
     view.dispatch({changes:{from:0,to:view.state.doc.length,insert:${JSON.stringify(source)}}});
-    ${submit ? `[...document.querySelectorAll('${scope} button')].find(b=>b.textContent.replaceAll(' ','')==='提交').click();` : ''}})()`);
+    ${submit ? `document.querySelector('${scope} form.rjsf button[type="submit"]').click();` : ''}})()`);
   const blocked = async (scope, source) => {
     const before = fixture.writes.length;
     await edit(scope, source, true);

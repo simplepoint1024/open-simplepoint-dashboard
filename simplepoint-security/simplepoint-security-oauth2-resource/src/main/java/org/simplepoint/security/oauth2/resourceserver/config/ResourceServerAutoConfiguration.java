@@ -34,10 +34,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.handler.MappedInterceptor;
 
-/**
- * Auto-configuration for the resource server.
- * 资源服务器的自动配置类
- */
+/** Auto-configuration for the resource server. 资源服务器的自动配置类 */
 @AutoConfiguration
 public class ResourceServerAutoConfiguration {
 
@@ -45,33 +42,34 @@ public class ResourceServerAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public ClasspathResourceScopeRegistry classpathResourceScopeRegistry(
-      final ObjectMapper objectMapper
-  ) throws IOException {
+      final ObjectMapper objectMapper) throws IOException {
     return new ClasspathResourceScopeRegistry(objectMapper);
   }
 
   /** Registers scope enforcement after handler mapping and before controller invocation. */
   @Bean
   public org.simplepoint.core.permission.ResourcePermissionCatalog resourcePermissionCatalog(
-      org.springframework.beans.factory.ObjectProvider<org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping> mappings,
+      org.springframework.beans.factory.ObjectProvider<
+              org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping>
+          mappings,
       ClasspathResourceScopeRegistry scopes) {
-    return new org.simplepoint.security.oauth2.resourceserver.scope.StandardResourcePermissionCatalog(mappings, scopes);
+    return new org.simplepoint.security.oauth2.resourceserver.scope
+        .StandardResourcePermissionCatalog(mappings, scopes);
   }
 
   /** Applies to every handler mapping, including dynamically registered plugin controllers. */
   @Bean
   public MappedInterceptor resourceScopeInterceptor(
-      final ClasspathResourceScopeRegistry scopeRegistry
-  ) {
+      final ClasspathResourceScopeRegistry scopeRegistry) {
     return new MappedInterceptor(null, new ResourceScopeHandlerInterceptor(scopeRegistry));
   }
 
   /**
-   * Configures the security filter chain for the application, enforcing authentication
-   * for all requests and enabling OAuth2 resource server with JWT authentication.
+   * Configures the security filter chain for the application, enforcing authentication for all
+   * requests and enabling OAuth2 resource server with JWT authentication.
    *
-   * <p>This bean defines a security filter that ensures all incoming requests are authenticated
-   * and utilizes OAuth2 JWT tokens for identity verification.</p>
+   * <p>This bean defines a security filter that ensures all incoming requests are authenticated and
+   * utilizes OAuth2 JWT tokens for identity verification.
    *
    * @return a fully configured {@link SecurityFilterChain} instance
    * @throws Exception if an error occurs during the security configuration process
@@ -91,114 +89,124 @@ public class ResourceServerAutoConfiguration {
       AuthorizationGrantedAuthorityLoader authorizationGrantedAuthorityLoader,
       AuthorizationContextResolver authorizationContextResolver,
       TokenRevocationService tokenRevocationService,
-      Environment environment
-  ) throws Exception {
+      Environment environment)
+      throws Exception {
     http.csrf(AbstractHttpConfigurer::disable);
-    final String serviceRouterMode = environment.getProperty(
-        "simplepoint.service-router.internal-auth.mode",
-        "shared-token"
-    );
-    final String serviceRouterToken = environment.getProperty("simplepoint.service-router.internal-auth.token");
-    final String serviceRouterHeaderName = environment.getProperty(
-        "simplepoint.service-router.internal-auth.header-name",
-        "X-SimplePoint-Service-Router-Token"
-    );
-    final String serviceRouterExposePath = environment.getProperty(
-        "simplepoint.service-router.provider.expose-path",
-        "/_simplepoint/service-router/invoke"
-    );
-    final String serviceRouterRequiredAuthority = environment.getProperty(
-        "simplepoint.service-router.internal-auth.oauth2.required-authority",
-        "SCOPE_service-router.invoke"
-    );
+    final String serviceRouterMode =
+        environment.getProperty("simplepoint.service-router.internal-auth.mode", "shared-token");
+    final String serviceRouterToken =
+        environment.getProperty("simplepoint.service-router.internal-auth.token");
+    final String serviceRouterHeaderName =
+        environment.getProperty(
+            "simplepoint.service-router.internal-auth.header-name",
+            "X-SimplePoint-Service-Router-Token");
+    final String serviceRouterExposePath =
+        environment.getProperty(
+            "simplepoint.service-router.provider.expose-path",
+            "/_simplepoint/service-router/invoke");
+    final String serviceRouterRequiredAuthority =
+        environment.getProperty(
+            "simplepoint.service-router.internal-auth.oauth2.required-authority",
+            "SCOPE_service-router.invoke");
     http.addFilterAfter(
         new AuthorizationContextFilter(authorizationContextResolver, serviceRouterExposePath),
-        BearerTokenAuthenticationFilter.class
-    );
-    return http
-        .authorizeHttpRequests(request -> {
-          request.requestMatchers(
-                  "/actuator/**", "/static/**", "/mf/**", "/v3/api-docs/**", "/swagger-ui/**",
-                  "/error", "/css/**", "/js/**", "/images/**",
-                  "/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/**"
-              )
-              .permitAll();
-          if ("oauth2".equalsIgnoreCase(serviceRouterMode)) {
-            request.requestMatchers(new ServiceRouterPathRequestMatcher(serviceRouterExposePath))
-                .hasAuthority(serviceRouterRequiredAuthority);
-          } else if (StringUtils.hasText(serviceRouterToken)) {
-            request.requestMatchers(new ServiceRouterInternalRequestMatcher(
-                    serviceRouterExposePath,
-                    serviceRouterHeaderName,
-                    serviceRouterToken
-                ))
-                .permitAll();
-          }
-          request.anyRequest().authenticated();
-        })
-        .oauth2ResourceServer(configurer -> {
-          String metadataUri = environment.getProperty(
-              "simplepoint.security.oauth2.protected-resource-metadata-uri"
-          );
-          if (StringUtils.hasText(metadataUri)) {
-            configurer.authenticationEntryPoint((request, response, exception) -> {
-              response.setStatus(401);
-              response.setHeader(
-                  "WWW-Authenticate",
-                  "Bearer resource_metadata=\"" + metadataUri.replace("\"", "") + "\""
-              );
-            });
-          }
-          String protectedResourceUri = environment.getProperty(
-              "simplepoint.security.oauth2.protected-resource-uri"
-          );
-          if (StringUtils.hasText(protectedResourceUri)) {
-            configurer.protectedResourceMetadata(metadata ->
-                metadata.protectedResourceMetadataCustomizer(builder -> {
-                  builder.resource(protectedResourceUri.trim());
-                  String authorizationServer = environment.getProperty(
-                      "simplepoint.security.oauth2.authorization-server-uri"
-                  );
-                  if (StringUtils.hasText(authorizationServer)) {
-                    builder.authorizationServer(authorizationServer.trim());
-                  }
-                  String scopes = environment.getProperty(
-                      "simplepoint.security.oauth2.protected-resource-scopes"
-                  );
-                  if (StringUtils.hasText(scopes)) {
-                    Arrays.stream(scopes.split("[,\\s]+"))
-                        .filter(StringUtils::hasText)
-                        .forEach(builder::scope);
-                  }
-                  String resourceName = environment.getProperty(
-                      "simplepoint.security.oauth2.protected-resource-name"
-                  );
-                  if (StringUtils.hasText(resourceName)) {
-                    builder.resourceName(resourceName.trim());
-                  }
-                  String documentation = environment.getProperty(
-                      "simplepoint.security.oauth2.protected-resource-documentation"
-                  );
-                  if (StringUtils.hasText(documentation)) {
-                    builder.claim("resource_documentation", documentation.trim());
-                  }
-                  builder.tlsClientCertificateBoundAccessTokens(false);
-                })
-            );
-          }
-          configurer.jwt(
-              jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(
-                  new JwtAuthenticationConverterDelegate(
-                      authorizationGrantedAuthorityLoader,
-                      tokenRevocationService,
-                      environment.getProperty(
-                          "simplepoint.security.oauth2.token.audience",
-                          "simplepoint-api"
-                      )
-                  )
-              )
-          );
-        })
+        BearerTokenAuthenticationFilter.class);
+    return http.authorizeHttpRequests(
+            request -> {
+              request
+                  .requestMatchers(
+                      "/actuator/**",
+                      "/static/**",
+                      "/mf/**",
+                      "/v3/api-docs/**",
+                      "/swagger-ui/**",
+                      "/error",
+                      "/css/**",
+                      "/js/**",
+                      "/images/**",
+                      "/.well-known/oauth-protected-resource",
+                      "/.well-known/oauth-protected-resource/**")
+                  .permitAll();
+              if ("oauth2".equalsIgnoreCase(serviceRouterMode)) {
+                request
+                    .requestMatchers(new ServiceRouterPathRequestMatcher(serviceRouterExposePath))
+                    .hasAuthority(serviceRouterRequiredAuthority);
+              } else if ("shared-token".equalsIgnoreCase(serviceRouterMode)
+                  && StringUtils.hasText(serviceRouterToken)) {
+                request
+                    .requestMatchers(
+                        new ServiceRouterInternalRequestMatcher(
+                            serviceRouterExposePath, serviceRouterHeaderName, serviceRouterToken))
+                    .permitAll();
+              }
+              // A mismatched/missing internal token must never fall through to ordinary login.
+              // This also fails closed for missing or misspelled internal authentication modes.
+              request
+                  .requestMatchers(new ServiceRouterPathRequestMatcher(serviceRouterExposePath))
+                  .denyAll();
+              request.anyRequest().authenticated();
+            })
+        .oauth2ResourceServer(
+            configurer -> {
+              String metadataUri =
+                  environment.getProperty(
+                      "simplepoint.security.oauth2.protected-resource-metadata-uri");
+              if (StringUtils.hasText(metadataUri)) {
+                configurer.authenticationEntryPoint(
+                    (request, response, exception) -> {
+                      response.setStatus(401);
+                      response.setHeader(
+                          "WWW-Authenticate",
+                          "Bearer resource_metadata=\"" + metadataUri.replace("\"", "") + "\"");
+                    });
+              }
+              String protectedResourceUri =
+                  environment.getProperty("simplepoint.security.oauth2.protected-resource-uri");
+              if (StringUtils.hasText(protectedResourceUri)) {
+                configurer.protectedResourceMetadata(
+                    metadata ->
+                        metadata.protectedResourceMetadataCustomizer(
+                            builder -> {
+                              builder.resource(protectedResourceUri.trim());
+                              String authorizationServer =
+                                  environment.getProperty(
+                                      "simplepoint.security.oauth2.authorization-server-uri");
+                              if (StringUtils.hasText(authorizationServer)) {
+                                builder.authorizationServer(authorizationServer.trim());
+                              }
+                              String scopes =
+                                  environment.getProperty(
+                                      "simplepoint.security.oauth2.protected-resource-scopes");
+                              if (StringUtils.hasText(scopes)) {
+                                Arrays.stream(scopes.split("[,\\s]+"))
+                                    .filter(StringUtils::hasText)
+                                    .forEach(builder::scope);
+                              }
+                              String resourceName =
+                                  environment.getProperty(
+                                      "simplepoint.security.oauth2.protected-resource-name");
+                              if (StringUtils.hasText(resourceName)) {
+                                builder.resourceName(resourceName.trim());
+                              }
+                              String documentation =
+                                  environment.getProperty(
+                                      "simplepoint.security.oauth2.protected-resource-documentation");
+                              if (StringUtils.hasText(documentation)) {
+                                builder.claim("resource_documentation", documentation.trim());
+                              }
+                              builder.tlsClientCertificateBoundAccessTokens(false);
+                            }));
+              }
+              configurer.jwt(
+                  jwtConfigurer ->
+                      jwtConfigurer.jwtAuthenticationConverter(
+                          new JwtAuthenticationConverterDelegate(
+                              authorizationGrantedAuthorityLoader,
+                              tokenRevocationService,
+                              environment.getProperty(
+                                  "simplepoint.security.oauth2.token.audience",
+                                  "simplepoint-api"))));
+            })
         .build();
   }
 
@@ -210,11 +218,8 @@ public class ResourceServerAutoConfiguration {
     }
   }
 
-  record ServiceRouterInternalRequestMatcher(
-      String exposePath,
-      String headerName,
-      String token
-  ) implements RequestMatcher {
+  record ServiceRouterInternalRequestMatcher(String exposePath, String headerName, String token)
+      implements RequestMatcher {
 
     @Override
     public boolean matches(final HttpServletRequest request) {
@@ -230,9 +235,7 @@ public class ResourceServerAutoConfiguration {
 
     private boolean constantTimeEquals(final String left, final String right) {
       return MessageDigest.isEqual(
-          left.getBytes(StandardCharsets.UTF_8),
-          right.getBytes(StandardCharsets.UTF_8)
-      );
+          left.getBytes(StandardCharsets.UTF_8), right.getBytes(StandardCharsets.UTF_8));
     }
   }
 
@@ -246,7 +249,8 @@ public class ResourceServerAutoConfiguration {
     if (exposePath.equals(requestUri)) {
       return true;
     }
-    return StringUtils.hasText(contextPath) && requestUri.startsWith(contextPath)
+    return StringUtils.hasText(contextPath)
+        && requestUri.startsWith(contextPath)
         && exposePath.equals(requestUri.substring(contextPath.length()));
   }
 
@@ -255,7 +259,7 @@ public class ResourceServerAutoConfiguration {
    * loading granted authorities based on JWT claims.
    *
    * <p>This implementation currently returns an empty list, but it can be customized to extract
-   * authorities from JWT claims or other sources as needed.</p>
+   * authorities from JWT claims or other sources as needed.
    *
    * @return a new instance of {@link AuthorizationGrantedAuthorityLoader}
    */
@@ -265,12 +269,14 @@ public class ResourceServerAutoConfiguration {
     return claims -> Collections.emptyList();
   }
 
-
   /**
-   * Creates a bean for AuthorizationContextResolver that uses Redis for caching authorization contexts.
+   * Creates a bean for AuthorizationContextResolver that uses Redis for caching authorization
+   * contexts.
    *
-   * @param cacheService                the CacheService implementation for interacting with Redis to store and retrieve authorization contexts
-   * @param authorizationContextService the AuthorizationContextService for calculating authorization contexts when not found in cache
+   * @param cacheService the CacheService implementation for interacting with Redis to store and
+   *     retrieve authorization contexts
+   * @param authorizationContextService the AuthorizationContextService for calculating
+   *     authorization contexts when not found in cache
    * @return an instance of AuthorizationContextResolver configured to use Redis for caching
    */
   @Bean
@@ -278,18 +284,19 @@ public class ResourceServerAutoConfiguration {
       CacheService cacheService,
       AuthorizationContextService authorizationContextService,
       OAuth2ResourceServerProperties resourceServerProperties,
-      Environment environment
-  ) throws GeneralException, IOException {
+      Environment environment)
+      throws GeneralException, IOException {
     String userInfoUri = environment.getProperty("simplepoint.security.oauth2.user-info-uri");
-    URI userInfoEndpoint = StringUtils.hasText(userInfoUri)
-        ? URI.create(userInfoUri)
-        : OIDCProviderMetadata.resolve(
-            Issuer.parse(resourceServerProperties.getJwt().getIssuerUri())).getUserInfoEndpointURI();
+    URI userInfoEndpoint =
+        StringUtils.hasText(userInfoUri)
+            ? URI.create(userInfoUri)
+            : OIDCProviderMetadata.resolve(
+                    Issuer.parse(resourceServerProperties.getJwt().getIssuerUri()))
+                .getUserInfoEndpointURI();
     return new AuthorizationContextResolver(
         "simplepoint:security:authorization-context:",
         cacheService,
         authorizationContextService,
-        userInfoEndpoint
-    );
+        userInfoEndpoint);
   }
 }

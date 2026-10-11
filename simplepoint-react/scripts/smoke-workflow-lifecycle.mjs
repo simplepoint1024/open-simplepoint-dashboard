@@ -125,19 +125,20 @@ export async function smokeWorkflowLifecycle({clickMenu, clickReady, clickText, 
   await clickText(`${taskDiscard} .ant-modal-footer button`, '继续编辑');
   await poll(() => visible(taskDiscard).then(value => !value), 'task discard closed before editing');
   await changeJson('{"approved":true}');
-  await poll(() => evaluate(`(() => {const button=[...document.querySelectorAll('${task} button')].find(button=>button.textContent.replaceAll(' ','')==='提交');return !!button && !button.disabled && !document.querySelector('${task} .ant-alert-error');})()`), 'valid current task variables');
+  await poll(() => evaluate(`(() => {const button=[...document.querySelectorAll('${task} button')].find(button=>button.textContent.replaceAll(' ','')==='通过');return !!button && !button.disabled && !document.querySelector('${task} .ant-alert-error');})()`), 'valid current task variables')
+    .catch(async error => {console.log(await evaluate(`({text:document.querySelector('${task}')?.textContent, json:document.querySelector('${task} .cm-content')?.textContent})`)); throw error;});
   fixture.failComplete(); const taskBefore = fixture.writes.length;
-  await evaluate(`(() => {const button=[...document.querySelectorAll('${task} button')].find(button=>button.textContent.replaceAll(' ','')==='提交');button.click();button.click();})()`);
+  await evaluate(`(() => {const button=[...document.querySelectorAll('${task} button')].find(button=>button.textContent.replaceAll(' ','')==='通过');button.click();button.click();})()`);
   await poll(() => fixture.writes.length === taskBefore + 1, 'task same-frame single flight');
   await poll(() => evaluate(`document.querySelector('${task} .ant-alert-error')?.textContent.includes('任务提交失败')`), 'task failure retains draft');
-  await clickText(`${task} button`, '提交'); await poll(() => evaluate(`!document.querySelector('${task}')`), 'task retry success');
+  await clickText(`${task} button`, '通过'); await poll(() => evaluate(`!document.querySelector('${task}')`), 'task retry success');
   assert.deepEqual(fixture.writes.at(-1).data, {variables: {approved: true}, comment: '实际处理意见'});
   await clickMenu('流程事项测试'); await poll(() => evaluate(`!!document.querySelector('${page} tr[data-row-key="instance1"]')`), 'actual instance list');
-  await clickText(`${page} tr[data-row-key="instance1"] button`, '终止');
-  const cancel = '.workflow-instance-cancellation .ant-modal';
+  await clickText(`${page} tr[data-row-key="instancecancel"] button`, '取消');
+  const cancel = '.workflow-matter-operation .ant-modal';
   await poll(() => evaluate(`!!document.querySelector('${cancel} form.rjsf textarea#root_reason')`), 'ordinary cancellation reason uses SForm');
   const cancelBefore = fixture.writes.length;
-  await clickText(`${cancel} .ant-modal-footer button`, '终止流程');
+  await clickText(`${cancel} button`, '确认操作');
   await poll(() => evaluate(`!!document.querySelector('${cancel} .ant-form-item-explain-error')`), 'required reason validated before write');
   assert.equal(fixture.writes.length, cancelBefore);
   await fill(`${cancel} textarea#root_reason`, '实际终止原因');
@@ -145,10 +146,10 @@ export async function smokeWorkflowLifecycle({clickMenu, clickReady, clickText, 
   await clickMenu('流程事项测试'); await poll(async () => await visible(cancel)
     && await evaluate(`document.querySelector('${cancel} textarea#root_reason')?.value==='实际终止原因'`), 'owner restores visible cancellation target and reason');
   fixture.failCancel();
-  await evaluate(`(() => {const button=document.querySelector('${cancel} .ant-modal-footer .ant-btn-primary');button.click();button.click();})()`);
+  await evaluate(`(() => {const button=document.querySelector('${cancel} form.rjsf button[type="submit"]');button.click();button.click();})()`);
   await poll(() => fixture.writes.length === cancelBefore + 1, 'cancellation same-frame single flight');
   await poll(() => evaluate(`document.querySelector('${cancel} .ant-alert-error')?.textContent.includes('流程终止失败')`), 'cancellation failure retained');
-  await clickText(`${cancel} .ant-modal-footer button`, '终止流程'); await poll(() => visible(cancel).then(value => !value), 'cancellation retry success');
+  await clickText(`${cancel} button`, '确认操作'); await poll(() => visible(cancel).then(value => !value), 'cancellation retry success');
   assert.deepEqual(fixture.writes.at(-1).data, {reason: '实际终止原因'});
   console.log('PASS: workflow captured history copy/revision, immutable publications/runtime, inactive incomplete expressions/JSON, guarded drafts, form read stability, typed cancellation and write single flight/retry');
 }

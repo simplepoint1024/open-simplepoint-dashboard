@@ -61,6 +61,7 @@
   "dna.metadata.page.detail.dialect": "方言",
   "dna.metadata.page.tab.structure": "结构",
   "dna.metadata.page.tab.preview": "数据预览",
+  "dna.metadata.page.preview.queryScope": "外部数据库分页预览，不提供表头筛选或排序；全量条件查询请使用 SQL 工作台。",
   "dna.metadata.page.modal.namespace.title": "新建命名空间",
   "dna.metadata.page.modal.table.title": "新建数据表",
   "dna.metadata.page.modal.view.title": "新建视图",

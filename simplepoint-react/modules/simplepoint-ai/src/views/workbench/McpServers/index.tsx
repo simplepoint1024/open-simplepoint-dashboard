@@ -566,6 +566,9 @@ const McpServers = () => {
         ]} onButtonEvents={{close: () => setDiscovery(undefined)}}/>}>
         <Text type="secondary">{[discovery?.serverName || "—", discovery?.serverVersion, discovery?.protocolVersion || "—"].filter(Boolean).join(" · ")}</Text>
         <DataTable<McpTool> storageKey="ai.mcp.discovery-tools" size="small" rowKey="name" pagination={{pageSize: 8, hideOnSinglePage: true}}
+          query={{mode: 'local', scope: 'result', contextKey: JSON.stringify(discovery), fields: {
+            name: {type: 'string'}, title: {type: 'string'}, description: {type: 'string'},
+          }}}
           dataSource={discovery?.tools ?? []} columns={[
             {title: t("ai.mcp.tools.name", "工具名称"), dataIndex: "name", width: 220},
             {title: t("ai.mcp.tools.title", "标题"), dataIndex: "title", width: 180},

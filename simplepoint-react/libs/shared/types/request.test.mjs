@@ -3,6 +3,13 @@ import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {normalizePage} from './request.ts';
 
+test('workflow PageResult preserves its numeric zero-based page alongside flat totals', () => {
+  const rows = [{id: 'action:withdrawal'}];
+  assert.deepEqual(normalizePage({content: rows, page: 3, size: 10, totalElements: 31}), {
+    content: rows, page: {number: 3, size: 10, totalElements: 31, totalPages: 4},
+  });
+});
+
 for (const [number, length] of [[0, 20], [26, 1]]) {
   test(`native resource HTTP page ${number} preserves its real count, offset and projected rows`, () => {
     const raw = JSON.parse(readFileSync(new URL(`../../../scripts/application-resource-contracts/root-page-${number}.json`, import.meta.url), 'utf8'));

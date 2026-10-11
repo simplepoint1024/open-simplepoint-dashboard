@@ -10,43 +10,30 @@ import org.simplepoint.plugin.ai.catalog.api.model.CatalogSource;
 import org.simplepoint.plugin.ai.mcp.api.entity.AiMcpServerDefinition;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpProfileImportResult;
 
-/**
- * Internal extension market and official MCP Registry facade.
- */
+/** Internal extension market and official MCP Registry facade. */
 public interface AiCatalogService {
 
-  /**
-   * Pages a normalized mixed-source catalog in the current scope.
-   */
-  AiCatalogPage findAll(
-      String query,
-      CatalogSource source,
-      CatalogPackageKind kind,
-      int page,
-      int size
-  );
+  /** Queries normalized catalog entries using declared fields and bounded paging. */
+  AiCatalogPage query(
+      java.util.Map<String, String> filters, org.springframework.data.domain.Pageable pageable);
 
-  /**
-   * Returns the durable official Registry synchronization state.
-   */
+  /** Returns the current workspace's catalog query capabilities. */
+  java.util.Map<String, Object> querySchema();
+
+  /** Pages a normalized mixed-source catalog in the current scope. */
+  AiCatalogPage findAll(
+      String query, CatalogSource source, CatalogPackageKind kind, int page, int size);
+
+  /** Returns the durable official Registry synchronization state. */
   AiCatalogSyncState getOfficialSyncState();
 
-  /**
-   * Performs one bounded official Registry synchronization pass.
-   */
+  /** Performs one bounded official Registry synchronization pass. */
   AiCatalogSyncResult syncOfficialRegistry();
 
-  /**
-   * Imports one safe official MCP Server into the current scope.
-   */
-  AiMcpServerDefinition importOfficialMcpServer(
-      String entryId,
-      AiCatalogImportRequest request
-  );
+  /** Imports one safe official MCP Server into the current scope. */
+  AiMcpServerDefinition importOfficialMcpServer(String entryId, AiCatalogImportRequest request);
 
   /** Imports one official package as an editable Runtime Profile draft. */
   RuntimeMcpProfileImportResult importOfficialMcpPackage(
-      String entryId,
-      AiCatalogRuntimeImportRequest request
-  );
+      String entryId, AiCatalogRuntimeImportRequest request);
 }

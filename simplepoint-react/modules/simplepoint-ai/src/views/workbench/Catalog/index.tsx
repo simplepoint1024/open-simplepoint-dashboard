@@ -1,5 +1,6 @@
 import api from '@/api';
 import DataTable, {type DataTableProps} from '@simplepoint/components/DataTable';
+import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
 import TableActions from '@simplepoint/components/Table/Actions';
 import {get, post, useData} from '@simplepoint/shared/api/methods';
 import {getQueryScopeSnapshot, scopedQueryKey} from '@simplepoint/shared/api/queryScope';
@@ -7,10 +8,9 @@ import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
 import {useQueryClient} from '@tanstack/react-query';
-import {Alert, App, Input, Modal, Select, Space, Spin, Tag, Typography} from 'antd';
+import {Alert, App, Modal, Space, Spin, Tag, Typography} from 'antd';
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {canImport, catalogLink, catalogParameters, type CatalogItem, type CatalogKind, type CatalogPage,
-  type CatalogPermissions, type CatalogSource, type ImportOperation} from './model';
+import {canImport, catalogLink, type CatalogItem, type CatalogPermissions, type ImportOperation} from './model';
 import {resolveCatalogItemStatus, resolveCatalogOperationError, resolveCatalogSyncMode, resolveCatalogSyncNotice,
   resolveCatalogSyncStatus} from './syncErrorCodes';
 
@@ -28,23 +28,17 @@ export default function Catalog() {
 function CatalogSession() {
   const {t, ensure, locale} = useI18n(), {message} = App.useApp(), selected = usePageSelected();
   const scope = useQueryScope(), scopeKey = JSON.stringify(scope), client = useQueryClient();
-  const [page, setPage] = useState(0), [size, setSize] = useState(20), [draftQuery, setDraftQuery] = useState(''), [query, setQuery] = useState('');
-  const [source, setSource] = useState<CatalogSource>(), [kind, setKind] = useState<CatalogKind>();
   const [target, setTarget] = useState<ImportTarget>(), targetRef = useRef<ImportTarget | undefined>(undefined);
   const [busy, setBusy] = useState(false), [writeError, setWriteError] = useState('');
   const [receipt, setReceipt] = useState<Imported>();
   const flight = useRef(false), alive = useRef(true), controller = useRef<AbortController | undefined>(undefined);
-  const params = useMemo(() => catalogParameters(page, size, query, source, kind), [page, size, query, source, kind]);
-  const catalog = useData([config.baseUrl, params], ({signal}) => get<CatalogPage>(config.baseUrl, params, {signal}), {retry: false});
+  const catalog = useRemoteList<CatalogItem>(config.baseUrl, selected);
   const syncState = useData([config.syncStatusUrl], ({signal}) => get<SyncState>(config.syncStatusUrl, {}, {signal}), {retry: false});
   const permissions = useData([config.permissionsUrl], ({signal}) => get<CatalogPermissions>(config.permissionsUrl, {}, {signal}), {retry: false});
-  const locked = busy || !!target, writable = selected && !catalog.isFetching && !catalog.error && !permissions.error && !!permissions.data;
+  const locked = busy || !!target, writable = selected && !catalog.tableProps.loading && !catalog.error && !permissions.error && !!permissions.data;
   usePageRetention(false, locked);
   useEffect(() => {void ensure(config.i18nNamespaces);}, [ensure, locale]);
   useEffect(() => {alive.current = true; return () => {alive.current = false; controller.current?.abort();};}, []);
-  useEffect(() => {
-    if (catalog.data && !catalog.isFetching && page > 0 && page >= catalog.data.totalPages) setPage(Math.max(0, catalog.data.totalPages - 1));
-  }, [catalog.data, catalog.isFetching, page]);
   const current = () => alive.current && scopeKey === getQueryScopeSnapshot();
   const operationError = (error: unknown, key: string, fallback: string) => {
     const descriptor = resolveCatalogOperationError(error, {key, fallback}); return t(descriptor.key, descriptor.fallback);
@@ -88,9 +82,9 @@ function CatalogSession() {
     } finally {flight.current = false; if (current()) setBusy(false); if (controller.current === request) controller.current = undefined;}
   };
   const columns = useMemo<DataTableProps<CatalogItem>['columns']>(() => [
-    {title: t('ai.catalog.column.package', '扩展'), key: 'package', render: (_, item) => <Space orientation="vertical" size={2}>
-      <Text strong>{item.title || item.code || item.registryName || '—'}</Text>
-      <Text type="secondary" ellipsis style={{maxWidth: 480}}>{item.description || '—'}</Text></Space>},
+    {title: t('ai.catalog.column.package', '扩展'), key: 'title', dataIndex: 'title', width: 260,
+      render: (value: string) => <Text strong>{value || '—'}</Text>},
+    {title: t('ai.catalog.column.description', '说明'), dataIndex: 'description', width: 320, ellipsis: true},
     {title: t('ai.catalog.column.source', '来源'), dataIndex: 'source', width: 150, render: value => <Tag color={value === 'OFFICIAL_MCP' ? 'blue' : 'default'}>
       {value === 'OFFICIAL_MCP' ? t('ai.catalog.source.official', '官方 MCP Registry') : t('ai.catalog.source.internal', '内部')}</Tag>},
     {title: t('ai.catalog.column.kind', '类型'), dataIndex: 'kind', width: 120, render: () => <Tag color="cyan">MCP Server</Tag>},
@@ -128,25 +122,13 @@ function CatalogSession() {
     {syncState.error && <Alert type="error" showIcon title={t('ai.catalog.error.syncStatus', '同步状态加载失败')}
       action={retry('syncState', () => {void syncState.refetch();})}/>}
     {catalog.error && <Alert type="error" showIcon title={operationError(catalog.error, 'ai.catalog.error.load', '扩展市场加载失败')}
-      action={retry('catalog', () => {void catalog.refetch();})}/>}
+      action={retry('catalog', catalog.retry)}/>}
     {writeError && !target && <Alert type="error" showIcon title={writeError}/>}
     {receipt?.id && <Alert type="success" showIcon title={t('ai.catalog.import.receipt', '已创建草稿')}
       description={<Space wrap><Text>{receipt.name || receipt.code || '—'}</Text><Text code>{receipt.id}</Text></Space>}/>}
-    <DataTable<CatalogItem> storageKey={config.name} rowKey="id" loading={catalog.isFetching || permissions.isPending}
-      columns={columns} dataSource={catalog.data?.content ?? []} refresh={() => {if (!locked) void catalog.refetch();}} scroll={{x: 1100}}
-      toolbarExtra={<Space wrap><Input.Search allowClear maxLength={200} value={draftQuery} disabled={locked}
-        placeholder={t('ai.catalog.search.placeholder', '搜索名称、编码或说明')} onChange={event => setDraftQuery(event.target.value)}
-        onSearch={value => {if (locked) return; const next = value.trim(); setQuery(next); setPage(0);
-          if (next === query && page === 0) void catalog.refetch();}} style={{width: 320}}/>
-        <Select allowClear value={source} disabled={locked} placeholder={t('ai.catalog.filter.source', '全部来源')}
-          onChange={value => {setSource(value); setPage(0);}} style={{width: 190}} options={[
-            {value: 'INTERNAL', label: t('ai.catalog.source.internal', '内部')}, {value: 'OFFICIAL_MCP', label: t('ai.catalog.source.official', '官方 MCP Registry')},
-          ]}/>
-        <Select allowClear value={kind} disabled={locked} placeholder={t('ai.catalog.filter.kind', '全部类型')}
-          onChange={value => {setKind(value); setPage(0);}} style={{width: 160}} options={[{value: 'MCP_SERVER', label: 'MCP Server'}]}/>
-      </Space>}
-      pagination={{current: page + 1, pageSize: size, total: catalog.data?.totalElements ?? 0, showSizeChanger: true, disabled: locked,
-        onChange: (nextPage, nextSize) => {if (locked) return; setPage(nextSize === size ? nextPage - 1 : 0); setSize(nextSize);}}}/>
+    <DataTable<CatalogItem> {...catalog.tableProps} storageKey={config.name} rowKey="id" loading={!!catalog.tableProps.loading || permissions.isPending}
+      columns={catalog.columns(columns ?? [])} refresh={() => {if (!locked) void catalog.refresh();}} scroll={{x: 1400}}
+      pagination={catalog.tableProps.pagination === false ? false : {...catalog.tableProps.pagination, disabled: locked}}/>
     <Modal wrapClassName="catalog-import" open={!!target && selected} title={target?.operation === 'runtime'
       ? t('ai.catalog.action.importRuntime', '导入运行草稿') : t('ai.catalog.import.title', '导入 MCP Server')}
       onCancel={cancel} closable={!busy} maskClosable={!busy} keyboard={!busy} destroyOnHidden

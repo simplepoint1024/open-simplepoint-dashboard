@@ -11,14 +11,15 @@ import lombok.Setter;
 
 /** Platform projection binding a Flowable instance to its immutable business version. */
 @Entity
-@Table(name = "simpoint_workflow_instances", indexes = {
-    @Index(name = "idx_workflow_instance_tenant_started",
-        columnList = "tenant_id,started_at"),
-    @Index(name = "idx_workflow_instance_starter_started",
-        columnList = "tenant_id,starter_id,started_at"),
-    @Index(name = "idx_workflow_instance_business_key",
-        columnList = "tenant_id,business_key")
-})
+@Table(
+    name = "simpoint_workflow_instances",
+    indexes = {
+      @Index(name = "idx_workflow_instance_tenant_started", columnList = "tenant_id,started_at"),
+      @Index(
+          name = "idx_workflow_instance_starter_started",
+          columnList = "tenant_id,starter_id,started_at"),
+      @Index(name = "idx_workflow_instance_business_key", columnList = "tenant_id,business_key")
+    })
 @Getter
 @Setter
 public class WorkflowInstanceEntity {
@@ -35,6 +36,9 @@ public class WorkflowInstanceEntity {
 
   @Column(name = "definition_version_id", length = 36, nullable = false, updatable = false)
   private String definitionVersionId;
+
+  @Column(name = "previous_instance_id", length = 64, unique = true, updatable = false)
+  private String previousInstanceId;
 
   @Column(name = "definition_key", length = 80, nullable = false, updatable = false)
   private String definitionKey;

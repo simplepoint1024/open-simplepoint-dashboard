@@ -74,6 +74,12 @@ CREATE INDEX IF NOT EXISTS idx_workflow_instance_starter_started
 CREATE INDEX IF NOT EXISTS idx_workflow_instance_business_key
   ON simpoint_workflow_instances (tenant_id, business_key);
 
+-- Resubmission is a new instance, never an update of the original decision history.
+ALTER TABLE simpoint_workflow_instances ADD COLUMN IF NOT EXISTS previous_instance_id VARCHAR(64)
+  REFERENCES simpoint_workflow_instances(process_instance_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_workflow_instance_successor
+  ON simpoint_workflow_instances (previous_instance_id);
+
 CREATE TABLE IF NOT EXISTS simpoint_workflow_instance_watchers (
   id VARCHAR(36) PRIMARY KEY,
   tenant_id VARCHAR(64) NOT NULL,
@@ -103,3 +109,39 @@ CREATE TABLE IF NOT EXISTS simpoint_workflow_notification_outbox (
 );
 CREATE INDEX IF NOT EXISTS idx_workflow_outbox_delivery
   ON simpoint_workflow_notification_outbox (status, next_attempt_at);
+
+-- Business outcomes are independent of engine completion/deletion reasons. Never backfill
+-- an unrecorded historical actor or approval decision from an instance's final status.
+CREATE TABLE IF NOT EXISTS simpoint_workflow_actions (
+  id VARCHAR(36) PRIMARY KEY,
+  tenant_id VARCHAR(64) NOT NULL,
+  process_instance_id VARCHAR(64) NOT NULL REFERENCES simpoint_workflow_instances(process_instance_id),
+  task_id VARCHAR(64),
+  task_definition_key VARCHAR(255),
+  decision_task_id VARCHAR(64),
+  terminal_instance_id VARCHAR(64),
+  action_type VARCHAR(20) NOT NULL,
+  actor_id VARCHAR(64) NOT NULL,
+  comment VARCHAR(2000),
+  occurred_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  CONSTRAINT uk_workflow_action_task_decision UNIQUE (decision_task_id),
+  CONSTRAINT uk_workflow_action_instance_terminal UNIQUE (terminal_instance_id)
+);
+CREATE INDEX IF NOT EXISTS idx_workflow_action_actor_time
+  ON simpoint_workflow_actions (tenant_id, actor_id, occurred_at);
+CREATE INDEX IF NOT EXISTS idx_workflow_action_instance_time
+  ON simpoint_workflow_actions (tenant_id, process_instance_id, occurred_at);
+
+-- Engine callbacks append here in the native transaction. Consumers take platform locks only
+-- after that transaction commits, avoiding engine/platform lock-order inversion.
+CREATE TABLE IF NOT EXISTS simpoint_workflow_engine_signals (
+  id VARCHAR(36) PRIMARY KEY,
+  process_instance_id VARCHAR(64) NOT NULL,
+  event_type VARCHAR(80) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  next_attempt_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_error VARCHAR(1000)
+);
+CREATE INDEX IF NOT EXISTS idx_workflow_signal_ready
+  ON simpoint_workflow_engine_signals (next_attempt_at, created_at);

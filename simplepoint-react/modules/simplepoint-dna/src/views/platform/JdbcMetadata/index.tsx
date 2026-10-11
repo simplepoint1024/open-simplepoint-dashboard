@@ -293,6 +293,9 @@ function MetadataSession({source, permissions, onLock}: {source: JdbcSourceOptio
                 {preview.error && <Alert type="error" showIcon title={resolveApiErrorMessage(preview.error, t('dna.metadata.page.error.loadPreview', 'Failed to load data preview.'))}
                   action={retry(() => void preview.refetch())}/>}
                 <DataTable<Record<string, unknown>> rowKey={(_row, index) => previewPage.number + '-' + index}
+                  data-query-exception="external-database-preview"
+                  toolbarExtra={<Typography.Text type="secondary">{t('dna.metadata.page.preview.queryScope',
+                    '外部数据库分页预览，不提供表头筛选或排序；全量条件查询请使用 SQL 工作台。')}</Typography.Text>}
                   loading={preview.isFetching} dataSource={preview.error ? [] : preview.data?.content ?? []}
                   columns={preview.data?.columns?.map(name => ({key: name, dataIndex: [name], title: name, width: 180, ellipsis: true,
                     render: value => value == null ? '—' : typeof value === 'object' ? JSON.stringify(value) : String(value)})) ?? []}

@@ -23,9 +23,7 @@ public class WorkflowNotificationOutboxDispatcher {
 
   /** Creates the outbox dispatcher. */
   public WorkflowNotificationOutboxDispatcher(
-      final EntityManager entityManager,
-      final NotificationDeliveryService deliveryService
-  ) {
+      final EntityManager entityManager, final NotificationDeliveryService deliveryService) {
     this.entityManager = entityManager;
     this.deliveryService = deliveryService;
   }
@@ -35,23 +33,32 @@ public class WorkflowNotificationOutboxDispatcher {
   @Transactional
   public void dispatch() {
     Instant now = Instant.now();
-    List<WorkflowNotificationOutboxEntity> batch = entityManager.createQuery(
-            "select o from WorkflowNotificationOutboxEntity o"
-                + " where o.status <> 'SENT' and o.nextAttemptAt <= :now"
-                + " order by o.createdAt asc",
-            WorkflowNotificationOutboxEntity.class
-        ).setParameter("now", now)
-        .setMaxResults(50)
-        .getResultList();
+    List<WorkflowNotificationOutboxEntity> batch =
+        entityManager
+            .createQuery(
+                "select o from WorkflowNotificationOutboxEntity o"
+                    + " where o.status <> 'SENT' and o.nextAttemptAt <= :now"
+                    + " order by o.createdAt asc",
+                WorkflowNotificationOutboxEntity.class)
+            .setParameter("now", now)
+            .setMaxResults(50)
+            .getResultList();
     batch.forEach(this::deliver);
   }
 
   private void deliver(final WorkflowNotificationOutboxEntity item) {
     try {
-      deliveryService.deliver(new NotificationDeliveryCommand(
-          "workflow", item.getEventKey(), item.getTargetUserId(), item.getTitle(),
-          item.getContent(), item.getLinkUrl(), NotificationPriority.NORMAL, null
-      ));
+      deliveryService.deliver(
+          new NotificationDeliveryCommand(
+              "workflow",
+              item.getEventKey(),
+              item.getTargetUserId(),
+              item.getTitle(),
+              item.getContent(),
+              item.getLinkUrl(),
+              NotificationPriority.NORMAL,
+              null,
+              item.getTenantId()));
       item.setStatus("SENT");
       item.setSentAt(Instant.now());
       item.setLastError(null);
@@ -60,8 +67,10 @@ public class WorkflowNotificationOutboxDispatcher {
       item.setAttempts(attempts);
       item.setStatus("RETRY");
       item.setNextAttemptAt(Instant.now().plus(backoff(attempts)));
-      String message = exception.getMessage() == null
-          ? exception.getClass().getSimpleName() : exception.getMessage();
+      String message =
+          exception.getMessage() == null
+              ? exception.getClass().getSimpleName()
+              : exception.getMessage();
       item.setLastError(message.substring(0, Math.min(message.length(), MAX_ERROR_LENGTH)));
     }
   }

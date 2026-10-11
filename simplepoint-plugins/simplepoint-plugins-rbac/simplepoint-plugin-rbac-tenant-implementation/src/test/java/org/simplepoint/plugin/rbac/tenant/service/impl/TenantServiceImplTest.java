@@ -48,29 +48,21 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @ExtendWith(MockitoExtension.class)
 class TenantServiceImplTest {
 
-  @Mock
-  TenantRepository repository;
+  @Mock TenantRepository repository;
 
-  @Mock
-  DetailsProviderService detailsProviderService;
+  @Mock DetailsProviderService detailsProviderService;
 
-  @Mock
-  TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
+  @Mock TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
 
-  @Mock
-  TenantUserRelevanceRepository tenantUserRelevanceRepository;
+  @Mock TenantUserRelevanceRepository tenantUserRelevanceRepository;
 
-  @Mock
-  ResourceAuthorizationVersionService resourceAuthorizationVersionService;
+  @Mock ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
-  @Mock
-  UsersService usersService;
+  @Mock UsersService usersService;
 
-  @Mock
-  TenantUserCandidateQuery userCandidateQuery;
+  @Mock TenantUserCandidateQuery userCandidateQuery;
 
-  @InjectMocks
-  TenantServiceImpl service;
+  @InjectMocks TenantServiceImpl service;
 
   @AfterEach
   void clearSecurityContext() {
@@ -132,7 +124,8 @@ class TenantServiceImplTest {
 
     Set<NamedTenantVo> result = service.getCurrentUserTenants();
 
-    assertThat(result).containsExactly(new NamedTenantVo("t-personal", "user1 的个人空间", TenantType.PERSONAL));
+    assertThat(result)
+        .containsExactly(new NamedTenantVo("t-personal", "user1 的个人空间", TenantType.PERSONAL));
     verify(repository).save(any(Tenant.class));
     verify(tenantUserRelevanceRepository).saveAll(any(Collection.class));
   }
@@ -150,10 +143,10 @@ class TenantServiceImplTest {
 
     Set<NamedTenantVo> result = service.getCurrentUserTenants();
 
-    assertThat(result).containsExactly(
-        new NamedTenantVo("__platform__", "平台工作台", TenantContextType.PLATFORM),
-        new NamedTenantVo("personal-admin", "admin 的个人空间", TenantType.PERSONAL)
-    );
+    assertThat(result)
+        .containsExactly(
+            new NamedTenantVo("__platform__", "平台工作台", TenantContextType.PLATFORM),
+            new NamedTenantVo("personal-admin", "admin 的个人空间", TenantType.PERSONAL));
   }
 
   // ── calculateAuthorizationContextId ──────────────────────────────────────────
@@ -161,19 +154,19 @@ class TenantServiceImplTest {
   @Test
   void getCurrentUserRoles_returnsTenantAndGlobalRoles() {
     setAuthentication("user1");
-    RoleGrantedAuthority tenantRole = new RoleGrantedAuthority(
-        "role-tenant", "租户角色", "ROLE_TENANT"
-    );
-    RoleGrantedAuthority globalRole = new RoleGrantedAuthority(
-        "role-global", "全局角色", "ROLE_GLOBAL"
-    );
+    RoleGrantedAuthority tenantRole =
+        new RoleGrantedAuthority("role-tenant", "租户角色", "ROLE_TENANT");
+    RoleGrantedAuthority globalRole =
+        new RoleGrantedAuthority("role-global", "全局角色", "ROLE_GLOBAL");
     when(repository.hasUser("tenant1", "user1")).thenReturn(true);
     when(usersService.loadRolesByUserId("tenant1", "user1")).thenReturn(List.of(tenantRole));
     when(usersService.loadRolesByUserId(null, "user1")).thenReturn(List.of(globalRole));
 
     Collection<RoleGrantedAuthority> result = service.getCurrentUserRoles("tenant1");
 
-    assertThat(result).extracting(RoleGrantedAuthority::getId).containsExactly("role-tenant", "role-global");
+    assertThat(result)
+        .extracting(RoleGrantedAuthority::getId)
+        .containsExactly("role-tenant", "role-global");
     assertThat(result).extracting(RoleGrantedAuthority::getName).containsExactly("租户角色", "全局角色");
   }
 
@@ -358,7 +351,8 @@ class TenantServiceImplTest {
     tenant.setOwnerId("owner1");
     Pageable pageable = Pageable.ofSize(10);
     when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(userCandidateQuery.list(tenant, null, java.util.Map.of(), pageable)).thenReturn(new PageImpl<>(List.of()));
+    when(userCandidateQuery.list(tenant, null, java.util.Map.of(), pageable))
+        .thenReturn(new PageImpl<>(List.of()));
 
     var result = service.userItems("tenant1", pageable);
 
@@ -422,15 +416,11 @@ class TenantServiceImplTest {
     tenant.setId("tenant1");
     tenant.setOwnerId("owner1");
     when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(repository.resolveActiveUserIds(
-        "tenant1",
-        Set.of("owner1", "user1", "user2", "unknown")
-    )).thenReturn(List.of("owner1", "user1"));
+    when(repository.resolveActiveUserIds("tenant1", Set.of("owner1", "user1", "user2", "unknown")))
+        .thenReturn(List.of("owner1", "user1"));
 
-    Collection<String> result = service.resolveActiveMemberIds(
-        "tenant1",
-        List.of("owner1", "user1", "user2", "unknown")
-    );
+    Collection<String> result =
+        service.resolveActiveMemberIds("tenant1", List.of("owner1", "user1", "user2", "unknown"));
 
     assertThat(result).containsExactlyInAnyOrder("owner1", "user1");
   }
@@ -458,11 +448,42 @@ class TenantServiceImplTest {
         .thenReturn(List.of("approver"));
     assertThat(service.resolveActiveRoleAuthorities("tenant1", List.of("approver", "foreign")))
         .containsExactly("approver");
-    assertThatThrownBy(() -> service.resolveActiveRoleAuthorities("tenant1", java.util.stream.IntStream.range(0, 51)
-        .mapToObj(index -> "role" + index).toList())).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(
+            () ->
+                service.resolveActiveRoleAuthorities(
+                    "tenant1",
+                    java.util.stream.IntStream.range(0, 51)
+                        .mapToObj(index -> "role" + index)
+                        .toList()))
+        .isInstanceOf(IllegalArgumentException.class);
     setAuthentication("outsider");
     when(repository.resolveActiveUserIds("tenant1", Set.of("outsider"))).thenReturn(List.of());
     assertThatThrownBy(() -> service.resolveActiveRoleAuthorities("tenant1", List.of("approver")))
+        .isInstanceOf(AccessDeniedException.class);
+  }
+
+  @Test
+  void roleNotificationRecipientsRequireInternalAuthorityAndUseBoundedKeysetPaging() {
+    setServiceRouterAuthentication();
+    Tenant tenant = new Tenant();
+    tenant.setId("tenant1");
+    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
+    var page = org.springframework.data.domain.PageRequest.of(0, 200);
+    when(repository.resolveActiveRoleMemberIds("tenant1", Set.of("approver"), "user1", page))
+        .thenReturn(List.of("user2"));
+    assertThat(service.resolveActiveRoleMemberIds("tenant1", List.of("approver"), "user1", 200))
+        .containsExactly("user2");
+    assertThatThrownBy(
+            () -> service.resolveActiveRoleMemberIds("tenant1", List.of("approver"), null, 201))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(
+            () ->
+                service.resolveActiveRoleMemberIds(
+                    "tenant1", List.of("approver"), "x".repeat(65), 20))
+        .isInstanceOf(IllegalArgumentException.class);
+    setAuthentication("member");
+    assertThatThrownBy(
+            () -> service.resolveActiveRoleMemberIds("tenant1", List.of("approver"), null, 20))
         .isInstanceOf(AccessDeniedException.class);
   }
 
@@ -617,8 +638,10 @@ class TenantServiceImplTest {
     tenant.setId("tenant1");
     tenant.setOwnerId("admin");
     when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(tenantUserRelevanceRepository.findAllByTenantIdAndUserIdIn("tenant1", Set.of("user2"))).thenReturn(List.of());
-    when(tenantUserRelevanceRepository.existingUserIds(Set.of("user2"))).thenReturn(Set.of("user2"));
+    when(tenantUserRelevanceRepository.findAllByTenantIdAndUserIdIn("tenant1", Set.of("user2")))
+        .thenReturn(List.of());
+    when(tenantUserRelevanceRepository.existingUserIds(Set.of("user2")))
+        .thenReturn(Set.of("user2"));
 
     TenantUserRelevance rel = new TenantUserRelevance();
     when(tenantUserRelevanceRepository.saveAll(any())).thenReturn(List.of(rel));
@@ -644,7 +667,8 @@ class TenantServiceImplTest {
     currentMember.setUserId("user2");
     when(tenantUserRelevanceRepository.findAllByTenantIdAndUserIdIn("tenant1", Set.of("user2")))
         .thenReturn(List.of(currentMember));
-    when(tenantUserRelevanceRepository.existingUserIds(Set.of("user2"))).thenReturn(Set.of("user2"));
+    when(tenantUserRelevanceRepository.existingUserIds(Set.of("user2")))
+        .thenReturn(Set.of("user2"));
 
     Collection<TenantUserRelevance> result = service.authorizeUsers(dto);
 
@@ -720,7 +744,8 @@ class TenantServiceImplTest {
     setAdminRole();
     final Tenant entity = new Tenant();
 
-    when(tenantUserRelevanceRepository.existingUserIds(Set.of("admin"))).thenReturn(Set.of("admin"));
+    when(tenantUserRelevanceRepository.existingUserIds(Set.of("admin")))
+        .thenReturn(Set.of("admin"));
     Tenant saved = new Tenant();
     saved.setId("t-new");
     saved.setOwnerId("admin");
@@ -753,8 +778,7 @@ class TenantServiceImplTest {
     Tenant entity = new Tenant();
     entity.setId("t1");
 
-    assertThatThrownBy(() -> service.modifyById(entity))
-        .isInstanceOf(Exception.class);
+    assertThatThrownBy(() -> service.modifyById(entity)).isInstanceOf(Exception.class);
   }
 
   @Test
@@ -784,7 +808,8 @@ class TenantServiceImplTest {
     entity.setOwnerId("owner1");
     entity.setAuthorizationVersion(null);
 
-    when(tenantUserRelevanceRepository.existingUserIds(Set.of("owner1"))).thenReturn(Set.of("owner1"));
+    when(tenantUserRelevanceRepository.existingUserIds(Set.of("owner1")))
+        .thenReturn(Set.of("owner1"));
     when(repository.updateById(any())).thenAnswer(inv -> inv.getArgument(0));
     when(tenantUserRelevanceRepository.authorized("t1")).thenReturn(List.of("owner1"));
 
@@ -804,7 +829,8 @@ class TenantServiceImplTest {
     current.setTenantType(TenantType.ORGANIZATION);
     when(repository.findById("t1")).thenReturn(Optional.of(current));
     when(repository.hasUser("t1", "owner1")).thenReturn(true);
-    when(repository.updateById(any(Tenant.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(repository.updateById(any(Tenant.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
     org.simplepoint.security.entity.User owner = new org.simplepoint.security.entity.User();
     owner.setId("owner1");
     owner.setName("张三");
@@ -887,8 +913,7 @@ class TenantServiceImplTest {
   }
 
   private void setAdminRole() {
-    SimpleGrantedAuthority adminAuthority =
-        new SimpleGrantedAuthority("ROLE_Administrator");
+    SimpleGrantedAuthority adminAuthority = new SimpleGrantedAuthority("ROLE_Administrator");
     UsernamePasswordAuthenticationToken auth =
         new UsernamePasswordAuthenticationToken("admin", null, List.of(adminAuthority));
     SecurityContextHolder.getContext().setAuthentication(auth);
@@ -899,18 +924,14 @@ class TenantServiceImplTest {
         new SimpleGrantedAuthority("SCOPE_service-router.invoke");
     UsernamePasswordAuthenticationToken auth =
         new UsernamePasswordAuthenticationToken(
-            "simplepoint-service-workflow",
-            null,
-            List.of(serviceRouterAuthority)
-        );
+            "simplepoint-service-workflow", null, List.of(serviceRouterAuthority));
     SecurityContextHolder.getContext().setAuthentication(auth);
   }
 
   private void setTenantContext(String tenantId, String userId) {
     MockHttpServletRequest request = new MockHttpServletRequest();
     org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
-        new ServletRequestAttributes(request)
-    );
+        new ServletRequestAttributes(request));
     AuthorizationContext context = new AuthorizationContext();
     context.setUserId(userId);
     context.setAttributes(java.util.Map.of("X-Tenant-Id", tenantId));

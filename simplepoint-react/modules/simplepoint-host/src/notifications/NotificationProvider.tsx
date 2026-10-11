@@ -6,6 +6,7 @@ import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {getQueryScopeSnapshot, scopedQueryKey} from '@simplepoint/shared/api/queryScope';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {normalizePage, type Page} from '@simplepoint/shared/types/request';
+import {personalApi, type PersonalOverview} from '@simplepoint/shared/personal/models';
 import {useI18n} from '@/layouts/i18n/useI18n';
 import {consumeNotificationStream} from './stream';
 import type {InboxNotification} from './models';
@@ -33,7 +34,7 @@ export function NotificationProvider({enabled, children}: {enabled: boolean; chi
   const unread = useData<{count: number}>(['notifications', 'unread'], ({signal}) => get(`${BASE}/unread-count`, undefined, {signal}), {
     enabled, staleTime: 30_000, refetchInterval: 60_000, retry: 1,
   });
-  useEffect(() => { void ensure(['common', 'notifications', 'host-dashboard']); }, [ensure, locale]);
+  useEffect(() => { void ensure(['common', 'notifications', 'host-dashboard', 'personal']); }, [ensure, locale]);
   useLayoutEffect(() => {
     controllerRef.current?.abort(); controllerRef.current = null; busyRef.current = false;
     setBusy(false); setOpen(false);
@@ -90,5 +91,14 @@ export function useNotificationInbox(active: boolean, page = 0) {
   return useData<Page<InboxNotification>>(['notifications', 'inbox', page], async ({signal}) =>
     normalizePage(await get(`${BASE}/inbox`, {page, size: 20}, {signal}), 20), {
     enabled: enabled && active, staleTime: 30_000, refetchInterval: active ? 60_000 : false, retry: 1,
+  });
+}
+
+/** Same cache/read state as My Messages and the homepage; never copy workflow messages here. */
+export function usePersonalMessageSummary() {
+  const {enabled} = useNotifications();
+  return useData<PersonalOverview>(['personal', 'overview'], ({signal}) =>
+    get(`${personalApi}/overview`, undefined, {signal}), {
+    enabled, staleTime: 30_000, refetchInterval: 60_000, retry: 1,
   });
 }

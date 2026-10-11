@@ -1,5 +1,8 @@
 import {setTimeout as delay} from 'node:timers/promises';
 import {readFileSync} from 'node:fs';
+import {fixtureSchema, fixturePage} from './query-fixture.mjs';
+const fields = {name: {type: 'string'}, code: {type: 'string'}, type: {type: 'string'},
+  origin: {type: 'string', enum: ['PLATFORM', 'TENANT']}, enabled: {type: 'boolean'}, sort: {type: 'integer'}};
 export const tenantResourceRoutes = JSON.parse(readFileSync(new URL('./tenant-resource-contracts/navigation.json', import.meta.url), 'utf8'));
 export function createTenantResourceFixture() {
   const tenantId = 'tenant-resource-test', rows = Array.from({length: 521}, (_, i) => ({id: `real-resource-${i}`, platformResourceId: `real-resource-${i}`,
@@ -20,6 +23,7 @@ export function createTenantResourceFixture() {
       if (!url.pathname.startsWith(base) && url.pathname !== '/common/tenants/current-profile') return false;
       if (req.headers['x-tenant-id'] !== tenantId) throw Error('Tenant resource request lost its captured workspace');
       state.requests.push({path: url.pathname, query: new URLSearchParams(url.search), method: req.method});
+      if (url.pathname === base + '/schema') return respond(fixtureSchema(fields)), true;
       let body;
       if (['POST', 'PUT'].includes(req.method)) {
         const chunks = []; for await (const chunk of req) chunks.push(chunk);
@@ -58,6 +62,8 @@ export function createTenantResourceFixture() {
       else if (url.searchParams.get('rootsOnly') === 'true') result = rows.filter(row => !row.parentId);
       const selected = url.searchParams.get('selectedId'), keyword = (url.searchParams.get('keyword') ?? '').toLowerCase();
       result = result.filter(row => (!selected || row.id === selected) && (!keyword || row.name.toLowerCase().includes(keyword) || row.code.includes(keyword)));
+      if (url.pathname === base) return respond(fixturePage(result.map(row => ({...row, origin: row.platformResourceId ? 'PLATFORM' : 'TENANT'})),
+        fields, url, ['parentId', 'rootsOnly', 'keyword'])), true;
       const page = Number(url.searchParams.get('page') ?? 0), size = Number(url.searchParams.get('size') ?? 20);
       if (size > 20) throw Error('Unbounded tenant resource browser read');
       respond({content: result.slice(page * size, (page + 1) * size), page: {number: page, size, totalElements: result.length, totalPages: Math.ceil(result.length / size)}}); return true;

@@ -1,0 +1,44 @@
+.workflow-personal-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.workflow-task-editor .ant-drawer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workflow-node-history { margin-top: 20px; }
+.workflow-node-comment { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.workflow-progress-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, .66fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.workflow-progress-layout > .workflow-node-history {
+  min-width: 0;
+  margin-top: 0;
+  max-height: clamp(360px, 58vh, 520px);
+  overflow: auto;
+  padding-inline-start: 16px;
+  border-inline-start: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+}
+
+.workflow-event-heading { display: flex; margin-bottom: 8px; }
+
+@media (max-width: 900px) {
+  .workflow-progress-layout { grid-template-columns: minmax(0, 1fr); }
+  .workflow-progress-layout > .workflow-node-history {
+    grid-row: 1;
+    padding-inline-start: 0;
+    border-inline-start: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  }
+}

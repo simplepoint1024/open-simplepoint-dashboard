@@ -3,18 +3,26 @@ package org.simplepoint.app.catalog.service;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.simplepoint.app.catalog.entity.WorkspaceApplication;
 import org.simplepoint.app.catalog.entity.WorkspaceApplicationPage;
+import org.simplepoint.app.catalog.entity.WorkspaceApplicationReadModel;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.AuthorizationScopeType;
+import org.simplepoint.core.query.QueryCapabilities;
+import org.simplepoint.core.query.QueryField;
+import org.simplepoint.core.query.TableQuery;
+import org.simplepoint.core.schema.ProjectionTableSchema;
+import org.simplepoint.data.jpa.ProjectionPages;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -27,98 +35,162 @@ import org.springframework.web.server.ResponseStatusException;
 public class WorkspaceApplicationCatalog {
   private final EntityManager em;
 
+  /** Creates the transaction-scoped application catalog. */
   public WorkspaceApplicationCatalog(EntityManager em) {
     this.em = em;
   }
 
+  /** Input for an application and its required main page. */
   public record CreateApplication(String name, String description, String mainPageName) {}
 
+  /** Input for an additional application page. */
   public record CreatePage(String name, String description) {}
 
-  public record ApplicationSummary(String id, String name, String description, String icon,
-                                   String status, String mainPageId, String mainPageName,
-                                   long attachedPageCount, String createdBy, Instant createdAt,
-                                   Instant updatedAt) {}
+  /** Scalar list contract including projected page metadata. */
+  @TableQuery(
+      value = {
+        @QueryField("name"),
+        @QueryField("description"),
+        @QueryField("mainPageName"),
+        @QueryField("attachedPageCount"),
+        @QueryField("status"),
+        @QueryField("updatedAt")
+      },
+      maxPageSize = 100)
+  public record ApplicationSummary(
+      String id,
+      String name,
+      String description,
+      String icon,
+      String status,
+      String mainPageId,
+      String mainPageName,
+      long attachedPageCount,
+      String createdBy,
+      Instant createdAt,
+      Instant updatedAt) {}
 
-  public record PageSummary(String id, String name, String description, String kind,
-                            String status, int sortOrder, boolean resourceRegistered,
-                            String runtimePath) {}
+  /** Read-only page directory item. */
+  public record PageSummary(
+      String id,
+      String name,
+      String description,
+      String kind,
+      String status,
+      int sortOrder,
+      boolean resourceRegistered,
+      String runtimePath) {}
 
+  /** Application metadata and its page directory. */
   public record ApplicationDetail(ApplicationSummary application, List<PageSummary> pages) {}
 
+  /** Current actor's creation capabilities. */
   public record Permissions(boolean canCreateApplication, boolean canAddPage) {}
 
+  /** Resolves workspace-bound application and page creation rights. */
   public Permissions permissions() {
     tenantId();
     AuthorizationContext context = AuthorizationContextHolder.getContext();
-    Collection<String> resources = context.getResources() == null ? List.of() : context.getResources();
+    Collection<String> resources =
+        context.getResources() == null ? List.of() : context.getResources();
     boolean administrator = Boolean.TRUE.equals(context.getIsAdministrator());
-    return new Permissions(administrator || resources.contains("app.workbench.apps.create"),
+    return new Permissions(
+        administrator || resources.contains("app.workbench.apps.create"),
         administrator || resources.contains("app.workbench.pages.create"));
   }
 
-  public Page<ApplicationSummary> list(String keyword, int page, int size) {
-    String tenantId = tenantId();
-    int boundedSize = Math.max(1, Math.min(100, size));
-    int boundedPage = Math.max(0, Math.min(page, Integer.MAX_VALUE / boundedSize));
-    String search = keyword == null ? "" : keyword.trim().toLowerCase();
-    if (search.length() > 100) throw badRequest("搜索词不能超过 100 个字符");
-    String condition = "a.tenantId = :tenant and (:search = '' or lower(a.name) like :pattern escape '!'"
-        + " or lower(coalesce(a.description, '')) like :pattern escape '!')";
-    String pattern = "%" + search.replace("!", "!!").replace("%", "!%")
-        .replace("_", "!_") + "%";
-    List<WorkspaceApplication> applications = em.createQuery(
-            "select a from WorkspaceApplication a where " + condition
-                + " order by a.updatedAt desc, a.id desc", WorkspaceApplication.class)
-        .setParameter("tenant", tenantId).setParameter("search", search)
-        .setParameter("pattern", pattern)
-        .setFirstResult(boundedPage * boundedSize).setMaxResults(boundedSize).getResultList();
-    long total = em.createQuery("select count(a) from WorkspaceApplication a where " + condition,
-            Long.class)
-        .setParameter("tenant", tenantId).setParameter("search", search)
-        .setParameter("pattern", pattern).getSingleResult();
-    if (applications.isEmpty()) return new PageImpl<>(List.of(), PageRequest.of(boundedPage, boundedSize), total);
-
-    List<String> appIds = applications.stream().map(WorkspaceApplication::getId).toList();
-    List<String> mainIds = applications.stream().map(WorkspaceApplication::getMainPageId).toList();
-    Map<String, String> mainNames = new HashMap<>();
-    for (WorkspaceApplicationPage main : em.createQuery(
-            "select p from WorkspaceApplicationPage p where p.tenantId = :tenant and p.id in :ids",
-            WorkspaceApplicationPage.class)
-        .setParameter("tenant", tenantId).setParameter("ids", mainIds).getResultList()) {
-      mainNames.put(main.getId(), main.getName());
-    }
-    Map<String, Long> attachedCounts = new HashMap<>();
-    for (Object[] count : em.createQuery(
-            "select p.applicationId, count(p) from WorkspaceApplicationPage p"
-                + " where p.tenantId = :tenant and p.applicationId in :ids and p.kind = 'ATTACHED'"
-                + " group by p.applicationId", Object[].class)
-        .setParameter("tenant", tenantId).setParameter("ids", appIds).getResultList()) {
-      attachedCounts.put((String) count[0], (Long) count[1]);
-    }
-    return new PageImpl<>(applications.stream()
-        .map(app -> summary(app, mainNames.get(app.getMainPageId()),
-            attachedCounts.getOrDefault(app.getId(), 0L))).toList(),
-        PageRequest.of(boundedPage, boundedSize), total);
+  /** Returns readable scalar fields and allowed query operators. */
+  public Map<String, Object> schema() {
+    tenantId();
+    return ProjectionTableSchema.schema(
+        ApplicationSummary.class,
+        "app.application",
+        Map.of(
+            "status",
+            List.of(
+                new ProjectionTableSchema.Choice("DRAFT", "i18n:app.status.draft"),
+                new ProjectionTableSchema.Choice("PUBLISHED", "i18n:app.status.published"))));
   }
 
+  /** Adapts the legacy literal keyword query to bounded pagination. */
+  public Page<ApplicationSummary> list(String keyword, int page, int size) {
+    int boundedSize = Math.max(1, Math.min(100, size));
+    int boundedPage = Math.max(0, Math.min(page, Integer.MAX_VALUE / boundedSize));
+    return list(
+        keyword == null ? Map.of() : Map.of("keyword", keyword),
+        PageRequest.of(boundedPage, boundedSize));
+  }
+
+  /** Queries scoped application metadata before counting and pagination. */
+  public Page<ApplicationSummary> list(Map<String, String> parameters, Pageable page) {
+    String tenantId = tenantId();
+    var filters = new LinkedHashMap<>(parameters == null ? Map.<String, String>of() : parameters);
+    String keyword = filters.remove("keyword");
+    String search = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+    if (search.length() > 100) {
+      throw badRequest("搜索词不能超过 100 个字符");
+    }
+    if (!search.isEmpty()) {
+      QueryCapabilities.require(ApplicationSummary.class, "name", "like", false);
+      QueryCapabilities.require(ApplicationSummary.class, "description", "like", false);
+    }
+    String pattern = "%" + search.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+    return ProjectionPages.query(
+        em,
+        WorkspaceApplicationReadModel.class,
+        ApplicationSummary.class,
+        filters,
+        page,
+        "updatedAt",
+        Set.of("name", "description", "mainPageName"),
+        (cb, criteria, root) ->
+            cb.and(
+                cb.equal(root.get("tenantId"), tenantId),
+                search.isEmpty()
+                    ? cb.conjunction()
+                    : cb.or(
+                        cb.like(cb.lower(root.get("name")), pattern, '!'),
+                        cb.like(cb.lower(root.get("description")), pattern, '!'))),
+        row ->
+            new ApplicationSummary(
+                row.getId(),
+                row.getName(),
+                row.getDescription(),
+                row.getIcon(),
+                row.getStatus(),
+                row.getMainPageId(),
+                row.getMainPageName(),
+                row.getAttachedPageCount(),
+                row.getCreatedBy(),
+                row.getCreatedAt(),
+                row.getUpdatedAt()));
+  }
+
+  /** Loads the tenant-owned application and its page directory. */
   public ApplicationDetail detail(String id) {
     String tenantId = tenantId();
     WorkspaceApplication app = findApplication(tenantId, id);
     List<WorkspaceApplicationPage> pages = pages(tenantId, id);
-    String mainName = pages.stream().filter(p -> p.getId().equals(app.getMainPageId()))
-        .map(WorkspaceApplicationPage::getName).findFirst().orElse("");
+    String mainName =
+        pages.stream()
+            .filter(p -> p.getId().equals(app.getMainPageId()))
+            .map(WorkspaceApplicationPage::getName)
+            .findFirst()
+            .orElse("");
     long attachedCount = pages.stream().filter(p -> "ATTACHED".equals(p.getKind())).count();
-    return new ApplicationDetail(summary(app, mainName, attachedCount),
-        pages.stream().map(this::pageSummary).toList());
+    return new ApplicationDetail(
+        summary(app, mainName, attachedCount), pages.stream().map(this::pageSummary).toList());
   }
 
+  /** Creates an application and main page in one transaction. */
   @Transactional
   public ApplicationDetail create(CreateApplication command) {
     String tenantId = tenantId();
-    if (command == null) throw badRequest("请填写应用信息");
+    if (command == null) {
+      throw badRequest("请填写应用信息");
+    }
     String name = requiredName(command.name(), "应用名称");
-    String mainName = requiredName(command.mainPageName(), "主页面名称");
+    final String mainName = requiredName(command.mainPageName(), "主页面名称");
     String description = description(command.description());
     Instant now = Instant.now();
     String appId = UUID.randomUUID().toString();
@@ -149,18 +221,25 @@ public class WorkspaceApplicationCatalog {
     return new ApplicationDetail(summary(app, mainName, 0), List.of(pageSummary(main)));
   }
 
+  /** Adds a page after verifying ownership and creation rights. */
   @Transactional
   public PageSummary addPage(String applicationId, CreatePage command) {
     String tenantId = tenantId();
-    WorkspaceApplication app = findApplication(tenantId, applicationId);
-    if (command == null) throw badRequest("请填写页面信息");
+    final WorkspaceApplication app = findApplication(tenantId, applicationId);
+    if (command == null) {
+      throw badRequest("请填写页面信息");
+    }
     String name = requiredName(command.name(), "页面名称");
     String description = description(command.description());
-    int nextSort = em.createQuery(
-            "select coalesce(max(p.sortOrder), 0) from WorkspaceApplicationPage p"
-                + " where p.tenantId = :tenant and p.applicationId = :applicationId", Integer.class)
-        .setParameter("tenant", tenantId).setParameter("applicationId", applicationId)
-        .getSingleResult() + 10;
+    int nextSort =
+        em.createQuery(
+                    "select coalesce(max(p.sortOrder), 0) from WorkspaceApplicationPage p"
+                        + " where p.tenantId = :tenant and p.applicationId = :applicationId",
+                    Integer.class)
+                .setParameter("tenant", tenantId)
+                .setParameter("applicationId", applicationId)
+                .getSingleResult()
+            + 10;
     Instant now = Instant.now();
     WorkspaceApplicationPage page = new WorkspaceApplicationPage();
     page.setId(UUID.randomUUID().toString());
@@ -179,10 +258,13 @@ public class WorkspaceApplicationCatalog {
   }
 
   private List<WorkspaceApplicationPage> pages(String tenantId, String applicationId) {
-    return em.createQuery("select p from WorkspaceApplicationPage p"
-            + " where p.tenantId = :tenant and p.applicationId = :applicationId"
-            + " order by p.sortOrder, p.createdAt", WorkspaceApplicationPage.class)
-        .setParameter("tenant", tenantId).setParameter("applicationId", applicationId)
+    return em.createQuery(
+            "select p from WorkspaceApplicationPage p"
+                + " where p.tenantId = :tenant and p.applicationId = :applicationId"
+                + " order by p.sortOrder, p.createdAt",
+            WorkspaceApplicationPage.class)
+        .setParameter("tenant", tenantId)
+        .setParameter("applicationId", applicationId)
         .getResultList();
   }
 
@@ -194,40 +276,66 @@ public class WorkspaceApplicationCatalog {
     return app;
   }
 
-  private ApplicationSummary summary(WorkspaceApplication app, String mainName, long attachedCount) {
-    return new ApplicationSummary(app.getId(), app.getName(), app.getDescription(), app.getIcon(),
-        app.getStatus(), app.getMainPageId(), mainName, attachedCount, app.getCreatedBy(),
-        app.getCreatedAt(), app.getUpdatedAt());
+  private ApplicationSummary summary(
+      WorkspaceApplication app, String mainName, long attachedCount) {
+    return new ApplicationSummary(
+        app.getId(),
+        app.getName(),
+        app.getDescription(),
+        app.getIcon(),
+        app.getStatus(),
+        app.getMainPageId(),
+        mainName,
+        attachedCount,
+        app.getCreatedBy(),
+        app.getCreatedAt(),
+        app.getUpdatedAt());
   }
 
   private PageSummary pageSummary(WorkspaceApplicationPage page) {
     boolean registered = page.getResourceId() != null && !page.getResourceId().isBlank();
-    return new PageSummary(page.getId(), page.getName(), page.getDescription(), page.getKind(),
-        page.getStatus(), page.getSortOrder(), registered,
+    return new PageSummary(
+        page.getId(),
+        page.getName(),
+        page.getDescription(),
+        page.getKind(),
+        page.getStatus(),
+        page.getSortOrder(),
+        registered,
         registered ? "/app/runtime/" + page.getApplicationId() + "/" + page.getId() : null);
   }
 
   private static String tenantId() {
     AuthorizationContext context = AuthorizationContextHolder.getContext();
     String tenantId = context == null ? null : context.getAttribute("X-Tenant-Id");
-    if (context == null || context.getScopeType() != AuthorizationScopeType.TENANT
-        || tenantId == null || tenantId.isBlank()) {
+    if (context == null
+        || context.getScopeType() != AuthorizationScopeType.TENANT
+        || tenantId == null
+        || tenantId.isBlank()) {
       throw new AccessDeniedException("请切换到组织工作空间");
     }
     return tenantId;
   }
 
   private static String requiredName(String value, String label) {
-    if (value == null || value.isBlank()) throw badRequest("请填写" + label);
+    if (value == null || value.isBlank()) {
+      throw badRequest("请填写" + label);
+    }
     String trimmed = value.trim();
-    if (trimmed.length() > 120) throw badRequest(label + "不能超过 120 个字符");
+    if (trimmed.length() > 120) {
+      throw badRequest(label + "不能超过 120 个字符");
+    }
     return trimmed;
   }
 
   private static String description(String value) {
-    if (value == null || value.isBlank()) return null;
+    if (value == null || value.isBlank()) {
+      return null;
+    }
     String trimmed = value.trim();
-    if (trimmed.length() > 500) throw badRequest("描述不能超过 500 个字符");
+    if (trimmed.length() > 500) {
+      throw badRequest("描述不能超过 500 个字符");
+    }
     return trimmed;
   }
 

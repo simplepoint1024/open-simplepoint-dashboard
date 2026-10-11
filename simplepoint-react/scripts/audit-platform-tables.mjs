@@ -29,6 +29,23 @@ export function tableSites(source, file) {
         imported: item.type === 'ImportNamespaceSpecifier' ? '*' : item.imported?.name ?? 'default'});
     }
   });
+  const remoteLists = new Set();
+  walk(ast, node => {
+    if (node.type !== 'VariableDeclarator' || node.id?.type !== 'Identifier' || node.init?.type !== 'CallExpression') return;
+    const hook = imports.get(node.init.callee?.name);
+    if (hook?.imported === 'useRemoteList' && /\/DataTable\/useRemoteList$/.test(hook.source)) remoteLists.add(node.id.name);
+  });
+  const isRemote = node => node?.type === 'Identifier' ? remoteLists.has(node.name)
+    : node?.type === 'ConditionalExpression' && isRemote(node.consequent) && isRemote(node.alternate);
+  let discovered;
+  do {
+    discovered = false;
+    walk(ast, node => {
+      if (node.type === 'VariableDeclarator' && node.id?.type === 'Identifier' && !remoteLists.has(node.id.name) && isRemote(node.init)) {
+        remoteLists.add(node.id.name); discovered = true;
+      }
+    });
+  } while (discovered);
   const sites = [];
   walk(ast, node => {
     if (node.type !== 'JSXOpeningElement') return;
@@ -44,12 +61,19 @@ export function tableSites(source, file) {
       || ['SimpleTable', 'DataTable', 'TreeTable', 'AssignmentTable', 'Table'].includes(imported.imported));
     if (!primitive && !platform) return;
     const query = node.attributes.find(a => a.type === 'JSXAttribute' && a.name.name === 'query');
+    const queryException = node.attributes.find(a => a.type === 'JSXAttribute'
+      && a.name.name === 'data-query-exception')?.value?.value;
     const expression = query?.value?.expression;
     const mode = expression?.type === 'ObjectExpression'
       ? expression.properties.find(p => p.type === 'ObjectProperty' && p.key.name === 'mode')?.value?.value : undefined;
+    const remoteSpread = node.attributes.some(attribute => attribute.type === 'JSXSpreadAttribute'
+      && attribute.argument.type === 'MemberExpression' && !attribute.argument.computed
+      && attribute.argument.property.name === 'tableProps' && remoteLists.has(attribute.argument.object.name));
     sites.push({file, line: node.loc.start.line, component: member ? `${local}.${member}` : local, origin,
       kind: dateGrids.has(file) && local === 'table' ? 'date-grid' : renderers.has(file) ? 'platform-renderer' : primitive ? 'nonstandard' : 'platform',
-      queryBinding: query ? mode ?? 'dynamic' : origin.includes('SimpleTable') ? 'schema-or-controlled' : 'not-declared',
+      queryBinding: query ? mode ?? 'dynamic' : remoteSpread ? 'remote-list'
+        : /(?:SimpleTable|AssignmentTable)/.test(origin) ? 'schema-or-controlled' : 'not-declared',
+      ...(queryException ? {queryException} : {}),
       attributes: node.attributes.filter(a => a.type === 'JSXAttribute').map(a => a.name.name).sort()});
   });
   return sites;

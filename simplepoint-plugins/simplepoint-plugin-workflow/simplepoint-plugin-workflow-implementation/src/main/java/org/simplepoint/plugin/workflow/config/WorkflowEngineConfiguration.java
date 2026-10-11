@@ -1,8 +1,10 @@
 package org.simplepoint.plugin.workflow.config;
 
+import java.util.ArrayList;
 import java.util.Map;
 import org.flowable.spring.SpringProcessEngineConfiguration;
 import org.flowable.spring.boot.EngineConfigurationConfigurer;
+import org.simplepoint.plugin.workflow.service.WorkflowEngineSignalListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -10,9 +12,29 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public class WorkflowEngineConfiguration {
 
-  /** Flowable's Spring integration exposes all beans when this map is null; an empty map exposes none. */
+  /**
+   * Flowable's Spring integration exposes all beans when this map is null; an empty map exposes
+   * none.
+   */
   @Bean
-  public EngineConfigurationConfigurer<SpringProcessEngineConfiguration> workflowExpressionIsolation() {
+  public EngineConfigurationConfigurer<SpringProcessEngineConfiguration>
+      workflowExpressionIsolation() {
     return configuration -> configuration.setBeans(Map.of());
+  }
+
+  /**
+   * Preserve other trusted engine listeners while installing the transactional notification bridge.
+   */
+  @Bean
+  public EngineConfigurationConfigurer<SpringProcessEngineConfiguration> workflowEngineSignals(
+      WorkflowEngineSignalListener listener) {
+    return configuration -> {
+      var listeners =
+          configuration.getEventListeners() == null
+              ? new ArrayList<org.flowable.common.engine.api.delegate.event.FlowableEventListener>()
+              : new ArrayList<>(configuration.getEventListeners());
+      listeners.add(listener);
+      configuration.setEventListeners(listeners);
+    };
   }
 }

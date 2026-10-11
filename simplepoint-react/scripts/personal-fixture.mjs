@@ -4,10 +4,10 @@ import schemas from './personal-schemas.fixture.json' with {type: 'json'};
 export const personalRoutes = [
   ['items', 'Items', '我的事项'], ['todos', 'Todos', '我的待办'], ['messages', 'Messages', '我的消息'],
 ].map(([key, component, label]) => ({id: 'my-' + key, code: 'common.view', type: 'PAGE', routeKind: 'item',
-  path: '/my/' + key, component: 'common/personal/' + component, label, scopeTypes: ['PLATFORM']}));
+  path: '/my/' + key, component: 'common/personal/' + component, label, scopeTypes: ['PLATFORM', 'TENANT']}));
 export const personalNavigation = [
   {id: 'home', code: 'dashboard.view', path: '/dashboard', component: 'common/Dashboard', label: '首页', routeKind: 'item', sort: 0, scopeTypes: ['PLATFORM']},
-  {id: 'my', code: 'personal.view', path: '/my', label: '我的', routeKind: 'submenu', sort: 1, scopeTypes: ['PLATFORM'], children: personalRoutes},
+  {id: 'my', code: 'personal.view', path: '/my', label: '我的', routeKind: 'submenu', sort: 1, scopeTypes: ['PLATFORM', 'TENANT'], children: personalRoutes},
 ];
 export function createPersonalFixture() {
   const now = new Date().toISOString();

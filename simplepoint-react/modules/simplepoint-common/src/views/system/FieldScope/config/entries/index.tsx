@@ -84,11 +84,15 @@ export default function FieldEntries({value = EMPTY, onChange, disabled, canInte
       ...titles.filter(title => title.startsWith('i18n:')).map(title => title.slice(5).split('.')[0])]);
   }, [selectedPage.data, selected?.pageCode, ensure, locale]);
   const configured = useMemo(() => new Map(value.map(entry => [keyOf(entry), entry])), [value]);
-  const rows = useMemo(() => selectedPage.data?.models.flatMap((model, group) => Object.entries(model.properties).map(([field, metadata]) => ({
+  const fieldMetadata = useMemo(() => selectedPage.data?.models.flatMap((model, group) => Object.entries(model.properties).map(([field, metadata]) => ({
     pageCode: selected?.pageCode,
     resource: model.model, field, title: labels.field(field, metadata, selected?.pageCode),
     group: selectedPage.data!.models.length > 1 ? labels.model(model.model, group) : '',
   }))) ?? [], [selectedPage.data, selected?.pageCode, labels]);
+  // Editing access changes the queryable value, not the parsed/translated metadata index.
+  const rows = useMemo(() => fieldMetadata.map(metadata => ({...metadata, metadata,
+    accessName: labels.access(configured.get(keyOf(metadata))?.access ?? ''),
+  })), [fieldMetadata, configured, labels]);
   const options = useMemo(() => accessTypes.map(access => ({value: access, label: labels.access(access)})), [labels]);
   const setAccess = (row: typeof rows[number], access?: string) => {
     const previous = entriesRef.current, exists = previous.some(entry => keyOf(entry) === keyOf(row));
@@ -116,11 +120,14 @@ export default function FieldEntries({value = EMPTY, onChange, disabled, canInte
         {!selected ? <Empty description={t('permissions.selectResource', '请从左侧选择资源权限点')} /> :
           <Table virtual size="small" rowKey={keyOf} dataSource={rows} loading={selectedPage.isFetching}
             settings={false} pagination={false}
+            query={{mode: 'local', scope: 'complete', contextKey: selected.pageCode, fields: {
+              title: {type: 'string'}, accessName: {type: 'string'},
+            }}}
             scroll={{x: 680, y: height}} columns={[
-              {title: t('field-scopes.title.entry.field', '字段'), width: 230, render: (_, row) => <Space orientation="vertical" size={0}>
+              {title: t('field-scopes.title.entry.field', '字段'), dataIndex: 'title', width: 230, render: (_, row) => <Space orientation="vertical" size={0}>
                 {row.title}{row.group && <Typography.Text type="secondary">{row.group}</Typography.Text>}
               </Space>},
-              {title: t('field-scopes.title.entry.access', '访问级别'), width: 400, render: (_, row) =>
+              {title: t('field-scopes.title.entry.access', '访问级别'), dataIndex: 'accessName', width: 400, render: (_, row) =>
                 <Radio.Group name={keyOf(row)} aria-label={row.title} value={configured.get(keyOf(row))?.access}
                   disabled={disabled || readOnlyEntries || readOnlyAccess || (!configured.has(keyOf(row)) && (!allowNew || value.length >= 500))}
                   options={options}

@@ -110,6 +110,7 @@ import {smokeEntitySelect} from './smoke-entity-select.mjs';
 import {createWorkflowFixture, workflowRoutes} from './workflow-fixture.mjs';
 import {smokeWorkflow} from './smoke-workflow.mjs';
 import {smokeWorkflowLifecycle} from './smoke-workflow-lifecycle.mjs';
+import {smokeWorkflowPersonal} from './smoke-workflow-personal.mjs';
 import {smokeExpressionModes} from './smoke-expression-modes.mjs';
 import {smokeConditionModes} from './smoke-condition-modes.mjs';
 import {smokeHostPreferences} from './smoke-host-preferences.mjs';
@@ -121,6 +122,9 @@ import {createTenantResourceFixture, tenantResourceRoutes} from './tenant-resour
 import {smokeTenantResources} from './smoke-tenant-resources.mjs';
 const tenantResourceFixture = createTenantResourceFixture();
 const workflowFixture = createWorkflowFixture();
+const workflowTenant = 'workflow-smoke-tenant';
+const initialWorkflowWorkspace = ['MF_SMOKE_WORKFLOW_PERSONAL_ONLY', 'MF_SMOKE_WORKFLOW_LIFECYCLE_ONLY',
+  'MF_SMOKE_WORKFLOW_FORM_COMMIT_ONLY', 'MF_SMOKE_WORKFLOW_ONLY'].some(key => process.env[key] === '1');
 const entitySelectFixture = createEntitySelectFixture();
 import {createUserAssignmentFixture, tenantAssignmentRoute} from './user-assignment-fixture.mjs';
 import {smokeUserAssignment} from './smoke-user-assignment.mjs';
@@ -295,14 +299,17 @@ const server = createServer(async (req, res) => {
     if (profileAccessFixture.handle(req, url, respond)) return;
     if (pathname === '/account/security-links') return json(res, {twoFactor: `${origin}/account/2fa`,
       externalIdentities: `${origin}/account/external-identities`});
-    if (pathname === '/common/tenants/current') return respond([{tenantId: '__platform__', tenantCode: '__platform__', tenantName: '平台', tenantType: 'PLATFORM'}]);
+    if (pathname === '/common/tenants/current') return respond([{tenantId: '__platform__', tenantCode: '__platform__', tenantName: '平台', tenantType: 'PLATFORM'},
+      {tenantId: workflowTenant, tenantCode: workflowTenant, tenantName: '工作流测试空间', tenantType: 'ORGANIZATION'}]);
+    if (pathname === '/common/tenants/current-profile' && req.headers['x-tenant-id'] === workflowTenant) return respond({
+      id: workflowTenant, name: '工作流测试空间', tenantType: 'ORGANIZATION', resourceMode: 'PLATFORM'});
     if (pathname.includes('current-roles')) return respond([]);
     if (pathname.includes('authorization-context-id')) return respond('smoke-context');
     if (pathname === '/common/resources/service-routes') return respond({
       services: remotes.map(p => ({name: p.remote, entry: `/${p.remote}/mf/mf-manifest.json`})),
       entryPoint: '/mf/mf-manifest.json',
-      authorizationContext: {scopeType: req.headers['x-tenant-id'] === tenantResourceFixture.tenantId ? 'TENANT' : 'PLATFORM',
-        actorRole: req.headers['x-tenant-id'] === tenantResourceFixture.tenantId ? 'TENANT_OWNER' : 'PLATFORM_ADMIN',
+      authorizationContext: {scopeType: [tenantResourceFixture.tenantId, workflowTenant].filter(Boolean).includes(req.headers['x-tenant-id']) ? 'TENANT' : 'PLATFORM',
+        actorRole: [tenantResourceFixture.tenantId, workflowTenant].filter(Boolean).includes(req.headers['x-tenant-id']) ? 'TENANT_OWNER' : 'PLATFORM_ADMIN',
         resources: [...new Set([...remotes.map(p => `${p.remote}.view`), ...(req.headers['x-tenant-id'] === tenantResourceFixture.tenantId ? tenantResourceRoutes.map(route => route.code) : [])])]},
       routes: [...personalNavigation, ...workflowRoutes, ...pages.map((p, id) => ({id: String(id + 1), code: `${p.remote}.view`, type: 'PAGE', routeKind: 'item', path: `/smoke/${p.remote}`, component: `${p.remote}/${p.expose}`, title: '', label: p.label, icon: 'AppstoreOutlined', scopeTypes: ['PLATFORM']})), ...cacheTestRoutes, storageRoute, sqlRoute, organizationRoute, memberRoute, tenantAssignmentRoute, organizationSelectionRoute, ...commonMainRoutes, aiProviderRoute, exactDecimalRoute, applicationResourceRoute, resourceManagementRoute, runtimeRoute, redisRoute, knowledgeRoute, apiKeyRoute, mcpCapabilitiesRoute, jdbcUserRoute, ...storageCrudRoutes, metadataRoute, ...jdbcArtifactRoutes, appWorkbenchRoute, catalogRoute, billingRoute, mcpLifecycleRoute, ...(tenantResourceFixture.isActive() ? tenantResourceRoutes : [])],
     });
@@ -515,8 +522,8 @@ try {
   await send('Page.enable');
   await send('Page.setLifecycleEventsEnabled', {enabled: true});
   await send('Page.addScriptToEvaluateOnNewDocument', {source: `
-    localStorage.setItem('sp.tenantId', '__platform__');
-    localStorage.setItem('sp.contextId:__platform__', 'smoke-context');
+    localStorage.setItem('sp.tenantId', ${JSON.stringify(initialWorkflowWorkspace ? workflowTenant : '__platform__')});
+    localStorage.setItem(${JSON.stringify('sp.contextId:' + (initialWorkflowWorkspace ? workflowTenant : '__platform__'))}, 'smoke-context');
     localStorage.setItem('sp.nav.tabs', JSON.stringify(${JSON.stringify(cacheTestRoutes.map(route => ({key: route.path, location: route.path, label: route.label, closable: true})))}));
   `});
   await send('Page.navigate', {url: origin});
@@ -720,12 +727,24 @@ try {
     assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/billing/summary')));
     assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
     console.log('PASS: targeted billing with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_WORKFLOW_PERSONAL_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeWorkflowPersonal({clickText, clickReady, fill, poll, evaluate, send, fixture: workflowFixture,
+      capturePreview: process.env.MF_SMOKE_WORKFLOW_PERSONAL_SCREENSHOT ? async () => {
+        await poll(() => evaluate(`!document.getAnimations().some(a=>a.playState==='running' && a.effect?.getComputedTiming().iterations!==Infinity && a.effect?.target?.closest?.('.ant-drawer'))`), 'progress preview settled');
+        const screenshot = await send('Page.captureScreenshot', {format: 'png'});
+        await writeFile(process.env.MF_SMOKE_WORKFLOW_PERSONAL_SCREENSHOT, Buffer.from(screenshot.data, 'base64'));
+      } : undefined});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/workflow/tasks/taskreject/reject')));
+    console.log('PASS: targeted consolidated personal workflow with production artifacts and isolated tenant APIs');
   } else if (process.env.MF_SMOKE_WORKFLOW_LIFECYCLE_ONLY === '1') {
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
     await clickMenu('首页');
     await smokeWorkflowLifecycle({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture});
     assert.deepEqual(exceptions, []);
-    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/workflow\/(definitions\/definition1\/versions\/1\/copy-to-draft|tasks\/task1\/complete|instances\/instance1\/cancel)/.test(message)));
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/workflow\/(definitions\/definition1\/versions\/1\/copy-to-draft|tasks\/task1\/complete|instances\/instancecancel\/cancel)/.test(message)));
     assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
     console.log('PASS: targeted workflow lifecycle with production artifacts and isolated API fixtures');
   } else if (process.env.MF_SMOKE_CATALOG_ONLY) {
@@ -1335,8 +1354,8 @@ try {
 
   // New personal-work pages use real built MF modules against isolated server state.
   const previousViewRequests = apiRequests.filter(r => r.url.includes('sp.table.views.')).length;
-  await poll(() => evaluate(`document.querySelector('.sp-home-personal')?.textContent.includes('首页事项测试') && document.querySelector('.sp-home-personal')?.textContent.includes('工作流待办测试') && document.querySelector('.sp-home-personal')?.textContent.includes('我的消息测试')`), 'three personal home summaries');
-  await evaluate(`location.hash='#/my/items'`);
+  await poll(() => evaluate(`document.querySelector('.sp-home-personal')?.textContent.includes('请切换到组织工作空间') && document.querySelector('.sp-home-personal')?.textContent.includes('我的消息测试')`), 'platform home explains tenant workflow scope and preserves personal messages');
+  await evaluate(`location.hash='#/my/items?legacy=1'`);
   await poll(() => evaluate(`document.querySelector('.nb-tab-panel-active .sp-personal')?.textContent.includes('首页事项测试')`), 'my items list');
   assert.equal(await evaluate(`(() => {const page=document.querySelector('.nb-tab-panel-active .sp-personal').getBoundingClientRect();
     const tabs=document.querySelector('.nb-tab-panel-active .sp-personal > .ant-tabs').getBoundingClientRect();
@@ -1516,37 +1535,12 @@ try {
   await poll(() => evaluate(`!document.querySelector('.ant-drawer-open')`), 'restored detail closed');
   await evaluate(`location.hash='#/my/todos?id=todo-home'`);
   await poll(() => evaluate(`document.querySelector('.ant-drawer-open h2')?.textContent==='工作流待办测试'`), 'workflow todo detail');
-  assert.equal(await evaluate(`(() => {const page=document.querySelector('.nb-tab-panel-active .sp-personal').getBoundingClientRect();
-    const tabs=document.querySelector('.nb-tab-panel-active .sp-personal > .ant-tabs').getBoundingClientRect();
-    return tabs.top-page.top<4;})()`), true, 'my todos tabs start at the top of the content area');
   assert.equal(await evaluate(`[...document.querySelectorAll('.ant-drawer-open button')].some(e=>e.textContent==='完成')`), false, 'workflow outcomes cannot be changed manually');
   await evaluate(`document.querySelector('.ant-drawer-open .ant-drawer-close').click()`);
-  assert.equal(await evaluate(`!!document.querySelector('.nb-tab-panel-active .sp-table-root [aria-label="表格设置"]')`), true, 'todos use platform table');
+  await poll(() => evaluate(`document.querySelector('.nb-tab-panel-active')?.textContent.includes('请切换到组织工作空间')`), 'platform workspace explains workflow scope before querying tenant data');
   assert.equal(await evaluate(`!!document.querySelector('.nb-tab-panel-active .sp-personal-filters, .nb-tab-panel-active .sp-personal .ant-input-search')`), false, 'header filtering replaces the top search bar');
-  await clickReady('.nb-tab-panel-active .sp-table-toolbar button[title="新建待办"]');
-  await poll(() => evaluate(`!!document.querySelector('.sp-simple-table-drawer.ant-drawer-open input#root_title')`), 'manual todo editor');
-  await fill('.sp-simple-table-drawer.ant-drawer-open input#root_title', '浏览器手工待办');
-  await clickReady('.sp-simple-table-drawer.ant-drawer-open button[type="submit"]');
-  await poll(() => evaluate(`document.querySelector('.nb-tab-panel-active .ant-table')?.textContent.includes('浏览器手工待办')`), 'manual todo created');
-  await poll(() => evaluate(`!document.querySelector('.ant-drawer-open') && getComputedStyle(document.body).overflow !== 'hidden'`), 'manual todo drawer finishes closing before keyboard filter interaction');
-  await evaluate(`[...document.querySelectorAll('.nb-tab-panel-active th')].find(e=>e.textContent.includes('优先级')).querySelector('.ant-table-filter-trigger').click()`);
-  await poll(() => evaluate(`!!document.querySelector('.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown .ant-select-multiple')`), 'priority uses platform labeled multi-select');
-  await evaluate(`document.querySelector('.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown .ant-select-multiple input[role="combobox"]').focus()`);
-  await send('Input.dispatchKeyEvent', {type: 'keyDown', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40});
-  await send('Input.dispatchKeyEvent', {type: 'keyUp', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40});
-  await poll(() => evaluate(`[...document.querySelectorAll('.ant-select-item-option')].some(e=>e.textContent==='高')`), 'priority labels available').catch(async error => {
-    console.error('Priority filter diagnostics', await evaluate(`({panels:[...document.querySelectorAll('.ant-dropdown:not(.ant-dropdown-hidden)')].map(e=>e.outerHTML), options:[...document.querySelectorAll('.ant-select-dropdown')].map(e=>e.outerHTML), active:document.activeElement===document.body?'BODY':document.activeElement?.outerHTML})`));
-    throw error;
-  });
-  await clickText('.ant-select-item-option', '高');
-  await clickText('.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown button', '应用');
-  await poll(() => evaluate(`document.querySelectorAll('.nb-tab-panel-active .ant-table-tbody tr[data-row-key]').length===1 && document.querySelector('.nb-tab-panel-active .ant-table-tbody')?.textContent.includes('工作流待办测试')`), 'todo priority filters server rows');
-  assert.ok(apiRequests.some(r => r.url.startsWith('/common/personal/todos?') &&
-    JSON.parse(JSON.parse(new URL(r.url, origin).searchParams.get('filters') || '{}').priority || '{}').where?.value?.[0] === 2));
-  await evaluate(`[...document.querySelectorAll('.nb-tab-panel-active th')].find(e=>e.textContent.includes('优先级')).querySelector('.ant-table-filter-trigger').click()`);
-  await poll(() => evaluate(`!!document.querySelector('.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown .ant-select-multiple')`), 'reopen priority filter');
-  await clickText('.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown button', '重置');
-  await poll(() => evaluate(`document.querySelectorAll('.nb-tab-panel-active .ant-table-tbody tr[data-row-key]').length===2`), 'reset priority restores todos');
+  assert.equal(await evaluate(`!!document.querySelector('.nb-tab-panel-active button[title="新建待办"]')`), false, 'manual creation is removed from the primary workflow inbox');
+  assert.equal(await evaluate(`!!document.querySelector('.nb-tab-panel-active .ant-table-tbody')`), false, 'platform scope never fabricates a tenant inbox');
   await evaluate(`location.hash='#/my/messages?id=message-home'`);
   await poll(() => evaluate(`document.querySelector('.ant-drawer-open h2')?.textContent==='我的消息测试'`), 'personal message detail');
   assert.equal(await evaluate(`(() => {const page=document.querySelector('.nb-tab-panel-active .sp-personal').getBoundingClientRect();
@@ -1562,7 +1556,7 @@ try {
   await poll(() => evaluate(`!!document.querySelector('.ant-drawer-open .ant-drawer-close')`), 'message write finishes before close');
   await evaluate(`document.querySelector('.ant-drawer-open .ant-drawer-close').click();location.hash='#/dashboard'`);
   await poll(() => evaluate(`!document.querySelector('.sp-home-personal')?.textContent.includes('我的消息测试')`), 'home summary invalidated after message read');
-  console.log('PASS: personal item create/edit/checklist/note/complete/trash/restore; workflow todo guard; manual todo; message read and shared home summaries');
+  console.log('PASS: historical item compatibility; readonly legacy todo deep link; primary workflow replacement; message read and shared home summaries');
 
   assert.ok(measurements.some(sample => sample.outcome === 'ready' && sample.durationMs >= 0));
   assert.ok(measurements.length <= 60);

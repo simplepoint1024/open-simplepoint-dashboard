@@ -45,12 +45,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Tenant service implementation.
- */
+/** Tenant service implementation. */
 @Service
 @RemoteProvider
-public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant, String> implements TenantService {
+public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant, String>
+    implements TenantService {
 
   private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
   private final TenantUserRelevanceRepository tenantUserRelevanceRepository;
@@ -59,9 +58,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   private final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider;
   private final TenantUserCandidateQuery userCandidateQuery;
 
-  /**
-   * Tenant Service Impl.
-   */
+  /** Tenant Service Impl. */
   public TenantServiceImpl(
       TenantRepository repository,
       DetailsProviderService detailsProviderService,
@@ -70,8 +67,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       ResourceAuthorizationVersionService resourceAuthorizationVersionService,
       UsersService usersService,
       ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider,
-      TenantUserCandidateQuery userCandidateQuery
-  ) {
+      TenantUserCandidateQuery userCandidateQuery) {
     super(repository, detailsProviderService);
     this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
     this.tenantUserRelevanceRepository = tenantUserRelevanceRepository;
@@ -91,10 +87,11 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     if (isSuperAdministrator()) {
       return decorateTenantOwners(super.limit(attributes, pageable));
     }
-    Set<String> tenantIds = getCurrentUserTenants().stream()
-        .map(NamedTenantVo::tenantId)
-        .filter(id -> id != null && !id.isBlank())
-        .collect(Collectors.toCollection(LinkedHashSet::new));
+    Set<String> tenantIds =
+        getCurrentUserTenants().stream()
+            .map(NamedTenantVo::tenantId)
+            .filter(id -> id != null && !id.isBlank())
+            .collect(Collectors.toCollection(LinkedHashSet::new));
     return decorateTenantOwners(super.limitInScope(attributes, "id", tenantIds, pageable));
   }
 
@@ -127,20 +124,17 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     Tenant personalTenant = ensurePersonalTenantExists(authentication.getName());
     Set<NamedTenantVo> tenants = new LinkedHashSet<>();
     if (hasPlatformAccess(authentication)) {
-      tenants.add(new NamedTenantVo(
-          TenantContextIds.PLATFORM,
-          "平台工作台",
-          TenantContextType.PLATFORM
-      ));
+      tenants.add(
+          new NamedTenantVo(TenantContextIds.PLATFORM, "平台工作台", TenantContextType.PLATFORM));
     }
     tenants.addAll(this.getTenantsByUserId(authentication.getName()));
     if (personalTenant != null) {
-      tenants.add(new NamedTenantVo(
-          personalTenant.getId(),
-          personalTenant.getName(),
-          personalTenant.getTenantType(),
-          personalTenant.getLogo()
-      ));
+      tenants.add(
+          new NamedTenantVo(
+              personalTenant.getId(),
+              personalTenant.getName(),
+              personalTenant.getTenantType(),
+              personalTenant.getLogo()));
     }
     return tenants;
   }
@@ -148,8 +142,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   @Override
   public Tenant getCurrentTenantProfile() {
     String tenantId = requireActiveTenantId();
-    Tenant tenant = findById(tenantId)
-        .orElseThrow(() -> new AccessDeniedException("无权访问当前租户资料"));
+    Tenant tenant = findById(tenantId).orElseThrow(() -> new AccessDeniedException("无权访问当前租户资料"));
     tenant.setProfileEditable(canManageTenantProfile(tenant));
     return tenant;
   }
@@ -161,8 +154,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       throw new IllegalArgumentException("租户资料不能为空");
     }
     String tenantId = requireActiveTenantId();
-    Tenant tenant = findById(tenantId)
-        .orElseThrow(() -> new AccessDeniedException("无权访问当前租户资料"));
+    Tenant tenant = findById(tenantId).orElseThrow(() -> new AccessDeniedException("无权访问当前租户资料"));
     if (!canManageTenantProfile(tenant)) {
       throw new AccessDeniedException("仅租户所有者或租户管理员可以修改租户资料");
     }
@@ -203,8 +195,9 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     String resolvedTenantId = resolveRequestedTenantId(tenantId, authentication);
     String normalizedRoleId = trimToNull(roleId);
     if (normalizedRoleId != null) {
-      boolean roleAllowed = loadEffectiveRoles(resolvedTenantId, authentication.getName()).stream()
-          .anyMatch(role -> normalizedRoleId.equals(role.getId()));
+      boolean roleAllowed =
+          loadEffectiveRoles(resolvedTenantId, authentication.getName()).stream()
+              .anyMatch(role -> normalizedRoleId.equals(role.getId()));
       if (!roleAllowed) {
         throw new AccessDeniedException("当前用户未拥有指定角色");
       }
@@ -216,10 +209,13 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     if (authorizationVersion == null) {
       authorizationVersion = 0L;
     }
-    return sha256((resolvedTenantId != null ? resolvedTenantId : "")
-        + ":" + authentication.getName()
-        + ":" + authorizationVersion
-        + (normalizedRoleId == null ? "" : ":" + normalizedRoleId));
+    return sha256(
+        (resolvedTenantId != null ? resolvedTenantId : "")
+            + ":"
+            + authentication.getName()
+            + ":"
+            + authorizationVersion
+            + (normalizedRoleId == null ? "" : ":" + normalizedRoleId));
   }
 
   private String resolveRequestedTenantId(String tenantId, Authentication authentication) {
@@ -230,7 +226,8 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       return null;
     }
     String normalizedTenantId = normalizeTenantId(tenantId);
-    if (normalizedTenantId != null && !getRepository().hasUser(normalizedTenantId, authentication.getName())) {
+    if (normalizedTenantId != null
+        && !getRepository().hasUser(normalizedTenantId, authentication.getName())) {
       throw new AccessDeniedException("当前用户未加入指定租户");
     }
     return normalizedTenantId == null
@@ -269,12 +266,17 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   @Override
   public Page<UserRelevanceVo> userItems(String tenantId, String keyword, Pageable pageable) {
     String normalizedKeyword = normalizeKeyword(keyword);
-    return userItems(tenantId, null, normalizedKeyword == null ? Map.of() : Map.of("keyword", normalizedKeyword), pageable);
+    return userItems(
+        tenantId,
+        null,
+        normalizedKeyword == null ? Map.of() : Map.of("keyword", normalizedKeyword),
+        pageable);
   }
 
   @Override
   @Transactional(readOnly = true)
-  public Page<UserRelevanceVo> userItems(String tenantId, Boolean selected, Map<String, String> filters, Pageable pageable) {
+  public Page<UserRelevanceVo> userItems(
+      String tenantId, Boolean selected, Map<String, String> filters, Pageable pageable) {
     Tenant tenant = requireTenantMemberManager(tenantId);
     return userCandidateQuery.list(tenant, selected, filters, pageable);
   }
@@ -308,7 +310,8 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   @Override
   public Collection<String> authorizedUsers(String tenantId) {
     Tenant tenant = requireTenantMemberManager(tenantId);
-    LinkedHashSet<String> userIds = new LinkedHashSet<>(tenantUserRelevanceRepository.authorized(tenant.getId()));
+    LinkedHashSet<String> userIds =
+        new LinkedHashSet<>(tenantUserRelevanceRepository.authorized(tenant.getId()));
     if (tenant.getOwnerId() != null && !tenant.getOwnerId().isBlank()) {
       userIds.add(tenant.getOwnerId());
     }
@@ -317,25 +320,54 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
 
   @Override
   public Collection<String> resolveActiveMemberIds(
-      final String tenantId,
-      final Collection<String> userIds
-  ) {
+      final String tenantId, final Collection<String> userIds) {
     Tenant tenant = requireDirectoryValidationTenant(tenantId);
     Set<String> requested = normalizeCodes(userIds);
     if (requested.size() > 50) {
       throw new IllegalArgumentException("每次最多校验 50 个租户成员");
     }
-    return requested.isEmpty() ? Set.of() : getRepository().resolveActiveUserIds(tenant.getId(), requested);
+    return requested.isEmpty()
+        ? Set.of()
+        : getRepository().resolveActiveUserIds(tenant.getId(), requested);
   }
 
   @Override
-  public Collection<String> resolveActiveRoleAuthorities(final String tenantId, final Collection<String> authorities) {
+  public Collection<String> resolveActiveRoleAuthorities(
+      final String tenantId, final Collection<String> authorities) {
     Tenant tenant = requireDirectoryValidationTenant(tenantId);
     Set<String> requested = normalizeCodes(authorities);
     if (requested.size() > 50) {
       throw new IllegalArgumentException("每次最多校验 50 个租户角色");
     }
-    return requested.isEmpty() ? Set.of() : getRepository().resolveActiveRoleAuthorities(tenant.getId(), requested);
+    return requested.isEmpty()
+        ? Set.of()
+        : getRepository().resolveActiveRoleAuthorities(tenant.getId(), requested);
+  }
+
+  @Override
+  public Collection<String> resolveActiveRoleMemberIds(
+      String tenantId, Collection<String> authorities, String afterUserId, int limit) {
+    Authentication authentication = getRequiredAuthentication();
+    if (!isAdministrator(authentication) && !isServiceRouterCaller(authentication)) {
+      throw new AccessDeniedException("仅内部服务可以解析角色通知接收人");
+    }
+    Tenant tenant = requireTenant(tenantId);
+    Set<String> requested = normalizeCodes(authorities);
+    String after = trimToNull(afterUserId);
+    if (requested.size() > 50
+        || limit < 1
+        || limit > 200
+        || (after != null && after.length() > 64)) {
+      throw new IllegalArgumentException("每次最多解析 50 个角色、200 个接收人，游标长度不能超过 64");
+    }
+    return requested.isEmpty()
+        ? List.of()
+        : getRepository()
+            .resolveActiveRoleMemberIds(
+                tenant.getId(),
+                requested,
+                after,
+                org.springframework.data.domain.PageRequest.of(0, limit));
   }
 
   private Tenant requireDirectoryValidationTenant(final String tenantId) {
@@ -343,7 +375,9 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     Authentication authentication = getRequiredAuthentication();
     if (!isAdministrator(authentication)
         && !isServiceRouterCaller(authentication)
-        && getRepository().resolveActiveUserIds(tenant.getId(), Set.of(authentication.getName())).isEmpty()) {
+        && getRepository()
+            .resolveActiveUserIds(tenant.getId(), Set.of(authentication.getName()))
+            .isEmpty()) {
       throw new AccessDeniedException("当前用户未加入指定租户");
     }
     return tenant;
@@ -398,9 +432,9 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     }
     validateUsersExist(userIds);
 
-    Map<String, TenantUserRelevance> existing = tenantUserRelevanceRepository
-        .findAllByTenantIdAndUserIdIn(tenant.getId(), userIds).stream()
-        .collect(Collectors.toMap(TenantUserRelevance::getUserId, relation -> relation));
+    Map<String, TenantUserRelevance> existing =
+        tenantUserRelevanceRepository.findAllByTenantIdAndUserIdIn(tenant.getId(), userIds).stream()
+            .collect(Collectors.toMap(TenantUserRelevance::getUserId, relation -> relation));
     LinkedHashSet<TenantUserRelevance> relations = new LinkedHashSet<>();
     for (String userId : userIds) {
       TenantUserRelevance relevance = existing.get(userId);
@@ -468,7 +502,8 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   @Transactional(rollbackFor = Exception.class)
   public <S extends Tenant> Tenant modifyById(S entity) {
     requirePlatformAdministrator();
-    Tenant current = super.findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("租户不存在"));
+    Tenant current =
+        super.findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("租户不存在"));
     entity.setResourceMode(current.getResourceMode());
     entity.setLogo(normalizeOssImage(entity.getLogo(), "租户 Logo"));
     entity.setBackgroundImage(normalizeOssImage(entity.getBackgroundImage(), "租户背景图片"));
@@ -522,7 +557,9 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   private Authentication getRequiredAuthentication() {
     SecurityContext context = SecurityContextHolder.getContext();
     Authentication authentication = context == null ? null : context.getAuthentication();
-    if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+    if (authentication == null
+        || authentication.getName() == null
+        || authentication.getName().isBlank()) {
       throw new IllegalStateException("当前未认证用户");
     }
     return authentication;
@@ -531,15 +568,18 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   private Tenant requireTenantMemberManager(String tenantId) {
     Tenant tenant = requireTenant(tenantId);
     Authentication authentication = getRequiredAuthentication();
-    if (tenant.getTenantType() == org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL) {
+    if (tenant.getTenantType()
+        == org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL) {
       throw new AccessDeniedException("个人空间不支持组织成员管理");
     }
     AuthorizationContext context = getAuthorizationContext();
-    if (!isAdministrator(authentication) && !Boolean.TRUE.equals(context == null ? null : context.getIsAdministrator())
-        && context != null && context.getScopeType() != null
+    if (!isAdministrator(authentication)
+        && !Boolean.TRUE.equals(context == null ? null : context.getIsAdministrator())
+        && context != null
+        && context.getScopeType() != null
         && (context.getScopeType() == org.simplepoint.core.AuthorizationScopeType.PERSONAL
-        || (context.getScopeType() == org.simplepoint.core.AuthorizationScopeType.TENANT
-        && !Objects.equals(tenant.getId(), context.getAttribute("X-Tenant-Id"))))) {
+            || (context.getScopeType() == org.simplepoint.core.AuthorizationScopeType.TENANT
+                && !Objects.equals(tenant.getId(), context.getAttribute("X-Tenant-Id"))))) {
       throw new AccessDeniedException("不能跨授权上下文配置租户成员");
     }
     if (AuthorizationScopeGuards.isTenantManager(context, tenant.getOwnerId())
@@ -553,7 +593,8 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
 
   private Tenant requireTenant(String tenantId) {
     String requiredTenantId = requireTenantId(tenantId);
-    return super.findById(requiredTenantId).orElseThrow(() -> new IllegalArgumentException("租户不存在"));
+    return super.findById(requiredTenantId)
+        .orElseThrow(() -> new IllegalArgumentException("租户不存在"));
   }
 
   private String resolveCurrentTenantScope() {
@@ -586,7 +627,8 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       return false;
     }
     Collection<String> authorizedUserIds = tenantUserRelevanceRepository.authorized(tenantId);
-    Set<String> existingUserIds = new LinkedHashSet<>(authorizedUserIds == null ? List.of() : authorizedUserIds);
+    Set<String> existingUserIds =
+        new LinkedHashSet<>(authorizedUserIds == null ? List.of() : authorizedUserIds);
     if (existingUserIds.contains(ownerId)) {
       return false;
     }
@@ -601,8 +643,9 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     if (userId == null || userId.isBlank()) {
       return null;
     }
-    Optional<Tenant> existing = Optional.ofNullable(getRepository().findPersonalTenantByOwnerId(userId))
-        .orElse(Optional.empty());
+    Optional<Tenant> existing =
+        Optional.ofNullable(getRepository().findPersonalTenantByOwnerId(userId))
+            .orElse(Optional.empty());
     if (existing.isPresent()) {
       Tenant tenant = existing.get();
       ensureOwnerMembership(tenant.getId(), userId);
@@ -676,29 +719,32 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     if (tenants == null || tenants.isEmpty()) {
       return;
     }
-    Set<String> ownerIds = tenants.stream()
-        .map(Tenant::getOwnerId)
-        .map(TenantServiceImpl::trimToNull)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
+    Set<String> ownerIds =
+        tenants.stream()
+            .map(Tenant::getOwnerId)
+            .map(TenantServiceImpl::trimToNull)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
     if (ownerIds.isEmpty()) {
       return;
     }
     Collection<User> loadedOwners = usersService.findAllByIdsForAuthorization(ownerIds);
-    Map<String, User> owners = Optional.ofNullable(loadedOwners).orElse(List.of()).stream()
-        .filter(user -> user.getId() != null)
-        .collect(Collectors.toMap(User::getId, user -> user, (left, right) -> left));
-    tenants.forEach(tenant -> {
-      User owner = owners.get(tenant.getOwnerId());
-      if (owner == null) {
-        return;
-      }
-      tenant.setOwnerName(resolveOwnerName(owner));
-      tenant.setOwnerGender(owner.getGender());
-      tenant.setOwnerPhoneNumber(owner.getPhoneNumber());
-      tenant.setOwnerEmail(owner.getEmail());
-      tenant.setOwnerPicture(owner.getPicture());
-    });
+    Map<String, User> owners =
+        Optional.ofNullable(loadedOwners).orElse(List.of()).stream()
+            .filter(user -> user.getId() != null)
+            .collect(Collectors.toMap(User::getId, user -> user, (left, right) -> left));
+    tenants.forEach(
+        tenant -> {
+          User owner = owners.get(tenant.getOwnerId());
+          if (owner == null) {
+            return;
+          }
+          tenant.setOwnerName(resolveOwnerName(owner));
+          tenant.setOwnerGender(owner.getGender());
+          tenant.setOwnerPhoneNumber(owner.getPhoneNumber());
+          tenant.setOwnerEmail(owner.getEmail());
+          tenant.setOwnerPicture(owner.getPicture());
+        });
   }
 
   private static String resolveOwnerName(User owner) {
@@ -706,11 +752,12 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     if (explicitName != null) {
       return explicitName;
     }
-    String structuredName = java.util.stream.Stream.of(
-            owner.getFamilyName(), owner.getMiddleName(), owner.getGivenName())
-        .map(TenantServiceImpl::trimToNull)
-        .filter(Objects::nonNull)
-        .collect(Collectors.joining(" "));
+    String structuredName =
+        java.util.stream.Stream.of(
+                owner.getFamilyName(), owner.getMiddleName(), owner.getGivenName())
+            .map(TenantServiceImpl::trimToNull)
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining(" "));
     if (!structuredName.isBlank()) {
       return structuredName;
     }
@@ -736,9 +783,10 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       return true;
     }
     AuthorizationContext context = getAuthorizationContext();
-    return tenant.getTenantType() != org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL
+    return tenant.getTenantType()
+            != org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL
         && (AuthorizationScopeGuards.isTenantManager(context, tenant.getOwnerId())
-        || isTenantAdmin(authentication));
+            || isTenantAdmin(authentication));
   }
 
   private static String normalizeOssImage(String value, String label) {
@@ -796,13 +844,16 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   }
 
   private static boolean hasPlatformAccess(Authentication authentication) {
-    return isAdministrator(authentication) || authentication.getAuthorities().stream()
-        .anyMatch(authority -> "platform.access".equals(authority.getAuthority()));
+    return isAdministrator(authentication)
+        || authentication.getAuthorities().stream()
+            .anyMatch(authority -> "platform.access".equals(authority.getAuthority()));
   }
 
   private static boolean isTenantAdmin(Authentication authentication) {
     return authentication.getAuthorities().stream()
-        .anyMatch(authority -> "tenant.admin".equals(authority.getAuthority())
-            || "ROLE_TENANT_ADMIN".equals(authority.getAuthority()));
+        .anyMatch(
+            authority ->
+                "tenant.admin".equals(authority.getAuthority())
+                    || "ROLE_TENANT_ADMIN".equals(authority.getAuthority()));
   }
 }

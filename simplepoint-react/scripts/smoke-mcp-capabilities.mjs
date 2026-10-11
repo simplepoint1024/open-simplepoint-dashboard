@@ -77,7 +77,7 @@ export async function smokeMcpCapabilities({clickMenu, clickReady, clickText, fi
   await clickReady(`${page} .ant-tabs-tab[data-node-key="snapshots"]`);
   await poll(() => evaluate(`!!document.querySelector('${page} tr[data-row-key="Snapshot-19"]')`), 'history is server-paged');
   await clickText(`${page} tr[data-row-key="Snapshot-19"] button`, '查看差异');
-  await poll(() => fixture.requests.some(request => request.path.endsWith('/snapshots/Snapshot-20')), 'comparison loads the true predecessor beyond the page boundary');
+  await poll(() => fixture.requests.some(request => request.path.endsWith('/snapshots/Snapshot-19/previous')), 'comparison loads the true predecessor beyond the page boundary');
   await poll(() => evaluate(`!!document.querySelector('${modal} .ant-table')`), 'snapshot difference dialog');
   await clickReady('.mcp-snapshot-dialog .ant-modal-close');
   await poll(() => evaluate(`![...document.querySelectorAll('.mcp-snapshot-dialog .ant-modal')].some(modal=>modal.getClientRects().length)`), 'actual snapshot target closed');

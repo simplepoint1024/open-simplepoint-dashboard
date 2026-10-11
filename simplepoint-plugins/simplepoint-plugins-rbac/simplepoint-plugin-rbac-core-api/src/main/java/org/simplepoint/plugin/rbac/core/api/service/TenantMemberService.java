@@ -21,8 +21,16 @@ public interface TenantMemberService {
   /** Counts and pages members of one organization and all its descendants in the database. */
   Page<TenantMemberView> organizationMembers(String orgId, String keyword, Pageable pageable);
 
+  /** Queries members within organization subtree and data-permission boundaries. */
+  Page<TenantMemberView> queryOrganizationMembers(
+      String orgId, java.util.Map<String, String> filters, Pageable pageable);
+
   /** Searches current-tenant members available for assignment to the selected organization. */
   Page<TenantMemberView> organizationCandidates(String orgId, String keyword, Pageable pageable);
+
+  /** Queries eligible candidates using the same typed table contract. */
+  Page<TenantMemberView> queryOrganizationCandidates(
+      String orgId, java.util.Map<String, String> filters, Pageable pageable);
 
   /** Adds an existing account to the current tenant. */
   void add(TenantMemberCommand command);
@@ -31,7 +39,8 @@ public interface TenantMemberService {
   void update(String userId, TenantMemberCommand command);
 
   /** Detaches an organization membership, retaining tenant membership and tenant roles. */
-  void removeFromOrganization(String userId,
+  void removeFromOrganization(
+      String userId,
       org.simplepoint.plugin.rbac.core.api.pojo.command.OrganizationMemberRemoval command);
 
   /** Removes a member without deleting the global account. */

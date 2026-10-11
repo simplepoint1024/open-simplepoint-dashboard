@@ -33,24 +33,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * AI workbench endpoints for MCP Server registration and discovery.
- */
+/** AI workbench endpoints for MCP Server registration and discovery. */
 @RestController
 @RequestMapping(AiMcpPaths.SERVERS)
 @Tag(name = "AI MCP Server", description = "注册、发现和测试远程 MCP Server")
 public class AiMcpServerDefinitionController
     extends BaseController<AiMcpServerDefinitionService, AiMcpServerDefinition, String> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(
-      AiMcpServerDefinitionController.class
-  );
+  private static final Logger LOG = LoggerFactory.getLogger(AiMcpServerDefinitionController.class);
 
-  private static final String REQUEST_INVALID =
-      "AI_MCP_SERVER_REQUEST_INVALID";
+  private static final String REQUEST_INVALID = "AI_MCP_SERVER_REQUEST_INVALID";
 
-  private static final String OPERATION_CONFLICT =
-      "AI_MCP_SERVER_OPERATION_CONFLICT";
+  private static final String OPERATION_CONFLICT = "AI_MCP_SERVER_OPERATION_CONFLICT";
 
   private static final String CAPABILITY_READ_AUTHORIZATION =
       "hasRole('Administrator') "
@@ -69,9 +63,7 @@ public class AiMcpServerDefinitionController
     super(service);
   }
 
-  /**
-   * Pages MCP server registrations in the active platform or tenant scope.
-   */
+  /** Pages MCP server registrations in the active platform or tenant scope. */
   @GetMapping
   @PreAuthorize(
       "hasRole('Administrator') "
@@ -86,154 +78,128 @@ public class AiMcpServerDefinitionController
           + "or hasAuthority('ai.workbench.mcp-publications.delete') "
           + "or hasAuthority('ai.workbench.runtime.view') "
           + "or hasAuthority('ai.workbench.runtime.pools.manage') "
-          + "or hasAuthority('ai.workbench.runtime.workloads.manage')"
-  )
+          + "or hasAuthority('ai.workbench.runtime.workloads.manage')")
   @Operation(summary = "分页查询 MCP Server")
   public Response<Page<AiMcpServerDefinition>> limit(
-      @RequestParam final Map<String, String> attributes,
-      final Pageable pageable
-  ) {
+      @RequestParam final Map<String, String> attributes, final Pageable pageable) {
     return limit(service.limit(attributes, pageable), AiMcpServerDefinition.class);
   }
 
-  /**
-   * Returns one MCP server registration.
-   */
+  /** Returns one MCP server registration. */
   @GetMapping("/{id}")
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.view')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.view')")
   @Operation(summary = "查询 MCP Server")
   public Response<?> find(@PathVariable("id") final String id) {
-    return invoke(() -> service.findActiveById(id)
-        .orElseThrow(() -> new IllegalArgumentException("MCP server does not exist")));
+    return invoke(
+        () ->
+            service
+                .findActiveById(id)
+                .orElseThrow(() -> new IllegalArgumentException("MCP server does not exist")));
   }
 
-  /**
-   * Creates an MCP server registration.
-   */
+  /** Creates an MCP server registration. */
   @PostMapping
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.create')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.create')")
   @Operation(summary = "新增 MCP Server")
   public Response<?> add(@RequestBody final AiMcpServerDefinition data) {
     return invoke(() -> service.create(data));
   }
 
-  /**
-   * Updates an MCP server registration.
-   */
+  /** Updates an MCP server registration. */
   @PutMapping
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.edit')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.edit')")
   @Operation(summary = "修改 MCP Server")
   public Response<?> modify(@RequestBody final AiMcpServerDefinition data) {
     return invoke(() -> service.modifyById(data));
   }
 
-  /**
-   * Deletes MCP server registrations.
-   */
+  /** Deletes MCP server registrations. */
   @DeleteMapping
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.delete')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.delete')")
   @Operation(summary = "删除 MCP Server")
   public Response<?> remove(@RequestParam("ids") final String ids) {
-    return invoke(() -> {
-      Set<String> idSet = StringUtil.stringToSet(ids);
-      service.removeByIds(idSet);
-      return idSet;
-    });
+    return invoke(
+        () -> {
+          Set<String> idSet = StringUtil.stringToSet(ids);
+          service.removeByIds(idSet);
+          return idSet;
+        });
   }
 
-  /**
-   * Initializes the remote server and persists a new capability snapshot.
-   */
+  /** Initializes the remote server and persists a new capability snapshot. */
   @PostMapping("/{id}/discover")
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.discover')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.discover')")
   @Operation(summary = "发现 MCP Server 能力")
   public Response<?> discover(@PathVariable("id") final String id) {
     return invoke(() -> service.discover(id));
   }
 
-  /**
-   * Pages immutable capability discovery snapshots for one MCP Server.
-   */
+  /** Pages immutable capability discovery snapshots for one MCP Server. */
   @GetMapping("/{id}/snapshots")
   @PreAuthorize(CAPABILITY_READ_AUTHORIZATION)
   @Operation(summary = "分页查询 MCP 能力快照历史")
   public Response<?> snapshots(
       @PathVariable("id") final String id,
-      final Pageable pageable
-  ) {
-    return invoke(() -> service.listSnapshots(id, pageable));
+      @RequestParam final java.util.Map<String, String> filters,
+      final Pageable pageable) {
+    return invoke(() -> service.querySnapshots(id, filters, pageable));
   }
 
-  /**
-   * Returns one decoded immutable capability snapshot.
-   */
+  /** Returns the authorized discovery-history query schema. */
+  @GetMapping("/{id}/snapshots/schema")
+  @PreAuthorize(CAPABILITY_READ_AUTHORIZATION)
+  public Response<?> snapshotSchema(@PathVariable("id") String id) {
+    return invoke(() -> service.snapshotSchema(id));
+  }
+
+  /** Loads the chronological predecessor independently of table filters. */
+  @GetMapping("/{id}/snapshots/{snapshotId}/previous")
+  @PreAuthorize(CAPABILITY_READ_AUTHORIZATION)
+  public Response<?> previousSnapshot(
+      @PathVariable("id") String id, @PathVariable("snapshotId") String snapshotId) {
+    return invoke(() -> service.previousSnapshot(id, snapshotId));
+  }
+
+  /** Returns one decoded immutable capability snapshot. */
   @GetMapping("/{id}/snapshots/{snapshotId}")
   @PreAuthorize(CAPABILITY_READ_AUTHORIZATION)
   @Operation(summary = "查询 MCP 能力快照详情")
   public Response<?> snapshot(
-      @PathVariable("id") final String id,
-      @PathVariable("snapshotId") final String snapshotId
-  ) {
+      @PathVariable("id") final String id, @PathVariable("snapshotId") final String snapshotId) {
     return invoke(() -> service.getSnapshot(id, snapshotId));
   }
 
-  /**
-   * Starts OAuth Authorization Code + PKCE for a remote MCP connection.
-   */
+  /** Starts OAuth Authorization Code + PKCE for a remote MCP connection. */
   @PostMapping("/{id}/oauth/authorize")
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.authorize')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.authorize')")
   @Operation(summary = "发起 MCP OAuth 2.1 授权")
   public Response<?> authorize(@PathVariable("id") final String id) {
     return invoke(() -> service.startOauthAuthorization(id));
   }
 
-  /**
-   * Completes an OAuth redirect relayed by the authenticated workbench page.
-   */
+  /** Completes an OAuth redirect relayed by the authenticated workbench page. */
   @PostMapping("/oauth/callback")
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.authorize')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.authorize')")
   @Operation(summary = "完成 MCP OAuth 2.1 授权")
-  public Response<?> oauthCallback(
-      @RequestBody final McpOauthCallbackCommand command
-  ) {
+  public Response<?> oauthCallback(@RequestBody final McpOauthCallbackCommand command) {
     return invoke(() -> service.completeOauthAuthorization(command));
   }
 
   /** Returns the current user's OAuth connection status for this provider. */
   @GetMapping("/{id}/oauth/connection")
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.authorize')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.authorize')")
   public Response<?> oauthConnection(@PathVariable("id") final String id) {
     return invoke(() -> service.currentProviderConnection(id).orElse(null));
   }
 
   /** Removes the current user's OAuth token material. */
   @DeleteMapping("/{id}/oauth/connection")
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.authorize')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.mcp-servers.authorize')")
   public Response<?> disconnectOauth(@PathVariable("id") final String id) {
     return invoke(() -> service.disconnectProvider(id));
   }
 
-  /**
-   * Returns operation permissions used by the consolidated MCP capability view.
-   */
+  /** Returns operation permissions used by the consolidated MCP capability view. */
   @GetMapping("/workbench-permissions")
   @PreAuthorize(
       "hasRole('Administrator') "
@@ -250,77 +216,64 @@ public class AiMcpServerDefinitionController
           + "or hasAuthority('ai.workbench.runtime.view') "
           + "or hasAuthority('ai.workbench.runtime.pools.manage') "
           + "or hasAuthority('ai.workbench.runtime.workloads.manage') "
-          + "or hasAuthority('ai.workbench.runtime.secrets.manage')"
-  )
+          + "or hasAuthority('ai.workbench.runtime.secrets.manage')")
   @Operation(summary = "查询 MCP 工作台功能权限")
   public Response<?> workbenchPermissions(final Authentication authentication) {
-    return ok(Map.ofEntries(
-        Map.entry("discoverServer", hasAuthority(authentication, "ai.workbench.mcp-servers.discover")),
-        Map.entry("callTool", hasAuthority(
-            authentication,
-            "ai.workbench.tools.call"
-        )),
-        Map.entry("managePools", hasAuthority(
-            authentication,
-            "ai.workbench.runtime.pools.manage"
-        )),
-        Map.entry("manageSecrets", hasAuthority(
-            authentication,
-            "ai.workbench.runtime.secrets.manage"
-        )),
-        Map.entry("manageWorkloads", hasAuthority(
-            authentication,
-            "ai.workbench.runtime.workloads.manage"
-        )),
-        Map.entry("viewCapabilities", hasAnyAuthority(
-            authentication,
-            "ai.workbench.mcp-servers.view",
-            "ai.workbench.tools.view",
-            "ai.workbench.tools.call",
-            "ai.workbench.mcp-servers.read-resource",
-            "ai.workbench.mcp-servers.get-prompt"
-        )),
-        Map.entry("viewGateway", hasAnyAuthority(
-            authentication,
-            "ai.workbench.mcp-servers.view",
-            "ai.workbench.mcp-gateway.view"
-        )),
-        Map.entry("viewNodes", hasAuthority(
-            authentication,
-            "ROLE_Administrator"
-        )),
-        Map.entry("viewPublications", hasAnyAuthority(
-            authentication,
-            "ai.workbench.mcp-publications.view",
-            "ai.workbench.mcp-publications.create",
-            "ai.workbench.mcp-publications.edit",
-            "ai.workbench.mcp-publications.delete"
-        )),
-        Map.entry("viewRuntime", hasAnyAuthority(
-            authentication,
-            "ai.workbench.runtime.view",
-            "ai.workbench.runtime.pools.manage",
-            "ai.workbench.runtime.workloads.manage",
-            "ai.workbench.runtime.secrets.manage"
-        )),
-        Map.entry("viewServers", hasAuthority(
-            authentication,
-            "ai.workbench.mcp-servers.view"
-        )),
-        Map.entry("readResource", hasAuthority(
-            authentication,
-            "ai.workbench.mcp-servers.read-resource"
-        )),
-        Map.entry("getPrompt", hasAuthority(
-            authentication,
-            "ai.workbench.mcp-servers.get-prompt"
-        ))
-    ));
+    return ok(
+        Map.ofEntries(
+            Map.entry(
+                "discoverServer",
+                hasAuthority(authentication, "ai.workbench.mcp-servers.discover")),
+            Map.entry("callTool", hasAuthority(authentication, "ai.workbench.tools.call")),
+            Map.entry(
+                "managePools", hasAuthority(authentication, "ai.workbench.runtime.pools.manage")),
+            Map.entry(
+                "manageSecrets",
+                hasAuthority(authentication, "ai.workbench.runtime.secrets.manage")),
+            Map.entry(
+                "manageWorkloads",
+                hasAuthority(authentication, "ai.workbench.runtime.workloads.manage")),
+            Map.entry(
+                "viewCapabilities",
+                hasAnyAuthority(
+                    authentication,
+                    "ai.workbench.mcp-servers.view",
+                    "ai.workbench.tools.view",
+                    "ai.workbench.tools.call",
+                    "ai.workbench.mcp-servers.read-resource",
+                    "ai.workbench.mcp-servers.get-prompt")),
+            Map.entry(
+                "viewGateway",
+                hasAnyAuthority(
+                    authentication,
+                    "ai.workbench.mcp-servers.view",
+                    "ai.workbench.mcp-gateway.view")),
+            Map.entry("viewNodes", hasAuthority(authentication, "ROLE_Administrator")),
+            Map.entry(
+                "viewPublications",
+                hasAnyAuthority(
+                    authentication,
+                    "ai.workbench.mcp-publications.view",
+                    "ai.workbench.mcp-publications.create",
+                    "ai.workbench.mcp-publications.edit",
+                    "ai.workbench.mcp-publications.delete")),
+            Map.entry(
+                "viewRuntime",
+                hasAnyAuthority(
+                    authentication,
+                    "ai.workbench.runtime.view",
+                    "ai.workbench.runtime.pools.manage",
+                    "ai.workbench.runtime.workloads.manage",
+                    "ai.workbench.runtime.secrets.manage")),
+            Map.entry("viewServers", hasAuthority(authentication, "ai.workbench.mcp-servers.view")),
+            Map.entry(
+                "readResource",
+                hasAuthority(authentication, "ai.workbench.mcp-servers.read-resource")),
+            Map.entry(
+                "getPrompt", hasAuthority(authentication, "ai.workbench.mcp-servers.get-prompt"))));
   }
 
-  /**
-   * Lists tools from the active immutable capability snapshot.
-   */
+  /** Lists tools from the active immutable capability snapshot. */
   @GetMapping("/{id}/tools")
   @PreAuthorize(CAPABILITY_READ_AUTHORIZATION)
   @Operation(summary = "查询 MCP Tool 快照")
@@ -328,9 +281,7 @@ public class AiMcpServerDefinitionController
     return invoke(() -> service.listTools(id));
   }
 
-  /**
-   * Lists resources from the active immutable capability snapshot.
-   */
+  /** Lists resources from the active immutable capability snapshot. */
   @GetMapping("/{id}/resources")
   @PreAuthorize(CAPABILITY_READ_AUTHORIZATION)
   @Operation(summary = "查询 MCP Resource 快照")
@@ -338,9 +289,7 @@ public class AiMcpServerDefinitionController
     return invoke(() -> service.listResources(id));
   }
 
-  /**
-   * Lists resource templates from the active immutable capability snapshot.
-   */
+  /** Lists resource templates from the active immutable capability snapshot. */
   @GetMapping("/{id}/resource-templates")
   @PreAuthorize(CAPABILITY_READ_AUTHORIZATION)
   @Operation(summary = "查询 MCP Resource Template 快照")
@@ -348,25 +297,17 @@ public class AiMcpServerDefinitionController
     return invoke(() -> service.listResourceTemplates(id));
   }
 
-  /**
-   * Reads a resource through the independent Gateway.
-   */
+  /** Reads a resource through the independent Gateway. */
   @PostMapping("/{id}/resources/read")
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAuthority('ai.workbench.mcp-servers.read-resource')"
-  )
+      "hasRole('Administrator') " + "or hasAuthority('ai.workbench.mcp-servers.read-resource')")
   @Operation(summary = "读取 MCP Resource")
   public Response<?> readResource(
-      @PathVariable("id") final String id,
-      @RequestBody final McpResourceReadCommand command
-  ) {
+      @PathVariable("id") final String id, @RequestBody final McpResourceReadCommand command) {
     return invoke(() -> service.readResource(id, command));
   }
 
-  /**
-   * Lists prompts from the active immutable capability snapshot.
-   */
+  /** Lists prompts from the active immutable capability snapshot. */
   @GetMapping("/{id}/prompts")
   @PreAuthorize(CAPABILITY_READ_AUTHORIZATION)
   @Operation(summary = "查询 MCP Prompt 快照")
@@ -374,34 +315,22 @@ public class AiMcpServerDefinitionController
     return invoke(() -> service.listPrompts(id));
   }
 
-  /**
-   * Renders a prompt through the independent Gateway.
-   */
+  /** Renders a prompt through the independent Gateway. */
   @PostMapping("/{id}/prompts/get")
   @PreAuthorize(
-      "hasRole('Administrator') "
-          + "or hasAuthority('ai.workbench.mcp-servers.get-prompt')"
-  )
+      "hasRole('Administrator') " + "or hasAuthority('ai.workbench.mcp-servers.get-prompt')")
   @Operation(summary = "获取 MCP Prompt")
   public Response<?> getPrompt(
-      @PathVariable("id") final String id,
-      @RequestBody final McpPromptGetCommand command
-  ) {
+      @PathVariable("id") final String id, @RequestBody final McpPromptGetCommand command) {
     return invoke(() -> service.getPrompt(id, command));
   }
 
-  /**
-   * Calls a tool for workbench testing through the independent Gateway.
-   */
+  /** Calls a tool for workbench testing through the independent Gateway. */
   @PostMapping("/{id}/tools/call")
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.tools.call')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.tools.call')")
   @Operation(summary = "调用 MCP Tool")
   public Response<?> callTool(
-      @PathVariable("id") final String id,
-      @RequestBody final McpToolCallCommand command
-  ) {
+      @PathVariable("id") final String id, @RequestBody final McpToolCallCommand command) {
     return invoke(() -> service.callTool(id, command));
   }
 
@@ -416,36 +345,31 @@ public class AiMcpServerDefinitionController
   }
 
   private Response<?> rejected(
-      final RuntimeException exception,
-      final String errorCode,
-      final boolean conflict
-  ) {
+      final RuntimeException exception, final String errorCode, final boolean conflict) {
     LOG.warn("MCP Server API request rejected with {}", errorCode, exception);
-    ResponseEntity.BodyBuilder response = conflict
-        ? ResponseEntity.status(409) : ResponseEntity.badRequest();
-    return Response.of(response
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(Map.of("errorCode", errorCode)));
+    ResponseEntity.BodyBuilder response =
+        conflict ? ResponseEntity.status(409) : ResponseEntity.badRequest();
+    return Response.of(
+        response.contentType(MediaType.APPLICATION_JSON).body(Map.of("errorCode", errorCode)));
   }
 
-  private boolean hasAuthority(
-      final Authentication authentication,
-      final String authority
-  ) {
-    return authentication != null && authentication.getAuthorities().stream()
-        .anyMatch(granted -> "ROLE_Administrator".equals(granted.getAuthority())
-            || authority.equals(granted.getAuthority()));
+  private boolean hasAuthority(final Authentication authentication, final String authority) {
+    return authentication != null
+        && authentication.getAuthorities().stream()
+            .anyMatch(
+                granted ->
+                    "ROLE_Administrator".equals(granted.getAuthority())
+                        || authority.equals(granted.getAuthority()));
   }
 
   private boolean hasAnyAuthority(
-      final Authentication authentication,
-      final String... authorities
-  ) {
+      final Authentication authentication, final String... authorities) {
     if (hasAuthority(authentication, "ROLE_Administrator")) {
       return true;
     }
-    return authentication != null && authentication.getAuthorities().stream()
-        .map(granted -> granted.getAuthority())
-        .anyMatch(granted -> Set.of(authorities).contains(granted));
+    return authentication != null
+        && authentication.getAuthorities().stream()
+            .map(granted -> granted.getAuthority())
+            .anyMatch(granted -> Set.of(authorities).contains(granted));
   }
 }

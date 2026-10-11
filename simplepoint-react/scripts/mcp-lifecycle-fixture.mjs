@@ -38,6 +38,8 @@ export function createMcpLifecycleFixture() {
           return respond({viewServers: true, discoverServer: tenant === '__platform__', managePools: tenant === '__platform__'}), true;
         }
         if (path === base + '/schema') return respond(schema), true;
+        if (path === workloads + '/schema') return respond({schema: localQuerySchema({...workloadFields,
+          runtimeWorkloadId: {type: 'string'}, lastError: {type: 'string'}, startedAt: {type: 'date-time'}, endedAt: {type: 'date-time'}}), buttons: []}), true;
         if (path === base) return respond(page([server, oauth], params)), true;
         if (path === pools) return respond(page([pool], params)), true;
         inReads++; maxReads = Math.max(maxReads, inReads);

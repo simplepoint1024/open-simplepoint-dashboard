@@ -108,6 +108,10 @@ function BillingSession() {
       </Col>)}
     </Row> : period && !query.error && <Spin size="small"/>}
     <DataTable<ModelSummary> storageKey="ai.billing.model-summary" columns={columns} dataSource={summary?.models ?? []}
+      query={{mode: 'local', scope: 'result', contextKey: JSON.stringify(period), fields: {
+        modelId: {type: 'string'}, currency: {type: 'string'}, invocationCount: {type: 'integer'},
+        inputTokens: {type: 'integer'}, outputTokens: {type: 'integer'}, totalCost: {type: 'number'},
+      }}}
       loading={!!period && query.isFetching} pagination={false} rowKey={record => record.modelDefinitionId + ':' + record.currency}
       toolbarExtra={<Space orientation="vertical" size={2}>
         <Typography.Text strong>{t('ai.billing.table.title', '模型费用排行')}</Typography.Text>

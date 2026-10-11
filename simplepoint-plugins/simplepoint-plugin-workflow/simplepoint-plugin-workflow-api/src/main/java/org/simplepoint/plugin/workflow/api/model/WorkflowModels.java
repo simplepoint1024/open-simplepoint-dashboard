@@ -7,8 +7,7 @@ import java.util.Map;
 /** Transport-neutral contracts for workflow definition and runtime operations. */
 public final class WorkflowModels {
 
-  private WorkflowModels() {
-  }
+  private WorkflowModels() {}
 
   /** Stable page shape independent of Spring Data serialization. */
   public record PageResult<T>(List<T> content, int page, int size, long totalElements) {
@@ -21,12 +20,7 @@ public final class WorkflowModels {
 
   /** Creates a stable process identity and its first draft. */
   public record CreateDefinitionCommand(
-      String key,
-      String name,
-      String category,
-      String description
-  ) {
-  }
+      String key, String name, String category, String description) {}
 
   /** Saves a draft when its optimistic revision still matches. */
   public record UpdateDraftCommand(
@@ -35,15 +29,24 @@ public final class WorkflowModels {
       String category,
       String description,
       String bpmnXml,
-      WorkflowFormContract formContract
-  ) {
-  }
+      WorkflowFormContract formContract) {}
 
   /** Publishes the requested draft revision with an audit comment. */
-  public record PublishDefinitionCommand(long expectedRevision, String comment) {
-  }
+  public record PublishDefinitionCommand(long expectedRevision, String comment) {}
 
-  /** Definition list projection. */
+  /** Definition list projection; header capabilities match database-backed fields only. */
+  @org.simplepoint.core.query.TableQuery(
+      maxPageSize = 100,
+      value = {
+        @org.simplepoint.core.query.QueryField("name"),
+        @org.simplepoint.core.query.QueryField("key"),
+        @org.simplepoint.core.query.QueryField("category"),
+        @org.simplepoint.core.query.QueryField("description"),
+        @org.simplepoint.core.query.QueryField("status"),
+        @org.simplepoint.core.query.QueryField("latestVersion"),
+        @org.simplepoint.core.query.QueryField("createdAt"),
+        @org.simplepoint.core.query.QueryField("updatedAt")
+      })
   public record DefinitionSummary(
       String id,
       String key,
@@ -56,9 +59,7 @@ public final class WorkflowModels {
       boolean unpublishedChanges,
       String createdBy,
       Instant createdAt,
-      Instant updatedAt
-  ) {
-  }
+      Instant updatedAt) {}
 
   /** Definition editor projection including draft, history and capabilities. */
   public record DefinitionDetail(
@@ -66,9 +67,7 @@ public final class WorkflowModels {
       String bpmnXml,
       List<VersionSummary> versions,
       DefinitionPermissions permissions,
-      WorkflowFormContract formContract
-  ) {
-  }
+      WorkflowFormContract formContract) {}
 
   /** Server-derived operation capabilities for the current actor. */
   public record DefinitionPermissions(
@@ -76,18 +75,15 @@ public final class WorkflowModels {
       boolean canEdit,
       boolean canPublish,
       boolean canCopyVersion,
-      boolean canStart
-  ) {
-  }
+      boolean canStart) {}
 
   /** Server-derived task and instance capabilities for the current actor. */
   public record RuntimePermissions(
       boolean canClaim,
       boolean canComplete,
       boolean canViewAllInstances,
-      boolean canCancelInstances
-  ) {
-  }
+      boolean canCancelInstances,
+      boolean canStartInstances) {}
 
   /** Immutable published version projection. */
   public record VersionSummary(
@@ -97,9 +93,7 @@ public final class WorkflowModels {
       String comment,
       String flowableProcessDefinitionId,
       String publishedBy,
-      Instant publishedAt
-  ) {
-  }
+      Instant publishedAt) {}
 
   /** Published version and its BPMN source. */
   public record VersionDetail(
@@ -108,18 +102,14 @@ public final class WorkflowModels {
       String name,
       String category,
       String description,
-      WorkflowFormContract formContract
-  ) {
-  }
+      WorkflowFormContract formContract) {}
 
   /** Authorized version-pinned runtime form projection, without engine-internal variables. */
   public record RuntimeForm(
       int definitionVersion,
       WorkflowFormContract formContract,
       WorkflowFormContract.Binding binding,
-      Map<String, Object> values
-  ) {
-  }
+      Map<String, Object> values) {}
 
   /** Starts a process against the latest or an explicit published version. */
   public record StartProcessCommand(
@@ -127,13 +117,10 @@ public final class WorkflowModels {
       String businessKey,
       String title,
       Map<String, Object> variables,
-      List<String> ccUserIds
-  ) {
-  }
+      List<String> ccUserIds) {}
 
   /** Completes a task with constrained variables and an optional comment. */
-  public record CompleteTaskCommand(Map<String, Object> variables, String comment) {
-  }
+  public record CompleteTaskCommand(Map<String, Object> variables, String comment) {}
 
   /** Platform-owned process instance projection. */
   public record ProcessInstanceSummary(
@@ -147,9 +134,7 @@ public final class WorkflowModels {
       String starterId,
       String status,
       Instant startedAt,
-      Instant endedAt
-  ) {
-  }
+      Instant endedAt) {}
 
   /** Pending or completed work item projection. */
   public record TaskSummary(
@@ -168,9 +153,7 @@ public final class WorkflowModels {
       boolean claimable,
       boolean actionable,
       String businessKey,
-      String instanceTitle
-  ) {
-  }
+      String instanceTitle) {}
 
   /** One historic or active BPMN activity occurrence. */
   public record ActivityState(
@@ -180,16 +163,16 @@ public final class WorkflowModels {
       String status,
       Instant startedAt,
       Instant endedAt,
-      String assignee
-  ) {
-  }
+      String assignee,
+      String id,
+      String taskId) {}
 
   /** BPMN source plus activity state used by the shared status diagram. */
   public record InstanceDiagram(
       ProcessInstanceSummary instance,
       String bpmnXml,
       List<ActivityState> activities,
-      List<String> activeActivityIds
-  ) {
-  }
+      List<String> activeActivityIds,
+      long totalActivities,
+      boolean historyTruncated) {}
 }

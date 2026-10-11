@@ -1,5 +1,6 @@
 import {readFileSync} from 'node:fs';
 import {compileLocalQuery} from '../libs/components/DataTable/localQuery.ts';
+import {fixturePage} from './query-fixture.mjs';
 
 // Contract is generated and compared by TenantMemberQueryHttpTest, not invented by this mock.
 const schema = JSON.parse(readFileSync(new URL('./member-schema.fixture.json', import.meta.url), 'utf8'));
@@ -103,13 +104,8 @@ export function createMemberFixture() {
         const candidate = url.pathname.endsWith('organization-candidates');
         const source = candidate ? rows : organizationRows.filter(row => !removedOrganizationUsers.has(row.userId));
         const keyword = (url.searchParams.get('keyword') ?? '').toLowerCase();
-        const matches = source.filter(row => `${row.name} ${row.email} ${row.userId}`.toLowerCase().includes(keyword));
-        const page = Number(url.searchParams.get('page') ?? 0);
-        const size = Number(url.searchParams.get('size') ?? 20);
-        if (size > 100) throw Error('Organization member fixture refuses unbounded pages');
-        return respond({content: matches.slice(page * size, (page + 1) * size),
-          page: {number: page, size, totalElements: matches.length,
-            totalPages: Math.ceil(matches.length / size)}}), true;
+        const matches = source.filter(row => `${row.name} ${row.email}`.toLowerCase().includes(keyword));
+        return respond(fixturePage(matches, {...fields, userType: {type: 'string'}}, url, ['orgId', 'keyword'])), true;
       }
       if (url.pathname === `${base}/schema` || url.pathname === `${base}/by-organization/schema`) {
         const current = structuredClone(schema);

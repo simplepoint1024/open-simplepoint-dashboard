@@ -3,7 +3,8 @@ import {Alert, App, Empty, Input, Modal, Space, Spin, Tag, Typography} from 'ant
 import {useSchema} from '@simplepoint/shared/hooks/useSchema';
 import TableActions from '@simplepoint/components/Table/Actions';
 import type {TableButtonProps} from '@simplepoint/components/Table';
-import DataTable from '@simplepoint/components/DataTable';
+import DataTable, {type QuerySchema, type TableQueryState} from '@simplepoint/components/DataTable';
+import {transportFilters} from '@simplepoint/components/Table/query';
 import SForm from '@simplepoint/components/SForm/Lazy';
 import type {SFormHandle} from '@simplepoint/components/SForm';
 import {del, get, put, useData} from '@simplepoint/shared/api/methods';
@@ -31,6 +32,8 @@ function MemberSession({organization, scope, onBlockedChange}: Props) {
   const [keywordInput, setKeywordInput] = useState(''), [keyword, setKeyword] = useState('');
   const [candidateOpen, setCandidateOpen] = useState(false), candidateOpenRef = useRef(false);
   const [candidatePage, setCandidatePage] = useState(0), [candidateInput, setCandidateInput] = useState(''), [candidateKeyword, setCandidateKeyword] = useState('');
+  const [memberQuery, setMemberQuery] = useState<TableQueryState>({filters: {}});
+  const [candidateQuery, setCandidateQuery] = useState<TableQueryState>({filters: {}});
   const [candidate, setCandidate] = useState<Member>(), candidateRef = useRef<Member | undefined>(undefined);
   const [candidateDraft, setCandidateDraft] = useState<UserTypeDraft>({userType: 'INTERNAL'});
   const [typeEditor, setTypeEditor] = useState<{row: Member; draft: UserTypeDraft} | null>(null), typeRef = useRef<typeof typeEditor>(null);
@@ -38,21 +41,22 @@ function MemberSession({organization, scope, onBlockedChange}: Props) {
   const [saving, setSaving] = useState(false), [error, setError] = useState('');
   const flight = useRef(false), alive = useRef(true), request = useRef<AbortController | null>(null), candidateForm = useRef<SFormHandle>(null), typeForm = useRef<SFormHandle>(null);
   const schema = useSchema(`${base}/by-organization`, {enabled: !!organization?.id});
+  const querySchema = schema.data?.schema?.['x-query'] ? schema.data.schema as unknown as QuerySchema : undefined;
   const blocked = candidateOpen || !!typeEditor || !!removal || saving;
   usePageRetention(false, blocked);
   useLayoutEffect(() => {onBlockedChange?.(blocked); return () => onBlockedChange?.(false);}, [blocked, onBlockedChange]);
   useEffect(() => {void ensure(['tenant-members', 'platform-accounts', 'common']);}, [ensure]);
   useEffect(() => {alive.current = true; return () => {alive.current = false; request.current?.abort();};}, []);
-  useEffect(() => {setSelectedKeys([]);}, [page, keyword]);
+  useEffect(() => {setSelectedKeys([]);}, [page, keyword, memberQuery]);
 
-  const members = useData(['organization-members', scope, organization?.id, keyword, page],
+  const members = useData(['organization-members', scope, organization?.id, keyword, page, memberQuery],
     ({signal}) => get<RawPage<Member>>(`${base}/by-organization`,
-      {orgId: organization?.id, keyword, page, size: 20}, {signal}).then(raw => normalizePage(raw, 20)),
-    {enabled: !!organization?.id, retry: false});
-  const candidates = useData(['organization-candidates', scope, organization?.id, candidateKeyword, candidatePage],
+      {...transportFilters(memberQuery.filters), ...(memberQuery.sort ? {sort: memberQuery.sort} : {}), orgId: organization?.id, keyword, page, size: 20}, {signal}).then(raw => normalizePage(raw, 20)),
+    {enabled: !!organization?.id && !!querySchema, retry: false});
+  const candidates = useData(['organization-candidates', scope, organization?.id, candidateKeyword, candidatePage, candidateQuery],
     ({signal}) => get<RawPage<Member>>(`${base}/organization-candidates`,
-      {orgId: organization?.id, keyword: candidateKeyword, page: candidatePage, size: 10}, {signal}).then(raw => normalizePage(raw, 10)),
-    {enabled: !!organization?.id && candidateOpen, retry: false});
+      {...transportFilters(candidateQuery.filters), ...(candidateQuery.sort ? {sort: candidateQuery.sort} : {}), orgId: organization?.id, keyword: candidateKeyword, page: candidatePage, size: 10}, {signal}).then(raw => normalizePage(raw, 10)),
+    {enabled: !!organization?.id && candidateOpen && !!querySchema, retry: false});
   const capabilities = useData(['organization-member-capabilities', scope], ({signal}) => get<{manage: boolean; remove: boolean}>(`${base}/by-organization/capabilities`, undefined, {signal}),
     {enabled: !!organization?.id});
   const dictionary = useData(['tenant-member-user-types'], ({signal}) =>
@@ -90,6 +94,7 @@ function MemberSession({organization, scope, onBlockedChange}: Props) {
   };
   const openCandidates = () => {
     if (!canAssign || !canOpen()) return; candidateOpenRef.current = true; candidateRef.current = undefined;
+    setCandidateQuery({filters: {}});
     setCandidate(undefined); setCandidateDraft({userType: 'INTERNAL'}); setCandidatePage(0); setCandidateInput(''); setCandidateKeyword(''); setError(''); setCandidateOpen(true);
   };
   const chooseCandidate = (row?: Member) => {if (flight.current) return; candidateRef.current = row; setCandidate(row);
@@ -145,6 +150,9 @@ function MemberSession({organization, scope, onBlockedChange}: Props) {
       {schema.isError && <Alert type="error" showIcon title={t('table.schemaLoadFail', '页面结构加载失败，请稍后重试。')} action={retry(schema.refetch)}/>}
       {members.isError && <Alert type="error" showIcon title={t('tenant-members.loadFailed', '组织用户加载失败')} action={retry(members.refetch)}/>}
       <div className="organization-members-table"><DataTable<Member> rowKey={canIdentify ? 'userId' : (_row, index) => `redacted-member-${index}`} storageKey="organization-members"
+        query={querySchema ? {mode: 'remote', schema: querySchema, state: memberQuery, onChange: next => {
+          if (blocked) return; setMemberQuery(next); setPage(0); setSelectedKeys([]);
+        }} : undefined}
         columns={columns} rowSelection={canIdentify ? {type: 'radio', selectedRowKeys: selectedKeys, onChange: setSelectedKeys,
           getCheckboxProps: row => ({disabled: blocked || !identifiableMember(row)})} : undefined}
         toolbarExtra={<TableActions<Member> buttons={actions.filter(action => action.key !== 'remove' || capabilities.data?.remove)}
@@ -167,6 +175,9 @@ function MemberSession({organization, scope, onBlockedChange}: Props) {
           onSearch={value => {chooseCandidate(undefined); setCandidateKeyword(value.trim()); setCandidatePage(0);}}/>
         {candidates.isError && <Alert type="error" showIcon title={t('tenant-members.candidatesFailed', '可添加用户加载失败')} action={retry(candidates.refetch)}/>}
         <DataTable<Member> size="small" rowKey="userId" storageKey="organization-member-candidates" loading={candidates.isFetching}
+          query={querySchema ? {mode: 'remote', schema: querySchema, state: candidateQuery, onChange: next => {
+            if (saving) return; chooseCandidate(undefined); setCandidateQuery(next); setCandidatePage(0);
+          }} : undefined}
           dataSource={candidates.isError ? [] : candidates.data?.content ?? []} columns={[
             {title: t('tenant-members.name', '用户'), dataIndex: 'name'}, {title: t('platform-accounts.email', '邮箱'), dataIndex: 'email'},
             {title: t('tenant-members.organization', '所属组织'), dataIndex: 'orgName', render: (value: unknown) => String(value || '-')},

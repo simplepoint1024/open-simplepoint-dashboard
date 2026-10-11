@@ -1,6 +1,8 @@
 import TableActions from "@simplepoint/components/Table/Actions";
 import { canEditPool } from "./Runtime/rowPolicy";
-import DataTable from "@simplepoint/components/DataTable";
+import DataTable, {type QuerySchema, type TableQueryState} from "@simplepoint/components/DataTable";
+import {transportFilters} from '@simplepoint/components/Table/query';
+import {useSchema} from '@simplepoint/shared/hooks/useSchema';
 import { del, get, post } from "@simplepoint/shared/api/methods";
 import { useI18n } from "@simplepoint/shared/hooks/useI18n";
 import { usePagePolling } from "@simplepoint/shared/page/usePagePolling";
@@ -107,10 +109,14 @@ const McpDeploymentStatusDialog = ({
   const [currentPool, setCurrentPool] = useState(pool);
   const [workloads, setWorkloads] = useState<RuntimeWorkload[]>([]);
   const [workloadPage, setWorkloadPage] = useState(0);
+  const [workloadQuery, setWorkloadQuery] = useState<TableQueryState>({filters: {}});
+  const workloadSchema = useSchema(workloadsUrl, {enabled: open && operation.selected, retry: false});
+  const querySchema = workloadSchema.data?.schema?.['x-query'] ? workloadSchema.data.schema as unknown as QuerySchema : undefined;
+  const schemaFailed = !!workloadSchema.error || !!workloadSchema.data && !querySchema;
   const [workloadTotal, setWorkloadTotal] = useState(0);
   const [activeCount, setActiveCount] = useState<number>();
   const [firstActive, setFirstActive] = useState<RuntimeWorkload>();
-  const viewKey = JSON.stringify([pool.id, server.id, workloadPage]);
+  const viewKey = JSON.stringify([pool.id, server.id, workloadPage, workloadQuery]);
   const currentView = useRef(viewKey); currentView.current = viewKey;
   const [discovery, setDiscovery] = useState<DiscoveryResult>();
   const [refreshing, setRefreshing] = useState(false);
@@ -122,7 +128,7 @@ const McpDeploymentStatusDialog = ({
   const discoveringRef = useRef(false);
 
   const refresh = useCallback(async (quiet = false): Promise<void> => {
-    if (!open || !selectedRef.current || !operation.current()) return;
+    if (!open || !selectedRef.current || !operation.current() || !querySchema || workloadSchema.error) return;
     if (readFlight.current) {
       if (!quiet) setRefreshing(true);
       if (readKey.current === viewKey) return readFlight.current;
@@ -136,7 +142,10 @@ const McpDeploymentStatusDialog = ({
       try {
         const [nextPool, nextWorkloads, nextServer, nextActive] = await Promise.all([
           get<RuntimePool>(poolsUrl + "/" + encodeURIComponent(pool.id), {}, {signal: request.signal}),
-          get<RawPage<RuntimeWorkload>>(workloadsUrl, {page: workloadPage, size: 20, ...deploymentWorkloadFilters(pool.id), sort: ['createdAt,desc', 'id,desc']}, {signal: request.signal}),
+          get<RawPage<RuntimeWorkload>>(workloadsUrl, {page: workloadPage, size: 20,
+            ...deploymentWorkloadFilters(pool.id, false, transportFilters(workloadQuery.filters)),
+            ...(workloadQuery.sort ? {sort: workloadQuery.sort} : querySchema['x-query'].fields.createdAt ? {sort: 'createdAt,desc'} : {}),
+          }, {signal: request.signal}),
           get<ManagedMcpServer>(serversUrl + "/" + encodeURIComponent(server.id), {}, {signal: request.signal}),
           get<RawPage<RuntimeWorkload>>(workloadsUrl, {page: 0, size: 1, ...deploymentWorkloadFilters(pool.id, true)}, {signal: request.signal}),
         ]);
@@ -155,7 +164,7 @@ const McpDeploymentStatusDialog = ({
       }
     })();
     readFlight.current = run; return run;
-  }, [open, pool.id, poolsUrl, server.id, serversUrl, t, workloadsUrl, workloadPage, viewKey, operation.current]);
+  }, [open, pool.id, poolsUrl, server.id, serversUrl, t, workloadsUrl, workloadPage, workloadQuery, querySchema, workloadSchema.error, viewKey, operation.current]);
   useEffect(() => {
     if (!open || !operation.selected) readRequest.current?.abort();
     return () => {readRequest.current?.abort();};
@@ -171,6 +180,8 @@ const McpDeploymentStatusDialog = ({
     discoveryAttempted.current = false;
   }, [autoDiscover, open, pool, server]);
   useEffect(() => {if (open && operation.selected) void refresh();}, [open, operation.selected, refresh]);
+  useEffect(() => {setWorkloadQuery({filters: {}}); setWorkloadPage(0);}, [pool.id, server.id]);
+  useEffect(() => {if (schemaFailed) setLoaded(false);}, [schemaFailed]);
 
   const pollStatus = useCallback(() => refresh(true), [refresh]);
   usePagePolling(pollStatus, open && !operation.busy && !confirmation, 2500);
@@ -368,7 +379,7 @@ const McpDeploymentStatusDialog = ({
         <TableActions
           selectedKeys={[currentPool.id]}
           selectedRows={[currentPool]}
-          isButtonDisabled={button => operating || discovering || !!confirmation || (button.key !== "close" && button.key !== "refresh" && (!loaded || !!loadError || refreshing))}
+          isButtonDisabled={button => operating || discovering || !!confirmation || (button.key !== "close" && button.key !== "refresh" && (!loaded || !!loadError || schemaFailed || refreshing))}
           buttons={[
             {
               key: "close",
@@ -436,6 +447,9 @@ const McpDeploymentStatusDialog = ({
       }
     >
       {loadError && <Alert type="error" showIcon title={loadError} style={{marginBottom: 12}}/>}
+      {schemaFailed && <Alert type="error" showIcon title={t('table.schemaLoadFail', '页面结构加载失败，请稍后重试。')}
+        action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retrySchema', sort: 0,
+          text: t('table.retry', '重试'), onClick: () => void workloadSchema.refetch()}]}/>}/>}
       <Alert
         showIcon
         type={errorMessage ? "error" : running ? "success" : "info"}
@@ -539,8 +553,12 @@ const McpDeploymentStatusDialog = ({
         storageKey="ai.mcp.deployment-workloads"
         rowKey="id"
         size="small"
-        loading={refreshing}
-        dataSource={workloads}
+        loading={refreshing || workloadSchema.isFetching}
+        query={querySchema ? {mode: 'remote', schema: querySchema, state: workloadQuery, onChange: next => {
+          if (operation.busy || confirmation) return;
+          setWorkloadQuery(next); setWorkloadPage(0);
+        }} : undefined}
+        dataSource={loadError || schemaFailed ? [] : workloads}
         pagination={{current: workloadPage + 1, pageSize: 20, total: workloadTotal, hideOnSinglePage: true,
           disabled: operation.busy || !!confirmation || refreshing,
           onChange: page => {if (!operation.busy && !confirmation && !refreshing) setWorkloadPage(page - 1);}}}
@@ -574,7 +592,7 @@ const McpDeploymentStatusDialog = ({
             width: 180,
             render: formatDateTime,
           },
-        ]}
+        ].filter(column => !!querySchema?.properties[column.dataIndex])}
       />
       {running && (
         <Space direction="vertical" style={{ width: "100%" }} size="middle">

@@ -1,16 +1,18 @@
 package org.simplepoint.plugin.rbac.tenant.api.repository;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.simplepoint.api.base.BaseRepository;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
+import org.springframework.data.domain.Pageable;
 
 /**
- * TenantRepository provides an interface for managing Tenant entities.
- * It extends the BaseRepository to inherit basic CRUD operations.
- * This interface is used to interact with the persistence layer for Tenant entities.
+ * TenantRepository provides an interface for managing Tenant entities. It extends the
+ * BaseRepository to inherit basic CRUD operations. This interface is used to interact with the
+ * persistence layer for Tenant entities.
  */
 public interface TenantRepository extends BaseRepository<Tenant, String> {
 
@@ -66,6 +68,12 @@ public interface TenantRepository extends BaseRepository<Tenant, String> {
 
   /** Resolves non-deleted role authorities belonging to an active tenant. */
   Collection<String> resolveActiveRoleAuthorities(String tenantId, Collection<String> authorities);
+
+  /**
+   * Keyset page of active tenant role members; duplicate role assignments never duplicate users.
+   */
+  List<String> resolveActiveRoleMemberIds(
+      String tenantId, Collection<String> authorities, String afterUserId, Pageable pageable);
 
   /**
    * Checks whether another active tenant already uses the supplied name.

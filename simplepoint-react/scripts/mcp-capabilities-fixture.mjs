@@ -1,4 +1,5 @@
 import {compileLocalQuery} from '../libs/components/DataTable/localQuery.ts';
+import {fixtureSchema, fixturePage} from './query-fixture.mjs';
 
 export const mcpCapabilitiesRoute = {id: 'mcp-capabilities-query', code: 'ai.view', type: 'PAGE', routeKind: 'item',
   path: '/smoke/mcp-capabilities-query', component: 'ai/workbench/McpServers', label: 'MCP 分页测试', scopeTypes: ['PLATFORM']};
@@ -16,6 +17,8 @@ export function createMcpCapabilitiesFixture() {
     remoteServerName: 'Remote', remoteServerVersion: String(index), schemaHash: `hash-${index}`,
     discoveredAt: new Date(Date.UTC(2026, 9, 9) - index * 60_000).toISOString(), active: index === 0,
     toolCount: 1, resourceCount: 1, resourceTemplateCount: 0, promptCount: 1}));
+  const snapshotFields = {discoveredAt: {type: 'date-time'}, remoteServerName: {type: 'string'}, remoteServerVersion: {type: 'string'},
+    protocolVersion: {type: 'string'}, schemaHash: {type: 'string'}, active: {type: 'boolean'}};
   const publication = {id: 'Publication-existing', name: '已有发布', code: 'existing', upstreamServerId: 'Server-520',
     status: 'DRAFT', enabled: false, requiredScopes: 'mcp.invoke', rateLimitPerMinute: 60};
   const schema = {schema: {type: 'object', required: ['name', 'code', 'upstreamServerId'], properties: {
@@ -62,10 +65,12 @@ export function createMcpCapabilitiesFixture() {
       else if (match[2] === 'resources') respond([{uri: 'demo://resource', name: 'demo', title: '演示资源'}]);
       else if (match[2] === 'resource-templates') respond([]);
       else if (match[2] === 'prompts') respond([prompt]);
-      else if (match[2] === 'snapshots') respond(page(snapshots, url.searchParams));
+      else if (match[2] === 'snapshots/schema') respond(fixtureSchema(snapshotFields));
+      else if (match[2] === 'snapshots') respond(fixturePage(snapshots, snapshotFields, url));
       else if (match[2].startsWith('snapshots/')) {
-        const snapshot = snapshots.find(item => item.id === match[2].slice('snapshots/'.length));
-        respond({...snapshot, tools: [tool], resources: [], resourceTemplates: [], prompts: [], capabilities: {tools: {}}});
+        const parts = match[2].split('/'), index = snapshots.findIndex(item => item.id === parts[1]);
+        const snapshot = snapshots[index + (parts[2] === 'previous' ? 1 : 0)];
+        respond(snapshot ? {...snapshot, tools: [tool], resources: [], resourceTemplates: [], prompts: [], capabilities: {tools: {}}} : null);
       } else return false;
       return true;
     }};

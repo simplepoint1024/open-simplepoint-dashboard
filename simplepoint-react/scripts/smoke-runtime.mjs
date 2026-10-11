@@ -8,7 +8,8 @@ export async function smokeRuntime({clickMenu, clickReady, clickText, fill, poll
   for (const kind of ['Pool', 'Workload', 'Node', 'Secret']) {
     const spec = fixture.datasets.find(item => item.kind === kind);
     const panel = `.runtime-list-${spec.plural}`;
-    await poll(() => evaluate(`!!document.querySelector('.nb-tab-panel-active .ant-tabs-tab[data-node-key="${spec.plural}"]')`), `${kind} runtime tab ready`);
+    await poll(() => evaluate(`!!document.querySelector('.nb-tab-panel-active .ant-tabs-tab[data-node-key="${spec.plural}"]')`), `${kind} runtime tab ready`)
+      .catch(async error => {console.log(await evaluate(`({hash:location.hash,text:document.querySelector('.nb-tab-panel-active')?.textContent})`)); throw error;});
     await clickReady(`.nb-tab-panel-active .ant-tabs-tab[data-node-key="${spec.plural}"]`);
     const row = index => `${panel} tr[data-row-key="${kind}-${String(index).padStart(3, '0')}"]`;
     await poll(() => evaluate(`!!document.querySelector('${row(0)}')`), `${kind} real-schema initial page`);

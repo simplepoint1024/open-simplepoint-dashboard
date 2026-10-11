@@ -70,6 +70,9 @@ export default function EffectiveScopePreview({isBlocked, onOpenChange}: {isBloc
           ]} />
           <Table size="small" rowKey="resource" pagination={{pageSize: 10}} storageKey="rbac.effective-page-data-permissions"
             dataSource={dataRows}
+            query={{mode: 'local', scope: 'complete', fields: {
+              title: {type: 'string'}, scope: {type: 'string'}, organizations: {type: 'string'}, self: {type: 'string'},
+            }}}
             columns={[
               {title: t('data-scopes.preview.resource', '页面资源'), dataIndex: 'title'},
               {title: t('data-scopes.preview.scope', '行范围'), dataIndex: 'scope'},
@@ -78,6 +81,9 @@ export default function EffectiveScopePreview({isBlocked, onOpenChange}: {isBloc
             ]} />
           <Table size="small" rowKey="key" pagination={{pageSize: 10}} storageKey="rbac.effective-page-field-permissions"
             dataSource={resourceFields}
+            query={{mode: 'local', scope: 'complete', fields: {
+              resource: {type: 'string'}, field: {type: 'string'}, access: {type: 'string'},
+            }}}
             columns={[
               {title: t('data-scopes.preview.resource', '页面资源'), dataIndex: 'resource'},
               {title: t('data-scopes.preview.field', '资源字段'), dataIndex: 'field'},
@@ -85,6 +91,7 @@ export default function EffectiveScopePreview({isBlocked, onOpenChange}: {isBloc
             ]} />
           <Table size="small" rowKey="key" pagination={{pageSize: 10}} storageKey="rbac.effective-field-permissions"
             dataSource={legacyFields}
+            query={{mode: 'local', scope: 'complete', fields: {field: {type: 'string'}, access: {type: 'string'}}}}
             columns={[
               {title: t('data-scopes.preview.field', '资源字段'), dataIndex: 'field'},
               {title: t('data-scopes.preview.access', '访问级别'), dataIndex: 'access'},

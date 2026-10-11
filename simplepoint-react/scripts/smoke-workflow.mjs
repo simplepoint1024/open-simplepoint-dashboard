@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 export async function smokeWorkflow({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture, capturePreview}) {
+  await evaluate(`localStorage.setItem('sp.tenantId','workflow-smoke-tenant');window.dispatchEvent(new CustomEvent('sp-set-tenant',{detail:'workflow-smoke-tenant'}));`);
   const page = '.nb-tab-panel-active';
   const drawer = '.ant-drawer-open';
   const selectCanvasElement = async element => {
@@ -139,8 +140,10 @@ export async function smokeWorkflow({clickMenu, clickReady, clickText, fill, pol
   await poll(() => evaluate(`!!document.querySelector('${page} tr[data-row-key="task1"]')`), 'workflow tasks list');
   await clickText(`${page} tr[data-row-key="task1"] button`, '办理');
   await poll(() => evaluate(`!!document.querySelector('${drawer} input[type="checkbox"]')`), 'normal typed task form');
-  await clickText(`${drawer} button`, '提交');
+  await clickText(`${drawer} button`, '通过');
   await poll(() => fixture.writes.some(write => write.path.endsWith('/complete')), 'task submitted');
   assert.deepEqual(fixture.writes.find(write => write.path.endsWith('/complete')).data.variables, {approved: false}, 'false is a valid required boolean');
+  await poll(() => evaluate(`!document.querySelector('.workflow-task-editor.ant-drawer-open')`), 'approval transaction has finished');
+  await evaluate(`localStorage.setItem('sp.tenantId','__platform__');window.dispatchEvent(new CustomEvent('sp-set-tenant',{detail:'__platform__'}));`);
   console.log('PASS: workflow platform layout, separate metadata/design, published history, user/role selectors, immutable start version, canvas save flush, typed task submission');
 }

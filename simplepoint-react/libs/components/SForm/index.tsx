@@ -16,6 +16,7 @@ import {validateDecimalFields} from './decimalValue';
 import {beginPreparation} from './preparation';
 import {flushSync} from 'react-dom';
 import {commitFormInput} from './inputCommit';
+import {submitButtonState} from './submitButton';
 
 // Keep optional widget dependencies out of forms which do not use them.
 const lazyWidget = (load: () => Promise<{default: ComponentType<WidgetProps>}>) => {
@@ -54,14 +55,11 @@ export type SFormHandle = {submit: () => void};
 // 自定义提交按钮
 const CustomSubmitButton = (props: SubmitButtonProps) => {
   const {t} = useI18n();
-  const {uiSchema} = props;
-  const {"ui:submitButtonOptions": {submitText} = {}} = (uiSchema || {}) as any;
-  const submitLoading = Boolean((props as any)?.registry?.formContext?.submitLoading);
-  const submitDisabled = Boolean((props as any)?.registry?.formContext?.submitDisabled);
-  const text = submitText || t('form.submit', '提交');
+  const state = submitButtonState(props.uiSchema, props.registry.formContext, t('form.submit', '提交'));
+  if (state.hidden) return null;
   return (
-    <Button type="primary" htmlType="submit" loading={submitLoading} disabled={submitLoading || submitDisabled}>
-      {text}
+    <Button type="primary" htmlType="submit" loading={state.loading} disabled={state.disabled}>
+      {state.text}
     </Button>
   );
 };

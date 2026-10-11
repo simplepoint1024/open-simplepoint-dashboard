@@ -61,6 +61,7 @@
   "dna.metadata.page.detail.dialect": "Dialect",
   "dna.metadata.page.tab.structure": "Structure",
   "dna.metadata.page.tab.preview": "Data Preview",
+  "dna.metadata.page.preview.queryScope": "Paginated external database preview without header filtering or sorting. Use the SQL workbench to query the full dataset.",
   "dna.metadata.page.modal.namespace.title": "Create Namespace",
   "dna.metadata.page.modal.table.title": "Create Table",
   "dna.metadata.page.modal.view.title": "Create View",

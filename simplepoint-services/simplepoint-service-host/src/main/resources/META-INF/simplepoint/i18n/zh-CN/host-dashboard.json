@@ -1,4 +1,9 @@
 {
+  "nav.notificationsAndMessages": "通知与消息",
+  "nav.markSystemRead": "系统通知全部已读",
+  "nav.systemNotifications": "系统通知",
+  "nav.personalMessagesUnavailable": "个人消息数量暂时无法加载",
+  "nav.personalMessagesHint": "工作流提醒和审批结果统一在我的消息中查看。",
   "home.calendar.title": "日历",
   "home.calendar.today": "回到今天",
   "home.calendar.previous": "上个月",

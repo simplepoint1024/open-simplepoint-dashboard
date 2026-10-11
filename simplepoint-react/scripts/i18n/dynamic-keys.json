@@ -621,17 +621,6 @@
         "organizations.type.department",
         "organizations.type.team"
       ]
-    },
-    {
-      "file": "modules/simplepoint-workflow/src/views/Instances/index.tsx",
-      "expression": "`workflow.instance.status.${value.toLowerCase()}`",
-      "expectedOccurrences": 1,
-      "mode": "finite",
-      "resolvedKeys": [
-        "workflow.instance.status.running",
-        "workflow.instance.status.completed",
-        "workflow.instance.status.canceled"
-      ]
     }
   ]
 }

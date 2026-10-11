@@ -1,6 +1,11 @@
+import {fixtureSchema, fixturePage} from './query-fixture.mjs';
+
 export const catalogRoute = {id: 'catalog-standard-test', code: 'ai.catalog.view', type: 'PAGE', routeKind: 'item',
   path: '/smoke/catalog-standard', component: 'ai/workbench/Catalog', label: '扩展市场标准测试', scopeTypes: ['PLATFORM', 'TENANT']};
 const base = '/ai/workbench/catalog';
+const fields = {title: {type: 'string', label: '名称'}, description: {type: 'string'}, code: {type: 'string'}, registryName: {type: 'string'},
+  source: {type: 'string', enum: ['INTERNAL', 'OFFICIAL_MCP']}, kind: {type: 'string', enum: ['MCP_SERVER']}, version: {type: 'string'},
+  status: {type: 'string'}, updatedAt: {type: 'date-time'}};
 export function createCatalogFixture() {
   const internal = Array.from({length: 521}, (_, index) => ({id: 'internal:mcp:' + index, source: 'INTERNAL', kind: 'MCP_SERVER',
     title: 'Internal' + String(index).padStart(3, '0'), code: 'internal-' + index, status: 'READY', importable: false, remoteImportable: false, runtimeImportable: false}));
@@ -16,6 +21,12 @@ export function createCatalogFixture() {
       const path = url.pathname, params = new URLSearchParams(url.searchParams), tenant = req.headers['x-tenant-id'];
       if (req.method === 'GET') {
         reads.push({path, params, tenant});
+        if (path === base + '/schema') {
+          const schema = fixtureSchema(fields);
+          schema.schema.properties.source.oneOf = [{const: 'INTERNAL', title: '内部'}, {const: 'OFFICIAL_MCP', title: '官方 MCP Registry'}];
+          delete schema.schema.properties.source.enum;
+          return respond(schema), true;
+        }
         if (path.endsWith('/workbench-permissions')) {
           if (failPermissions) {failPermissions = false; expectedFailure(503); return respond({errorCode: 'AI_CATALOG_OPERATION_FAILED'}, 503), true;}
           return respond({sync: !readOnly && tenant === '__platform__', importRemote: !readOnly, importRuntime: !readOnly}), true;
@@ -23,12 +34,7 @@ export function createCatalogFixture() {
         if (path.endsWith('/sync-status')) return respond({status: 'SUCCEEDED', syncMode: 'FULL', lastCompletedAt: '2026-10-10T01:00:00Z'}), true;
         if (path !== base) throw Error('Unexpected catalog read: ' + path);
         if (failRead) {failRead = false; expectedFailure(503); return respond({errorCode: 'AI_CATALOG_OPERATION_FAILED'}, 503), true;}
-        const page = Number(params.get('page')), size = Number(params.get('size'));
-        if (size > 100 || size < 1 || [...params.keys()].some(key => !['page', 'size', 'query', 'source', 'kind'].includes(key))) throw Error('Invalid catalog page contract');
-        const query = (params.get('query') ?? '').toLowerCase(), source = params.get('source');
-        const rows = [...(source === 'OFFICIAL_MCP' ? [] : internal), ...(source === 'INTERNAL' ? [] : official)]
-          .filter(row => [row.title, row.code, row.description].some(value => value?.toLowerCase().includes(query)));
-        return respond({content: rows.slice(page * size, (page + 1) * size), number: page, size, totalElements: rows.length, totalPages: Math.ceil(rows.length / size)}), true;
+        return respond(fixturePage([...internal, ...official], fields, url)), true;
       }
       if (readOnly || req.method !== 'POST') throw Error('Unauthorized catalog mutation');
       let raw = ''; for await (const chunk of req) raw += chunk;

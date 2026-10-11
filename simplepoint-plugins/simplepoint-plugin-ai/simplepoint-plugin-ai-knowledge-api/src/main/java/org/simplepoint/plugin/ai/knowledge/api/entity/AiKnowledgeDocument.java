@@ -22,27 +22,37 @@ import org.simplepoint.plugin.ai.knowledge.api.model.AiKnowledgeDocumentStatus;
 import org.simplepoint.plugin.ai.knowledge.api.model.AiKnowledgeErrorCodeSerializer;
 import org.springframework.core.annotation.Order;
 
-/**
- * Parsed source document stored in a knowledge base.
- */
+/** Parsed source document stored in a knowledge base. */
 @Data
 @Entity
 @Table(
     name = "simpoint_ai_knowledge_documents",
     indexes = {
-        @Index(name = "idx_simpoint_ai_kb_doc_base", columnList = "knowledge_base_id"),
-        @Index(name = "idx_simpoint_ai_kb_doc_scope", columnList = "scope_type, tenant_id"),
-        @Index(name = "idx_simpoint_ai_kb_doc_storage", columnList = "storage_object_id")
-    }
-)
+      @Index(name = "idx_simpoint_ai_kb_doc_base", columnList = "knowledge_base_id"),
+      @Index(name = "idx_simpoint_ai_kb_doc_scope", columnList = "scope_type, tenant_id"),
+      @Index(name = "idx_simpoint_ai_kb_doc_storage", columnList = "storage_object_id")
+    })
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @Schema(title = "i18n:ai.knowledge-documents.entity.title")
+@org.simplepoint.core.query.TableQuery(
+    value = {
+      @org.simplepoint.core.query.QueryField("name"),
+      @org.simplepoint.core.query.QueryField("fileName"),
+      @org.simplepoint.core.query.QueryField("sourceType"),
+      @org.simplepoint.core.query.QueryField("fileSize"),
+      @org.simplepoint.core.query.QueryField("status"),
+      @org.simplepoint.core.query.QueryField("chunkCount"),
+      @org.simplepoint.core.query.QueryField("createdAt"),
+      @org.simplepoint.core.query.QueryField("processedAt")
+    },
+    maxPageSize = 100)
 public class AiKnowledgeDocument extends BaseEntityImpl<String> {
 
   @Order(0)
   @Column(name = "knowledge_base_id", length = 64, nullable = false)
-  @Schema(title = "i18n:ai.knowledge-documents.title.knowledgeBaseId",
+  @Schema(
+      title = "i18n:ai.knowledge-documents.title.knowledgeBaseId",
       accessMode = Schema.AccessMode.READ_ONLY)
   private String knowledgeBaseId;
 
@@ -57,32 +67,41 @@ public class AiKnowledgeDocument extends BaseEntityImpl<String> {
 
   @Order(1)
   @Column(length = 512, nullable = false)
-  @Schema(title = "i18n:ai.knowledge-documents.title.name",
-      extensions = @Extension(name = "x-ui", properties =
-          @ExtensionProperty(name = "x-list-visible", value = "true")))
+  @Schema(
+      title = "i18n:ai.knowledge-documents.title.name",
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = @ExtensionProperty(name = "x-list-visible", value = "true")))
   private String name;
 
   @Order(2)
   @Column(name = "file_name", length = 512)
-  @Schema(title = "i18n:ai.knowledge-documents.title.fileName",
+  @Schema(
+      title = "i18n:ai.knowledge-documents.title.fileName",
       accessMode = Schema.AccessMode.READ_ONLY,
-      extensions = @Extension(name = "x-ui", properties =
-          @ExtensionProperty(name = "x-list-visible", value = "true")))
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = @ExtensionProperty(name = "x-list-visible", value = "true")))
   private String fileName;
 
   @Order(3)
   @Column(name = "mime_type", length = 256)
-  @Schema(title = "i18n:ai.knowledge-documents.title.mimeType",
+  @Schema(
+      title = "i18n:ai.knowledge-documents.title.mimeType",
       accessMode = Schema.AccessMode.READ_ONLY)
   private String mimeType;
 
   @Column(name = "file_size")
-  @Schema(title = "i18n:ai.knowledge-documents.title.fileSize",
+  @Schema(
+      title = "i18n:ai.knowledge-documents.title.fileSize",
       accessMode = Schema.AccessMode.READ_ONLY)
   private Long fileSize;
 
   @Column(name = "storage_object_id", length = 64)
-  @Schema(title = "i18n:ai.knowledge-documents.title.storageObjectId",
+  @Schema(
+      title = "i18n:ai.knowledge-documents.title.storageObjectId",
       accessMode = Schema.AccessMode.READ_ONLY)
   private String storageObjectId;
 
@@ -97,38 +116,49 @@ public class AiKnowledgeDocument extends BaseEntityImpl<String> {
   @Order(4)
   @Enumerated(EnumType.STRING)
   @Column(name = "source_type", length = 16, nullable = false)
-  @Schema(title = "i18n:ai.knowledge-documents.title.sourceType",
+  @Schema(
+      title = "i18n:ai.knowledge-documents.title.sourceType",
       accessMode = Schema.AccessMode.READ_ONLY,
-      extensions = @Extension(name = "x-ui", properties =
-          @ExtensionProperty(name = "x-list-visible", value = "true")))
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = @ExtensionProperty(name = "x-list-visible", value = "true")))
   private AiKnowledgeDocumentSourceType sourceType;
 
   @Order(5)
   @Enumerated(EnumType.STRING)
   @Column(length = 16, nullable = false)
-  @Schema(title = "i18n:ai.knowledge-documents.title.status",
+  @Schema(
+      title = "i18n:ai.knowledge-documents.title.status",
       accessMode = Schema.AccessMode.READ_ONLY,
-      extensions = @Extension(name = "x-ui", properties =
-          @ExtensionProperty(name = "x-list-visible", value = "true")))
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = @ExtensionProperty(name = "x-list-visible", value = "true")))
   private AiKnowledgeDocumentStatus status;
 
   @Order(6)
   @Column(name = "chunk_count")
-  @Schema(title = "i18n:ai.knowledge-documents.title.chunkCount",
+  @Schema(
+      title = "i18n:ai.knowledge-documents.title.chunkCount",
       accessMode = Schema.AccessMode.READ_ONLY,
-      extensions = @Extension(name = "x-ui", properties =
-          @ExtensionProperty(name = "x-list-visible", value = "true")))
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = @ExtensionProperty(name = "x-list-visible", value = "true")))
   private Integer chunkCount;
 
   @Order(7)
   @Column(name = "processed_at")
-  @Schema(title = "i18n:ai.knowledge-documents.title.processedAt",
+  @Schema(
+      title = "i18n:ai.knowledge-documents.title.processedAt",
       accessMode = Schema.AccessMode.READ_ONLY)
   private Instant processedAt;
 
   @Column(name = "error_message", length = 2048)
   @JsonSerialize(using = AiKnowledgeErrorCodeSerializer.class)
-  @Schema(title = "i18n:ai.knowledge-documents.title.errorMessage",
+  @Schema(
+      title = "i18n:ai.knowledge-documents.title.errorMessage",
       accessMode = Schema.AccessMode.READ_ONLY)
   private String errorMessage;
 

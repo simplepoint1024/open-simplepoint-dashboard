@@ -18,10 +18,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 /**
- * TenantService is an interface that defines methods for managing tenant-related operations.
- * It is part of the RBAC (Role-Based Access Control) module of the SimplePoint application.
- * This service will handle operations related to tenants, such as retrieving tenant information,
- * managing tenant data, and other related functionalities.
+ * TenantService is an interface that defines methods for managing tenant-related operations. It is
+ * part of the RBAC (Role-Based Access Control) module of the SimplePoint application. This service
+ * will handle operations related to tenants, such as retrieving tenant information, managing tenant
+ * data, and other related functionalities.
  */
 @RemoteContract(name = "saas.tenant")
 public interface TenantService extends BaseService<Tenant, String> {
@@ -37,7 +37,8 @@ public interface TenantService extends BaseService<Tenant, String> {
   /**
    * Retrieves a set of tenants associated with the currently authenticated user.
    *
-   * @return a set of NamedTenantVo objects representing the tenants associated with the current user
+   * @return a set of NamedTenantVo objects representing the tenants associated with the current
+   *     user
    */
   Set<NamedTenantVo> getCurrentUserTenants();
 
@@ -117,9 +118,7 @@ public interface TenantService extends BaseService<Tenant, String> {
     return ownerItems(null, pageable);
   }
 
-  /**
-   * Loads a page of tenant owner candidates matching the optional keyword.
-   */
+  /** Loads a page of tenant owner candidates matching the optional keyword. */
   Page<UserRelevanceVo> ownerItems(String keyword, Pageable pageable);
 
   /**
@@ -133,15 +132,20 @@ public interface TenantService extends BaseService<Tenant, String> {
     return userItems(tenantId, null, pageable);
   }
 
-  /**
-   * Loads a page of tenant members matching the optional keyword.
-   */
+  /** Loads a page of tenant members matching the optional keyword. */
   Page<UserRelevanceVo> userItems(String tenantId, String keyword, Pageable pageable);
 
-  /** Loads a SQL-filtered assignment side; null selected preserves the legacy all-candidate selector. */
-  Page<UserRelevanceVo> userItems(String tenantId, Boolean selected, Map<String, String> filters, Pageable pageable);
+  /**
+   * Loads a SQL-filtered assignment side; null selected preserves the legacy all-candidate
+   * selector.
+   */
+  Page<UserRelevanceVo> userItems(
+      String tenantId, Boolean selected, Map<String, String> filters, Pageable pageable);
 
-  /** Returns the candidate query contract after checking management authority over the target tenant. */
+  /**
+   * Returns the candidate query contract after checking management authority over the target
+   * tenant.
+   */
   Map<String, Object> userItemsSchema(String tenantId);
 
   /**
@@ -152,19 +156,29 @@ public interface TenantService extends BaseService<Tenant, String> {
    */
   Collection<String> authorizedUsers(String tenantId);
 
-  /** Capability for the selected tenant, using exactly the member-management write policy; never lists accounts. */
+  /**
+   * Capability for the selected tenant, using exactly the member-management write policy; never
+   * lists accounts.
+   */
   Map<String, Boolean> userManagementCapabilities(String tenantId);
 
   /**
    * Resolves the requested IDs that are active members of a tenant.
    *
-   * <p>This narrow lookup supports tenant-safe assignee and copied-user validation without
-   * exposing the full member directory to ordinary members.</p>
+   * <p>This narrow lookup supports tenant-safe assignee and copied-user validation without exposing
+   * the full member directory to ordinary members.
    */
   Collection<String> resolveActiveMemberIds(String tenantId, Collection<String> userIds);
 
   /** Resolves existing, non-deleted role authorities within a tenant, in bounded batches. */
   Collection<String> resolveActiveRoleAuthorities(String tenantId, Collection<String> authorities);
+
+  /**
+   * Internal notification fan-out only: ordered, bounded active members of tenant roles. Continue
+   * after the last returned user ID; ordinary member credentials cannot enumerate it.
+   */
+  Collection<String> resolveActiveRoleMemberIds(
+      String tenantId, Collection<String> authorities, String afterUserId, int limit);
 
   /**
    * Adds tenant members.

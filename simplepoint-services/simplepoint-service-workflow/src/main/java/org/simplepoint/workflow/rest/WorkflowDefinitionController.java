@@ -2,6 +2,7 @@ package org.simplepoint.workflow.rest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Map;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.CreateDefinitionCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionDetail;
@@ -13,6 +14,8 @@ import org.simplepoint.plugin.workflow.api.model.WorkflowModels.UpdateDraftComma
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.VersionDetail;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.VersionSummary;
 import org.simplepoint.plugin.workflow.api.service.WorkflowCenterService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,11 +44,14 @@ public class WorkflowDefinitionController {
   @GetMapping
   @Operation(summary = "分页查询流程定义")
   public Response<PageResult<DefinitionSummary>> definitions(
-      @RequestParam(name = "keyword", required = false) final String keyword,
-      @RequestParam(name = "page", defaultValue = "0") final int page,
-      @RequestParam(name = "size", defaultValue = "20") final int size
-  ) {
-    return Response.okay(service.definitions(keyword, page, size));
+      @RequestParam Map<String, String> filters, @PageableDefault(size = 20) Pageable page) {
+    return Response.okay(service.queryDefinitions(filters, page));
+  }
+
+  /** Returns the readable workflow-definition query schema. */
+  @GetMapping("/schema")
+  public Response<Map<String, Object>> schema() {
+    return Response.okay(service.definitionsSchema());
   }
 
   /** Returns current definition capabilities. */
@@ -75,9 +81,7 @@ public class WorkflowDefinitionController {
   @PreAuthorize("hasRole('Administrator') or hasAuthority('workflow.definitions.edit')")
   @Operation(summary = "按乐观修订号保存流程草稿")
   public Response<DefinitionDetail> saveDraft(
-      @PathVariable("id") final String id,
-      @RequestBody final UpdateDraftCommand command
-  ) {
+      @PathVariable("id") final String id, @RequestBody final UpdateDraftCommand command) {
     return Response.okay(service.updateDraft(id, command));
   }
 
@@ -86,9 +90,7 @@ public class WorkflowDefinitionController {
   @PreAuthorize("hasRole('Administrator') or hasAuthority('workflow.definitions.publish')")
   @Operation(summary = "校验并发布不可变流程版本")
   public Response<VersionSummary> publish(
-      @PathVariable("id") final String id,
-      @RequestBody final PublishDefinitionCommand command
-  ) {
+      @PathVariable("id") final String id, @RequestBody final PublishDefinitionCommand command) {
     return Response.okay(service.publish(id, command));
   }
 
@@ -96,9 +98,7 @@ public class WorkflowDefinitionController {
   @GetMapping("/{id}/versions/{version}")
   @Operation(summary = "读取指定发布版本")
   public Response<VersionDetail> version(
-      @PathVariable("id") final String id,
-      @PathVariable("version") final int version
-  ) {
+      @PathVariable("id") final String id, @PathVariable("version") final int version) {
     return Response.okay(service.version(id, version));
   }
 
@@ -109,8 +109,7 @@ public class WorkflowDefinitionController {
   public Response<DefinitionDetail> copyVersion(
       @PathVariable("id") final String id,
       @PathVariable("version") final int version,
-      @RequestParam("expectedRevision") final long expectedRevision
-  ) {
+      @RequestParam("expectedRevision") final long expectedRevision) {
     return Response.okay(service.copyVersionToDraft(id, version, expectedRevision));
   }
 }

@@ -1,4 +1,5 @@
 import DataTable from '@simplepoint/components/DataTable';
+import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
 import SForm from '@simplepoint/components/SForm/Lazy';
 import type {SFormHandle} from '@simplepoint/components/SForm';
 import TableActions from '@simplepoint/components/Table/Actions';
@@ -8,7 +9,7 @@ import type {
 } from '@simplepoint/components/WorkflowDesigner';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {usePageRetention} from '@simplepoint/shared/page/hooks';
-import {Alert, App, Drawer, Input, Modal, Space, Spin, Tag, Typography} from 'antd';
+import {Alert, App, Drawer, Modal, Space, Spin, Tag, Typography} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import {type ComponentProps, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
@@ -65,10 +66,6 @@ function DefinitionsSession() {
         : t('workflow.editor.priorityInteger', '优先级文本必须能被引擎解析为 32 位整数，不能使用小数或指数文本') : undefined};
   }, [queryClient, queryScope, t]);
   const {message} = App.useApp(), mutation = useMutationScope();
-  const [keyword, setKeyword] = useState('');
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(0);
-  const [size, setSize] = useState(20);
   const [createOpen, setCreateOpen] = useState(false);
   const [createData, setCreateData] = useState<CreateValues>({});
   const [createDirty, setCreateDirty] = useState(false), [startDirty, setStartDirty] = useState(false);
@@ -117,12 +114,11 @@ function DefinitionsSession() {
   usePageRetention(!locked && !dirty, locked || dirty);
   useEffect(() => { void ensure(['workflow']); }, [ensure, locale]);
 
-  const definitions = useData(['workflow', 'definitions', search, page, size],
-    ({signal}) => workflowApi.definitions(search, page, size, signal), {retry: false});
+  const definitions = useRemoteList<DefinitionSummary>('/workflow/definitions', mutation.selected);
   const permissionsQuery = useData(['workflow', 'definition-permissions'],
     ({signal}) => workflowApi.permissions(signal));
   const permissions = permissionsQuery.data;
-  const load = useCallback(async () => {await definitions.refetch();}, [definitions.refetch]);
+  const load = definitions.refresh;
   const startForm = useData(['workflow', 'start-form', startTarget?.id, startVersion],
     ({signal}) => workflowApi.startForm(startTarget!.id, startVersion, signal),
     {enabled: Boolean(startTarget), retry: false, staleTime: Infinity, gcTime: 120_000,
@@ -441,23 +437,17 @@ function DefinitionsSession() {
   }}), [t]);
 
   return <section className="workflow-page">
-      {definitions.isError && <Alert type="error" showIcon message={t('workflow.loadFailed', '数据加载失败')}
+      {definitions.error && <Alert type="error" showIcon message={t('workflow.loadFailed', '数据加载失败')}
         action={<TableActions selectedKeys={[]} selectedRows={[]}
           buttons={[{key: 'retry', sort: 10, text: t('workflow.retry', '重试'), argumentMinSize: 0, argumentMaxSize: 0}]}
-          onButtonEvents={{retry: () => { void load(); }}}/>}/>}
-      <DataTable rowKey="id" storageKey="workflow.definitions" columns={columns}
-        dataSource={definitions.data?.content ?? []} loading={definitions.isFetching} refresh={() => void load()}
+          onButtonEvents={{retry: definitions.retry}}/>}/>}
+      <DataTable {...definitions.tableProps} storageKey="workflow.definitions" columns={definitions.columns(columns)}
         toolbarExtra={<Space wrap><TableActions selectedKeys={[]} selectedRows={[]}
           buttons={permissions?.canCreate ? [{key: 'add', sort: 10, text: t('workflow.action.create', '新建流程'), icon: 'PlusOutlined',
             type: 'primary', disabled: locked, argumentMinSize: 0, argumentMaxSize: 0}] : []}
           onButtonEvents={{add: () => {if (!locked) {setWriteError(''); setCreateOpen(true);}}}}/>
-          <Input.Search value={keyword} allowClear style={{width: 280}} disabled={locked}
-            placeholder={t('workflow.search', '搜索名称、标识或说明')}
-            onChange={event => setKeyword(event.target.value)}
-            onSearch={value => {setPage(0); setSearch(value.trim());}}/>
         </Space>}
-        scroll={{x: 1100}} pagination={{current: page + 1, pageSize: size, total: definitions.data?.totalElements ?? 0, showSizeChanger: true, disabled: locked,
-          onChange: (next, nextSize) => {setPage(next - 1); setSize(nextSize);}}}/>
+        scroll={{x: 1100}} pagination={definitions.tableProps.pagination && {...definitions.tableProps.pagination, disabled: locked}}/>
 
     <Modal title={t('workflow.action.create', '新建流程')} open={createOpen && mutation.selected} footer={null}
       destroyOnHidden={!createOpen} closable={!saving} maskClosable={!saving} keyboard={!saving}

@@ -1,7 +1,8 @@
 import api from '@/api';
 import type {TableButtonProps} from '@simplepoint/components/Table';
 import SimpleTable from '@simplepoint/components/SimpleTable';
-import DataTable from '@simplepoint/components/DataTable';
+import DataTable, {type QuerySchema, type TableQueryState} from '@simplepoint/components/DataTable';
+import {transportFilters} from '@simplepoint/components/Table/query';
 import TableActions from '@simplepoint/components/Table/Actions';
 import SForm from '@simplepoint/components/SForm/Lazy';
 import type {SFormHandle} from '@simplepoint/components/SForm';
@@ -106,6 +107,7 @@ const KnowledgeBasesSession = () => {
   const [documentsOpen, setDocumentsOpen] = useState(false);
   const [documentPage, setDocumentPage] = useState(0);
   const [documentSize, setDocumentSize] = useState(20);
+  const [documentQuery, setDocumentQuery] = useState<TableQueryState>({filters: {}});
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -139,11 +141,18 @@ const KnowledgeBasesSession = () => {
     void ensure(baseConfig.i18nNamespaces);
   }, [baseConfig.i18nNamespaces, ensure, locale]);
 
-  const documentsQuery = useData(['knowledge-documents', baseConfig.baseUrl, selectedKnowledgeBase?.id, documentPage, documentSize],
+  const documentsEndpoint = `${baseConfig.baseUrl}/${encodeURIComponent(selectedKnowledgeBase?.id ?? '')}/documents`;
+  const documentsSchema = useSchema(documentsEndpoint, {enabled: documentsOpen && canDocuments && !!selectedKnowledgeBase?.id, retry: false});
+  const querySchema = documentsSchema.data?.schema?.['x-query'] ? documentsSchema.data.schema as unknown as QuerySchema : undefined;
+  const documentsPageQuery = useData(['knowledge-documents', baseConfig.baseUrl, selectedKnowledgeBase?.id, documentPage, documentSize, documentQuery],
     async ({signal}) => normalizePage(await get<RawPage<KnowledgeDocument>>(
-      `${baseConfig.baseUrl}/${encodeURIComponent(selectedKnowledgeBase!.id)}/documents`,
-      {page: documentPage, size: documentSize, sort: 'createdAt,desc'}, {signal})),
-    {enabled: documentsOpen && Boolean(selectedKnowledgeBase?.id), retry: false});
+      documentsEndpoint,
+      {...transportFilters(documentQuery.filters), page: documentPage, size: documentSize, ...(documentQuery.sort ? {sort: documentQuery.sort} : {})}, {signal})),
+    {enabled: documentsOpen && canDocuments && !!querySchema && Boolean(selectedKnowledgeBase?.id), retry: false});
+  const documentError = documentsSchema.error ?? documentsPageQuery.error
+    ?? (documentsSchema.data && !querySchema ? new Error('查询配置不完整') : undefined);
+  const documentsQuery = {...documentsPageQuery, error: documentError, isError: !!documentError,
+    isFetching: documentsSchema.isFetching || documentsPageQuery.isFetching};
   const documents = documentsQuery.data ?? emptyDocuments;
   const documentsLoading = documentsQuery.isFetching;
   const limitsQuery = useData(['knowledge-document-limits', baseConfig.baseUrl],
@@ -163,8 +172,9 @@ const KnowledgeBasesSession = () => {
   }, [queryClient, scope, baseConfig.baseUrl, baseConfig.name]);
 
   const loadDocuments = useCallback(async (_knowledgeBase?: KnowledgeBaseRow, _silent = false) => {
-    await documentsQuery.refetch();
-  }, [documentsQuery.refetch]);
+    if (!querySchema || documentsSchema.error) await documentsSchema.refetch();
+    else await documentsPageQuery.refetch();
+  }, [querySchema, documentsSchema.error, documentsSchema.refetch, documentsPageQuery.refetch]);
 
   const hasActiveIndexJobs = useMemo(
     () => documents.content.some((document) => (
@@ -187,6 +197,7 @@ const KnowledgeBasesSession = () => {
     if (locked || operation.isBusy() || !canDocuments || !operation.isSelected() || !hasRecordIdentity(knowledgeBase)) return;
     setSelectedKnowledgeBase(structuredClone(knowledgeBase)); setWriteError('');
     setDocumentPage(0);
+    setDocumentQuery({filters: {}});
     setDocumentsOpen(true);
   }, [locked, canDocuments, operation.isSelected, operation.isBusy]);
 
@@ -504,10 +515,15 @@ const KnowledgeBasesSession = () => {
         {writeError && !uploadOpen && !textOpen && !deleting && <Alert type="error" showIcon title={writeError}/>}
         <DataTable
           rowKey="id"
+          storageKey="ai.knowledge-documents"
+          query={querySchema ? {mode: 'remote', schema: querySchema, state: documentQuery, onChange: next => {
+            if (documentsLocked || operation.isBusy()) return;
+            setDocumentQuery(next); setDocumentPage(0);
+          }} : undefined}
           size="small"
           loading={documentsLoading}
-          columns={documentColumns}
-          dataSource={documents.content}
+          columns={querySchema ? documentColumns.filter(column => !('dataIndex' in column) || !column.dataIndex || !!querySchema.properties[String(column.dataIndex)]) : []}
+          dataSource={documentsQuery.error ? [] : documents.content}
           refresh={documentsLocked ? undefined : () => void loadDocuments()}
           toolbarExtra={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
             {key: 'upload', sort: 10, type: 'primary', text: t('ai.knowledge-bases.documents.upload', '上传文档'),
@@ -608,6 +624,11 @@ const KnowledgeBasesSession = () => {
           onSubmit={({formData}) => void handleRetrieve(formData ?? {})}/>
         <DataTable
           rowKey="chunkId"
+          storageKey="ai.knowledge-retrieval.hits"
+          query={{mode: 'local', scope: 'result', contextKey: JSON.stringify(retrievalResult), fields: {
+            documentName: {type: 'string'}, score: {type: 'number'}, vectorScore: {type: 'number'},
+            keywordScore: {type: 'number'}, content: {type: 'string'},
+          }}}
           size="small"
           loading={retrieving}
           columns={hitColumns}

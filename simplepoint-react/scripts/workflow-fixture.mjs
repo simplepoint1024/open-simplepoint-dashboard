@@ -1,11 +1,13 @@
 import {readFileSync} from 'node:fs';
+import {createWorkflowPersonalFixture, definitionFields} from './workflow-personal-fixture.mjs';
+import {fixtureSchema, fixturePage} from './query-fixture.mjs';
 const numericLiterals = JSON.parse(readFileSync(new URL('../libs/components/ExpressionEditor/numericLiterals.fixture.json', import.meta.url), 'utf8'));
 const priorityLiterals = JSON.parse(readFileSync(new URL('../libs/components/ExpressionEditor/priorityLiterals.fixture.json', import.meta.url), 'utf8'));
 
 export const workflowRoutes = ['Definitions', 'Tasks', 'Instances'].map((expose, index) => ({
   id: `workflow-${expose}`, code: 'workflow.view', type: 'PAGE', routeKind: 'item',
   path: `/smoke/workflow-${expose.toLowerCase()}`, component: `workflow/${expose}`,
-  label: ['流程定义测试', '流程任务测试', '流程事项测试'][index], scopeTypes: ['PLATFORM'],
+  label: ['流程定义测试', '流程任务测试', '流程事项测试'][index], scopeTypes: ['PLATFORM', 'TENANT'],
 }));
 
 const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -40,7 +42,7 @@ export function createWorkflowFixture() {
     status: 'PUBLISHED', unpublishedChanges: false, createdBy: 'actor', updatedAt: '2026-10-09T00:00:00Z'};
   const versions = [2, 1].map(version => ({id: `version${version}`, version, checksum: `checksum${version}`,
     publishedBy: 'actor', publishedAt: '2026-10-09T00:00:00Z', comment: `发布说明 ${version}`}));
-  let draftXml = xml, draftContract = structuredClone(contract), failCopy = false, failComplete = false, failCancel = false;
+  let draftXml = xml, draftContract = structuredClone(contract), failCopy = false;
   const users = Array.from({length: 125}, (_, index) => ({id: `member-${index}`, value: `member-${index}`, name: `租户成员 ${index}`}));
   const roles = [{id: 'role1', value: 'tenant.approver', name: '审批角色'}];
   const writes = [], requests = [];
@@ -50,11 +52,9 @@ export function createWorkflowFixture() {
   let failPriorityPreview;
   const instance = {id: 'instance1', definitionId: 'definition1', definitionKey: 'approval', definitionName: '审批流程',
     definitionVersion: 1, title: '申请事项', status: 'RUNNING', startedAt: '2026-10-09T00:00:00Z', starterId: 'actor'};
-  const task = {id: 'task1', processInstanceId: 'instance1', taskDefinitionKey: 'review', name: '审批任务',
-    definitionName: '审批流程', instanceTitle: '申请事项', priority: 50, actionable: true, claimable: false,
-    assignee: 'actor', createdAt: '2026-10-09T00:00:00Z'};
   const detail = () => ({definition: {...definition}, bpmnXml: draftXml, formContract: structuredClone(draftContract), versions, permissions});
-  return {writes, requests, numericPreviewCompletions, priorityPreviewCompletions, snapshot: () => structuredClone({definition, versions, instance, draftContract}),
+  const personal = createWorkflowPersonalFixture({xml, contract, definition});
+  return {writes, requests, personal, numericPreviewCompletions, priorityPreviewCompletions, snapshot: () => structuredClone({definition, versions, instance, draftContract}),
     delayPriorityPreview(value, milliseconds) {priorityPreviewDelays.set(value, milliseconds);},
     failPriorityPreview(value) {failPriorityPreview = value;},
     delayNumericPreview(expression, milliseconds) {numericPreviewDelays.set(expression, milliseconds);},
@@ -83,7 +83,7 @@ export function createWorkflowFixture() {
       });
     },
     bindStart() {draftContract = {...draftContract, startBinding: {provider: 'legacy.provider', formId: 'stored-form', version: 3, variableMappings: {reviewer: 'approver'}}};},
-    failCopy() {failCopy = true;}, failComplete() {failComplete = true;}, failCancel() {failCancel = true;},
+    failCopy() {failCopy = true;}, failComplete() {personal.fail('complete');}, failCancel() {personal.fail('cancel');},
     async handle(req, url, respond, expectedFailure = () => {}) {
       const path = url.pathname;
       if (!path.startsWith('/workflow/') && !path.startsWith('/common/tenant-directory/')) return false;
@@ -95,6 +95,7 @@ export function createWorkflowFixture() {
         data = JSON.parse(Buffer.concat(chunks).toString() || '{}');
         writes.push({path, data});
       }
+      if (await personal.handle(req, url, data, respond, expectedFailure)) return true;
       if (path.endsWith('/copy-to-draft')) {
         if (Number(url.searchParams.get('expectedRevision')) !== definition.draftRevision) throw Error('Copy lost its captured draft revision');
         const version = Number(path.split('/').at(-2));
@@ -152,9 +153,8 @@ export function createWorkflowFixture() {
         numericPreviewCompletions.push({expression, value: item.value});
         return respond({value: item.value}), true;
       }
-      if (path === '/workflow/runtime/permissions') return respond({canClaim: true, canComplete: true,
-        canViewAllInstances: true, canCancelInstances: true}), true;
-      if (path === '/workflow/definitions') return respond({content: [{...definition}], page: 0, size: 20, totalElements: 1}), true;
+      if (path === '/workflow/definitions/schema') return respond(fixtureSchema(definitionFields)), true;
+      if (path === '/workflow/definitions') return respond(fixturePage([{...definition}], definitionFields, url)), true;
       if (path === '/workflow/definitions/definition1') return respond(detail()), true;
       if (path === '/workflow/definitions/definition1/draft') {
         if (data.expectedRevision !== definition.draftRevision) throw Error('Stale workflow draft revision');
@@ -174,23 +174,6 @@ export function createWorkflowFixture() {
         return respond({definitionVersion: version, formContract: contract, values: {}}), true;
       }
       if (path === '/workflow/definitions/definition1/instances') return respond({...instance, definitionVersion: data.version}), true;
-      if (path === '/workflow/tasks/pending') return respond({content: [task], page: 0, size: 20, totalElements: 1}), true;
-      if (path === '/workflow/tasks/completed') return respond({content: [], page: 0, size: 20, totalElements: 0}), true;
-      if (path === '/workflow/tasks/task1/form') return respond({definitionVersion: 1, formContract: contract,
-        values: {approved: false}}), true;
-      if (path === '/workflow/tasks/task1/complete') {
-        await new Promise(resolve => setTimeout(resolve, 250));
-        if (failComplete) {failComplete = false; expectedFailure(503); return respond({message: '任务提交失败（测试）'}, 503), true;}
-        return respond({...instance, status: 'COMPLETED'}), true;
-      }
-      if (path === '/workflow/instances/instance1/diagram') return respond({instance, bpmnXml: xml, activities: [], activeActivityIds: ['review']}), true;
-      if (path === '/workflow/instances/instance1/cancel') {
-        if (!data.reason?.trim() || data.reason.length > 500) throw Error('Cancellation must include a validated reason');
-        await new Promise(resolve => setTimeout(resolve, 250));
-        if (failCancel) {failCancel = false; expectedFailure(503); return respond({message: '流程终止失败（测试）'}, 503), true;}
-        return respond({...instance, status: 'CANCELED'}), true;
-      }
-      if (path.startsWith('/workflow/instances')) return respond({content: [instance], page: 0, size: 20, totalElements: 1}), true;
       throw Error('Unimplemented workflow fixture: ' + path);
     }};
 }

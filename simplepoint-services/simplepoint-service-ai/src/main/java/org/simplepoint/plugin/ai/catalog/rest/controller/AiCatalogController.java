@@ -12,7 +12,6 @@ import org.simplepoint.plugin.ai.catalog.api.model.AiCatalogImportRequest;
 import org.simplepoint.plugin.ai.catalog.api.model.AiCatalogRuntimeImportRequest;
 import org.simplepoint.plugin.ai.catalog.api.model.AiCatalogSyncErrorCode;
 import org.simplepoint.plugin.ai.catalog.api.model.AiCatalogSyncResult;
-import org.simplepoint.plugin.ai.catalog.api.model.CatalogPackageKind;
 import org.simplepoint.plugin.ai.catalog.api.model.CatalogSource;
 import org.simplepoint.plugin.ai.catalog.api.model.CatalogSyncMode;
 import org.simplepoint.plugin.ai.catalog.api.model.CatalogSyncStatus;
@@ -33,9 +32,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * AI workbench extension market endpoints.
- */
+/** AI workbench extension market endpoints. */
 @RestController
 @RequestMapping(AiCatalogPaths.CATALOG)
 @Tag(name = "AI extension catalog", description = "内部扩展市场和官方 MCP Registry")
@@ -45,10 +42,9 @@ public class AiCatalogController {
   private final AiCatalogService service;
   private final AiScopeAccessPolicy scopePolicy;
 
-  /**
-   * Creates the controller.
-   */
-  public AiCatalogController(final AiCatalogService service, final AiScopeAccessPolicy scopePolicy) {
+  /** Creates the controller. */
+  public AiCatalogController(
+      final AiCatalogService service, final AiScopeAccessPolicy scopePolicy) {
     this.service = service;
     this.scopePolicy = scopePolicy;
   }
@@ -57,62 +53,64 @@ public class AiCatalogController {
   @GetMapping("/workbench-permissions")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.catalog.view')")
   public Response<?> workbenchPermissions(final Authentication authentication) {
-    boolean owned = false, platform = false;
+    boolean owned = false;
+    boolean platform = false;
     try {
       var scope = scopePolicy.currentManagementScope();
-      owned = true; platform = scope.scopeType() == AiResourceScope.SYSTEM;
+      owned = true;
+      platform = scope.scopeType() == AiResourceScope.SYSTEM;
     } catch (AccessDeniedException ignored) {
       // An unsupported request scope never grants a business operation.
     }
     boolean importAllowed = owned && authorized(authentication, "ai.workbench.catalog.import");
-    return Response.okay(Map.of("sync", platform && authorized(authentication, "ai.workbench.catalog.sync"),
-        "importRemote", importAllowed, "importRuntime", importAllowed));
+    return Response.okay(
+        Map.of(
+            "sync",
+            platform && authorized(authentication, "ai.workbench.catalog.sync"),
+            "importRemote",
+            importAllowed,
+            "importRuntime",
+            importAllowed));
   }
 
   private static boolean authorized(Authentication authentication, String authority) {
-    return authentication != null && authentication.isAuthenticated() && authentication.getAuthorities().stream()
-        .anyMatch(grant -> grant.getAuthority().equals(authority) || grant.getAuthority().equals("ROLE_Administrator"));
+    return authentication != null
+        && authentication.isAuthenticated()
+        && authentication.getAuthorities().stream()
+            .anyMatch(
+                grant ->
+                    grant.getAuthority().equals(authority)
+                        || grant.getAuthority().equals("ROLE_Administrator"));
   }
 
-  /**
-   * Pages internal and official extensions visible in the active scope.
-   */
+  /** Pages internal and official extensions visible in the active scope. */
   @GetMapping
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.catalog.view')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.catalog.view')")
   @Operation(summary = "分页查询 AI 扩展市场")
   public Response<?> findAll(
-      @RequestParam(name = "query", required = false) final String query,
-      @RequestParam(name = "source", required = false) final CatalogSource source,
-      @RequestParam(name = "kind", required = false) final CatalogPackageKind kind,
-      @RequestParam(name = "page", defaultValue = "0") final int page,
-      @RequestParam(name = "size", defaultValue = "20") final int size
-  ) {
-    return invoke(
-        () -> service.findAll(query, source, kind, page, size)
-    );
+      @RequestParam final Map<String, String> filters,
+      final org.springframework.data.domain.Pageable page) {
+    return invoke(() -> service.query(filters, page));
   }
 
-  /**
-   * Returns durable official Registry cursor and health.
-   */
+  /** Returns readable catalog fields and their enforced query operators. */
+  @GetMapping("/schema")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.catalog.view')")
+  public Response<?> schema() {
+    return invoke(service::querySchema);
+  }
+
+  /** Returns durable official Registry cursor and health. */
   @GetMapping("/sync-status")
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.catalog.view')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.catalog.view')")
   @Operation(summary = "查询官方 MCP Registry 同步状态")
   public Response<?> syncStatus() {
     return invoke(service::getOfficialSyncState);
   }
 
-  /**
-   * Runs a bounded platform-only synchronization pass.
-   */
+  /** Runs a bounded platform-only synchronization pass. */
   @PostMapping("/sync")
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.catalog.sync')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.catalog.sync')")
   @Operation(summary = "同步官方 MCP Registry")
   public Response<?> sync() {
     try {
@@ -121,49 +119,36 @@ public class AiCatalogController {
       throw ex;
     } catch (RuntimeException ex) {
       log.error("Official MCP Registry endpoint synchronization failed", ex);
-      return Response.okay(new AiCatalogSyncResult(
-          CatalogSource.OFFICIAL_MCP,
-          CatalogSyncMode.INCREMENTAL,
-          CatalogSyncStatus.FAILED,
-          0,
-          null,
-          null,
-          AiCatalogSyncErrorCode.OFFICIAL_MCP_SYNC_FAILED
-      ));
+      return Response.okay(
+          new AiCatalogSyncResult(
+              CatalogSource.OFFICIAL_MCP,
+              CatalogSyncMode.INCREMENTAL,
+              CatalogSyncStatus.FAILED,
+              0,
+              null,
+              null,
+              AiCatalogSyncErrorCode.OFFICIAL_MCP_SYNC_FAILED));
     }
   }
 
-  /**
-   * Imports one safe remote MCP registration into the active scope.
-   */
+  /** Imports one safe remote MCP registration into the active scope. */
   @PostMapping("/{entryId}/import")
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.catalog.import')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.catalog.import')")
   @Operation(summary = "导入官方远程 MCP Server")
   public Response<?> importServer(
       @PathVariable("entryId") final String entryId,
-      @RequestBody(required = false) final AiCatalogImportRequest request
-  ) {
-    return invoke(
-        () -> service.importOfficialMcpServer(entryId, request)
-    );
+      @RequestBody(required = false) final AiCatalogImportRequest request) {
+    return invoke(() -> service.importOfficialMcpServer(entryId, request));
   }
 
   /** Imports one official package as a normalized Runtime Profile draft. */
   @PostMapping("/{entryId}/import-runtime")
-  @PreAuthorize(
-      "hasRole('Administrator') or hasAuthority('ai.workbench.catalog.import')"
-  )
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('ai.workbench.catalog.import')")
   @Operation(summary = "导入官方 MCP package 为 Runtime Profile 草稿")
   public Response<?> importRuntimeProfile(
       @PathVariable("entryId") final String entryId,
-      @RequestBody(required = false)
-      final AiCatalogRuntimeImportRequest request
-  ) {
-    return invoke(
-        () -> service.importOfficialMcpPackage(entryId, request)
-    );
+      @RequestBody(required = false) final AiCatalogRuntimeImportRequest request) {
+    return invoke(() -> service.importOfficialMcpPackage(entryId, request));
   }
 
   private Response<?> invoke(final Supplier<?> operation) {
@@ -171,35 +156,25 @@ public class AiCatalogController {
       return Response.okay(operation.get());
     } catch (IllegalArgumentException ex) {
       log.warn("AI catalog request was rejected", ex);
-      return catalogError(
-          HttpStatus.BAD_REQUEST,
-          AiCatalogErrorCode.AI_CATALOG_REQUEST_INVALID
-      );
+      return catalogError(HttpStatus.BAD_REQUEST, AiCatalogErrorCode.AI_CATALOG_REQUEST_INVALID);
     } catch (IllegalStateException ex) {
       log.error("AI catalog operation is unavailable", ex);
       return catalogError(
-          HttpStatus.BAD_REQUEST,
-          AiCatalogErrorCode.AI_CATALOG_OPERATION_UNAVAILABLE
-      );
+          HttpStatus.BAD_REQUEST, AiCatalogErrorCode.AI_CATALOG_OPERATION_UNAVAILABLE);
     } catch (AccessDeniedException ex) {
       throw ex;
     } catch (RuntimeException ex) {
       log.error("Unhandled AI catalog operation failure", ex);
       return catalogError(
-          HttpStatus.INTERNAL_SERVER_ERROR,
-          AiCatalogErrorCode.AI_CATALOG_OPERATION_FAILED
-      );
+          HttpStatus.INTERNAL_SERVER_ERROR, AiCatalogErrorCode.AI_CATALOG_OPERATION_FAILED);
     }
   }
 
   private Response<Map<String, String>> catalogError(
-      final HttpStatus status,
-      final AiCatalogErrorCode errorCode
-  ) {
+      final HttpStatus status, final AiCatalogErrorCode errorCode) {
     return Response.of(
         ResponseEntity.status(status)
             .contentType(MediaType.APPLICATION_JSON)
-            .body(Map.of("errorCode", errorCode.name()))
-    );
+            .body(Map.of("errorCode", errorCode.name())));
   }
 }

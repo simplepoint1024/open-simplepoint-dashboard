@@ -16,30 +16,6 @@
       ]
     },
     {
-      "file": "modules/simplepoint-ai/src/views/workbench/Catalog/index.tsx",
-      "component": "Select",
-      "fingerprint": "a7ded6e069685f0fa2dfd2a0a3aaeff3edc710ddbbf383c671f3130d36407115",
-      "reviewedAtLine": 141,
-      "category": "local-enum-filter",
-      "reason": "Finite source/kind facets filter the paged catalog API; options are domain enums, not entities fetched from an incomplete first page.",
-      "evidence": [
-        "modules/simplepoint-ai/src/views/workbench/Catalog/model.test.mjs",
-        "scripts/smoke-catalog.mjs"
-      ]
-    },
-    {
-      "file": "modules/simplepoint-ai/src/views/workbench/Catalog/index.tsx",
-      "component": "Select",
-      "fingerprint": "bf051cbb10a6eacf3666b2775020647dd57174ac8d1ea5411676e0b43ded5ab1",
-      "reviewedAtLine": 145,
-      "category": "local-enum-filter",
-      "reason": "Finite source/kind facets filter the paged catalog API; options are domain enums, not entities fetched from an incomplete first page.",
-      "evidence": [
-        "modules/simplepoint-ai/src/views/workbench/Catalog/model.test.mjs",
-        "scripts/smoke-catalog.mjs"
-      ]
-    },
-    {
       "file": "modules/simplepoint-common/src/views/personal/components/ItemDetail.tsx",
       "component": "Pagination",
       "fingerprint": "9fb78e43e9b2bb81b3f091b3b271d7c0505c64c5115db49916b4c96ba9907b1d",
@@ -216,8 +192,8 @@
     {
       "file": "modules/simplepoint-host/src/layouts/navigation-bar/NotificationButton.tsx",
       "component": "Button",
-      "fingerprint": "44832aa7a9cd67a273cd6c296813dfa9d69912f4aa3a83089a8c5c109c1bb154",
-      "reviewedAtLine": 22,
+      "fingerprint": "bfbdcd123fa64611567af1d2d14cdf8bf398dfe03cffc8ae06cdb5f9aaacfbee",
+      "reviewedAtLine": 26,
       "category": "hierarchy-navigation",
       "reason": "The bell opens shared notification navigation, while counted pagination belongs to a rich inbox list; acknowledgement and read-all mutations use platform actions.",
       "evidence": [
@@ -498,18 +474,6 @@
       "evidence": [
         "modules/simplepoint-host/src/views/home/calendar.test.mjs",
         "scripts/smoke-mf.mjs"
-      ]
-    },
-    {
-      "file": "modules/simplepoint-workflow/src/views/Instances/index.tsx",
-      "component": "Select",
-      "fingerprint": "bd881d825a9e62f5c22cc33b637ca9646206820f2fe14da15640fb9b72e4db42",
-      "reviewedAtLine": 124,
-      "category": "local-enum-filter",
-      "reason": "A fixed RUNNING/COMPLETED/CANCELED status enum filters the actual server instance query; tenant users/roles and runtime forms use their dedicated shared selectors/SForm.",
-      "evidence": [
-        "scripts/smoke-workflow-lifecycle.mjs",
-        "modules/simplepoint-workflow/src/views/Instances/index.tsx"
       ]
     }
   ]

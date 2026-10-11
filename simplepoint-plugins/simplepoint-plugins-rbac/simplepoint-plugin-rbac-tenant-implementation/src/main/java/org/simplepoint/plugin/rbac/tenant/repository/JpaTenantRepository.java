@@ -1,45 +1,49 @@
 package org.simplepoint.plugin.rbac.tenant.repository;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.simplepoint.data.jpa.base.BaseRepository;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
- * JpaTenantRepository provides an interface for managing Tenant entities.
- * It extends the BaseRepository to inherit basic CRUD operations and the TenantRepository
- * to include specific methods for handling tenant data.
- * This interface is used to interact with the persistence layer for Tenant entities.
+ * JpaTenantRepository provides an interface for managing Tenant entities. It extends the
+ * BaseRepository to inherit basic CRUD operations and the TenantRepository to include specific
+ * methods for handling tenant data. This interface is used to interact with the persistence layer
+ * for Tenant entities.
  */
 @Repository
 public interface JpaTenantRepository extends BaseRepository<Tenant, String>, TenantRepository {
 
   @Override
-  @Query("""
-      select
-          new org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo(t.id, t.name, t.tenantType, t.logo)
-      from Tenant t
-      where t.ownerId = :userId
-         or exists (
-             select utr.id
-             from TenantUserRelevance utr
-             where utr.tenantId = t.id and utr.userId = :userId
-         )
-      order by
-          case when t.tenantType = org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL then 1 else 0 end,
-          t.name
+  @Query(
+      """
+select
+    new org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo(t.id, t.name, t.tenantType, t.logo)
+from Tenant t
+where t.ownerId = :userId
+   or exists (
+       select utr.id
+       from TenantUserRelevance utr
+       where utr.tenantId = t.id and utr.userId = :userId
+   )
+order by
+    case when t.tenantType = org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL then 1 else 0 end,
+    t.name
       """)
   Set<NamedTenantVo> getTenantsByUserId(@Param("userId") String userId);
 
   @Override
-  @Query("""
+  @Query(
+      """
       select t from Tenant t
       where t.ownerId = :ownerId
         and t.tenantType = org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL
@@ -52,7 +56,8 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
 
   @Override
   @Modifying
-  @Query("""
+  @Query(
+      """
       update Tenant t
       set t.authorizationVersion = coalesce(t.authorizationVersion, 0) + 1
       where t.id in :tenantIds
@@ -64,7 +69,8 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
   Collection<String> findAllIds();
 
   @Override
-  @Query("""
+  @Query(
+      """
       select case when count(t) > 0 then true else false end
       from Tenant t
       where t.id = :tenantId
@@ -80,7 +86,8 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
   boolean hasUser(@Param("tenantId") String tenantId, @Param("userId") String userId);
 
   @Override
-  @Query("""
+  @Query(
+      """
       select u.id from User u
       where u.id in :userIds and u.deletedAt is null and coalesce(u.enabled, true) = true
         and exists (select t.id from Tenant t where t.id = :tenantId and t.deletedAt is null
@@ -88,20 +95,43 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
             where m.tenantId = t.id and m.userId = u.id and m.deletedAt is null
               and coalesce(m.enabled, true) = true)))
       """)
-  Collection<String> resolveActiveUserIds(@Param("tenantId") String tenantId,
-                                        @Param("userIds") Collection<String> userIds);
+  Collection<String> resolveActiveUserIds(
+      @Param("tenantId") String tenantId, @Param("userIds") Collection<String> userIds);
 
   @Override
-  @Query("""
+  @Query(
+      """
       select distinct r.authority from Role r
       where r.tenantId = :tenantId and r.authority in :authorities and r.deletedAt is null
         and exists (select t.id from Tenant t where t.id = :tenantId and t.deletedAt is null)
       """)
-  Collection<String> resolveActiveRoleAuthorities(@Param("tenantId") String tenantId,
-                                                @Param("authorities") Collection<String> authorities);
+  Collection<String> resolveActiveRoleAuthorities(
+      @Param("tenantId") String tenantId, @Param("authorities") Collection<String> authorities);
 
   @Override
-  @Query("""
+  @Query(
+      """
+      select u.id from User u
+      where u.deletedAt is null and coalesce(u.enabled, true) = true
+        and (:afterUserId is null or u.id > :afterUserId)
+        and exists (select t.id from Tenant t where t.id = :tenantId and t.deletedAt is null
+          and (t.ownerId = u.id or exists (select m.id from TenantUserRelevance m
+            where m.tenantId = t.id and m.userId = u.id and m.deletedAt is null
+              and coalesce(m.enabled, true) = true)))
+        and exists (select r.id from Role r join UserRoleRelevance a on a.roleId = r.id
+          where r.tenantId = :tenantId and a.tenantId = :tenantId and a.userId = u.id
+            and r.authority in :authorities and r.deletedAt is null and a.deletedAt is null)
+      order by u.id asc
+      """)
+  List<String> resolveActiveRoleMemberIds(
+      @Param("tenantId") String tenantId,
+      @Param("authorities") Collection<String> authorities,
+      @Param("afterUserId") String afterUserId,
+      Pageable pageable);
+
+  @Override
+  @Query(
+      """
       select case when count(t) > 0 then true else false end
       from Tenant t
       where lower(t.name) = lower(:name)

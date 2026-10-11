@@ -3,26 +3,42 @@ import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 
 const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
-test('personal lists use the same schema-driven SimpleTable lifecycle as Resource', () => {
+test('historical personal items and messages retain the schema-driven SimpleTable lifecycle', () => {
   const table = read('../modules/simplepoint-common/src/views/personal/components/PersonalTable.tsx');
   assert.match(table, /import SimpleTable from '@simplepoint\/components\/SimpleTable'/);
   assert.doesNotMatch(table, /mode="controlled"/);
   assert.match(table, /loadPage=\{loadPage\}/);
   assert.match(table, /customButtonEvents=/);
   assert.match(table, /formSchemaTransform=/);
-  for (const page of ['Items/index.tsx', 'components/Inbox.tsx']) {
+  for (const page of ['components/LegacyItems.tsx', 'components/Inbox.tsx']) {
     const source = read('../modules/simplepoint-common/src/views/personal/' + page);
     assert.match(source, /<PersonalTable</);
     assert.doesNotMatch(source, /import\s*\{[^}]*\bTable\b[^}]*\}\s*from\s*['"]antd['"]/);
   }
 });
 
-test('personal lists use header filters without duplicate toolbar query state', () => {
-  for (const page of ['Items/index.tsx', 'components/Inbox.tsx']) {
+test('historical personal lists use header filters without duplicate toolbar query state', () => {
+  for (const page of ['components/LegacyItems.tsx', 'components/Inbox.tsx']) {
     const source = read('../modules/simplepoint-common/src/views/personal/' + page);
     assert.doesNotMatch(source, /Input\.Search|sp-personal-filters|setKeyword|setCategory|setStatus|setPriority/);
     assert.doesNotMatch(source, /setPage\(|setFilters\(|PageHeading|<Button/);
     assert.match(source, /<Tabs activeKey=\{view\}/);
+  }
+});
+
+test('primary personal routes own workflow handling and retain only explicit legacy entry points', () => {
+  const todos = read('../modules/simplepoint-common/src/views/personal/Todos/index.tsx');
+  const items = read('../modules/simplepoint-common/src/views/personal/Items/index.tsx');
+  assert.match(todos, /WorkflowRuntime\/Inbox/);
+  assert.match(todos, /<WorkflowInbox\/>/);
+  assert.match(todos, /<InboxDetail kind="todos" id=\{legacyId\} readOnly/);
+  assert.match(items, /WorkflowRuntime\/Matters/);
+  assert.match(items, /!params.has\('item'\) && params.get\('legacy'\) !== '1'/);
+  for (const page of ['Inbox', 'Matters']) {
+    const source = read(`../libs/components/WorkflowRuntime/${page}.tsx`);
+    assert.match(source, /useRemoteList</);
+    assert.match(source, /<DataTable/);
+    assert.doesNotMatch(source, /personalApi|<PersonalTable|Input\.Search/);
   }
 });
 

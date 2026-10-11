@@ -3,14 +3,18 @@ package org.simplepoint.workflow.rest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.simplepoint.core.http.Response;
+import org.simplepoint.plugin.workflow.api.model.WorkflowAuditTrail;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.CompleteTaskCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.InstanceDiagram;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.PageResult;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.ProcessInstanceSummary;
-import org.simplepoint.plugin.workflow.api.model.WorkflowModels.RuntimePermissions;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.RuntimeForm;
+import org.simplepoint.plugin.workflow.api.model.WorkflowModels.RuntimePermissions;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.StartProcessCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.TaskSummary;
+import org.simplepoint.plugin.workflow.api.model.WorkflowProgress;
+import org.simplepoint.plugin.workflow.api.model.WorkflowProgress.NodeExecution;
+import org.simplepoint.plugin.workflow.api.model.WorkflowResubmission;
 import org.simplepoint.plugin.workflow.api.service.WorkflowCenterService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,8 +40,9 @@ public class WorkflowRuntimeController {
 
   /** Returns current task and instance capabilities. */
   @GetMapping("/runtime/permissions")
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('workflow.tasks.view',"
-      + " 'workflow.instances.started.view', 'workflow.instances.view')")
+  @PreAuthorize(
+      "hasRole('Administrator') or hasAnyAuthority('workflow.tasks.view',"
+          + " 'workflow.instances.started.view', 'workflow.instances.view')")
   @Operation(summary = "查询当前运行时操作权限")
   public Response<RuntimePermissions> permissions() {
     return Response.okay(service.runtimePermissions());
@@ -49,8 +54,7 @@ public class WorkflowRuntimeController {
   @Operation(summary = "按已发布版本启动流程")
   public Response<ProcessInstanceSummary> start(
       @PathVariable("id") final String definitionId,
-      @RequestBody(required = false) final StartProcessCommand command
-  ) {
+      @RequestBody(required = false) final StartProcessCommand command) {
     return Response.okay(service.start(definitionId, command));
   }
 
@@ -59,9 +63,23 @@ public class WorkflowRuntimeController {
   @PreAuthorize("hasRole('Administrator') or hasAuthority('workflow.instances.start')")
   public Response<RuntimeForm> startForm(
       @PathVariable("id") final String definitionId,
-      @RequestParam(name = "version", required = false) final Integer version
-  ) {
+      @RequestParam(name = "version", required = false) final Integer version) {
     return Response.okay(service.startForm(definitionId, version));
+  }
+
+  /** Loads original-version values for an authorized linked resubmission. */
+  @GetMapping("/instances/{id}/resubmission-form")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('workflow.instances.start')")
+  public Response<WorkflowResubmission> resubmissionForm(@PathVariable("id") String id) {
+    return Response.okay(service.resubmissionForm(id));
+  }
+
+  /** Starts a new linked instance without rewriting the previous round. */
+  @PostMapping("/instances/{id}/resubmit")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('workflow.instances.start')")
+  public Response<ProcessInstanceSummary> resubmit(
+      @PathVariable("id") String id, @RequestBody StartProcessCommand command) {
+    return Response.okay(service.resubmit(id, command));
   }
 
   /** Returns a task form after checking assignment/candidacy and tenant ownership. */
@@ -78,8 +96,7 @@ public class WorkflowRuntimeController {
   public Response<PageResult<TaskSummary>> pending(
       @RequestParam(name = "keyword", required = false) final String keyword,
       @RequestParam(name = "page", defaultValue = "0") final int page,
-      @RequestParam(name = "size", defaultValue = "20") final int size
-  ) {
+      @RequestParam(name = "size", defaultValue = "20") final int size) {
     return Response.okay(service.pendingTasks(keyword, page, size));
   }
 
@@ -90,8 +107,7 @@ public class WorkflowRuntimeController {
   public Response<PageResult<TaskSummary>> completed(
       @RequestParam(name = "keyword", required = false) final String keyword,
       @RequestParam(name = "page", defaultValue = "0") final int page,
-      @RequestParam(name = "size", defaultValue = "20") final int size
-  ) {
+      @RequestParam(name = "size", defaultValue = "20") final int size) {
     return Response.okay(service.completedTasks(keyword, page, size));
   }
 
@@ -109,9 +125,28 @@ public class WorkflowRuntimeController {
   @Operation(summary = "提交并完成任务")
   public Response<ProcessInstanceSummary> complete(
       @PathVariable("id") final String id,
-      @RequestBody(required = false) final CompleteTaskCommand command
-  ) {
+      @RequestBody(required = false) final CompleteTaskCommand command) {
     return Response.okay(service.complete(id, command));
+  }
+
+  /** Rejects a task within exactly the same assignment boundary as approval. */
+  @PostMapping("/tasks/{id}/reject")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('workflow.tasks.complete')")
+  @Operation(summary = "驳回当前审批并结束本轮流程")
+  public Response<ProcessInstanceSummary> reject(
+      @PathVariable("id") final String id, @RequestBody final CancelCommand command) {
+    return Response.okay(service.reject(id, command == null ? null : command.reason()));
+  }
+
+  /** Withdrawal is a starter operation; the domain never grants it to a different actor. */
+  @PostMapping("/instances/{id}/withdraw")
+  @PreAuthorize(
+      "hasRole('Administrator') or hasAnyAuthority('workflow.instances.started.view',"
+          + " 'workflow.instances.view')")
+  @Operation(summary = "发起人撤回尚未结束的流程")
+  public Response<ProcessInstanceSummary> withdraw(
+      @PathVariable("id") final String id, @RequestBody final CancelCommand command) {
+    return Response.okay(service.withdraw(id, command == null ? null : command.reason()));
   }
 
   /** Pages matters started by the current user. */
@@ -121,8 +156,7 @@ public class WorkflowRuntimeController {
   public Response<PageResult<ProcessInstanceSummary>> started(
       @RequestParam(name = "keyword", required = false) final String keyword,
       @RequestParam(name = "page", defaultValue = "0") final int page,
-      @RequestParam(name = "size", defaultValue = "20") final int size
-  ) {
+      @RequestParam(name = "size", defaultValue = "20") final int size) {
     return Response.okay(service.startedInstances(keyword, page, size));
   }
 
@@ -133,8 +167,7 @@ public class WorkflowRuntimeController {
   public Response<PageResult<ProcessInstanceSummary>> copied(
       @RequestParam(name = "keyword", required = false) final String keyword,
       @RequestParam(name = "page", defaultValue = "0") final int page,
-      @RequestParam(name = "size", defaultValue = "20") final int size
-  ) {
+      @RequestParam(name = "size", defaultValue = "20") final int size) {
     return Response.okay(service.copiedInstances(keyword, page, size));
   }
 
@@ -146,18 +179,53 @@ public class WorkflowRuntimeController {
       @RequestParam(name = "keyword", required = false) final String keyword,
       @RequestParam(name = "status", required = false) final String status,
       @RequestParam(name = "page", defaultValue = "0") final int page,
-      @RequestParam(name = "size", defaultValue = "20") final int size
-  ) {
+      @RequestParam(name = "size", defaultValue = "20") final int size) {
     return Response.okay(service.instances(keyword, status, page, size));
   }
 
   /** Reads the authorized execution-state diagram. */
   @GetMapping("/instances/{id}/diagram")
-  @PreAuthorize("hasRole('Administrator') or hasAnyAuthority('workflow.instances.view',"
-      + " 'workflow.instances.started.view', 'workflow.tasks.view')")
+  @PreAuthorize(
+      "hasRole('Administrator') or hasAnyAuthority('workflow.instances.view',"
+          + " 'workflow.instances.started.view', 'workflow.tasks.view')")
   @Operation(summary = "读取流程实例状态图")
   public Response<InstanceDiagram> diagram(@PathVariable("id") final String id) {
     return Response.okay(service.diagram(id));
+  }
+
+  /** Returns the matter projection and bounded process diagram. */
+  @GetMapping("/instances/{id}/progress")
+  @PreAuthorize(
+      "hasRole('Administrator') or hasAnyAuthority('workflow.instances.view',"
+          + " 'workflow.instances.started.view', 'workflow.tasks.view')")
+  public Response<WorkflowProgress> progress(@PathVariable("id") String id) {
+    return Response.okay(service.progress(id));
+  }
+
+  /** Pages actual executions and approval details for one BPMN node. */
+  @GetMapping("/instances/{id}/nodes/{nodeId}")
+  @PreAuthorize(
+      "hasRole('Administrator') or hasAnyAuthority('workflow.instances.view',"
+          + " 'workflow.instances.started.view', 'workflow.tasks.view')")
+  public Response<PageResult<NodeExecution>> nodeHistory(
+      @PathVariable("id") String id,
+      @PathVariable("nodeId") String nodeId,
+      @RequestParam(name = "page", defaultValue = "0") int page,
+      @RequestParam(name = "size", defaultValue = "20") int size,
+      @RequestParam(name = "activeOnly", defaultValue = "false") boolean activeOnly) {
+    return Response.okay(service.nodeHistory(id, nodeId, page, size, activeOnly));
+  }
+
+  /** Pages immutable platform operations separately from engine activities. */
+  @GetMapping("/instances/{id}/actions")
+  @PreAuthorize(
+      "hasRole('Administrator') or hasAnyAuthority('workflow.tasks.view',"
+          + " 'workflow.instances.started.view', 'workflow.instances.view')")
+  public Response<WorkflowAuditTrail> actions(
+      @PathVariable("id") String id,
+      @RequestParam(name = "page", defaultValue = "0") int page,
+      @RequestParam(name = "size", defaultValue = "20") int size) {
+    return Response.okay(service.auditTrail(id, page, size));
   }
 
   /** Cancels a running instance within the actor's permitted scope. */
@@ -165,13 +233,10 @@ public class WorkflowRuntimeController {
   @PreAuthorize("hasRole('Administrator') or hasAuthority('workflow.instances.cancel')")
   @Operation(summary = "终止运行中的流程实例")
   public Response<ProcessInstanceSummary> cancel(
-      @PathVariable("id") final String id,
-      @RequestBody final CancelCommand command
-  ) {
+      @PathVariable("id") final String id, @RequestBody final CancelCommand command) {
     return Response.okay(service.cancel(id, command == null ? null : command.reason()));
   }
 
   /** Cancellation request with an audited reason. */
-  public record CancelCommand(String reason) {
-  }
+  public record CancelCommand(String reason) {}
 }

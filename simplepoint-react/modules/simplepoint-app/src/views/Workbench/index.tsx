@@ -1,4 +1,5 @@
 import DataTable from '@simplepoint/components/DataTable';
+import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
 import TableActions from '@simplepoint/components/Table/Actions';
 import SForm from '@simplepoint/components/SForm/Lazy';
 import type {SFormHandle} from '@simplepoint/components/SForm';
@@ -7,9 +8,8 @@ import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
 import {usePageRetention} from '@simplepoint/shared/page/hooks';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
-import {normalizePage, type RawPage} from '@simplepoint/shared/types/request';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {Alert, App, Drawer, Input, Modal, Space, Tag, Typography} from 'antd';
+import {Alert, App, Drawer, Modal, Space, Tag, Typography} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
@@ -53,10 +53,6 @@ function WorkbenchSession() {
   const pageForm = useRef<SFormHandle>(null);
   const [applicationValues, setApplicationValues] = useState<Partial<CreateApplicationValues>>({});
   const [pageValues, setPageValues] = useState<Partial<CreatePageValues>>({});
-  const [page, setPage] = useState(0);
-  const [size, setSize] = useState(20);
-  const [keyword, setKeyword] = useState('');
-  const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [addPageOpen, setAddPageOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -74,11 +70,9 @@ function WorkbenchSession() {
   const permissionsQuery = useData(['app', 'permissions'], ({signal}) => get<Permissions>(endpoint + '/permissions', undefined, {signal}),
     {retry: false, staleTime: 30_000});
   const permissions = permissionsQuery.data;
-  const listQuery = useData(['app', 'applications', search, page, size], async ({signal}) =>
-    normalizePage(await get<RawPage<ApplicationSummary>>(endpoint, {keyword: search, page, size}, {signal})), {retry: false});
-  const items = listQuery.data?.content ?? [], total = listQuery.data?.page.totalElements ?? 0;
-  const error = listQuery.isError, loading = listQuery.isFetching;
-  const load = useCallback(async () => {await listQuery.refetch();}, [listQuery.refetch]);
+  const table = useRemoteList<ApplicationSummary>(endpoint, operation.selected);
+  const error = !!table.error;
+  const load = table.refresh;
   const detailQuery = useData(['app', 'detail', detailId], ({signal}) => get<ApplicationDetail>(endpoint + '/' + encodeURIComponent(detailId!), undefined, {signal}),
     {enabled: Boolean(detailId), retry: false});
   const detail = detailQuery.data, detailLoading = detailQuery.isFetching;
@@ -104,8 +98,7 @@ function WorkbenchSession() {
       setApplicationValues({});
       setDirty(false);
       setDetailId(created.application.id);
-      if (page !== 0) setPage(0);
-      else await load();
+      await load();
       message.success(t('app.application.created', '应用已创建'));
     } catch (cause) {
       if (operation.current(controller.signal)) setWriteError(resolveApiErrorMessage(cause, t('app.application.createFailed', '创建应用失败')));
@@ -187,9 +180,9 @@ function WorkbenchSession() {
           message={t('app.application.loadFailed', '应用列表加载失败')}
           action={<TableActions selectedKeys={[]} selectedRows={[]}
             buttons={[{key: 'retry', sort: 0, text: t('app.retry', '重试')}]}
-            onButtonEvents={{retry: () => {void load();}}}/>}/>}
-        <DataTable<ApplicationSummary> rowKey="id" storageKey="app.workbench.applications"
-          columns={columns} dataSource={items} loading={loading} refresh={() => {if (!locked) void load();}}
+            onButtonEvents={{retry: table.retry}}/>}/>}
+        <DataTable<ApplicationSummary> {...table.tableProps} rowKey="id" storageKey="app.workbench.applications"
+          columns={table.columns(columns)} refresh={() => {if (!locked) void load();}}
           toolbarExtra={<Space wrap>{permissions?.canCreateApplication && !permissionsQuery.error && <TableActions selectedKeys={[]} selectedRows={[]}
             buttons={[{key: 'add', sort: 0, text: t('app.application.create', '新建应用'),
               icon: 'PlusOutlined', type: 'primary', argumentMinSize: 0, argumentMaxSize: 0, disabled: locked || !!error || !operation.selected}]}
@@ -198,12 +191,8 @@ function WorkbenchSession() {
               setDirty(false); setWriteError('');
               setApplicationValues({mainPageName: t('app.page.defaultMain', '首页')});
               setCreateOpen(true);
-            }}}/>}<Input.Search disabled={locked} value={keyword} onChange={event => {if (!locked) setKeyword(event.target.value);}}
-              onSearch={value => {if (!locked) {setPage(0); setSearch(value.trim());}}}
-              placeholder={t('app.application.search', '搜索应用名称或说明')}
-              allowClear maxLength={100} style={{width: 250}}/></Space>}
-          pagination={{current: page + 1, pageSize: size, total, showSizeChanger: true, disabled: locked,
-            onChange: (nextPage, nextSize) => {if (!locked) {setPage(nextPage - 1); setSize(nextSize);}}}}/>
+            }}}/>}</Space>}
+          pagination={table.tableProps.pagination === false ? false : {...table.tableProps.pagination, disabled: locked}}/>
 
       <Modal wrapClassName="app-application-create" title={t('app.application.create', '新建应用')} open={createOpen && operation.selected}
         confirmLoading={saving} destroyOnHidden={!createOpen} closable={!saving} maskClosable={!saving} keyboard={!saving}
@@ -242,6 +231,10 @@ function WorkbenchSession() {
               }}}/>}
           </Space>
           <DataTable<ApplicationPage> rowKey="id" storageKey="app.workbench.pages"
+            query={{mode: 'local', scope: 'complete', contextKey: detail.application.id, fields: {
+              name: {type: 'string'}, description: {type: 'string'}, kind: {type: 'string', enum: ['MAIN', 'ATTACHED']},
+              status: {type: 'string', enum: ['DRAFT', 'PUBLISHED']},
+            }}}
             columns={pageColumns} dataSource={detail.pages} pagination={{pageSize: 20, disabled: saving || addPageOpen}}/>
           <Typography.Paragraph type="secondary" style={{marginTop: 16}}>
             {t('app.page.draftHint', '主页面与附属页面先保存为草稿；表单设计、发布和资源授权将在下一阶段接入。')}

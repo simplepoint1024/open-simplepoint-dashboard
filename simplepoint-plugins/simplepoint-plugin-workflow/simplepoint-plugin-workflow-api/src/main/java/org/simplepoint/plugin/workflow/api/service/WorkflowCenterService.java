@@ -1,5 +1,6 @@
 package org.simplepoint.plugin.workflow.api.service;
 
+import org.simplepoint.plugin.workflow.api.model.WorkflowAuditTrail;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.CompleteTaskCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.CreateDefinitionCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionDetail;
@@ -9,19 +10,38 @@ import org.simplepoint.plugin.workflow.api.model.WorkflowModels.InstanceDiagram;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.PageResult;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.ProcessInstanceSummary;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.PublishDefinitionCommand;
-import org.simplepoint.plugin.workflow.api.model.WorkflowModels.RuntimePermissions;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.RuntimeForm;
+import org.simplepoint.plugin.workflow.api.model.WorkflowModels.RuntimePermissions;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.StartProcessCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.TaskSummary;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.UpdateDraftCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.VersionDetail;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.VersionSummary;
+import org.simplepoint.plugin.workflow.api.model.WorkflowProgress;
+import org.simplepoint.plugin.workflow.api.model.WorkflowProgress.NodeExecution;
+import org.simplepoint.plugin.workflow.api.model.WorkflowResubmission;
 
 /** Tenant-scoped workflow definition and runtime boundary. */
 public interface WorkflowCenterService {
 
+  /** Bounded instance action history, protected by the same participant boundary as progress. */
+  WorkflowAuditTrail auditTrail(String processInstanceId, int page, int size);
+
+  /** Reads only the original starter's eligible terminal form, pinned to its published version. */
+  WorkflowResubmission resubmissionForm(String processInstanceId);
+
+  /** Creates one linked successor; source history is never reopened or overwritten. */
+  ProcessInstanceSummary resubmit(String processInstanceId, StartProcessCommand command);
+
   /** Pages definitions visible in the active tenant. */
   PageResult<DefinitionSummary> definitions(String keyword, int page, int size);
+
+  /** Allowlisted server-side header filtering and stable multi-column sorting. */
+  PageResult<DefinitionSummary> queryDefinitions(
+      java.util.Map<String, String> filters, org.springframework.data.domain.Pageable page);
+
+  /** Same field budget as queryDefinitions, without exposing draft payloads or actor IDs. */
+  java.util.Map<String, Object> definitionsSchema();
 
   /** Resolves current definition and start operation permissions. */
   DefinitionPermissions definitionPermissions();
@@ -68,6 +88,12 @@ public interface WorkflowCenterService {
   /** Completes a task and returns its parent instance. */
   ProcessInstanceSummary complete(String taskId, CompleteTaskCommand command);
 
+  /** Rejects the current approval and ends this instance, preserving its history. */
+  ProcessInstanceSummary reject(String taskId, String reason);
+
+  /** Lets only the original starter withdraw a still-running instance. */
+  ProcessInstanceSummary withdraw(String processInstanceId, String reason);
+
   /** Pages process instances started by the current user. */
   PageResult<ProcessInstanceSummary> startedInstances(String keyword, int page, int size);
 
@@ -79,6 +105,19 @@ public interface WorkflowCenterService {
 
   /** Reads BPMN source and execution states for an instance. */
   InstanceDiagram diagram(String processInstanceId);
+
+  /** Personal progress header plus immutable source and execution states. */
+  WorkflowProgress progress(String processInstanceId);
+
+  /** Pages distinct executions of one BPMN node after verifying instance visibility. */
+  PageResult<NodeExecution> nodeHistory(
+      String processInstanceId, String activityId, int page, int size, boolean activeOnly);
+
+  /** Compatibility overload for the complete node execution timeline. */
+  default PageResult<NodeExecution> nodeHistory(
+      String processInstanceId, String activityId, int page, int size) {
+    return nodeHistory(processInstanceId, activityId, page, size, false);
+  }
 
   /** Terminates a running process instance. */
   ProcessInstanceSummary cancel(String processInstanceId, String reason);

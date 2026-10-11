@@ -20,9 +20,14 @@ export async function smokeAppWorkbench({clickMenu, clickReady, clickText, fill,
   }
   assert.equal(await evaluate(`!!document.querySelector('${root} .ant-card')`), false);
   await clickReady(root + ' .ant-pagination-item-27'); await poll(() => evaluate(`!!document.querySelector('${root} [data-row-key="app-520"]')`), 'application beyond first 500');
-  await fill(root + ' input.ant-input', 'Application520'); await clickReady(root + ' .ant-input-search-btn');
+  const filter = '.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown';
+  const header = async () => {
+    await evaluate(`[...document.querySelectorAll('${root} th')].find(e=>e.textContent.includes('名称')).querySelector('.ant-table-filter-trigger').click()`);
+    await poll(() => evaluate(`!!document.querySelector('${filter} input.ant-input')`), 'application header query');
+  };
+  await header(); await fill(filter + ' input.ant-input', 'Application520'); await clickText(filter + ' button', '应用');
   await poll(() => evaluate(`document.querySelectorAll('${root} [data-row-key]').length===1 && !!document.querySelector('${root} [data-row-key="app-520"]')`), 'server keyword search resets page');
-  await fill(root + ' input.ant-input', ''); await clickReady(root + ' .ant-input-search-btn');
+  await header(); await clickText(filter + ' button', '重置');
   await poll(() => evaluate(`!!document.querySelector('${root} [data-row-key="app-0"]')`), 'application search cleared');
   await clickText(root + ' .sp-data-table-toolbar-extra button', '新建应用');
   await poll(() => evaluate(`!!document.querySelector('${create} #root_name')`), 'actual new application SForm');

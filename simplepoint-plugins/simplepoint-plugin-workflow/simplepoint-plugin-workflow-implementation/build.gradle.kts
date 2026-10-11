@@ -8,6 +8,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("com.h2database:h2")
+    testRuntimeOnly("org.postgresql:postgresql")
 }
 
 tasks.named<ProcessResources>("processTestResources") {

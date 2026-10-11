@@ -249,6 +249,7 @@
   "tenant.resources.deleteFailed": "删除失败",
   "tenant.resources.delete": "删除租户自建资源",
   "tenant.resources.name": "资源",
+  "tenant.resources.code": "资源编码",
   "tenant.resources.type": "类型",
   "tenant.resources.origin": "来源",
   "tenant.resources.platform": "平台",

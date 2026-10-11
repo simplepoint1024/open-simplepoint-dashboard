@@ -5,6 +5,8 @@
   "app.application.name": "Application name",
   "app.application.description": "Description",
   "app.application.mainPage": "Main page",
+  "app.application.mainPageName": "Main page",
+  "app.application.attachedPageCount": "Attached page count",
   "app.application.attachedPages": "Attached pages",
   "app.application.status": "Status",
   "app.application.updatedAt": "Updated",

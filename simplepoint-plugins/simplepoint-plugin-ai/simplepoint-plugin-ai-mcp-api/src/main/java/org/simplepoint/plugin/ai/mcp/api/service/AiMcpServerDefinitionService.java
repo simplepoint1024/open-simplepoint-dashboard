@@ -25,11 +25,8 @@ import org.simplepoint.plugin.ai.mcp.api.model.McpToolCallCommand;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-/**
- * Control-plane service for remote MCP Server registration and operations.
- */
-public interface AiMcpServerDefinitionService
-    extends BaseService<AiMcpServerDefinition, String> {
+/** Control-plane service for remote MCP Server registration and operations. */
+public interface AiMcpServerDefinitionService extends BaseService<AiMcpServerDefinition, String> {
 
   /** Pages non-secret internal catalog metadata using the current management scope. */
   Page<McpCatalogRegistration> findCatalog(String query, Pageable pageable);
@@ -50,20 +47,25 @@ public interface AiMcpServerDefinitionService
    */
   McpGatewayDiscoveryResult discover(String id);
 
-  /**
-   * Pages immutable capability snapshot history for one visible MCP server.
-   */
+  /** Pages immutable capability snapshot history for one visible MCP server. */
   Page<McpCapabilitySnapshotSummary> listSnapshots(String id, Pageable pageable);
 
-  /**
-   * Returns one decoded immutable capability snapshot.
-   */
+  /** Queries discovery history with scoped header conditions and sorting. */
+  Page<McpCapabilitySnapshotSummary> querySnapshots(
+      String id, java.util.Map<String, String> filters, Pageable pageable);
+
+  /** Returns the authorized server's discovery-history query schema. */
+  java.util.Map<String, Object> snapshotSchema(String id);
+
+  /** Actual preceding discovery, not the adjacent row of a filtered/sorted result page. */
+  McpCapabilitySnapshotDetails previousSnapshot(String id, String snapshotId);
+
+  /** Returns one decoded immutable capability snapshot. */
   McpCapabilitySnapshotDetails getSnapshot(String id, String snapshotId);
 
   /**
-   * Returns one immutable capability snapshot for durable background work.
-   * The caller supplies its persisted owner scope because no request
-   * authorization context exists on worker threads.
+   * Returns one immutable capability snapshot for durable background work. The caller supplies its
+   * persisted owner scope because no request authorization context exists on worker threads.
    *
    * @param id server identifier
    * @param snapshotId capability snapshot identifier
@@ -72,11 +74,7 @@ public interface AiMcpServerDefinitionService
    * @return decoded immutable snapshot
    */
   McpCapabilitySnapshotDetails getSnapshotForScope(
-      String id,
-      String snapshotId,
-      AiResourceScope invocationScope,
-      String invocationTenantId
-  );
+      String id, String snapshotId, AiResourceScope invocationScope, String invocationTenantId);
 
   /**
    * Lists tools from a server's active immutable snapshot.
@@ -86,29 +84,19 @@ public interface AiMcpServerDefinitionService
    */
   List<McpToolDescriptor> listTools(String id);
 
-  /**
-   * Lists resources from the active immutable snapshot.
-   */
+  /** Lists resources from the active immutable snapshot. */
   List<McpResourceDescriptor> listResources(String id);
 
-  /**
-   * Lists resource templates from the active immutable snapshot.
-   */
+  /** Lists resource templates from the active immutable snapshot. */
   List<McpResourceTemplateDescriptor> listResourceTemplates(String id);
 
-  /**
-   * Reads one snapshotted resource through the Gateway.
-   */
+  /** Reads one snapshotted resource through the Gateway. */
   McpGatewayResourceReadResult readResource(String id, McpResourceReadCommand command);
 
-  /**
-   * Lists prompts from the active immutable snapshot.
-   */
+  /** Lists prompts from the active immutable snapshot. */
   List<McpPromptDescriptor> listPrompts(String id);
 
-  /**
-   * Renders one snapshotted prompt through the Gateway.
-   */
+  /** Renders one snapshotted prompt through the Gateway. */
   McpGatewayPromptGetResult getPrompt(String id, McpPromptGetCommand command);
 
   /**
@@ -120,14 +108,10 @@ public interface AiMcpServerDefinitionService
    */
   McpGatewayToolCallResult callTool(String id, McpToolCallCommand command);
 
-  /**
-   * Starts Authorization Code + PKCE for an OAuth protected MCP server.
-   */
+  /** Starts Authorization Code + PKCE for an OAuth protected MCP server. */
   McpOauthAuthorizationStart startOauthAuthorization(String id);
 
-  /**
-   * Completes a one-time OAuth authorization transaction.
-   */
+  /** Completes a one-time OAuth authorization transaction. */
   AiMcpServerDefinition completeOauthAuthorization(McpOauthCallbackCommand command);
 
   /** Returns the current user's provider connection without token material. */

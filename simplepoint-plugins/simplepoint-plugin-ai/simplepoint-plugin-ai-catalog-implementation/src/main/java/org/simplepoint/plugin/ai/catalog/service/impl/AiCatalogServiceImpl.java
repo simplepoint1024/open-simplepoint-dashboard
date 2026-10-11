@@ -46,12 +46,11 @@ import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpProfileSpec;
 import org.simplepoint.plugin.ai.runtime.api.service.AiRuntimeMcpProfileService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Mixed internal/external extension catalog.
- */
+/** Mixed internal/external extension catalog. */
 @Service
 public class AiCatalogServiceImpl implements AiCatalogService {
 
@@ -60,7 +59,6 @@ public class AiCatalogServiceImpl implements AiCatalogService {
   private final AiCatalogSyncStateRepository stateRepository;
 
   private final AiMcpServerDefinitionService mcpServerService;
-
 
   private final AiScopeAccessPolicy scopeAccessPolicy;
 
@@ -71,10 +69,9 @@ public class AiCatalogServiceImpl implements AiCatalogService {
   private final AiRuntimeMcpProfileService runtimeProfileService;
 
   private final ObjectMapper objectMapper;
+  private final AiCatalogQueries catalogQueries;
 
-  /**
-   * Creates the catalog facade.
-   */
+  /** Creates the catalog facade. */
   public AiCatalogServiceImpl(
       final AiCatalogEntryRepository entryRepository,
       final AiCatalogSyncStateRepository stateRepository,
@@ -83,8 +80,8 @@ public class AiCatalogServiceImpl implements AiCatalogService {
       final AiCatalogProperties properties,
       final OfficialMcpRegistrySync registrySync,
       final AiRuntimeMcpProfileService runtimeProfileService,
-      final ObjectMapper objectMapper
-  ) {
+      final ObjectMapper objectMapper,
+      final AiCatalogQueries catalogQueries) {
     this.entryRepository = entryRepository;
     this.stateRepository = stateRepository;
     this.mcpServerService = mcpServerService;
@@ -93,6 +90,65 @@ public class AiCatalogServiceImpl implements AiCatalogService {
     this.registrySync = registrySync;
     this.runtimeProfileService = runtimeProfileService;
     this.objectMapper = objectMapper;
+    this.catalogQueries = catalogQueries;
+  }
+
+  @Override
+  public Map<String, Object> querySchema() {
+    return catalogQueries.schema();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public AiCatalogPage query(Map<String, String> filters, Pageable pageable) {
+    var page = catalogQueries.page(filters, pageable);
+    return new AiCatalogPage(
+        page.getContent().stream()
+            .map(
+                row -> {
+                  if ("INTERNAL".equals(row.getSource())) {
+                    return new AiCatalogItem(
+                        row.getId(),
+                        CatalogSource.INTERNAL,
+                        CatalogPackageKind.MCP_SERVER,
+                        null,
+                        row.getCode(),
+                        row.getVersion(),
+                        row.getTitle(),
+                        row.getDescription(),
+                        row.getStatus(),
+                        org.simplepoint.plugin.ai.core.api.model.AiResourceScope.valueOf(
+                            row.getScopeType()),
+                        row.getEndpointUrl(),
+                        null,
+                        null,
+                        false,
+                        false,
+                        false,
+                        row.getUpdatedAt());
+                  }
+                  var entry = new AiCatalogEntry();
+                  entry.setId(row.getEntryId());
+                  entry.setSource(CatalogSource.OFFICIAL_MCP);
+                  entry.setKind(CatalogPackageKind.MCP_SERVER);
+                  entry.setRegistryName(row.getRegistryName());
+                  entry.setVersion(row.getVersion());
+                  entry.setTitle(row.getTitle());
+                  entry.setDescription(row.getDescription());
+                  entry.setStatus(CatalogEntryStatus.ACTIVE);
+                  entry.setEndpointUrl(row.getEndpointUrl());
+                  entry.setRepositoryUrl(row.getRepositoryUrl());
+                  entry.setWebsiteUrl(row.getWebsiteUrl());
+                  entry.setTransportType(row.getTransportType());
+                  entry.setDescriptorJson(row.getDescriptorJson());
+                  entry.setRegistryUpdatedAt(row.getUpdatedAt());
+                  return officialEntry(entry);
+                })
+            .toList(),
+        page.getNumber(),
+        page.getSize(),
+        page.getTotalElements(),
+        page.getTotalPages());
   }
 
   @Override
@@ -102,71 +158,72 @@ public class AiCatalogServiceImpl implements AiCatalogService {
       final CatalogSource source,
       final CatalogPackageKind kind,
       final int page,
-      final int size
-  ) {
+      final int size) {
     int normalizedPage = Math.max(0, page);
     int normalizedSize = Math.max(1, Math.min(size, 100));
     String keyword = normalize(query);
-    if (keyword != null && keyword.length() > 200) throw new IllegalArgumentException("Catalog query must not exceed 200 characters");
+    if (keyword != null && keyword.length() > 200) {
+      throw new IllegalArgumentException("Catalog query must not exceed 200 characters");
+    }
     long offset = (long) normalizedPage * normalizedSize;
-    if (offset > Integer.MAX_VALUE) throw new IllegalArgumentException("Catalog page offset is too large");
+    if (offset > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("Catalog page offset is too large");
+    }
     List<AiCatalogItem> result = new ArrayList<>();
     long internalTotal = 0;
     if ((source == null || source == CatalogSource.INTERNAL)
         && (kind == null || kind == CatalogPackageKind.MCP_SERVER)) {
-      Page<McpCatalogRegistration> internal = mcpServerService.findCatalog(keyword, PageRequest.of(normalizedPage, normalizedSize));
+      Page<McpCatalogRegistration> internal =
+          mcpServerService.findCatalog(keyword, PageRequest.of(normalizedPage, normalizedSize));
       internalTotal = internal.getTotalElements();
       internal.map(this::internalServer).forEach(result::add);
     }
-    boolean includeOfficial = (source == null
-        || source == CatalogSource.OFFICIAL_MCP)
-        && (kind == null || kind == CatalogPackageKind.MCP_SERVER);
+    boolean includeOfficial =
+        (source == null || source == CatalogSource.OFFICIAL_MCP)
+            && (kind == null || kind == CatalogPackageKind.MCP_SERVER);
     long officialTotal = 0;
     if (includeOfficial) {
       int remaining = normalizedSize - result.size();
       long officialOffset = Math.max(0, offset - internalTotal);
-      String pattern = keyword == null ? "" : "%" + keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+      String pattern =
+          keyword == null
+              ? ""
+              : "%" + keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
       if (remaining == 0) {
-        officialTotal = entryRepository.countActiveBySource(CatalogSource.OFFICIAL_MCP, CatalogEntryStatus.ACTIVE, pattern);
+        officialTotal =
+            entryRepository.countActiveBySource(
+                CatalogSource.OFFICIAL_MCP, CatalogEntryStatus.ACTIVE, pattern);
       } else {
-        Page<AiCatalogEntry> officialPage = entryRepository.findAllActiveBySource(
-              CatalogSource.OFFICIAL_MCP,
-              CatalogEntryStatus.ACTIVE,
-              pattern,
-              new OffsetPageRequest(officialOffset, remaining)
-          );
+        Page<AiCatalogEntry> officialPage =
+            entryRepository.findAllActiveBySource(
+                CatalogSource.OFFICIAL_MCP,
+                CatalogEntryStatus.ACTIVE,
+                pattern,
+                new OffsetPageRequest(officialOffset, remaining));
         officialTotal = officialPage.getTotalElements();
-        officialPage.stream()
-            .map(this::officialEntry)
-            .forEach(result::add);
+        officialPage.stream().map(this::officialEntry).forEach(result::add);
       }
     }
     long total = internalTotal + officialTotal;
-    int totalPages = total == 0
-        ? 0 : Math.toIntExact((total + normalizedSize - 1) / normalizedSize);
+    int totalPages =
+        total == 0 ? 0 : Math.toIntExact((total + normalizedSize - 1) / normalizedSize);
     return new AiCatalogPage(
-        List.copyOf(result),
-        normalizedPage,
-        normalizedSize,
-        total,
-        totalPages
-    );
+        List.copyOf(result), normalizedPage, normalizedSize, total, totalPages);
   }
 
   @Override
   @Transactional(readOnly = true)
   public AiCatalogSyncState getOfficialSyncState() {
-    return stateRepository.findBySource(CatalogSource.OFFICIAL_MCP)
+    return stateRepository
+        .findBySource(CatalogSource.OFFICIAL_MCP)
         .orElseGet(AiCatalogServiceImpl::neverSyncedState);
   }
 
   @Override
   public AiCatalogSyncResult syncOfficialRegistry() {
-    if (scopeAccessPolicy.currentManagementScope().scopeType()
-        != AiResourceScope.SYSTEM) {
+    if (scopeAccessPolicy.currentManagementScope().scopeType() != AiResourceScope.SYSTEM) {
       throw new org.springframework.security.access.AccessDeniedException(
-          "Official MCP Registry synchronization is platform-only"
-      );
+          "Official MCP Registry synchronization is platform-only");
     }
     requireSyncEnabled();
     return registrySync.synchronize();
@@ -175,27 +232,26 @@ public class AiCatalogServiceImpl implements AiCatalogService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public AiMcpServerDefinition importOfficialMcpServer(
-      final String entryId,
-      final AiCatalogImportRequest request
-  ) {
-    AiCatalogEntry entry = entryRepository.findActiveById(requireText(entryId))
-        .orElseThrow(() -> new IllegalArgumentException(
-            "Catalog entry does not exist"
-        ));
+      final String entryId, final AiCatalogImportRequest request) {
+    AiCatalogEntry entry =
+        entryRepository
+            .findActiveById(requireText(entryId))
+            .orElseThrow(() -> new IllegalArgumentException("Catalog entry does not exist"));
     if (entry.getSource() != CatalogSource.OFFICIAL_MCP
         || entry.getKind() != CatalogPackageKind.MCP_SERVER
         || entry.getStatus() != CatalogEntryStatus.ACTIVE
         || !isImportable(entry.getEndpointUrl(), entry.getTransportType())) {
       throw new IllegalArgumentException(
-          "Catalog entry is not an importable Streamable HTTP MCP Server"
-      );
+          "Catalog entry is not an importable Streamable HTTP MCP Server");
     }
     AiMcpServerDefinition server = new AiMcpServerDefinition();
     server.setCode(importCode(entry, request == null ? null : request.code()));
-    server.setName(truncate(first(
-        request == null ? null : request.name(),
-        first(entry.getTitle(), entry.getRegistryName())
-    ), 128));
+    server.setName(
+        truncate(
+            first(
+                request == null ? null : request.name(),
+                first(entry.getTitle(), entry.getRegistryName())),
+            128));
     server.setDescription(truncate(entry.getDescription(), 512));
     server.setDeploymentType(McpServerDeploymentType.REMOTE);
     server.setTransportType(McpTransportType.STREAMABLE_HTTP);
@@ -209,59 +265,39 @@ public class AiCatalogServiceImpl implements AiCatalogService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public RuntimeMcpProfileImportResult importOfficialMcpPackage(
-      final String entryId,
-      final AiCatalogRuntimeImportRequest request
-  ) {
-    AiCatalogEntry entry = entryRepository.findActiveById(requireText(entryId))
-        .orElseThrow(() -> new IllegalArgumentException(
-            "Catalog entry does not exist"
-        ));
+      final String entryId, final AiCatalogRuntimeImportRequest request) {
+    AiCatalogEntry entry =
+        entryRepository
+            .findActiveById(requireText(entryId))
+            .orElseThrow(() -> new IllegalArgumentException("Catalog entry does not exist"));
     if (entry.getSource() != CatalogSource.OFFICIAL_MCP
         || entry.getKind() != CatalogPackageKind.MCP_SERVER
         || entry.getStatus() != CatalogEntryStatus.ACTIVE) {
-      throw new IllegalArgumentException(
-          "Catalog entry is not an active official MCP Server"
-      );
+      throw new IllegalArgumentException("Catalog entry is not an active official MCP Server");
     }
     McpServerDescriptor descriptor = readDescriptor(entry);
     int packageIndex = selectPackage(descriptor, request);
     McpServerDescriptor.Package selected = descriptor.packages().get(packageIndex);
     RuntimeMcpProfileSpec.ArtifactType artifactType = artifactType(selected);
-    RuntimeMcpProfileSpec spec = new RuntimeMcpProfileSpec(
-        descriptor.name(),
-        descriptor.version(),
-        new RuntimeMcpProfileSpec.Artifact(
-            RuntimeMcpProfileSpec.ArtifactSource.UPSTREAM_ORIGINAL,
-            artifactType,
-            artifactReference(selected, artifactType)
-        ),
-        new RuntimeMcpProfileSpec.Transport(
-            RuntimeMcpProfileSpec.TransportType.STDIO,
-            null,
-            null
-        ),
-        new RuntimeMcpProfileSpec.Process(
+    RuntimeMcpProfileSpec spec =
+        new RuntimeMcpProfileSpec(
+            descriptor.name(),
+            descriptor.version(),
+            new RuntimeMcpProfileSpec.Artifact(
+                RuntimeMcpProfileSpec.ArtifactSource.UPSTREAM_ORIGINAL,
+                artifactType,
+                artifactReference(selected, artifactType)),
+            new RuntimeMcpProfileSpec.Transport(
+                RuntimeMcpProfileSpec.TransportType.STDIO, null, null),
+            new RuntimeMcpProfileSpec.Process(List.of(), List.of(), List.of(), null),
             List.of(),
             List.of(),
             List.of(),
-            null
-        ),
-        List.of(),
-        List.of(),
-        List.of(),
-        new RuntimeMcpProfileSpec.NetworkPolicy(
-            RuntimeMcpProfileSpec.NetworkMode.NONE,
-            List.of()
-        ),
-        new RuntimeMcpProfileSpec.SessionPolicy(
-            RuntimeMcpProfileSpec.SessionMode.DEDICATED,
-            1
-        ),
-        new RuntimeMcpProfileSpec.SandboxPolicy(
-            RuntimeMcpProfileSpec.SandboxProfile.STRICT,
-            Map.of()
-        )
-    );
+            new RuntimeMcpProfileSpec.NetworkPolicy(
+                RuntimeMcpProfileSpec.NetworkMode.NONE, List.of()),
+            new RuntimeMcpProfileSpec.SessionPolicy(RuntimeMcpProfileSpec.SessionMode.DEDICATED, 1),
+            new RuntimeMcpProfileSpec.SandboxPolicy(
+                RuntimeMcpProfileSpec.SandboxProfile.STRICT, Map.of()));
     RuntimeMcpDescriptorImportRequest importedDescriptor =
         new RuntimeMcpDescriptorImportRequest(
             entry.getId(),
@@ -269,52 +305,44 @@ public class AiCatalogServiceImpl implements AiCatalogService {
             descriptor.version(),
             first(descriptor.title(), entry.getTitle()),
             descriptor.repository() == null
-                ? entry.getRepositoryUrl() : descriptor.repository().url(),
-            descriptor.rawJson()
-        );
-    return runtimeProfileService.importDraft(new RuntimeMcpProfileImportRequest(
-        importCode(entry, request == null ? null : request.code()),
-        truncate(first(
-            request == null ? null : request.name(),
-            first(descriptor.title(), descriptor.name())
-        ), 128),
-        importedDescriptor,
-        spec
-    ));
+                ? entry.getRepositoryUrl()
+                : descriptor.repository().url(),
+            descriptor.rawJson());
+    return runtimeProfileService.importDraft(
+        new RuntimeMcpProfileImportRequest(
+            importCode(entry, request == null ? null : request.code()),
+            truncate(
+                first(
+                    request == null ? null : request.name(),
+                    first(descriptor.title(), descriptor.name())),
+                128),
+            importedDescriptor,
+            spec));
   }
 
   private McpServerDescriptor readDescriptor(final AiCatalogEntry entry) {
-    if (entry.getDescriptorJson() == null
-        || entry.getDescriptorJson().isBlank()) {
+    if (entry.getDescriptorJson() == null || entry.getDescriptorJson().isBlank()) {
       throw new IllegalStateException(
           "Catalog entry predates normalized descriptors; synchronize the "
-              + "official MCP Registry again"
-      );
+              + "official MCP Registry again");
     }
     try {
-      return objectMapper.readValue(
-          entry.getDescriptorJson(),
-          McpServerDescriptor.class
-      );
+      return objectMapper.readValue(entry.getDescriptorJson(), McpServerDescriptor.class);
     } catch (JsonProcessingException ex) {
       throw new IllegalStateException(
-          "Catalog entry contains an invalid normalized MCP descriptor",
-          ex
-      );
+          "Catalog entry contains an invalid normalized MCP descriptor", ex);
     }
   }
 
   private static int selectPackage(
-      final McpServerDescriptor descriptor,
-      final AiCatalogRuntimeImportRequest request
-  ) {
+      final McpServerDescriptor descriptor, final AiCatalogRuntimeImportRequest request) {
     if (request != null && request.packageIndex() != null) {
       int requested = request.packageIndex();
-      if (requested < 0 || requested >= descriptor.packages().size()
+      if (requested < 0
+          || requested >= descriptor.packages().size()
           || !isSupportedPackage(descriptor.packages().get(requested))) {
         throw new IllegalArgumentException(
-            "Selected MCP package is not a supported stdio distribution"
-        );
+            "Selected MCP package is not a supported stdio distribution");
       }
       return requested;
     }
@@ -324,37 +352,30 @@ public class AiCatalogServiceImpl implements AiCatalogService {
       }
     }
     throw new IllegalArgumentException(
-        "MCP descriptor has no supported OCI, npm or PyPI stdio package"
-    );
+        "MCP descriptor has no supported OCI, npm or PyPI stdio package");
   }
 
-  private static boolean isSupportedPackage(
-      final McpServerDescriptor.Package selected
-  ) {
+  private static boolean isSupportedPackage(final McpServerDescriptor.Package selected) {
     String registry = selected.registryType().toLowerCase(Locale.ROOT);
     return "stdio".equalsIgnoreCase(selected.transport().type())
-        && ("oci".equals(registry)
-            || "npm".equals(registry)
-            || "pypi".equals(registry));
+        && ("oci".equals(registry) || "npm".equals(registry) || "pypi".equals(registry));
   }
 
   private static RuntimeMcpProfileSpec.ArtifactType artifactType(
-      final McpServerDescriptor.Package selected
-  ) {
+      final McpServerDescriptor.Package selected) {
     return switch (selected.registryType().toLowerCase(Locale.ROOT)) {
       case "oci" -> RuntimeMcpProfileSpec.ArtifactType.OCI;
       case "npm" -> RuntimeMcpProfileSpec.ArtifactType.NPM;
       case "pypi" -> RuntimeMcpProfileSpec.ArtifactType.PYPI;
-      default -> throw new IllegalArgumentException(
-          "Unsupported MCP package registry: " + selected.registryType()
-      );
+      default ->
+          throw new IllegalArgumentException(
+              "Unsupported MCP package registry: " + selected.registryType());
     };
   }
 
   private static String artifactReference(
       final McpServerDescriptor.Package selected,
-      final RuntimeMcpProfileSpec.ArtifactType artifactType
-  ) {
+      final RuntimeMcpProfileSpec.ArtifactType artifactType) {
     String version = first(selected.version(), null);
     if (version == null || artifactType == RuntimeMcpProfileSpec.ArtifactType.OCI) {
       return selected.identifier();
@@ -383,12 +404,12 @@ public class AiCatalogServiceImpl implements AiCatalogService {
         false,
         false,
         false,
-        server.updatedAt()
-    );
+        server.updatedAt());
   }
 
   private AiCatalogItem officialEntry(final AiCatalogEntry entry) {
-    boolean remote = isImportable(entry.getEndpointUrl(), entry.getTransportType()), runtime = hasImportablePackage(entry);
+    boolean remote = isImportable(entry.getEndpointUrl(), entry.getTransportType());
+    boolean runtime = hasImportablePackage(entry);
     return new AiCatalogItem(
         entry.getId(),
         entry.getSource(),
@@ -406,15 +427,12 @@ public class AiCatalogServiceImpl implements AiCatalogService {
         remote || runtime,
         remote,
         runtime,
-        firstInstant(entry.getRegistryUpdatedAt(), entry.getUpdatedAt())
-    );
+        firstInstant(entry.getRegistryUpdatedAt(), entry.getUpdatedAt()));
   }
 
   private void requireSyncEnabled() {
     if (!Boolean.TRUE.equals(properties.getOfficialSyncEnabled())) {
-      throw new IllegalStateException(
-          "Official MCP Registry synchronization is disabled"
-      );
+      throw new IllegalStateException("Official MCP Registry synchronization is disabled");
     }
   }
 
@@ -427,12 +445,8 @@ public class AiCatalogServiceImpl implements AiCatalogService {
     return state;
   }
 
-  private static boolean isImportable(
-      final String endpoint,
-      final String transport
-  ) {
-    if (!"streamable-http".equalsIgnoreCase(transport)
-        || endpoint == null) {
+  private static boolean isImportable(final String endpoint, final String transport) {
+    if (!"streamable-http".equalsIgnoreCase(transport) || endpoint == null) {
       return false;
     }
     try {
@@ -450,18 +464,17 @@ public class AiCatalogServiceImpl implements AiCatalogService {
       return false;
     }
     try {
-      return objectMapper.readValue(
-          entry.getDescriptorJson(), McpServerDescriptor.class
-      ).packages().stream().anyMatch(AiCatalogServiceImpl::isSupportedPackage);
+      return objectMapper
+          .readValue(entry.getDescriptorJson(), McpServerDescriptor.class)
+          .packages()
+          .stream()
+          .anyMatch(AiCatalogServiceImpl::isSupportedPackage);
     } catch (JsonProcessingException | IllegalArgumentException ex) {
       return false;
     }
   }
 
-  private static String importCode(
-      final AiCatalogEntry entry,
-      final String requestedCode
-  ) {
+  private static String importCode(final AiCatalogEntry entry, final String requestedCode) {
     if (requestedCode != null && !requestedCode.isBlank()) {
       return requestedCode.trim().toLowerCase(Locale.ROOT);
     }
@@ -493,26 +506,19 @@ public class AiCatalogServiceImpl implements AiCatalogService {
       return null;
     }
     String normalized = value.trim();
-    return normalized.length() <= maximum
-        ? normalized : normalized.substring(0, maximum);
+    return normalized.length() <= maximum ? normalized : normalized.substring(0, maximum);
   }
 
-  private static Instant firstInstant(
-      final Instant value,
-      final Instant fallback
-  ) {
+  private static Instant firstInstant(final Instant value, final Instant fallback) {
     return value == null ? fallback : value;
   }
 
-  /**
-   * Creates a stable non-secret identity for one Registry name and version.
-   */
+  /** Creates a stable non-secret identity for one Registry name and version. */
   public static String externalKey(final String name, final String version) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
-      return HexFormat.of().formatHex(digest.digest(
-          (name + "\u0000" + version).getBytes(StandardCharsets.UTF_8)
-      ));
+      return HexFormat.of()
+          .formatHex(digest.digest((name + "\u0000" + version).getBytes(StandardCharsets.UTF_8)));
     } catch (NoSuchAlgorithmException ex) {
       throw new IllegalStateException("SHA-256 is unavailable", ex);
     }

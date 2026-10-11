@@ -7,11 +7,15 @@ export async function smokeCatalog({clickMenu, clickReady, clickText, fill, poll
   assert.equal(await evaluate(`document.querySelectorAll('${root} .ant-card').length`), 0, 'same platform layout without an extra card or duplicate heading');
   assert.equal(await evaluate(`document.querySelectorAll('${root} .sp-data-table').length`), 1);
   const search = async value => {
-    await fill(`${root} .ant-input-search input`, value);
-    await evaluate(`document.querySelector('${root} .ant-input-search input').focus()`);
-    await send('Input.dispatchKeyEvent', {type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13});
-    await send('Input.dispatchKeyEvent', {type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13});
-    await poll(() => evaluate(`document.querySelectorAll('${root} tr[data-row-key]').length===1 && document.querySelector('${root} tr[data-row-key]')?.textContent.includes(${JSON.stringify(value)}) && !document.querySelector('${root} .ant-spin-spinning')`), 'server search beyond first 500: ' + value);
+    await poll(() => evaluate(`!document.querySelector('.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown')`), 'previous column editor closed');
+    await poll(() => evaluate(`!![...document.querySelectorAll('${root} th')].find(e=>e.textContent.includes('扩展'))?.querySelector('.ant-table-filter-trigger')`), 'catalog title header ready');
+    await evaluate(`[...document.querySelectorAll('${root} th')].find(e=>e.textContent.includes('扩展')).querySelector('.ant-table-filter-trigger').click()`);
+    const filter = '.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown';
+    await poll(() => evaluate(`!!document.querySelector('${filter} input.ant-input')`), 'catalog header filter');
+    await fill(`${filter} input.ant-input`, value);
+    await clickText(`${filter} button`, '应用');
+    await poll(() => evaluate(`document.querySelectorAll('${root} tr[data-row-key]').length===1 && document.querySelector('${root} tr[data-row-key]')?.textContent.includes(${JSON.stringify(value)}) && !document.querySelector('${root} .ant-spin-spinning')`), 'server search beyond first 500: ' + value)
+      .catch(async error => {console.log(await evaluate(`({text:document.querySelector('${root}')?.textContent,filters:[...document.querySelectorAll('.ant-table-filter-dropdown')].map(e=>({text:e.textContent,inputs:[...e.querySelectorAll('input')].map(i=>i.value)}))})`)); throw error;});
   };
   if (mode === 'permissions') {
     await poll(() => evaluate(`document.querySelector('${root} .ant-alert-error')?.textContent.includes('权限加载失败')`), 'permissions failure visible');
@@ -31,14 +35,20 @@ export async function smokeCatalog({clickMenu, clickReady, clickText, fill, poll
   await clickReady(`${root} .ant-pagination-item-53`);
   await poll(() => evaluate(`document.querySelector('${root} tr[data-row-key="official-520"]') && !document.querySelector('${root} .ant-spin-spinning')`), 'actual last catalog page beyond 1000');
   assert.equal(fixture.reads.findLast(read => read.path === base).params.get('page'), '52');
-  const source = `${root} .sp-data-table-toolbar-extra .ant-select`;
   const chooseSource = async label => {
-    await evaluate(`document.querySelector('${source}').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
+    await poll(() => evaluate(`!document.querySelector('.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown')`), 'previous header editor closed');
+    const filter = '.ant-dropdown:not(.ant-dropdown-hidden) .ant-table-filter-dropdown';
+    await evaluate(`[...document.querySelectorAll('${root} th')].find(e=>e.textContent.includes('来源')).querySelector('.ant-table-filter-trigger').click()`);
+    await poll(() => evaluate(`!!document.querySelector('${filter} .ant-select-multiple')`), 'source header choices');
+    // Replace the previous finite selection rather than accumulating incompatible sources.
+    await evaluate(`document.querySelectorAll('${filter} .ant-select-selection-item-remove').forEach(button=>button.click())`);
+    await evaluate(`document.querySelector('${filter} .ant-select-multiple').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
     await clickText('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option', label);
+    await clickText(`${filter} button`, '应用');
   };
   await chooseSource('内部');
   await poll(() => evaluate(`document.querySelector('${root} tr[data-row-key="internal:mcp:0"]') && document.querySelector('${root} .ant-pagination-item-active')?.textContent==='1' && !document.querySelector('${root} .ant-spin-spinning')`), 'finite source facet resets actual server page');
-  assert.equal(fixture.reads.findLast(read => read.path === base).params.get('source'), 'INTERNAL');
+  assert.deepEqual(JSON.parse(fixture.reads.findLast(read => read.path === base).params.get('source')).where.value, ['INTERNAL']);
   await search('Internal520'); assert.equal(await evaluate(`document.querySelectorAll('${root} tr button').length`), 0);
   await chooseSource('官方 MCP Registry');
   await poll(() => evaluate(`document.querySelectorAll('${root} tr[data-row-key]').length===0 && !document.querySelector('${root} .ant-spin-spinning')`), 'server source and keyword intersect');
@@ -81,7 +91,9 @@ export async function smokeCatalog({clickMenu, clickReady, clickText, fill, poll
     await clickMenu('扩展市场标准测试');
     await poll(() => evaluate(`document.querySelector('${root} tr[data-row-key="internal:mcp:0"]') && !document.querySelector('${root} .ant-spin-spinning')`), 'new workspace resets query and page');
     assert.equal(await evaluate(`[...document.querySelectorAll('${root} button')].some(button=>button.textContent==='同步官方 Registry')`), false, 'tenant cannot synchronize platform metadata');
-    assert.equal(await evaluate(`document.querySelector('${root} .ant-input-search input').value`), '');
+    assert.equal(await evaluate(`document.querySelectorAll('${root} .ant-table-filter-trigger.active').length`), 0);
+    assert.equal(fixture.reads.findLast(read => read.path === base).params.has('title'), false);
+    assert.equal(fixture.reads.findLast(read => read.path === base).params.has('source'), false);
     await evaluate(`localStorage.setItem('sp.tenantId','__platform__');window.dispatchEvent(new CustomEvent('sp-set-tenant',{detail:'__platform__'}));`);
     await clickMenu('扩展市场标准测试'); await poll(() => evaluate(`!!document.querySelector('${root} tr[data-row-key="internal:mcp:0"]')`), 'return to platform scope');
     workspace.disable();

@@ -1,4 +1,9 @@
 {
+  "nav.notificationsAndMessages": "Notifications and Messages",
+  "nav.markSystemRead": "Read All System Notices",
+  "nav.systemNotifications": "System Notices",
+  "nav.personalMessagesUnavailable": "The personal message count is temporarily unavailable.",
+  "nav.personalMessagesHint": "Workflow reminders and approval results are available in My Messages.",
   "home.calendar.title": "Calendar",
   "home.calendar.today": "Today",
   "home.calendar.previous": "Previous month",

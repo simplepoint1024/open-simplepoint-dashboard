@@ -1,5 +1,5 @@
 import {JSX} from 'react';
-import {Navigate, Route} from 'react-router';
+import {Navigate, Route, useLocation} from 'react-router';
 import {IframeView} from './IframeView';
 import {BoundaryAndSuspense} from './withBoundaryAndSuspense';
 import {parseComponent} from '@/utils/parseComponent';
@@ -16,6 +16,12 @@ import {
     LEGACY_AI_WORKSPACE_PATH,
     resolveLegacyAiWorkspaceTarget,
 } from './legacyAiWorkspace';
+import {LEGACY_WORKFLOW_INSTANCES, LEGACY_WORKFLOW_TASKS, migrateWorkflowLocation, resolveWorkflowTargets, type WorkflowTargets} from './legacyWorkflow';
+
+function LegacyWorkflowRedirect({targets}: {targets: WorkflowTargets}) {
+    const location = useLocation();
+    return <Navigate replace to={migrateWorkflowLocation(`${location.pathname}${location.search}${location.hash}`, targets)}/>;
+}
 
 export interface RouteItem {
     key: string;
@@ -47,6 +53,7 @@ export function renderRoutes(
     remoteRegistryKey?: string,
 ) {
     const legacyAiWorkspaceTarget = resolveLegacyAiWorkspaceTarget(leafRoutes);
+    const workflowTargets = resolveWorkflowTargets(leafRoutes);
 
     // 1. 静态路由（结构统一）
     const staticRoutes: RouteItem[] = [
@@ -63,6 +70,8 @@ export function renderRoutes(
             element: <Navigate to={legacyAiWorkspaceTarget} replace/>,
         },
         {key: 'profile', path: '/profile', element: <Profile/>},
+        {key: 'legacy-workflow-tasks', path: LEGACY_WORKFLOW_TASKS, element: <LegacyWorkflowRedirect targets={workflowTargets}/>},
+        {key: 'legacy-workflow-instances', path: LEGACY_WORKFLOW_INSTANCES, element: <LegacyWorkflowRedirect targets={workflowTargets}/>},
         {key: 'tenant', path: '/tenant', element: <TenantHome/>},
         {key: 'settings', path: '/settings', element: <Settings/>},
         {key: '404', path: '*', element: <NotFound/>}
@@ -75,6 +84,8 @@ export function renderRoutes(
             && route.path !== '/dashboard'
             && route.path !== AI_WORKBENCH_ROOT_PATH
             && route.path !== LEGACY_AI_WORKSPACE_PATH
+            && route.path !== LEGACY_WORKFLOW_TASKS
+            && route.path !== LEGACY_WORKFLOW_INSTANCES
         ))
         .map((route, idx: number) => {
             const { uuid, path, component, requireOrgTenant } = route;

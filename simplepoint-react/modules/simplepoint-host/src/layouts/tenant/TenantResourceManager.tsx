@@ -1,7 +1,9 @@
 import React, {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {Alert, App, Breadcrumb, Input, Modal, Space, Tag, Typography} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
-import DataTable from '@simplepoint/components/DataTable';
+import DataTable, {type QuerySchema, type TableQueryState} from '@simplepoint/components/DataTable';
+import {transportFilters} from '@simplepoint/components/Table/query';
+import {useSchema} from '@simplepoint/shared/hooks/useSchema';
 import TableActions from '@simplepoint/components/Table/Actions';
 import SForm from '@simplepoint/components/SForm/Lazy';
 import type {SFormHandle} from '@simplepoint/components/SForm';
@@ -30,6 +32,9 @@ export const TenantResourceManager: React.FC<ManagerProps> = props => {
 function ResourceManagerSession({tenantId, onBlockedChange}: ManagerProps) {
   const {message} = App.useApp(), {t} = useI18n(), selected = usePageSelected();
   const [page, setPage] = useState(1), [keyword, setKeyword] = useState(''), [search, setSearch] = useState('');
+  const [tableQuery, setTableQuery] = useState<TableQueryState>({filters: {}});
+  const tableSchema = useSchema(endpoint, {enabled: selected, retry: false});
+  const querySchema = tableSchema.data?.schema?.['x-query'] ? tableSchema.data.schema as unknown as QuerySchema : undefined;
   const [trail, setTrail] = useState<Array<{id: string; name: string}>>([]), [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false), flight = useRef(false);
   const [editor, setEditor] = useState<{row: TenantResource | null; draft: ResourceDraft} | null>(null);
@@ -43,9 +48,10 @@ function ResourceManagerSession({tenantId, onBlockedChange}: ManagerProps) {
   useLayoutEffect(() => {onBlockedChange?.(retentionBlocked);
     return () => onBlockedChange?.(false);}, [onBlockedChange, retentionBlocked]);
   const headers = {'X-Tenant-Id': tenantId}, parentId = trail[trail.length - 1]?.id;
-  const list = useData(['tenant-resources', tenantId, page, search, parentId, revision], async ({signal}) =>
-    normalizePage(await get<RawPage<TenantResource>>(endpoint, {page: page - 1, size: 20, keyword: search,
-      ...(search ? {} : parentId ? {parentId} : {rootsOnly: true})}, {headers, signal}), 20), {retry: false});
+  const list = useData(['tenant-resources', tenantId, page, search, parentId, revision, tableQuery], async ({signal}) =>
+    normalizePage(await get<RawPage<TenantResource>>(endpoint, {...transportFilters(tableQuery.filters),
+      ...(tableQuery.sort ? {sort: tableQuery.sort} : {}), page: page - 1, size: 20, keyword: search,
+      ...(search ? {} : parentId ? {parentId} : {rootsOnly: true})}, {headers, signal}), 20), {retry: false, enabled: selected && !!querySchema});
   const refresh = () => setRevision(value => value + 1);
   const blocked = busy || !!editor || !!confirmation;
   const canOpen = () => !flight.current && !editorRef.current && !confirmationRef.current;
@@ -65,7 +71,7 @@ function ResourceManagerSession({tenantId, onBlockedChange}: ManagerProps) {
       else await post(endpoint, payload, {headers});
       if (!alive.current) return;
       message.success(t('tenant.resources.saved', '资源已保存')); editorRef.current = null; setEditor(null);
-      if (!target.row) {setTrail([]); setPage(1); setKeyword(payload.name); setSearch(payload.name);} refresh();
+      if (!target.row) {setTrail([]); setPage(1); setTableQuery({filters: {}}); setKeyword(payload.name); setSearch(payload.name);} refresh();
       window.dispatchEvent(new Event('sp-tenant-resources-updated'));
     } catch (error) {if (alive.current) setWriteError(resolveApiErrorMessage(error, t('tenant.resources.saveFailed', '资源保存失败')));}
     finally {finish();}
@@ -101,18 +107,18 @@ function ResourceManagerSession({tenantId, onBlockedChange}: ManagerProps) {
     finally {finish();}
   };
   const columns: ColumnsType<TenantResource> = [
-    {title: t('tenant.resources.name', '资源'), key: 'name', render: (_, row) => <Space direction="vertical" size={0}>
-      <strong>{row.name}</strong><Typography.Text type="secondary" copyable>{row.code}</Typography.Text></Space>},
+    {title: t('tenant.resources.name', '资源'), dataIndex: 'name', key: 'name'},
+    {title: t('tenant.resources.code', '资源编码'), dataIndex: 'code', render: value => <Typography.Text type="secondary" copyable>{value}</Typography.Text>},
     {title: t('tenant.resources.type', '类型'), dataIndex: 'type', width: 110},
-    {title: t('tenant.resources.origin', '来源'), width: 110, render: (_, row) => row.platformResourceId
+    {title: t('tenant.resources.origin', '来源'), dataIndex: 'origin', width: 110, render: value => value === 'PLATFORM'
       ? <Tag color="blue">{t('tenant.resources.platform', '平台')}</Tag> : <Tag color="green">{t('tenant.resources.tenant', '租户自建')}</Tag>},
-    {title: t('tenant.resources.status', '状态'), width: 95, render: (_, row) => row.enabled
+    {title: t('tenant.resources.status', '状态'), dataIndex: 'enabled', width: 95, render: value => value
       ? <Tag color="success">{t('tenant.resources.active', '生效')}</Tag> : <Tag>{t('tenant.resources.inactive', '已停用')}</Tag>},
     {title: t('tenant.resources.actions', '操作'), key: 'actions', width: 250, render: (_, row) =>
       <TableActions<TenantResource> selectedKeys={[row.id]} selectedRows={[row]} buttons={[
         ...(row.type !== 'ACTION' && row.type !== 'API' ? [{key: 'children', sort: 0, size: 'small' as const, icon: 'ApartmentOutlined',
           text: t('tenant.resources.children', '下级'), disabled: blocked, onClick: () => {
-            if (!canOpen()) return; setSearch(''); setKeyword(''); setPage(1); setTrail(current => [...current, {id: row.id, name: row.name}]);
+            if (!canOpen()) return; setSearch(''); setKeyword(''); setPage(1); setTableQuery({filters: {}}); setTrail(current => [...current, {id: row.id, name: row.name}]);
           }}] : []),
         {key: 'edit', sort: 1, size: 'small', icon: 'EditOutlined', text: t('action.edit', '编辑'), disabled: blocked, onClick: () => openEditor(row)},
         ...(!row.platformResourceId ? [{key: 'delete', sort: 2, size: 'small' as const, danger: true, icon: 'DeleteOutlined',
@@ -144,8 +150,15 @@ function ResourceManagerSession({tenantId, onBlockedChange}: ManagerProps) {
       description={resolveApiErrorMessage(list.error, t('tenant.resources.loadFailed', '资源加载失败'))}
       action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', sort: 0,
         text: t('action.retry', '重试'), onClick: () => void list.refetch()}]}/>}/>}
-    <DataTable<TenantResource> rowKey="id" storageKey="tenant-resource-manager" columns={columns}
-      dataSource={list.data?.content ?? []} loading={list.isFetching} refresh={() => {if (canOpen()) refresh();}}
+    {tableSchema.error && <Alert type="error" showIcon title={t('table.schemaLoadFail', '页面结构加载失败，请稍后重试。')}
+      action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retrySchema', sort: 0,
+        text: t('action.retry', '重试'), onClick: () => void tableSchema.refetch()}]}/>}/>}
+    <DataTable<TenantResource> rowKey="id" storageKey="tenant-resource-manager"
+      query={querySchema ? {mode: 'remote', schema: querySchema, state: tableQuery, onChange: next => {
+        if (!canOpen()) return; setTableQuery(next); setPage(1);
+      }} : undefined}
+      columns={querySchema ? columns.filter(column => !('dataIndex' in column) || !column.dataIndex || !!querySchema.properties[String(column.dataIndex)]) : []}
+      dataSource={list.error || tableSchema.error ? [] : list.data?.content ?? []} loading={list.isFetching || tableSchema.isFetching} refresh={() => {if (canOpen()) refresh();}}
       scroll={{x: 900}} pagination={{current: page, pageSize: 20, total: list.data?.page.totalElements ?? 0,
         showSizeChanger: false, disabled: blocked, onChange: next => {if (canOpen()) setPage(next);}}}/>
     <Modal title={editor?.row ? t('tenant.resources.edit', '编辑资源') : t('tenant.resources.create', '新建租户资源')}

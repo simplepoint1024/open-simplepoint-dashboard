@@ -441,6 +441,11 @@ const App = () => {
         }
       >
         <Table
+          storageKey="dna.dashboard.recent-audits"
+          query={{mode: 'local', scope: 'result', fields: {
+            catalogCode: {type: 'string'}, sql: {type: 'string'}, executionTimeMs: {type: 'integer'},
+            createdAt: {type: 'date-time'},
+          }}}
           columns={auditColumns}
           dataSource={summary?.recentAudits ?? []}
           rowKey="id"

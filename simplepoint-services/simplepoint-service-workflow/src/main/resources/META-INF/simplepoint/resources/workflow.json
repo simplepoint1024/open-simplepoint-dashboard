@@ -16,7 +16,9 @@
       "requireOrgTenant": true,
       "grantable": false,
       "disabled": false,
-      "scopeTypes": ["TENANT"],
+      "scopeTypes": [
+        "TENANT"
+      ],
       "children": [
         {
           "code": "workflow.definitions.view",
@@ -34,7 +36,9 @@
           "requireOrgTenant": true,
           "grantable": true,
           "disabled": false,
-          "scopeTypes": ["TENANT"],
+          "scopeTypes": [
+            "TENANT"
+          ],
           "children": [
             {
               "code": "workflow.definitions.create",
@@ -88,21 +92,23 @@
         },
         {
           "code": "workflow.tasks.view",
-          "name": "任务中心",
-          "label": "任务中心",
+          "name": "工作流待办（兼容权限）",
+          "label": "工作流待办（兼容权限）",
           "title": "menu.workflow.tasks",
           "type": "PAGE",
           "path": "/workflow/tasks",
           "component": "workflow/Tasks",
           "icon": "ScheduleOutlined",
-          "routeKind": "item",
+          "routeKind": "hidden",
           "description": "menu.workflow.tasks",
           "sort": 10,
           "publicAccess": false,
           "requireOrgTenant": true,
           "grantable": true,
           "disabled": false,
-          "scopeTypes": ["TENANT"],
+          "scopeTypes": [
+            "TENANT"
+          ],
           "children": [
             {
               "code": "workflow.tasks.claim",
@@ -132,34 +138,24 @@
         },
         {
           "code": "workflow.instances.started.view",
-          "name": "流程实例",
-          "label": "流程实例",
+          "name": "个人流程事项（兼容权限）",
+          "label": "个人流程事项（兼容权限）",
           "title": "menu.workflow.instances",
           "type": "PAGE",
           "path": "/workflow/instances",
           "component": "workflow/Instances",
           "icon": "NodeIndexOutlined",
-          "routeKind": "item",
+          "routeKind": "hidden",
           "description": "menu.workflow.instances",
           "sort": 20,
           "publicAccess": false,
           "requireOrgTenant": true,
           "grantable": true,
           "disabled": false,
-          "scopeTypes": ["TENANT"],
+          "scopeTypes": [
+            "TENANT"
+          ],
           "children": [
-            {
-              "code": "workflow.instances.view",
-              "name": "查看全部流程",
-              "label": "查看全部流程",
-              "alias": "i18n:workflow.action.viewAll",
-              "type": "ACTION",
-              "icon": "UnorderedListOutlined",
-              "sort": 90,
-              "publicAccess": false,
-              "grantable": true,
-              "disabled": false
-            },
             {
               "code": "workflow.instances.start",
               "name": "发起流程",
@@ -185,6 +181,27 @@
               "disabled": false
             }
           ]
+        },
+        {
+          "code": "workflow.instances.view",
+          "name": "运行管理",
+          "label": "运行管理",
+          "title": "menu.workflow.management",
+          "type": "PAGE",
+          "path": "/workflow/management",
+          "component": "workflow/Management",
+          "icon": "NodeIndexOutlined",
+          "routeKind": "item",
+          "description": "menu.workflow.management",
+          "sort": 20,
+          "publicAccess": false,
+          "requireOrgTenant": true,
+          "grantable": true,
+          "disabled": false,
+          "scopeTypes": [
+            "TENANT"
+          ],
+          "children": []
         }
       ]
     }

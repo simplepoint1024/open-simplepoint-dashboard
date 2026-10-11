@@ -67,8 +67,8 @@ import org.simplepoint.plugin.ai.mcp.api.gateway.McpToolDescriptor;
 import org.simplepoint.plugin.ai.mcp.api.model.McpAuthenticationType;
 import org.simplepoint.plugin.ai.mcp.api.model.McpCapabilitySnapshotDetails;
 import org.simplepoint.plugin.ai.mcp.api.model.McpCapabilitySnapshotSummary;
-import org.simplepoint.plugin.ai.mcp.api.model.McpCatalogRegistration;
 import org.simplepoint.plugin.ai.mcp.api.model.McpCapabilityType;
+import org.simplepoint.plugin.ai.mcp.api.model.McpCatalogRegistration;
 import org.simplepoint.plugin.ai.mcp.api.model.McpOauthAuthorizationStart;
 import org.simplepoint.plugin.ai.mcp.api.model.McpOauthCallbackCommand;
 import org.simplepoint.plugin.ai.mcp.api.model.McpOauthStatus;
@@ -96,33 +96,26 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * MCP server control-plane service.
- */
+/** MCP server control-plane service. */
 @Service
 public class AiMcpServerDefinitionServiceImpl
     extends BaseServiceImpl<AiMcpServerDefinitionRepository, AiMcpServerDefinition, String>
     implements AiMcpServerDefinitionService, AiMcpPublicationRuntimeService {
 
   private static final TypeReference<List<McpToolDescriptor>> TOOL_LIST_TYPE =
-      new TypeReference<>() {
-      };
+      new TypeReference<>() {};
 
   private static final TypeReference<List<McpResourceDescriptor>> RESOURCE_LIST_TYPE =
-      new TypeReference<>() {
-      };
+      new TypeReference<>() {};
 
   private static final TypeReference<List<McpResourceTemplateDescriptor>>
-      RESOURCE_TEMPLATE_LIST_TYPE = new TypeReference<>() {
-      };
+      RESOURCE_TEMPLATE_LIST_TYPE = new TypeReference<>() {};
 
   private static final TypeReference<List<McpPromptDescriptor>> PROMPT_LIST_TYPE =
-      new TypeReference<>() {
-      };
+      new TypeReference<>() {};
 
   private static final TypeReference<Map<String, Object>> CAPABILITIES_MAP_TYPE =
-      new TypeReference<>() {
-      };
+      new TypeReference<>() {};
 
   private static final Duration OAUTH_STATE_LIFETIME = Duration.ofMinutes(10);
 
@@ -157,10 +150,9 @@ public class AiMcpServerDefinitionServiceImpl
   private final AiRuntimeMcpEndpointService runtimeMcpEndpointService;
 
   private final AiRuntimePoolService runtimePoolService;
+  private final McpSnapshotQueries snapshotQueries;
 
-  /**
-   * Creates the MCP server service.
-   */
+  /** Creates the MCP server service. */
   public AiMcpServerDefinitionServiceImpl(
       final AiMcpServerDefinitionRepository repository,
       final DetailsProviderService detailsProviderService,
@@ -175,9 +167,10 @@ public class AiMcpServerDefinitionServiceImpl
       final AiMcpInvocationLedger invocationLedger,
       final ObjectMapper objectMapper,
       final AiRuntimeMcpEndpointService runtimeMcpEndpointService,
-      final AiRuntimePoolService runtimePoolService
-  ) {
+      final AiRuntimePoolService runtimePoolService,
+      final McpSnapshotQueries snapshotQueries) {
     super(repository, detailsProviderService);
+    this.snapshotQueries = snapshotQueries;
     this.repository = repository;
     this.snapshotRepository = snapshotRepository;
     this.oauthAuthorizationRepository = oauthAuthorizationRepository;
@@ -189,8 +182,8 @@ public class AiMcpServerDefinitionServiceImpl
     this.snapshotStore = snapshotStore;
     this.invocationLedger = invocationLedger;
     this.objectMapper = objectMapper;
-    this.canonicalMapper = objectMapper.copy()
-        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
+    this.canonicalMapper =
+        objectMapper.copy().configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
     this.runtimeMcpEndpointService = runtimeMcpEndpointService;
     this.runtimePoolService = runtimePoolService;
   }
@@ -203,13 +196,21 @@ public class AiMcpServerDefinitionServiceImpl
   @Override
   @Transactional(readOnly = true)
   public Page<McpCatalogRegistration> findCatalog(final String query, final Pageable pageable) {
-    if (pageable == null || pageable.isUnpaged() || pageable.getPageSize() > 100
-        || pageable.getOffset() > Integer.MAX_VALUE || pageable.getSort().isSorted()) {
-      throw new IllegalArgumentException("Catalog page must be bounded and use its stable server order");
+    if (pageable == null
+        || pageable.isUnpaged()
+        || pageable.getPageSize() > 100
+        || pageable.getOffset() > Integer.MAX_VALUE
+        || pageable.getSort().isSorted()) {
+      throw new IllegalArgumentException(
+          "Catalog page must be bounded and use its stable server order");
     }
     String keyword = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
-    if (keyword.length() > 200) throw new IllegalArgumentException("Catalog query must not exceed 200 characters");
-    if (!keyword.isEmpty()) keyword = "%" + keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+    if (keyword.length() > 200) {
+      throw new IllegalArgumentException("Catalog query must not exceed 200 characters");
+    }
+    if (!keyword.isEmpty()) {
+      keyword = "%" + keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+    }
     ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
     return repository.findCatalogInScope(scope.scopeType(), scope.tenantId(), keyword, pageable);
   }
@@ -223,17 +224,18 @@ public class AiMcpServerDefinitionServiceImpl
 
   @Override
   public <S extends AiMcpServerDefinition> Page<S> limit(
-      final Map<String, String> attributes,
-      final Pageable pageable
-  ) {
+      final Map<String, String> attributes, final Pageable pageable) {
     Map<String, String> normalized = new LinkedHashMap<>();
     if (attributes != null) {
       normalized.putAll(attributes);
     }
     ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
-    Map<String, String> required = Map.of(
-        "scopeType", scope.scopeType().name(),
-        "tenantId", scope.tenantId() == null ? "is:null" : "equals:" + scope.tenantId());
+    Map<String, String> required =
+        Map.of(
+            "scopeType",
+            scope.scopeType().name(),
+            "tenantId",
+            scope.tenantId() == null ? "is:null" : "equals:" + scope.tenantId());
     normalizeLikeQuery(normalized, "name");
     normalizeLikeQuery(normalized, "code");
     Page<S> page = super.limitScoped(normalized, required, pageable);
@@ -256,12 +258,16 @@ public class AiMcpServerDefinitionServiceImpl
     entity.setCredentialCiphertext(credential);
     entity.setBearerToken(null);
     entity.setEnabled(entity.getEnabled() == null ? Boolean.TRUE : entity.getEnabled());
-    entity.setStatus(Boolean.TRUE.equals(entity.getEnabled())
-        ? McpServerStatus.DRAFT : McpServerStatus.DISABLED);
+    entity.setStatus(
+        Boolean.TRUE.equals(entity.getEnabled())
+            ? McpServerStatus.DRAFT
+            : McpServerStatus.DISABLED);
     clearDiscoveryState(entity);
     clearOauthRuntimeState(entity);
-    entity.setOauthStatus(entity.getAuthenticationType() == McpAuthenticationType.OAUTH2
-        ? McpOauthStatus.CONFIGURED : McpOauthStatus.NOT_CONFIGURED);
+    entity.setOauthStatus(
+        entity.getAuthenticationType() == McpAuthenticationType.OAUTH2
+            ? McpOauthStatus.CONFIGURED
+            : McpOauthStatus.NOT_CONFIGURED);
     S saved = super.create(entity);
     return decorate(saved);
   }
@@ -269,12 +275,11 @@ public class AiMcpServerDefinitionServiceImpl
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends AiMcpServerDefinition> AiMcpServerDefinition modifyById(final S entity) {
-    AiMcpServerDefinition current = repository.findActiveById(requireEntityId(entity))
-        .orElseThrow(() -> new IllegalArgumentException("MCP server does not exist"));
-    scopeAccessPolicy.assertCanManageOwnedResource(
-        current.getScopeType(),
-        current.getTenantId()
-    );
+    AiMcpServerDefinition current =
+        repository
+            .findActiveById(requireEntityId(entity))
+            .orElseThrow(() -> new IllegalArgumentException("MCP server does not exist"));
+    scopeAccessPolicy.assertCanManageOwnedResource(current.getScopeType(), current.getTenantId());
     entity.setScopeType(current.getScopeType());
     entity.setTenantId(current.getTenantId());
     normalizeAndValidate(entity, current.getId());
@@ -285,8 +290,10 @@ public class AiMcpServerDefinitionServiceImpl
     entity.setOauthClientSecret(null);
     if (oauthConfigurationChanged(current, entity, credential)) {
       clearOauthRuntimeState(entity);
-      entity.setOauthStatus(entity.getAuthenticationType() == McpAuthenticationType.OAUTH2
-          ? McpOauthStatus.CONFIGURED : McpOauthStatus.NOT_CONFIGURED);
+      entity.setOauthStatus(
+          entity.getAuthenticationType() == McpAuthenticationType.OAUTH2
+              ? McpOauthStatus.CONFIGURED
+              : McpOauthStatus.NOT_CONFIGURED);
     } else {
       copyOauthRuntimeState(current, entity);
     }
@@ -299,8 +306,10 @@ public class AiMcpServerDefinitionServiceImpl
     if (entity.getEnabled() == null) {
       entity.setEnabled(current.getEnabled());
     }
-    entity.setStatus(Boolean.TRUE.equals(entity.getEnabled())
-        ? staleStatus(current, entity) : McpServerStatus.DISABLED);
+    entity.setStatus(
+        Boolean.TRUE.equals(entity.getEnabled())
+            ? staleStatus(current, entity)
+            : McpServerStatus.DISABLED);
     AiMcpServerDefinition updated = (AiMcpServerDefinition) super.modifyById(entity);
     return decorate(updated);
   }
@@ -311,25 +320,26 @@ public class AiMcpServerDefinitionServiceImpl
     if (ids == null || ids.isEmpty()) {
       return;
     }
-    ids.forEach(id -> {
-      AiMcpServerDefinition server = repository.findActiveById(requireId(id))
-          .orElseThrow(() -> new IllegalArgumentException("MCP server does not exist"));
-      scopeAccessPolicy.assertCanManageOwnedResource(
-          server.getScopeType(),
-          server.getTenantId()
-      );
-      if (!publicationRepository
-          .findActiveByUpstreamServerId(server.getId()).isEmpty()) {
-        throw new IllegalStateException(
-            "Delete MCP publications before deleting their upstream server"
-        );
-      }
-      runtimePoolService.findByServer(server.getId()).ifPresent(pool -> {
-        throw new IllegalStateException(
-            "Delete the managed Runtime pool before deleting its MCP server"
-        );
-      });
-    });
+    ids.forEach(
+        id -> {
+          AiMcpServerDefinition server =
+              repository
+                  .findActiveById(requireId(id))
+                  .orElseThrow(() -> new IllegalArgumentException("MCP server does not exist"));
+          scopeAccessPolicy.assertCanManageOwnedResource(
+              server.getScopeType(), server.getTenantId());
+          if (!publicationRepository.findActiveByUpstreamServerId(server.getId()).isEmpty()) {
+            throw new IllegalStateException(
+                "Delete MCP publications before deleting their upstream server");
+          }
+          runtimePoolService
+              .findByServer(server.getId())
+              .ifPresent(
+                  pool -> {
+                    throw new IllegalStateException(
+                        "Delete the managed Runtime pool before deleting its MCP server");
+                  });
+        });
     super.removeByIds(ids);
   }
 
@@ -337,11 +347,8 @@ public class AiMcpServerDefinitionServiceImpl
   public McpGatewayDiscoveryResult discover(final String id) {
     AiMcpServerDefinition server = requireUsableServer(id, false);
     try {
-      McpGatewayDiscoveryResult discovery = executeGateway(
-          server,
-          managementSessionId(server),
-          gatewayOperations::discover
-      );
+      McpGatewayDiscoveryResult discovery =
+          executeGateway(server, managementSessionId(server), gatewayOperations::discover);
       snapshotStore.saveDiscovery(server.getId(), discovery);
       return discovery;
     } catch (RuntimeException ex) {
@@ -353,24 +360,43 @@ public class AiMcpServerDefinitionServiceImpl
   @Override
   @Transactional(readOnly = true)
   public Page<McpCapabilitySnapshotSummary> listSnapshots(
-      final String id,
-      final Pageable pageable
-  ) {
-    AiMcpServerDefinition server = requireVisibleServer(id);
-    return snapshotRepository.findAllActiveByServerId(
-        server.getId(),
-        pageable
-    ).map(snapshot -> snapshotSummary(server, snapshot));
+      final String id, final Pageable pageable) {
+    return querySnapshots(id, Map.of(), pageable);
   }
 
   @Override
   @Transactional(readOnly = true)
-  public McpCapabilitySnapshotDetails getSnapshot(
-      final String id,
-      final String snapshotId
-  ) {
+  public Map<String, Object> snapshotSchema(String id) {
+    requireVisibleServer(id);
+    return org.simplepoint.core.schema.ProjectionTableSchema.schema(
+        McpCapabilitySnapshotSummary.class, "ai.mcp.snapshots", Map.of());
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Page<McpCapabilitySnapshotSummary> querySnapshots(
+      String id, Map<String, String> filters, Pageable pageable) {
+    AiMcpServerDefinition server = requireVisibleServer(id);
+    return snapshotQueries
+        .page(server, filters, pageable)
+        .map(snapshot -> snapshotSummary(server, snapshot));
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public McpCapabilitySnapshotDetails getSnapshot(final String id, final String snapshotId) {
     AiMcpServerDefinition server = requireVisibleServer(id);
     return snapshotDetails(server, snapshotId);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public McpCapabilitySnapshotDetails previousSnapshot(String id, String snapshotId) {
+    AiMcpServerDefinition server = requireVisibleServer(id);
+    return snapshotQueries
+        .previous(server, requireId(snapshotId))
+        .map(snapshot -> snapshotDetails(server, snapshot))
+        .orElse(null);
   }
 
   @Override
@@ -379,37 +405,30 @@ public class AiMcpServerDefinitionServiceImpl
       final String id,
       final String snapshotId,
       final AiResourceScope invocationScope,
-      final String invocationTenantId
-  ) {
-    AiMcpServerDefinition server = repository.findActiveById(requireId(id))
-        .orElseThrow(() -> new IllegalArgumentException(
-            "MCP server does not exist"
-        ));
+      final String invocationTenantId) {
+    AiMcpServerDefinition server =
+        repository
+            .findActiveById(requireId(id))
+            .orElseThrow(() -> new IllegalArgumentException("MCP server does not exist"));
     if (!scopeAccessPolicy.canUseResourceFromScope(
-        server.getScopeType(),
-        server.getTenantId(),
-        invocationScope,
-        invocationTenantId
-    )) {
-      throw new IllegalArgumentException(
-          "MCP server is outside the background work scope"
-      );
+        server.getScopeType(), server.getTenantId(), invocationScope, invocationTenantId)) {
+      throw new IllegalArgumentException("MCP server is outside the background work scope");
     }
     return snapshotDetails(server, snapshotId);
   }
 
   private McpCapabilitySnapshotDetails snapshotDetails(
-      final AiMcpServerDefinition server,
-      final String snapshotId
-  ) {
-    AiMcpCapabilitySnapshot snapshot = snapshotRepository
-        .findActiveByIdAndServerId(
-            requireId(snapshotId),
-            server.getId()
-        )
-        .orElseThrow(() -> new IllegalArgumentException(
-            "MCP capability snapshot does not exist"
-        ));
+      final AiMcpServerDefinition server, final String snapshotId) {
+    AiMcpCapabilitySnapshot snapshot =
+        snapshotRepository
+            .findActiveByIdAndServerId(requireId(snapshotId), server.getId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("MCP capability snapshot does not exist"));
+    return snapshotDetails(server, snapshot);
+  }
+
+  private McpCapabilitySnapshotDetails snapshotDetails(
+      AiMcpServerDefinition server, AiMcpCapabilitySnapshot snapshot) {
     return new McpCapabilitySnapshotDetails(
         snapshot.getId(),
         snapshot.getServerId(),
@@ -423,8 +442,7 @@ public class AiMcpServerDefinitionServiceImpl
         readTools(snapshot),
         readResources(snapshot),
         readResourceTemplates(snapshot),
-        readPrompts(snapshot)
-    );
+        readPrompts(snapshot));
   }
 
   @Override
@@ -447,42 +465,29 @@ public class AiMcpServerDefinitionServiceImpl
 
   @Override
   public McpGatewayResourceReadResult readResource(
-      final String id,
-      final McpResourceReadCommand command
-  ) {
+      final String id, final McpResourceReadCommand command) {
     AiMcpServerDefinition server = requireUsableServer(id, true);
-    String uri = command == null
-        ? null : normalizeResourceUri(command.uri());
+    String uri = command == null ? null : normalizeResourceUri(command.uri());
     AiMcpCapabilitySnapshot snapshot = requireSnapshot(server);
-    boolean listed = readResources(snapshot).stream()
-        .anyMatch(resource -> resource.uri().equals(uri));
-    boolean templated = readResourceTemplates(snapshot).stream()
-        .anyMatch(template -> matchesResourceTemplate(template.uriTemplate(), uri));
+    boolean listed =
+        readResources(snapshot).stream().anyMatch(resource -> resource.uri().equals(uri));
+    boolean templated =
+        readResourceTemplates(snapshot).stream()
+            .anyMatch(template -> matchesResourceTemplate(template.uriTemplate(), uri));
     if (!listed && !templated) {
-      throw new IllegalArgumentException(
-          "MCP resource is not part of the active snapshot: " + uri
-      );
+      throw new IllegalArgumentException("MCP resource is not part of the active snapshot: " + uri);
     }
-    String invocationId = invocationLedger.start(
-        server,
-        snapshot.getId(),
-        McpCapabilityType.RESOURCE,
-        uri,
-        Map.of("uri", uri)
-    );
+    String invocationId =
+        invocationLedger.start(
+            server, snapshot.getId(), McpCapabilityType.RESOURCE, uri, Map.of("uri", uri));
     try {
-      McpGatewayResourceReadResult result = executeGateway(
-          server,
-          managementSessionId(server),
-          connection -> gatewayOperations.readResource(
-              new McpGatewayResourceReadRequest(
-                  connection,
-                  uri,
-                  Map.of(),
-                  null
-              )
-          )
-      );
+      McpGatewayResourceReadResult result =
+          executeGateway(
+              server,
+              managementSessionId(server),
+              connection ->
+                  gatewayOperations.readResource(
+                      new McpGatewayResourceReadRequest(connection, uri, Map.of(), null)));
       invocationLedger.succeed(invocationId, result);
       return result;
     } catch (RuntimeException ex) {
@@ -498,42 +503,25 @@ public class AiMcpServerDefinitionServiceImpl
   }
 
   @Override
-  public McpGatewayPromptGetResult getPrompt(
-      final String id,
-      final McpPromptGetCommand command
-  ) {
+  public McpGatewayPromptGetResult getPrompt(final String id, final McpPromptGetCommand command) {
     AiMcpServerDefinition server = requireUsableServer(id, true);
-    String name = command == null
-        ? null : required(command.name(), "MCP prompt name must not be blank");
+    String name =
+        command == null ? null : required(command.name(), "MCP prompt name must not be blank");
     AiMcpCapabilitySnapshot snapshot = requireSnapshot(server);
     if (readPrompts(snapshot).stream().noneMatch(prompt -> prompt.name().equals(name))) {
-      throw new IllegalArgumentException(
-          "MCP prompt is not part of the active snapshot: " + name
-      );
+      throw new IllegalArgumentException("MCP prompt is not part of the active snapshot: " + name);
     }
-    Map<String, Object> arguments = command.arguments() == null
-        ? Map.of() : command.arguments();
-    String invocationId = invocationLedger.start(
-        server,
-        snapshot.getId(),
-        McpCapabilityType.PROMPT,
-        name,
-        arguments
-    );
+    Map<String, Object> arguments = command.arguments() == null ? Map.of() : command.arguments();
+    String invocationId =
+        invocationLedger.start(server, snapshot.getId(), McpCapabilityType.PROMPT, name, arguments);
     try {
-      McpGatewayPromptGetResult result = executeGateway(
-          server,
-          managementSessionId(server),
-          connection -> gatewayOperations.getPrompt(
-              new McpGatewayPromptGetRequest(
-                  connection,
-                  name,
-                  arguments,
-                  Map.of(),
-                  null
-              )
-          )
-      );
+      McpGatewayPromptGetResult result =
+          executeGateway(
+              server,
+              managementSessionId(server),
+              connection ->
+                  gatewayOperations.getPrompt(
+                      new McpGatewayPromptGetRequest(connection, name, arguments, Map.of(), null)));
       invocationLedger.succeed(invocationId, result);
       return result;
     } catch (RuntimeException ex) {
@@ -543,43 +531,32 @@ public class AiMcpServerDefinitionServiceImpl
   }
 
   @Override
-  public McpGatewayToolCallResult callTool(
-      final String id,
-      final McpToolCallCommand command
-  ) {
+  public McpGatewayToolCallResult callTool(final String id, final McpToolCallCommand command) {
     AiMcpServerDefinition server = requireUsableServer(id, true);
     if (command == null || command.toolName() == null || command.toolName().isBlank()) {
       throw new IllegalArgumentException("MCP tool name must not be blank");
     }
     String toolName = command.toolName().trim();
     AiMcpCapabilitySnapshot snapshot = requireSnapshot(server);
-    boolean discovered = readTools(snapshot).stream()
-        .anyMatch(tool -> tool.name().equals(toolName));
+    boolean discovered =
+        readTools(snapshot).stream().anyMatch(tool -> tool.name().equals(toolName));
     if (!discovered) {
-      throw new IllegalArgumentException("MCP tool is not part of the active snapshot: " + toolName);
+      throw new IllegalArgumentException(
+          "MCP tool is not part of the active snapshot: " + toolName);
     }
     Map<String, Object> arguments = command.arguments() == null ? Map.of() : command.arguments();
-    String invocationId = invocationLedger.start(
-        server,
-        snapshot.getId(),
-        McpCapabilityType.TOOL,
-        toolName,
-        arguments
-    );
+    String invocationId =
+        invocationLedger.start(
+            server, snapshot.getId(), McpCapabilityType.TOOL, toolName, arguments);
     try {
-      McpGatewayToolCallResult result = executeGateway(
-          server,
-          managementSessionId(server),
-          connection -> gatewayOperations.callTool(
-              new McpGatewayToolCallRequest(
-                  connection,
-                  toolName,
-                  arguments,
-                  Map.of(),
-                  null
-              )
-          )
-      );
+      McpGatewayToolCallResult result =
+          executeGateway(
+              server,
+              managementSessionId(server),
+              connection ->
+                  gatewayOperations.callTool(
+                      new McpGatewayToolCallRequest(
+                          connection, toolName, arguments, Map.of(), null)));
       invocationLedger.succeed(invocationId, result);
       return result;
     } catch (RuntimeException ex) {
@@ -591,12 +568,11 @@ public class AiMcpServerDefinitionServiceImpl
   @Override
   @Transactional(rollbackFor = Exception.class)
   public McpOauthAuthorizationStart startOauthAuthorization(final String id) {
-    AiMcpServerDefinition server = repository.findActiveById(requireId(id))
-        .orElseThrow(() -> new IllegalArgumentException("MCP server does not exist"));
-    scopeAccessPolicy.assertCanManageOwnedResource(
-        server.getScopeType(),
-        server.getTenantId()
-    );
+    AiMcpServerDefinition server =
+        repository
+            .findActiveById(requireId(id))
+            .orElseThrow(() -> new IllegalArgumentException("MCP server does not exist"));
+    scopeAccessPolicy.assertCanManageOwnedResource(server.getScopeType(), server.getTenantId());
     if (!Boolean.TRUE.equals(server.getEnabled())) {
       throw new IllegalStateException("MCP server is disabled");
     }
@@ -604,49 +580,42 @@ public class AiMcpServerDefinitionServiceImpl
       throw new IllegalStateException("MCP server is not configured for OAuth 2.1");
     }
     if (server.getDeploymentType() == McpServerDeploymentType.REMOTE) {
-      McpGatewayOauthDiscoveryResult discovery = gatewayOperations.discoverOauth(
-          new McpGatewayOauthDiscoveryRequest(
-              server.getEndpointUrl(),
-              Boolean.TRUE.equals(server.getAllowPrivateNetwork())
-          )
-      );
+      McpGatewayOauthDiscoveryResult discovery =
+          gatewayOperations.discoverOauth(
+              new McpGatewayOauthDiscoveryRequest(
+                  server.getEndpointUrl(), Boolean.TRUE.equals(server.getAllowPrivateNetwork())));
       applyOauthDiscovery(server, discovery);
       ensureOauthClient(server, discovery);
     } else {
-      validateOauthEndpoint(
-          server.getOauthAuthorizationEndpoint(), "authorization"
-      );
+      validateOauthEndpoint(server.getOauthAuthorizationEndpoint(), "authorization");
       validateOauthEndpoint(server.getOauthTokenEndpoint(), "token");
-      if (server.getOauthClientId() == null
-          || server.getOauthClientId().isBlank()) {
-        throw new IllegalStateException(
-            "Managed MCP OAuth client ID is required"
-        );
+      if (server.getOauthClientId() == null || server.getOauthClientId().isBlank()) {
+        throw new IllegalStateException("Managed MCP OAuth client ID is required");
       }
-      List<AiMcpProviderConnection> existing = providerConnectionRepository
-          .findActiveByServer(server.getId());
+      List<AiMcpProviderConnection> existing =
+          providerConnectionRepository.findActiveByServer(server.getId());
       String userId = currentUserId();
-      if (existing.stream().anyMatch(connection ->
-          !userId.equals(connection.getUserId()))) {
+      if (existing.stream().anyMatch(connection -> !userId.equals(connection.getUserId()))) {
         throw new IllegalStateException(
-            "Managed OAuth MCP server is already bound to another subject"
-        );
+            "Managed OAuth MCP server is already bound to another subject");
       }
     }
 
     String userId = currentUserId();
-    AiMcpProviderConnection connection = providerConnectionRepository
-        .findActiveByServerAndUser(server.getId(), userId)
-        .orElseGet(() -> {
-          AiMcpProviderConnection created = new AiMcpProviderConnection();
-          created.setServerId(server.getId());
-          created.setScopeType(server.getScopeType());
-          created.setTenantId(server.getTenantId());
-          created.setUserId(userId);
-          created.setStatus(McpOauthStatus.CONFIGURED);
-          created.setTokenVersion(0L);
-          return providerConnectionRepository.save(created);
-        });
+    AiMcpProviderConnection connection =
+        providerConnectionRepository
+            .findActiveByServerAndUser(server.getId(), userId)
+            .orElseGet(
+                () -> {
+                  AiMcpProviderConnection created = new AiMcpProviderConnection();
+                  created.setServerId(server.getId());
+                  created.setScopeType(server.getScopeType());
+                  created.setTenantId(server.getTenantId());
+                  created.setUserId(userId);
+                  created.setStatus(McpOauthStatus.CONFIGURED);
+                  created.setTokenVersion(0L);
+                  return providerConnectionRepository.save(created);
+                });
 
     String state = randomUrlToken(32);
     String verifier = randomUrlToken(64);
@@ -668,109 +637,93 @@ public class AiMcpServerDefinitionServiceImpl
     providerConnectionRepository.save(connection);
     repository.save(server);
     return new McpOauthAuthorizationStart(
-        authorizationUrl(server, state, pkceChallenge(verifier)),
-        expiresAt
-    );
+        authorizationUrl(server, state, pkceChallenge(verifier)), expiresAt);
   }
 
   @Override
-  public AiMcpServerDefinition completeOauthAuthorization(
-      final McpOauthCallbackCommand command
-  ) {
+  public AiMcpServerDefinition completeOauthAuthorization(final McpOauthCallbackCommand command) {
     if (command == null) {
       throw new IllegalArgumentException("OAuth callback must not be null");
     }
     String state = required(command.state(), "OAuth state is missing");
     String stateHash = sha256(state);
-    AiMcpOauthAuthorization authorization = oauthAuthorizationRepository
-        .findActiveByStateHash(stateHash)
-        .orElseThrow(() -> new IllegalArgumentException("OAuth state is invalid"));
-    AiMcpServerDefinition server = repository.findActiveById(authorization.getServerId())
-        .orElseThrow(() -> new IllegalArgumentException("MCP server does not exist"));
-    scopeAccessPolicy.assertCanManageOwnedResource(
-        server.getScopeType(),
-        server.getTenantId()
-    );
+    AiMcpOauthAuthorization authorization =
+        oauthAuthorizationRepository
+            .findActiveByStateHash(stateHash)
+            .orElseThrow(() -> new IllegalArgumentException("OAuth state is invalid"));
+    AiMcpServerDefinition server =
+        repository
+            .findActiveById(authorization.getServerId())
+            .orElseThrow(() -> new IllegalArgumentException("MCP server does not exist"));
+    scopeAccessPolicy.assertCanManageOwnedResource(server.getScopeType(), server.getTenantId());
     String userId = currentUserId();
-    if (authorization.getUserId() == null
-        || !authorization.getUserId().equals(userId)) {
-      throw new IllegalArgumentException(
-          "OAuth state does not belong to the current user"
-      );
+    if (authorization.getUserId() == null || !authorization.getUserId().equals(userId)) {
+      throw new IllegalArgumentException("OAuth state does not belong to the current user");
     }
-    AiMcpProviderConnection connection = providerConnectionRepository
-        .findById(authorization.getConnectionId())
-        .filter(candidate -> server.getId().equals(candidate.getServerId()))
-        .filter(candidate -> userId.equals(candidate.getUserId()))
-        .orElseThrow(() -> new IllegalArgumentException(
-            "OAuth provider connection does not exist"
-        ));
+    AiMcpProviderConnection connection =
+        providerConnectionRepository
+            .findById(authorization.getConnectionId())
+            .filter(candidate -> server.getId().equals(candidate.getServerId()))
+            .filter(candidate -> userId.equals(candidate.getUserId()))
+            .orElseThrow(
+                () -> new IllegalArgumentException("OAuth provider connection does not exist"));
     if (oauthAuthorizationRepository.consume(stateHash, Instant.now()) != 1) {
       throw new IllegalArgumentException("OAuth state is expired or has already been used");
     }
     if (command.error() != null && !command.error().isBlank()) {
       connection.setStatus(McpOauthStatus.ERROR);
-      connection.setLastError(truncateOauthError(
-          command.error(), command.errorDescription()
-      ));
+      connection.setLastError(truncateOauthError(command.error(), command.errorDescription()));
       providerConnectionRepository.save(connection);
       return decorate(server);
     }
     try {
-      McpGatewayOauthTokenResult token = gatewayOperations.exchangeOauthToken(
-          new McpGatewayOauthTokenRequest(
-              server.getOauthTokenEndpoint(),
-              "authorization_code",
-              server.getOauthClientId(),
-              credentialCipher.decrypt(server.getCredentialCiphertext()),
-              server.getOauthTokenEndpointAuthMethod(),
-              required(command.code(), "OAuth authorization code is missing"),
-              credentialCipher.decrypt(authorization.getCodeVerifierCiphertext()),
-              authorization.getRedirectUri(),
-              null,
-              server.getOauthResourceUri(),
-              null,
-              Boolean.TRUE.equals(server.getAllowPrivateNetwork())
-          )
-      );
+      McpGatewayOauthTokenResult token =
+          gatewayOperations.exchangeOauthToken(
+              new McpGatewayOauthTokenRequest(
+                  server.getOauthTokenEndpoint(),
+                  "authorization_code",
+                  server.getOauthClientId(),
+                  credentialCipher.decrypt(server.getCredentialCiphertext()),
+                  server.getOauthTokenEndpointAuthMethod(),
+                  required(command.code(), "OAuth authorization code is missing"),
+                  credentialCipher.decrypt(authorization.getCodeVerifierCiphertext()),
+                  authorization.getRedirectUri(),
+                  null,
+                  server.getOauthResourceUri(),
+                  null,
+                  Boolean.TRUE.equals(server.getAllowPrivateNetwork())));
       applyOauthToken(connection, token, false);
       providerConnectionRepository.save(connection);
       repository.save(server);
       if (server.getDeploymentType() == McpServerDeploymentType.MANAGED_OCI) {
-        runtimePoolService.findByServer(server.getId()).ifPresent(pool ->
-            runtimePoolService.redeploy(pool.getId())
-        );
+        runtimePoolService
+            .findByServer(server.getId())
+            .ifPresent(pool -> runtimePoolService.redeploy(pool.getId()));
       }
       return decorate(server);
     } catch (RuntimeException ex) {
       connection.setStatus(McpOauthStatus.ERROR);
-      connection.setLastError(truncateOauthError(
-          "token_exchange_failed", ex.getMessage()
-      ));
+      connection.setLastError(truncateOauthError("token_exchange_failed", ex.getMessage()));
       providerConnectionRepository.save(connection);
       throw ex;
     }
   }
 
   @Override
-  public Optional<AiMcpProviderConnection> currentProviderConnection(
-      final String id
-  ) {
+  public Optional<AiMcpProviderConnection> currentProviderConnection(final String id) {
     AiMcpServerDefinition server = requireVisibleServer(id);
-    return providerConnectionRepository.findActiveByServerAndUser(
-        server.getId(), currentUserId()
-    );
+    return providerConnectionRepository.findActiveByServerAndUser(server.getId(), currentUserId());
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public AiMcpProviderConnection disconnectProvider(final String id) {
     AiMcpServerDefinition server = requireVisibleServer(id);
-    AiMcpProviderConnection connection = providerConnectionRepository
-        .findActiveByServerAndUser(server.getId(), currentUserId())
-        .orElseThrow(() -> new IllegalArgumentException(
-            "MCP provider connection does not exist"
-        ));
+    AiMcpProviderConnection connection =
+        providerConnectionRepository
+            .findActiveByServerAndUser(server.getId(), currentUserId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("MCP provider connection does not exist"));
     connection.setAccessTokenCiphertext(null);
     connection.setRefreshTokenCiphertext(null);
     connection.setAccessTokenExpiresAt(null);
@@ -779,14 +732,12 @@ public class AiMcpServerDefinitionServiceImpl
     connection.setStatus(McpOauthStatus.CONFIGURED);
     connection.setLastError(null);
     connection.setTokenVersion(
-        connection.getTokenVersion() == null
-            ? 1L : connection.getTokenVersion() + 1L
-    );
+        connection.getTokenVersion() == null ? 1L : connection.getTokenVersion() + 1L);
     AiMcpProviderConnection saved = providerConnectionRepository.save(connection);
     if (server.getDeploymentType() == McpServerDeploymentType.MANAGED_OCI) {
-      runtimePoolService.findByServer(server.getId()).ifPresent(pool ->
-          runtimePoolService.redeploy(pool.getId())
-      );
+      runtimePoolService
+          .findByServer(server.getId())
+          .ifPresent(pool -> runtimePoolService.redeploy(pool.getId()));
     }
     return saved;
   }
@@ -810,14 +761,11 @@ public class AiMcpServerDefinitionServiceImpl
         readTools(snapshot),
         readResources(snapshot),
         readResourceTemplates(snapshot),
-        readPrompts(snapshot)
-    );
+        readPrompts(snapshot));
   }
 
   @Override
-  public McpGatewayToolCallResult callPublishedTool(
-      final McpPublicationToolCallRequest request
-  ) {
+  public McpGatewayToolCallResult callPublishedTool(final McpPublicationToolCallRequest request) {
     if (request == null) {
       throw new IllegalArgumentException("MCP publication tool call must not be null");
     }
@@ -827,36 +775,33 @@ public class AiMcpServerDefinitionServiceImpl
     String toolName = required(request.toolName(), "MCP tool name must not be blank");
     if (readTools(snapshot).stream().noneMatch(tool -> tool.name().equals(toolName))) {
       throw new IllegalArgumentException(
-          "MCP tool is not part of the published snapshot: " + toolName
-      );
+          "MCP tool is not part of the published snapshot: " + toolName);
     }
-    Map<String, Object> arguments = request.arguments() == null
-        ? Map.of() : request.arguments();
-    String invocationId = invocationLedger.start(
-        server,
-        snapshot.getId(),
-        McpCapabilityType.TOOL,
-        toolName,
-        arguments,
-        request.subject(),
-        request.clientId(),
-        request.sessionId()
-    );
+    Map<String, Object> arguments = request.arguments() == null ? Map.of() : request.arguments();
+    String invocationId =
+        invocationLedger.start(
+            server,
+            snapshot.getId(),
+            McpCapabilityType.TOOL,
+            toolName,
+            arguments,
+            request.subject(),
+            request.clientId(),
+            request.sessionId());
     try {
-      McpGatewayToolCallResult result = executeGateway(
-          server,
-          request.sessionId(),
-          request.subject(),
-          connection -> gatewayOperations.callTool(
-              new McpGatewayToolCallRequest(
-                  connection,
-                  toolName,
-                  arguments,
-                  progressMeta(request.operationId()),
-                  request.operationId()
-              )
-          )
-      );
+      McpGatewayToolCallResult result =
+          executeGateway(
+              server,
+              request.sessionId(),
+              request.subject(),
+              connection ->
+                  gatewayOperations.callTool(
+                      new McpGatewayToolCallRequest(
+                          connection,
+                          toolName,
+                          arguments,
+                          progressMeta(request.operationId()),
+                          request.operationId())));
       invocationLedger.succeed(invocationId, result);
       return result;
     } catch (RuntimeException ex) {
@@ -867,8 +812,7 @@ public class AiMcpServerDefinitionServiceImpl
 
   @Override
   public McpGatewayResourceReadResult readPublishedResource(
-      final McpPublicationResourceReadRequest request
-  ) {
+      final McpPublicationResourceReadRequest request) {
     if (request == null) {
       throw new IllegalArgumentException("MCP publication resource read must not be null");
     }
@@ -876,39 +820,38 @@ public class AiMcpServerDefinitionServiceImpl
     AiMcpServerDefinition server = requirePublicationServer(publication);
     AiMcpCapabilitySnapshot snapshot = requireSnapshot(server);
     String uri = normalizeResourceUri(request.uri());
-    boolean listed = readResources(snapshot).stream()
-        .anyMatch(resource -> resource.uri().equals(uri));
-    boolean templated = readResourceTemplates(snapshot).stream()
-        .anyMatch(template -> matchesResourceTemplate(template.uriTemplate(), uri));
+    boolean listed =
+        readResources(snapshot).stream().anyMatch(resource -> resource.uri().equals(uri));
+    boolean templated =
+        readResourceTemplates(snapshot).stream()
+            .anyMatch(template -> matchesResourceTemplate(template.uriTemplate(), uri));
     if (!listed && !templated) {
       throw new IllegalArgumentException(
-          "MCP resource is not part of the published snapshot: " + uri
-      );
+          "MCP resource is not part of the published snapshot: " + uri);
     }
-    String invocationId = invocationLedger.start(
-        server,
-        snapshot.getId(),
-        McpCapabilityType.RESOURCE,
-        uri,
-        Map.of("uri", uri),
-        request.subject(),
-        request.clientId(),
-        request.sessionId()
-    );
+    String invocationId =
+        invocationLedger.start(
+            server,
+            snapshot.getId(),
+            McpCapabilityType.RESOURCE,
+            uri,
+            Map.of("uri", uri),
+            request.subject(),
+            request.clientId(),
+            request.sessionId());
     try {
-      McpGatewayResourceReadResult result = executeGateway(
-          server,
-          request.sessionId(),
-          request.subject(),
-          connection -> gatewayOperations.readResource(
-              new McpGatewayResourceReadRequest(
-                  connection,
-                  uri,
-                  progressMeta(request.operationId()),
-                  request.operationId()
-              )
-          )
-      );
+      McpGatewayResourceReadResult result =
+          executeGateway(
+              server,
+              request.sessionId(),
+              request.subject(),
+              connection ->
+                  gatewayOperations.readResource(
+                      new McpGatewayResourceReadRequest(
+                          connection,
+                          uri,
+                          progressMeta(request.operationId()),
+                          request.operationId())));
       invocationLedger.succeed(invocationId, result);
       return result;
     } catch (RuntimeException ex) {
@@ -919,51 +862,43 @@ public class AiMcpServerDefinitionServiceImpl
 
   @Override
   public McpGatewayPromptGetResult getPublishedPrompt(
-      final McpPublicationPromptGetRequest request
-  ) {
+      final McpPublicationPromptGetRequest request) {
     if (request == null) {
       throw new IllegalArgumentException("MCP publication prompt get must not be null");
     }
     AiMcpPublication publication = requirePublished(request.publicationCode());
     AiMcpServerDefinition server = requirePublicationServer(publication);
     AiMcpCapabilitySnapshot snapshot = requireSnapshot(server);
-    String promptName = required(
-        request.promptName(),
-        "MCP prompt name must not be blank"
-    );
-    if (readPrompts(snapshot).stream()
-        .noneMatch(prompt -> prompt.name().equals(promptName))) {
+    String promptName = required(request.promptName(), "MCP prompt name must not be blank");
+    if (readPrompts(snapshot).stream().noneMatch(prompt -> prompt.name().equals(promptName))) {
       throw new IllegalArgumentException(
-          "MCP prompt is not part of the published snapshot: " + promptName
-      );
+          "MCP prompt is not part of the published snapshot: " + promptName);
     }
-    Map<String, Object> arguments = request.arguments() == null
-        ? Map.of() : request.arguments();
-    String invocationId = invocationLedger.start(
-        server,
-        snapshot.getId(),
-        McpCapabilityType.PROMPT,
-        promptName,
-        arguments,
-        request.subject(),
-        request.clientId(),
-        request.sessionId()
-    );
+    Map<String, Object> arguments = request.arguments() == null ? Map.of() : request.arguments();
+    String invocationId =
+        invocationLedger.start(
+            server,
+            snapshot.getId(),
+            McpCapabilityType.PROMPT,
+            promptName,
+            arguments,
+            request.subject(),
+            request.clientId(),
+            request.sessionId());
     try {
-      McpGatewayPromptGetResult result = executeGateway(
-          server,
-          request.sessionId(),
-          request.subject(),
-          connection -> gatewayOperations.getPrompt(
-              new McpGatewayPromptGetRequest(
-                  connection,
-                  promptName,
-                  arguments,
-                  progressMeta(request.operationId()),
-                  request.operationId()
-              )
-          )
-      );
+      McpGatewayPromptGetResult result =
+          executeGateway(
+              server,
+              request.sessionId(),
+              request.subject(),
+              connection ->
+                  gatewayOperations.getPrompt(
+                      new McpGatewayPromptGetRequest(
+                          connection,
+                          promptName,
+                          arguments,
+                          progressMeta(request.operationId()),
+                          request.operationId())));
       invocationLedger.succeed(invocationId, result);
       return result;
     } catch (RuntimeException ex) {
@@ -973,67 +908,59 @@ public class AiMcpServerDefinitionServiceImpl
   }
 
   @Override
-  public McpPublicationChangeEvent handleUpstreamEvent(
-      final McpGatewayUpstreamEvent event
-  ) {
-    if (event == null || event.connectionId() == null
-        || event.connectionId().isBlank()) {
+  public McpPublicationChangeEvent handleUpstreamEvent(final McpGatewayUpstreamEvent event) {
+    if (event == null || event.connectionId() == null || event.connectionId().isBlank()) {
       throw new IllegalArgumentException("MCP upstream event connection is missing");
     }
-    Set<McpGatewayEventType> eventTypes = event.eventTypes() == null
-        ? Set.of() : Set.copyOf(event.eventTypes());
+    Set<McpGatewayEventType> eventTypes =
+        event.eventTypes() == null ? Set.of() : Set.copyOf(event.eventTypes());
     if (eventTypes.isEmpty()) {
       throw new IllegalArgumentException("MCP upstream event type is missing");
     }
-    AiMcpServerDefinition server = repository
-        .findActiveById(event.connectionId().trim())
-        .orElseThrow(() -> new IllegalArgumentException(
-            "MCP upstream event server does not exist"
-        ));
+    AiMcpServerDefinition server =
+        repository
+            .findActiveById(event.connectionId().trim())
+            .orElseThrow(
+                () -> new IllegalArgumentException("MCP upstream event server does not exist"));
     if (!Boolean.TRUE.equals(server.getEnabled())) {
       throw new IllegalStateException("MCP upstream event server is disabled");
     }
-    boolean listChanged = eventTypes.contains(McpGatewayEventType.TOOLS_LIST_CHANGED)
-        || eventTypes.contains(McpGatewayEventType.RESOURCES_LIST_CHANGED)
-        || eventTypes.contains(McpGatewayEventType.PROMPTS_LIST_CHANGED);
+    boolean listChanged =
+        eventTypes.contains(McpGatewayEventType.TOOLS_LIST_CHANGED)
+            || eventTypes.contains(McpGatewayEventType.RESOURCES_LIST_CHANGED)
+            || eventTypes.contains(McpGatewayEventType.PROMPTS_LIST_CHANGED);
     if (listChanged) {
       if (event.discovery() == null) {
         throw new IllegalArgumentException(
-            "MCP list change event requires a complete discovery result"
-        );
+            "MCP list change event requires a complete discovery result");
       }
       snapshotStore.saveDiscovery(server.getId(), event.discovery());
     }
-    List<String> publicationCodes = publicationRepository
-        .findActiveByUpstreamServerId(server.getId())
-        .stream()
-        .filter(publication -> Boolean.TRUE.equals(publication.getEnabled()))
-        .filter(publication ->
-            publication.getStatus() == McpPublicationStatus.PUBLISHED)
-        .map(AiMcpPublication::getCode)
-        .sorted()
-        .toList();
-    List<String> resourceUris = event.resourceUris() == null
-        ? List.of() : event.resourceUris().stream()
-            .filter(java.util.Objects::nonNull)
-            .map(String::trim)
-            .filter(uri -> !uri.isEmpty())
-            .distinct()
-            .limit(1000)
+    List<String> publicationCodes =
+        publicationRepository.findActiveByUpstreamServerId(server.getId()).stream()
+            .filter(publication -> Boolean.TRUE.equals(publication.getEnabled()))
+            .filter(publication -> publication.getStatus() == McpPublicationStatus.PUBLISHED)
+            .map(AiMcpPublication::getCode)
+            .sorted()
             .toList();
-    return new McpPublicationChangeEvent(
-        publicationCodes,
-        eventTypes,
-        resourceUris
-    );
+    List<String> resourceUris =
+        event.resourceUris() == null
+            ? List.of()
+            : event.resourceUris().stream()
+                .filter(java.util.Objects::nonNull)
+                .map(String::trim)
+                .filter(uri -> !uri.isEmpty())
+                .distinct()
+                .limit(1000)
+                .toList();
+    return new McpPublicationChangeEvent(publicationCodes, eventTypes, resourceUris);
   }
 
   private AiMcpPublication requirePublished(final String code) {
-    AiMcpPublication publication = publicationRepository.findActiveByCode(
-        required(code, "MCP publication code must not be blank")
-    ).orElseThrow(() -> new IllegalArgumentException(
-        "MCP publication does not exist"
-    ));
+    AiMcpPublication publication =
+        publicationRepository
+            .findActiveByCode(required(code, "MCP publication code must not be blank"))
+            .orElseThrow(() -> new IllegalArgumentException("MCP publication does not exist"));
     if (!Boolean.TRUE.equals(publication.getEnabled())
         || publication.getStatus() != McpPublicationStatus.PUBLISHED) {
       throw new IllegalStateException("MCP publication is disabled");
@@ -1041,29 +968,23 @@ public class AiMcpServerDefinitionServiceImpl
     return publication;
   }
 
-  private AiMcpServerDefinition requirePublicationServer(
-      final AiMcpPublication publication
-  ) {
-    AiMcpServerDefinition server = repository
-        .findActiveById(publication.getUpstreamServerId())
-        .orElseThrow(() -> new IllegalStateException(
-            "MCP publication upstream server does not exist"
-        ));
+  private AiMcpServerDefinition requirePublicationServer(final AiMcpPublication publication) {
+    AiMcpServerDefinition server =
+        repository
+            .findActiveById(publication.getUpstreamServerId())
+            .orElseThrow(
+                () -> new IllegalStateException("MCP publication upstream server does not exist"));
     if (server.getScopeType() != publication.getScopeType()
         || !java.util.Objects.equals(server.getTenantId(), publication.getTenantId())) {
       throw new IllegalStateException("MCP publication scope is invalid");
     }
-    if (!Boolean.TRUE.equals(server.getEnabled())
-        || server.getStatus() != McpServerStatus.READY) {
+    if (!Boolean.TRUE.equals(server.getEnabled()) || server.getStatus() != McpServerStatus.READY) {
       throw new IllegalStateException("MCP publication upstream server is not READY");
     }
     return server;
   }
 
-  private AiMcpServerDefinition requireUsableServer(
-      final String id,
-      final boolean requireReady
-  ) {
+  private AiMcpServerDefinition requireUsableServer(final String id, final boolean requireReady) {
     AiMcpServerDefinition server = requireVisibleServer(id);
     if (!Boolean.TRUE.equals(server.getEnabled())) {
       throw new IllegalStateException("MCP server is disabled");
@@ -1075,10 +996,10 @@ public class AiMcpServerDefinitionServiceImpl
   }
 
   private AiMcpServerDefinition requireVisibleServer(final String id) {
-    AiMcpServerDefinition server = repository.findActiveById(requireId(id))
-        .orElseThrow(() -> new IllegalArgumentException(
-            "MCP server does not exist"
-        ));
+    AiMcpServerDefinition server =
+        repository
+            .findActiveById(requireId(id))
+            .orElseThrow(() -> new IllegalArgumentException("MCP server does not exist"));
     assertCanRead(server);
     return server;
   }
@@ -1087,9 +1008,10 @@ public class AiMcpServerDefinitionServiceImpl
     if (server.getActiveSnapshotId() == null || server.getActiveSnapshotId().isBlank()) {
       throw new IllegalStateException("MCP server has no active capability snapshot");
     }
-    AiMcpCapabilitySnapshot snapshot = snapshotRepository
-        .findActiveById(server.getActiveSnapshotId())
-        .orElseThrow(() -> new IllegalStateException("MCP capability snapshot does not exist"));
+    AiMcpCapabilitySnapshot snapshot =
+        snapshotRepository
+            .findActiveById(server.getActiveSnapshotId())
+            .orElseThrow(() -> new IllegalStateException("MCP capability snapshot does not exist"));
     if (!server.getId().equals(snapshot.getServerId())) {
       throw new IllegalStateException("MCP capability snapshot ownership is invalid");
     }
@@ -1104,30 +1026,21 @@ public class AiMcpServerDefinitionServiceImpl
     }
   }
 
-  private Map<String, Object> readCapabilities(
-      final AiMcpCapabilitySnapshot snapshot
-  ) {
+  private Map<String, Object> readCapabilities(final AiMcpCapabilitySnapshot snapshot) {
     String json = snapshot.getCapabilitiesJson();
     if (json == null || json.isBlank()) {
       return Map.of();
     }
     try {
-      Map<String, Object> capabilities =
-          objectMapper.readValue(json, CAPABILITIES_MAP_TYPE);
-      return capabilities == null
-          ? Map.of() : new LinkedHashMap<>(capabilities);
+      Map<String, Object> capabilities = objectMapper.readValue(json, CAPABILITIES_MAP_TYPE);
+      return capabilities == null ? Map.of() : new LinkedHashMap<>(capabilities);
     } catch (JsonProcessingException ex) {
-      throw new IllegalStateException(
-          "MCP capability snapshot is corrupted",
-          ex
-      );
+      throw new IllegalStateException("MCP capability snapshot is corrupted", ex);
     }
   }
 
   private McpCapabilitySnapshotSummary snapshotSummary(
-      final AiMcpServerDefinition server,
-      final AiMcpCapabilitySnapshot snapshot
-  ) {
+      final AiMcpServerDefinition server, final AiMcpCapabilitySnapshot snapshot) {
     return new McpCapabilitySnapshotSummary(
         snapshot.getId(),
         snapshot.getServerId(),
@@ -1140,59 +1053,39 @@ public class AiMcpServerDefinitionServiceImpl
         readTools(snapshot).size(),
         readResources(snapshot).size(),
         readResourceTemplates(snapshot).size(),
-        readPrompts(snapshot).size()
-    );
+        readPrompts(snapshot).size());
   }
 
-  private List<McpResourceDescriptor> readResources(
-      final AiMcpCapabilitySnapshot snapshot
-  ) {
-    return readSnapshotList(
-        snapshot.getResourcesJson(),
-        RESOURCE_LIST_TYPE,
-        "resources"
-    );
+  private List<McpResourceDescriptor> readResources(final AiMcpCapabilitySnapshot snapshot) {
+    return readSnapshotList(snapshot.getResourcesJson(), RESOURCE_LIST_TYPE, "resources");
   }
 
   private List<McpResourceTemplateDescriptor> readResourceTemplates(
-      final AiMcpCapabilitySnapshot snapshot
-  ) {
+      final AiMcpCapabilitySnapshot snapshot) {
     return readSnapshotList(
-        snapshot.getResourceTemplatesJson(),
-        RESOURCE_TEMPLATE_LIST_TYPE,
-        "resource templates"
-    );
+        snapshot.getResourceTemplatesJson(), RESOURCE_TEMPLATE_LIST_TYPE, "resource templates");
   }
 
-  private List<McpPromptDescriptor> readPrompts(
-      final AiMcpCapabilitySnapshot snapshot
-  ) {
+  private List<McpPromptDescriptor> readPrompts(final AiMcpCapabilitySnapshot snapshot) {
     return readSnapshotList(snapshot.getPromptsJson(), PROMPT_LIST_TYPE, "prompts");
   }
 
   private <T> List<T> readSnapshotList(
-      final String json,
-      final TypeReference<List<T>> type,
-      final String capability
-  ) {
+      final String json, final TypeReference<List<T>> type, final String capability) {
     if (json == null || json.isBlank()) {
       return List.of();
     }
     try {
       return objectMapper.readValue(json, type);
     } catch (JsonProcessingException ex) {
-      throw new IllegalStateException(
-          "MCP " + capability + " snapshot is corrupted",
-          ex
-      );
+      throw new IllegalStateException("MCP " + capability + " snapshot is corrupted", ex);
     }
   }
 
   private <T> T executeGateway(
       final AiMcpServerDefinition server,
       final String sessionId,
-      final Function<McpGatewayConnection, T> operation
-  ) {
+      final Function<McpGatewayConnection, T> operation) {
     return executeGateway(server, sessionId, currentUserIdOrNull(), operation);
   }
 
@@ -1200,8 +1093,7 @@ public class AiMcpServerDefinitionServiceImpl
       final AiMcpServerDefinition server,
       final String sessionId,
       final String subjectId,
-      final Function<McpGatewayConnection, T> operation
-  ) {
+      final Function<McpGatewayConnection, T> operation) {
     GatewayConnection selected = connection(server, sessionId, subjectId);
     try {
       return operation.apply(selected.connection());
@@ -1213,8 +1105,7 @@ public class AiMcpServerDefinitionServiceImpl
               server.getScopeType(),
               server.getTenantId(),
               sessionId,
-              selected.runtimeEndpoint()
-          );
+              selected.runtimeEndpoint());
         } catch (RuntimeException invalidationFailure) {
           ex.addSuppressed(invalidationFailure);
         }
@@ -1223,45 +1114,35 @@ public class AiMcpServerDefinitionServiceImpl
     }
   }
 
-  private static String managementSessionId(
-      final AiMcpServerDefinition server
-  ) {
+  private static String managementSessionId(final AiMcpServerDefinition server) {
     return "management:" + required(server.getId(), "MCP server ID");
   }
 
   private GatewayConnection connection(
-      final AiMcpServerDefinition server,
-      final String sessionId,
-      final String subjectId
-  ) {
+      final AiMcpServerDefinition server, final String sessionId, final String subjectId) {
     if (server.getDeploymentType() == McpServerDeploymentType.MANAGED_OCI) {
       if (server.getAuthenticationType() == McpAuthenticationType.OAUTH2) {
-        String userId = required(
-            subjectId,
-            "Managed OAuth MCP invocation subject must not be blank"
-        );
-        AiMcpProviderConnection provider = providerConnectionRepository
-            .findActiveByServerAndUser(server.getId(), userId)
-            .filter(AiMcpProviderConnection::isConnected)
-            .orElseThrow(() -> new IllegalStateException(
-                "Managed OAuth MCP connection is not authorized for subject"
-            ));
+        String userId =
+            required(subjectId, "Managed OAuth MCP invocation subject must not be blank");
+        AiMcpProviderConnection provider =
+            providerConnectionRepository
+                .findActiveByServerAndUser(server.getId(), userId)
+                .filter(AiMcpProviderConnection::isConnected)
+                .orElseThrow(
+                    () ->
+                        new IllegalStateException(
+                            "Managed OAuth MCP connection is not authorized for subject"));
         if (provider.getAccessTokenExpiresAt() != null
-            && !provider.getAccessTokenExpiresAt().isAfter(
-                Instant.now().plus(OAUTH_EXPIRY_SKEW)
-            )) {
+            && !provider.getAccessTokenExpiresAt().isAfter(Instant.now().plus(OAUTH_EXPIRY_SKEW))) {
           refreshOauthToken(server, provider);
-          runtimePoolService.findByServer(server.getId()).ifPresent(pool ->
-              runtimePoolService.redeploy(pool.getId())
-          );
+          runtimePoolService
+              .findByServer(server.getId())
+              .ifPresent(pool -> runtimePoolService.redeploy(pool.getId()));
         }
       }
-      RuntimeMcpEndpoint endpoint = runtimeMcpEndpointService.resolve(
-          server.getId(),
-          server.getScopeType(),
-          server.getTenantId(),
-          sessionId
-      );
+      RuntimeMcpEndpoint endpoint =
+          runtimeMcpEndpointService.resolve(
+              server.getId(), server.getScopeType(), server.getTenantId(), sessionId);
       return new GatewayConnection(
           new McpGatewayConnection(
               server.getId(),
@@ -1270,10 +1151,8 @@ public class AiMcpServerDefinitionServiceImpl
               true,
               McpGatewayConnectionKind.MANAGED_RUNTIME,
               endpoint.leaseId(),
-              endpoint.fencingToken()
-          ),
-          endpoint
-      );
+              endpoint.fencingToken()),
+          endpoint);
     }
     String authorization = null;
     if (server.getAuthenticationType() == McpAuthenticationType.BEARER) {
@@ -1290,17 +1169,12 @@ public class AiMcpServerDefinitionServiceImpl
             server.getId(),
             server.getEndpointUrl(),
             authorization,
-            Boolean.TRUE.equals(server.getAllowPrivateNetwork())
-        ),
-        null
-    );
+            Boolean.TRUE.equals(server.getAllowPrivateNetwork())),
+        null);
   }
 
   private record GatewayConnection(
-      McpGatewayConnection connection,
-      RuntimeMcpEndpoint runtimeEndpoint
-  ) {
-  }
+      McpGatewayConnection connection, RuntimeMcpEndpoint runtimeEndpoint) {}
 
   private static Map<String, Object> progressMeta(final String operationId) {
     if (operationId == null || operationId.isBlank()) {
@@ -1309,46 +1183,46 @@ public class AiMcpServerDefinitionServiceImpl
     return Map.of("progressToken", operationId.trim());
   }
 
-  private void normalizeAndValidate(
-      final AiMcpServerDefinition entity,
-      final String currentId
-  ) {
+  private void normalizeAndValidate(final AiMcpServerDefinition entity, final String currentId) {
     if (entity == null) {
       throw new IllegalArgumentException("MCP server must not be null");
     }
     entity.setName(required(entity.getName(), "MCP server name must not be blank"));
     entity.setCode(normalizeCode(entity.getCode()));
-    entity.setDeploymentType(entity.getDeploymentType() == null
-        ? McpServerDeploymentType.REMOTE : entity.getDeploymentType());
+    entity.setDeploymentType(
+        entity.getDeploymentType() == null
+            ? McpServerDeploymentType.REMOTE
+            : entity.getDeploymentType());
     if (entity.getDeploymentType() == McpServerDeploymentType.MANAGED_OCI) {
-      entity.setTransportType(entity.getTransportType() == null
-          ? McpTransportType.STDIO : entity.getTransportType());
+      entity.setTransportType(
+          entity.getTransportType() == null ? McpTransportType.STDIO : entity.getTransportType());
       if (entity.getTransportType() != McpTransportType.STDIO) {
-        throw new IllegalArgumentException(
-            "Managed OCI MCP servers must use stdio transport"
-        );
+        throw new IllegalArgumentException("Managed OCI MCP servers must use stdio transport");
       }
       entity.setEndpointUrl(null);
-      entity.setAuthenticationType(entity.getAuthenticationType() == null
-          ? McpAuthenticationType.NONE : entity.getAuthenticationType());
+      entity.setAuthenticationType(
+          entity.getAuthenticationType() == null
+              ? McpAuthenticationType.NONE
+              : entity.getAuthenticationType());
       if (entity.getAuthenticationType() != McpAuthenticationType.NONE
           && entity.getAuthenticationType() != McpAuthenticationType.OAUTH2) {
         throw new IllegalArgumentException(
-            "Managed OCI MCP servers support NONE or subject OAuth2"
-        );
+            "Managed OCI MCP servers support NONE or subject OAuth2");
       }
       entity.setAllowPrivateNetwork(false);
     } else {
-      entity.setTransportType(entity.getTransportType() == null
-          ? McpTransportType.STREAMABLE_HTTP : entity.getTransportType());
+      entity.setTransportType(
+          entity.getTransportType() == null
+              ? McpTransportType.STREAMABLE_HTTP
+              : entity.getTransportType());
       if (entity.getTransportType() != McpTransportType.STREAMABLE_HTTP) {
-        throw new IllegalArgumentException(
-            "Remote MCP servers must use Streamable HTTP"
-        );
+        throw new IllegalArgumentException("Remote MCP servers must use Streamable HTTP");
       }
       entity.setEndpointUrl(validateEndpoint(entity.getEndpointUrl()));
-      entity.setAuthenticationType(entity.getAuthenticationType() == null
-          ? McpAuthenticationType.NONE : entity.getAuthenticationType());
+      entity.setAuthenticationType(
+          entity.getAuthenticationType() == null
+              ? McpAuthenticationType.NONE
+              : entity.getAuthenticationType());
     }
     normalizeOauthConfiguration(entity);
     if (entity.getScopeType() != AiResourceScope.SYSTEM
@@ -1357,22 +1231,26 @@ public class AiMcpServerDefinitionServiceImpl
     }
     entity.setAllowPrivateNetwork(Boolean.TRUE.equals(entity.getAllowPrivateNetwork()));
     entity.setDescription(trimToNull(entity.getDescription()));
-    repository.findActiveByCodeAndScope(
-        entity.getCode(),
-        entity.getScopeType(),
-        entity.getTenantId()
-    ).ifPresent(existing -> {
-      if (!existing.getId().equals(currentId)) {
-        throw new IllegalArgumentException("MCP server code already exists: " + entity.getCode());
-      }
-    });
+    repository
+        .findActiveByCodeAndScope(entity.getCode(), entity.getScopeType(), entity.getTenantId())
+        .ifPresent(
+            existing -> {
+              if (!existing.getId().equals(currentId)) {
+                throw new IllegalArgumentException(
+                    "MCP server code already exists: " + entity.getCode());
+              }
+            });
   }
 
   private void requireCredentialFieldsWritable(AiMcpServerDefinition entity) {
-    if (trimToNull(entity.getBearerToken()) != null)
-      org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(AiMcpServerDefinition.class, "bearerToken");
-    if (trimToNull(entity.getOauthClientSecret()) != null)
-      org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(AiMcpServerDefinition.class, "oauthClientSecret");
+    if (trimToNull(entity.getBearerToken()) != null) {
+      org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(
+          AiMcpServerDefinition.class, "bearerToken");
+    }
+    if (trimToNull(entity.getOauthClientSecret()) != null) {
+      org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(
+          AiMcpServerDefinition.class, "oauthClientSecret");
+    }
   }
 
   private String encryptCredentialForCreate(final AiMcpServerDefinition entity) {
@@ -1390,9 +1268,7 @@ public class AiMcpServerDefinitionServiceImpl
   }
 
   private String resolveUpdatedCredential(
-      final AiMcpServerDefinition entity,
-      final AiMcpServerDefinition current
-  ) {
+      final AiMcpServerDefinition entity, final AiMcpServerDefinition current) {
     if (entity.getAuthenticationType() == McpAuthenticationType.NONE) {
       return null;
     }
@@ -1418,25 +1294,16 @@ public class AiMcpServerDefinitionServiceImpl
   }
 
   private static McpServerStatus staleStatus(
-      final AiMcpServerDefinition current,
-      final AiMcpServerDefinition updated
-  ) {
+      final AiMcpServerDefinition current, final AiMcpServerDefinition updated) {
     boolean connectionChanged =
         current.getDeploymentType() != updated.getDeploymentType()
-            || !java.util.Objects.equals(
-                current.getEndpointUrl(),
-                updated.getEndpointUrl()
-            )
+            || !java.util.Objects.equals(current.getEndpointUrl(), updated.getEndpointUrl())
             || current.getTransportType() != updated.getTransportType()
             || current.getAuthenticationType() != updated.getAuthenticationType()
             || !java.util.Objects.equals(
-                current.getCredentialCiphertext(),
-                updated.getCredentialCiphertext()
-            )
+                current.getCredentialCiphertext(), updated.getCredentialCiphertext())
             || !java.util.Objects.equals(
-                current.getAllowPrivateNetwork(),
-                updated.getAllowPrivateNetwork()
-            );
+                current.getAllowPrivateNetwork(), updated.getAllowPrivateNetwork());
     return connectionChanged ? McpServerStatus.DRAFT : current.getStatus();
   }
 
@@ -1451,15 +1318,16 @@ public class AiMcpServerDefinitionServiceImpl
 
   private <S extends AiMcpServerDefinition> S decorate(final S entity) {
     entity.setHasCredential(
-        entity.getCredentialCiphertext() != null && !entity.getCredentialCiphertext().isBlank()
-    );
+        entity.getCredentialCiphertext() != null && !entity.getCredentialCiphertext().isBlank());
     entity.setBearerToken(null);
     entity.setOauthClientSecret(null);
     String userId = currentUserIdOrNull();
-    entity.setHasOauthToken(userId != null && providerConnectionRepository
-        .findActiveByServerAndUser(entity.getId(), userId)
-        .map(AiMcpProviderConnection::isConnected)
-        .orElse(false));
+    entity.setHasOauthToken(
+        userId != null
+            && providerConnectionRepository
+                .findActiveByServerAndUser(entity.getId(), userId)
+                .map(AiMcpProviderConnection::isConnected)
+                .orElse(false));
     return entity;
   }
 
@@ -1477,59 +1345,44 @@ public class AiMcpServerDefinitionServiceImpl
     entity.setOauthScopes(normalizeScopes(entity.getOauthScopes()));
     String authMethod = trimToNull(entity.getOauthTokenEndpointAuthMethod());
     if (authMethod == null) {
-      authMethod = trimToNull(entity.getOauthClientSecret()) == null
-          ? "none" : "client_secret_post";
+      authMethod =
+          trimToNull(entity.getOauthClientSecret()) == null ? "none" : "client_secret_post";
     }
     if (!Set.of("none", "client_secret_post", "client_secret_basic").contains(authMethod)) {
       throw new IllegalArgumentException(
-          "OAuth token endpoint authentication method is not supported"
-      );
+          "OAuth token endpoint authentication method is not supported");
     }
     entity.setOauthTokenEndpointAuthMethod(authMethod);
     if (entity.getDeploymentType() == McpServerDeploymentType.MANAGED_OCI) {
-      entity.setOauthAuthorizationEndpoint(validateOauthEndpoint(
-          entity.getOauthAuthorizationEndpoint(), "authorization"
-      ));
-      entity.setOauthTokenEndpoint(validateOauthEndpoint(
-          entity.getOauthTokenEndpoint(), "token"
-      ));
+      entity.setOauthAuthorizationEndpoint(
+          validateOauthEndpoint(entity.getOauthAuthorizationEndpoint(), "authorization"));
+      entity.setOauthTokenEndpoint(validateOauthEndpoint(entity.getOauthTokenEndpoint(), "token"));
     }
   }
 
   private void applyOauthDiscovery(
-      final AiMcpServerDefinition server,
-      final McpGatewayOauthDiscoveryResult discovery
-  ) {
+      final AiMcpServerDefinition server, final McpGatewayOauthDiscoveryResult discovery) {
     server.setOauthResourceUri(discovery.resource());
     server.setOauthAuthorizationServer(discovery.authorizationServer());
     server.setOauthAuthorizationEndpoint(discovery.authorizationEndpoint());
     server.setOauthTokenEndpoint(discovery.tokenEndpoint());
     server.setOauthRegistrationEndpoint(discovery.registrationEndpoint());
-    server.setOauthProtectedResourceMetadata(writeJson(
-        discovery.protectedResourceMetadata()
-    ));
-    server.setOauthAuthorizationServerMetadata(writeJson(
-        discovery.authorizationServerMetadata()
-    ));
+    server.setOauthProtectedResourceMetadata(writeJson(discovery.protectedResourceMetadata()));
+    server.setOauthAuthorizationServerMetadata(writeJson(discovery.authorizationServerMetadata()));
   }
 
   private void ensureOauthClient(
-      final AiMcpServerDefinition server,
-      final McpGatewayOauthDiscoveryResult discovery
-  ) {
+      final AiMcpServerDefinition server, final McpGatewayOauthDiscoveryResult discovery) {
     if (server.getOauthClientId() != null && !server.getOauthClientId().isBlank()) {
       if (server.getOauthTokenEndpointAuthMethod() == null) {
         server.setOauthTokenEndpointAuthMethod(
-            server.getCredentialCiphertext() == null ? "none" : "client_secret_post"
-        );
+            server.getCredentialCiphertext() == null ? "none" : "client_secret_post");
       }
       return;
     }
     if (discovery.clientIdMetadataDocumentSupported()
         && discovery.clientIdMetadataDocumentUri() != null
-        && discovery.clientIdMetadataRedirectUris().contains(
-            server.getOauthRedirectUri()
-        )) {
+        && discovery.clientIdMetadataRedirectUris().contains(server.getOauthRedirectUri())) {
       server.setOauthClientId(discovery.clientIdMetadataDocumentUri());
       server.setOauthTokenEndpointAuthMethod("none");
       server.setCredentialCiphertext(null);
@@ -1538,8 +1391,7 @@ public class AiMcpServerDefinitionServiceImpl
     if (discovery.registrationEndpoint() == null) {
       throw new IllegalStateException(
           "OAuth client ID is missing and neither a compatible Client ID Metadata "
-              + "Document nor dynamic client registration is available"
-      );
+              + "Document nor dynamic client registration is available");
     }
     McpGatewayOauthRegistrationResult registration =
         gatewayOperations.registerOauthClient(
@@ -1548,27 +1400,22 @@ public class AiMcpServerDefinitionServiceImpl
                 List.of(server.getOauthRedirectUri()),
                 "Open SimplePoint MCP Gateway",
                 scopes(server.getOauthScopes()),
-                Boolean.TRUE.equals(server.getAllowPrivateNetwork())
-            )
-        );
+                Boolean.TRUE.equals(server.getAllowPrivateNetwork())));
     server.setOauthClientId(registration.clientId());
     server.setCredentialCiphertext(credentialCipher.encrypt(registration.clientSecret()));
     server.setOauthTokenEndpointAuthMethod(registration.tokenEndpointAuthMethod());
   }
 
   private String oauthAuthorizationHeader(
-      final AiMcpServerDefinition server,
-      final String subjectId
-  ) {
-    String userId = required(
-        subjectId,
-        "MCP OAuth invocation subject must not be blank"
-    );
-    AiMcpProviderConnection connection = providerConnectionRepository
-        .findActiveByServerAndUser(server.getId(), userId)
-        .orElseThrow(() -> new IllegalStateException(
-            "MCP OAuth authorization is required for the current subject"
-        ));
+      final AiMcpServerDefinition server, final String subjectId) {
+    String userId = required(subjectId, "MCP OAuth invocation subject must not be blank");
+    AiMcpProviderConnection connection =
+        providerConnectionRepository
+            .findActiveByServerAndUser(server.getId(), userId)
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "MCP OAuth authorization is required for the current subject"));
     if (connection.getAccessTokenCiphertext() == null) {
       throw new IllegalStateException("MCP OAuth authorization is required");
     }
@@ -1576,9 +1423,7 @@ public class AiMcpServerDefinitionServiceImpl
     if (expiresAt != null && !expiresAt.isAfter(Instant.now().plus(OAUTH_EXPIRY_SKEW))) {
       refreshOauthToken(server, connection);
     }
-    String accessToken = credentialCipher.decrypt(
-        connection.getAccessTokenCiphertext()
-    );
+    String accessToken = credentialCipher.decrypt(connection.getAccessTokenCiphertext());
     if (accessToken == null || accessToken.isBlank()) {
       throw new IllegalStateException("MCP OAuth access token is missing");
     }
@@ -1586,41 +1431,34 @@ public class AiMcpServerDefinitionServiceImpl
   }
 
   private void refreshOauthToken(
-      final AiMcpServerDefinition server,
-      final AiMcpProviderConnection connection
-  ) {
-    String refreshToken = credentialCipher.decrypt(
-        connection.getRefreshTokenCiphertext()
-    );
+      final AiMcpServerDefinition server, final AiMcpProviderConnection connection) {
+    String refreshToken = credentialCipher.decrypt(connection.getRefreshTokenCiphertext());
     if (refreshToken == null || refreshToken.isBlank()) {
       connection.setStatus(McpOauthStatus.EXPIRED);
       providerConnectionRepository.save(connection);
       throw new IllegalStateException("MCP OAuth authorization has expired");
     }
     try {
-      McpGatewayOauthTokenResult token = gatewayOperations.exchangeOauthToken(
-          new McpGatewayOauthTokenRequest(
-              server.getOauthTokenEndpoint(),
-              "refresh_token",
-              server.getOauthClientId(),
-              credentialCipher.decrypt(server.getCredentialCiphertext()),
-              server.getOauthTokenEndpointAuthMethod(),
-              null,
-              null,
-              null,
-              refreshToken,
-              server.getOauthResourceUri(),
-              server.getOauthScopes(),
-              Boolean.TRUE.equals(server.getAllowPrivateNetwork())
-          )
-      );
+      McpGatewayOauthTokenResult token =
+          gatewayOperations.exchangeOauthToken(
+              new McpGatewayOauthTokenRequest(
+                  server.getOauthTokenEndpoint(),
+                  "refresh_token",
+                  server.getOauthClientId(),
+                  credentialCipher.decrypt(server.getCredentialCiphertext()),
+                  server.getOauthTokenEndpointAuthMethod(),
+                  null,
+                  null,
+                  null,
+                  refreshToken,
+                  server.getOauthResourceUri(),
+                  server.getOauthScopes(),
+                  Boolean.TRUE.equals(server.getAllowPrivateNetwork())));
       applyOauthToken(connection, token, true);
       providerConnectionRepository.save(connection);
     } catch (RuntimeException ex) {
       connection.setStatus(McpOauthStatus.ERROR);
-      connection.setLastError(truncateOauthError(
-          "token_refresh_failed", ex.getMessage()
-      ));
+      connection.setLastError(truncateOauthError("token_refresh_failed", ex.getMessage()));
       providerConnectionRepository.save(connection);
       throw ex;
     }
@@ -1629,28 +1467,21 @@ public class AiMcpServerDefinitionServiceImpl
   private void applyOauthToken(
       final AiMcpProviderConnection connection,
       final McpGatewayOauthTokenResult token,
-      final boolean preserveRefreshToken
-  ) {
-    connection.setAccessTokenCiphertext(
-        credentialCipher.encrypt(token.accessToken())
-    );
+      final boolean preserveRefreshToken) {
+    connection.setAccessTokenCiphertext(credentialCipher.encrypt(token.accessToken()));
     if (token.refreshToken() != null && !token.refreshToken().isBlank()) {
-      connection.setRefreshTokenCiphertext(
-          credentialCipher.encrypt(token.refreshToken())
-      );
+      connection.setRefreshTokenCiphertext(credentialCipher.encrypt(token.refreshToken()));
     } else if (!preserveRefreshToken) {
       connection.setRefreshTokenCiphertext(null);
     }
-    connection.setAccessTokenExpiresAt(token.expiresIn() > 0
-        ? Instant.now().plusSeconds(token.expiresIn()) : null);
+    connection.setAccessTokenExpiresAt(
+        token.expiresIn() > 0 ? Instant.now().plusSeconds(token.expiresIn()) : null);
     if (token.scope() != null && !token.scope().isBlank()) {
       connection.setGrantedScopes(normalizeScopes(token.scope()));
     }
     connection.setAuthorizedAt(Instant.now());
     connection.setTokenVersion(
-        connection.getTokenVersion() == null
-            ? 1L : connection.getTokenVersion() + 1L
-    );
+        connection.getTokenVersion() == null ? 1L : connection.getTokenVersion() + 1L);
     connection.setStatus(McpOauthStatus.CONNECTED);
     connection.setLastError(null);
   }
@@ -1658,37 +1489,22 @@ public class AiMcpServerDefinitionServiceImpl
   private static boolean oauthConfigurationChanged(
       final AiMcpServerDefinition current,
       final AiMcpServerDefinition updated,
-      final String updatedCredential
-  ) {
+      final String updatedCredential) {
     return current.getAuthenticationType() != updated.getAuthenticationType()
         || !java.util.Objects.equals(current.getOauthClientId(), updated.getOauthClientId())
-        || !java.util.Objects.equals(
-            current.getOauthRedirectUri(),
-            updated.getOauthRedirectUri()
-        )
+        || !java.util.Objects.equals(current.getOauthRedirectUri(), updated.getOauthRedirectUri())
         || !java.util.Objects.equals(current.getOauthScopes(), updated.getOauthScopes())
         || !java.util.Objects.equals(
-            current.getOauthAuthorizationEndpoint(),
-            updated.getOauthAuthorizationEndpoint()
-        )
+            current.getOauthAuthorizationEndpoint(), updated.getOauthAuthorizationEndpoint())
         || !java.util.Objects.equals(
-            current.getOauthTokenEndpoint(),
-            updated.getOauthTokenEndpoint()
-        )
+            current.getOauthTokenEndpoint(), updated.getOauthTokenEndpoint())
         || !java.util.Objects.equals(
-            current.getOauthTokenEndpointAuthMethod(),
-            updated.getOauthTokenEndpointAuthMethod()
-        )
-        || !java.util.Objects.equals(
-            current.getCredentialCiphertext(),
-            updatedCredential
-        );
+            current.getOauthTokenEndpointAuthMethod(), updated.getOauthTokenEndpointAuthMethod())
+        || !java.util.Objects.equals(current.getCredentialCiphertext(), updatedCredential);
   }
 
   private static void copyOauthRuntimeState(
-      final AiMcpServerDefinition current,
-      final AiMcpServerDefinition updated
-  ) {
+      final AiMcpServerDefinition current, final AiMcpServerDefinition updated) {
     updated.setOauthStatus(current.getOauthStatus());
     updated.setOauthAccessTokenCiphertext(current.getOauthAccessTokenCiphertext());
     updated.setOauthRefreshTokenCiphertext(current.getOauthRefreshTokenCiphertext());
@@ -1697,12 +1513,8 @@ public class AiMcpServerDefinitionServiceImpl
     updated.setOauthAuthorizationEndpoint(current.getOauthAuthorizationEndpoint());
     updated.setOauthTokenEndpoint(current.getOauthTokenEndpoint());
     updated.setOauthRegistrationEndpoint(current.getOauthRegistrationEndpoint());
-    updated.setOauthProtectedResourceMetadata(
-        current.getOauthProtectedResourceMetadata()
-    );
-    updated.setOauthAuthorizationServerMetadata(
-        current.getOauthAuthorizationServerMetadata()
-    );
+    updated.setOauthProtectedResourceMetadata(current.getOauthProtectedResourceMetadata());
+    updated.setOauthAuthorizationServerMetadata(current.getOauthAuthorizationServerMetadata());
     updated.setOauthAccessTokenExpiresAt(current.getOauthAccessTokenExpiresAt());
     updated.setOauthAuthorizedAt(current.getOauthAuthorizedAt());
   }
@@ -1724,10 +1536,7 @@ public class AiMcpServerDefinitionServiceImpl
   }
 
   private String authorizationUrl(
-      final AiMcpServerDefinition server,
-      final String state,
-      final String challenge
-  ) {
+      final AiMcpServerDefinition server, final String state, final String challenge) {
     Map<String, String> parameters = new LinkedHashMap<>();
     parameters.put("response_type", "code");
     parameters.put("client_id", server.getOauthClientId());
@@ -1741,9 +1550,10 @@ public class AiMcpServerDefinitionServiceImpl
     if (server.getOauthScopes() != null) {
       parameters.put("scope", server.getOauthScopes());
     }
-    String query = parameters.entrySet().stream()
-        .map(entry -> urlEncode(entry.getKey()) + "=" + urlEncode(entry.getValue()))
-        .collect(java.util.stream.Collectors.joining("&"));
+    String query =
+        parameters.entrySet().stream()
+            .map(entry -> urlEncode(entry.getKey()) + "=" + urlEncode(entry.getValue()))
+            .collect(java.util.stream.Collectors.joining("&"));
     String separator = server.getOauthAuthorizationEndpoint().contains("?") ? "&" : "?";
     return server.getOauthAuthorizationEndpoint() + separator + query;
   }
@@ -1760,10 +1570,7 @@ public class AiMcpServerDefinitionServiceImpl
     try {
       return canonicalMapper.writeValueAsString(value);
     } catch (JsonProcessingException ex) {
-      throw new IllegalStateException(
-          "Unable to serialize MCP capability Schema",
-          ex
-      );
+      throw new IllegalStateException("Unable to serialize MCP capability Schema", ex);
     }
   }
 
@@ -1771,8 +1578,7 @@ public class AiMcpServerDefinitionServiceImpl
     String normalized = required(value, "OAuth redirect URI must not be blank");
     try {
       URI uri = URI.create(normalized);
-      String scheme = uri.getScheme() == null
-          ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+      String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
       boolean loopback = isLoopbackHost(uri.getHost());
       if ((!loopback && !"https".equals(scheme))
           || (loopback && !"https".equals(scheme) && !"http".equals(scheme))
@@ -1784,9 +1590,7 @@ public class AiMcpServerDefinitionServiceImpl
       return uri.toString();
     } catch (IllegalArgumentException ex) {
       throw new IllegalArgumentException(
-          "OAuth redirect URI must use HTTPS, except for loopback development",
-          ex
-      );
+          "OAuth redirect URI must use HTTPS, except for loopback development", ex);
     }
   }
 
@@ -1795,8 +1599,10 @@ public class AiMcpServerDefinitionServiceImpl
       return false;
     }
     String host = value.toLowerCase(Locale.ROOT);
-    if ("localhost".equals(host) || host.endsWith(".localhost")
-        || "::1".equals(host) || "[::1]".equals(host)) {
+    if ("localhost".equals(host)
+        || host.endsWith(".localhost")
+        || "::1".equals(host)
+        || "[::1]".equals(host)) {
       return true;
     }
     String[] octets = host.split("\\.", -1);
@@ -1820,16 +1626,11 @@ public class AiMcpServerDefinitionServiceImpl
     return "127".equals(octets[0]);
   }
 
-  private static String validateOauthEndpoint(
-      final String value,
-      final String type
-  ) {
+  private static String validateOauthEndpoint(final String value, final String type) {
     String normalized = validateEndpoint(value);
     URI uri = URI.create(normalized);
     if (!"https".equalsIgnoreCase(uri.getScheme())) {
-      throw new IllegalArgumentException(
-          "OAuth " + type + " endpoint must use HTTPS"
-      );
+      throw new IllegalArgumentException("OAuth " + type + " endpoint must use HTTPS");
     }
     return normalized;
   }
@@ -1857,8 +1658,8 @@ public class AiMcpServerDefinitionServiceImpl
 
   private static String pkceChallenge(final String verifier) {
     try {
-      byte[] digest = MessageDigest.getInstance("SHA-256")
-          .digest(verifier.getBytes(StandardCharsets.US_ASCII));
+      byte[] digest =
+          MessageDigest.getInstance("SHA-256").digest(verifier.getBytes(StandardCharsets.US_ASCII));
       return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
     } catch (NoSuchAlgorithmException ex) {
       throw new IllegalStateException("SHA-256 is not available", ex);
@@ -1867,8 +1668,8 @@ public class AiMcpServerDefinitionServiceImpl
 
   private static String sha256(final String value) {
     try {
-      byte[] digest = MessageDigest.getInstance("SHA-256")
-          .digest(value.getBytes(StandardCharsets.UTF_8));
+      byte[] digest =
+          MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
       return HexFormat.of().formatHex(digest);
     } catch (NoSuchAlgorithmException ex) {
       throw new IllegalStateException("SHA-256 is not available", ex);
@@ -1879,22 +1680,17 @@ public class AiMcpServerDefinitionServiceImpl
     return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
   }
 
-  private static String truncateOauthError(
-      final String error,
-      final String description
-  ) {
-    String combined = required(error, "oauth_error")
-        + (description == null || description.isBlank() ? "" : ": " + description);
+  private static String truncateOauthError(final String error, final String description) {
+    String combined =
+        required(error, "oauth_error")
+            + (description == null || description.isBlank() ? "" : ": " + description);
     String normalized = combined.replaceAll("\\s+", " ").trim();
     return normalized.length() <= 1024 ? normalized : normalized.substring(0, 1024);
   }
 
   private void assertCanRead(final AiMcpServerDefinition server) {
     assertAccessible(server);
-    scopeAccessPolicy.assertCanReadManagedResource(
-        server.getScopeType(),
-        server.getTenantId()
-    );
+    scopeAccessPolicy.assertCanReadManagedResource(server.getScopeType(), server.getTenantId());
   }
 
   private static String validateEndpoint(final String value) {
@@ -1912,16 +1708,15 @@ public class AiMcpServerDefinitionServiceImpl
       return uri.toString();
     } catch (IllegalArgumentException ex) {
       throw new IllegalArgumentException(
-          "MCP endpoint must be an absolute http or https URI without credentials, query, or fragment",
-          ex
-      );
+          "MCP endpoint must be an absolute http or https URI without credentials, query, or"
+              + " fragment",
+          ex);
     }
   }
 
   private static String normalizeResourceUri(final String value) {
     String normalized = required(value, "MCP resource URI must not be blank");
-    if (normalized.length() > 4096 || normalized.contains("\r")
-        || normalized.contains("\n")) {
+    if (normalized.length() > 4096 || normalized.contains("\r") || normalized.contains("\n")) {
       throw new IllegalArgumentException("MCP resource URI is invalid");
     }
     try {
@@ -1932,10 +1727,7 @@ public class AiMcpServerDefinitionServiceImpl
     }
   }
 
-  private static boolean matchesResourceTemplate(
-      final String template,
-      final String resourceUri
-  ) {
+  private static boolean matchesResourceTemplate(final String template, final String resourceUri) {
     if (template == null || template.isBlank()) {
       return false;
     }
@@ -1958,12 +1750,10 @@ public class AiMcpServerDefinitionServiceImpl
   }
 
   private static String normalizeCode(final String value) {
-    String code = required(value, "MCP server code must not be blank")
-        .toLowerCase(Locale.ROOT);
+    String code = required(value, "MCP server code must not be blank").toLowerCase(Locale.ROOT);
     if (!code.matches("[a-z0-9][a-z0-9_-]{0,127}")) {
       throw new IllegalArgumentException(
-          "MCP server code supports lowercase letters, digits, underscores, and hyphens"
-      );
+          "MCP server code supports lowercase letters, digits, underscores, and hyphens");
     }
     return code;
   }
@@ -1978,16 +1768,13 @@ public class AiMcpServerDefinitionServiceImpl
 
   private static String currentUserId() {
     return required(
-        currentUserIdOrNull(),
-        "An authenticated user is required for an MCP OAuth connection"
-    );
+        currentUserIdOrNull(), "An authenticated user is required for an MCP OAuth connection");
   }
 
   private static String currentUserIdOrNull() {
     AuthorizationContext context = AuthorizationContextHolder.getContext();
     return context == null ? null : trimToNull(context.getUserId());
   }
-
 
   private static String requireId(final String id) {
     return required(id, "MCP server ID must not be blank");
@@ -2008,14 +1795,10 @@ public class AiMcpServerDefinitionServiceImpl
     return normalized.isEmpty() ? null : normalized;
   }
 
-  private static void normalizeLikeQuery(
-      final Map<String, String> attributes,
-      final String field
-  ) {
+  private static void normalizeLikeQuery(final Map<String, String> attributes, final String field) {
     String value = attributes.get(field);
     if (value != null && !value.isBlank() && !value.contains(":")) {
       attributes.put(field, "like:" + value.trim());
     }
   }
-
 }

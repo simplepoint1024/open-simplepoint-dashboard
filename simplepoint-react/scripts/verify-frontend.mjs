@@ -48,6 +48,7 @@ await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_FIELD_LIFECYCLE_
 await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_FIELD_PROTECTED_ONLY: '1'});
 for (const mode of ['writes', 'readonly', 'permissions']) await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_CATALOG_ONLY: mode});
 await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_WORKFLOW_LIFECYCLE_ONLY: '1'});
+await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_WORKFLOW_PERSONAL_ONLY: '1'});
 await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_BILLING_ONLY: '1'});
 await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_MCP_LIFECYCLE_ONLY: '1'});
 await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_RUNTIME_MUTATIONS_ONLY: '1'});

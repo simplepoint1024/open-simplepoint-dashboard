@@ -1,6 +1,10 @@
+import {fixtureSchema, fixturePage} from './query-fixture.mjs';
+
 export const appWorkbenchRoute = {id: 'app-workbench-test', code: 'app.workbench.view', type: 'PAGE', routeKind: 'item',
   path: '/smoke/app-workbench', component: 'app/Workbench', label: '应用工作台测试', scopeTypes: ['TENANT'], requireOrgTenant: true};
 const base = '/app/applications';
+const fields = {name: {type: 'string', label: '应用名称'}, description: {type: 'string'}, mainPageName: {type: 'string'},
+  attachedPageCount: {type: 'integer'}, status: {type: 'string'}, updatedAt: {type: 'date-time'}};
 
 export function createAppWorkbenchFixture() {
   const applications = Array.from({length: 521}, (_, index) => ({id: 'app-' + index, name: 'Application' + index,
@@ -15,6 +19,7 @@ export function createAppWorkbenchFixture() {
       if (!active || !(url.pathname === base || url.pathname.startsWith(base + '/'))) return false;
       if (req.headers['x-tenant-id'] !== tenant) throw Error('App workbench lost its actual tenant context');
       const path = url.pathname; requests.push({path, method: req.method, params: new URLSearchParams(url.searchParams)});
+      if (path === base + '/schema') return respond(fixtureSchema(fields)), true;
       if (path === base + '/permissions') {
         if (mode === 'denied') {expectedFailure(503); return respond({message: '应用权限读取失败（测试）'}, 503), true;}
         return respond({canCreateApplication: ['all', 'create'].includes(mode), canAddPage: ['all', 'page'].includes(mode)}), true;
@@ -38,11 +43,7 @@ export function createAppWorkbenchFixture() {
         pages.get(id).push(page); applications.find(app=>app.id===id).attachedPageCount++; return respond(page), true;
       }
       if (path === base) {
-        const page = Number(url.searchParams.get('page')), size = Number(url.searchParams.get('size'));
-        if (size < 1 || size > 100) throw Error('Unbounded application list');
-        const keyword = (url.searchParams.get('keyword') ?? '').toLowerCase();
-        const rows = applications.filter(app=>app.name.toLowerCase().includes(keyword) || app.description?.toLowerCase().includes(keyword));
-        return respond({content: rows.slice(page * size, (page + 1) * size), page: {number: page, size, totalElements: rows.length, totalPages: Math.ceil(rows.length / size)}}), true;
+        return respond(fixturePage(applications, fields, url)), true;
       }
       const id = path.slice(base.length + 1); return respond({application: applications.find(app=>app.id===id), pages: pages.get(id)}), true;
     }};

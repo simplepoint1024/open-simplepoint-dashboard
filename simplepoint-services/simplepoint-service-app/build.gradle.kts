@@ -49,4 +49,5 @@ dependencies {
 
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("com.h2database:h2")
 }
