@@ -16,9 +16,20 @@ export async function smokeMcpCapabilities({clickMenu, clickReady, clickText, fi
   const selector = `${page} .ant-select input`;
   // The shared selector is outside the inner capability tabs.
   await poll(() => evaluate(`!!document.querySelector('${selector}')`), 'server selector is mounted');
-  await evaluate(`document.querySelector('${selector}').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
-  await fill(selector, 'Server519');
-  await poll(() => evaluate(`!!document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option[title="Server519"]')`), 'READY selector uses bounded server search');
+  // Use the real pointer/focus sequence. A wrapper-only synthetic mousedown does
+  // not focus the input or establish that the selector is open before typing.
+  const point = await evaluate(`(()=>{const input=document.querySelector('${selector}');input.scrollIntoView({block:'center'});const rect=input.getBoundingClientRect();return {x:rect.left+rect.width/2,y:rect.top+rect.height/2};})()`);
+  await send('Input.dispatchMouseEvent', {type: 'mousePressed', ...point, button: 'left', clickCount: 1});
+  await send('Input.dispatchMouseEvent', {type: 'mouseReleased', ...point, button: 'left', clickCount: 1});
+  await poll(() => evaluate(`document.activeElement===document.querySelector('${selector}') && document.querySelector('${selector}')?.getAttribute('aria-expanded')==='true'`), 'READY selector is focused and open before typing');
+  await send('Input.insertText', {text: 'Server519'});
+  try {
+    await poll(() => evaluate(`!!document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option[title="Server519"]')`), 'READY selector uses bounded server search');
+  } catch (error) {
+    console.error('READY selector state', await evaluate(`(()=>{const input=document.querySelector('${selector}');return {value:input?.value,open:input?.getAttribute('aria-expanded'),focused:document.activeElement===input,options:[...document.querySelectorAll('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option')].map(option=>option.title)};})()`));
+    console.error('READY directory requests', fixture.requests.filter(request => request.path.endsWith('/servers')).map(request => request.params.toString()));
+    throw error;
+  }
   await clickReady('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option[title="Server519"]');
   await poll(() => evaluate(`document.querySelector('${page} tr[data-row-key="typed-tool"]')?.textContent.includes('Server-519')`), 'capabilities switch to the selected server');
   await clickText(`${page} tr[data-row-key="typed-tool"] button`, '调用');
