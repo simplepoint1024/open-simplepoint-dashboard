@@ -730,7 +730,7 @@ try {
   } else if (process.env.MF_SMOKE_WORKFLOW_PERSONAL_ONLY === '1') {
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
     await clickMenu('首页');
-    await smokeWorkflowPersonal({clickText, clickReady, fill, poll, evaluate, send, fixture: workflowFixture,
+    await smokeWorkflowPersonal({clickText, clickReady, fill, poll, evaluate, send, reload, fixture: workflowFixture,
       capturePreview: process.env.MF_SMOKE_WORKFLOW_PERSONAL_SCREENSHOT ? async () => {
         await poll(() => evaluate(`!document.getAnimations().some(a=>a.playState==='running' && a.effect?.getComputedTiming().iterations!==Infinity && a.effect?.target?.closest?.('.ant-drawer'))`), 'progress preview settled');
         const screenshot = await send('Page.captureScreenshot', {format: 'png'});

@@ -36,7 +36,7 @@ import {
   migrateLegacyAiWorkspaceTabs,
   resolveLegacyAiWorkspaceTarget,
 } from '@/components/legacyAiWorkspace';
-import {migrateWorkflowLocation, migrateWorkflowTabs, resolveWorkflowTargets} from '@/components/legacyWorkflow';
+import {isWorkflowEntryLocation, migrateWorkflowLocation, migrateWorkflowTabs, resolveWorkflowTargets} from '@/components/legacyWorkflow';
 
 const {Header, Content, Footer, Sider} = Layout;
 const MAX_VISIBLE_TABS = 10;
@@ -420,24 +420,25 @@ const NavigateBar: React.FC<{
     return () => window.removeEventListener('sp-set-tenant', handleWorkspaceChange as EventListener);
   }, [getDashboardTab, navigate, persistTabs]);
 
-  // 首次加载：如果当前 URL 不在持久化的 tabs 中，不再将其加入，而是跳到第一个（dashboard）
+  // 个人流程/消息链接允许创建首个页签，但只接受当前已授权菜单的目标。
+  // 其他页面仍保留原有的已保存页签恢复策略；页签存储不授予访问权限。
   const initialSynced = useRef(false);
   useEffect(() => {
     if (initialSynced.current || !routesReady) return;
     const requested = normalizeRoutePath(location.pathname || '/');
     const current = getCurrentPath();
     if (requested !== current) {
-      navigate(current, {replace: true});
+      navigate(getCurrentLocation(), {replace: true});
       initialSynced.current = true;
       return;
     }
     const exists = tabs.some(t => t.key === current);
-    if (!exists) {
+    if (!exists && !isWorkflowEntryLocation(getCurrentLocation(), workflowTargets)) {
       const target = tabs[0]?.key || DASHBOARD_PATH;
       if (target && target !== current) navigate(target, {replace: true});
     }
     initialSynced.current = true;
-  }, [tabs, getCurrentPath, location.pathname, navigate, routesReady]);
+  }, [tabs, getCurrentPath, getCurrentLocation, workflowTargets, location.pathname, navigate, routesReady]);
 
   // 菜单变化时，用最新映射更新已有标签文字，并保持 dashboard 固定首位
   useEffect(() => {

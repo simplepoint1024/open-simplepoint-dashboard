@@ -1,7 +1,7 @@
 export const LEGACY_WORKFLOW_TASKS = '/workflow/tasks';
 export const LEGACY_WORKFLOW_INSTANCES = '/workflow/instances';
 type Route = {path?: string; component?: string; disabled?: boolean; routeKind?: string; children?: Route[]};
-export type WorkflowTargets = {tasks?: string; items?: string; management?: string};
+export type WorkflowTargets = {tasks?: string; items?: string; messages?: string; management?: string};
 
 /** Compatibility redirects only resolve pages present in the currently authorized route tree. */
 export function resolveWorkflowTargets(routes: readonly Route[] = []): WorkflowTargets {
@@ -11,12 +11,19 @@ export function resolveWorkflowTargets(routes: readonly Route[] = []): WorkflowT
     if (node.path && /^\/(?!\/)[^?#\\\s]*$/.test(node.path)) {
       if (node.component === 'common/personal/Todos') result.tasks ??= node.path;
       if (node.component === 'common/personal/Items') result.items ??= node.path;
+      if (node.component === 'common/personal/Messages') result.messages ??= node.path;
       if (node.component === 'workflow/Management') result.management ??= node.path;
     }
     visit(node.children ?? []);
   });
   visit(routes);
   return result;
+}
+
+/** Authorized personal links may create their first tab; a saved tab is not an access grant. */
+export function isWorkflowEntryLocation(location: string, targets: WorkflowTargets): boolean {
+  const path = location.replace(/^#/, '').split(/[?#]/, 1)[0];
+  return Object.values(targets).some(target => Boolean(target) && target === path);
 }
 
 export function migrateWorkflowLocation(location: string, targets: WorkflowTargets, ready = true): string {

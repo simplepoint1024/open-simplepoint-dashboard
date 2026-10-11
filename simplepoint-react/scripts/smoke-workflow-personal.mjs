@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 /** Real personal routes and built shared runtime; no independent task-center navigation. */
-export async function smokeWorkflowPersonal({clickText, clickReady, fill, poll, evaluate, send, fixture, capturePreview}) {
+export async function smokeWorkflowPersonal({clickText, clickReady, fill, poll, evaluate, send, reload, fixture, capturePreview}) {
   const page = '.nb-tab-panel-active', task = '.workflow-task-editor.ant-drawer-open';
   const progress = '.workflow-progress-detail.ant-drawer-open', reject = '.workflow-task-rejection .ant-modal';
   const operation = '.workflow-matter-operation .ant-modal';
@@ -118,5 +118,15 @@ export async function smokeWorkflowPersonal({clickText, clickReady, fill, poll, 
   await clickReady(`${progress} .ant-drawer-close`);
   assert.equal(fixture.requests.filter(r => r.path === '/workflow/tasks/pending' || r.path === '/workflow/instances/started').length, 0,
     'personal workflow never calls the obsolete task-center list contracts');
+  await route('/my/todos?view=completed&task=task1&instance=instance1');
+  await evaluate(`localStorage.removeItem('sp.nav.tabs')`);
+  await reload();
+  await poll(() => visible(progress), 'first visit without saved personal tabs preserves the processed deep link');
+  assert.equal(await evaluate(`location.hash.includes('/my/todos?') && location.hash.includes('task=task1')
+    && location.hash.includes('instance=instance1')`), true);
+  await poll(() => evaluate(`document.querySelector('${progress} .workflow-node-history')?.textContent.includes('材料完整，同意')`),
+    'fresh personal deep link resolves actual historical processing details');
+  await clickReady(`${progress} .ant-drawer-close`);
+  console.log('PASS: first-visit workflow deep links open without a saved tab and preserve task/instance parameters');
   console.log('PASS: personal inbox approval/rejection/claim; real names and clickable node/audit details; retained drafts and retry; withdraw/cancel completed records; linked version-pinned resubmission and processed deep links');
 }

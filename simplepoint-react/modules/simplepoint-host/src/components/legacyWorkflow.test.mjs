@@ -1,8 +1,22 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {migrateWorkflowLocation, migrateWorkflowTabs, resolveWorkflowTargets} from './legacyWorkflow.ts';
+import {isWorkflowEntryLocation, migrateWorkflowLocation, migrateWorkflowTabs, resolveWorkflowTargets} from './legacyWorkflow.ts';
 
 const targets = {tasks: '/my/todos', items: '/my/items', management: '/workflow/management'};
+
+test('first-visit personal deep links do not require a previously saved tab', () => {
+  assert.equal(isWorkflowEntryLocation('/my/todos?view=completed&instance=flow', targets), true);
+  assert.equal(isWorkflowEntryLocation('/my/items?instance=flow#detail', targets), true);
+  assert.equal(isWorkflowEntryLocation('/my/messages?id=notice', {messages: '/my/messages'}), true);
+  assert.equal(isWorkflowEntryLocation('/custom/work?task=task', {tasks: '/custom/work'}), true);
+});
+test('first-visit handling never authorizes a hidden, absent or lookalike workflow route', () => {
+  assert.equal(isWorkflowEntryLocation('/my/todos?task=task', {}), false);
+  assert.equal(isWorkflowEntryLocation('/my/todos/more', targets), false);
+  assert.equal(isWorkflowEntryLocation('//outside.invalid/my/todos', targets), false);
+  const hidden = resolveWorkflowTargets([{path: '/my/messages', component: 'common/personal/Messages', routeKind: 'hidden'}]);
+  assert.equal(isWorkflowEntryLocation('/my/messages?id=notice', hidden), false);
+});
 test('old task and instance bookmarks preserve the selected record and view', () => {
   assert.equal(migrateWorkflowLocation('/workflow/tasks?id=task-1&view=completed', targets), '/my/todos?view=completed&task=task-1');
   assert.equal(migrateWorkflowLocation('/workflow/instances?id=flow-1#detail', targets), '/my/items?instance=flow-1#detail');
