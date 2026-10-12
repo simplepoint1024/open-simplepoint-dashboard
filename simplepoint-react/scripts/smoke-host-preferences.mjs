@@ -13,6 +13,7 @@ export async function smokeHostPreferences({clickMenu, clickReady, clickText, fi
   assert.equal(await evaluate("document.querySelector('" + save + "').disabled"), true);
   const initialBirthday = fixture.profile().birthdate;
   await fill(form + ' input#root_nickname', 'Unsaved profile draft');
+  await fill(form + ' input#root_name', '真实姓名测试');
   const file = root + ' .oss-image-upload input[type=file]';
   fixture.failUpload(413);
   const beforeFail = fixture.pictureSaves.length;
@@ -29,6 +30,8 @@ export async function smokeHostPreferences({clickMenu, clickReady, clickText, fi
   await poll(() => fixture.pictureSaves.length === beforeRetry + 1 && evaluate("!!document.querySelector('" + root + " .oss-image-upload img[src=\"/common/object-storage/images/smoke-upload\"]') && !document.querySelector('" + root + " .oss-image-upload .ant-btn-loading') && !document.querySelector('" + form + " input#root_nickname').disabled"), 'avatar succeeds without losing a dirty draft');
   assert.equal(await evaluate("document.querySelector('" + form + " input#root_nickname').value"), 'Unsaved profile draft');
   assert.notEqual(fixture.profile().nickname, 'Unsaved profile draft');
+  assert.equal(await evaluate("document.querySelector('" + form + " input#root_name').value"), '真实姓名测试');
+  assert.notEqual(fixture.profile().name, '真实姓名测试', 'avatar-only persistence must not save a name draft');
   fixture.delay = 250;
   let before = fixture.profileSaves.length;
   await evaluate("(() => {const button=document.querySelector('" + save + "');button.click();button.click();})()");
@@ -36,6 +39,7 @@ export async function smokeHostPreferences({clickMenu, clickReady, clickText, fi
   assert.equal(await evaluate("document.querySelector('" + form + " input#root_nickname').disabled"), true);
   await poll(() => evaluate("document.querySelector('" + save + "').disabled && !document.querySelector('" + form + " input#root_nickname').disabled"), 'saved form is clean');
   assert.equal(fixture.profileSaves.length, before + 1);
+  assert.equal(fixture.profileSaves.at(-1).name, '真实姓名测试', 'explicit full name is persisted with the profile');
   assert.equal(fixture.profileSaves.at(-1).birthdate, initialBirthday, 'unchanged picker retains the original instant');
   for (const field of ['gender', 'locale', 'zoneinfo']) assert.equal(fixture.profileSaves.at(-1)[field], fixture.profile()[field]);
   await fill(form + ' input#root_nickname', ''); before = fixture.profileSaves.length;

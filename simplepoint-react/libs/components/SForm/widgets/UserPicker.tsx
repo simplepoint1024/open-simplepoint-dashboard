@@ -17,7 +17,7 @@ export default function UserPicker({id, value, required, disabled, readonly, onC
     key: config.key, pageSize: config.pageSize, debounceMs: config.debounceMs, minSearchLength: config.minSearchLength,
     searchParams: (keyword, page, size) => ({...config.staticParams, [config.pageParam]: page,
       [config.sizeParam]: size, [config.searchParam]: keyword.trim()}),
-    option: userPickerOption,
+    option: row => userPickerOption(row, t('form.userPicker.unnamed', '未设置姓名或邮箱')),
     resolve: async (requested, signal) => {
       const selected = [];
       const expected = new Set(requested);
@@ -25,13 +25,13 @@ export default function UserPicker({id, value, required, disabled, readonly, onC
         const result = await get<Record<string, unknown>[]>(config.resolveEndpoint,
           {...config.staticParams, [config.resolveParam]: batch.join(',')}, {signal, notifyOnError: false});
         selected.push(...(Array.isArray(result) ? result : []).flatMap(row => {
-          const option = userPickerOption(row);
+          const option = userPickerOption(row, t('form.userPicker.unnamed', '未设置姓名或邮箱'));
           return option && expected.has(option.value) ? [option] : [];
         }));
       }
       return selected;
     },
-  }), [config.key]);
+  }), [config.key, t]);
   const common = {id, endpoint: config.searchEndpoint, source, disabled: disabled || readonly, allowClear: !required,
     placeholder: placeholder || t('form.userPicker.placeholder', '输入邮箱或手机号搜索用户'), maxTagCount: 'responsive' as const,
     searchHint: t('form.userPicker.minSearch', '请输入至少 {count} 位邮箱或手机号', {count: config.minSearchLength}),

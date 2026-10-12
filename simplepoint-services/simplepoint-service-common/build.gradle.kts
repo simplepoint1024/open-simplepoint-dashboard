@@ -9,6 +9,13 @@ application {
     mainClass.set("org.simplepoint.common.server.Common")
 }
 
+// These HTTP contracts create many independent Hibernate factories and instrumented repositories.
+// Bound per-worker parser/mock metadata lifetime instead of allowing the entire suite to accumulate it.
+tasks.test {
+    forkEvery = 8
+    inputs.files(rootProject.fileTree("simplepoint-react/scripts") { include("**/*.json") })
+}
+
 val frontendRoot = rootProject.file("simplepoint-react")
 val frontendCommonDir = frontendRoot.resolve("modules/simplepoint-common")
 val frontendCommonDistDir = frontendCommonDir.resolve("dist")

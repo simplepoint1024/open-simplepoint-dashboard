@@ -27,10 +27,11 @@ export function createApiKeyFixture() {
     scopeType: 'SYSTEM', keyPrefix: 'spk_public_' + index, enabled: index !== 0, rateLimitPerMinute: 17,
     expiresAt: '2030-01-01T00:00:00Z', lastUsedAt: null, usageCount: index, description: 'Actual policy'}));
   const dictionaries = [{id: 'dict-scope-0', name: 'Actual dictionary', code: 'scope-dictionary', enabled: true, sort: 0, description: 'Original'}];
-  let active = false, mode = 'all', dictionaryMode = 'all', failure, sequence = 0;
+  let active = false, mode = 'all', dictionaryMode = 'all', failure, validationFailure, sequence = 0;
   const requests = [], writes = [];
   return {rows, dictionaries, requests, writes, enable() {active = true;}, mode(value) {mode = value;}, dictionaryMode(value) {dictionaryMode = value;},
     failWrite(method, path) {failure = method + ':' + path;},
+    rejectValidationOnce() {validationFailure = true;},
     async handle(req, url, respond, expectedFailure) {
       const path = url.pathname; if (!active || ![base, dictionaryBase].some(prefix=>path === prefix || path.startsWith(prefix + '/'))) return false;
       requests.push({path, method: req.method, params: new URLSearchParams(url.searchParams), context: req.headers['x-context-id']});
@@ -66,6 +67,11 @@ export function createApiKeyFixture() {
       const write = {path, method: req.method, data, params: new URLSearchParams(url.searchParams), context: req.headers['x-context-id'], mode: currentMode, completed: false};
       writes.push(write); const fail = failure === req.method + ':' + path; if (fail) failure = undefined;
       await new Promise(resolve=>setTimeout(resolve, 450)); write.completed = true;
+      if (isDictionary && validationFailure) {
+        validationFailure = false; expectedFailure(400);
+        return respond({code: 'VALIDATION_FAILED', messageKey: 'form.validation.failed',
+          fieldErrors: [{field: 'code', keyword: 'pattern', params: {}}]}, 400), true;
+      }
       if (fail) {expectedFailure(503); return respond(isDictionary ? {message: '默认 CRUD 写入失败（测试）'} : {errorCode: 'AI_API_KEY_OPERATION_FAILED'}, 503), true;}
       if (isDictionary) {
         if (req.method === 'DELETE') {

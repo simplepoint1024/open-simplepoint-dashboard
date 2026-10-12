@@ -11,6 +11,7 @@ import {
   waitForFeedbackBridge,
 } from '@simplepoint/shared/api/feedbackBridge';
 import {isMachineErrorCode, selectApiErrorMessage} from './errorMessage';
+import {serverValidationMessage} from '../validation/server';
 import {redirectToLogin} from './session';
 import {createRequestSignal} from './requestSignal';
 import {
@@ -261,6 +262,8 @@ function extractFromArray(values: unknown): string | undefined {
 }
 
 function extractServerMessage(data: unknown, text?: string): string | undefined {
+  const validation = serverValidationMessage(data, (key, fallback, params) => t(key, typeof fallback === 'string' ? fallback : key, params));
+  if (validation) return validation;
   if (typeof data === 'string') {
     return usefulMessage(data);
   }

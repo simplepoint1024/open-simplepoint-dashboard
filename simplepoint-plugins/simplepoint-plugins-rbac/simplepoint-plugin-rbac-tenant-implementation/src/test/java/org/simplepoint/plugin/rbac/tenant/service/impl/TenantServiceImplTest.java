@@ -743,6 +743,7 @@ class TenantServiceImplTest {
   void create_setsOwnerFromAuthenticationAndSaves() {
     setAdminRole();
     final Tenant entity = new Tenant();
+    entity.setName("New tenant");
 
     when(tenantUserRelevanceRepository.existingUserIds(Set.of("admin")))
         .thenReturn(Set.of("admin"));
@@ -797,6 +798,7 @@ class TenantServiceImplTest {
   void modifyById_preservesAuthorizationVersionFromCurrentWhenNull() {
     setAdminRole();
     Tenant current = new Tenant();
+    current.setName("Versioned tenant");
     current.setId("t1");
     current.setOwnerId("owner1");
     current.setAuthorizationVersion(3L);
@@ -807,6 +809,7 @@ class TenantServiceImplTest {
     entity.setId("t1");
     entity.setOwnerId("owner1");
     entity.setAuthorizationVersion(null);
+    entity.setName("Versioned tenant");
 
     when(tenantUserRelevanceRepository.existingUserIds(Set.of("owner1")))
         .thenReturn(Set.of("owner1"));

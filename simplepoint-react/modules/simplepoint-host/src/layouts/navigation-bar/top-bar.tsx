@@ -4,6 +4,7 @@ import {ApartmentOutlined, CreditCardOutlined, DesktopOutlined, DownOutlined, Ed
 import React, {useEffect, useRef, useState} from 'react';
 import TableActions from '@simplepoint/components/Table/Actions';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
+import {userDisplayName} from '@simplepoint/shared/utils/userIdentity';
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import { useUserInfo } from '@/fetches/user';
 import { useCurrentRoles, useCurrentTenants, type CurrentRole, type CurrentTenant } from '@/fetches/tenants';
@@ -425,7 +426,7 @@ function getGreetingKeyByTime() {
 const HeaderUser: React.FC = () => {
   const { t } = useI18n();
   const { data: info } = useUserInfo();
-  const nickname: string = info?.nickname || info?.name || t('user.defaultName', '用户');
+  const nickname: string = userDisplayName(info) || t('user.defaultName', '用户');
   const picture: string | undefined = info?.picture || undefined;
   const isMock = typeof window !== 'undefined' && /localhost|127\.0\.0\.1/.test(window.location.hostname);
   const greeting = t(getGreetingKeyByTime());

@@ -5,7 +5,7 @@
       "type" : "object",
       "properties" : {
         "title" : {
-          "type" : [ "string", "null" ],
+          "type" : "string",
           "title" : "i18n:personal.title",
           "description" : "",
           "minLength" : 1,
@@ -41,6 +41,8 @@
           "title" : "i18n:personal.priority",
           "description" : "",
           "default" : 1,
+          "minimum" : 0,
+          "maximum" : 3,
           "x-order" : 3,
           "x-ui" : {
             "x-list-visible" : "true"
@@ -128,25 +130,23 @@
                 "description" : ""
               },
               "title" : {
-                "type" : [ "string", "null" ],
+                "type" : "string",
                 "title" : "i18n:personal.subtaskTitle",
                 "description" : "",
                 "minLength" : 1,
                 "maxLength" : 200
               }
             },
+            "required" : [ "title" ],
             "title" : "i18n:personal.checklist",
             "description" : "",
-            "x-order" : 8,
-            "x-ui" : {
-              "x-list-visible" : "true"
-            }
+            "x-order" : 8
           },
           "maxItems" : 50
         }
       },
+      "required" : [ "title" ],
       "x-query" : {
-        "maxPageSize" : 100,
         "maxNodes" : 32,
         "maxDepth" : 4,
         "maxSort" : 3,
@@ -178,7 +178,8 @@
           }
         },
         "relations" : [ ],
-        "version" : 1
+        "version" : 1,
+        "maxPageSize" : 100
       }
     },
     "buttons" : [ {
@@ -332,7 +333,7 @@
       "type" : "object",
       "properties" : {
         "title" : {
-          "type" : [ "string", "null" ],
+          "type" : "string",
           "title" : "i18n:personal.title",
           "description" : "",
           "minLength" : 1,
@@ -358,6 +359,8 @@
           "title" : "i18n:personal.priority",
           "description" : "",
           "default" : 1,
+          "minimum" : 0,
+          "maximum" : 3,
           "x-order" : 2,
           "x-ui" : {
             "x-list-visible" : "true"
@@ -397,8 +400,8 @@
           }
         }
       },
+      "required" : [ "title" ],
       "x-query" : {
-        "maxPageSize" : 100,
         "maxNodes" : 32,
         "maxDepth" : 4,
         "maxSort" : 3,
@@ -425,7 +428,8 @@
           }
         },
         "relations" : [ ],
-        "version" : 1
+        "version" : 1,
+        "maxPageSize" : 100
       }
     },
     "buttons" : [ {
@@ -513,6 +517,8 @@
           "type" : "integer",
           "title" : "i18n:personal.priority",
           "description" : "",
+          "minimum" : 0,
+          "maximum" : 3,
           "x-order" : 1,
           "x-ui" : {
             "x-list-visible" : "true"
@@ -552,7 +558,6 @@
         }
       },
       "x-query" : {
-        "maxPageSize" : 100,
         "maxNodes" : 32,
         "maxDepth" : 4,
         "maxSort" : 3,
@@ -579,7 +584,8 @@
           }
         },
         "relations" : [ ],
-        "version" : 1
+        "version" : 1,
+        "maxPageSize" : 100
       }
     },
     "buttons" : [ {

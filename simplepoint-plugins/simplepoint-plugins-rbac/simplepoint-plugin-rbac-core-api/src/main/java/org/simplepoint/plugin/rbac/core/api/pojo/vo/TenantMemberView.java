@@ -14,7 +14,7 @@ public record TenantMemberView(
     @PermissionFields(resource = User.class, value = "id")
     @Schema(title = "用户标识")
     String userId,
-    @PermissionFields(resource = User.class, value = {"nickname", "name", "email", "id"})
+    @PermissionFields(resource = User.class, value = {"name", "familyName", "middleName", "givenName", "email"})
     @Schema(title = "i18n:platform-accounts.name")
     String name,
     @PermissionFields(resource = User.class, value = "email")

@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import type {RJSFSchema} from '@rjsf/utils';
 import type {CurrentProfile} from '@/fetches/user';
 
-export const profileFields = ['nickname', 'gender', 'familyName', 'middleName', 'givenName', 'birthdate',
+export const profileFields = ['name', 'nickname', 'gender', 'familyName', 'middleName', 'givenName', 'birthdate',
   'email', 'phoneNumber', 'address', 'website', 'profile', 'locale', 'zoneinfo'] as const;
 export type ProfileDraft = Partial<Record<typeof profileFields[number], string>>;
 export type PasswordDraft = {currentPassword?: string; newPassword?: string; confirmPassword?: string};
@@ -34,6 +34,7 @@ export function profileSchema(t: Translate, draft: ProfileDraft, languages: {cod
   try {timezones = (Intl as typeof Intl & {supportedValuesOf: (key: string) => string[]}).supportedValuesOf('timeZone');}
   catch {timezones = [Intl.DateTimeFormat().resolvedOptions().timeZone];}
   return {type: 'object', additionalProperties: false, required: ['nickname'], properties: {
+    name: text(t('field.fullName', '姓名'), 100),
     nickname: {...text(t('field.nickname', '昵称'), 50), minLength: 1, pattern: '\\S'},
     gender: choices(t('field.gender', '性别'), [{const: 'male', title: t('gender.male', '男')},
       {const: 'female', title: t('gender.female', '女')}, {const: 'other', title: t('gender.other', '其他')}], draft.gender),

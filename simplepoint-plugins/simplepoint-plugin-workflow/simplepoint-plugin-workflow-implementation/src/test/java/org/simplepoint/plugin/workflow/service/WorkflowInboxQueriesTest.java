@@ -265,6 +265,24 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
   }
 
   @Test
+  void legacyStructuredNameAndEmailFallbackDriveBothDisplayAndDatabaseQueries() {
+    start(publish("${initiator}", null), "Identity fallback");
+    transaction.executeWithoutResult(status -> em.createNativeQuery("update simpoint_ac_users set name=' ',"
+        + " family_name=' Zhang ',given_name=' San ',email='actor@example.test' where id='actor'").executeUpdate());
+    var structured = transaction.execute(status -> inbox.query("pending", Map.of("starterName", "equals:Zhang San"),
+        PageRequest.of(0, 1, Sort.by("starterName"))));
+    assertThat(structured.totalElements()).isEqualTo(1);
+    assertThat(structured.content().getFirst().starterName()).isEqualTo("Zhang San");
+    transaction.executeWithoutResult(status -> em.createNativeQuery("update simpoint_ac_users set family_name=null,"
+        + " given_name=null where id='actor'").executeUpdate());
+    var email = transaction.execute(status -> inbox.query("pending", Map.of("starterName", "equals:actor@example.test"),
+        PageRequest.of(0, 1, Sort.by("starterName"))));
+    assertThat(email.totalElements()).isEqualTo(1);
+    assertThat(email.content().getFirst().starterName()).isEqualTo("actor@example.test");
+    assertThat(email.content().getFirst().assigneeName()).isEqualTo("actor@example.test");
+  }
+
+  @Test
   void legacyEngineCompletionIsNotInventedAsAnApprovalAndEndedProcessIsNotShownRunning() {
     var instance = start(publish("${initiator}", null), "Legacy");
     engine.getTaskService().complete(task(instance));

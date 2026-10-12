@@ -215,14 +215,14 @@ class CommonMainTableQueryHttpTest {
         .andExpect(jsonPath("$.schema['x-query'].fields.createdBy").doesNotExist())
         .andExpect(jsonPath("$.schema['x-query'].fields.deletedAt").doesNotExist()).andReturn();
     String json = response.getResponse().getContentAsString(StandardCharsets.UTF_8);
+    var output = Path.of("build/generated-test-resources/common-main/" + endpoint.name() + ".json");
+    Files.createDirectories(output.getParent()); Files.writeString(output, json);
     if (!Boolean.getBoolean("simplepoint.query.exportSchemas")) {
       try (var fixture = getClass().getResourceAsStream("/query-contracts/common-main/" + endpoint.name() + ".json")) {
         assertNotNull(fixture);
         assertEquals(mapper.readTree(fixture), mapper.readTree(json), "Browser contract must match actual production HTTP schema");
       }
     }
-    var output = Path.of("build/generated-test-resources/common-main/" + endpoint.name() + ".json");
-    Files.createDirectories(output.getParent()); Files.writeString(output, json);
     var forbidden = new ArrayList<>(List.of("unknownField", "createdBy", "deletedAt", "tenantId"));
     if (endpoint.name().equals("ExternalIdentityProvider")) forbidden.addAll(List.of("clientSecret", "clientSecretCiphertext", "clientSecretConfigured"));
     if (endpoint.name().equals("Client")) forbidden.addAll(List.of("clientSecret", "clientSettings", "tokenSettings"));

@@ -17,7 +17,7 @@ import org.simplepoint.security.entity.User;
 @TableQuery({@QueryField("id"), @QueryField("name"), @QueryField("email"), @QueryField("phoneNumber")})
 public record UserRelevanceVo(
     @PermissionFields(resource = User.class, value = "id") @Schema(title = "i18n:users.title.id") String id,
-    @PermissionFields(resource = User.class, value = {"nickname", "name", "email", "phoneNumber", "id"})
+    @PermissionFields(resource = User.class, value = {"name", "familyName", "middleName", "givenName", "email"})
     @Schema(title = "i18n:users.title.name") String name,
     @PermissionFields(resource = User.class, value = "email") @Schema(title = "i18n:users.title.email") String email,
     @PermissionFields(resource = User.class, value = "phoneNumber")

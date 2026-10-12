@@ -102,7 +102,8 @@ public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthen
   private void setClaims(Map<String, Object> claims, User user, JwtAuthenticationToken principal) {
     Collection<GrantedAuthority> authorities = principal.getAuthorities();
     if (authorities.contains(OidcScopes.getScopeAuthority(OidcScopes.PROFILE))) {
-      claims.put("name", user.getName());
+      // A profile-scoped name must not expose email unless the separate email scope permits it.
+      claims.put("name", org.simplepoint.security.identity.UserDisplayName.fullName(user));
       claims.put("given_name", user.getGivenName());
       claims.put("family_name", user.getFamilyName());
       claims.put("middle_name", user.getMiddleName());

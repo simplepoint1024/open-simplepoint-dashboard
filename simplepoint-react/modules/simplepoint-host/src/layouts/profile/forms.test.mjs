@@ -35,3 +35,13 @@ test('password schema retains all required fields and established lengths', () =
   assert.equal(valid(schema, {newPassword: 'short', confirmPassword: 'short'}), false);
   assert.equal(valid(schema, {currentPassword: 'a'.repeat(65), newPassword: 'actual-password', confirmPassword: 'actual-password'}), false);
 });
+
+test('explicit full name is editable, optional, bounded and preserved independently of legacy parts', () => {
+  const profile = {...original, name: '完整姓名', familyName: '旧姓', givenName: '旧名'};
+  const draft = profileDraft(profile), schema = profileSchema(t, draft, []);
+  assert.equal(draft.name, '完整姓名');
+  assert.equal(profilePayload({...draft, nickname: 'Changed'}, profile).name, '完整姓名');
+  assert.equal(profilePayload({...draft, name: ''}, profile).name, null);
+  assert.equal(valid(schema, {...draft, name: 'x'.repeat(101)}), false);
+  assert.equal(valid(schema, {...draft, name: ''}), true);
+});

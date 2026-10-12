@@ -83,6 +83,14 @@ public class BaseServiceImpl
 
   private final DetailsProviderService detailsProviderService;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private jakarta.validation.Validator formValidator;
+
+  private void validateFormInput(T entity) {
+    org.simplepoint.core.validation.DeclarativeFormValidation.validate(
+        entity, getNonWritableFieldNames(entity.getClass()), formValidator);
+  }
+
   private final AnnotatedTableSchemaProvider tableSchemaProvider;
 
 
@@ -199,6 +207,7 @@ public class BaseServiceImpl
     applyCreationAuditContext(entity);
     assertCreateAccessible(entity);
     DecimalColumnPolicy.validate(entity);
+    validateFormInput(entity);
     S save = repository.save(entity);
     getModifyDataAuditingServices().forEach(service -> service.save(Set.of(save), repository.getDomainClass()));
     return save;
@@ -219,6 +228,7 @@ public class BaseServiceImpl
         applyCreationAuditContext(e);
         assertCreateAccessible(e);
         DecimalColumnPolicy.validate(e);
+        validateFormInput(e);
       });
     }
     List<T> save = repository.saveAll(entities);
@@ -353,6 +363,7 @@ public class BaseServiceImpl
       applyModificationAuditContext(entity);
       assertAccessible(entity);
       DecimalColumnPolicy.validate(entity);
+      validateFormInput(entity);
 
       // Audit diff between db (before) and entity (after merge)
       getModifyDataAuditingServices().forEach(svc -> svc.modify(db, entity, repository.getDomainClass()));

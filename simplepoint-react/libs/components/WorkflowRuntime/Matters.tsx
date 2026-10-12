@@ -79,7 +79,7 @@ function MattersSession({management}: {management: boolean}) {
     {key: 'definitionName', dataIndex: 'definitionName', title: t('workflow.definition.name', '流程名称'), width: 180},
     {key: 'definitionVersion', dataIndex: 'definitionVersion', title: t('workflow.matter.definitionVersion', '流程版本'), width: 100},
     {key: 'starterName', dataIndex: 'starterName', title: t('workflow.inbox.starterName', '发起人'), width: 120,
-      render: value => value || t('workflow.identity.unavailable', '姓名不可用')},
+      render: value => value || t('workflow.identity.unavailable', '用户信息不可用')},
     {key: 'status', dataIndex: 'status', title: t('workflow.inbox.instanceStatus', '流程状态'), width: 120,
       render: value => <WorkflowStatus value={value}/>},
     {key: 'startedAt', dataIndex: 'startedAt', title: t('workflow.matter.startedAt', '发起时间'), width: 185, render: time},

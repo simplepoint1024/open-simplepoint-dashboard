@@ -273,6 +273,42 @@ class UsersServiceImplTest {
   }
 
   @Test
+  void profileFullNameCanBeUpdatedOrClearedButOldClientsCannotEraseIt() throws Exception {
+    var user = new User();
+    user.setId("u1"); user.setName("Existing name");
+    when(userRepository.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
+    when(userRepository.updateById(user)).thenReturn(user);
+    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    var legacy = mapper.readValue("{\"nickname\":\"Old client\"}", UserProfileUpdateCommand.class);
+    assertThat(legacy.isNameProvided()).isFalse();
+    service.updateCurrentProfile("u1", legacy);
+    assertThat(user.getName()).isEqualTo("Existing name");
+    var update = mapper.readValue("{\"name\":\" 新姓名 \"}", UserProfileUpdateCommand.class);
+    assertThat(update.isNameProvided()).isTrue();
+    service.updateCurrentProfile("u1", update);
+    assertThat(user.getName()).isEqualTo("新姓名");
+    var unicode = new UserProfileUpdateCommand(); unicode.setName("😀".repeat(100));
+    service.updateCurrentProfile("u1", unicode);
+    assertThat(user.getName()).isEqualTo(unicode.getName());
+    service.updateCurrentProfile("u1", mapper.readValue("{\"name\":null}", UserProfileUpdateCommand.class));
+    assertThat(user.getName()).isNull();
+    assertThat(mapper.writeValueAsString(update)).doesNotContain("nameProvided");
+    var currentMapper = tools.jackson.databind.json.JsonMapper.builder().build();
+    assertThat(currentMapper.readValue("{}", UserProfileUpdateCommand.class).isNameProvided()).isFalse();
+    var explicitClear = currentMapper.readValue("{\"name\":null}", UserProfileUpdateCommand.class);
+    assertThat(explicitClear.isNameProvided()).isTrue();
+    assertThat(currentMapper.writeValueAsString(explicitClear)).doesNotContain("nameProvided");
+  }
+
+  @Test
+  void profileRejectsOversizeNameBeforeLoadingOrWritingTheAccount() {
+    var command = new UserProfileUpdateCommand(); command.setName("x".repeat(101));
+    assertThatThrownBy(() -> service.updateCurrentProfile("u1", command)).isInstanceOf(IllegalArgumentException.class);
+    verify(userRepository, never()).findByIdForAuthorization(anyString());
+    verify(userRepository, never()).updateById(any());
+  }
+
+  @Test
   void updateCurrentProfile_rejectsInlineDataAvatar() {
     User user = new User();
     user.setId("u1");

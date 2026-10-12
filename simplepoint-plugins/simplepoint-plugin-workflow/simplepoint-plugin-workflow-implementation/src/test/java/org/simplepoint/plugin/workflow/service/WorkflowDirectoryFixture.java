@@ -27,7 +27,8 @@ abstract class WorkflowDirectoryFixture extends WorkflowEngineFixture {
         status -> {
           em.createNativeQuery(
                   "create table simpoint_ac_users (id varchar(64) primary key, name varchar(128),"
-                      + " nickname varchar(128), enabled boolean, deleted_at timestamp)")
+                      + " nickname varchar(128), email varchar(128), family_name varchar(50),"
+                      + " middle_name varchar(50), given_name varchar(50), enabled boolean, deleted_at timestamp)")
               .executeUpdate();
           em.createNativeQuery(
                   "create table simpoint_saas_tenants (id varchar(64) primary key,"

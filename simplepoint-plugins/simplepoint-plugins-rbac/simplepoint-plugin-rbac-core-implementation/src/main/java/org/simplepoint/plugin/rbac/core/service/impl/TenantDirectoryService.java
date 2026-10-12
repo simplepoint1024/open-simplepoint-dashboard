@@ -33,7 +33,7 @@ public class TenantDirectoryService {
       "roles.view", "roles.config.resource", "users.config.role", "workflow.definitions.view", "workflow.definitions.edit",
       "workflow.instances.start", "workflow.tasks.complete"
   );
-  private static final String USER_NAME = "coalesce(nullif(u.nickname, ''), nullif(u.name, ''), u.email)";
+  private static final String USER_NAME = org.simplepoint.security.identity.UserDisplayName.HQL;
   private static final String USER_WHERE = "u.deletedAt is null and coalesce(u.enabled, true) = true"
       + " and (u.id = :owner or exists (select m.id from TenantUserRelevance m"
       + " where m.tenantId = :tenant and m.userId = u.id and m.deletedAt is null"

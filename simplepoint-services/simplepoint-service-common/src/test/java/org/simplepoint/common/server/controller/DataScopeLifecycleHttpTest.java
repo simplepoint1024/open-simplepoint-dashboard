@@ -60,7 +60,7 @@ class DataScopeLifecycleHttpTest {
     var resource = new Resource(); resource.setId("scope-resource"); resource.setCode("organizations.view");
     resource.setName("组织管理"); resource.setType(ResourceType.PAGE); resource.setDisabled(false);
     resource.setPermissionMetadata(new PermissionPageDescriptor(List.of(PermissionModelDescriptor.describe(Organization.class))).toJson()); em.persist(resource);
-    var user = new User(); user.setId("verified-user"); user.setNickname("验证用户"); em.persist(user);
+    var user = new User(); user.setId("verified-user"); user.setName("验证用户"); user.setNickname("不是实名"); em.persist(user);
     var tenant = new Tenant(); tenant.setId("scope-tenant"); tenant.setName("验证工作空间"); tenant.setAuthorizationVersion(0L);
     tenant.setOwnerId(user.getId()); tenant.setTenantType(org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.ORGANIZATION); em.persist(tenant);
     var organization = new Organization(); organization.setId("scope-organization"); organization.setTenantId(tenant.getId());
@@ -112,7 +112,7 @@ class DataScopeLifecycleHttpTest {
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(strings = {"MASKED", "HIDDEN"})
   void presentationMapsCannotBypassActualSourceFieldPermissions(String access) throws Exception {
-    var role = new Role(); role.setId("scope-role"); role.setTenantId("scope-tenant"); role.setRoleName("Private role"); em.persist(role);
+    var role = new Role(); role.setId("scope-role"); role.setTenantId("scope-tenant"); role.setRoleName("Private role"); role.setAuthority("ROLE_SCOPE"); em.persist(role);
     var fieldRule = new FieldScope(); fieldRule.setId("field-rule"); fieldRule.setTenantId("scope-tenant"); fieldRule.setName("Private field rule"); em.persist(fieldRule);
     var user = em.find(User.class, "verified-user"); user.setEmail("private@example.invalid");
     em.flush(); em.clear(); factory.getStatistics().clear();
@@ -120,7 +120,7 @@ class DataScopeLifecycleHttpTest {
     context.setDataScopeType("CUSTOM"); context.setDataScopeIncludeSelf(false);
     context.setResources(Set.of("organizations.view", "data-scope.view", "field-scope.view"));
     context.setAttributes(Map.of("X-Tenant-Id", "scope-tenant", "X-Role-Id", "scope-role"));
-    context.setFieldPermissions(Map.of(User.class.getName() + "#nickname", access, User.class.getName() + "#email", access,
+    context.setFieldPermissions(Map.of(User.class.getName() + "#name", access, User.class.getName() + "#email", access,
         Tenant.class.getName() + "#name", access, Role.class.getName() + "#roleName", access,
         DataScope.class.getName() + "#name", access, FieldScope.class.getName() + "#name", access,
         Organization.class.getName() + "#name", access, Resource.class.getName() + "#name", access));
@@ -149,12 +149,30 @@ class DataScopeLifecycleHttpTest {
 
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(strings = {"MASKED", "VISIBLE"})
-  void hiddenNicknameUsesOnlyTheActuallyReadableEmailFallback(String emailAccess) throws Exception {
+  void hiddenFullNameUsesOnlyTheActuallyReadableEmailFallback(String emailAccess) throws Exception {
     var user = em.find(User.class, "verified-user"); user.setEmail("readable@example.invalid"); em.flush(); em.clear();
-    context.setFieldPermissions(Map.of(User.class.getName() + "#nickname", "VISIBLE", "User#nickname", "HIDDEN", User.class.getName() + "#email", emailAccess));
+    context.setFieldPermissions(Map.of(User.class.getName() + "#name", "VISIBLE", "User#name", "HIDDEN", User.class.getName() + "#email", emailAccess));
     var result = mapper.readTree(read("/presentation"));
     assertEquals(emailAccess.equals("MASKED") ? "***" : "readable@example.invalid", result.path("userName").asText());
     assertFalse(result.toString().contains("验证用户"));
+  }
+
+  @Test void presentationUsesTheSharedRealNameRuleWithoutProtectedSourceLeakage() throws Exception {
+    var user = em.find(User.class, "verified-user");
+    user.setName(null);
+    user.setFamilyName(" 张 "); user.setGivenName(" 三 "); user.setEmail("fallback@example.test");
+    em.flush();
+    assertEquals("张 三", mapper.readTree(read("/presentation")).path("userName").asText());
+    user.setName("完整姓名"); em.flush();
+    assertEquals("完整姓名", mapper.readTree(read("/presentation")).path("userName").asText());
+    context.setFieldPermissions(Map.of(User.class.getName() + "#name", "HIDDEN",
+        User.class.getName() + "#familyName", "MASKED", User.class.getName() + "#givenName", "HIDDEN"));
+    statements.clear();
+    assertEquals("fallback@example.test", mapper.readTree(read("/presentation")).path("userName").asText());
+    String identityQuery = statements.stream().filter(sql -> sql.contains("simpoint_ac_users")).findFirst().orElseThrow();
+    assertFalse(identityQuery.contains("familyName"));
+    assertFalse(identityQuery.contains("givenName"));
+    assertFalse(identityQuery.contains("nickname"));
   }
 
   @Test void completePresentationRulesAndCollectionEdgesRemainBoundedBeyondFiveHundred() throws Exception {

@@ -19,6 +19,55 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+  @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+  public ResponseEntity<Map<String, Object>> invalidRequestBody(
+      org.springframework.web.bind.MethodArgumentNotValidException error) {
+    var violations =
+        error.getBindingResult().getAllErrors().stream()
+            .limit(100)
+            .map(
+                item -> {
+                  try {
+                    return org.simplepoint.core.validation.DeclarativeFormValidation.fromConstraint(
+                        item.unwrap(jakarta.validation.ConstraintViolation.class));
+                  } catch (IllegalArgumentException unavailable) {
+                    String field =
+                        item instanceof org.springframework.validation.FieldError value
+                            ? value.getField()
+                            : "";
+                    return new org.simplepoint.core.validation.FormViolation(
+                        field, "invalid", Map.of());
+                  }
+                })
+            .toList();
+    return invalidForm(new org.simplepoint.core.validation.InvalidFormException(violations));
+  }
+
+  @ExceptionHandler(org.simplepoint.core.validation.InvalidFormException.class)
+  public ResponseEntity<Map<String, Object>> invalidForm(
+      org.simplepoint.core.validation.InvalidFormException error) {
+    return ResponseEntity.badRequest()
+        .body(
+            Map.of(
+                "code",
+                "VALIDATION_FAILED",
+                "messageKey",
+                "form.validation.failed",
+                "fieldErrors",
+                error.getViolations()));
+  }
+
+  @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+  public ResponseEntity<Map<String, Object>> constraintViolation(
+      jakarta.validation.ConstraintViolationException error) {
+    return invalidForm(
+        new org.simplepoint.core.validation.InvalidFormException(
+            error.getConstraintViolations().stream()
+                .map(org.simplepoint.core.validation.DeclarativeFormValidation::fromConstraint)
+                .limit(100)
+                .toList()));
+  }
+
   @ExceptionHandler(org.simplepoint.core.base.InvalidDecimalValueException.class)
   public ResponseEntity<Map<String, String>> invalidDecimalValue(
       org.simplepoint.core.base.InvalidDecimalValueException error) {

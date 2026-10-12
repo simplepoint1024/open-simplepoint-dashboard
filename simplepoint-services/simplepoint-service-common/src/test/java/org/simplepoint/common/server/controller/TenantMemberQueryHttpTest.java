@@ -157,8 +157,8 @@ class TenantMemberQueryHttpTest {
       boolean deletedUser,
       boolean deletedMember) {
     var user = new User();
-    user.setName("Legal " + name);
-    user.setNickname(name);
+    user.setName(name);
+    user.setNickname("Nickname " + name);
     user.setEmail(name + "@example.test");
     if (deletedUser) {
       user.setDeletedAt(Instant.now());
@@ -913,7 +913,7 @@ class TenantMemberQueryHttpTest {
     mvc.perform(detach(owner.getId(), organization.getId(), relation.getRevision() + 1))
         .andExpect(status().isConflict());
     var foreign =
-        em.createQuery("select u from User u where u.nickname='Foreign'", User.class)
+        em.createQuery("select u from User u where u.name='Foreign'", User.class)
             .getSingleResult();
     var crossTenant =
         assertThrows(

@@ -199,6 +199,37 @@ class UserPickerHttpTest {
   }
 
   @Test
+  void nativeHqlCriteriaAndJavaLabelsAgreeForLegacyNamesAndEmailFallback() {
+    var explicit = user(" Full name ", "identity-explicit@example.test", null, true);
+    explicit.setNickname("Do not display"); explicit.setFamilyName("Other");
+    var structured = user(" ", "identity-structured@example.test", null, true);
+    structured.setFamilyName(" Family "); structured.setMiddleName(" "); structured.setGivenName(" Given ");
+    var email = user(null, "identity-email@example.test", null, true);
+    email.setNickname("Do not display");
+    var absent = user(null, null, "13711111111", true); absent.setNickname("Do not display");
+    em.flush();
+    for (var account : List.of(explicit, structured, email, absent)) {
+      String expected = org.simplepoint.security.identity.UserDisplayName.display(account);
+      String hql = em.createQuery("select " + org.simplepoint.security.identity.UserDisplayName.HQL
+          + " from User u where u.id=:id", String.class).setParameter("id", account.getId()).getSingleResult();
+      Object nativeLabel = em.createNativeQuery("select " + org.simplepoint.security.identity.UserDisplayName.SQL
+          + " from simpoint_ac_users u where u.id=:id", String.class).setParameter("id", account.getId()).getSingleResult();
+      var cb = em.getCriteriaBuilder(); var criteria = cb.createQuery(String.class); var root = criteria.from(User.class);
+      var labelExpression = org.simplepoint.security.identity.UserDisplayName.expression(cb, root);
+      assertThat(labelExpression.getJavaType()).isEqualTo(String.class);
+      criteria.select(labelExpression).where(cb.equal(root.get("id"), account.getId()));
+      assertThat(hql).isEqualTo(expected); assertThat(nativeLabel).isEqualTo(expected);
+      assertThat(em.createQuery(criteria).getSingleResult()).isEqualTo(expected);
+      assertThat(query.selected(List.of(account.getId())).getFirst().name()).isEqualTo(expected);
+    }
+    authorize(Map.of(User.class.getName() + "#name", "HIDDEN", User.class.getName() + "#familyName", "MASKED",
+        User.class.getName() + "#middleName", "HIDDEN", User.class.getName() + "#givenName", "HIDDEN"));
+    sql.clear();
+    assertThat(query.selected(List.of(structured.getId())).getFirst().name()).isEqualTo("identity-structured@example.test");
+    assertThat(sql).allSatisfy(statement -> assertThat(statement).doesNotContain("family_name", "given_name", "middle_name", "nickname"));
+  }
+
+  @Test
   void malformedHttpRequestsReturnBadRequestBeforeAnySqlRatherThanInternalErrors() throws Exception {
     mvc.perform(get("/users/picker/items").param("keyword", "p".repeat(321))
             .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)).andExpect(status().isBadRequest());
@@ -221,12 +252,12 @@ class UserPickerHttpTest {
     assertThat(schema.at("/properties/userIds/x-ui/options/selectionMode").asText()).isEqualTo("multiple");
     assertThat(schema.at("/properties/userIds/x-ui/options/endpoint").asText()).isEqualTo("/common/users/picker/items");
     assertThat(schema.at("/properties/userIds/x-ui/options/resolveEndpoint").asText()).isEqualTo("/common/users/picker/selected");
-    org.junit.jupiter.api.Assertions.assertEquals(schema,
-        mapper.readTree(java.nio.file.Path.of("../../simplepoint-react/scripts/tenant-user-picker-schema.fixture.json").toFile()),
-        "Browser multi-select field must match the actual DTO generator");
     var output = java.nio.file.Path.of("build/generated-test-resources/tenant-user-picker-schema.json");
     java.nio.file.Files.createDirectories(output.getParent());
     java.nio.file.Files.writeString(output, mapper.writeValueAsString(schema));
+    org.junit.jupiter.api.Assertions.assertEquals(schema,
+        mapper.readTree(java.nio.file.Path.of("../../simplepoint-react/scripts/tenant-user-picker-schema.fixture.json").toFile()),
+        "Browser multi-select field must match the actual DTO generator");
   }
 
   @Test

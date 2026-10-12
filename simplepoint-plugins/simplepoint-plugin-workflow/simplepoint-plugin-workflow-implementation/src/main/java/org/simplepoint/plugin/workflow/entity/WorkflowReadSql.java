@@ -1,5 +1,7 @@
 package org.simplepoint.plugin.workflow.entity;
 
+import org.simplepoint.security.identity.UserDisplayName;
+
 /**
  * Read-only adapter for the pinned Flowable 8 / shared platform database schema. No engine table is
  * written here. SQL is static; scope, filters and paging are always bound by Criteria. Keep this
@@ -8,11 +10,13 @@ package org.simplepoint.plugin.workflow.entity;
 final class WorkflowReadSql {
   private WorkflowReadSql() {}
 
-  // A scalar, unique tenant/user directory. Display the real name, not nickname/email/ID.
+  // A scalar, unique tenant/user directory using the shared name-first/email-fallback contract.
   // Removed or disabled identities are deliberately unavailable; do not invent historical names.
   static final String MEMBERS =
       """
-      (select t.id as tenant_id, u.id as user_id, nullif(trim(u.name), '') as name
+      (select t.id as tenant_id, u.id as user_id,
+      """ + UserDisplayName.SQL + """
+       as name
        from simpoint_saas_tenants t join simpoint_ac_users u
          on (u.id = t.owner_id or exists (
            select 1 from simpoint_saas_tenant_user_rel m

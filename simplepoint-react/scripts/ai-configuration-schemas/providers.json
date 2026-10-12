@@ -114,10 +114,7 @@
         "x-order": 1
       },
       "name": {
-        "type": [
-          "string",
-          "null"
-        ],
+        "type": "string",
         "title": "i18n:ai.providers.title.name",
         "description": "",
         "minLength": 1,
@@ -128,10 +125,7 @@
         }
       },
       "code": {
-        "type": [
-          "string",
-          "null"
-        ],
+        "type": "string",
         "title": "i18n:ai.providers.title.code",
         "description": "",
         "minLength": 1,
@@ -549,6 +543,11 @@
       "maxDepth": 4,
       "maxNodes": 32,
       "maxPageSize": 500
-    }
+    },
+    "required": [
+      "code",
+      "name",
+      "vendor"
+    ]
   }
 }

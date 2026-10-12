@@ -8,6 +8,8 @@
 
 package org.simplepoint.plugin.rbac.core.base.repository;
 
+import static org.simplepoint.security.identity.UserDisplayName.HQL;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -84,7 +86,8 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
   @Query("""
       select new org.simplepoint.plugin.rbac.core.api.pojo.vo.UserPickerItem(
         u.id,
-        coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id),
+        """ + HQL + """
+          ,
         u.email,
         u.phoneNumber,
         u.picture
@@ -95,7 +98,9 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
           lower(coalesce(u.email, '')) like concat(lower(replace(replace(replace(:keyword, '!', '!!'), '%', '!%'), '_', '!_')), '%') escape '!'
           or coalesce(u.phoneNumber, '') like concat(replace(replace(replace(:keyword, '!', '!!'), '%', '!%'), '_', '!_'), '%') escape '!'
         )
-      order by coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id), u.id
+      order by
+      """ + HQL + """
+          , u.id
       """)
   Page<UserPickerItem> searchPickerItems(@Param("keyword") String keyword, Pageable pageable);
 
@@ -103,7 +108,8 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
   @Query("""
       select new org.simplepoint.plugin.rbac.core.api.pojo.vo.UserPickerItem(
         u.id,
-        coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id),
+        """ + HQL + """
+          ,
         u.email,
         u.phoneNumber,
         u.picture

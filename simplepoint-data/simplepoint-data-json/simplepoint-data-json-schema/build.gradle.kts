@@ -7,4 +7,10 @@ dependencies{
     api(project(":simplepoint-api"))
     api(project(":simplepoint-security:simplepoint-security-core"))
     implementation(project(":simplepoint-remoting:simplepoint-remoting-core"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation(project(":simplepoint-core"))
+}
+
+tasks.test {
+    inputs.file(rootProject.file("simplepoint-react/scripts/form-validation-contract.fixture.json"))
 }

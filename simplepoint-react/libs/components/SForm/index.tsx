@@ -17,6 +17,7 @@ import {beginPreparation} from './preparation';
 import {flushSync} from 'react-dom';
 import {commitFormInput} from './inputCommit';
 import {submitButtonState} from './submitButton';
+import {localizeValidationErrors} from '../../shared/validation/messages';
 
 // Keep optional widget dependencies out of forms which do not use them.
 const lazyWidget = (load: () => Promise<{default: ComponentType<WidgetProps>}>) => {
@@ -104,8 +105,17 @@ const TEXTAREA_AUTOSIZE = { minRows: 4, maxRows: 16 } as const;
 const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
   const formRef = useRef<RjsfForm>(null);
   useImperativeHandle(ref, () => ({submit: () => formRef.current?.submit()}), []);
-  const {t} = useI18n();
-  const {schema, uiSchema, validate, customValidate, hideSubmit, submitLoading, submitDisabled, onBeforeSubmit, ...rest} = props as any;
+  const {t, locale, ensure} = useI18n();
+  const lastFailures = useRef<RJSFValidationError[]>([]);
+  const lastTranslator = useRef(t);
+  const {schema, uiSchema, validate, customValidate, transformErrors: customTransformErrors, hideSubmit, submitLoading, submitDisabled, onBeforeSubmit, ...rest} = props as any;
+  useEffect(() => {void ensure(['common', ...(props.i18nNamespaces ?? [])]);}, [ensure, locale, props.i18nNamespaces]);
+  useEffect(() => {
+    const changed = lastTranslator.current !== t;
+    lastTranslator.current = t;
+    // Revalidate only previously diagnosed input, without submitting or resetting a draft.
+    if (changed && lastFailures.current.length && !submitLoading && !rest.disabled) formRef.current?.validateForm();
+  }, [t, submitLoading, rest.disabled]);
   const preparations = useRef(new Set<symbol>()), mounted = useRef(true);
   const [preparing, setPreparing] = useState(false);
   const available = useRef(false); available.current = !submitLoading && !submitDisabled && !rest.disabled;
@@ -171,7 +181,7 @@ const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
       const props = (schema as any).properties || {};
       Object.keys(props).forEach((k) => {
         const fmt = props[k]?.['x-ui']?.format;
-        if (fmt === 'json') keys.push(k);
+        if (fmt === 'json' && !props[k].readOnly && (!props[k]['x-field-access'] || props[k]['x-field-access'] === 'EDITABLE')) keys.push(k);
       });
     }
     return keys;
@@ -201,7 +211,10 @@ const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
     return typeof customValidate === 'function' ? customValidate(formData, validated, validationUiSchema) ?? validated : validated;
   };
 
-  const transformErrors = (errors: RJSFValidationError[]) => errors;
+  const transformErrors = (errors: RJSFValidationError[], errorUiSchema?: any) => {
+    const localized = localizeValidationErrors(errors, t, schema);
+    return typeof customTransformErrors === 'function' ? customTransformErrors(localized, errorUiSchema) : localized;
+  };
   const resolvedTemplates = useMemo(() => hideSubmit
     ? {...formTemplates, ButtonTemplates: {SubmitButton: () => null}}
     : formTemplates, [hideSubmit]);
@@ -221,7 +234,8 @@ const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
       validator={validator}
       // Dialog submission and non-native widgets must use the same schema/custom validation.
       noHtml5Validate={rest.noHtml5Validate ?? true}
-      onError={rest.onError ?? defaultValidationError}
+      onError={errors => {lastFailures.current = errors; (rest.onError ?? defaultValidationError)(errors);}}
+      onSubmit={(event, nativeEvent) => {lastFailures.current = []; rest.onSubmit?.(event, nativeEvent);}}
       customValidate={mergedValidate}
       showErrorList={false}
       transformErrors={transformErrors}

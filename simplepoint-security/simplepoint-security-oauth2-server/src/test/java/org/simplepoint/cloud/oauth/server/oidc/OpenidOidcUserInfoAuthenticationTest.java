@@ -70,6 +70,27 @@ class OpenidOidcUserInfoAuthenticationTest {
     assertThat(userInfo.getClaims()).containsOnlyKeys("sub");
   }
 
+  @Test
+  void profileNameUsesLegacyComponentsButNeverDisclosesEmailWithoutEmailScope() {
+    UsersService usersService = org.mockito.Mockito.mock(UsersService.class);
+    User user = user("u1", "private@example.test");
+    user.setNickname("Not a real name");
+    user.setFamilyName(" 张 ");
+    user.setGivenName(" 三 ");
+    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
+    var mapper = new OpenidOidcUserInfoAuthentication(usersService);
+    var profile = context("u1", OidcScopes.OPENID, OidcScopes.PROFILE);
+    assertThat(mapper.apply(profile).getClaims()).containsEntry("name", "张 三").doesNotContainKey("email");
+    user.setName("完整姓名");
+    assertThat(mapper.apply(profile).getClaims()).containsEntry("name", "完整姓名");
+    user.setName(null);
+    user.setFamilyName(null);
+    user.setGivenName(null);
+    assertThat(mapper.apply(profile).getClaims()).doesNotContainValue("private@example.test");
+    assertThat(mapper.apply(context("u1", OidcScopes.OPENID, OidcScopes.EMAIL)).getClaims())
+        .containsEntry("email", "private@example.test").doesNotContainKey("name");
+  }
+
   private static User user(String id, String email) {
     User user = new User();
     user.setId(id);

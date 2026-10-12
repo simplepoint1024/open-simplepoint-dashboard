@@ -63,10 +63,7 @@
         "readOnly": true
       },
       "name": {
-        "type": [
-          "string",
-          "null"
-        ],
+        "type": "string",
         "title": "i18n:data-scopes.title.name",
         "description": "i18n:data-scopes.description.name",
         "minLength": 1,
@@ -198,6 +195,10 @@
       "maxNodes": 32,
       "maxDepth": 4,
       "maxSort": 3
-    }
+    },
+    "required": [
+      "name",
+      "type"
+    ]
   }
 }

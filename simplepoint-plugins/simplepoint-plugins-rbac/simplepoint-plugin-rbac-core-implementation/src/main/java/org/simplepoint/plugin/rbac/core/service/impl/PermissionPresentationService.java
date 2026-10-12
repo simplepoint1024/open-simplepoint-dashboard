@@ -10,6 +10,7 @@ import org.simplepoint.security.entity.DataScope;
 import org.simplepoint.security.entity.FieldScope;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.User;
+import org.simplepoint.security.identity.UserDisplayName;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,12 +28,16 @@ public class PermissionPresentationService {
     String tenant = context.getAttribute("X-Tenant-Id");
     Map<String, Object> result = new LinkedHashMap<>();
     result.put("pages", fields.pages());
-    var users = em.createQuery("select u.nickname,u.email from User u where u.id=:id and u.deletedAt is null", Object[].class)
-        .setParameter("id", context.getUserId()).setMaxResults(1).getResultList();
-    var userValues = new LinkedHashMap<String, Object>(); userValues.put("nickname", users.isEmpty() ? null : users.getFirst()[0]);
-    userValues.put("email", users.isEmpty() ? null : users.getFirst()[1]);
-    var readableUser = FieldPermissionPolicy.project(User.class, userValues);
-    if (!readableUser.isEmpty()) result.put("userName", readableUser.values().stream().filter(Objects::nonNull).findFirst().orElse(""));
+    String userName = first("select " + UserDisplayName.hql(field -> {
+      String access = FieldPermissionPolicy.access(User.class, field);
+      return !FieldPermissionPolicy.hidden(access) && !"MASKED".equals(access);
+    }) + " from User u where u.id=:id and u.deletedAt is null", context.getUserId());
+    if (!userName.isEmpty()) {
+      result.put("userName", userName);
+    } else if (List.of("name", "familyName", "middleName", "givenName", "email").stream()
+        .anyMatch(field -> "MASKED".equals(FieldPermissionPolicy.access(User.class, field)))) {
+      result.put("userName", "***");
+    }
     putName(result, "tenantName", Tenant.class, "name", first("select t.name from Tenant t where t.id=:id and t.deletedAt is null", tenant));
     String role = context.getAttribute("X-Role-Id");
     putName(result, "roleName", Role.class, "roleName", role == null || tenant == null ? "" : em.createQuery(

@@ -255,13 +255,13 @@ class TenantCatalogQueryHttpTest {
         .andExpect(jsonPath("$.buttons.length()").value(1))
         .andExpect(jsonPath("$.buttons[0].key").value("edit")).andReturn();
     var mapper = new ObjectMapper();
+    var output = java.nio.file.Path.of("build/generated-test-resources/tenant-readonly-owner-schema.json");
+    java.nio.file.Files.createDirectories(output.getParent());
+    java.nio.file.Files.writeString(output, response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
     org.junit.jupiter.api.Assertions.assertEquals(
         mapper.readTree(java.nio.file.Path.of("../../simplepoint-react/scripts/tenant-readonly-owner-schema.fixture.json").toFile()),
         mapper.readTree(response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)),
         "Browser form contract must match the actual permission-filtered HTTP schema");
-    var output = java.nio.file.Path.of("build/generated-test-resources/tenant-readonly-owner-schema.json");
-    java.nio.file.Files.createDirectories(output.getParent());
-    java.nio.file.Files.writeString(output, response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
   }
 
   @org.junit.jupiter.api.Test

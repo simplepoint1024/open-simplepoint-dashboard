@@ -47,6 +47,7 @@ import org.simplepoint.remoting.RemoteProvider;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
+import org.simplepoint.security.identity.UserDisplayName;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -179,7 +180,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
         org.simplepoint.core.permission.PermissionExpressionEvaluator.matches(node, field -> switch (field) {
           case "orgId" -> member.getOrgId(); case "enabled" -> member.getEnabled() == null || member.getEnabled();
           case "userId" -> user.getId();
-          case "name" -> user.getNickname() != null ? user.getNickname() : user.getName() != null ? user.getName() : user.getEmail() != null ? user.getEmail() : user.getId();
+          case "name" -> UserDisplayName.display(user);
           default -> permissionFieldValue(user, field);
         }));
   }
@@ -193,7 +194,7 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     permissionEntityManager.getMetamodel().entity(User.class).getAttributes().forEach(attribute -> fields.put(attribute.getName(), user.get(attribute.getName())));
     fields.put("orgId", member.get("orgId")); fields.put("userId", member.get("userId"));
     fields.put("enabled", cb.coalesce(member.<Boolean>get("enabled"), true));
-    fields.put("name", cb.<String>coalesce().value(user.get("nickname")).value(user.get("name")).value(user.get("email")).value(user.get("id")));
+    fields.put("name", UserDisplayName.expression(cb, user));
     var policy = org.simplepoint.data.jpa.DataScopePredicates.compile(rule.condition("orgId", "userId", getAuthorizationContext()), fields, cb);
     query.select(member.get("userId")).where(cb.equal(member.get("tenantId"), tenantId), cb.isNull(member.get("deletedAt")),
         cb.equal(member.get("userId"), user.get("id")), cb.isNull(user.get("deletedAt")), policy);
@@ -402,8 +403,15 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     if (command == null) {
       throw new IllegalArgumentException("个人资料不能为空");
     }
+    String name = UserDisplayName.text(command.getName());
+    if (name != null && name.codePointCount(0, name.length()) > 100) {
+      throw new IllegalArgumentException("姓名不能超过 100 个字符");
+    }
     User user = getRepository().findByIdForAuthorization(userId)
         .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+    if (command.isNameProvided()) {
+      user.setName(name);
+    }
     user.setNickname(trimToNull(command.getNickname()));
     user.setEmail(trimToNull(command.getEmail()));
     user.setPhoneNumber(trimToNull(command.getPhoneNumber()));
@@ -741,8 +749,8 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
 
   private String resolveUserLabel(String userId) {
     return findById(userId)
-        .map(user -> firstNonBlank(user.getName(), user.getNickname(), user.getEmail(), user.getPhoneNumber(), user.getId()))
-        .orElse(userId);
+        .map(UserDisplayName::display)
+        .orElse("用户信息不可用");
   }
 
   private String resolveRoleSummary(Set<String> roleIds) {

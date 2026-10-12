@@ -4,10 +4,7 @@
     "type": "object",
     "properties": {
       "name": {
-        "type": [
-          "string",
-          "null"
-        ],
+        "type": "string",
         "title": "i18n:resources.title.name",
         "description": "i18n:resources.description.name",
         "minLength": 1,
@@ -18,10 +15,7 @@
         }
       },
       "code": {
-        "type": [
-          "string",
-          "null"
-        ],
+        "type": "string",
         "title": "i18n:resources.title.code",
         "description": "i18n:resources.description.code",
         "minLength": 1,
@@ -102,8 +96,7 @@
           "description": "i18n:resources.description.scopeTypes",
           "x-order": 6,
           "x-ui": {
-            "x-list-visible": "true",
-            "widget": "checkboxes",
+            "widget": "select",
             "dictCode": "resource.scope.type"
           },
           "x-dictionary-code": "resource.scope.type"
@@ -669,7 +662,11 @@
           "javaType": "String"
         }
       }
-    }
+    },
+    "required": [
+      "code",
+      "name"
+    ]
   },
   "buttons": [
     {

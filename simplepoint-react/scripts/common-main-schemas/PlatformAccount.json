@@ -125,10 +125,7 @@
           "title": "i18n:platform-accounts.identity",
           "description": "",
           "readOnly": true,
-          "x-order": 5,
-          "x-ui": {
-            "x-list-visible": "true"
-          }
+          "x-order": 5
         }
       },
       "revision": {

@@ -100,6 +100,7 @@ public class Application extends BaseEntityImpl<String> {
       }
   )
   @Column(length = 128, nullable = false)
+  @jakarta.validation.constraints.NotBlank
   private String name;
 
   /**
@@ -119,6 +120,7 @@ public class Application extends BaseEntityImpl<String> {
       }
   )
   @Column(length = 128, nullable = false, unique = true)
+  @jakarta.validation.constraints.NotBlank
   private String code;
 
   /**

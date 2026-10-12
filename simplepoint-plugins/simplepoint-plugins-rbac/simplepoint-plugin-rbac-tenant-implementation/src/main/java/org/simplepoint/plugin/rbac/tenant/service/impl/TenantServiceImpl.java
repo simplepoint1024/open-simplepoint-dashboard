@@ -748,25 +748,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   }
 
   private static String resolveOwnerName(User owner) {
-    String explicitName = trimToNull(owner.getName());
-    if (explicitName != null) {
-      return explicitName;
-    }
-    String structuredName =
-        java.util.stream.Stream.of(
-                owner.getFamilyName(), owner.getMiddleName(), owner.getGivenName())
-            .map(TenantServiceImpl::trimToNull)
-            .filter(Objects::nonNull)
-            .collect(Collectors.joining(" "));
-    if (!structuredName.isBlank()) {
-      return structuredName;
-    }
-    return java.util.stream.Stream.of(
-            owner.getNickname(), owner.getEmail(), owner.getPhoneNumber(), owner.getId())
-        .map(TenantServiceImpl::trimToNull)
-        .filter(Objects::nonNull)
-        .findFirst()
-        .orElse(owner.getId());
+    return org.simplepoint.security.identity.UserDisplayName.display(owner);
   }
 
   private String requireActiveTenantId() {

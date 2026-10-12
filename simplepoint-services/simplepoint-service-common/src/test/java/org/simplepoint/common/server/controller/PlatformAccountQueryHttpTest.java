@@ -449,6 +449,9 @@ class PlatformAccountQueryHttpTest {
               .andExpect(jsonPath("$.schema['x-query'].fields.password").doesNotExist())
               .andReturn();
       String json = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+      var output = Path.of("build/generated-test-resources/platform-account/" + name + ".json");
+      Files.createDirectories(output.getParent());
+      Files.writeString(output, json);
       try (var fixture =
           getClass().getResourceAsStream("/query-contracts/common-main/" + name + ".json")) {
         assertNotNull(fixture);
@@ -457,9 +460,6 @@ class PlatformAccountQueryHttpTest {
             mapper.readTree(json),
             "Browser schema must match actual HTTP output");
       }
-      var output = Path.of("build/generated-test-resources/platform-account/" + name + ".json");
-      Files.createDirectories(output.getParent());
-      Files.writeString(output, json);
     }
   }
 }

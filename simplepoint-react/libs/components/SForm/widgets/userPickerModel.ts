@@ -33,12 +33,12 @@ export function userPickerIds(value: unknown, multiple: boolean): string[] {
 }
 
 /** Protected/missing identities are not selectable. Never turn a masked value into a real name. */
-export function userPickerOption(item: Record<string, unknown>): EntityOption | undefined {
+export function userPickerOption(item: Record<string, unknown>, unnamed = '未设置姓名或邮箱'): EntityOption | undefined {
   const text = (value: unknown) => typeof value === 'string' ? value.trim() : typeof value === 'number' && Number.isFinite(value) ? String(value) : '';
   const id = text(item.id); if (!id || /^\*+$/.test(id)) return undefined;
   const display = (value: unknown) => {const result = text(value); return /^\*+$/.test(result) ? '' : result;};
   const name = display(item.name), email = display(item.email), phone = display(item.phoneNumber);
-  const primary = name || email || phone || id;
+  const primary = name || email || unnamed;
   const secondary = [...new Set([email, phone].filter(value => value && value !== primary))];
   return {value: id, label: secondary.length ? `${primary} · ${secondary.join(' · ')}` : primary};
 }

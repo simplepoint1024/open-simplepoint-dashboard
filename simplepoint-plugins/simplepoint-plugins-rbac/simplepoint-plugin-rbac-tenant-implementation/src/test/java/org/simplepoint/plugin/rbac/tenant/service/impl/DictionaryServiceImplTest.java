@@ -80,6 +80,7 @@ class DictionaryServiceImplTest {
   void create_setsEnabledTrueWhenNull() {
     Dictionary dict = new Dictionary();
     dict.setId("d1");
+    dict.setName("Dictionary one"); dict.setCode("dict-one");
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     Dictionary result = service.create(dict);
@@ -91,6 +92,7 @@ class DictionaryServiceImplTest {
   void create_keepsExistingEnabledFalse() {
     Dictionary dict = new Dictionary();
     dict.setId("d2");
+    dict.setName("Dictionary two"); dict.setCode("dict-two");
     dict.setEnabled(false);
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -103,6 +105,7 @@ class DictionaryServiceImplTest {
   void create_keepsExistingEnabledTrue() {
     Dictionary dict = new Dictionary();
     dict.setId("d3");
+    dict.setName("Dictionary three"); dict.setCode("dict-three");
     dict.setEnabled(true);
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 

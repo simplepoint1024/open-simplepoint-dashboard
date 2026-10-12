@@ -24,7 +24,7 @@ export default function ActionTimeline({id, onSelectNode}: {id: string; onSelect
       {!result.events.content.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('workflow.audit.empty', '暂无平台操作记录')}/>}
       <Timeline items={result.events.content.map(event => ({key: event.id,
         content: <>
-          <Space wrap className="workflow-event-heading"><WorkflowStatus value={event.actionType}/><strong>{event.actorName || t('workflow.identity.unavailable', '姓名不可用')}</strong></Space>
+          <Space wrap className="workflow-event-heading"><WorkflowStatus value={event.actionType}/><strong>{event.actorName || t('workflow.identity.unavailable', '用户信息不可用')}</strong></Space>
           <Typography.Text type="secondary">{new Date(event.occurredAt).toLocaleString(locale)}</Typography.Text>
           {event.comment && <p className="workflow-node-comment">{event.comment}</p>}
           {event.activityId && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'node', sort: 1, type: 'link',

@@ -81,5 +81,11 @@ export function variablesIssue(variables: readonly WorkflowVariable[], value: Re
   return undefined;
 }
 
+/** Do not silently submit invisible legacy variables after removing the free-form JSON entry. */
+export function ordinaryVariablesIssue(variables: readonly WorkflowVariable[], value: Record<string, unknown>, stage: 'start' | 'task') {
+  if (!variables.length && Object.keys(value).length) return '当前数据包含未配置的表单字段，请先完善流程表单配置';
+  return variablesIssue(variables, value, stage);
+}
+
 const userValue = (value: string) => /^[A-Za-z0-9_][A-Za-z0-9_.:@-]{0,99}$/.test(value);
 const roleValue = tenantRoleAuthoritySelectable;

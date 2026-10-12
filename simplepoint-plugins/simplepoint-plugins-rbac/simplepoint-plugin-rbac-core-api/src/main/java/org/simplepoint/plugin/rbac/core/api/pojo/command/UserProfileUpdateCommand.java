@@ -24,6 +24,18 @@ import lombok.Data;
 @Data
 public class UserProfileUpdateCommand {
 
+  private String name;
+
+  @com.fasterxml.jackson.annotation.JsonIgnore
+  @lombok.Setter(lombok.AccessLevel.NONE)
+  private boolean nameProvided;
+
+  /** Distinguishes an explicit clear from older clients that do not send the full-name field. */
+  public void setName(String name) {
+    this.name = name;
+    this.nameProvided = true;
+  }
+
   private String nickname;
 
   private String email;

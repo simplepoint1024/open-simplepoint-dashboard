@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -98,7 +97,7 @@ class LoginAuditEventPublisherTest {
   }
 
   @Test
-  void publishSuccessShouldUseNicknameForDisplayNameWhenNameIsBlank() {
+  void publishSuccessShouldUseEmailNotNicknameWhenNameIsBlank() {
     User user = mockUser("user-uuid-4", "u4@example.com", null, null, null, "Nickname4", null);
     Authentication authentication = new UsernamePasswordAuthenticationToken(user, null);
 
@@ -108,11 +107,11 @@ class LoginAuditEventPublisherTest {
         ArgumentCaptor.forClass(LoginAuthenticationSuccessEvent.class);
     verify(applicationEventPublisher).publishEvent(captor.capture());
 
-    assertEquals("Nickname4", captor.getValue().displayName());
+    assertEquals("u4@example.com", captor.getValue().displayName());
   }
 
   @Test
-  void publishSuccessShouldUseGivenNameForDisplayNameWhenNameAndNicknameBlank() {
+  void publishSuccessShouldUseStructuredNameBeforeEmail() {
     User user = mockUser("user-uuid-5", "u5@example.com", null, null, null, null, "GivenName5");
     Authentication authentication = new UsernamePasswordAuthenticationToken(user, null);
 
@@ -126,7 +125,7 @@ class LoginAuditEventPublisherTest {
   }
 
   @Test
-  void publishSuccessShouldFallbackToIdWhenAllNameFieldsBlank() {
+  void publishSuccessShouldKeepDiagnosticIdOutOfDisplayName() {
     User user = mockUser("user-uuid-6", null, null, null, null, null, null);
     Authentication authentication = new UsernamePasswordAuthenticationToken(user, null);
 
@@ -137,7 +136,7 @@ class LoginAuditEventPublisherTest {
     verify(applicationEventPublisher).publishEvent(captor.capture());
 
     assertEquals("user-uuid-6", captor.getValue().username());
-    assertEquals("user-uuid-6", captor.getValue().displayName());
+    assertEquals("用户信息不可用", captor.getValue().displayName());
   }
 
   @Test
@@ -357,15 +356,14 @@ class LoginAuditEventPublisherTest {
       final String nickname,
       final String givenName
   ) {
-    User user = org.mockito.Mockito.mock(User.class);
-    when(user.getId()).thenReturn(id);
-    when(user.getEmail()).thenReturn(email);
-    when(user.getPhoneNumber()).thenReturn(phoneNumber);
-    when(user.getPreferredUsername()).thenReturn(preferredUsername);
-    when(user.getName()).thenReturn(name);
-    when(user.getNickname()).thenReturn(nickname);
-    when(user.getGivenName()).thenReturn(givenName);
-    when(user.getUsername()).thenReturn(id);
+    User user = new User();
+    user.setId(id);
+    user.setEmail(email);
+    user.setPhoneNumber(phoneNumber);
+    user.setPreferredUsername(preferredUsername);
+    user.setName(name);
+    user.setNickname(nickname);
+    user.setGivenName(givenName);
     return user;
   }
 }

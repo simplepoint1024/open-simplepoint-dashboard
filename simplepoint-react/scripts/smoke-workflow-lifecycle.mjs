@@ -107,26 +107,17 @@ export async function smokeWorkflowLifecycle({clickMenu, clickReady, clickText, 
   await poll(() => evaluate(`!!document.querySelector('${task} textarea#root_comment')`), 'typed task form');
   await fill(`${task} textarea#root_comment`, '实际处理意见');
   const formReads = fixture.requests.filter(request => request.path.endsWith('/task1/form')).length;
-  await clickText(`${task} .ant-segmented-item`, '高级 JSON');
-  await poll(() => evaluate(`!!document.querySelector('${task} .cm-content')`), 'real JSON editor');
-  const changeJson = async text => {
-    await evaluate(`document.querySelector('${task} .cm-content').focus()`);
-    await send('Input.dispatchKeyEvent', {type: 'keyDown', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2});
-    await send('Input.dispatchKeyEvent', {type: 'keyUp', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2});
-    await send('Input.insertText', {text});
-  };
-  await changeJson('{"approved":');
-  await poll(() => evaluate(`!!document.querySelector('${task} .ant-alert-error')`), 'invalid JSON remains a local dirty draft');
+  await clickReady(`${task} input[type="checkbox"]`);
+  assert.equal(await evaluate(`!!document.querySelector('${task} .ant-segmented, ${task} .cm-content')`), false, 'runtime workflow has one form-only input path');
   await evaluate(`location.hash='#/profile'`); await poll(() => evaluate(`!document.querySelector('${task}')`), 'inactive task hidden');
   await clickMenu('流程任务测试');
-  await poll(() => evaluate(`document.querySelector('${task} .cm-content')?.textContent==='{"approved":' && document.querySelector('${task} textarea#root_comment')?.value==='实际处理意见'`), 'invalid JSON and ordinary fields survive page switching');
+  await poll(() => evaluate(`document.querySelector('${task} input[type="checkbox"]')?.checked && document.querySelector('${task} textarea#root_comment')?.value==='实际处理意见'`), 'typed variables and comment survive page switching');
   assert.equal(fixture.requests.filter(request => request.path.endsWith('/task1/form')).length, formReads, 'returning to a dirty form does not refetch and overwrite its values');
   await clickReady(`${task} .ant-drawer-close`); await poll(() => visible(taskDiscard), 'task draft close guarded');
   await clickText(`${taskDiscard} .ant-modal-footer button`, '继续编辑');
   await poll(() => visible(taskDiscard).then(value => !value), 'task discard closed before editing');
-  await changeJson('{"approved":true}');
   await poll(() => evaluate(`(() => {const button=[...document.querySelectorAll('${task} button')].find(button=>button.textContent.replaceAll(' ','')==='通过');return !!button && !button.disabled && !document.querySelector('${task} .ant-alert-error');})()`), 'valid current task variables')
-    .catch(async error => {console.log(await evaluate(`({text:document.querySelector('${task}')?.textContent, json:document.querySelector('${task} .cm-content')?.textContent})`)); throw error;});
+    .catch(async error => {console.log(await evaluate(`({text:document.querySelector('${task}')?.textContent})`)); throw error;});
   fixture.failComplete(); const taskBefore = fixture.writes.length;
   await evaluate(`(() => {const button=[...document.querySelectorAll('${task} button')].find(button=>button.textContent.replaceAll(' ','')==='通过');button.click();button.click();})()`);
   await poll(() => fixture.writes.length === taskBefore + 1, 'task same-frame single flight');

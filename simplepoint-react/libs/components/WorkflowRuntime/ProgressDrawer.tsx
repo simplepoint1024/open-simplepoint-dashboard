@@ -48,7 +48,7 @@ function ProgressSession({id, onClose, onNavigate, onBack}: {
     ({signal}) => workflowApi.nodeHistory(id, node!, page, activeOnly, signal), {enabled: Boolean(node) && section === 'nodes', retry: false});
   const pick = (value: string) => {setNode(value); setPage(0); setActiveOnly(Boolean(diagram?.activeActivityIds.includes(value)));};
   const date = (value?: string) => value ? new Date(value).toLocaleString(locale) : '—';
-  const unavailable = t('workflow.identity.unavailable', '姓名不可用');
+  const unavailable = t('workflow.identity.unavailable', '用户信息不可用');
   const name = diagram?.activities.find(activity => activity.activityId === node)?.activityName;
   return <Drawer rootClassName="workflow-progress-detail" title={progress?.matter.title ?? t('workflow.diagram.title', '流程进度')}
     open={selected} width="min(1200px, 96vw)" onClose={onClose} destroyOnHidden

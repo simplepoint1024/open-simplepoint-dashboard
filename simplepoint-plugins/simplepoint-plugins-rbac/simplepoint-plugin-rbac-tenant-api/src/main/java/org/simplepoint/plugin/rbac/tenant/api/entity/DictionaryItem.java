@@ -97,6 +97,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
       }
   )
   @Column(name = "dictionary_code", length = 128, nullable = false)
+  @jakarta.validation.constraints.NotBlank
   private String dictionaryCode;
 
   @Order(1)
@@ -113,6 +114,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
       }
   )
   @Column(length = 128, nullable = false)
+  @jakarta.validation.constraints.NotBlank
   private String name;
 
   @Order(3)
@@ -144,6 +146,7 @@ public class DictionaryItem extends BaseEntityImpl<String> {
       }
   )
   @Column(name = "item_value", length = 128, nullable = false)
+  @jakarta.validation.constraints.NotBlank
   private String value;
 
   @Order(6)

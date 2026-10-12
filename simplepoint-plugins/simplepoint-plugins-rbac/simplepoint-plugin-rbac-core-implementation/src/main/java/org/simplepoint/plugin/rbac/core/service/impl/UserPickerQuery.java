@@ -79,9 +79,7 @@ public class UserPickerQuery {
   }
 
   private static String displayName() {
-    var fields = List.of("nickname", "name", "email", "phoneNumber").stream().filter(UserPickerQuery::readable)
-        .map(field -> "nullif(u." + field + ", '')").toList();
-    return fields.isEmpty() ? "u.id" : "coalesce(" + String.join(", ", fields) + ", u.id)";
+    return org.simplepoint.security.identity.UserDisplayName.hql(UserPickerQuery::readable);
   }
 
   private static String projection(String name) {

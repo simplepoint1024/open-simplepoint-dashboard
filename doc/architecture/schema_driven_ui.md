@@ -68,6 +68,30 @@ GET {baseUrl}/schema
 - 表单里用下拉框
 - 选项来自某个字典编码
 
+### 3.3 表单校验约定（2026-10-12）
+
+新增与编辑必须使用同一份授权后的 Schema 和 `SForm`，不得在页面分别维护规则。
+必填使用 `@NotBlank`（非空白文本）、`@NotNull` / `@NotEmpty`，或
+`@Schema(requiredMode = REQUIRED)`；`minLength` 本身不代表必填，允许未提供的可选字段。
+兼容已有模型：仅当可编辑文本同时声明 `@Schema(minLength > 0)` 与 `@Column(nullable = false)` 时，
+AUTO 模式生成必填；显式 `NOT_REQUIRED` / `nullable = true`、只读/隐藏字段以及没有表单 Schema 的审计字段不作此推导。
+
+```java
+@NotBlank
+@Pattern(regexp = "[A-Z][A-Z0-9_]*", message = "i18n:catalog.validation.code")
+@Schema(title = "i18n:catalog.code", maxLength = 64)
+private String code;
+```
+
+- `@Schema` 的长度、数值上下界（包括排他边界）、步长、枚举和正则由共用解释器生成；集合的枚举约束作用于每一项。
+- Jakarta Validation 使用 Default 分组；同时声明的 Schema 与 Bean 规则都必须满足。Schema 长度按 Unicode 码点计算，Jakarta `@Size` 沿用 Java 字符串长度语义。涉及多语言长度限制时优先使用 `@Schema(minLength, maxLength)`。
+- `@Pattern` 是整串匹配，`@Schema(pattern)` 是 JSON Schema 的子串匹配语义；建议使用简单、明确的锚点表达式。Java 特有语法或 flags 不直接导出为浏览器正则，由服务端执行并返回字段错误。
+- 数字、布尔默认值按字段类型生成；精确金额继续使用字符串和 `x-decimal`，不能转换成 JavaScript 浮点数。
+- `BaseServiceImpl` 在单条新增、批量新增和编辑的持久化及审计写入前执行声明式规则；权限隐藏、脱敏和不可写字段不作为用户输入校验。自定义、不经过基类的写入必须使用 `@Valid` 或调用 `DeclarativeFormValidation`，业务授权和业务约束仍由服务端负责。
+- HTTP 校验失败统一返回 `400 / VALIDATION_FAILED`、字段路径、规则名和参数，不返回拒绝值、内部异常或原始正则。`SForm` 和 API 客户端使用 `common` 中的 `form.validation.*` 文案；自定义提示使用 `message = "i18n:..."` 并提供中英文翻译，不依赖校验器的英文默认句子。
+- 失败保留草稿并展示字段提示，修正后可重试；切换语言不重置表单。上下文提供的字段若通过 `formSchemaTransform` 从表单中移除，共享层同时移除其残留 `required`，最终提交值仍须通过服务端校验。
+- 跨端契约测试 `FormConstraintSchemaTest` 导出真实注解 Schema 和服务端判定，前端直接消费同一份 fixture；浏览器回归使用真实标准列表与 RJSF 表单验证新增、编辑、语言切换、服务端拒绝及重试。
+
 ## 4. 按钮是如何生成的
 
 页面动作按钮来自实体类上的 `@ButtonDeclarations`，例如 `Role`、`Organization`、`Dictionary`、`MicroModule` 等实体都声明了：

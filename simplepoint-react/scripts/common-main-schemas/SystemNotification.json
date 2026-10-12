@@ -90,10 +90,7 @@
     "type": "object",
     "properties": {
       "title": {
-        "type": [
-          "string",
-          "null"
-        ],
+        "type": "string",
         "title": "i18n:notifications.title.title",
         "description": "",
         "minLength": 1,
@@ -104,10 +101,7 @@
         }
       },
       "content": {
-        "type": [
-          "string",
-          "null"
-        ],
+        "type": "string",
         "title": "i18n:notifications.title.content",
         "description": "",
         "minLength": 1,
@@ -471,6 +465,10 @@
       "maxDepth": 4,
       "maxNodes": 32,
       "maxPageSize": 200
-    }
+    },
+    "required": [
+      "content",
+      "title"
+    ]
   }
 }

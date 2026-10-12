@@ -8,6 +8,7 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationModule;
+import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationOption;
 import java.util.Set;
 import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.data.json.schema.generator.DefaultJsonSchemaGenerator;
@@ -91,6 +92,8 @@ public class JsonSchemaAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public JakartaValidationModule javaxValidationModule() {
-    return new JakartaValidationModule();
+    return new JakartaValidationModule(
+        JakartaValidationOption.NOT_NULLABLE_FIELD_IS_REQUIRED,
+        JakartaValidationOption.NOT_NULLABLE_METHOD_IS_REQUIRED).forValidationGroups(jakarta.validation.groups.Default.class);
   }
 }

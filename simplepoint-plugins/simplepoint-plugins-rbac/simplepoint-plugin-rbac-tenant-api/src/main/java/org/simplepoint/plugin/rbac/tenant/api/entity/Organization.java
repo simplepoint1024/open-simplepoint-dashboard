@@ -95,6 +95,7 @@ public class Organization extends TenantBaseEntityImpl<String> {
       }
   )
   @Column(length = 128, nullable = false)
+  @jakarta.validation.constraints.NotBlank
   private String name;
 
   @Order(1)
@@ -111,6 +112,7 @@ public class Organization extends TenantBaseEntityImpl<String> {
       }
   )
   @Column(length = 128, nullable = false)
+  @jakarta.validation.constraints.NotBlank
   private String code;
 
   @Order(2)

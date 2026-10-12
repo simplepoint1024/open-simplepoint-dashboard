@@ -164,11 +164,11 @@ function TasksSession() {
     {title: t('workflow.definition.name', '流程名称'), dataIndex: 'definitionName', key: 'definitionName',
       width: 170, render: (value?: string) => value || '—'},
     {title: t('workflow.inbox.starterName', '发起人'), dataIndex: 'starterName', key: 'starterName', width: 120,
-      render: (value?: string) => value || t('workflow.identity.unavailable', '姓名不可用')},
+      render: (value?: string) => value || t('workflow.identity.unavailable', '用户信息不可用')},
     {title: view === 'pending' ? t('workflow.task.assignee', '办理人') : t('workflow.inbox.actorName', '实际操作人'),
       dataIndex: view === 'pending' ? 'assigneeName' : 'actorName', key: view === 'pending' ? 'assigneeName' : 'actorName', width: 150,
       render: (value: string | undefined, row) => value || (view === 'pending' && !row.assigned
-        ? <Tag>{t('workflow.task.unclaimed', '待认领')}</Tag> : t('workflow.identity.unavailable', '姓名不可用'))},
+        ? <Tag>{t('workflow.task.unclaimed', '待认领')}</Tag> : t('workflow.identity.unavailable', '用户信息不可用'))},
     ...(view === 'completed' ? [{title: t('workflow.inbox.outcome', '处理结果'), dataIndex: 'outcome', key: 'outcome', width: 110,
       render: statusTag}] : []),
     {title: t('workflow.inbox.instanceStatus', '流程状态'), dataIndex: 'instanceStatus', key: 'instanceStatus', width: 110, render: statusTag},
@@ -221,7 +221,7 @@ function TasksSession() {
       {error && <Alert type="error" showIcon title={error}/>}
       {completeTarget && <Descriptions size="small" column={2} items={[
         {key: 'flow', label: t('workflow.definition.name', '流程名称'), children: completeTarget.definitionName},
-        {key: 'starter', label: t('workflow.inbox.starterName', '发起人'), children: completeTarget.starterName || t('workflow.identity.unavailable', '姓名不可用')},
+        {key: 'starter', label: t('workflow.inbox.starterName', '发起人'), children: completeTarget.starterName || t('workflow.identity.unavailable', '用户信息不可用')},
         {key: 'node', label: t('workflow.task.name', '任务'), children: completeTarget.taskName},
       ]}/>}
       <TableActions selectedKeys={[]} selectedRows={[]} buttons={[

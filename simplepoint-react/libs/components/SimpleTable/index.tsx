@@ -8,7 +8,8 @@ import {createIcon} from '@simplepoint/shared/types/icon';
 import type {ControlledSimpleTableProps, SimpleTableProps} from './types';
 import {useSimpleTableController} from './useSimpleTableController';
 import {hasRecordIdentity} from './recordIdentity';
-import {lazy, Suspense, useEffect, useRef, useState} from 'react';
+import {lazy, Suspense, useEffect, useMemo, useRef, useState} from 'react';
+import {serverErrorSchema} from '../../shared/validation/server';
 import {usePageSelected} from '@simplepoint/shared/page/hooks';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 
@@ -22,6 +23,8 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
   const { bootLoading, tableLoading, submitLoading, submitError, deleteOpen, drawerSchemaLoading, hasSchemaError, hasPageError, showPageWarning } = controller.status;
   const { data: pageData, filters, buttons } = controller.table;
   const { open: drawerOpen, editingRecord, setOpen: setDrawerOpen } = controller.drawer;
+  const formErrors = useMemo(() => serverErrorSchema(controller.status.submitViolations, formSchema ?? schemaData?.schema, t),
+    [controller.status.submitViolations, formSchema, schemaData?.schema, t]);
   const { defaultEvents, handleFormSubmit, retryPage } = controller.actions;
   const drawerWasOpenRef = useRef(false);
   const [dirty, setDirty] = useState(false);
@@ -191,9 +194,11 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
               schema={formSchema ?? schemaData.schema}
               uiSchema={typeof props.formUiSchema === 'function' ? props.formUiSchema(formDraft, formSchema ?? schemaData.schema) : props.formUiSchema}
               formData={formDraft}
+              extraErrors={formErrors}
               onChange={(event) => {
                 if (controller.status.isSubmitting() || discardRef.current) return;
                 const next = event.formData ?? {};
+                controller.actions.clearFormViolations();
                 setFormDraft(props.formDataTransform ? props.formDataTransform(next, formDraft) : next); setDirty(true);
               }}
               onSubmit={handleFormSubmit}

@@ -71,8 +71,8 @@ class TenantUserAssignmentHttpTest {
     em = factory.openSession(); em.beginTransaction();
     users = new ArrayList<>();
     for (int i = 0; i < 243; i++) {
-      var user = new User(); user.setNickname("Candidate" + String.format("%03d", i));
-      user.setName("Legal " + i); user.setEmail("candidate" + i + "@example.test"); user.setPhoneNumber("138" + String.format("%08d", i));
+      var user = new User(); user.setNickname("Nickname " + i);
+      user.setName("Candidate" + String.format("%03d", i)); user.setEmail("candidate" + i + "@example.test"); user.setPhoneNumber("138" + String.format("%08d", i));
       if (i == 242) user.setDeletedAt(Instant.now());
       em.persist(user); users.add(user);
     }
@@ -251,7 +251,7 @@ class TenantUserAssignmentHttpTest {
         .andExpect(jsonPath("$.schema['x-query'].fields.name").doesNotExist())
         .andExpect(jsonPath("$.schema.properties.phoneNumber").doesNotExist());
     mvc.perform(items(true)).andExpect(status().isOk()).andExpect(jsonPath("$.content[0].email").value("***"))
-        .andExpect(jsonPath("$.content[0].phoneNumber").doesNotExist()).andExpect(jsonPath("$.content[0].name").doesNotExist());
+        .andExpect(jsonPath("$.content[0].phoneNumber").doesNotExist()).andExpect(jsonPath("$.content[0].name").value("***"));
     for (String field : List.of("name", "email", "phoneNumber", "password", "deletedAt")) {
       mvc.perform(items(true).param(field, "is:null")).andExpect(status().isBadRequest())
           .andExpect(jsonPath("$.code").value("INVALID_QUERY"));

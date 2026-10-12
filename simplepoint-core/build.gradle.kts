@@ -23,6 +23,7 @@ dependencies {
     api("org.springframework.boot:spring-boot-autoconfigure")
     api("tools.jackson.core:jackson-databind")
     api(libs.swagger.annotations)
+    api("org.springframework.boot:spring-boot-starter-validation")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-jackson")

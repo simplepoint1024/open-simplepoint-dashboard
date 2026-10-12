@@ -102,6 +102,7 @@ public class Role extends TenantBaseEntityImpl<String> implements BaseRole {
             })
       })
   @jakarta.persistence.Column(name = "role_name")
+  @jakarta.validation.constraints.NotBlank
   private String roleName;
 
   /** The authority associated with the role. This field specifies the role authority identifier. */
@@ -117,6 +118,7 @@ public class Role extends TenantBaseEntityImpl<String> implements BaseRole {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
             })
       })
+  @jakarta.validation.constraints.NotBlank
   private String authority;
 
   /**

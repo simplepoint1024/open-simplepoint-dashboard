@@ -6,6 +6,7 @@ import {useNavigate} from 'react-router';
 import {usePageActive, usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
 import {createIcon} from '@simplepoint/shared/types/icon';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import {userDisplayName} from '@simplepoint/shared/utils/userIdentity';
 import {useI18n} from '@/layouts/i18n/useI18n';
 import {useUserInfo} from '@/fetches/user';
 import {useCurrentTenants} from '@/fetches/tenants';
@@ -46,7 +47,7 @@ function HomeSession({routes, tenantType, remoteRegistryKey}: HomeProps) {
   const groups = prefs.data?.groups || [];
   const favorites = new Set(groups.flatMap(group => group.paths.filter(path => appMap.has(path)))).size;
   const workspace = tenants.data?.find(tenant => tenant.tenantId === scope[0])?.tenantName || '—';
-  const username = user.data?.nickname || user.data?.name || user.data?.preferred_username || user.data?.username || '';
+  const username = userDisplayName(user.data) || '';
   const style = {'--home-bg': token.colorBgContainer, '--home-border': token.colorBorderSecondary,
     '--home-muted': token.colorTextSecondary, '--home-primary': token.colorPrimary, '--home-tint': token.colorPrimaryBg,
     color: token.colorText} as CSSProperties;

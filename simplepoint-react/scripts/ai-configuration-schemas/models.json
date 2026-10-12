@@ -1,62 +1,4 @@
 {
-  "buttons": [
-    {
-      "path": "[default]",
-      "color": "blue",
-      "authority": "ai.workbench.models.create",
-      "variant": "outlined",
-      "icon": "PlusCircleOutlined",
-      "argumentMaxSize": 1,
-      "sort": 0,
-      "type": "primary",
-      "title": "i18n:table.button.create",
-      "danger": false,
-      "argumentMinSize": 0,
-      "key": "add"
-    },
-    {
-      "path": "[default]",
-      "color": "orange",
-      "authority": "ai.workbench.models.edit",
-      "variant": "outlined",
-      "icon": "EditOutlined",
-      "argumentMaxSize": 1,
-      "sort": 1,
-      "type": "primary",
-      "title": "i18n:table.button.edit",
-      "danger": false,
-      "argumentMinSize": 1,
-      "key": "edit"
-    },
-    {
-      "path": "[default]",
-      "color": "danger",
-      "authority": "ai.workbench.models.delete",
-      "variant": "outlined",
-      "icon": "MinusCircleOutlined",
-      "argumentMaxSize": 10,
-      "sort": 2,
-      "type": "primary",
-      "title": "i18n:table.button.delete",
-      "danger": true,
-      "argumentMinSize": 1,
-      "key": "delete"
-    },
-    {
-      "path": "[default]",
-      "color": "blue",
-      "authority": "ai.workbench.models.debug",
-      "variant": "outlined",
-      "icon": "MessageOutlined",
-      "argumentMaxSize": 1,
-      "sort": 3,
-      "type": "primary",
-      "title": "i18n:ai.model-debug.button",
-      "danger": false,
-      "argumentMinSize": 1,
-      "key": "debug"
-    }
-  ],
   "schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
@@ -98,10 +40,7 @@
         }
       },
       "modelId": {
-        "type": [
-          "string",
-          "null"
-        ],
+        "type": "string",
         "title": "i18n:ai.models.title.modelId",
         "description": "",
         "minLength": 1,
@@ -308,9 +247,14 @@
         "readOnly": true
       }
     },
+    "required": [
+      "modelId"
+    ],
     "x-query": {
-      "version": 1,
-      "relations": [],
+      "maxPageSize": 200,
+      "maxNodes": 32,
+      "maxDepth": 4,
+      "maxSort": 3,
       "fields": {
         "scopeType": {
           "operators": [
@@ -595,10 +539,66 @@
           "javaType": "String"
         }
       },
-      "maxSort": 3,
-      "maxDepth": 4,
-      "maxNodes": 32,
-      "maxPageSize": 200
+      "relations": [],
+      "version": 1
     }
-  }
+  },
+  "buttons": [
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "ai.workbench.models.create",
+      "variant": "outlined",
+      "icon": "PlusCircleOutlined",
+      "argumentMaxSize": 1,
+      "sort": 0,
+      "type": "primary",
+      "title": "i18n:table.button.create",
+      "danger": false,
+      "argumentMinSize": 0,
+      "key": "add"
+    },
+    {
+      "path": "[default]",
+      "color": "orange",
+      "authority": "ai.workbench.models.edit",
+      "variant": "outlined",
+      "icon": "EditOutlined",
+      "argumentMaxSize": 1,
+      "sort": 1,
+      "type": "primary",
+      "title": "i18n:table.button.edit",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "edit"
+    },
+    {
+      "path": "[default]",
+      "color": "danger",
+      "authority": "ai.workbench.models.delete",
+      "variant": "outlined",
+      "icon": "MinusCircleOutlined",
+      "argumentMaxSize": 10,
+      "sort": 2,
+      "type": "primary",
+      "title": "i18n:table.button.delete",
+      "danger": true,
+      "argumentMinSize": 1,
+      "key": "delete"
+    },
+    {
+      "path": "[default]",
+      "color": "blue",
+      "authority": "ai.workbench.models.debug",
+      "variant": "outlined",
+      "icon": "MessageOutlined",
+      "argumentMaxSize": 1,
+      "sort": 3,
+      "type": "primary",
+      "title": "i18n:ai.model-debug.button",
+      "danger": false,
+      "argumentMinSize": 1,
+      "key": "debug"
+    }
+  ]
 }

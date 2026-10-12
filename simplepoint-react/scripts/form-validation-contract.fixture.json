@@ -1,0 +1,205 @@
+{
+  "schema" : {
+    "$schema" : "http://json-schema.org/draft-07/schema#",
+    "type" : "object",
+    "properties" : {
+      "alias" : {
+        "type" : [ "string", "null" ],
+        "pattern" : "^(?:[a-z]+)(?![\\s\\S])"
+      },
+      "code" : {
+        "type" : "string",
+        "title" : "",
+        "description" : "",
+        "minLength" : 2,
+        "maxLength" : 8,
+        "pattern" : "^[A-Z]+$"
+      },
+      "count" : {
+        "type" : "number",
+        "title" : "",
+        "description" : "",
+        "minimum" : 3,
+        "maximum" : 5,
+        "exclusiveMinimum" : 2,
+        "multipleOf" : 0.5
+      },
+      "enabled" : {
+        "type" : "boolean"
+      },
+      "initialCount" : {
+        "type" : "integer",
+        "title" : "",
+        "description" : "",
+        "default" : 3
+      },
+      "initialEnabled" : {
+        "type" : "boolean",
+        "title" : "",
+        "description" : "",
+        "default" : true
+      },
+      "optional" : {
+        "type" : [ "string", "null" ],
+        "title" : "",
+        "description" : "",
+        "minLength" : 2
+      },
+      "optionalChoice" : {
+        "type" : [ "string", "null" ],
+        "title" : "",
+        "description" : "",
+        "enum" : [ "ON", "OFF", null ]
+      },
+      "permissions" : {
+        "title" : "",
+        "description" : "",
+        "type" : "array",
+        "items" : {
+          "type" : "string",
+          "title" : "",
+          "description" : "",
+          "enum" : [ "READ", "WRITE", null ]
+        }
+      },
+      "serverOnlyPattern" : {
+        "type" : [ "string", "null" ],
+        "x-server-validation" : [ "pattern" ]
+      },
+      "tags" : {
+        "minItems" : 1,
+        "maxItems" : 3,
+        "type" : "array",
+        "items" : {
+          "type" : "string"
+        }
+      },
+      "title" : {
+        "type" : "string",
+        "minLength" : 1,
+        "pattern" : "[^\\u0009-\\u000d\\u001c-\\u0020\\u1680\\u2000-\\u2006\\u2008-\\u200a\\u2028-\\u2029\\u205f\\u3000]",
+        "x-validation-messages" : {
+          "pattern" : "form.validation.required"
+        }
+      }
+    },
+    "required" : [ "code", "enabled", "title" ]
+  },
+  "cases" : [ {
+    "data" : {
+      "code" : "OK",
+      "title" : "Title",
+      "enabled" : true
+    },
+    "valid" : true
+  }, {
+    "data" : {
+      "code" : "",
+      "title" : "Title",
+      "enabled" : true
+    },
+    "valid" : false
+  }, {
+    "data" : {
+      "code" : "lowercase",
+      "title" : "Title",
+      "enabled" : true
+    },
+    "valid" : false
+  }, {
+    "data" : {
+      "code" : "OK",
+      "title" : " \t\n",
+      "enabled" : true
+    },
+    "valid" : false
+  }, {
+    "data" : {
+      "code" : "OK",
+      "title" : "Title",
+      "enabled" : true,
+      "optional" : ""
+    },
+    "valid" : false
+  }, {
+    "data" : {
+      "code" : "OK",
+      "title" : "Title",
+      "enabled" : true,
+      "alias" : "abc\n"
+    },
+    "valid" : false
+  }, {
+    "data" : {
+      "code" : "OK",
+      "title" : "Title",
+      "enabled" : true,
+      "alias" : "abc"
+    },
+    "valid" : true
+  }, {
+    "data" : {
+      "code" : "OK",
+      "title" : "Title",
+      "enabled" : true,
+      "count" : 2
+    },
+    "valid" : false
+  }, {
+    "data" : {
+      "code" : "OK",
+      "title" : "Title",
+      "enabled" : true,
+      "count" : 4
+    },
+    "valid" : true
+  }, {
+    "data" : {
+      "code" : "OK",
+      "title" : "Title",
+      "enabled" : true,
+      "count" : 7
+    },
+    "valid" : false
+  }, {
+    "data" : {
+      "code" : "OK",
+      "title" : "Title",
+      "enabled" : true,
+      "tags" : [ ]
+    },
+    "valid" : false
+  }, {
+    "data" : {
+      "code" : "OK",
+      "title" : "Title",
+      "enabled" : true,
+      "optionalChoice" : "INVALID"
+    },
+    "valid" : false
+  }, {
+    "data" : {
+      "code" : "OK",
+      "title" : "Title",
+      "enabled" : true,
+      "optionalChoice" : null
+    },
+    "valid" : true
+  }, {
+    "data" : {
+      "code" : "OK",
+      "title" : "Title",
+      "enabled" : true,
+      "permissions" : [ "READ", "WRITE" ]
+    },
+    "valid" : true
+  }, {
+    "data" : {
+      "code" : "OK",
+      "title" : "Title",
+      "enabled" : true,
+      "permissions" : [ "INVALID" ]
+    },
+    "valid" : false
+  } ]
+}

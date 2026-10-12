@@ -11,6 +11,7 @@ package org.simplepoint.cloud.oauth.server.event;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import org.simplepoint.security.entity.User;
+import org.simplepoint.security.identity.UserDisplayName;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -118,11 +119,8 @@ public class LoginAuditEventPublisher {
           user.getId()
       );
       String displayName = firstNonBlank(
-          user.getName(),
-          user.getNickname(),
-          user.getGivenName(),
-          username,
-          user.getId()
+          UserDisplayName.display(user),
+          "用户信息不可用"
       );
       return new UserIdentity(user.getId(), username, displayName);
     }

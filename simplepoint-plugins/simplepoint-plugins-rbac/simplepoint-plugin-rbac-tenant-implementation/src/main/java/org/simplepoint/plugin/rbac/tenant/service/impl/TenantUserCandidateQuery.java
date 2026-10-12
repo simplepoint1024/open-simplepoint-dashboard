@@ -15,6 +15,7 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.vo.UserRelevanceVo;
 import org.simplepoint.security.entity.User;
+import org.simplepoint.security.identity.UserDisplayName;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -64,8 +65,7 @@ public class TenantUserCandidateQuery {
     var user = query.from(User.class);
     Map<String, Expression<?>> fields = Map.of(
         "id", user.get("id").as(String.class),
-        "name", cb.<String>coalesce().value(user.get("nickname")).value(user.get("name"))
-            .value(user.get("email")).value(user.get("phoneNumber")).value(user.get("id")).as(String.class),
+        "name", UserDisplayName.expression(cb, user),
         "email", user.get("email"), "phoneNumber", user.get("phoneNumber"));
     Predicate side = cb.conjunction();
     if (selected != null) {

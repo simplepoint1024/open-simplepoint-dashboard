@@ -42,6 +42,12 @@ export async function smokeFormSubmission({clickMenu, clickReady, clickText, fil
   const invalid = fixture.writes.length; await clickReady(form + ' button[type="submit"]');
   await poll(() => evaluate(`!!document.querySelector('${form} .error-detail, ${form} .ant-form-item-has-error, ${form} .text-danger')`), 'real schema validation stays in the engine');
   assert.equal(fixture.writes.length, invalid, 'invalid validation never reaches the default writer');
+  await poll(() => evaluate(`document.querySelector('${form} form.rjsf')?.textContent.includes('最多填写 512 个字符')`), 'edit validation uses Chinese platform translations');
+  await evaluate(`window.spI18n.setLocale('en-US')`);
+  await poll(() => evaluate(`document.querySelector('${form} form.rjsf')?.textContent.includes('Use at most 512 characters') && !document.querySelector('${form} form.rjsf')?.textContent.includes('最多填写') && !document.querySelector('${form} form.rjsf')?.textContent.includes('must NOT')`), 'existing validation errors translate without remounting');
+  assert.equal(await evaluate(`document.querySelector('${form} #root_description').value.length`), 513, 'language switch retains the invalid draft');
+  await evaluate(`window.spI18n.setLocale('zh-CN')`);
+  await poll(() => evaluate(`document.querySelector('${form} form.rjsf')?.textContent.includes('最多填写 512 个字符')`), 'Chinese validation restored');
   await fill(form + ' #root_description', 'Valid after a validation error');
   await clickReady(form + ' .ant-drawer-close'); await poll(() => evaluate(`!!document.querySelector('${discard}')`), 'ordinary dirty close retains Common discard semantics');
   // The underlying form is genuinely present. A submission while discard owns the editor must be refused.
@@ -55,6 +61,19 @@ export async function smokeFormSubmission({clickMenu, clickReady, clickText, fil
   console.log('PASS: actual RJSF invalid-schema release, original validation UI, discard ownership and normal continued editing');
 
   await clickText(root + ' button', '新增'); await poll(() => evaluate(`!!document.querySelector('${form} #root_name')`), 'default add form');
+  const missing = fixture.writes.length;
+  await clickReady(form + ' button[type="submit"]');
+  await poll(() => evaluate(`document.querySelector('${form} form.rjsf')?.textContent.includes('请填写此项')`), 'absent create fields enforce annotation-required rules');
+  assert.equal(fixture.writes.length, missing);
+  await fill(form + ' #root_name', '   '); await fill(form + ' #root_code', 'whitespace-check');
+  await clickReady(form + ' button[type="submit"]');
+  await poll(() => evaluate(`document.querySelector('${form} form.rjsf')?.textContent.includes('请填写此项')`), 'NotBlank blocks whitespace in actual add form');
+  assert.equal(fixture.writes.length, missing);
+  await fill(form + ' #root_name', 'Accepted default create'); await fill(form + ' #root_description', 'x'.repeat(513));
+  await clickReady(form + ' button[type="submit"]');
+  await poll(() => evaluate(`document.querySelector('${form} form.rjsf')?.textContent.includes('最多填写 512 个字符')`), 'add and edit share the same length rules and messages');
+  assert.equal(fixture.writes.length, missing);
+  await fill(form + ' #root_description', 'Valid new draft');
   await fill(form + ' #root_name', 'Accepted default create'); await fill(form + ' #root_code', 'accepted-default-create');
   fixture.failWrite('POST', base); const create = fixture.writes.length; await submitAndClose(true);
   await poll(() => evaluate(`document.querySelector('${form} .ant-alert-error')?.textContent.includes('默认 CRUD 写入失败')`), 'default addition keeps its original draft');
@@ -63,6 +82,21 @@ export async function smokeFormSubmission({clickMenu, clickReady, clickText, fil
   assert.equal(await evaluate(`document.querySelector('${form} #root_name').value`), 'Accepted default create');
   await clickReady(form + ' button[type="submit"]'); await poll(() => evaluate(`!document.querySelector('${form}')`), 'default add retry releases the accepted intent');
   assert.equal(fixture.writes.length, create + 2); assert.equal(fixture.writes.at(-1).data.code, 'accepted-default-create');
+
+  await openEdit(); const originalName = await evaluate(`document.querySelector('${form} #root_name').value`);
+  const rejected = fixture.writes.length;
+  await fill(form + ' #root_name', '   '); await clickReady(form + ' button[type="submit"]');
+  await poll(() => evaluate(`document.querySelector('${form} form.rjsf')?.textContent.includes('请填写此项')`), 'NotBlank also blocks whitespace in actual edit form');
+  assert.equal(fixture.writes.length, rejected);
+  await fill(form + ' #root_name', originalName); await fill(form + ' #root_description', 'Server validation keeps this draft');
+  fixture.rejectValidationOnce(); await clickReady(form + ' button[type="submit"]');
+  await poll(() => evaluate(`document.querySelector('${form} .ant-alert-error')?.textContent.includes('格式不符合要求') && document.querySelector('${form} form.rjsf')?.textContent.includes('格式不符合要求')`), 'server validation maps to both localized summary and actual field');
+  assert.equal(fixture.writes.length, rejected + 1);
+  assert.equal(await evaluate(`document.querySelector('${form} #root_description').value`), 'Server validation keeps this draft');
+  await fill(form + ' #root_code', 'server-valid-code'); await clickReady(form + ' button[type="submit"]');
+  await poll(() => evaluate(`!document.querySelector('${form}')`), 'correcting a field clears server errors and permits retry');
+  assert.equal(fixture.writes.length, rejected + 2);
+  console.log('PASS: annotation-generated add/edit required, NotBlank and length parity, live bilingual errors, safe server field errors, preserved drafts and retry');
 
   await openEdit(); await fill(form + ' #root_description', 'Old validation scope must not write');
   const oldScope = fixture.writes.length; fixture.dictionaryMode('view');

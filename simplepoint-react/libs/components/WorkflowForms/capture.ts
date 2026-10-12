@@ -1,5 +1,5 @@
 import type {WorkflowRuntimeForm} from '../WorkflowDesigner/contracts';
-import {parseVariables, validateVariablesValue, variablesIssue} from './model.ts';
+import {ordinaryVariablesIssue, parseVariables, validateVariablesValue, variablesIssue} from './model.ts';
 
 export type WorkflowVariablesSnapshot = {
   form: WorkflowRuntimeForm;
@@ -22,7 +22,7 @@ export function captureWorkflowVariables(snapshot: WorkflowVariablesSnapshot, ex
   try {text = JSON.stringify(snapshot.value);} catch {throw Error('流程变量必须是可序列化的 JSON 对象');}
   if (text == null) throw Error('流程变量必须是 JSON 对象');
   // Recheck size, depth and stage ownership for ordinary controls and provider callbacks too.
-  const value = parseVariables(text), issue = variablesIssue(snapshot.form.formContract.variables, value, snapshot.stage);
+  const value = parseVariables(text), issue = (snapshot.form.binding ? variablesIssue : ordinaryVariablesIssue)(snapshot.form.formContract.variables, value, snapshot.stage);
   if (issue) throw Error(issue);
   return value;
 }

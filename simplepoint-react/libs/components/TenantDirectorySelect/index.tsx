@@ -12,9 +12,9 @@ export type TenantDirectorySelectProps = DirectoryProps<EntitySelectProps> & {
 };
 
 type DirectoryItem = {id: string; name: string; value: string};
-const option = (row: Record<string, unknown>): EntityOption | undefined =>
+const option = (row: Record<string, unknown>, unnamed: string): EntityOption | undefined =>
   typeof row.value === 'string' && row.value
-    ? {value: row.value, label: typeof row.name === 'string' && row.name ? row.name : row.value}
+    ? {value: row.value, label: typeof row.name === 'string' && row.name.trim() ? row.name.trim() : unnamed}
     : undefined;
 
 /** User IDs and role authorities use the same authorized, paged, scope-keyed selector. */
@@ -23,7 +23,7 @@ export default function TenantDirectorySelect({kind, ...props}: TenantDirectoryS
   const endpoint = `/common/tenant-directory/${kind}`;
   const source = useMemo<EntitySelectSource>(() => {
     const toOption = (row: Record<string, unknown>): EntityOption | undefined => {
-      const item = option(row);
+      const item = option(row, kind === 'users' ? t('form.userPicker.unnamed', '未设置姓名或邮箱') : String(row.value ?? ''));
       if (item && kind === 'roles' && !tenantRoleAuthoritySelectable(item.value)) return {...item, disabled: true,
         title: t('form.remoteSelect.roleUnsupported', '此角色权限标识无法安全用于流程：含逗号、首尾空白、控制字符或长度超限')};
       return item;

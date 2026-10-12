@@ -4,10 +4,7 @@
     "type": "object",
     "properties": {
       "name": {
-        "type": [
-          "string",
-          "null"
-        ],
+        "type": "string",
         "title": "i18n:packages.title.name",
         "description": "i18n:packages.description.name",
         "minLength": 1,
@@ -15,13 +12,14 @@
         "x-order": 0,
         "x-ui": {
           "x-list-visible": "true"
+        },
+        "pattern": "[^\\u0009-\\u000d\\u001c-\\u0020\\u1680\\u2000-\\u2006\\u2008-\\u200a\\u2028-\\u2029\\u205f\\u3000]",
+        "x-validation-messages": {
+          "pattern": "form.validation.required"
         }
       },
       "code": {
-        "type": [
-          "string",
-          "null"
-        ],
+        "type": "string",
         "title": "i18n:packages.title.code",
         "description": "i18n:packages.description.code",
         "minLength": 1,
@@ -29,6 +27,10 @@
         "x-order": 1,
         "x-ui": {
           "x-list-visible": "true"
+        },
+        "pattern": "[^\\u0009-\\u000d\\u001c-\\u0020\\u1680\\u2000-\\u2006\\u2008-\\u200a\\u2028-\\u2029\\u205f\\u3000]",
+        "x-validation-messages": {
+          "pattern": "form.validation.required"
         }
       },
       "price": {
@@ -211,7 +213,11 @@
         }
       },
       "relations": []
-    }
+    },
+    "required": [
+      "code",
+      "name"
+    ]
   },
   "buttons": [
     {

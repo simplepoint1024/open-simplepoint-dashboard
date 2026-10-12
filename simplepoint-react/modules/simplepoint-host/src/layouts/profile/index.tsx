@@ -11,6 +11,7 @@ import TableActions from '@simplepoint/components/Table/Actions';
 import {OssImageUpload} from '@simplepoint/components/SForm/widgets/OssImageUpload';
 import {post, put} from '@simplepoint/shared/api/methods';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
+import {userDisplayName, userFullName} from '@simplepoint/shared/utils/userIdentity';
 import {usePageRetention} from '@simplepoint/shared/page/hooks';
 import {useI18n} from '@/layouts/i18n/useI18n';
 import {type CurrentProfile, useCurrentProfile, useUserInfo} from '@/fetches/user';
@@ -77,7 +78,7 @@ export const Profile: React.FC = () => {
     ? userInfo.roles.map((role: any) => typeof role === 'string' ? role : role?.name).filter(Boolean) as string[] : [], [userInfo]);
   const detailsSchema = useMemo(() => profileSchema(t, draft ?? {}, languages), [t, draft?.gender, draft?.locale, draft?.zoneinfo, languages]);
   const pwdSchema = useMemo(() => passwordSchema(t), [t]);
-  const displayName = data?.nickname || data?.name || t('user.defaultName', '用户');
+  const displayName = userDisplayName(data) || t('user.defaultName', '用户');
   const start = (kind: NonNullable<typeof busy>) => {if (busyRef.current) return false; busyRef.current = kind; setBusy(kind); return true;};
   const finish = () => {busyRef.current = null; if (alive.current) setBusy(null);};
   const saveDetails = async (values: ProfileDraft) => {
@@ -130,7 +131,7 @@ export const Profile: React.FC = () => {
           {isLoading ? <Skeleton active paragraph={{rows: 7}}/> : !data ? <Empty/> :
             <Descriptions column={{xs: 1, sm: 2}} size="middle" className="profile-descriptions">
               <Descriptions.Item label={t('field.nickname', '昵称')}>{data.nickname || '-'}</Descriptions.Item>
-              <Descriptions.Item label={t('field.fullName', '姓名')}>{[data.familyName, data.middleName, data.givenName].filter(Boolean).join(' ') || data.name || '-'}</Descriptions.Item>
+              <Descriptions.Item label={t('field.fullName', '姓名')}>{userFullName(data) || '-'}</Descriptions.Item>
               <Descriptions.Item label={t('field.email', '邮箱')}>{data.email || '-'}</Descriptions.Item>
               <Descriptions.Item label={t('field.phone', '手机号')}>{data.phoneNumber || '-'}</Descriptions.Item>
               <Descriptions.Item label={t('field.profile', '个人简介')} span={2}>{data.profile || '-'}</Descriptions.Item>

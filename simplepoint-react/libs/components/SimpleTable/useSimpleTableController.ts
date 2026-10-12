@@ -17,6 +17,8 @@ import {usePageActive, usePageRetention} from '@simplepoint/shared/page/hooks';
 import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
 import {hasRecordIdentity} from './recordIdentity';
 import {defaultCrudData} from './defaultCrudData';
+import {projectedFormSchema} from './formSchema';
+import {serverViolations, serverValidationMessage, type FieldViolation} from '../../shared/validation/server';
 import {transportFilters} from '../Table/query';
 import {resolveSimpleTableLoadError} from './errorMessage';
 import {reachableServerPage} from './pagination';
@@ -31,6 +33,7 @@ export type SimpleTableController<T> = {
     tableLoading: boolean;
     submitLoading: boolean;
     submitError?: string;
+    submitViolations?: FieldViolation[];
     isSubmitting: () => boolean;
     deleteOpen: boolean;
     drawerSchemaLoading: boolean;
@@ -72,6 +75,7 @@ export type SimpleTableController<T> = {
     handleFormSubmit: (event: IChangeEvent) => Promise<void>;
     beginFormSubmit: () => boolean;
     handleFormError: () => void;
+    clearFormViolations: () => void;
     retryPage: () => Promise<unknown>;
   };
 };
@@ -96,8 +100,9 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   const [innerEditing, setInnerEditing] = useState<any | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
+  const [submitViolations, setSubmitViolations] = useState<FieldViolation[]>();
   const [selectionResetKey, setSelectionResetKey] = useState(0);
-  useEffect(() => {setSubmitError(undefined);}, [props.drawerOpen]);
+  useEffect(() => {setSubmitError(undefined); setSubmitViolations(undefined);}, [props.drawerOpen, innerDrawerOpen]);
   const [deletion, setDeletion] = useState<{keys: React.Key[]; scope: string; error?: string}>();
   const confirmingDelete = !!deletion && deletion.scope === session;
   const submissionLock = useRef(false);
@@ -112,7 +117,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   useLayoutEffect(() => {
     const next = session; if (previousScope.current === next) return;
     previousScope.current = next; submissionLock.current = false; formSubmission.current = undefined;
-    setDeletion(undefined); setSubmitLoading(false); setSubmitError(undefined);
+    setDeletion(undefined); setSubmitLoading(false); setSubmitError(undefined); setSubmitViolations(undefined);
     setSelectionResetKey(previous => previous + 1);
     setInnerDrawerOpen(false); setInnerEditing(null); setPage(1); setFilters(props.initialFilters ?? {}); setSort(undefined);
     props.onDrawerOpenChange?.(false); props.onEditingRecordChange?.(null);
@@ -353,7 +358,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
       operation.finish(request); return false;
     }
     submissionLock.current = true;
-    setSubmitLoading(true); setSubmitError(undefined); return true;
+    setSubmitLoading(true); setSubmitError(undefined); setSubmitViolations(undefined); return true;
   };
   const handleFormError = () => {
     const pending = cancelFormValidation(formSubmission, session); if (!pending) return;
@@ -427,6 +432,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
         () => resolveApiErrorMessage(e, ''),
       );
       setSubmitError(detail);
+      setSubmitViolations(serverViolations(e?.data));
       if (operation.isSelected()) message.error(t('table.actionFail', '操作失败: {msg}', {msg: detail}));
     } finally {
       const released = finishFormSubmission(formSubmission, submission);
@@ -452,7 +458,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     const transformed = props.formSchemaTransform
       ? props.formSchemaTransform(schemaData.schema, editingRecord)
       : schemaData.schema;
-    return sortSchemaProperties(transformed);
+    return sortSchemaProperties(projectedFormSchema(schemaData.schema, transformed));
   }, [schemaData?.schema, props.formSchemaTransform, editingRecord]);
 
   return {
@@ -461,7 +467,8 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
       bootLoading,
       tableLoading,
       submitLoading,
-      submitError,
+      submitError: submitViolations ? serverValidationMessage({code: 'VALIDATION_FAILED', fieldErrors: submitViolations}, t) : submitError,
+      submitViolations,
       isSubmitting: operation.isBusy,
       deleteOpen: confirmingDelete,
       drawerSchemaLoading,
@@ -509,6 +516,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
       handleFormSubmit,
       beginFormSubmit,
       handleFormError,
+      clearFormViolations: () => setSubmitViolations(undefined),
       retryPage: refetchPage,
     },
   };

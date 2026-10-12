@@ -37,3 +37,9 @@ test('ordinary and provider values obey the same size, depth and serialization l
   assert.throws(() => captureWorkflowVariables(snapshot({value: {approved: true, nonfinite: Infinity}}), form), /有限/);
   assert.throws(() => captureWorkflowVariables(snapshot({value: {approved: true, large: 'x'.repeat(128 * 1024)}}), form), /大小/);
 });
+
+test('ordinary forms cannot silently submit invisible fields after the JSON entry is removed', () => {
+  const empty = {...form, formContract: {...form.formContract, variables: []}};
+  assert.deepEqual(captureWorkflowVariables(snapshot({form: empty, value: {}}), empty), {});
+  assert.throws(() => captureWorkflowVariables(snapshot({form: empty, value: {hidden: 'value'}}), empty), /未配置的表单字段/);
+});

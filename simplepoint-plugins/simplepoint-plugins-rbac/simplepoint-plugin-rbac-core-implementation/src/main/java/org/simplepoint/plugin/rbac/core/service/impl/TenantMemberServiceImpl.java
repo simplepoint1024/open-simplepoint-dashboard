@@ -24,6 +24,7 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.entity.User;
+import org.simplepoint.security.identity.UserDisplayName;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -375,12 +376,7 @@ public class TenantMemberServiceImpl implements TenantMemberService {
             "userId",
             user.get("id").as(String.class),
             "name",
-            cb.<String>coalesce()
-                .value(user.get("nickname"))
-                .value(user.get("name"))
-                .value(user.get("email"))
-                .value(user.get("id"))
-                .as(String.class),
+            UserDisplayName.expression(cb, user),
             "email",
             user.get("email"),
             "orgId",
@@ -561,13 +557,7 @@ public class TenantMemberServiceImpl implements TenantMemberService {
           case "userType" -> member.getUserType();
           case "email" -> account == null ? null : account.getEmail();
           case "name" ->
-              account == null
-                  ? null
-                  : account.getNickname() != null
-                      ? account.getNickname()
-                      : account.getName() != null
-                          ? account.getName()
-                          : account.getEmail() != null ? account.getEmail() : account.getId();
+              UserDisplayName.display(account);
           case "orgName" -> {
             var org =
                 member.getOrgId() == null

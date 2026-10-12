@@ -199,9 +199,9 @@ public class FederationJdbcConnectionUserServiceImpl
     String condition = "u.deletedAt is null and u.enabled = true and "
         + "(lower(u.email) like :pattern escape '!' or u.phoneNumber like :pattern escape '!')";
     var query = entityManager.createQuery("select new " + FederationJdbcUserOptionVo.class.getName()
-        + "(u.id, coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id), u.email, u.phoneNumber) "
+        + "(u.id, " + org.simplepoint.security.identity.UserDisplayName.HQL + ", u.email, u.phoneNumber) "
         + "from User u where " + condition
-        + " order by coalesce(u.nickname, u.name, u.email, u.phoneNumber, u.id), u.id",
+        + " order by " + org.simplepoint.security.identity.UserDisplayName.HQL + ", u.id",
         FederationJdbcUserOptionVo.class);
     var count = entityManager.createQuery("select count(u) from User u where " + condition, Long.class);
     query.setParameter("pattern", pattern);

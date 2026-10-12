@@ -2,6 +2,34 @@
   "version": 1,
   "rules": [
     {
+      "file": "libs/shared/validation/messages.ts",
+      "expression": "key",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Explicit annotation x-validation-messages metadata uses bounded i18n keys and retains localized defaults when missing."
+    },
+    {
+      "file": "libs/shared/api/client.ts",
+      "expression": "key",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Pass-through adapter for the shared validation translator; message keys originate in bounded annotation metadata."
+    },
+    {
+      "file": "libs/shared/validation/messages.ts",
+      "expression": "error.title.slice(5)",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Validation titles use the same explicit i18n-prefixed schema metadata as platform field labels."
+    },
+    {
+      "file": "libs/shared/validation/server.ts",
+      "expression": "violation.messageKey",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Server annotation message keys are bounded identifiers with a localized standard validation fallback."
+    },
+    {
       "file": "modules/simplepoint-host/src/views/home/index.tsx",
       "expression": "app.title || ''",
       "expectedOccurrences": 1,

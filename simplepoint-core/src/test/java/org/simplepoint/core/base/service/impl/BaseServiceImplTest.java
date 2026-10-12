@@ -55,6 +55,11 @@ class BaseServiceImplTest {
     private String updatedBy;
     private String createOrgDeptId;
     private String orgId;
+    @io.swagger.v3.oas.annotations.media.Schema(minLength = 2, maxLength = 10, pattern = "^[A-Z]+$")
+    @jakarta.validation.constraints.Pattern(regexp = "[A-Z]+")
+    private String formCode;
+    public String getFormCode() { return formCode; }
+    public void setFormCode(String value) { formCode = value; }
     @jakarta.persistence.Column(precision = 19, scale = 2)
     private java.math.BigDecimal amount;
     public java.math.BigDecimal getAmount() {return amount;}
@@ -190,6 +195,28 @@ class BaseServiceImplTest {
   }
 
   // ---- Tests: delegation to repository -----------------------------------
+
+  @Test
+  void declarativeRulesRejectCreateBatchAndEditBeforePersistenceOrAuditing() {
+    try (var factory = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+      org.springframework.test.util.ReflectionTestUtils.setField(service, "formValidator", factory.getValidator());
+      var om = new com.fasterxml.jackson.databind.ObjectMapper();
+      setupSchemaGeneratorMocks(StubEntity.class, om);
+      detailsProviderService.getDialect(JsonSchemaGenerator.class).generateSchema(StubEntity.class)
+          .withObject("/properties").putObject("formCode").put("type", "string");
+      var before = new StubEntity(); before.setId("existing"); before.setFormCode("VALID");
+      var incoming = new StubEntity(); incoming.setId("existing"); incoming.setFormCode("invalid-secret");
+      when(repository.findById("existing")).thenReturn(Optional.of(before));
+      var audit = mock(ModifyDataAuditingService.class);
+      when(detailsProviderService.getDialects(ModifyDataAuditingService.class)).thenReturn(Set.of(audit));
+      assertThatThrownBy(() -> service.create(incoming)).isInstanceOf(org.simplepoint.core.validation.InvalidFormException.class);
+      assertThatThrownBy(() -> service.create(List.of(before, incoming))).isInstanceOf(org.simplepoint.core.validation.InvalidFormException.class);
+      assertThatThrownBy(() -> service.modifyById(incoming)).isInstanceOf(org.simplepoint.core.validation.InvalidFormException.class);
+      assertThat(before.getFormCode()).isEqualTo("VALID");
+      verify(repository, never()).save(any()); verify(repository, never()).saveAll(any()); verify(repository, never()).updateById(any());
+      org.mockito.Mockito.verifyNoInteractions(audit);
+    }
+  }
 
   @Test
   void createCannotBypassNonWritablePrimitiveField() {
