@@ -1,4 +1,6 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import {usePageSelected, usePageRetention} from '@simplepoint/shared/page/hooks';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -139,6 +141,11 @@ const ColumnSettings: React.FC<ColumnSettingsProps> = ({
   onReset,
 }) => {
   const {t} = useI18n();
+  const selected = usePageSelected();
+  const scope = JSON.stringify(useQueryScope());
+  usePageRetention(!open, open);
+  const previousScope = useRef(scope);
+  useEffect(() => {if (previousScope.current !== scope) {previousScope.current = scope; onClose();}}, [scope]);
   const [items, setItems] = useState<ColumnSetting[]>(initialSettings);
   const [displaySettings, setDisplaySettings] = useState<TableDisplaySettings>(initialDisplaySettings);
 
@@ -179,7 +186,7 @@ const ColumnSettings: React.FC<ColumnSettingsProps> = ({
       title={t('table.settings.title', '表格设置')}
       rootClassName="sp-table-settings-drawer"
       width="min(460px, 100vw)"
-      open={open}
+      open={open && selected}
       onClose={onClose}
       styles={{body: {padding: '12px 16px'}}}
       footer={

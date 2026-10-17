@@ -552,6 +552,61 @@ class AuthorizationContextServiceImplTest {
   }
 
   @Test
+  void platformCatalogModeRetainsOnlyValidatedManagedRoleGrants() {
+    User user = new User();
+    Tenant tenant = new Tenant();
+    tenant.setOwnerId("owner");
+    tenant.setTenantType(TenantType.ORGANIZATION);
+    tenant.setResourceMode(TenantResourceMode.PLATFORM);
+    TenantRepository tenantRepository = mock(TenantRepository.class);
+    ResourceService resourceService = mock(ResourceService.class);
+    TenantResourceCatalog catalog = mock(TenantResourceCatalog.class);
+    service.setTenantResourceCatalog(catalog);
+    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
+    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenantRepository);
+    when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
+    when(tenantRepository.hasUser("tenant1", "u1")).thenReturn(true);
+    when(usersService.loadRolesByUserId("tenant1", "u1"))
+        .thenReturn(List.of(new RoleGrantedAuthority("role1", "ROLE_USER")));
+    when(usersService.loadResourcesInRoleIds(List.of("role1")))
+        .thenReturn(Set.of("app.runtime.page.allowed", "app.runtime.page.retired"));
+    when(resourceServiceProvider.getIfAvailable()).thenReturn(resourceService);
+    when(resourceService.findPublicAccessCodes()).thenReturn(List.of());
+    when(resourceService.filterAccessibleCodes(anyCollection(), eq(AuthorizationScopeType.TENANT), eq(false)))
+        .thenReturn(Set.of());
+    when(catalog.mode("tenant1")).thenReturn(TenantResourceMode.PLATFORM);
+    when(catalog.managedGrantableCodes(eq("tenant1"), anyCollection()))
+        .thenReturn(Set.of("app.runtime.page.allowed"));
+
+    AuthorizationContext context = service.calculate("tenant1", "u1", null, null);
+
+    assertThat(context.getResources()).contains("app.runtime.page.allowed")
+        .doesNotContain("app.runtime.page.retired");
+  }
+
+  @Test
+  void tenantOwnerReceivesActiveManagedResourcesWithoutAStoredRoleGrant() {
+    User user = new User();
+    Tenant tenant = new Tenant();
+    tenant.setOwnerId("owner");
+    tenant.setTenantType(TenantType.ORGANIZATION);
+    TenantRepository tenantRepository = mock(TenantRepository.class);
+    TenantResourceCatalog catalog = mock(TenantResourceCatalog.class);
+    service.setTenantResourceCatalog(catalog);
+    when(usersService.findByIdForAuthorization("owner")).thenReturn(Optional.of(user));
+    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenantRepository);
+    when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
+    when(tenantRepository.hasUser("tenant1", "owner")).thenReturn(true);
+    when(usersService.loadRolesByUserId("tenant1", "owner")).thenReturn(List.of());
+    when(catalog.activeManagedGrantableCodes("tenant1"))
+        .thenReturn(Set.of("app.runtime.page.owner"));
+
+    AuthorizationContext context = service.calculate("tenant1", "owner", null, null);
+
+    assertThat(context.getResources()).contains("app.runtime.page.owner");
+  }
+
+  @Test
   void calculate_tenantMemberWithTenantAdminResource_usesTenantAdminActorRole() {
     User user = new User();
     user.setSuperAdmin(false);

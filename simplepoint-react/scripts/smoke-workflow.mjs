@@ -57,8 +57,8 @@ export async function smokeWorkflow({clickMenu, clickReady, clickText, fill, pol
   await evaluate(`document.querySelector('.ant-modal #root_approver').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
   await poll(() => fixture.requests.some(request => request.path === '/common/tenant-directory/users'), 'bounded tenant user search');
   await clickText('.ant-select-dropdown .ant-select-item-option', '租户成员 1');
-  await poll(() => evaluate(`![...document.querySelectorAll('.ant-modal button')].find(button=>button.textContent==='提交')?.disabled`), 'required user value enables submission');
-  await clickText('.ant-modal button', '提交');
+  await poll(() => evaluate(`!!document.querySelector('.workflow-process-start button[type="submit"]:not(:disabled)')`), 'required user value enables submission');
+  await clickText('.workflow-process-start button[type="submit"]', '发起流程');
   await poll(() => fixture.writes.some(write => write.path.endsWith('/instances')), 'historical start submitted');
   const started = fixture.writes.find(write => write.path.endsWith('/instances')).data;
   assert.equal(started.version, 1, 'start pins the chosen published version');
@@ -72,6 +72,16 @@ export async function smokeWorkflow({clickMenu, clickReady, clickText, fill, pol
     'platform palette exposes a real human user task');
   await selectCanvasElement('review');
   await poll(() => evaluate(`!!document.querySelector('${drawer} .workflow-designer__properties .ant-select')`), 'node assignment controls');
+  assert.equal(await evaluate(`document.querySelectorAll('${drawer} [data-domain-select="user"]').length`), 1,
+    'candidate users use the public selector while the saved assignee remains a variable');
+  const assignee = `${drawer} .workflow-designer__properties .ant-form-item:has(.ant-segmented)`;
+  await evaluate(`document.querySelector('${assignee}').querySelectorAll('.ant-segmented-item')[0].click()`);
+  await poll(() => evaluate(`document.querySelectorAll('${drawer} [data-domain-select="user"]').length===2`),
+    'fixed assignee and candidate users both use the public user selector');
+  await evaluate(`document.querySelector('${assignee}').querySelectorAll('.ant-segmented-item')[1].click()`);
+  await poll(() => evaluate(`document.querySelectorAll('${drawer} [data-domain-select="user"]').length===1`),
+    'changing only the editing view preserves the saved variable');
+  assert.equal(await evaluate(`document.querySelectorAll('${drawer} [data-domain-select="role"]').length`), 1);
   await poll(() => fixture.requests.some(request => request.path === '/common/tenant-directory/roles/selected')
     && evaluate(`document.querySelector('${drawer} .workflow-designer__properties')?.textContent.includes('审批角色')`), 'candidate role labels hydrate by authority');
   assert.equal(await evaluate(`document.querySelector('${drawer} .workflow-designer__properties').textContent.includes('审批角色')`), true, 'candidate role uses a shared role selector');
@@ -83,6 +93,7 @@ export async function smokeWorkflow({clickMenu, clickReady, clickText, fill, pol
   await clickText(`${drawer} button`, '保存草稿');
   await poll(() => fixture.writes.length >= 3, 'canvas save flushes current XML');
   assert.ok(fixture.writes.at(-1).data.bpmnXml.includes('立即保存节点'), 'no debounce-induced lost edit');
+  assert.ok(fixture.writes.at(-1).data.bpmnXml.includes('assignee="${approver}"'), 'selector view switching does not replace dynamic assignment');
   assert.ok(fixture.writes.at(-1).data.bpmnXml.includes('P1DT2H'), 'unmodified ISO duration is retained');
   await poll(() => evaluate(`document.querySelector('${drawer} .workflow-designer')?.getAttribute('aria-busy')==='false'`),
     'save finished and canvas accepts pointer input');

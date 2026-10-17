@@ -22,7 +22,7 @@ export function createAppWorkbenchFixture() {
       if (path === base + '/schema') return respond(fixtureSchema(fields)), true;
       if (path === base + '/permissions') {
         if (mode === 'denied') {expectedFailure(503); return respond({message: '应用权限读取失败（测试）'}, 503), true;}
-        return respond({canCreateApplication: ['all', 'create'].includes(mode), canAddPage: ['all', 'page'].includes(mode)}), true;
+        return respond({canCreateApplication: ['all', 'create'].includes(mode), canAddPage: ['all', 'page'].includes(mode), canDesignForm: mode === 'all'}), true;
       }
       if (req.method !== 'GET') {
         if (['readonly', 'denied'].includes(mode)) throw Error('Unauthorized app mutation');

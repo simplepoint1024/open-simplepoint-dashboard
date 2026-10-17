@@ -167,7 +167,7 @@ const RuntimeSecrets = ({active = true, secretsUrl, canManage}: RuntimeSecretsPr
       title: t('ai.runtime.field.rotatedAt', '最后轮换'),
       dataIndex: 'rotatedAt',
       width: 180,
-      render: formatDateTime,
+      render: (value?: string) => formatDateTime(value),
     },
     ...(canManage ? [{
       title: t('ai.runtime.field.action', '操作'),

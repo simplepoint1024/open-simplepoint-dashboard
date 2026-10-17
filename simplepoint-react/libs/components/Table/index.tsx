@@ -19,8 +19,9 @@ import {Page, toPagination} from '@simplepoint/shared/types/request';
 import {createIcon} from '@simplepoint/shared/types/icon';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {isRowSelectionClick} from './rowClickSelection';
-import {get, put} from '@simplepoint/shared/api/methods';
-import {request} from '@simplepoint/shared/api/client';
+import {usePreference, preferenceUser} from '@simplepoint/shared/preferences/usePreference';
+import PreferenceFeedback from './PreferenceFeedback';
+import {formatTemporal} from '@simplepoint/shared/format/temporal';
 import TableActions from './Actions';
 export {default as TableActions} from './Actions';
 import ColumnFilter, {ColumnFilterType} from './ColumnFilter';
@@ -29,21 +30,26 @@ import QueryTools from './QueryTools';
 import {pageSizeOptions} from './pagination';
 import {visibleKeySignature} from './visibleKeys';
 import {encodeDocument, readDocument, validateView, type QueryContract} from './query';
-import ColumnSettings, {
+import {
   ColumnFixed,
   ColumnSetting,
   DEFAULT_TABLE_DISPLAY_SETTINGS,
   TableDisplaySettings,
   normalizeColumnSettings,
-} from './ColumnSettings';
+} from './settings';
 import {MAX_TABLE_COLUMN_WIDTH, normalizeTableDisplaySettings} from './settings';
+
+import CardView, {type CardViewConfig} from './CardView';
+import ViewToggle from './ViewToggle';
+import {useCardLayout} from './useCardLayout';
+
+const ColumnSettings = React.lazy(() => import('./ColumnSettings'));
 
 const MIN_COLUMN_WIDTH = 80;
 const DEFAULT_ICON_COLUMN_WIDTH = 80;
 const DEFAULT_NUMBER_COLUMN_WIDTH = 120;
 const DEFAULT_TEXT_COLUMN_WIDTH = 150;
 
-const preferenceUrl = (key: string) => `/common/users/preferences?key=${encodeURIComponent(key)}`;
 
 export type TableButtonProps = ButtonProps & {
   key: string;
@@ -57,6 +63,7 @@ export type TableButtonProps = ButtonProps & {
 };
 
 export interface TableProps<T> {
+  cards?: CardViewConfig | false;
   refresh: () => void;
   pageable: Page<T>;
   schema: RJSFSchema | any[];
@@ -154,19 +161,6 @@ const resolveDictionaryOptions = (schemaDef: any): Array<{value: string; label: 
       label: resolveI18nLabel(option?.title ?? option?.label ?? option?.const ?? option?.value),
     }));
 };
-
-/** Read a stable user identifier from the session cache written by useUserInfo(). */
-function getUserId(): string {
-  try {
-    const raw = sessionStorage.getItem('sp.userinfo');
-    if (raw) {
-      const info = JSON.parse(raw) as Record<string, unknown>;
-      const id = info?.sub ?? info?.id ?? info?.username ?? info?.preferred_username;
-      if (id != null) return String(id);
-    }
-  } catch { /* ignore */ }
-  return 'anonymous';
-}
 
 const normalizeTreeRows = <T extends object>(rows: T[]): T[] => {
   let changed = false;
@@ -277,118 +271,32 @@ const App = <T extends object = any>(props: TableProps<T>) => {
   const columnIdentity = useMemo(() => visibleKeySignature(properties), [properties]);
   const visibleKeys = useMemo<string[]>(() => JSON.parse(columnIdentity), [columnIdentity]);
 
-  // Keys are scoped by userId so each user gets independent settings on the same browser.
-  const storageKey = useMemo(() => {
-    if (!props.storageKey) return undefined;
-    return `sp.table.cols.${getUserId()}.${props.storageKey}`;
-  }, [props.storageKey]);
-
-  const widthStorageKey = useMemo(() => {
-    if (!props.storageKey) return undefined;
-    return `sp.table.widths.${getUserId()}.${props.storageKey}`;
-  }, [props.storageKey]);
-
-  const displayStorageKey = useMemo(() => {
-    if (!props.storageKey) return undefined;
-    return `sp.table.display.${getUserId()}.${props.storageKey}`;
-  }, [props.storageKey]);
-
-  // Backend preference keys (userId is implicit — the server scopes by JWT sub)
-  const apiColsKey = props.storageKey ? `sp.table.cols.${props.storageKey}` : undefined;
-  const apiWidthsKey = props.storageKey ? `sp.table.widths.${props.storageKey}` : undefined;
-  const apiDisplayKey = props.storageKey ? `sp.table.display.${props.storageKey}` : undefined;
-
-  const [colConfigs, setColConfigs] = useState<Record<string, StoredColConfig>>({});
-  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
-    if (!props.storageKey) return {};
-    try {
-      const key = `sp.table.widths.${getUserId()}.${props.storageKey}`;
-      const raw = localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as Record<string, number>) : {};
-    } catch { return {}; }
-  });
+  const user = preferenceUser();
+  const columnsPreference = usePreference<Record<string, StoredColConfig>>(
+    props.storageKey ? `sp.table.cols.${props.storageKey}` : undefined, {}, raw => {
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+      return Object.fromEntries(Object.entries(raw).filter(([, v]) => typeof v === 'boolean' || v && typeof v === 'object')
+        .map(([key, value]) => {
+          if (typeof value === 'boolean') return [key, {visible: value}];
+          const stored = value as Partial<StoredColConfig>;
+          return [key, {visible: typeof stored.visible === 'boolean' ? stored.visible : true,
+            ...('fixed' in stored ? {fixed: stored.fixed === 'left' || stored.fixed === 'right' ? stored.fixed : null} : {}),
+            ...(Number.isSafeInteger(stored.order) && stored.order! >= 0 ? {order: stored.order} : {})}];
+        }));
+    }, props.storageKey ? `sp.table.cols.${user}.${props.storageKey}` : undefined);
+  const widthsPreference = usePreference<Record<string, number>>(
+    props.storageKey ? `sp.table.widths.${props.storageKey}` : undefined, {}, raw =>
+      raw && typeof raw === 'object' && !Array.isArray(raw) ? Object.fromEntries(Object.entries(raw)
+        .filter(([, width]) => typeof width === 'number' && Number.isFinite(width) && width >= MIN_COLUMN_WIDTH)) : {},
+    props.storageKey ? `sp.table.widths.${user}.${props.storageKey}` : undefined);
+  const displayPreference = usePreference(props.storageKey ? `sp.table.display.${props.storageKey}` : undefined,
+    DEFAULT_TABLE_DISPLAY_SETTINGS, raw => normalizeTableDisplaySettings(raw as Partial<TableDisplaySettings>),
+    props.storageKey ? `sp.table.display.${user}.${props.storageKey}` : undefined);
+  const {value: colConfigs, setValue: setColConfigs} = columnsPreference;
+  const {value: colWidths, setValue: setColWidths} = widthsPreference;
+  const {value: displaySettings, setValue: setDisplaySettings} = displayPreference;
   const [settingsOpen, setSettingsOpen] = useState(false);
-
-  // Debounce timers for backend saves
-  const colSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const widthSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const displaySaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Skip initial-load triggers
-  const colConfigsInitialized = useRef(false);
-  const colWidthsInitialized = useRef(false);
-  const displayInitialized = useRef(false);
-  const [displaySettings, setDisplaySettings] = useState<TableDisplaySettings>(DEFAULT_TABLE_DISPLAY_SETTINGS);
   const [isFullscreen, setIsFullscreen] = useState(false);
-
-  // Load from localStorage first (instant), then fetch backend (async override)
-  useEffect(() => {
-    colConfigsInitialized.current = false;
-    const base: Record<string, StoredColConfig> = {};
-    visibleKeys.forEach((k) => { base[k] = {visible: true}; });
-    try {
-      if (storageKey) {
-        const raw = localStorage.getItem(storageKey);
-        if (raw) {
-          const saved = JSON.parse(raw) as Record<string, any>;
-          const firstVal = saved[Object.keys(saved)[0]];
-          const isOldFormat = typeof firstVal === 'boolean';
-          visibleKeys.forEach((k) => {
-            if (isOldFormat) {
-              if (typeof saved[k] === 'boolean') base[k] = {visible: saved[k]};
-            } else if (saved[k] && typeof saved[k] === 'object') {
-              base[k] = saved[k] as StoredColConfig;
-            }
-          });
-        }
-      }
-    } catch { /* ignore */ }
-    setColConfigs(base);
-
-    // Async override from backend
-    if (apiColsKey) {
-      get<string | undefined>(preferenceUrl(apiColsKey))
-        .then(res => {
-          const raw = res;
-          if (!raw) return;
-          const saved = JSON.parse(raw) as Record<string, any>;
-          setColConfigs(prev => {
-            const next = {...prev};
-            visibleKeys.forEach((k) => {
-              if (saved[k] && typeof saved[k] === 'object') next[k] = saved[k] as StoredColConfig;
-            });
-            return next;
-          });
-          if (storageKey) {
-            try { localStorage.setItem(storageKey, raw); } catch { /* ignore */ }
-          }
-        })
-        .catch(() => { /* silently ignore — use localStorage fallback */ })
-        .finally(() => { colConfigsInitialized.current = true; });
-    } else {
-      colConfigsInitialized.current = true;
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleKeys, storageKey, apiColsKey]);
-
-  // Persist to localStorage + debounce backend save whenever configs change
-  useEffect(() => {
-    if (!colConfigsInitialized.current) return;
-    try {
-      if (storageKey && Object.keys(colConfigs).length) {
-        const payload: Record<string, StoredColConfig> = {};
-        visibleKeys.forEach((k) => { if (colConfigs[k]) payload[k] = colConfigs[k]; });
-        const json = JSON.stringify(payload);
-        localStorage.setItem(storageKey, json);
-        if (apiColsKey) {
-          if (colSaveTimer.current) clearTimeout(colSaveTimer.current);
-          colSaveTimer.current = setTimeout(() => {
-            put(preferenceUrl(apiColsKey), {value: json})
-              .catch(() => { /* ignore */ });
-          }, 800);
-        }
-      }
-    } catch { /* ignore */ }
-  }, [colConfigs, visibleKeys, storageKey, apiColsKey]);
 
   // Build ColumnSetting[] for the settings drawer (sorted by user order)
   const settingsItems = useMemo<ColumnSetting[]>(() => {
@@ -424,125 +332,21 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     setColConfigs(next);
     setColWidths(nextWidths);
     setDisplaySettings(nextDisplaySettings);
-  }, []);
+  }, [setColConfigs, setColWidths, setDisplaySettings]);
 
-  const handleSettingsReset = useCallback(() => {
-    try {
-      if (storageKey) localStorage.removeItem(storageKey);
-      if (widthStorageKey) localStorage.removeItem(widthStorageKey);
-      if (displayStorageKey) localStorage.removeItem(displayStorageKey);
-    } catch { /* ignore */ }
-    if (apiColsKey) {
-      request(preferenceUrl(apiColsKey), {method: 'DELETE'})
-        .catch(() => { /* ignore */ });
-    }
-    if (apiWidthsKey) {
-      request(preferenceUrl(apiWidthsKey), {method: 'DELETE'})
-        .catch(() => { /* ignore */ });
-    }
-    if (apiDisplayKey) {
-      request(preferenceUrl(apiDisplayKey), {method: 'DELETE'})
-        .catch(() => { /* ignore */ });
-    }
-    const next: Record<string, StoredColConfig> = {};
-    visibleKeys.forEach((k) => { next[k] = {visible: true}; });
-    setColConfigs(next);
-    setColWidths({});
-    setDisplaySettings(DEFAULT_TABLE_DISPLAY_SETTINGS);
-  }, [storageKey, widthStorageKey, displayStorageKey, apiColsKey, apiWidthsKey, apiDisplayKey, visibleKeys]);
+  const handleSettingsReset = () => {
+    columnsPreference.reset(); widthsPreference.reset(); displayPreference.reset();
+  };
 
   const handleResize = useCallback((key: string) => (_: React.SyntheticEvent, {size}: {size: {width: number; height: number}}) => {
     const width = Math.max(MIN_COLUMN_WIDTH, Math.round(size.width));
     setColWidths(prev => ({...prev, [key]: width}));
-  }, []);
-
-  // Async load column widths from backend (overrides localStorage if server has newer data)
-  useEffect(() => {
-    colWidthsInitialized.current = false;
-    if (!apiWidthsKey) { colWidthsInitialized.current = true; return; }
-    get<string | undefined>(preferenceUrl(apiWidthsKey))
-      .then(res => {
-        const raw = res;
-        if (!raw) return;
-        const saved = JSON.parse(raw) as Record<string, number>;
-        setColWidths(saved);
-        if (widthStorageKey) {
-          try { localStorage.setItem(widthStorageKey, raw); } catch { /* ignore */ }
-        }
-      })
-      .catch(() => { /* silently ignore */ })
-      .finally(() => { colWidthsInitialized.current = true; });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiWidthsKey, widthStorageKey]);
-
-  // Persist column widths whenever they change
-  useEffect(() => {
-    if (!colWidthsInitialized.current) return;
-    try {
-      if (widthStorageKey) localStorage.setItem(widthStorageKey, JSON.stringify(colWidths));
-    } catch { /* ignore */ }
-    if (apiWidthsKey) {
-      if (widthSaveTimer.current) clearTimeout(widthSaveTimer.current);
-      widthSaveTimer.current = setTimeout(() => {
-        put(preferenceUrl(apiWidthsKey), {value: JSON.stringify(colWidths)})
-          .catch(() => { /* ignore */ });
-      }, 800);
-    }
-  }, [colWidths, widthStorageKey, apiWidthsKey]);
-
-  // Display and pagination preferences use the same local-first, account-synced strategy.
-  useEffect(() => {
-    displayInitialized.current = false;
-    let localSettings = DEFAULT_TABLE_DISPLAY_SETTINGS;
-    try {
-      if (displayStorageKey) {
-        const raw = localStorage.getItem(displayStorageKey);
-        if (raw) localSettings = normalizeTableDisplaySettings(JSON.parse(raw));
-      }
-    } catch { /* ignore */ }
-    setDisplaySettings(localSettings);
-
-    if (!apiDisplayKey) {
-      displayInitialized.current = true;
-      return;
-    }
-    get<string | undefined>(preferenceUrl(apiDisplayKey))
-      .then(raw => {
-        if (!raw) return;
-        const saved = normalizeTableDisplaySettings(JSON.parse(raw));
-        setDisplaySettings(saved);
-        if (displayStorageKey) {
-          try { localStorage.setItem(displayStorageKey, JSON.stringify(saved)); } catch { /* ignore */ }
-        }
-      })
-      .catch(() => { /* use localStorage fallback */ })
-      .finally(() => { displayInitialized.current = true; });
-  }, [apiDisplayKey, displayStorageKey]);
-
-  useEffect(() => {
-    if (!displayInitialized.current) return;
-    const json = JSON.stringify(displaySettings);
-    try {
-      if (displayStorageKey) localStorage.setItem(displayStorageKey, json);
-    } catch { /* ignore */ }
-    if (apiDisplayKey) {
-      if (displaySaveTimer.current) clearTimeout(displaySaveTimer.current);
-      displaySaveTimer.current = setTimeout(() => {
-        put(preferenceUrl(apiDisplayKey), {value: json}).catch(() => { /* ignore */ });
-      }, 800);
-    }
-  }, [displaySettings, displayStorageKey, apiDisplayKey]);
+  }, [setColWidths]);
 
   useEffect(() => {
     const handleFullscreenChange = () => setIsFullscreen(document.fullscreenElement === containerRef.current);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  useEffect(() => () => {
-    if (colSaveTimer.current) clearTimeout(colSaveTimer.current);
-    if (widthSaveTimer.current) clearTimeout(widthSaveTimer.current);
-    if (displaySaveTimer.current) clearTimeout(displaySaveTimer.current);
   }, []);
 
   const toggleFullscreen = useCallback(() => {
@@ -573,7 +377,9 @@ const App = <T extends object = any>(props: TableProps<T>) => {
         const hasOptions = resolvedOptions.length > 0;
         const dictionaryOptions = dictionaryCode || hasOptions ? resolvedOptions : undefined;
 
-        const renderCell = isBoolean
+        const renderCell = ['date', 'date-time', 'time'].includes((schemaDef as any)?.format)
+          ? (val: unknown) => formatTemporal(val, {locale, kind: (schemaDef as any).format === 'date' ? 'date' : (schemaDef as any).format === 'time' ? 'time' : 'datetime'})
+          : isBoolean
           ? (val: any) => {
             const active = val === true || val === 1 || val === 'true' || val === '1';
             return (
@@ -751,7 +557,8 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           const extra = props.rowLeadingExtra?.(record);
           const rendered = original ? original(value, record, rowIndex) : value;
           if (!extra) return rendered;
-          const wrap = (content: React.ReactNode) => <Space size={4} wrap>{content}{extra}</Space>;
+          const wrap = (content: React.ReactNode) => <Space size={4} wrap>
+              <PreferenceFeedback preferences={[columnsPreference, widthsPreference, displayPreference]}/>{content}{extra}</Space>;
           if (rendered && typeof rendered === 'object' && !React.isValidElement(rendered)
             && !('$$typeof' in rendered) && 'children' in rendered) {
             return {...rendered, children: wrap(rendered.children)};
@@ -842,12 +649,31 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     onChange: (keys: React.Key[], rows: T[]) => onSelectChange(keys, rows),
   };
 
+  useEffect(() => {
+    if (props.loading || !selectedRowKeys.length) return;
+    const visibleKeys = selectedRowKeys.filter(key => rowByKey.has(key));
+    if (visibleKeys.length !== selectedRowKeys.length) {
+      onSelectChange(visibleKeys, visibleKeys.map(key => rowByKey.get(key)!));
+    }
+  }, [props.loading, rowByKey, selectedRowKeys, onSelectChange]);
+
   const emptyText = useMemo(() => (
     <div className="sp-table-empty">
       <InboxOutlined className="sp-table-empty-icon" />
       <div className="sp-table-empty-title">{t('table.emptyText', '暂无数据')}</div>
     </div>
   ), [t]);
+
+  const cardsSupported = props.cards !== false && !props.expandable
+    && !dataSource.some(record => Array.isArray((record as any).children) && (record as any).children.length);
+  const viewMode = cardsSupported ? displaySettings.viewMode : 'table';
+  const changeCardPage = (current: number, pageSize: number) => {
+    onSelectChange([], []);
+    props.onChange?.({current, pageSize}, {}, undefined, {action: 'paginate'});
+  };
+  const cardLayout = useCardLayout(containerRef, viewMode, cardsSupported, displaySettings.cardRows,
+    pagination.current ?? 1, pagination.pageSize ?? 10, pagination.total ?? 0, changeCardPage,
+    contract?.maxPageSize, props.cards ? props.cards.minWidth : undefined);
 
   return (
     <div ref={containerRef} className="sp-table-root" style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
@@ -871,6 +697,10 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           </Col>
           <Col className="sp-table-toolbar-actions">
             <Space size={4} wrap>
+              <PreferenceFeedback preferences={[columnsPreference, widthsPreference, displayPreference]}/>
+              {cardsSupported && <ViewToggle mode={viewMode} rows={displaySettings.cardRows}
+                onMode={viewMode => setDisplaySettings(previous => ({...previous, viewMode}))}
+                onRows={cardRows => setDisplaySettings(previous => ({...previous, cardRows}))} />}
               {contract?.version === 1 && props.onQueryChange && <QueryTools contract={contract} properties={properties}
                 filters={filters} sort={props.sorter} storageKey={props.storageKey} onApply={props.onQueryChange} />}
               {Object.keys(filters).length > 0 && (
@@ -922,7 +752,26 @@ const App = <T extends object = any>(props: TableProps<T>) => {
         </Row>
       </div>
       <div style={{flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
-        <AntTable<T>
+        {viewMode === 'cards' ? <CardView<T> data={dataSource} columns={columns}
+          columnsCount={cardLayout.columns} config={props.cards || undefined} rowKey={keyOfRecord}
+          selection={rowSelection} loading={props.loading} emptyText={emptyText}
+          pagination={{...pagination, onChange: changeCardPage}}
+          onRow={record => ({onClick: event => {
+            if (!isRowSelectionClick(event) || props.rowSelection?.isRowSelectable?.(record) === false) return;
+            const key = keyOfRecord(record);
+            const keys = selectedRowKeys.includes(key) ? selectedRowKeys.filter(item => item !== key) : [...selectedRowKeys, key];
+            onSelectChange(keys, keys.map(item => rowByKey.get(item)).filter((row): row is T => !!row));
+            props.onRowClick?.(record, key);
+          }, onDoubleClick: event => {
+            if (!isRowSelectionClick(event) || props.rowSelection?.isRowSelectable?.(record) === false) return;
+            onSelectChange([keyOfRecord(record)], [record]);
+            props.onRowDoubleClick?.(record, keyOfRecord(record));
+          }})}
+          actions={record => <TableActions appearance="row" buttons={props.buttons?.filter(button => (button.argumentMinSize ?? 0) === 1
+            && (button.argumentMaxSize == null || button.argumentMaxSize >= 1))}
+            selectedKeys={[keyOfRecord(record)]} selectedRows={[record]} onButtonEvents={props.onButtonEvents}
+            isButtonDisabled={props.isButtonDisabled} />}
+        /> : <AntTable<T>
           className={[
             'sp-table-fill',
             displaySettings.striped && 'sp-table-striped',
@@ -965,16 +814,16 @@ const App = <T extends object = any>(props: TableProps<T>) => {
             ? columns.reduce((width, column) => width + (typeof column.width === 'number' ? column.width : 150), 48) : 'max-content'}}
           locale={{emptyText}}
           components={{header: {cell: ResizableTitle}}}
-        />
+        />}
       </div>
-      <ColumnSettings
+      {settingsOpen && <React.Suspense fallback={null}><ColumnSettings
         open={settingsOpen}
         settings={settingsItems}
         displaySettings={displaySettings}
         onSave={handleSettingsSave}
         onClose={() => setSettingsOpen(false)}
         onReset={handleSettingsReset}
-      />
+      /></React.Suspense>}
     </div>
   );
 };

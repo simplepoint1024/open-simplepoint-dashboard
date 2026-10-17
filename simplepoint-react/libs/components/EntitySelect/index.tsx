@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {Button, Select, Spin, Typography} from 'antd';
 import {useInfiniteQuery, useQueryClient} from '@tanstack/react-query';
 import {get, useData} from '@simplepoint/shared/api/methods';
@@ -34,8 +34,13 @@ interface EntitySelectBaseProps {
   className?: string;
   ariaLabel?: string;
   source?: EntitySelectSource;
+  /** Domain renderers receive the same authorized metadata for search and exact hydration. */
+  renderOption?: (option: EntityOption) => ReactNode;
+  renderSelected?: (option: EntityOption) => ReactNode;
   status?: 'error' | 'warning';
   maxTagCount?: number | 'responsive';
+  autoFocus?: boolean;
+  defaultOpen?: boolean;
   onBlur?: () => void;
   onFocus?: () => void;
 }
@@ -68,7 +73,7 @@ function EntitySelectSession(props: EntitySelectProps) {
   const client = useQueryClient();
   const pageSize = Number.isSafeInteger(source?.pageSize) && source!.pageSize! > 0 ? Math.min(source!.pageSize!, 100) : 20;
   const debounceMs = Number.isSafeInteger(source?.debounceMs) && source!.debounceMs! > 0 ? Math.min(source!.debounceMs!, 60000) : 250;
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(props.defaultOpen ?? false);
   const [search, setSearch] = useState('');
   const [keyword, setKeyword] = useState('');
   const [selected, setSelected] = useState<EntityOption[]>([]);
@@ -126,13 +131,17 @@ function EntitySelectSession(props: EntitySelectProps) {
   const failure = pages.error;
   const unavailable = values.filter(id => !resolved.has(id));
   return <><Select<string | string[]>
-    id={id} className={className} aria-label={ariaLabel} style={{width: '100%'}} showSearch filterOption={false}
+    id={id} className={className} aria-label={ariaLabel} style={{width: '100%'}} showSearch filterOption={false} autoFocus={props.autoFocus}
     allowClear={allowClear} disabled={disabled} value={value || undefined} placeholder={placeholder} status={props.status}
     maxTagCount={props.maxTagCount} onBlur={props.onBlur} onFocus={props.onFocus}
     mode={props.multiple ? 'multiple' : undefined} maxCount={props.multiple ? props.maxCount : undefined}
-    labelRender={label => resolved.get(String(label.value))?.label
-      ?? (lookup.isFetching ? t('form.remoteSelect.selectedLoading', '正在加载已选项')
-        : t('form.remoteSelect.selectedUnavailable', '已选项不可用'))}
+    optionRender={props.renderOption ? option => props.renderOption!(option.data as EntityOption) : undefined}
+    labelRender={label => {
+      const option = resolved.get(String(label.value));
+      return option ? props.renderSelected?.(option) ?? option.label
+        : lookup.isFetching ? t('form.remoteSelect.selectedLoading', '正在加载已选项')
+          : t('form.remoteSelect.selectedUnavailable', '已选项不可用');
+    }}
     options={visible} open={open && active && !disabled}
     loading={pages.isFetching || lookup.isFetching || search !== keyword} searchValue={search}
     onOpenChange={next => {setOpen(next); if (!next) setSearch('');}}

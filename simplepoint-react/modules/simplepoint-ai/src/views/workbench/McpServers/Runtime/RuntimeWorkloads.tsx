@@ -193,7 +193,7 @@ const RuntimeWorkloads = ({
       title: t('ai.runtime.field.startedAt', '启动时间'),
       dataIndex: 'startedAt',
       width: 175,
-      render: formatDateTime,
+      render: (value?: string) => formatDateTime(value),
     },
     {
       title: t('ai.runtime.field.lastError', '最后错误'),

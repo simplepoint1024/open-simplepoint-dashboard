@@ -17,9 +17,11 @@ import org.simplepoint.plugin.dna.runtime.configuration.DnaRuntimePublicationPro
 import org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationStateService.PersistedStep;
 import org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationStateService.PublicationClaim;
 import org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationStateService.PublicationWork;
+import org.simplepoint.plugin.dna.runtime.service.record.RecordWriteFencePreparation;
 import org.simplepoint.plugin.dna.runtime.service.schema.InitialSchemaPlan;
 import org.simplepoint.plugin.dna.runtime.service.schema.JdbcPhysicalSchemaBackend;
 import org.simplepoint.plugin.dna.runtime.service.schema.PlannedSchemaStep;
+import org.simplepoint.plugin.dna.runtime.service.schema.RecordJournalProvisioner;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext.RuntimeActor;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,8 @@ public class SchemaPublicationServiceImpl implements SchemaPublicationService {
   private final JdbcPhysicalSchemaBackend backend;
   private final RuntimeMetadataCacheInvalidator cacheInvalidator;
   private final long staleAfterMs;
+  private final RecordJournalProvisioner journal;
+  private final RecordWriteFencePreparation writeFences;
 
   /** Creates the publication orchestrator with a mandatory cache invalidation bridge. */
   public SchemaPublicationServiceImpl(
@@ -40,13 +44,17 @@ public class SchemaPublicationServiceImpl implements SchemaPublicationService {
       final SchemaPublicationStateService stateService,
       final JdbcPhysicalSchemaBackend backend,
       final RuntimeMetadataCacheInvalidator cacheInvalidator,
-      final DnaRuntimePublicationProperties publicationProperties
+      final DnaRuntimePublicationProperties publicationProperties,
+      final RecordJournalProvisioner journal,
+      final RecordWriteFencePreparation writeFences
   ) {
     this.requestContext = requestContext;
     this.stateService = stateService;
     this.backend = backend;
     this.cacheInvalidator = cacheInvalidator;
     this.staleAfterMs = publicationProperties.getStaleAfterMs();
+    this.journal = journal;
+    this.writeFences = writeFences;
   }
 
   @Override
@@ -62,15 +70,40 @@ public class SchemaPublicationServiceImpl implements SchemaPublicationService {
     }
     RuntimeActor actor = requestContext.requireActor();
     PublicationClaim claim = stateService.claim(actor, physicalModelId, command);
-    return claim.execute()
-        ? execute(actor, claim.work())
-        : stateService.get(actor.tenantId(), claim.work().migrationId());
+    if (claim.execute()) {
+      return execute(actor, claim.work());
+    }
+    SchemaPublicationView existing = stateService.get(actor.tenantId(), claim.work().migrationId());
+    if (existing.status() == org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationStatus.ACTIVE) {
+      journal.prepare(claim.work().target());
+      writeFences.prepare(actor, claim.work().target());
+    }
+    return existing;
   }
 
   @Override
   public SchemaPublicationView get(final String migrationId) {
     RuntimeActor actor = requestContext.requireActor();
     return stateService.get(actor.tenantId(), requireId(migrationId));
+  }
+
+  @Override
+  public SchemaPublicationView getByTargetVersion(
+      final String physicalModelId,
+      final int targetVersion
+  ) {
+    if (targetVersion < 1) {
+      throw new DnaRuntimeException(
+          DnaRuntimeErrorCode.INVALID_ARGUMENT,
+          "targetVersion must be positive"
+      );
+    }
+    RuntimeActor actor = requestContext.requireActor();
+    return stateService.getByTargetVersion(
+        actor.tenantId(),
+        requireId(physicalModelId),
+        targetVersion
+    );
   }
 
   @Override
@@ -132,6 +165,8 @@ public class SchemaPublicationServiceImpl implements SchemaPublicationService {
       }
       stateService.ready(actor, work.migrationId(), work.executionToken(), plan);
       stateService.start(actor, work.migrationId(), work.executionToken());
+      journal.prepare(work.target());
+      writeFences.prepare(actor, work.target());
       executeSteps(actor, work, plan);
       stateService.verifying(actor, work.migrationId(), work.executionToken());
       PhysicalTableSnapshot verified = backend.inspect(work.target(), plan.dialectId());

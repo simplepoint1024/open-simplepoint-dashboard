@@ -11,7 +11,7 @@ import BindingEditor from './BindingEditor';
 import {usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
 
 type FormSchema = ComponentProps<typeof SForm>['schema'];
-const types: WorkflowVariable['type'][] = ['string', 'number', 'boolean', 'date', 'date-time', 'user', 'users', 'role', 'roles'];
+const types: WorkflowVariable['type'][] = ['string', 'number', 'decimal', 'boolean', 'date', 'date-time', 'user', 'users', 'role', 'roles'];
 const scopes: WorkflowVariable['scope'][] = ['start', 'task', 'both'];
 
 /** Client-only, bounded variable declarations. All persistence still uses the owning draft's revision. */
@@ -31,6 +31,7 @@ export default function ContractEditor({value, onChange, disabled, onBlockedChan
   useLayoutEffect(() => {onBlockedChange?.(blocked); return () => {onBlockedChange?.(false);};}, [blocked, onBlockedChange]);
   const typeLabels: Record<string, string> = {
     string: t('workflow.variable.type.string', '文本'), number: t('workflow.variable.type.number', '数值'),
+    decimal: t('workflow.variable.type.decimal', '精确数值'),
     boolean: t('workflow.variable.type.boolean', '布尔值'), date: t('workflow.variable.type.date', '日期'),
     'date-time': t('workflow.variable.type.date-time', '日期时间'), user: t('workflow.variable.type.user', '用户'),
     users: t('workflow.variable.type.users', '多个用户'), role: t('workflow.variable.type.role', '角色'),
@@ -85,7 +86,7 @@ export default function ContractEditor({value, onChange, disabled, onBlockedChan
     removingRef.current = undefined; setRemoving(undefined);
   };
   return <>
-    <BindingEditor elementId="process:start" binding={value.startBinding} disabled={disabled || blocked}
+    <BindingEditor elementId="process:start" binding={value.startBinding} variables={value.variables} disabled={disabled || blocked}
       onChange={startBinding => onChange({...value, startBinding})}/>
     <DataTable rowKey="name" storageKey="workflow.variable.contract" dataSource={value.variables}
       pagination={{pageSize: 10, showSizeChanger: true}}

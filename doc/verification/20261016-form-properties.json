@@ -1,0 +1,391 @@
+{
+  "verifiedAt": "2026-10-16T10:34:02.396Z",
+  "release": "20261016-form-properties1",
+  "changes": {
+    "components": [
+      "display.divider",
+      "layout.tabs",
+      "field.cascader",
+      "field.rating",
+      "field.switch",
+      "field.time",
+      "field.transfer",
+      "display.image",
+      "display.alert",
+      "display.progress",
+      "display.icon",
+      "display.markdown"
+    ],
+    "properties": "Toolbar icon opens right drawer; basic, field policy and default list order tabs all have icons",
+    "fieldPolicy": "Main and detail checkbox matrix: global readonly, create write/hidden, edit read/write/hidden; intersect server permissions and lifecycle policy; locked required fields must be supplied before initial draft",
+    "listOrder": "Drag and keyboard order by stable field identities; no canvas reorder or overwrite of existing personal table preferences",
+    "compatibility": "Optional versioned JSON preserves prior document checksums when unset; defaults, copies and runtime projections preserve settings",
+    "componentSafety": "Bounded cascading/transfer options, rating ranges, safe display URLs and Markdown without raw HTML; existing time microseconds preserved on unchanged values",
+    "extensibility": "Shared component registry, registered property tabs, SForm widgets and server component validation; mandatory conventions recorded in AGENTS.md"
+  },
+  "verification": {
+    "backend": {
+      "tests": 254,
+      "passed": 252,
+      "skipped": 2,
+      "failures": 0,
+      "errors": 0,
+      "modules": [
+        {
+          "module": "app-form-implementation",
+          "tests": 214,
+          "skipped": 2
+        },
+        {
+          "module": "service-app",
+          "tests": 40,
+          "skipped": 0
+        }
+      ],
+      "skippedCases": [
+        "ApplicationFormPostgresSchemaTest.freshBootstrapUsesThePlatformSqlInitializer",
+        "ApplicationFormPostgresSchemaTest.productionMigrationMatchesHibernateMappings"
+      ],
+      "scope": "Affected modules; not a full repository test run"
+    },
+    "frontend": {
+      "unitTests": 122,
+      "failed": 0,
+      "typecheckModules": 8,
+      "productionBuild": "all seven modules and common package",
+      "bundleBudgets": "passed",
+      "i18n": "passed",
+      "nativeUiAudit": {
+        "sourceFiles": 155,
+        "reviewed": 40,
+        "unreviewed": 0
+      }
+    },
+    "fixtureBrowser": {
+      "productionArtifacts": true,
+      "apiMode": "isolated fixtures",
+      "modules": 57,
+      "designer": "All 12 components, actual cascade and transfer interactions, safe Markdown, property policy matrix, keyboard reorder and undo, 1600/1024 layout, inline detail editing, publication and draft recovery, published CRUD"
+    },
+    "realEnvironment": {
+      "componentContract": {
+        "passed": true,
+        "at": "2026-10-16T10:27:17.382Z",
+        "types": [
+          "display.divider",
+          "layout.tabs",
+          "field.cascader",
+          "field.rating",
+          "field.switch",
+          "field.time",
+          "field.transfer",
+          "display.image",
+          "display.alert",
+          "display.progress",
+          "display.icon",
+          "display.markdown"
+        ],
+        "draftRoundTrip": true,
+        "mainAndDetailPolicies": true,
+        "invalidOptionsRejected": true,
+        "publishedVersionUnchanged": true,
+        "originalDraftRestored": true
+      },
+      "designer": {
+        "passed": true,
+        "at": "2026-10-16T10:32:17.470Z",
+        "components": [
+          "display.divider",
+          "layout.tabs",
+          "field.cascader",
+          "field.rating",
+          "field.switch",
+          "field.time",
+          "field.transfer",
+          "display.image",
+          "display.alert",
+          "display.progress",
+          "display.icon",
+          "display.markdown"
+        ],
+        "fieldMatrix": true,
+        "iconTabs": true,
+        "boundedAt1024": true,
+        "listDragHandles": true,
+        "detailFieldAndIndexIconTabs": true,
+        "businessMutations": 0
+      },
+      "details": {
+        "passed": true,
+        "at": "2026-10-16T10:32:01.993Z",
+        "forms": [
+          {
+            "code": "office_daily_report",
+            "inlineAddEditDelete": true,
+            "newestFirst": true,
+            "unicodeDraftPreserved": true,
+            "iconTextActions": true,
+            "scroll": {
+              "width": 1006,
+              "scrollWidth": 1860,
+              "height": 305,
+              "scrollHeight": 627
+            }
+          },
+          {
+            "code": "office_expense_claim",
+            "inlineAddEditDelete": true,
+            "newestFirst": true,
+            "unicodeDraftPreserved": true,
+            "iconTextActions": true,
+            "scroll": {
+              "width": 1006,
+              "scrollWidth": 1780,
+              "height": 305,
+              "scrollHeight": 627
+            }
+          }
+        ],
+        "businessMutations": 0
+      },
+      "records": {
+        "passed": true,
+        "at": "2026-10-16T10:32:40.249Z",
+        "recordIds": [
+          "d94a724f-995b-5823-a1a1-db55c8c8e8ea",
+          "38e1c317-43ef-525b-adc2-2c3bb649ed6f"
+        ],
+        "unicodeRoundTrip": true,
+        "detailPrependEditDelete": true,
+        "newestBeforePagination": true,
+        "updatingOlderRecordDoesNotMoveItFirst": true,
+        "cleanedRecordIds": [
+          "d94a724f-995b-5823-a1a1-db55c8c8e8ea",
+          "38e1c317-43ef-525b-adc2-2c3bb649ed6f"
+        ],
+        "activeTemporaryRecords": 0,
+        "cleanupReadBackVerified": true
+      },
+      "scope": "Real service contract and temporary draft save/read/reject/restore; real designer and existing business pages; real APP/DNA aggregate CRUD. New component runtime combinations and policy bypass are covered by component/server tests and fixture browser scenarios; no new published business version created."
+    }
+  },
+  "deployment": {
+    "passed": true,
+    "at": "2026-10-16T10:27:06.914Z",
+    "version": "20261016-form-properties1",
+    "sourceDigest": "2eac4987faaa2b989127b79f12ea01580ea31369f76fde8e8a2fa0021125ea5b",
+    "services": [
+      {
+        "service": "authorization",
+        "version": "20261016-form-properties1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 258,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "common",
+        "version": "20261016-form-properties1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 317,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "auditing",
+        "version": "20261016-form-properties1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 246,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "dna",
+        "version": "20261016-form-properties1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 294,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "ai",
+        "version": "20261016-form-properties1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 326,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "app",
+        "version": "20261016-form-properties1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 261,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "workflow",
+        "version": "20261016-form-properties1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 298,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "mcp-gateway",
+        "version": "20261016-form-properties1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 180,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "host",
+        "version": "20261016-form-properties1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 226,
+        "jarHashesMatch": true
+      }
+    ],
+    "allNineServiceHealth": "passing",
+    "rabbitmq": "healthy",
+    "rollbackImagesAndDatabaseBackup": true,
+    "sqlMigrationRequired": false,
+    "runtimeBase": {
+      "base": "eclipse-temurin@sha256:61d6c7b34d36aee3f45d043101259f97f3c6d428dc2a6f75513789983c5e254f",
+      "javaVersion": "JAVA_VERSION=jdk-21.0.12+8",
+      "services": [
+        {
+          "service": "authorization",
+          "originalLayers": 60,
+          "originalBytes": 7002455100,
+          "exactBaseLayersPreserved": true,
+          "startupScriptCopiedFromRunningContainer": true
+        },
+        {
+          "service": "common",
+          "originalLayers": 98,
+          "originalBytes": 12161341031,
+          "exactBaseLayersPreserved": true,
+          "startupScriptCopiedFromRunningContainer": true
+        },
+        {
+          "service": "auditing",
+          "originalLayers": 66,
+          "originalBytes": 7319109303,
+          "exactBaseLayersPreserved": true,
+          "startupScriptCopiedFromRunningContainer": true
+        },
+        {
+          "service": "dna",
+          "originalLayers": 77,
+          "originalBytes": 9075107318,
+          "exactBaseLayersPreserved": true,
+          "startupScriptCopiedFromRunningContainer": true
+        },
+        {
+          "service": "ai",
+          "originalLayers": 66,
+          "originalBytes": 9326060801,
+          "exactBaseLayersPreserved": true,
+          "startupScriptCopiedFromRunningContainer": true
+        },
+        {
+          "service": "app",
+          "originalLayers": 102,
+          "originalBytes": 11922628829,
+          "exactBaseLayersPreserved": true,
+          "startupScriptCopiedFromRunningContainer": true
+        },
+        {
+          "service": "workflow",
+          "originalLayers": 96,
+          "originalBytes": 11684024774,
+          "exactBaseLayersPreserved": true,
+          "startupScriptCopiedFromRunningContainer": true
+        },
+        {
+          "service": "mcp-gateway",
+          "originalLayers": 58,
+          "originalBytes": 5526257676,
+          "exactBaseLayersPreserved": true,
+          "startupScriptCopiedFromRunningContainer": true
+        },
+        {
+          "service": "host",
+          "originalLayers": 78,
+          "originalBytes": 8879174230,
+          "exactBaseLayersPreserved": true,
+          "startupScriptCopiedFromRunningContainer": true
+        }
+      ]
+    },
+    "images": [
+      {
+        "service": "authorization",
+        "image": "sha256:a1824a8aa048ecb1d13fdcd89e7ad1bd4438f6199129c6165b2f25b08dddd039",
+        "layers": 10,
+        "bytes": 662680912,
+        "exactRuntimeBaseLayers": true
+      },
+      {
+        "service": "common",
+        "image": "sha256:a8b8986aa5fc742435287014f47c951fa28d2b4f68f4b6ab203074a627935144",
+        "layers": 10,
+        "bytes": 685771815,
+        "exactRuntimeBaseLayers": true
+      },
+      {
+        "service": "auditing",
+        "image": "sha256:cfcb87d05a78343b3017de66cfc59ed737321c6e6075cdf2a584101d3562ae40",
+        "layers": 10,
+        "bytes": 655683118,
+        "exactRuntimeBaseLayers": true
+      },
+      {
+        "service": "dna",
+        "image": "sha256:4d0541001fd67755b7a77ac2c8668616e98ef5fae8997384410afb4eb77fbca5",
+        "layers": 10,
+        "bytes": 711223677,
+        "exactRuntimeBaseLayers": true
+      },
+      {
+        "service": "ai",
+        "image": "sha256:baf29746e1ae1f0d7575a95a6f3e75220e59ff717fbfafd3fd1a9d1dc93c9c38",
+        "layers": 10,
+        "bytes": 727604976,
+        "exactRuntimeBaseLayers": true
+      },
+      {
+        "service": "app",
+        "image": "sha256:d2ac2371afb9e106543b442cda43ca051baf09ae11fa580e54321d903cc9b93a",
+        "layers": 10,
+        "bytes": 663032382,
+        "exactRuntimeBaseLayers": true
+      },
+      {
+        "service": "workflow",
+        "image": "sha256:528dda83e99c3129bf05b482ea50388afecb55508d227721ce687c001e27660c",
+        "layers": 10,
+        "bytes": 676343340,
+        "exactRuntimeBaseLayers": true
+      },
+      {
+        "service": "mcp-gateway",
+        "image": "sha256:326cbd0930efb8d0d0f3005165491816b54080384349fc852e6b58452a61d69f",
+        "layers": 10,
+        "bytes": 613596886,
+        "exactRuntimeBaseLayers": true
+      },
+      {
+        "service": "host",
+        "image": "sha256:7237469986a2c97240a0bc7635075450b1540eac5842ea1b7a8cc6ef84efcaaf",
+        "layers": 10,
+        "bytes": 657814064,
+        "exactRuntimeBaseLayers": true
+      }
+    ]
+  },
+  "relatedMigration": "20261016-docker-data-migration.json"
+}

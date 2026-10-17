@@ -1,6 +1,7 @@
 import api from '@/api';
 import SimpleTable from '@simplepoint/components/SimpleTable';
-import EntitySelect, {type EntitySelectSource} from '@simplepoint/components/EntitySelect';
+import UserSelect from '@simplepoint/components/UserSelect';
+import {userPickerOption} from '@simplepoint/components/UserSelect/model';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {useSchema} from '@simplepoint/shared/hooks/useSchema';
@@ -23,11 +24,7 @@ type Grant = {
 };
 type UserOption = {id: string; name?: string; email?: string; phoneNumber?: string};
 
-const userLabel = (user: UserOption) => {
-  const primary = user.name || user.email || user.phoneNumber || user.id;
-  const secondary = [user.email, user.phoneNumber].filter(value => value && value !== primary);
-  return secondary.length ? `${primary} · ${secondary.join(' · ')}` : primary;
-};
+const userLabel = (user: UserOption, unnamed: string) => userPickerOption(user, unnamed)?.label ?? unnamed;
 
 function FederationJdbcUserSession() {
   const {t, ensure, locale} = useI18n();
@@ -39,14 +36,7 @@ function FederationJdbcUserSession() {
   const [pickedUser, setPickedUser] = useState<UserOption>();
   const [assignmentBusy, setAssignmentBusy] = useState(false);
   const assignmentBusyRef = useRef(false);
-  const userSource = useMemo<EntitySelectSource>(() => ({key: 'dna-jdbc-user-options', minSearchLength: 3,
-    searchParams: (keyword, page, size) => ({keyword, page, size}),
-    option: row => typeof row.id === 'string' && row.id
-      ? {value: row.id, label: userLabel(row as UserOption)} : undefined,
-    // This create-only directory supports prefix searches, not lookup by arbitrary user ID.
-    // Selected labels are retained by EntitySelect; an unknown persisted ID must not trigger a broad search.
-    resolve: async () => [],
-  }), []);
+
 
   useEffect(() => { void ensure(baseConfig.i18nNamespaces); }, [ensure, locale]);
 
@@ -115,14 +105,14 @@ function FederationJdbcUserSession() {
         setPickerOpen(false);
         openConfiguration(pickedUser);
       }}>
-      <EntitySelect endpoint={`${endpoint}/user-options`} source={userSource} disabled={!canCreate}
+      <UserSelect directory="accounts" accountOptions={{endpoint: `${endpoint}/user-options`}} resolveAccounts={false} disabled={!canCreate}
         placeholder={t('dna.federation.jdbcUsers.page.search.userPlaceholder', '输入邮箱或手机号前缀（至少 3 位）')}
         value={pickedUser?.id} onChange={(value, option) => setPickedUser(value && option ? {id: value, name: option.label} : undefined)}/>
     </Modal>
 
     <Drawer rootClassName="sp-simple-table-drawer"
       title={selectedUser ? t('dna.federation.jdbcUsers.page.drawer.title',
-        '分配数据源 - {user}', {user: userLabel(selectedUser)}) : undefined}
+        '分配数据源 - {user}', {user: userLabel(selectedUser, t('form.userPicker.unnamed', '未设置姓名或邮箱'))}) : undefined}
       open={drawerOpen} onClose={() => {
         if (!assignmentBusyRef.current) {setDrawerOpen(false); setSelectedUser(undefined);}
       }} closable={!assignmentBusy} maskClosable={!assignmentBusy} keyboard={!assignmentBusy}

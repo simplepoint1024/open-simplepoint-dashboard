@@ -10,7 +10,8 @@ public final class WorkflowVariableNames {
       "execution", "task", "processEngine", "processEngineConfiguration", "delegateTask",
       "class", "Runtime", "ProcessBuilder", "new", "true", "false", "null", "and", "or", "not",
       "eq", "ne", "gt", "lt", "ge", "le", "empty", "div", "mod", "instanceof",
-      "__proto__", "constructor", "prototype"
+      "__proto__", "constructor", "prototype", "loopCounter", "nrOfInstances",
+      "nrOfActiveInstances", "nrOfCompletedInstances"
   );
 
   /** Also rejects names that the expression policy treats case-insensitively. */

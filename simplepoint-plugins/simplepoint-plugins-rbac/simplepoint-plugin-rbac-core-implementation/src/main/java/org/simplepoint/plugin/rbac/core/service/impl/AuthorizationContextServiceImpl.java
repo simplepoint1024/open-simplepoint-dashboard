@@ -229,6 +229,19 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
       if (scopeType == AuthorizationScopeType.PLATFORM) platformRoles.forEach(role -> resources.addAll(role.permissions()));
       resources.retainAll(resourceService.filterAccessibleCodes(resources, scopeType, administrator));
     }
+    Set<String> managedCodes = new LinkedHashSet<>();
+    if (tenantResourceCatalog != null && resolvedTenantId != null
+        && scopeType == AuthorizationScopeType.TENANT) {
+      managedCodes.addAll(tenantResourceCatalog.managedGrantableCodes(
+          resolvedTenantId,
+          explicitlyGrantedCodes
+      ));
+      if (tenantOwner || administrator) {
+        managedCodes.addAll(
+            tenantResourceCatalog.activeManagedGrantableCodes(resolvedTenantId)
+        );
+      }
+    }
     if (tenantResourceCatalog != null && resolvedTenantId != null
         && scopeType == AuthorizationScopeType.TENANT
         && tenantResourceCatalog.mode(resolvedTenantId) == TenantResourceMode.CUSTOM) {
@@ -251,6 +264,7 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
         if (code.startsWith("tenant." + resolvedTenantId + ".")) resources.add(code);
       }
     }
+    resources.addAll(managedCodes);
     boolean tenantAdmin = hasTenantAdminAuthority(roleAuthorityVos, resources);
     AuthorizationActorRole actorRole = resolveActorRole(administrator, resolvedTenantId, resolvedTenant, tenantOwner, tenantAdmin);
     if (platformAccess) resources.add("platform.access");

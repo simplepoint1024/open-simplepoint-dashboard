@@ -300,6 +300,65 @@ class RoleResourceConfigurationHttpTest {
   }
 
   @Test
+  void platformCatalogIncludesAndSavesTenantManagedPageResources() {
+    Resource parent = new Resource();
+    parent.setCode("app.platform.view"); parent.setName("Application platform");
+    parent.setType(ResourceType.MODULE); parent.setGrantable(false); parent.setDisabled(false);
+    parent.setPublicAccess(true); parent.setScopeTypes(EnumSet.of(ResourceScopeType.TENANT));
+    em.persist(parent);
+    TenantResource page = managedResource(
+        "tenant-a", "managed-page", "app.runtime.page.one", "Orders", ResourceType.PAGE,
+        parent.getId()
+    );
+    TenantResource create = managedResource(
+        "tenant-a", "managed-create", "app.runtime.page.one.records.create", "Create",
+        ResourceType.ACTION, page.getId()
+    );
+    TenantResource foreign = managedResource(
+        "tenant-b", "managed-foreign", "app.runtime.page.foreign", "Foreign",
+        ResourceType.PAGE, parent.getId()
+    );
+    em.persist(page); em.persist(create); em.persist(foreign); em.flush(); em.clear();
+    TenantResourceCatalog catalog = mock(TenantResourceCatalog.class);
+    when(catalog.mode("tenant-a")).thenReturn(TenantResourceMode.PLATFORM);
+    when(catalog.grantableCodes(eq("tenant-a"), anyCollection())).thenAnswer(call ->
+        new LinkedHashSet<>((Collection<String>) call.getArgument(1)));
+    service.setTenantResourceCatalog(catalog);
+
+    var pageRows = service.list(
+        role.getId(), "", "all", null, parent.getId(), false, true, PageRequest.of(0, 100)
+    );
+    assertEquals(1, pageRows.getTotalElements());
+    Row pageRow = pageRows.getContent().getFirst();
+    assertEquals("app.runtime.page.one", pageRow.code());
+    assertTrue(pageRow.grantable());
+    assertFalse(pageRow.granted());
+
+    List<Row> subtree = service.subtreeRows(role.getId(), page.getId());
+    assertEquals(Set.of("app.runtime.page.one", "app.runtime.page.one.records.create"),
+        subtree.stream().map(Row::code).collect(java.util.stream.Collectors.toSet()));
+    service.save(role.getId(), new Patch(List.of(change(pageRow, true))));
+    verify(roles).authorize(argThat(dto ->
+        dto.getResourceCodes().equals(Set.of("app.runtime.page.one"))));
+  }
+
+  TenantResource managedResource(
+      String tenant,
+      String id,
+      String code,
+      String name,
+      ResourceType type,
+      String parentId
+  ) {
+    TenantResource resource = new TenantResource();
+    resource.setTenantId(tenant); resource.setId(id); resource.setManagedOwner("app");
+    resource.setManagedKey("page:" + id); resource.setCode(code); resource.setName(name);
+    resource.setType(type); resource.setParentId(parentId); resource.setGrantable(true);
+    resource.setEnabled(true); resource.setUpdatedAt(Instant.parse("2026-10-13T00:00:00Z"));
+    return resource;
+  }
+
+  @Test
   void previewContextIsBoundedAndPreservesVisibilityAndRoleIsolation() throws Exception {
     Resource child = resources.get(2), parent = resources.get(1);
     var contextRows = service.contextRows(role.getId(), List.of(child.getId(), child.getId(), resources.get(242).getId()));

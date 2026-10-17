@@ -1,8 +1,10 @@
 import {CompressOutlined, ZoomInOutlined, ZoomOutOutlined} from '@ant-design/icons';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
-import {Alert, Button, Space, Tooltip} from 'antd';
+import {Button, Space, Tooltip} from 'antd';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import flowableModdle from '../WorkflowDesigner/flowableModdle';
+import ImportProblemNotice from '../WorkflowDesigner/ImportProblemNotice';
+import {importProblem, type ImportProblem} from '../WorkflowDesigner/importIntegrity';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import './style.css';
@@ -49,12 +51,13 @@ export default function ProcessStatusDiagram({
 }: ProcessStatusDiagramProps) {
   const {t} = useI18n();
   const labels = useMemo(() => ({
-    active: '当前节点', completed: '已完成', canceled: '已取消/异常',
-    fit: '适配画布', zoomIn: '放大', zoomOut: '缩小', ...labelOverrides,
-  }), [labelOverrides]);
+    active: t('workflow.diagram.active', '当前节点'), completed: t('workflow.status.COMPLETED', '已完成'),
+    canceled: t('workflow.diagram.canceled', '已取消/异常'), fit: t('workflow.designer.fit', '适配画布'),
+    zoomIn: t('workflow.designer.zoomIn', '放大'), zoomOut: t('workflow.designer.zoomOut', '缩小'), ...labelOverrides,
+  }), [labelOverrides, t]);
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<InstanceType<typeof NavigatedViewer> | undefined>(undefined);
-  const [error, setError] = useState<string>();
+  const [problem, setProblem] = useState<ImportProblem>();
   const [ready, setReady] = useState(false);
   const [nodes, setNodes] = useState<Array<{id: string; name: string}>>([]);
   const selection = useRef(onSelectActivity);
@@ -65,10 +68,10 @@ export default function ProcessStatusDiagram({
   const states = useMemo(() => activityMarkers(activities, activeActivityIds), [activeActivityIds, activities]);
 
   useEffect(() => {
-    if (!containerRef.current || !xml) return;
+    setReady(false); setProblem(undefined); setNodes([]);
+    if (!containerRef.current || !xml) {setProblem(importProblem([], true)); return;}
     let active = true;
     let stopResize: (() => void) | undefined;
-    setReady(false); setError(undefined); setNodes([]);
     const viewer = new NavigatedViewer({
       container: containerRef.current,
       moddleExtensions: {flowable: flowableModdle},
@@ -78,9 +81,9 @@ export default function ProcessStatusDiagram({
       const element = event.element;
       if (element?.id && /(?:Task|Event|Gateway|SubProcess)$/.test(element.type ?? '')) selection.current?.(element.id);
     });
-    void viewer.importXML(xml).then(() => {
+    void viewer.importXML(xml).then(result => {
       if (!active) return;
-      setError(undefined);
+      setProblem(importProblem(result.warnings));
       const canvas = viewer.get<CanvasApi>('canvas');
       canvas.zoom('fit-viewport');
       setNodes(viewer.get<RegistryApi>('elementRegistry').getAll()
@@ -101,8 +104,12 @@ export default function ProcessStatusDiagram({
         }
       });
       setReady(true);
-    }).catch((reason: unknown) => {
-      if (active) setError(reason instanceof Error ? reason.message : '流程图加载失败');
+    }).catch(() => {
+      if (active) {
+        viewer.clear();
+        setNodes([]);
+        setProblem(importProblem([], true));
+      }
     });
     // A new source owns a new viewer. A slow old import must never replace the new instance's canvas.
     return () => {active = false; stopResize?.(); viewer.destroy(); if (viewerRef.current === viewer) viewerRef.current = undefined;};
@@ -125,11 +132,16 @@ export default function ProcessStatusDiagram({
     const current = Number(canvas()?.zoom?.()) || 1;
     canvas()?.zoom?.(Math.max(0.2, Math.min(4, current + delta)));
   };
+  const statusLabels: Record<string, string> = {
+    ACTIVE: t('workflow.status.ACTIVE', '当前处理'), COMPLETED: t('workflow.status.COMPLETED', '已完成'),
+    CANCELED: t('workflow.status.CANCELED', '取消'), WITHDRAWN: t('workflow.status.WITHDRAWN', '撤回'),
+    REJECTED: t('workflow.status.REJECTED', '驳回'), FAILED: t('workflow.diagram.failed', '异常'),
+  };
   const summary = activities.map(activity =>
-    `${activity.activityName || activity.activityId}: ${activity.status}`).join('; ');
+    `${activity.activityName || activity.activityId}: ${statusLabels[activity.status] ?? activity.status}`).join('; ');
 
   return <figure className={`process-status-diagram ${className ?? ''}`} style={{height}}
-    aria-busy={!ready && !error} aria-label={`流程状态图。${summary}`}>
+    aria-busy={!ready && !problem} aria-label={`${t('workflow.diagram.title', '流程进度')}。${summary}`}>
     <div className="process-status-diagram__toolbar">
       <Space className="process-status-diagram__legend" size="middle" wrap>
         <span><i className="is-active"/>{labels.active}</span>
@@ -145,7 +157,7 @@ export default function ProcessStatusDiagram({
           icon={<CompressOutlined/>} onClick={() => canvas()?.zoom?.('fit-viewport')}/></Tooltip>
       </Space.Compact>
     </div>
-    {error && <Alert className="process-status-diagram__error" type="error" showIcon message={error}/>}
+    {problem && <ImportProblemNotice progress problem={problem} xml={xml}/>}
     <div ref={containerRef} className="process-status-diagram__canvas"/>
     {onSelectActivity && <nav className="process-status-diagram__nodes" aria-label={t('workflow.diagram.selectNode', '选择节点查看处理记录')}>
       {/* Native buttons are the keyboard equivalent of selecting a BPMN shape, not business actions. */}

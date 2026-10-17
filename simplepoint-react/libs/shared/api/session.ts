@@ -1,3 +1,4 @@
+import {clearStorageKeepingWorkspaceChoices} from '../preferences/workspace.ts';
 import {
   ensureContextId,
   getStoredContextId,
@@ -57,7 +58,7 @@ function restoreSessionSnapshot(snapshot?: SessionSnapshot) {
 }
 
 async function clearBrowserCaches() {
-  try { if (typeof localStorage !== 'undefined') localStorage.clear(); } catch {}
+  clearStorageKeepingWorkspaceChoices();
   try { if (typeof sessionStorage !== 'undefined') sessionStorage.clear(); } catch {}
 
   const tasks: Promise<any>[] = [];

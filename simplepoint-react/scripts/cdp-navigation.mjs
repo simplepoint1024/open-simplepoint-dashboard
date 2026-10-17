@@ -28,3 +28,17 @@ export function createReadyControlClicker({evaluate, poll}) {
       'enabled visible non-loading control ' + selector);
   };
 }
+
+// Segmented controls are labels around radios: label.disabled does not reflect
+// the underlying input or a disabled parent. Wait for the real user action to unlock.
+export function createReadyTextClicker({evaluate, poll}) {
+  return async (selector, text) => {
+    const match = `[...document.querySelectorAll(${JSON.stringify(selector)})].find(control=>
+      control.getClientRects().length && !control.disabled && !control.classList.contains('ant-btn-loading')
+      && !control.closest('[aria-disabled="true"],.ant-segmented-disabled,.ant-segmented-item-disabled,.ant-pagination-disabled')
+      && !control.querySelector('input:disabled')
+      && control.textContent.replaceAll(' ','')===${JSON.stringify(text.replaceAll(' ', ''))})`;
+    await poll(() => evaluate(`(()=>{const control=${match};if(!control)return false;control.click();return true;})()`),
+      'enabled visible non-loading action ' + text);
+  };
+}

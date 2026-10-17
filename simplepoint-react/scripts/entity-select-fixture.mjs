@@ -21,7 +21,7 @@ export function createEntitySelectFixture() {
       code: `resource.operation.${index}`, label: `测试操作 ${index}`, type,
       parentId: 'resource-001', grantable: true, granted: false, revision: '1',
       dataPermission: {supported: false, policyId: null}, fieldPermission: {supported: false, policyId: null}}))];
-  const tenants = Array.from({length: 240}, (_, index) => ({id: `tenant-${String(index).padStart(3, '0')}`, name: `Tenant${String(index).padStart(3, '0')}`}));
+  const tenants = Array.from({length: 240}, (_, index) => ({id: `tenant-${String(index).padStart(3, '0')}`, name: `Tenant${String(index).padStart(3, '0')}`, tenantType: 'ORGANIZATION'}));
   const descendants = (rootId, grantableOnly = true) => {
     const ids = new Set([rootId]);
     for (let changed = true; changed;) {

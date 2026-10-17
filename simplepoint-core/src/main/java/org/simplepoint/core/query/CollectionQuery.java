@@ -69,11 +69,18 @@ public final class CollectionQuery {
     }
     Comparator<T> comparator = (left, right) -> 0;
     Set<String> sorted = new java.util.HashSet<>();
-    for (var order : pageable.getSort()) {
+    var sort = pageable.getSort();
+    if (sort.isUnsorted()) sort = DefaultTableOrder.forModel(type, name ->
+        DefaultTableOrder.exists(type, name) && QueryCapabilities.readable(type, name));
+    for (var order : sort) {
       if (!sorted.add(order.getProperty())) {
         throw new InvalidQueryException("排序字段不能重复");
       }
-      Field field = checkedField(type, order.getProperty(), null, true);
+      Field field = pageable.getSort().isUnsorted() ? QueryCapabilities.field(type, order.getProperty())
+          : checkedField(type, order.getProperty(), null, true);
+      if (!field.trySetAccessible()) {
+        throw new IllegalStateException("Query field is inaccessible");
+      }
       comparator =
           comparator.thenComparing(
               (left, right) -> {

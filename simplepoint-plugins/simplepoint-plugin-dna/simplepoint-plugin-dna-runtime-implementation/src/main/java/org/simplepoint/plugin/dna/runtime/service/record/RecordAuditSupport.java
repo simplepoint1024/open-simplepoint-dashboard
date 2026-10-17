@@ -74,7 +74,7 @@ class RecordAuditSupport {
         model.appId(),
         model.formId(),
         model.target().metadataTarget().dataSourceId(),
-        model.activeVersion(),
+        model.requestedVersion(),
         affectedRows,
         durationMillis,
         outcome,

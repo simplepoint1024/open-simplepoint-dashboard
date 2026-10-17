@@ -20,6 +20,7 @@ pluginManagement {
 // Gradle's implicit parent projects provide the hierarchy used by IDE imports;
 // only the listed modules receive Java/build conventions in the root build.
 val moduleDirectories = listOf(
+    "simplepoint-calculation",
     "simplepoint-api",
     "simplepoint-boot/simplepoint-boot-config-consul-starter",
     "simplepoint-boot/simplepoint-boot-starter",
@@ -42,6 +43,7 @@ val moduleDirectories = listOf(
     "simplepoint-examples/simplepoint-service-router-examples/simplepoint-service-router-example-consumer",
     "simplepoint-examples/simplepoint-service-router-examples/simplepoint-service-router-example-provider",
     "simplepoint-platform/simplepoint-platform-bootstrap",
+    "simplepoint-platform/simplepoint-platform-resource-api",
     "simplepoint-plugin/simplepoint-plugin-api",
     "simplepoint-plugin/simplepoint-plugin-core",
     "simplepoint-plugin/simplepoint-plugin-spring",
@@ -56,6 +58,8 @@ val moduleDirectories = listOf(
     "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation",
     "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-runtime-api",
     "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-runtime-implementation",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-api",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation",
     "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-api",
     "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation",
     "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-api",
@@ -98,6 +102,9 @@ val moduleDirectories = listOf(
     "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-api",
     "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-http-client",
     "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation",
+    "simplepoint-events/simplepoint-events-api",
+    "simplepoint-events/simplepoint-events-jdbc",
+    "simplepoint-events/simplepoint-events-rabbit",
     "simplepoint-remoting/simplepoint-remoting-core",
     "simplepoint-security/simplepoint-security-core",
     "simplepoint-security/simplepoint-security-oauth2-client",

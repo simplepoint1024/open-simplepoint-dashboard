@@ -5,9 +5,12 @@ import {request} from '@simplepoint/shared/api/client';
 import {get, post, put} from '@simplepoint/shared/api/methods';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {normalizePage, type RawPage} from '@simplepoint/shared/types/request';
-import {Alert, App, Descriptions, Drawer, Input, Tag} from 'antd';
+import {Alert, App, Descriptions, Drawer, Input, Modal, Tag} from 'antd';
 import type {Key} from 'react';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
+import {useOwnedReads} from '@simplepoint/shared/hooks/useOwnedReads';
+import {usePageRetention} from '@simplepoint/shared/page/hooks';
 import {formatDateTime, resolveErrorMessage} from '../shared';
 
 type ModelType = 'DNA_SQL' | 'NATIVE_SQL';
@@ -26,16 +29,18 @@ const sourceEndpoint = endpoint + '/data-sources';
 
 export default function DataModel() {
   const {t, ensure, locale} = useI18n();
-  const {message, modal} = App.useApp();
+  const {message} = App.useApp();
+  const operation = useOperationScope(endpoint);
+  const reads = useOwnedReads(operation, true);
+  const [deleting, setDeleting] = useState<Model>();
   const [tableRevision, setTableRevision] = useState(0);
   const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<EditingModel | null>(null);
-  const [editorLoading, setEditorLoading] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
-  const [viewLoading, setViewLoading] = useState(false);
   const [detail, setDetail] = useState<Detail>();
 
+  useEffect(() => {if (!operation.selected && !detail) setViewOpen(false);}, [operation.selected, detail]);
   useEffect(() => { void ensure(baseConfig.i18nNamespaces); }, [ensure, locale]);
 
   const loadPage = useCallback(async ({page, size, filters, sort, signal}: SimpleTablePageRequest) =>
@@ -47,51 +52,27 @@ export default function DataModel() {
     ? t('dna.models.type.dnaSql', 'DNA SQL 模型')
     : t('dna.models.type.nativeSql', 'Native SQL 原生模型'), [t]);
 
-  const openEditor = useCallback(async (row: Model) => {
-    setEditorLoading(true);
+  usePageRetention(!viewOpen && !deleting && !operation.busy, !!deleting || operation.busy);
+  useEffect(() => {setDetail(undefined); setViewOpen(false); setDeleting(undefined);}, [operation.current]);
+  const openDetail = (row: Model) => {
+    reads.cancel('detail'); reads.clearErrors('detail'); setDetail(undefined); setViewOpen(true);
+    void reads.run('detail', signal => get<Detail>(endpoint + '/' + row.id, undefined,
+      {signal, notifyOnError: false}), setDetail);
+  };
+  const deleteModel = async () => {
+    if (!deleting) return;
+    const command = operation.begin(); if (!command) return;
     try {
-      const value = await get<Detail>(endpoint + '/' + row.id, undefined, {notifyOnError: false});
-      setEditingRecord({...value.model, dataSourceId: value.dataSourceId, sqlText: value.sqlText});
-      setDrawerOpen(true);
+      await request<void>(endpoint + '/' + deleting.id,
+        {method: 'DELETE', params: {version: deleting.version}, signal: command.signal, notifyOnError: false});
+      if (operation.current(command.signal)) {
+        setDeleting(undefined); setSelectedKeys([]); setTableRevision(value => value + 1);
+        message.success(t('dna.models.deleted', '模型已删除'));
+      }
     } catch (error) {
-      message.error(resolveErrorMessage(error, t('dna.models.loadDetailFailed', '模型详情加载失败')));
-    } finally {
-      setEditorLoading(false);
-    }
-  }, [message, t]);
-
-  const openDetail = useCallback(async (row: Model) => {
-    setDetail(undefined);
-    setViewOpen(true);
-    setViewLoading(true);
-    try {
-      setDetail(await get<Detail>(endpoint + '/' + row.id, undefined, {notifyOnError: false}));
-    } catch (error) {
-      setViewOpen(false);
-      message.error(resolveErrorMessage(error, t('dna.models.loadDetailFailed', '模型详情加载失败')));
-    } finally {
-      setViewLoading(false);
-    }
-  }, [message, t]);
-
-  const deleteModel = useCallback((model: Model) => {
-    modal.confirm({
-      title: t('dna.models.confirmDelete', '确定删除这个数据模型？'),
-      okButtonProps: {danger: true},
-      onOk: async () => {
-        try {
-          await request<void>(endpoint + '/' + model.id,
-            {method: 'DELETE', params: {version: model.version}, notifyOnError: false});
-          setSelectedKeys([]);
-          setTableRevision(value => value + 1);
-          message.success(t('dna.models.deleted', '模型已删除'));
-        } catch (error) {
-          message.error(resolveErrorMessage(error, t('dna.models.deleteFailed', '删除失败，请刷新后重试')));
-          throw error;
-        }
-      },
-    });
-  }, [message, modal, t]);
+      if (operation.current(command.signal)) message.error(resolveErrorMessage(error, t('dna.models.deleteFailed', '删除失败，请刷新后重试')));
+    } finally {operation.finish(command);}
+  };
 
   const formSchemaTransform = useCallback((schema: any) => {
     const next = structuredClone(schema);
@@ -156,17 +137,20 @@ export default function DataModel() {
       }}
       afterSubmit={() => {setSelectedKeys([]); message.success(t('dna.models.saved', '草稿已保存'));}}
       rowSelection={{selectedKeys}} onSelectionChange={keys => setSelectedKeys(keys)}
-      isButtonDisabled={button => button.key === 'edit' && editorLoading}
+      isButtonDisabled={() => operation.busy || !!deleting || viewOpen}
+      loadEditingRecord={async (row, signal) => {
+        const value = await get<Detail>(endpoint + '/' + row.id, undefined, {signal, notifyOnError: false});
+        return {...value.model, dataSourceId: value.dataSourceId, sqlText: value.sqlText};
+      }}
       customButtonEvents={{
         view: (_keys, rows) => {if (rows[0]) void openDetail(rows[0]);},
-        add: () => {setEditingRecord(null); setDrawerOpen(true);},
-        edit: (_keys, rows) => {if (rows[0]) void openEditor(rows[0]);},
-        delete: (_keys, rows) => {if (rows[0]) deleteModel(rows[0]);},
+        delete: (_keys, rows) => {if (rows[0]) setDeleting(rows[0]);},
       }}/>
 
     <Drawer rootClassName="sp-simple-table-drawer" title={detail?.model.name}
-      open={viewOpen} width={700} loading={viewLoading} destroyOnHidden
-      onClose={() => setViewOpen(false)}>
+      open={viewOpen && operation.selected} width="min(700px, 94vw)" loading={reads.loading.includes('detail')} destroyOnHidden={!viewOpen}
+      onClose={() => {reads.cancel('detail'); setViewOpen(false);}}>
+      {!!reads.errors.detail && <Alert type="error" showIcon title={resolveErrorMessage(reads.errors.detail, t('dna.models.loadDetailFailed', '模型详情加载失败'))}/>}
       {detail && <>
         <Descriptions column={1} size="small">
           <Descriptions.Item label={t('dna.models.type', '类型')}>{typeLabel(detail.model.modelType)}</Descriptions.Item>
@@ -189,5 +173,9 @@ export default function DataModel() {
           '当前保存的是模型草稿。执行、校验、发布和应用引用将在后续阶段接入。')}/>
       </>}
     </Drawer>
+    <Modal open={!!deleting && operation.selected} title={t('dna.models.confirmDelete', '确定删除这个数据模型？')}
+      confirmLoading={operation.busy} okButtonProps={{danger: true}} closable={!operation.busy}
+      maskClosable={!operation.busy} keyboard={!operation.busy} onOk={() => void deleteModel()}
+      onCancel={() => {if (!operation.isBusy()) setDeleting(undefined);}}/>
   </>;
 }

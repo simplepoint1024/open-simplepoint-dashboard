@@ -74,7 +74,7 @@ public interface JpaUsersRepository extends BaseRepository<User, String>, UserRe
       select
         grant.resourceCode
       from RoleResourceGrant grant
-      where grant.roleId in :roleIds
+      where grant.roleId in :roleIds and grant.deletedAt is null
       """)
   Collection<String> loadResourcesInRoleIds(@Param("roleIds") List<String> roleIds);
 

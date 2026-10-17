@@ -1,4 +1,5 @@
 import type {ItemType} from "antd/es/menu/interface";
+export {getRouteKey} from './identity';
 
 /** Ant Design menu item extended with the component spec for route matching. */
 export type MenuItemType = ItemType & { component?: string };
@@ -44,12 +45,6 @@ export const flattenRoutes = (nodes: RouteInfo[] = []): RouteInfo[] => {
   };
   dfs(nodes);
   return res;
-};
-
-// 获取菜单节点的唯一标识
-export const getRouteKey = (route?: RouteInfo): string | undefined => {
-  if (!route) return undefined;
-  return route.path || (route.id != null ? String(route.id) : undefined);
 };
 
 // 根据路径查找从根到叶的路由链

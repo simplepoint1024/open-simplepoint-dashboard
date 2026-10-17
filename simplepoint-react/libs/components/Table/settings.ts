@@ -9,6 +9,8 @@ export type ColumnSetting = {
 };
 
 export type TableDisplaySettings = {
+  viewMode: 'table' | 'cards';
+  cardRows: 2 | 3 | 4;
   size: 'small' | 'middle' | 'large';
   bordered: boolean;
   striped: boolean;
@@ -24,6 +26,8 @@ export const MAX_TABLE_COLUMN_WIDTH = 1200;
 export const DEFAULT_FIXED_COLUMN_WIDTH = 160;
 
 export const DEFAULT_TABLE_DISPLAY_SETTINGS: TableDisplaySettings = {
+  viewMode: 'table',
+  cardRows: 3,
   size: 'middle',
   bordered: true,
   striped: true,
@@ -52,6 +56,8 @@ export const normalizeTableDisplaySettings = (
     typeof value?.[key] === 'boolean' ? value[key] as boolean : defaults[key] as boolean
   );
   return {
+    viewMode: value?.viewMode === 'cards' ? 'cards' : 'table',
+    cardRows: value?.cardRows === 2 || value?.cardRows === 4 ? value.cardRows : 3,
     size,
     bordered: booleanValue('bordered'),
     striped: booleanValue('striped'),

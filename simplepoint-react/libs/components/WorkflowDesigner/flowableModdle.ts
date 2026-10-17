@@ -15,6 +15,15 @@ const flowableModdle = {
         {name: 'priority', isAttr: true, type: 'String'},
       ],
     },
+    {
+      name: 'FlowableMultiInstance',
+      extends: ['bpmn:MultiInstanceLoopCharacteristics'],
+      properties: [
+        {name: 'collection', isAttr: true, type: 'String'},
+        {name: 'elementVariable', isAttr: true, type: 'String'},
+        {name: 'elementIndexVariable', isAttr: true, type: 'String'},
+      ],
+    },
   ],
 } as const;
 

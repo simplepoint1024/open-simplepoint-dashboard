@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import api from '@/api';
 import DataTable, {type DataTableProps} from '@simplepoint/components/DataTable';
 import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
@@ -19,7 +20,7 @@ type SyncState = {syncMode?: string; status?: string; lastCompletedAt?: string; 
 type ImportTarget = {item: CatalogItem; operation: ImportOperation};
 type Imported = {id?: string; name?: string; code?: string};
 const formatTime = (value?: string) => {if (!value) return '—'; const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString();};
+  return Number.isNaN(date.getTime()) ? '—' : formatDateTime(date);};
 
 export default function Catalog() {
   const scope = useQueryScope();

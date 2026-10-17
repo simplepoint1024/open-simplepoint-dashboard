@@ -182,6 +182,30 @@ public class RuntimeGovernanceCatalog {
     ));
   }
 
+  /** Reads persisted model metadata without generating a plan or contacting its data source. */
+  public ModelDetail model(final String modelId) {
+    requireGovernanceScope();
+    String tenant = requireTenant();
+    PhysicalModelEntity model = entityManager.createQuery(
+        "select m from PhysicalModelEntity m where m.tenantId = :tenant"
+            + " and m.id = :id and m.deletedAt is null", PhysicalModelEntity.class)
+        .setParameter("tenant", tenant).setParameter("id", modelId)
+        .getResultStream().findFirst().orElseThrow(
+            () -> new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.NOT_FOUND, "Physical model not found"));
+    String schema = entityManager.createQuery(
+        "select v.schemaJson from PhysicalModelVersionEntity v where v.tenantId = :tenant"
+            + " and v.physicalModelId = :model and v.versionNumber = :version"
+            + " and v.deletedAt is null", String.class)
+        .setParameter("tenant", tenant).setParameter("model", modelId)
+        .setParameter("version", model.getLatestVersion())
+        .getResultStream().findFirst().orElse(null);
+    return new ModelDetail(new ModelSummary(model.getId(), model.getDisplayName(),
+        model.getAppId(), model.getFormId(), model.getStatus().name(), model.getLatestVersion(),
+        model.getActiveVersion(), model.getLockVersion(), model.getUpdatedAt()),
+        model.getCreatedAt(), schema);
+  }
+
   /** Delegates plan generation to the Runtime engine so the UI never derives DDL. */
   public SchemaPlanView plan(final String modelId, final int targetVersion) {
     requireGovernanceScope();
@@ -192,6 +216,23 @@ public class RuntimeGovernanceCatalog {
   public SchemaPublicationView migration(final String migrationId) {
     requireGovernanceScope();
     return publicationService.get(migrationId);
+  }
+
+  /** Replays the active publication to prepare infrastructure without changing business schema. */
+  @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+  public SchemaPublicationView prepareStorage(final String modelId, final long expectedVersion) {
+    requireGovernanceScope();
+    if (!canRetry()) {
+      throw new AccessDeniedException("Runtime recovery permission is required");
+    }
+    var current = model(modelId).model();
+    if (!"ACTIVE".equals(current.status()) || current.activeVersion() == null) {
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.CONFLICT, "Only an active model can prepare storage");
+    }
+    return publicationService.publish(modelId,
+        new org.simplepoint.plugin.dna.runtime.api.migration.SchemaPublicationCommand(
+            current.activeVersion(), expectedVersion));
   }
 
   /** Retries only a failed migration through its existing guarded state machine. */
@@ -290,6 +331,10 @@ public class RuntimeGovernanceCatalog {
         1,
         false
     ));
+    if (resource == Resource.MODELS) {
+      actions.add(new Action("plan", "i18n:dna.runtime.plan.title", "i18n:dna.runtime.plan.title",
+          "DiffOutlined", "blue", 1, 1, 1, false));
+    }
     if (resource == Resource.MIGRATIONS && canRetry()) {
       actions.add(new Action(
           "recover",
@@ -458,6 +503,10 @@ public class RuntimeGovernanceCatalog {
       long lockVersion,
       Instant updatedAt
   ) {
+  }
+
+  /** Persisted model identity and the latest logical definition, without live data-source access. */
+  public record ModelDetail(ModelSummary model, Instant createdAt, String schemaJson) {
   }
 
   public record VersionSummary(

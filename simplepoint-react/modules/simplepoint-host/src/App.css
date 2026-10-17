@@ -28,7 +28,8 @@ body {
 .nb-top-menu-left { flex-shrink: 0; }
 
 /* 右侧工具菜单：彻底去掉激活蓝线（::after 伪元素） */
-.nb-top-menu-right { flex-shrink: 0; }
+/* Keep Menu's invisible overflow measurement items inside its own bounds. */
+.nb-top-menu-right { flex-shrink: 1; position: relative; overflow: hidden; }
 .nb-top-menu-right .ant-menu-item::after,
 .nb-top-menu-right .ant-menu-submenu::after,
 .nb-top-menu-right .ant-menu-item-selected::after,

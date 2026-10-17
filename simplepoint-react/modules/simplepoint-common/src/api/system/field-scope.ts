@@ -18,7 +18,7 @@ export interface FieldScopeConfiguration {
 
 export interface FieldPageMetadata {
   title: string;
-  models: Array<{model: string; properties: Record<string, {title: string; type: string}>}>;
+  models: Array<{model: string; properties: Record<string, {title: string; type: string; readOnly?: boolean}>}>;
 }
 
 export function fetchFieldPageCatalog() {

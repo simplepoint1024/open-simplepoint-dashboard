@@ -30,7 +30,7 @@ public record PermissionPageDescriptor(List<PermissionModelDescriptor> models) {
       });
       result.replaceAll((name, field) -> new PermissionModelDescriptor.Field(boxed(field.type()),
           field.title(), field.operators().stream().filter(model.properties().get(name).operators()::contains).toList(),
-          field.values()));
+          field.values(), field.readOnly() || model.properties().get(name).readOnly()));
     }
     result.entrySet().removeIf(entry -> entry.getValue().operators().isEmpty());
     return Map.copyOf(result);

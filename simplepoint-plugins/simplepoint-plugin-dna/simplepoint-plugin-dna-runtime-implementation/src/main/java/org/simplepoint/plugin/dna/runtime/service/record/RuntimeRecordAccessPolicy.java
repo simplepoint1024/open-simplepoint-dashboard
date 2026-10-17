@@ -21,69 +21,95 @@ import org.springframework.stereotype.Component;
 @Component
 public class RuntimeRecordAccessPolicy {
 
-  static final Set<String> SYSTEM_FIELDS = Set.of(
-      "id",
-      "tenant_id",
-      "record_version",
-      "created_by",
-      "created_org_dept_id",
-      "created_at",
-      "updated_by",
-      "updated_at",
-      "deleted_at"
-  );
+  static final Set<String> SYSTEM_FIELDS =
+      Set.of(
+          "id",
+          "tenant_id",
+          "record_version",
+          "created_by",
+          "created_org_dept_id",
+          "created_at",
+          "updated_by",
+          "updated_at",
+          "deleted_at");
 
   private static final String ORGANIZATION_ATTRIBUTE = "X-Org-Dept-Id";
 
   private final PhysicalModelResourceBindingRepository resourceBindingRepository;
 
+  private RecordResourceFence resourceFence;
+
+  /** Captures the resource generation before preparing any physical write. */
+  @org.springframework.beans.factory.annotation.Autowired
+  public void setResourceFence(RecordResourceFence resourceFence) {
+    this.resourceFence = resourceFence;
+  }
+
   /** Creates the access policy from the durable model-resource projection. */
   public RuntimeRecordAccessPolicy(
-      final PhysicalModelResourceBindingRepository resourceBindingRepository
-  ) {
+      final PhysicalModelResourceBindingRepository resourceBindingRepository) {
     this.resourceBindingRepository = resourceBindingRepository;
   }
 
   /** Resolves effective permissions and rejects unbound or ambiguous page contexts. */
-  RecordAccessContext authorize(
-      final RuntimeActor actor,
-      final RuntimeRecordModel model
-  ) {
+  RecordAccessContext authorize(final RuntimeActor actor, final RuntimeRecordModel model) {
+    if (model.activeSchema().owner() != null) {
+      throw denied("Owned rows require parent-scoped aggregate access");
+    }
     AuthorizationContext authorization = AuthorizationContextHolder.getContext();
     String resourceCode = normalize(ResourcePolicyContext.get());
     if (authorization == null || resourceCode == null) {
       throw denied("A server-selected page resource is required for record access");
     }
-    Collection<String> resources = authorization.getResources() == null
-        ? List.of() : authorization.getResources();
+    Collection<String> resources =
+        authorization.getResources() == null ? List.of() : authorization.getResources();
     if (!Boolean.TRUE.equals(authorization.getIsAdministrator())
         && !resources.contains(resourceCode)) {
       throw denied("The current actor has no access to the active page resource");
     }
-    if (resourceBindingRepository.findActive(
-        actor.tenantId(),
-        model.physicalModelId(),
-        resourceCode
-    ).isEmpty()) {
+    if (resourceBindingRepository
+        .findActive(actor.tenantId(), model.physicalModelId(), resourceCode)
+        .isEmpty()) {
       throw denied("The active page resource is not bound to the physical model");
     }
 
-    Set<String> modelFields = new LinkedHashSet<>(Set.of(
-        "id",
-        "record_version",
-        "created_by",
-        "created_at",
-        "updated_by",
-        "updated_at"
-    ));
-    model.schema().fields().forEach(field -> modelFields.add(field.code()));
+    RecordAccessContext result = fields(actor, model, authorization, resourceCode, rowScope(authorization));
+    return resourceFence == null ? result : result.withGeneration(
+        resourceFence.generation(actor.tenantId(), model.physicalModelId(), resourceCode));
+  }
+
+  /** Caller must verify the immutable owner relation and authorize the parent record first. */
+  RecordAccessContext owned(
+      RuntimeActor actor, RuntimeRecordModel model, RecordAccessContext parent) {
+    return fields(
+        actor,
+        model,
+        AuthorizationContextHolder.getContext(),
+        parent.resourceCode(),
+        new DataScopeCondition("ALL", "created_org_dept_id", "created_by", null, Set.of()))
+        .withGeneration(parent.resourceGeneration());
+  }
+
+  private RecordAccessContext fields(
+      RuntimeActor actor,
+      RuntimeRecordModel model,
+      AuthorizationContext authorization,
+      String resourceCode,
+      DataScopeCondition scope) {
+    Set<String> modelFields =
+        new LinkedHashSet<>(
+            Set.of("id", "record_version", "created_by", "created_at", "updated_by", "updated_at"));
+    modelFields.addAll(org.simplepoint.plugin.dna.runtime.api.record.RecordSystemField.storageCodes());
+    model.requestedSchema().fields().forEach(field -> modelFields.add(field.code()));
     Set<String> readable = new LinkedHashSet<>();
     Set<String> writable = new LinkedHashSet<>();
     Set<String> masked = new LinkedHashSet<>();
     Map<String, String> permissions = authorization.activeFieldPermissions();
-    String permissionModel = RecordPermissionModel.key(model.physicalModelId());
     for (String field : modelFields) {
-      String access = permissions == null ? null : permissions.get(permissionModel + '#' + field);
+      String permissionField = model.activeCode(field);
+      var definition = model.requestedField(field);
+      String access = RecordPermissionModel.access(permissions, model.physicalModelId(),
+          definition == null ? null : definition.fieldId(), permissionField);
       if (access == null || Set.of("EDITABLE", "VISIBLE", "MASKED").contains(access)) {
         readable.add(field);
       }
@@ -100,9 +126,8 @@ public class RuntimeRecordAccessPolicy {
         readable,
         writable,
         masked,
-        rowScope(authorization),
-        normalize(authorization.getAttribute(ORGANIZATION_ATTRIBUTE))
-    );
+        scope,
+        normalize(authorization.getAttribute(ORGANIZATION_ATTRIBUTE)));
   }
 
   private static DataScopeCondition rowScope(final AuthorizationContext context) {
@@ -120,8 +145,7 @@ public class RuntimeRecordAccessPolicy {
         "created_by",
         context.getUserId(),
         context.getDeptIds() == null ? Set.of() : context.getDeptIds(),
-        Boolean.TRUE.equals(context.getDataScopeIncludeSelf())
-    );
+        Boolean.TRUE.equals(context.getDataScopeIncludeSelf()));
   }
 
   private static String normalize(final String value) {

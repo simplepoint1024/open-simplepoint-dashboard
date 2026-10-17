@@ -1,0 +1,379 @@
+{
+  "verifiedAt": "2026-10-15T11:54:25.155Z",
+  "scope": "Generated business navigation, inherited base metadata and platform data/field policies",
+  "deployment": {
+    "passed": true,
+    "at": "2026-10-15T11:53:19.918Z",
+    "results": [
+      {
+        "service": "authorization",
+        "version": "20261015-office-access4",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 258,
+        "jarHashesMatch": true,
+        "sourceDigest": "de8d48b23022dc2d26211bd56a89eedae020f52d7d34d975a65793845f53696b"
+      },
+      {
+        "service": "common",
+        "version": "20261015-office-access4",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 317,
+        "jarHashesMatch": true,
+        "sourceDigest": "de8d48b23022dc2d26211bd56a89eedae020f52d7d34d975a65793845f53696b"
+      },
+      {
+        "service": "auditing",
+        "version": "20261015-office-access1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 246,
+        "jarHashesMatch": true,
+        "sourceDigest": "38103478c0454fb009edcba07f11191f4605840dee77d137febee7beec43e47c"
+      },
+      {
+        "service": "dna",
+        "version": "20261015-office-access2",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 294,
+        "jarHashesMatch": true,
+        "sourceDigest": "cd4acbffead30284c359394b1f44619f3c99444471052dfb1fe00787828757b1"
+      },
+      {
+        "service": "ai",
+        "version": "20261015-office-access1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 326,
+        "jarHashesMatch": true,
+        "sourceDigest": "38103478c0454fb009edcba07f11191f4605840dee77d137febee7beec43e47c"
+      },
+      {
+        "service": "app",
+        "version": "20261015-office-access4",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 260,
+        "jarHashesMatch": true,
+        "sourceDigest": "de8d48b23022dc2d26211bd56a89eedae020f52d7d34d975a65793845f53696b"
+      },
+      {
+        "service": "workflow",
+        "version": "20261015-office-access1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 298,
+        "jarHashesMatch": true,
+        "sourceDigest": "38103478c0454fb009edcba07f11191f4605840dee77d137febee7beec43e47c"
+      },
+      {
+        "service": "mcp-gateway",
+        "version": "20261015-office-access1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 180,
+        "jarHashesMatch": true,
+        "sourceDigest": "38103478c0454fb009edcba07f11191f4605840dee77d137febee7beec43e47c"
+      },
+      {
+        "service": "host",
+        "version": "20261015-office-access3",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 226,
+        "jarHashesMatch": true,
+        "sourceDigest": "602d04034eb009847c8cf42a708f243c17f0d3982bc6e2efe10c4586bcbd45a7"
+      }
+    ],
+    "rabbitmq": "healthy"
+  },
+  "menu": {
+    "passed": true,
+    "at": "2026-10-15T11:41:26.892Z",
+    "results": [
+      {
+        "label": "会议室申请",
+        "open": true,
+        "visibleItems": [
+          "会议室申请",
+          "日报填写",
+          "财务报销"
+        ],
+        "hash": "#/app/runtime/06165401-1851-4bda-bb6a-f0511a1cab7a/a90c5bca-3c9d-49dd-bf04-3a06c59a0d0c"
+      },
+      {
+        "label": "日报填写",
+        "open": true,
+        "visibleItems": [
+          "会议室申请",
+          "日报填写",
+          "财务报销"
+        ],
+        "hash": "#/app/runtime/06165401-1851-4bda-bb6a-f0511a1cab7a/ec7df87d-acdc-4541-b75a-1a63eb7a2659"
+      },
+      {
+        "label": "财务报销",
+        "open": true,
+        "visibleItems": [
+          "会议室申请",
+          "日报填写",
+          "财务报销"
+        ],
+        "hash": "#/app/runtime/06165401-1851-4bda-bb6a-f0511a1cab7a/cd442ce8-9844-4674-9c0a-3ac210c647f3"
+      },
+      {
+        "label": "日报填写",
+        "open": true,
+        "visibleItems": [
+          "会议室申请",
+          "日报填写",
+          "财务报销"
+        ],
+        "hash": "#/app/runtime/06165401-1851-4bda-bb6a-f0511a1cab7a/ec7df87d-acdc-4541-b75a-1a63eb7a2659"
+      },
+      {
+        "label": "日报填写",
+        "open": true,
+        "visibleItems": [
+          "会议室申请",
+          "日报填写",
+          "财务报销"
+        ],
+        "hash": "#/app/runtime/06165401-1851-4bda-bb6a-f0511a1cab7a/ec7df87d-acdc-4541-b75a-1a63eb7a2659"
+      }
+    ],
+    "coldUrlWithoutTabs": true
+  },
+  "baseFields": [
+    "tenantId",
+    "createOrgDeptId",
+    "createdBy",
+    "createdAt",
+    "updatedBy",
+    "updatedAt",
+    "deletedAt"
+  ],
+  "structuralFields": [
+    "id",
+    "version"
+  ],
+  "permissionCatalog": {
+    "passed": true,
+    "pages": [
+      {
+        "code": "office_meeting_room",
+        "resourceCode": "app.runtime.page.b3530d9592d633d2969aa9aea871ba12",
+        "models": [
+          {
+            "model": "dna.runtime.record.f764e3a5-af65-4887-b05c-88504bff0cbf",
+            "fields": 26,
+            "readonlySystemFields": 7
+          }
+        ]
+      },
+      {
+        "code": "office_daily_report",
+        "resourceCode": "app.runtime.page.38a1c3f547393f0b9fd4cbc8b51f533b",
+        "models": [
+          {
+            "model": "dna.runtime.record.10decc0c-6184-460c-93a6-6c4019686378",
+            "fields": 21,
+            "readonlySystemFields": 7
+          },
+          {
+            "model": "dna.runtime.record.5fee675f-e1e1-412c-be25-86225445f6ba",
+            "fields": 16,
+            "readonlySystemFields": 7
+          }
+        ]
+      },
+      {
+        "code": "office_expense_claim",
+        "resourceCode": "app.runtime.page.d8877e3c4134348dad7f69271cd93691",
+        "models": [
+          {
+            "model": "dna.runtime.record.61858755-5cf7-4680-a9c4-004065d8209d",
+            "fields": 27,
+            "readonlySystemFields": 7
+          },
+          {
+            "model": "dna.runtime.record.33ecdf3c-61c9-403f-a5e4-a12127fe4a94",
+            "fields": 16,
+            "readonlySystemFields": 7
+          }
+        ]
+      }
+    ]
+  },
+  "backfill": {
+    "passed": true,
+    "at": "2026-10-15T11:20:21.130Z",
+    "results": [
+      {
+        "code": "office_meeting_room",
+        "formVersion": 1,
+        "bindingId": "66c4a581-052e-4486-9386-cdecec196cb9"
+      },
+      {
+        "code": "office_daily_report",
+        "formVersion": 2,
+        "bindingId": "3e3d617c-49ed-4926-9bd3-576e677f1676"
+      },
+      {
+        "code": "office_expense_claim",
+        "formVersion": 1,
+        "bindingId": "f220476c-a862-48d0-b6c3-a7670431bfe6"
+      }
+    ]
+  },
+  "legacyBackfill": {
+    "passed": true,
+    "count": 42
+  },
+  "legacyAudit": {
+    "passed": true,
+    "at": "2026-10-15T11:53:58.879Z",
+    "active_pages": 45,
+    "missing_metadata": 0,
+    "legacy_generation": 0,
+    "grantsUnchanged": true
+  },
+  "permissions": {
+    "passed": true,
+    "checks": [
+      {
+        "name": "main/detail base fields are populated by the authenticated actor and tenant"
+      },
+      {
+        "name": "business payload cannot overwrite platform base fields"
+      },
+      {
+        "name": "SELF, department and ALL scopes constrain lists, counts and direct reads/writes",
+        "employeeTotal": 6,
+        "managerTotal": 7,
+        "financeTotal": 8,
+        "outsideDepartment": true
+      },
+      {
+        "name": "main/detail hidden, masked and visible-only projection; existing sessions receive changed policy"
+      },
+      {
+        "name": "runtime designer projection and standard list schema follow the same policy"
+      },
+      {
+        "name": "hidden and masked business/base fields cannot be inferred by filtering or sorting"
+      },
+      {
+        "name": "server rejects hidden/masked/readonly main and detail writes; permitted partial update preserves protected fields"
+      },
+      {
+        "name": "historical main/detail snapshots are reprojected through current field permissions"
+      }
+    ]
+  },
+  "dataExpressions": {
+    "passed": true,
+    "at": "2026-10-15T11:34:26.336Z",
+    "results": [
+      {
+        "owner": "employee",
+        "total": 6
+      },
+      {
+        "owner": "manager",
+        "total": 1
+      }
+    ],
+    "restored": true
+  },
+  "fieldConfigurationBrowser": {
+    "passed": true,
+    "at": "2026-10-15T11:31:22.906Z",
+    "fields": 43,
+    "models": 2,
+    "baseFieldsReadOnly": true,
+    "saved": true
+  },
+  "recordBrowser": {
+    "passed": true,
+    "at": "2026-10-15T11:32:17.676Z",
+    "checks": [
+      "main/detail masking and hidden fields",
+      "readonly metadata visible in detail",
+      "masked/hidden/system fields cannot be edited"
+    ]
+  },
+  "validation": {
+    "frontendTypecheckModules": 8,
+    "frontendTestsPassed": 80,
+    "backendSuiteTests": 1461,
+    "backendSuiteSkipped": 17,
+    "backendSuiteFailures": 0,
+    "additionalRealDatabaseTests": {
+      "postgresqlTemporalSorting": {
+        "passed": true,
+        "fields": [
+          "business datetime",
+          "created_at"
+        ],
+        "directions": [
+          "ASC",
+          "DESC"
+        ],
+        "pagination": true,
+        "microsecondPrecision": true,
+        "projectedAndUnprojected": true
+      }
+    },
+    "build": "production installDist",
+    "i18n": "3383 literal calls and 61 reviewed dynamic calls",
+    "scopedCheckstyle": "new base/permission descriptor classes passed",
+    "limits": "Not a full-repository test run. Optional external-database/engine tests skipped in the standard suite; PostgreSQL temporal regression was executed separately."
+  },
+  "cleanup": {
+    "passed": true,
+    "at": "2026-10-15T11:35:32.707Z",
+    "restored": [
+      "employee",
+      "manager",
+      "finance"
+    ],
+    "deletedRecords": [
+      "e886eb1c-625a-542b-840d-348b2f522367",
+      "8c722a06-0150-57ad-8ca9-a32e76e3be47",
+      "3d7ded6e-37bc-5f41-9c23-8e8d58181275"
+    ],
+    "deletedPolicies": [
+      "adf529b1-c522-47a0-b894-ef32623e6818",
+      "788ce261-b53b-4520-a28c-c85f8b80ffb2",
+      "1ce5e6ac-74f5-4828-a46b-62249fc8e458",
+      "78ec15ca-9189-418d-ae9d-694d039bfa00"
+    ]
+  },
+  "retainedBusinessEvidence": {
+    "verifiedAt": "2026-10-15T11:54:00.872Z",
+    "activeMainRecords": 7,
+    "activeDetailRecords": 12,
+    "workflowInstances": 7,
+    "completed": 6,
+    "rejected": 1,
+    "pendingTasks": 0,
+    "attachmentSha256": "295016e79b41b396618dd1aaebb0ac5f163be5e6402a2a734bcedc4f9c1137be"
+  },
+  "compatibility": {
+    "oldSnapshots": "Captured metadata is projected by current policy; absent historical system values are not invented.",
+    "stableFieldGrants": "Business field policy keys use stable field IDs; legacy storage-code policies cannot weaken stable grants.",
+    "oldPhysicalTables": "Existing audit columns are reused; managed resource metadata is backfilled through the published APP version."
+  },
+  "finalProductionSmoke": {
+    "passed": true,
+    "at": "2026-10-15T11:55:48.991Z",
+    "originalExpenseRows": 5,
+    "baseTimestampEquality": true,
+    "baseTimestampSort": true,
+    "deletedRowsExcluded": true,
+    "systemSchemaReadOnly": true
+  }
+}

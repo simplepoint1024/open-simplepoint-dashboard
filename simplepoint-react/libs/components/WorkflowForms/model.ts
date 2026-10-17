@@ -1,4 +1,4 @@
-import type {WorkflowVariable} from '../WorkflowDesigner/contracts';
+import type {WorkflowVariable, WorkflowRuntimeForm} from '../WorkflowDesigner/contracts';
 import {reservedVariable} from '../WorkflowDesigner/contracts.ts';
 import {tenantRoleAuthoritySelectable} from '../TenantDirectorySelect/query.ts';
 
@@ -6,15 +6,16 @@ import {tenantRoleAuthoritySelectable} from '../TenantDirectorySelect/query.ts';
 export function variableSchema(variable: WorkflowVariable): Record<string, unknown> {
   const base = {title: variable.label};
   switch (variable.type) {
+    case 'decimal': return {...base, type: 'string', maxLength: 80, pattern: '^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$'};
     case 'number': return {...base, type: 'number'};
     case 'boolean': return {...base, type: 'boolean'};
     case 'date': return {...base, type: 'string', format: 'date'};
     case 'date-time': return {...base, type: 'string', format: 'date-time'};
     case 'user': case 'role': return {...base, type: 'string', maxLength: 100,
-      'x-ui': {widget: 'TenantDirectory', options: {kind: variable.type === 'user' ? 'users' : 'roles'}}};
+      'x-ui': {widget: variable.type === 'user' ? 'UserSelect' : 'RoleSelect'}};
     case 'users': case 'roles': return {...base, type: 'array', maxItems: 50, uniqueItems: true,
       items: {type: 'string', maxLength: 100},
-      'x-ui': {widget: 'TenantDirectory', options: {kind: variable.type, multiple: true}}};
+      'x-ui': {widget: variable.type === 'users' ? 'UserSelect' : 'RoleSelect', options: {multiple: true}}};
     default: return {...base, type: 'string', maxLength: 4000};
   }
 }
@@ -69,6 +70,7 @@ export function variablesIssue(variables: readonly WorkflowVariable[], value: Re
       || Array.isArray(item) && item.length === 0)) return `请填写: ${variable.label}`;
     if (item == null) continue;
     const valid = variable.type === 'number' ? typeof item === 'number' && Number.isFinite(item)
+      : variable.type === 'decimal' ? exactDecimal(item)
       : variable.type === 'boolean' ? typeof item === 'boolean'
         : ['users', 'roles'].includes(variable.type) ? Array.isArray(item) && item.length <= 50
           && item.every(entry => typeof entry === 'string' && (variable.type === 'roles' ? roleValue(entry) : userValue(entry)))
@@ -89,3 +91,17 @@ export function ordinaryVariablesIssue(variables: readonly WorkflowVariable[], v
 
 const userValue = (value: string) => /^[A-Za-z0-9_][A-Za-z0-9_.:@-]{0,99}$/.test(value);
 const roleValue = tenantRoleAuthoritySelectable;
+
+/** Same 38-digit decimal envelope as the engine; never passes through JavaScript Number. */
+export function exactDecimal(value: unknown): boolean {
+  if (typeof value !== 'string' || value.length > 80 || !/^-?(0|[1-9][0-9]*)(\.[0-9]+)?$/.test(value)) return false;
+  const digits = value.replace('-', '').replace('.', '');
+  const precision = digits.replace(/^0+/, '').length || 1;
+  return precision <= 38 && (value.split('.')[1]?.length ?? 0) <= 38;
+}
+
+/** Provider-owned facts are displayed only by the authorized business snapshot renderer. */
+export function editableWorkflowVariables(form: WorkflowRuntimeForm) {
+  const protectedNames = new Set(form.protectedVariables ?? []);
+  return form.formContract.variables.filter(variable => !protectedNames.has(variable.name));
+}

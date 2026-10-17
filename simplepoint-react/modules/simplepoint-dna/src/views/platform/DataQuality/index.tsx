@@ -1,3 +1,5 @@
+import StatusTag from '@simplepoint/components/StatusTag';
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import api from '@/api';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import {get} from '@simplepoint/shared/api/methods';
@@ -22,12 +24,6 @@ const SEVERITY_COLORS: Record<string, string> = {
   WARNING: 'orange',
   ERROR: 'red',
   CRITICAL: 'magenta',
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  PASSED: 'green',
-  FAILED: 'red',
-  ERROR: 'volcano',
 };
 
 const App = () => {
@@ -111,20 +107,22 @@ const App = () => {
       title: t('dna.dataQuality.title.severity', 'Severity'),
       width: 90,
       render: (value?: string) => (
-        <Tag color={SEVERITY_COLORS[value ?? ''] ?? 'default'}>{value || '-'}</Tag>
+        <Tag color={SEVERITY_COLORS[value ?? ''] ?? 'default'}>{severities.find(item => item.const === value)?.title ?? value ?? '—'}</Tag>
       ),
     },
     lastRunStatus: {
       title: t('dna.dataQuality.title.lastRunStatus', 'Last Status'),
       width: 100,
       render: (value?: string) =>
-        value ? <Tag color={STATUS_COLORS[value] ?? 'default'}>{value}</Tag> : '-',
+        value ? <StatusTag tone={value === 'PASSED' ? 'success' : value === 'FAILED' || value === 'ERROR' ? 'error' : 'neutral'}
+          label={value === 'PASSED' ? t('dna.dataQuality.status.passed', '通过') : value === 'FAILED' ? t('dna.dataQuality.status.failed', '未通过')
+            : value === 'ERROR' ? t('dna.dataQuality.status.error', '执行错误') : value}/> : '—',
     },
     lastRunAt: {
       title: t('dna.dataQuality.title.lastRunAt', 'Last Run'),
       width: 170,
       render: (value?: string) =>
-        value ? new Date(value).toLocaleString() : '-',
+        value ? formatDateTime(value) : '-',
     },
     enabled: {
       title: t('dna.dataQuality.title.enabled', 'Status'),
@@ -133,7 +131,7 @@ const App = () => {
         <Tag color={value ? 'green' : 'red'}>{value ? t('dna.dataQuality.state.enabled', 'Enabled') : t('dna.dataQuality.state.disabled', 'Disabled')}</Tag>
       ),
     },
-  }), [ruleTypes, t]);
+  }), [ruleTypes, severities, t]);
 
   return (
     <div>

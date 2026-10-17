@@ -150,7 +150,7 @@ public class PersonalServiceImpl implements PersonalService, PersonalInboxGatewa
             "OVERDUE".equals(view),
             clock.instant(),
             Map.copyOf(filters));
-    return repository.page(PersonalItem.class, filter, bounded(page), "items").map(this::itemView);
+    return repository.page(PersonalItem.class, filter, bounded(page), "createdAt").map(this::itemView);
   }
 
   @Override
@@ -343,7 +343,7 @@ public class PersonalServiceImpl implements PersonalService, PersonalInboxGatewa
                 clock.instant(),
                 Map.copyOf(filters)),
             bounded(page),
-            "dueAt")
+            "createdAt")
         .map(this::todoView);
   }
 

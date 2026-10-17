@@ -78,8 +78,10 @@ export async function smokeNotificationLifecycle({clickMenu, clickReady, clickTe
   const emptyWrites = fixture.writes.length; await clickReady(form + ' button[type="submit"]');
   await poll(() => evaluate(`!!document.querySelector('${form} .text-danger, ${form} .ant-form-item-has-error, ${form} .error-detail')`), 'missing typed audience is required by genuine form schema');
   assert.equal(fixture.writes.length, emptyWrites, 'empty audience never reaches notification write');
-  await search('AudienceTenant520'); await poll(() => evaluate(`!![...document.querySelectorAll('${popup} .ant-select-item-option')].find(element=>element.textContent==='AudienceTenant520')`), 'tenant directory searches beyond 500');
-  await clickText(popup + ' .ant-select-item-option', 'AudienceTenant520'); fixture.failWrite(); await clickReady(form + ' button[type="submit"]');
+  await search('AudienceTenant520'); await poll(() => evaluate(`!![...document.querySelectorAll('${popup} .sp-tenant-name')].find(element=>element.textContent==='AudienceTenant520')`), 'tenant directory searches beyond 500');
+  assert.equal(await evaluate(`document.querySelector('${form} [data-domain-select="tenant"]')?.dataset.directory`), 'platform',
+    'notification tenant audience uses the public platform-scoped tenant selector');
+  await clickText(popup + ' .sp-tenant-name', 'AudienceTenant520'); fixture.failWrite(); await clickReady(form + ' button[type="submit"]');
   await poll(() => evaluate(`document.querySelector('${form} .ant-alert-error')?.textContent.includes('通知事务失败')`), 'copy metadata failure preserves typed selection');
   assert.equal(fixture.writes.at(-1).id, duplicate.id);
   assert.equal(fixture.writes.at(-1).data.audienceId, 'notification-tenant-520');

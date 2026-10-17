@@ -1,0 +1,135 @@
+{
+  "at": "2026-10-16T12:43:18.695198+00:00",
+  "scope": "Structured model details deployed; standalone calculation foundation verified; form calculation integration pending",
+  "wholeCalculationFeatureComplete": false,
+  "modelDefinition": {
+    "deploymentVersion": "20261016-model-definition2",
+    "services": [
+      {
+        "service": "dna",
+        "version": "20261016-model-definition2",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 294,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "host",
+        "version": "20261016-model-definition2",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 226,
+        "jarHashesMatch": true
+      }
+    ],
+    "allNineServiceHealth": "passing",
+    "live": {
+      "passed": true,
+      "at": "2026-10-16T12:39:57.850Z",
+      "fieldCount": 11,
+      "structuredSchema": true,
+      "indexesTab": true,
+      "rawJsonTextarea": false,
+      "dnaWrites": 0
+    },
+    "fixtureViewports": [
+      1440,
+      1024
+    ],
+    "screenshot": "20261016-model-definition.png",
+    "rolloutCorrection": "A DNA restart exposed missing discovery-generated gateway routing. Added a stable DNA route in packaged configuration and Consul. Verified live access again after recreating DNA without restarting Host."
+  },
+  "calculationFoundation": {
+    "standaloneRuntimeDependency": "org.antlr:antlr4-runtime:4.13.2",
+    "javaSuites": [
+      {
+        "suite": "org.simplepoint.calculation.FormulaAggregatePlanTest",
+        "tests": 4
+      },
+      {
+        "suite": "org.simplepoint.calculation.FormulaEngineTest",
+        "tests": 7
+      },
+      {
+        "suite": "org.simplepoint.calculation.FormulaSyntaxContractTest",
+        "tests": 1
+      },
+      {
+        "suite": "org.simplepoint.calculation.StandardFunctionsTest",
+        "tests": 63
+      }
+    ],
+    "javaTests": 75,
+    "browserSyntaxTests": 5,
+    "sharedGrammarDriftCheck": true,
+    "standaloneEditorViewports": [
+      1280,
+      768,
+      390
+    ],
+    "covered": [
+      "decimal precision",
+      "Unicode text and identifiers",
+      "canonical expression round trips",
+      "all 63 built-in function examples",
+      "lazy branches",
+      "same-record dependency ordering",
+      "parent/detail aggregation",
+      "cross-scope cycles",
+      "fixed operation clock",
+      "bounded aggregate output",
+      "pointer drag",
+      "keyboard insertion",
+      "invalid expression draft retention"
+    ]
+  },
+  "pending": [
+    "optional versioned formula metadata in form and DNA contracts",
+    "designer/runtime adapter and preview",
+    "server-owned persisted calculation and original request idempotency",
+    "field permissions across calculated dependencies and historical versions",
+    "formula-change publication and backfill",
+    "published form CRUD, query, detail and workflow end-to-end validation"
+  ],
+  "logs": {
+    "javaCalculation": {
+      "sha256": "367dc807b5f2ba84ffa74ce59a93490f5129e24017a5e2cdaa3561d281c3e041"
+    },
+    "browserSyntax": {
+      "sha256": "4b34962f2b09fb4530a07124212466a4b183124e491879e76c452dbc95b68c07"
+    },
+    "platformTypecheck": {
+      "sha256": "ee1cba279de065b1821006009b2b9f9c977127e4665f1fa0a265a072c00b1b08"
+    },
+    "editorTypecheck": {
+      "sha256": "38ac890c60e7f38d59ddfb410325cdfb5fca83c9411765c5481754e01c021630"
+    },
+    "syntaxTypecheck": {
+      "sha256": "38ac890c60e7f38d59ddfb410325cdfb5fca83c9411765c5481754e01c021630"
+    },
+    "uiStandards": {
+      "sha256": "bdb8a012462382995eeea59aa156aee41dc613169d95e77f2d6c61bbc49a39c1"
+    },
+    "i18n": {
+      "sha256": "42ed9a73e82ee89042e037a3d803dab472a534968e96dbb0821fef7c9d49f716"
+    },
+    "moduleBundles": {
+      "sha256": "c11cad87c4266f80dfa58aa7e52c4b5851f6b0ef7aced08a0b64756ec70e7572"
+    },
+    "modelFixture": {
+      "sha256": "d6d1d8fe1f706237cf47146853e45cd399f59e5a4f30665bdf24be0d9a6c6671"
+    },
+    "standaloneEditorBrowser": {
+      "sha256": "36a4a3ab827888fe44ba7bd5e911183f879db539158f27f8a6c0ff89a74a5c48"
+    },
+    "liveAfterDnaRecreation": {
+      "sha256": "6e6155915635435ea1991827aef619df357c1e1fa261feb0757630ae06a59a2f"
+    },
+    "deployment": {
+      "sha256": "35e119cc9c2c543db9936f50b93768d9f68a3954b58c616be27b0c0071bbfeef"
+    },
+    "hostTestsAndPackage": {
+      "sha256": "1c6fc134df9ec28ec5e3c4af422e4bf085d678a9828dc800319fd23fee6c2778"
+    }
+  }
+}

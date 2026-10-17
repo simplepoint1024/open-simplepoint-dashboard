@@ -55,6 +55,10 @@ class TenantResourceCatalogReadTest {
     row.setDescription("Actual description " + id); row.setSort(1); row.setEnabled(true); row.setGrantable(true);
     row.setLocalModified(true); row.setUpdatedAt(Instant.parse("2026-10-10T00:00:00Z")); em.persist(row); return row;
   }
+  TenantResource managed(String tenant, String id, String parent, String code, boolean enabled) {
+    var row = entry(tenant, id, parent, code, null, null); row.setManagedOwner("app"); row.setManagedKey(id);
+    row.setManagedHostResourceId("runtime-host"); row.setEnabled(enabled); return row;
+  }
   Resource resource(String id, String code, boolean publiclyAccessible) {
     var row = new Resource(); row.setId(id); row.setCode(code); row.setName("Private platform name " + id);
     row.setType(ResourceType.PAGE); row.setGrantable(true); row.setScopeTypes(Set.of(ResourceScopeType.TENANT));
@@ -113,6 +117,23 @@ class TenantResourceCatalogReadTest {
     scalarEvidence(false);
     assertEquals(Boolean.TRUE, em.createQuery("select r.enabled from TenantResource r where r.tenantId = :tenant and r.id = :id", Boolean.class)
         .setParameter("tenant", "tenant-a").setParameter("id", "alias").getSingleResult(), "No synchronization or mutation is necessary to revoke authorization");
+  }
+
+  @Test void managedResourcesRemainTenantScopedAndDoNotDependOnPlatformCatalogModeOrLicenseRows() {
+    var page = managed("tenant-a", "managed-page", "platform-parent", "app.runtime.page.one", true);
+    var action = managed("tenant-a", "managed-action", page.getId(), "app.runtime.page.one.create", true);
+    action.setType(ResourceType.ACTION);
+    managed("tenant-a", "managed-disabled", null, "app.runtime.page.disabled", false);
+    managed("tenant-b", "managed-foreign", null, "app.runtime.page.foreign", true);
+    evidence();
+
+    assertEquals(Set.of(page.getCode(), action.getCode()), catalog.managedGrantableCodes(
+        "tenant-a", Set.of(page.getCode(), action.getCode(), "app.runtime.page.foreign")));
+    assertEquals(Set.of(page.getCode(), action.getCode()), catalog.activeManagedGrantableCodes("tenant-a"));
+    assertEquals(Set.of(page.getId()), catalog.managedNavigationResources(
+        "tenant-a", Set.of(page.getCode())).stream().map(TenantResource::getId)
+        .collect(java.util.stream.Collectors.toSet()));
+    scalarEvidence(true);
   }
 
   @Test void disabledCyclesMissingTargetsAndOtherNamespacesCannotGrantAliases() {

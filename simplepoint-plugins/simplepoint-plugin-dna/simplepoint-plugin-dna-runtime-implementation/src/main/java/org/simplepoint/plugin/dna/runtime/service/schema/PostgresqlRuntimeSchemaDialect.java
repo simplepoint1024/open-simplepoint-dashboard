@@ -7,6 +7,8 @@ import java.sql.Types;
 import java.util.EnumMap;
 import java.util.HexFormat;
 import java.util.Locale;
+import org.apache.calcite.sql.SqlDialectFactory;
+import org.apache.calcite.sql.SqlDialects;
 import org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect;
 import org.simplepoint.plugin.dna.runtime.api.dialect.DatabaseIdentity;
 import org.simplepoint.plugin.dna.runtime.api.dialect.DialectCapability;
@@ -22,6 +24,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class PostgresqlRuntimeSchemaDialect extends AbstractRuntimeSchemaDialect {
 
+  @Override
+  public SqlDialectFactory recordSqlDialectFactory() {
+    return metadata -> new PostgresqlRuntimeRecordSqlDialect(SqlDialects.createContext(metadata));
+  }
+
   /** Creates the PostgreSQL schema dialect. */
   public PostgresqlRuntimeSchemaDialect(final PhysicalSchemaSnapshotCodec snapshotCodec) {
     super(snapshotCodec);
@@ -30,6 +37,14 @@ public class PostgresqlRuntimeSchemaDialect extends AbstractRuntimeSchemaDialect
   @Override
   public String dialectId() {
     return "postgresql";
+  }
+
+  @Override
+  public RecordWriteFenceSql recordWriteFenceSql(final JdbcDatabaseDialect coreDialect,
+      final JdbcDatabaseDialect.SupportContext context, final PhysicalSchemaTarget model) {
+    return RecordWriteFenceSql.compile(qualifiedTable(coreDialect, context, RecordWriteFenceSchema.target(model)),
+        field -> coreDialect.quoteIdentifier(field, context),
+        " ON CONFLICT (" + coreDialect.quoteIdentifier("id", context) + ") DO NOTHING");
   }
 
   @Override

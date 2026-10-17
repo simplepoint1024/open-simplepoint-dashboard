@@ -45,5 +45,8 @@
   "dna.dataQuality.severity.INFO": "Info (INFO)",
   "dna.dataQuality.severity.WARNING": "Warning (WARNING)",
   "dna.dataQuality.severity.ERROR": "Error (ERROR)",
-  "dna.dataQuality.severity.CRITICAL": "Critical (CRITICAL)"
+  "dna.dataQuality.severity.CRITICAL": "Critical (CRITICAL)",
+  "dna.dataQuality.status.passed": "Passed",
+  "dna.dataQuality.status.failed": "Failed",
+  "dna.dataQuality.status.error": "Execution error"
 }

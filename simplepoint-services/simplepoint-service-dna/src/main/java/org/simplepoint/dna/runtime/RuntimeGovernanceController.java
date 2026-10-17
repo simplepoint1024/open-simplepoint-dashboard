@@ -88,24 +88,41 @@ public class RuntimeGovernanceController {
     return Response.okay(catalog.audits(filters, pageable));
   }
 
+  /** Returns tenant-scoped model metadata independently of migration planning. */
+  @GetMapping("/models/{modelId}")
+  public Response<RuntimeGovernanceCatalog.ModelDetail> model(
+      @PathVariable(name = "modelId") final String modelId
+  ) {
+    return Response.okay(catalog.model(modelId));
+  }
+
+  /** Prepares the active namespace through the same authorized publication state machine. */
+  @PostMapping("/models/{modelId}/prepare-storage")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.runtime.models.retry')")
+  public Response<SchemaPublicationView> prepareStorage(
+      @PathVariable("modelId") final String modelId,
+      @RequestParam("expectedVersion") final long expectedVersion) {
+    return Response.okay(catalog.prepareStorage(modelId, expectedVersion));
+  }
+
   @GetMapping("/models/{modelId}/plan")
   public Response<SchemaPlanView> plan(
-      @PathVariable final String modelId,
-      @RequestParam final int targetVersion
+      @PathVariable(name = "modelId") final String modelId,
+      @RequestParam(name = "targetVersion") final int targetVersion
   ) {
     return Response.okay(catalog.plan(modelId, targetVersion));
   }
 
   @GetMapping("/migrations/{migrationId}")
-  public Response<SchemaPublicationView> migration(@PathVariable final String migrationId) {
+  public Response<SchemaPublicationView> migration(@PathVariable(name = "migrationId") final String migrationId) {
     return Response.okay(catalog.migration(migrationId));
   }
 
   @PostMapping("/migrations/{migrationId}/retry")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.runtime.models.retry')")
   public Response<SchemaPublicationView> retry(
-      @PathVariable final String migrationId,
-      @RequestParam final long expectedVersion
+      @PathVariable(name = "migrationId") final String migrationId,
+      @RequestParam(name = "expectedVersion") final long expectedVersion
   ) {
     return Response.okay(catalog.retry(migrationId, expectedVersion));
   }
@@ -113,8 +130,8 @@ public class RuntimeGovernanceController {
   @PostMapping("/migrations/{migrationId}/recover")
   @PreAuthorize("hasRole('Administrator') or hasAuthority('dna.runtime.models.retry')")
   public Response<SchemaPublicationView> recover(
-      @PathVariable final String migrationId,
-      @RequestParam final long expectedVersion
+      @PathVariable(name = "migrationId") final String migrationId,
+      @RequestParam(name = "expectedVersion") final long expectedVersion
   ) {
     return Response.okay(catalog.recover(migrationId, expectedVersion));
   }

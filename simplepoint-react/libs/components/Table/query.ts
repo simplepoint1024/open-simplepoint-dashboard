@@ -103,5 +103,6 @@ export function validateView(view: SavedView, contract: QueryContract): void {
   if (encodeURIComponent(JSON.stringify(wireFilters)).length > 6000) throw Error('筛选内容过长，请减少条件或集合值');
   const sort = view.sort ? (Array.isArray(view.sort) ? view.sort : [view.sort]) : [];
   if (sort.length > contract.maxSort || new Set(sort.map(s => s.split(',')[0])).size !== sort.length
-    || sort.some(s => !/^[A-Za-z][A-Za-z0-9_]*,(asc|desc)$/.test(s) || !contract.fields[s.split(',')[0]]?.sortable)) throw Error('排序字段已不可用');
+    || sort.some(s => !/^[A-Za-z0-9][A-Za-z0-9_-]{0,63},(asc|desc)$/.test(s)
+      || !contract.fields[s.split(',')[0]]?.sortable)) throw Error('排序字段已不可用');
 }

@@ -18,6 +18,9 @@ public final class WorkflowModels {
     }
   }
 
+  /** A latest published process whose start form matches the selected immutable business form. */
+  public record BoundDefinition(String id, String name, int version, String description) {}
+
   /** Creates a stable process identity and its first draft. */
   public record CreateDefinitionCommand(
       String key, String name, String category, String description) {}
@@ -109,7 +112,36 @@ public final class WorkflowModels {
       int definitionVersion,
       WorkflowFormContract formContract,
       WorkflowFormContract.Binding binding,
-      Map<String, Object> values) {}
+      Map<String, Object> values,
+      @com.fasterxml.jackson.annotation.JsonInclude(
+              com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+          String processInstanceId,
+      @com.fasterxml.jackson.annotation.JsonInclude(
+              com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+          String businessKey,
+      @com.fasterxml.jackson.annotation.JsonInclude(
+              com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+          String definitionId,
+      @com.fasterxml.jackson.annotation.JsonInclude(
+              com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY)
+          java.util.Set<String> protectedVariables) {
+    /** Validates and defensively copies the immutable request or snapshot boundary. */
+    public RuntimeForm {
+      protectedVariables =
+          protectedVariables == null
+              ? java.util.Set.of()
+              : java.util.Set.copyOf(protectedVariables);
+    }
+
+    /** Preserves compatibility for callers without optional snapshot or scene metadata. */
+    public RuntimeForm(
+        int definitionVersion,
+        WorkflowFormContract formContract,
+        WorkflowFormContract.Binding binding,
+        Map<String, Object> values) {
+      this(definitionVersion, formContract, binding, values, null, null, null, java.util.Set.of());
+    }
+  }
 
   /** Starts a process against the latest or an explicit published version. */
   public record StartProcessCommand(
@@ -117,10 +149,27 @@ public final class WorkflowModels {
       String businessKey,
       String title,
       Map<String, Object> variables,
-      List<String> ccUserIds) {}
+      List<String> ccUserIds,
+      String idempotencyKey) {
+    /** Compatibility for existing callers; reliable integrations always supply an operation key. */
+    public StartProcessCommand(
+        Integer version,
+        String businessKey,
+        String title,
+        Map<String, Object> variables,
+        List<String> ccUserIds) {
+      this(version, businessKey, title, variables, ccUserIds, null);
+    }
+  }
 
   /** Completes a task with constrained variables and an optional comment. */
-  public record CompleteTaskCommand(Map<String, Object> variables, String comment) {}
+  public record CompleteTaskCommand(
+      Map<String, Object> variables, String comment, String idempotencyKey) {
+    /** Compatibility with existing unkeyed task clients. */
+    public CompleteTaskCommand(Map<String, Object> variables, String comment) {
+      this(variables, comment, null);
+    }
+  }
 
   /** Platform-owned process instance projection. */
   public record ProcessInstanceSummary(

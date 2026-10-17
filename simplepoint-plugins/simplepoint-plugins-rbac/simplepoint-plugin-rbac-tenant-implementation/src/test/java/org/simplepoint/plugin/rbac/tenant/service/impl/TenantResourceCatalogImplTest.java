@@ -454,7 +454,9 @@ class TenantResourceCatalogImplTest {
             .getTotalElements());
     var schema =
         new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(catalog.querySchema());
-    assertEquals(2, schema.at("/schema/properties/origin/oneOf").size());
+    var origins = new java.util.HashSet<String>();
+    schema.at("/schema/properties/origin/oneOf").forEach(choice -> origins.add(choice.path("const").asText()));
+    assertEquals(Set.of("PLATFORM", "MANAGED", "TENANT"), origins);
     assertTrue(schema.at("/schema/properties/tenantId").isMissingNode());
   }
 

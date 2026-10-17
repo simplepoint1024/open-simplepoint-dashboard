@@ -7,18 +7,58 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.Statement;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import javax.sql.DataSource;
 import org.apache.calcite.adapter.jdbc.JdbcSchema;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.AbstractSchema;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 
 class DefaultCalciteQueryEngineTest {
 
   private final CalciteQueryEngine engine = new DefaultCalciteQueryEngine();
+
+  @Test
+  void trustedSessionTypesPreservePhysicalPrecisionWithoutChangingOtherSessions() throws Exception {
+    JdbcDataSource source = createDataSource("temporal");
+    initialize(source, "CREATE TABLE moments (at_time TIME(6)); INSERT INTO moments VALUES (TIME '12:34:56.123456');");
+    CalciteSchemaConfigurer ordinary = root -> root.add("source", JdbcSchema.create(root, "source", source, null, "PUBLIC"));
+    CalciteSchemaConfigurer precise = new CalciteSchemaConfigurer() {
+      @Override
+      public void configure(final SchemaPlus root) {
+        ordinary.configure(root);
+      }
+
+      @Override
+      public Class<? extends RelDataTypeSystem> typeSystem() {
+        return MicrosecondTypeSystem.class;
+      }
+
+      @Override
+      public ZoneId timeZone() {
+        return ZoneId.of("UTC");
+      }
+    };
+    var query = new CalciteQueryRequest("SELECT COUNT(*) FROM source.moments WHERE at_time = CAST(? AS TIME(6))",
+        null, 1, 5000, List.of("12:34:56.123456"));
+    assertEquals(0L, engine.execute(query, ordinary).rows().getFirst().getFirst());
+    assertEquals(1L, engine.execute(query, precise).rows().getFirst().getFirst());
+    assertEquals(0L, engine.execute(query, ordinary).rows().getFirst().getFirst());
+  }
+
+  /** Public constructor is required by Calcite's trusted type-system SPI. */
+  public static final class MicrosecondTypeSystem extends RelDataTypeSystemImpl {
+    @Override
+    public int getMaxPrecision(final SqlTypeName type) {
+      return type == SqlTypeName.TIME ? 6 : super.getMaxPrecision(type);
+    }
+  }
 
   @Test
   void executeShouldJoinAcrossSchemasAndReportPlatformJoin() throws Exception {

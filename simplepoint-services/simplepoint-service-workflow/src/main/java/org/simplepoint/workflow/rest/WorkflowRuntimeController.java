@@ -135,7 +135,7 @@ public class WorkflowRuntimeController {
   @Operation(summary = "驳回当前审批并结束本轮流程")
   public Response<ProcessInstanceSummary> reject(
       @PathVariable("id") final String id, @RequestBody final CancelCommand command) {
-    return Response.okay(service.reject(id, command == null ? null : command.reason()));
+    return Response.okay(service.reject(id, command == null ? null : command.reason(), command == null ? null : command.idempotencyKey()));
   }
 
   /** Withdrawal is a starter operation; the domain never grants it to a different actor. */
@@ -146,7 +146,7 @@ public class WorkflowRuntimeController {
   @Operation(summary = "发起人撤回尚未结束的流程")
   public Response<ProcessInstanceSummary> withdraw(
       @PathVariable("id") final String id, @RequestBody final CancelCommand command) {
-    return Response.okay(service.withdraw(id, command == null ? null : command.reason()));
+    return Response.okay(service.withdraw(id, command == null ? null : command.reason(), command == null ? null : command.idempotencyKey()));
   }
 
   /** Pages matters started by the current user. */
@@ -234,9 +234,11 @@ public class WorkflowRuntimeController {
   @Operation(summary = "终止运行中的流程实例")
   public Response<ProcessInstanceSummary> cancel(
       @PathVariable("id") final String id, @RequestBody final CancelCommand command) {
-    return Response.okay(service.cancel(id, command == null ? null : command.reason()));
+    return Response.okay(service.cancel(id, command == null ? null : command.reason(), command == null ? null : command.idempotencyKey()));
   }
 
   /** Cancellation request with an audited reason. */
-  public record CancelCommand(String reason) {}
+  public record CancelCommand(String reason, String idempotencyKey) {
+    public CancelCommand(String reason) { this(reason, null); }
+  }
 }

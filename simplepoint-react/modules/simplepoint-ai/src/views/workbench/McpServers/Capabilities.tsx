@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import TableActions from "@simplepoint/components/Table/Actions";
 import api from "@/api";
 import DataTable from "@simplepoint/components/DataTable";
@@ -850,7 +851,7 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
                       dataIndex: "discoveredAt",
                       width: 190,
                       render: (value: string) =>
-                        new Date(value).toLocaleString(),
+                        formatDateTime(value),
                     },
                     {
                       title: t("ai.mcp.snapshots.remoteServerName", "服务名称"),
@@ -1081,7 +1082,7 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
               style={{ marginBottom: 16 }}
               message={
                 snapshotComparison.previous
-                  ? `${new Date(snapshotComparison.current.discoveredAt).toLocaleString()} ↔ ${new Date(snapshotComparison.previous.discoveredAt).toLocaleString()}`
+                  ? `${formatDateTime(snapshotComparison.current.discoveredAt)} ↔ ${formatDateTime(snapshotComparison.previous.discoveredAt)}`
                   : t(
                       "ai.mcp.snapshots.first",
                       "这是该 MCP Server 的第一份能力快照",

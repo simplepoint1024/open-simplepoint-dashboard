@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import {useState} from 'react';
 import {Alert, Empty, Space, Spin, Timeline, Typography} from 'antd';
 import {useData} from '@simplepoint/shared/api/methods';
@@ -25,7 +26,7 @@ export default function ActionTimeline({id, onSelectNode}: {id: string; onSelect
       <Timeline items={result.events.content.map(event => ({key: event.id,
         content: <>
           <Space wrap className="workflow-event-heading"><WorkflowStatus value={event.actionType}/><strong>{event.actorName || t('workflow.identity.unavailable', '用户信息不可用')}</strong></Space>
-          <Typography.Text type="secondary">{new Date(event.occurredAt).toLocaleString(locale)}</Typography.Text>
+          <Typography.Text type="secondary">{formatDateTime(event.occurredAt, locale)}</Typography.Text>
           {event.comment && <p className="workflow-node-comment">{event.comment}</p>}
           {event.activityId && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'node', sort: 1, type: 'link',
             text: event.activityName || t('workflow.audit.viewNode', '查看相关节点'), onClick: () => onSelectNode(event.activityId!)}]}/>}

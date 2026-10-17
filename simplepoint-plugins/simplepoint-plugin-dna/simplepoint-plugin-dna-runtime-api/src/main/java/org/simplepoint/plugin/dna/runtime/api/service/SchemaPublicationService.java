@@ -12,6 +12,9 @@ public interface SchemaPublicationService {
   /** Reads a tenant-scoped publication without exposing its native SQL. */
   SchemaPublicationView get(String migrationId);
 
+  /** Reads the idempotent publication record for one model version. */
+  SchemaPublicationView getByTargetVersion(String physicalModelId, int targetVersion);
+
   /** Reclaims and retries a failed publication after checking the model version. */
   SchemaPublicationView retry(String migrationId, long expectedLockVersion);
 

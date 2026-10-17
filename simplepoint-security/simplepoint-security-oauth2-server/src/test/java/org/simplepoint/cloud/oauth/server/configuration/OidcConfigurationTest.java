@@ -68,7 +68,8 @@ class OidcConfigurationTest {
     assertThat(context.getClaims().build().getAudience())
         .containsExactly("simplepoint-api", "simplepoint-client");
     assertThat(context.getClaims().build().getClaims())
-        .containsEntry("aud", context.getClaims().build().getAudience());
+        .containsEntry("aud", context.getClaims().build().getAudience())
+        .containsEntry("client_id", "simplepoint-client").containsEntry("grant_type", "authorization_code");
   }
 
   @Test

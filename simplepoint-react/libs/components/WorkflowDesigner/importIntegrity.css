@@ -1,0 +1,7 @@
+.workflow-import-problem {
+  max-height: 35%;
+  flex-shrink: 0;
+  margin: 8px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}

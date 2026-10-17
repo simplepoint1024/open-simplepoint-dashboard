@@ -57,7 +57,7 @@ public class RecordQueryServiceImpl implements RecordQueryService {
 
   @Override
   public RecordPageView page(final RecordPageQuery query) {
-    return execute("page", query.physicalModelId(), invocation -> {
+    return execute("page", query.physicalModelId(), query.schemaReference(), invocation -> {
       long startedAt = System.nanoTime();
       RecordSelectPlan pagePlan = compiler.page(invocation.model(), invocation.access(), query);
       RecordSelectPlan countPlan = compiler.count(
@@ -67,7 +67,7 @@ public class RecordQueryServiceImpl implements RecordQueryService {
       );
       CalciteQueryResult pageResult = backend.query(invocation.model(), pagePlan, TIMEOUT_MS);
       CalciteQueryResult countResult = backend.query(invocation.model(), countPlan, TIMEOUT_MS);
-      List<RecordView> records = views(pageResult, pagePlan, invocation.access());
+      List<RecordView> records = views(pageResult, pagePlan, invocation.model(), invocation.access());
       long total = countValue(countResult);
       audit.success(
           DnaRuntimeAuditEventType.RECORD_QUERIED,
@@ -82,7 +82,7 @@ public class RecordQueryServiceImpl implements RecordQueryService {
 
   @Override
   public long count(final RecordCountQuery query) {
-    return execute("count", query.physicalModelId(), invocation -> {
+    return execute("count", query.physicalModelId(), query.schemaReference(), invocation -> {
       long startedAt = System.nanoTime();
       long count = countValue(backend.query(
           invocation.model(),
@@ -102,12 +102,13 @@ public class RecordQueryServiceImpl implements RecordQueryService {
 
   @Override
   public RecordView get(final RecordLookupQuery query) {
-    return execute("get", query.physicalModelId(), invocation -> {
+    return execute("get", query.physicalModelId(), query.schemaReference(), invocation -> {
       long startedAt = System.nanoTime();
       RecordSelectPlan plan = compiler.lookup(invocation.model(), invocation.access(), query);
       List<RecordView> records = views(
           backend.query(invocation.model(), plan, TIMEOUT_MS),
           plan,
+          invocation.model(),
           invocation.access()
       );
       if (records.isEmpty()) {
@@ -130,9 +131,10 @@ public class RecordQueryServiceImpl implements RecordQueryService {
   private <T> T execute(
       final String operation,
       final String modelId,
+      final org.simplepoint.plugin.dna.runtime.api.record.RecordSchemaReference schemaReference,
       final Function<Invocation, T> callback
   ) {
-    Invocation invocation = invocation(modelId);
+    Invocation invocation = invocation(modelId, schemaReference);
     long startedAt = System.nanoTime();
     try (RecordAdmissionController.Permit ignored = admission.enter(
         invocation.access().actor().tenantId()
@@ -167,15 +169,19 @@ public class RecordQueryServiceImpl implements RecordQueryService {
     }
   }
 
-  private Invocation invocation(final String modelId) {
+  private Invocation invocation(
+      final String modelId,
+      final org.simplepoint.plugin.dna.runtime.api.record.RecordSchemaReference schemaReference
+  ) {
     RuntimeActor actor = requestContext.requireActor();
-    RuntimeRecordModel model = modelResolver.resolve(actor, modelId);
+    RuntimeRecordModel model = modelResolver.resolve(actor, modelId, schemaReference);
     return new Invocation(model, accessPolicy.authorize(actor, model));
   }
 
-  private static List<RecordView> views(
+  static List<RecordView> views(
       final CalciteQueryResult result,
       final RecordSelectPlan plan,
+      final RuntimeRecordModel model,
       final RecordAccessContext access
   ) {
     return result.rows().stream().map(row -> {
@@ -185,7 +191,7 @@ public class RecordQueryServiceImpl implements RecordQueryService {
       for (int index = 0; index < plan.valueFields().size(); index++) {
         String field = plan.valueFields().get(index);
         Object value = row.get(index + 2);
-        values.put(field, access.maskedFields().contains(field) && value != null ? "***" : value);
+        values.put(field, access.maskedFields().contains(field) && value != null ? "***" : RecordWireValues.wireValue(model, field, value));
       }
       return new RecordView(
           id,

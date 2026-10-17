@@ -40,6 +40,12 @@ final class RecordQueryLimits {
     return filter;
   }
 
+  static void writePolicyVersion(final long version) {
+    if (version < 0) {
+      throw new IllegalArgumentException("writePolicyVersion must not be negative");
+    }
+  }
+
   static String modelId(final String value) {
     if (value == null || value.isBlank() || value.length() > 64) {
       throw new IllegalArgumentException("physicalModelId is required");
@@ -52,6 +58,17 @@ final class RecordQueryLimits {
       throw new IllegalArgumentException("recordId is required");
     }
     return value.trim();
+  }
+
+  static String idempotencyKey(final String value) {
+    if (value == null || value.isBlank() || value.length() > 128) {
+      throw new IllegalArgumentException("idempotencyKey is required");
+    }
+    String normalized = value.trim();
+    if (!normalized.matches("[A-Za-z0-9][A-Za-z0-9._:-]{0,127}")) {
+      throw new IllegalArgumentException("idempotencyKey has an invalid format");
+    }
+    return normalized;
   }
 
   private static void visit(final RecordFilter node, final int depth, final int[] count) {

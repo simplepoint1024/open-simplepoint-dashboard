@@ -25,6 +25,20 @@ public interface PhysicalModelRepository extends JpaRepository<PhysicalModelEnti
       @Param("modelId") String modelId
   );
 
+  /** Resolves the unique live model owned by one tenant form. */
+  @Query("""
+      select model from PhysicalModelEntity model
+      where model.tenantId = :tenantId
+        and model.appId = :appId
+        and model.formId = :formId
+        and model.deletedAt is null
+      """)
+  Optional<PhysicalModelEntity> findActiveByForm(
+      @Param("tenantId") String tenantId,
+      @Param("appId") String appId,
+      @Param("formId") String formId
+  );
+
   /** Serializes model version creation and publication claims across service instances. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("""

@@ -44,6 +44,11 @@ public interface TenantResourceCatalog {
     PAGE_TARGET
   }
 
+  /** Serializes grant changes with managed resource lifecycle changes in the caller transaction. */
+  default void lockForGrantModification(String tenantId) {
+    throw new UnsupportedOperationException("Tenant grant serialization is required");
+  }
+
   /** Returns the tenant's resource loading mode. */
   TenantResourceMode mode(String tenantId);
 
@@ -107,4 +112,16 @@ public interface TenantResourceCatalog {
 
   /** Effective platform permission codes in custom mode, including licensed page aliases. */
   Set<String> effectivePlatformCodes(String tenantId, Collection<String> requested);
+
+  /** Active service-managed permission codes, independent of presentation mode. */
+  Set<String> managedGrantableCodes(String tenantId, Collection<String> requested);
+
+  /** All active service-managed permission codes for tenant owner/administrator access. */
+  Set<String> activeManagedGrantableCodes(String tenantId);
+
+  /** Held managed navigation nodes and their managed ancestors. */
+  List<TenantResource> managedNavigationResources(
+      String tenantId,
+      Collection<String> heldCodes
+  );
 }

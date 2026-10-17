@@ -157,6 +157,12 @@ public class OidcConfiguration {
           claims.forEach((key, value) -> context.getClaims().claim(key, value));
         }
       }
+      // Service-to-service trust must come from the authenticated OAuth client and grant,
+      // after decorators, never from a display name or a user-controlled subject claim.
+      if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
+        context.getClaims().claim("client_id", context.getRegisteredClient().getClientId());
+        context.getClaims().claim("grant_type", context.getAuthorizationGrantType().getValue());
+      }
     };
   }
 

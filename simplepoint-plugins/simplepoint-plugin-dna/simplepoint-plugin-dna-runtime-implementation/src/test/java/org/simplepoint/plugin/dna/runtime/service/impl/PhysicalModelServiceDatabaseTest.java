@@ -39,6 +39,7 @@ import org.simplepoint.plugin.dna.runtime.entity.PhysicalModelBindingEntity;
 import org.simplepoint.plugin.dna.runtime.entity.PhysicalModelEntity;
 import org.simplepoint.plugin.dna.runtime.entity.PhysicalModelResourceBindingEntity;
 import org.simplepoint.plugin.dna.runtime.entity.PhysicalModelVersionEntity;
+import org.simplepoint.plugin.dna.runtime.entity.RecordCreateReceiptEntity;
 import org.simplepoint.plugin.dna.runtime.entity.SchemaMigrationEntity;
 import org.simplepoint.plugin.dna.runtime.entity.SchemaMigrationStepEntity;
 import org.simplepoint.plugin.dna.runtime.repository.DnaRuntimeAuditEventRepository;
@@ -76,6 +77,7 @@ class PhysicalModelServiceDatabaseTest {
         .addAnnotatedClass(PhysicalModelVersionEntity.class)
         .addAnnotatedClass(PhysicalModelResourceBindingEntity.class)
         .addAnnotatedClass(DnaRuntimeAuditEventEntity.class)
+        .addAnnotatedClass(RecordCreateReceiptEntity.class)
         .addAnnotatedClass(SchemaMigrationEntity.class)
         .addAnnotatedClass(SchemaMigrationStepEntity.class)
         .buildMetadata()
@@ -97,7 +99,7 @@ class PhysicalModelServiceDatabaseTest {
         new DefaultPhysicalTableNamingStrategy(),
         new PhysicalSchemaCodec(new ObjectMapper().findAndRegisterModules()),
         new PhysicalSchemaValidator(
-            new StandardLogicalValueConverter(new ObjectMapper().findAndRegisterModules())
+            new StandardLogicalValueConverter()
         ),
         new RuntimeRequestContext(),
         new JpaDnaRuntimeAuditPublisher(auditRepository)
@@ -128,6 +130,7 @@ class PhysicalModelServiceDatabaseTest {
     assertThat(created.latestVersion()).isEqualTo(1);
     assertThat(created.activeVersion()).isNull();
     assertThat(created.latestSchema().checksum()).hasSize(64);
+    assertThat(service.getByForm("app-a", "form-a").id()).isEqualTo(created.id());
     assertThat(count(PhysicalModelEntity.class)).isEqualTo(1);
     assertThat(count(PhysicalModelBindingEntity.class)).isEqualTo(1);
     assertThat(count(PhysicalModelVersionEntity.class)).isEqualTo(1);
@@ -247,6 +250,18 @@ class PhysicalModelServiceDatabaseTest {
 
     when(modelRepository.findActiveById(anyString(), anyString()))
         .thenAnswer(call -> findModel(call.getArgument(0), call.getArgument(1)));
+    when(modelRepository.findActiveByForm(anyString(), anyString(), anyString()))
+        .thenAnswer(call -> unique(
+            "from PhysicalModelEntity model where model.tenantId = :tenant "
+                + "and model.appId = :app and model.formId = :form "
+                + "and model.deletedAt is null",
+            PhysicalModelEntity.class,
+            Map.of(
+                "tenant", call.getArgument(0),
+                "app", call.getArgument(1),
+                "form", call.getArgument(2)
+            )
+        ));
     when(modelRepository.findActiveByIdForUpdate(anyString(), anyString()))
         .thenAnswer(call -> findModel(call.getArgument(0), call.getArgument(1)));
     when(bindingRepository.findActiveByModel(anyString(), anyString()))

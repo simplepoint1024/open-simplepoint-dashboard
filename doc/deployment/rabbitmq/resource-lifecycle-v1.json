@@ -1,0 +1,112 @@
+{
+  "vhosts": [
+    {
+      "name": "/simplepoint"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "sp.events.app",
+      "vhost": "/simplepoint",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "sp.events.common",
+      "vhost": "/simplepoint",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "sp.events.dna",
+      "vhost": "/simplepoint",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "sp.events.common.resource-offline.grants",
+      "vhost": "/simplepoint",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-delivery-limit": -1
+      }
+    },
+    {
+      "name": "sp.events.dna.resource-offline.projection",
+      "vhost": "/simplepoint",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-delivery-limit": -1
+      }
+    },
+    {
+      "name": "sp.events.app.resource-offline.common",
+      "vhost": "/simplepoint",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-delivery-limit": -1
+      }
+    },
+    {
+      "name": "sp.events.app.resource-offline.dna",
+      "vhost": "/simplepoint",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-delivery-limit": -1
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source": "sp.events.app",
+      "vhost": "/simplepoint",
+      "destination": "sp.events.common.resource-offline.grants",
+      "destination_type": "queue",
+      "routing_key": "resource.offline.requested.v1",
+      "arguments": {}
+    },
+    {
+      "source": "sp.events.app",
+      "vhost": "/simplepoint",
+      "destination": "sp.events.dna.resource-offline.projection",
+      "destination_type": "queue",
+      "routing_key": "resource.offline.requested.v1",
+      "arguments": {}
+    },
+    {
+      "source": "sp.events.common",
+      "vhost": "/simplepoint",
+      "destination": "sp.events.app.resource-offline.common",
+      "destination_type": "queue",
+      "routing_key": "resource.offline.completed.v1",
+      "arguments": {}
+    },
+    {
+      "source": "sp.events.dna",
+      "vhost": "/simplepoint",
+      "destination": "sp.events.app.resource-offline.dna",
+      "destination_type": "queue",
+      "routing_key": "resource.offline.completed.v1",
+      "arguments": {}
+    }
+  ]
+}

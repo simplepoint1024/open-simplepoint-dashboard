@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 export type NotificationRow = {id: string; title?: string; content?: string; category?: string; priority?: string;
   audienceType?: string; audienceId?: string; status?: 'DRAFT' | 'PUBLISHED' | 'REVOKED'; publishAt?: string; expireAt?: string};
 export type NotificationAction = 'publish' | 'revoke' | 'duplicate';
@@ -13,7 +14,7 @@ export function canNotificationAction(action: NotificationAction, row: unknown):
 export function notificationDate(value: unknown): string {
   if (typeof value !== 'string' || !value.trim()) return '-';
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toLocaleString() : '-';
+  return Number.isFinite(date.getTime()) ? formatDateTime(value) : '-';
 }
 
 /** A different audience directory never inherits another kind's persisted identifier. */
@@ -27,7 +28,7 @@ export function notificationFormUi(draft: Record<string, unknown>, audienceReada
   switch (draft.audienceType ?? 'ALL') {
     case 'ALL': return {...protectedType, audienceId: {'ui:widget': 'hidden'}};
     case 'USER': return {...protectedType, audienceId: {'ui:widget': 'UserPicker'}};
-    case 'TENANT': return {...protectedType, audienceId: {'ui:widget': 'EntitySelect', 'ui:options': {endpoint: '/common/platform/tenants'}}};
+    case 'TENANT': return {...protectedType, audienceId: {'ui:widget': 'TenantSelect', 'ui:options': {directory: 'platform'}}};
     // A protected/unknown discriminant cannot safely choose an editable ID directory.
     default: return {...protectedType, audienceId: {'ui:readonly': true}};
   }

@@ -470,6 +470,20 @@ public class SchemaPublicationStateService {
         .orElseThrow(() -> notFound("Schema migration was not found")));
   }
 
+  /** Reads the tenant-scoped idempotent migration for one model version. */
+  @Transactional(readOnly = true)
+  public SchemaPublicationView getByTargetVersion(
+      final String tenantId,
+      final String modelId,
+      final int targetVersion
+  ) {
+    return view(tenantId, migrationRepository.findByTargetVersion(
+        tenantId,
+        modelId,
+        targetVersion
+    ).orElseThrow(() -> notFound("Schema migration was not found")));
+  }
+
   /** Loads trusted planning inputs without exposing the physical binding to callers. */
   @Transactional(readOnly = true)
   public PlanningWork planningWork(

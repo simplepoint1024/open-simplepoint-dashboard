@@ -80,6 +80,8 @@ export function localizeValidationErrors(errors: RJSFValidationError[], t: Trans
     });
   }).map(error => {
     let message = validationMessage(error.name ?? 'invalid', error.params ?? {}, t);
+    const customText = errorDefinition(schema, error)?.['x-validation-text']?.[error.name ?? 'invalid'];
+    if (typeof customText === 'string' && customText.length <= 500) message = customText;
     const key = errorDefinition(schema, error)?.['x-validation-messages']?.[error.name ?? 'invalid'];
     if (typeof key === 'string' && /^[a-zA-Z][a-zA-Z0-9._-]{0,199}$/.test(key)) message = t(key, message, error.params);
     const title = error.title?.startsWith('i18n:') ? t(error.title.slice(5)) : error.title;

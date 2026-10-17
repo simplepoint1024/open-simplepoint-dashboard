@@ -7,11 +7,12 @@ import {
 } from '@ant-design/icons';
 import Modeler from 'bpmn-js/lib/Modeler';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
-import {Alert, Button, Empty, Form, Input, InputNumber, Space, Tooltip, Typography} from 'antd';
+import {Button, Empty, Form, Input, InputNumber, Space, Tooltip, Typography} from 'antd';
 import {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 import DueDateValue from './DueDateValue';
-import TenantDirectorySelect from '../TenantDirectorySelect';
-import ValueExpression from '../ExpressionEditor/ValueExpression';
+import UserSelect from '../UserSelect';
+import RoleSelect from '../RoleSelect';
+import ValueExpression, {type ValueExpressionDraft} from '../ExpressionEditor/ValueExpression';
 import ConditionExpression from '../ExpressionEditor/ConditionExpression';
 import {preserveXmlWhitespace} from './xmlWhitespace';
 import {priorityBooleanLiteral} from './priority';
@@ -24,6 +25,19 @@ import type {WorkflowFormContract} from './contracts';
 export type {WorkflowFormAdapter, WorkflowFormBinding} from './contracts';
 import flowableModdle from './flowableModdle';
 import platformModeling from './platformModeling';
+import DiagramProperties from './DiagramProperties';
+import {diagramTypes, modelingCapabilities} from './modelingCapabilities';
+import {diagramMessage, diagramXmlIssues} from './diagramPolicy';
+import {translateBpmn} from './bpmnTranslation';
+import ImportProblemNotice from './ImportProblemNotice';
+import {importProblem, importProblemMessage, type ImportProblem, type WorkflowImportState} from './importIntegrity';
+export type {WorkflowImportState} from './importIntegrity';
+import ActivityExecutionEditor from './ActivityExecutionEditor';
+import {invalidAssignmentVariableNodes, iterationLocals, MULTI_INSTANCE_TYPE, multiInstanceXmlIssues} from './multiInstance';
+import {loopConditionValue, STANDARD_LOOP_TYPE, type ActivityLoop, type ExecutionMode, type LoopOwner} from './loopCharacteristics';
+import {standardLoopMessage, standardLoopXmlIssues} from './standardLoop';
+import {multiInstanceMessage} from './multiInstanceMessages';
+import type {TranslateFn} from '@simplepoint/shared/i18n/translator';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import './style.css';
@@ -31,7 +45,7 @@ import './style.css';
 type BpmnElement = {
   id: string;
   type?: string;
-  businessObject?: Record<string, unknown> & {
+  businessObject?: Record<string, unknown> & LoopOwner & {
     $type?: string;
     id?: string;
     name?: string;
@@ -49,12 +63,14 @@ export type WorkflowDesignerValidation = {
   valid: boolean;
   errors: string[];
   warnings: string[];
+  elementId?: string;
 };
 
 export type WorkflowDesignerProps = {
   xml: string;
   onChange?: (xml: string, validation: WorkflowDesignerValidation) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  onImportStateChange?: (state: WorkflowImportState) => void;
   readOnly?: boolean;
   /** Temporarily blocks edits during save without recreating the modeler or discarding its state. */
   disabled?: boolean;
@@ -90,6 +106,7 @@ export type WorkflowDesignerProps = {
 export type WorkflowDesignerHandle = {
   /** Flushes the latest canvas state before a save, independently of debounced change notifications. */
   getXml: () => Promise<string>;
+  focusElement: (id: string) => void;
 };
 
 const defaultLabels: Required<NonNullable<WorkflowDesignerProps['labels']>> = {
@@ -112,41 +129,52 @@ const defaultLabels: Required<NonNullable<WorkflowDesignerProps['labels']>> = {
 };
 
 /** Lightweight client validation; the server remains authoritative at save and publish time. */
-export function validateWorkflowXml(xml: string): WorkflowDesignerValidation {
+export function validateWorkflowXml(xml: string, variables: readonly ExpressionVariable[] = [],
+  t: TranslateFn = (_key, fallback) => typeof fallback === 'string' ? fallback : _key): WorkflowDesignerValidation {
   const errors: string[] = [];
   const warnings: string[] = [];
-  if (!xml.trim()) return {valid: false, errors: ['BPMN XML 不能为空'], warnings};
+  if (!xml.trim()) return {valid: false, errors: [t('workflow.modeling.emptyXml', 'BPMN XML 不能为空')], warnings};
   const document = new DOMParser().parseFromString(xml, 'application/xml');
   if (document.querySelector('parsererror')) {
-    return {valid: false, errors: ['BPMN XML 格式不正确'], warnings};
+    return {valid: false, errors: [t('workflow.modeling.invalidXml', 'BPMN XML 格式不正确')], warnings};
   }
   const processes = Array.from(document.getElementsByTagNameNS(
     'http://www.omg.org/spec/BPMN/20100524/MODEL', 'process'));
-  if (processes.length !== 1) errors.push('流程必须且只能包含一个 process');
+  if (processes.length !== modelingCapabilities.maxProcesses) errors.push(t('workflow.modeling.singleProcess', '流程必须且只能包含一个 process'));
   const process = processes[0];
-  if (process && !process.getAttribute('id')) errors.push('process id 不能为空');
+  if (process && !process.getAttribute('id')) errors.push(t('workflow.modeling.processId', 'process id 不能为空'));
   if (!document.getElementsByTagNameNS(
     'http://www.omg.org/spec/BPMN/20100524/MODEL', 'startEvent').length) {
-    errors.push('流程必须包含开始事件');
+    errors.push(t('workflow.modeling.startRequired', '流程必须包含开始事件'));
   }
   if (!document.getElementsByTagNameNS(
     'http://www.omg.org/spec/BPMN/20100524/MODEL', 'endEvent').length) {
-    errors.push('流程必须包含结束事件');
+    errors.push(t('workflow.modeling.endRequired', '流程必须包含结束事件'));
   }
   for (const task of Array.from(document.getElementsByTagNameNS(
     'http://www.omg.org/spec/BPMN/20100524/MODEL', 'userTask'))) {
     const assignment = ['assignee', 'candidateUsers', 'candidateGroups'].some(name =>
       Boolean(task.getAttributeNS('http://flowable.org/bpmn', name)));
-    if (!assignment) warnings.push(`用户任务 ${task.getAttribute('name') || task.id} 尚未设置办理范围`);
+    if (!assignment) warnings.push(t('workflow.modeling.assignmentRequired', '用户任务 {name} 尚未设置办理范围',
+      {name: task.getAttribute('name') || task.id}));
   }
-  return {valid: errors.length === 0, errors, warnings};
+  const multiIssues = multiInstanceXmlIssues(document, variables);
+  const diagramIssues = diagramXmlIssues(document);
+  errors.push(...diagramIssues.map(({elementId, issue}) => `${elementId}: ${diagramMessage(issue, t)}`));
+  const loopIssues = standardLoopXmlIssues(document);
+  errors.push(...loopIssues.map(({elementId, issue}) => `${elementId}: ${standardLoopMessage(issue, t)}`));
+  errors.push(...multiIssues.map(({elementId, issue}) => `${elementId}: ${multiInstanceMessage(issue, t)}`));
+  const invalidAssignments = invalidAssignmentVariableNodes(document, variables);
+  errors.push(...invalidAssignments.map(id => `${id}: ${t('workflow.modeling.assignmentVariable', '办理范围引用了未声明或不在当前节点作用域内的变量，请检查多实例配置与办理人设置')}`));
+  return {valid: errors.length === 0, errors, warnings, elementId: diagramIssues[0]?.elementId ?? loopIssues[0]?.elementId ?? multiIssues[0]?.elementId ?? invalidAssignments[0]};
 }
 
 const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProps>(function WorkflowDesigner({
   xml,
   onChange,
   onDirtyChange,
-  readOnly = false,
+  onImportStateChange,
+  readOnly: requestedReadOnly = false,
   disabled = false,
   height = 640,
   className,
@@ -157,7 +185,13 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
   onFormContractChange,
   labels: labelOverrides,
 }: WorkflowDesignerProps, ref) {
-  const {t} = useI18n();
+  const {t, locale} = useI18n();
+  const [importIssue, setImportIssue] = useState<ImportProblem>();
+  const importIssueRef = useRef<ImportProblem | undefined>(undefined);
+  // A lossy import uses the actual viewer: no hidden modeling commands, palette or undo stack.
+  const readOnly = requestedReadOnly || Boolean(importIssue);
+  const onImportStateChangeRef = useRef(onImportStateChange);
+  onImportStateChangeRef.current = onImportStateChange;
   const labels = useMemo(() => ({...defaultLabels,
     empty: t('workflow.designer.empty', '暂无 BPMN 内容'), properties: t('workflow.designer.properties', '元素属性'),
     noSelection: t('workflow.designer.noSelection', '选择画布中的流程元素以编辑属性'),
@@ -170,15 +204,8 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
     zoomOut: t('workflow.designer.zoomOut', '缩小'), ...labelOverrides}), [labelOverrides, t]);
   const variables = useMemo(() => [{name: 'initiator', label: t('workflow.designer.initiator', '流程发起人'), type: 'string' as const,
     kind: 'user', readOnly: true}, ...(variableDeclarations ?? [])], [variableDeclarations, t]);
-  // Property edits do not rebuild each value editor's declaration index/options.
-  const variableViews = useMemo(() => ({
-    assignee: variables.filter(variable => variable.kind === 'user'),
-    users: variables.filter(variable => ['user', 'users'].includes(variable.kind ?? '')),
-    roles: variables.filter(variable => ['role', 'roles'].includes(variable.kind ?? '')),
-    dates: variables.filter(variable => ['date', 'date-time'].includes(variable.kind ?? '')),
-    numbers: variables.filter(variable => variable.type === 'number'),
-    conditions: variables.filter(variable => variable.type !== 'array'),
-  }), [variables]);
+  const validationContextRef = useRef({variables: variableDeclarations ?? [], t});
+  validationContextRef.current = {variables: variableDeclarations ?? [], t};
   const canvasRef = useRef<HTMLDivElement>(null);
   const modelerRef = useRef<any>(undefined);
   const onChangeRef = useRef(onChange);
@@ -191,9 +218,23 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
   const [importing, setImporting] = useState(false);
   const propertyErrorsRef = useRef(new Set<string>());
   const conditionDraftsRef = useRef(new Map<string, ConditionExpressionDraft>());
+  const multiCompletionDraftsRef = useRef(new Map<string, {loop: ActivityLoop; draft: ConditionExpressionDraft}>());
+  const multiSourceDraftsRef = useRef(new Map<string, {loop: ActivityLoop; source: string; draft: ValueExpressionDraft}>());
   const [selected, setSelected] = useState<BpmnElement>();
-  const [importError, setImportError] = useState<string>();
-  const [, setRevision] = useState(0);
+  const [revision, setRevision] = useState(0);
+  const localSignature = JSON.stringify(iterationLocals(selected?.businessObject, variables, t('workflow.multi.local', '当前实例变量')));
+  const localVariables = useMemo<ExpressionVariable[]>(() => JSON.parse(localSignature), [localSignature]);
+  const scopedVariables = useMemo(() => [...variables, ...localVariables], [variables, localVariables]);
+  const ancestorNames = useMemo(() => iterationLocals(selected?.businessObject?.$parent, variables, '').map(item => item.name),
+    [selected, revision, variables]);
+  const variableViews = useMemo(() => ({
+    assignee: scopedVariables.filter(variable => variable.kind === 'user'),
+    users: scopedVariables.filter(variable => ['user', 'users'].includes(variable.kind ?? '')),
+    roles: scopedVariables.filter(variable => ['role', 'roles'].includes(variable.kind ?? '')),
+    dates: scopedVariables.filter(variable => ['date', 'date-time'].includes(variable.kind ?? '')),
+    numbers: scopedVariables.filter(variable => variable.type === 'number'),
+    conditions: scopedVariables.filter(variable => variable.type !== 'array'),
+  }), [scopedVariables]);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -205,32 +246,51 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
   const commandStack = service('commandStack');
   const canUndo = Boolean(commandStack?.canUndo?.());
   const canRedo = Boolean(commandStack?.canRedo?.());
+  const focusElement = useCallback((id: string) => {
+    const element = service('elementRegistry')?.get(id);
+    if (!element) return;
+    service('selection')?.select(element);
+    service('canvas')?.scrollToElement(element);
+  }, [service]);
 
   const exportXml = useCallback(async () => {
     const modeler = modelerRef.current;
-    if (!modeler || readOnly) return;
+    if (!modeler || readOnly || importingRef.current || importIssueRef.current) return;
     const sequence = ++exportSequenceRef.current;
     try {
       const result = await modeler.saveXML({format: true});
-      if (sequence !== exportSequenceRef.current || typeof result?.xml !== 'string') return;
+      if (sequence !== exportSequenceRef.current || modeler !== modelerRef.current
+        || importingRef.current || importIssueRef.current || typeof result?.xml !== 'string') return;
       const exported = preserveXmlWhitespace(result.xml);
       importedXmlRef.current = exported;
       onDirtyChangeRef.current?.(true);
-      onChangeRef.current?.(exported, validateWorkflowXml(exported));
+      const context = validationContextRef.current;
+      onChangeRef.current?.(exported, validateWorkflowXml(exported, context.variables, context.t));
       return exported;
     } catch {
       // The next command-stack change retries serialization; import errors are shown separately.
     }
   }, [readOnly]);
 
-  useImperativeHandle(ref, () => ({getXml: async () => {
+  useImperativeHandle(ref, () => ({focusElement, getXml: async () => {
     if (exportTimerRef.current) clearTimeout(exportTimerRef.current);
-    if (importingRef.current || propertyErrorsRef.current.size) throw new Error('请完成当前属性配置后保存');
+    const context = validationContextRef.current;
+    if (importIssueRef.current) throw new Error(importProblemMessage(importIssueRef.current, context.t));
+    if (importingRef.current || propertyErrorsRef.current.size) {
+      const invalid = propertyErrorsRef.current.values().next().value;
+      if (invalid) focusElement(invalid.slice(0, invalid.lastIndexOf(':')));
+      throw new Error(context.t('workflow.modeling.finishProperties', '请完成当前属性配置后保存'));
+    }
     if (readOnly) return importedXmlRef.current;
     const result = await exportXml();
-    if (typeof result !== 'string') throw new Error('流程设计器尚未完成加载');
+    if (typeof result !== 'string') throw new Error(context.t('workflow.modeling.notReady', '流程设计器尚未完成加载'));
+    const validation = validateWorkflowXml(result, context.variables, context.t);
+    if (!validation.valid) {
+      if (validation.elementId) focusElement(validation.elementId);
+      throw new Error(validation.errors[0]);
+    }
     return result;
-  }}), [exportXml, readOnly]);
+  }}), [exportXml, readOnly, focusElement]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -241,8 +301,10 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
       container: canvasRef.current,
       moddleExtensions: {flowable: flowableModdle},
     };
-    if (!readOnly) options.additionalModules = [platformModeling, {
-      workflowDesignLabels: ['value', {userTask: t('workflow.designer.createUserTask', '创建用户任务')}],
+    const translations = {translate: ['value', (text: string, values?: Record<string, unknown>) =>
+      translateBpmn(validationContextRef.current.t, text, values)]};
+    options.additionalModules = readOnly ? [translations] : [platformModeling, translations, {
+      workflowDesignLabels: ['value', {get userTask() {return validationContextRef.current.t('workflow.designer.createUserTask', '创建用户任务');}}],
     }];
     const modeler = new Viewer(options);
     modelerRef.current = modeler;
@@ -251,15 +313,37 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
       setSelected(event.newSelection?.length === 1 ? event.newSelection[0] : undefined);
     };
     const commandChanged = () => {
-      const registry = modeler.get('elementRegistry') as {get: (id: string) => unknown};
+      const registry = modeler.get('elementRegistry') as {get: (id: string) => BpmnElement | undefined};
       for (const key of propertyErrorsRef.current) {
         if (!registry.get(key.slice(0, key.lastIndexOf(':')))) propertyErrorsRef.current.delete(key);
       }
       for (const id of conditionDraftsRef.current.keys()) {
         if (!registry.get(id)) conditionDraftsRef.current.delete(id);
       }
+      for (const [id, saved] of multiCompletionDraftsRef.current) {
+        const loop = registry.get(id)?.businessObject?.loopCharacteristics;
+        if (loop !== saved.loop || loopConditionValue(loop) !== saved.draft.value) {
+          multiCompletionDraftsRef.current.delete(id);
+          propertyErrorsRef.current.delete(`${id}:multiCompletion`);
+        }
+      }
+      for (const [id, saved] of multiSourceDraftsRef.current) {
+        const loop = registry.get(id)?.businessObject?.loopCharacteristics;
+        const source = loop?.collection != null ? 'collection' : 'count';
+        const value = loop?.collection ?? loop?.loopCardinality?.body ?? '';
+        if (loop !== saved.loop || source !== saved.source || value !== saved.draft.value) {
+          multiSourceDraftsRef.current.delete(id);
+          propertyErrorsRef.current.delete(`${id}:multiSourceExpression`);
+        }
+      }
+      for (const key of propertyErrorsRef.current) {
+        // This field has no transient draft: its authoritative value is checked over the full XML at save.
+        if (key.endsWith(':multi')) {
+          propertyErrorsRef.current.delete(key);
+        }
+      }
       setRevision(value => value + 1);
-      if (importingRef.current || readOnly) return;
+      if (importingRef.current || importIssueRef.current || readOnly) return;
       onDirtyChangeRef.current?.(true);
       if (exportTimerRef.current) clearTimeout(exportTimerRef.current);
       exportTimerRef.current = setTimeout(() => {void exportXml();}, 180);
@@ -276,31 +360,65 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
 
   useEffect(() => {
     const modeler = modelerRef.current;
+    if (!modeler) return;
+    // The library's public i18n event refreshes palette entries without recreating the modeler,
+    // losing an unsaved property draft or resetting the command/undo stack.
+    modeler.get('eventBus').fire('i18n.changed');
+    if (!readOnly) {
+      modeler.get('popupMenu').close();
+      const pad = modeler.get('contextPad'), selection = modeler.get('selection').get();
+      if (pad.isOpen() && selection.length) pad.open(selection.length === 1 ? selection[0] : selection, true);
+    }
+  }, [locale, t, readOnly]);
+
+  useEffect(() => {
+    const modeler = modelerRef.current;
     if (!modeler || importedXmlRef.current === xml && !importingRef.current) return;
     let active = true;
     importingRef.current = true;
     setImporting(true);
+    exportSequenceRef.current += 1;
+    if (exportTimerRef.current) clearTimeout(exportTimerRef.current);
+    onImportStateChangeRef.current?.('loading');
     // bpmn-js imports mutate the canvas asynchronously. Serialize them so an older import
     // cannot overwrite a newer document after a rapid definition/version change.
     importQueueRef.current = importQueueRef.current.catch(() => {}).then(async () => {
       if (!active || modelerRef.current !== modeler) return;
-      if (xml) await modeler.importXML(xml);
+      let problem: ImportProblem | undefined;
+      if (xml) {
+        const result = await modeler.importXML(xml);
+        problem = importProblem(result.warnings);
+      }
       else modeler.clear();
       if (!active) return;
+      importIssueRef.current = problem;
+      setImportIssue(problem);
       importingRef.current = false;
       setImporting(false);
       importedXmlRef.current = xml;
       propertyErrorsRef.current.clear();
       conditionDraftsRef.current.clear();
+      multiCompletionDraftsRef.current.clear();
+      multiSourceDraftsRef.current.clear();
       setSelected(undefined);
-      setImportError(undefined);
       if (xml) modeler.get('canvas').zoom('fit-viewport');
+      onImportStateChangeRef.current?.(problem ? 'blocked' : 'ready');
       onDirtyChangeRef.current?.(false);
       setRevision(value => value + 1);
-    }).catch((error: unknown) => {
-      if (active) {importingRef.current = false;
+    }).catch(() => {
+      if (active) {
+        // A failed import may leave the previous canvas visible. Never show or serialize it
+        // as if it belonged to the requested definition.
+        modeler.clear();
+        const problem = importProblem([], true)!;
+        importIssueRef.current = problem;
+        setImportIssue(problem);
+        importedXmlRef.current = xml;
+        setSelected(undefined);
+        importingRef.current = false;
         setImporting(false);
-        setImportError(error instanceof Error ? error.message : 'BPMN 导入失败');}
+        onImportStateChangeRef.current?.('blocked');
+      }
     });
     return () => { active = false; };
   }, [readOnly, xml]);
@@ -326,6 +444,32 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
     });
   }, [service, updateProperties]);
 
+  const updateExecutionMode = (mode: ExecutionMode) => {
+    if (!selected || readOnly || disabled) return;
+    const loop = selected.businessObject?.loopCharacteristics;
+    if (mode === 'none') updateProperties({loopCharacteristics: undefined});
+    else if (mode === 'standard') {
+      if (loop?.$type !== STANDARD_LOOP_TYPE) updateProperties({loopCharacteristics: service('moddle').create(STANDARD_LOOP_TYPE, {
+        testBefore: false, loopMaximum: 1,
+      })});
+    } else if (loop?.$type === MULTI_INSTANCE_TYPE) service('modeling')?.updateModdleProperties(selected, loop, {isSequential: mode === 'sequential'});
+    else updateProperties({loopCharacteristics: service('moddle').create(MULTI_INSTANCE_TYPE, {
+      isSequential: mode === 'sequential',
+      loopCardinality: service('moddle').create('bpmn:FormalExpression', {body: '1'}),
+    })});
+  };
+  const updateExecution = (patch: Partial<ActivityLoop>) => {
+    const loop = selected?.businessObject?.loopCharacteristics;
+    if (!selected || !loop || ![MULTI_INSTANCE_TYPE, STANDARD_LOOP_TYPE].includes(loop.$type) || readOnly || disabled) return;
+    const properties: Record<string, unknown> = {...patch};
+    for (const key of ['loopCardinality', 'completionCondition', 'loopCondition'] as const) {
+      if (Object.prototype.hasOwnProperty.call(patch, key)) properties[key] = patch[key]
+        ? service('moddle').create('bpmn:FormalExpression', {body: patch[key]?.body ?? ''}) : undefined;
+    }
+    // Update the existing moddle object: unedited extension attributes and the undo stack survive.
+    service('modeling')?.updateModdleProperties(selected, loop, properties);
+  };
+
   const business = selected?.businessObject;
   const propertyValidity = (field: string) => (valid: boolean) => {
     if (!selected) return;
@@ -336,6 +480,7 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
   const type = business?.$type ?? selected?.type ?? '';
   const isUserTask = type === 'bpmn:UserTask';
   const isSequenceFlow = type === 'bpmn:SequenceFlow';
+  const isDiagram = diagramTypes.has(type);
   const isLabelEditable = Boolean(selected && !['bpmn:Definitions', 'label'].includes(type));
   const zoom = (delta: number) => {
     const canvas = service('canvas');
@@ -361,8 +506,7 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
           onClick={() => service('canvas')?.zoom?.('fit-viewport')}/></Tooltip>
       </Space.Compact>
     </div>
-    {importError && <Alert className="workflow-designer__error" type="error" showIcon
-      message={importError}/>}
+    {importIssue && <ImportProblemNotice problem={importIssue} xml={xml}/>}
     <div className="workflow-designer__body">
       <div ref={canvasRef} className="workflow-designer__canvas"/>
       <aside className="workflow-designer__properties" aria-label={labels.properties}>
@@ -374,7 +518,14 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
           <Typography.Text type="secondary" className="workflow-designer__element-id">
             {business.id ?? selected.id} · {type}
           </Typography.Text>
-          {isLabelEditable && <Form.Item label={labels.elementName}>
+          {isDiagram && <DiagramProperties business={business} disabled={readOnly || disabled}
+            onLabelChange={text => {if (!readOnly && !disabled) service('modeling')?.updateLabel(selected, text);}}
+            onPlainText={() => updateProperties({textFormat: modelingCapabilities.annotationFormat})}
+            onClearMultiplicity={() => updateProperties({participantMultiplicity: undefined})}
+            onCollectionChange={isCollection => {
+              if (!readOnly && !disabled && business.dataObjectRef) service('modeling')?.updateModdleProperties(selected, business.dataObjectRef, {isCollection});
+            }}/>}
+          {isLabelEditable && !isDiagram && <Form.Item label={labels.elementName}>
             <Input value={String(business.name ?? '')} disabled={readOnly || disabled}
               onChange={event => updateProperties({name: event.target.value || undefined})}/>
           </Form.Item>}
@@ -383,20 +534,34 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
               disabled={readOnly || disabled} autoSize={{minRows: 2, maxRows: 6}}
               onChange={event => updateDocumentation(event.target.value)}/>
           </Form.Item>}
+          {(isUserTask || type === 'bpmn:SubProcess') && <ActivityExecutionEditor key={`${selected.id}:multi`}
+            loop={business.loopCharacteristics} declarations={variableDeclarations ?? []} variables={scopedVariables}
+            ancestorNames={ancestorNames} disabled={readOnly || disabled}
+            onModeChange={updateExecutionMode} onChange={updateExecution}
+            onValidityChange={propertyValidity('multi')}
+            sourceDraft={multiSourceDraftsRef.current.get(selected.id)?.draft}
+            onSourceDraftChange={draft => {
+              const loop = business.loopCharacteristics;
+              if (loop) multiSourceDraftsRef.current.set(selected.id, {loop, source: loop.collection != null ? 'collection' : 'count', draft});
+            }} onSourceValidityChange={propertyValidity('multiSourceExpression')}
+            completionDraft={multiCompletionDraftsRef.current.get(selected.id)?.draft}
+            onCompletionDraftChange={draft => {
+              if (business.loopCharacteristics) multiCompletionDraftsRef.current.set(selected.id, {loop: business.loopCharacteristics, draft});
+            }} onCompletionValidityChange={propertyValidity('multiCompletion')}/>}
           {isUserTask && <>
             <Form.Item label={labels.assignee}><ValueExpression key={`${selected.id}:assignee`} value={String(business.assignee ?? '')}
               literalIdentity resolveNumericLiteral={resolveNumericLiteral}
               onValidityChange={propertyValidity('assignee')}
               disabled={readOnly || disabled} variables={variableViews.assignee}
               onChange={assignee => updateProperties({assignee})}
-              renderLiteral={(value, onChange) => <TenantDirectorySelect kind="users" multiple={false}
+              renderLiteral={(value, onChange) => <UserSelect multiple={false}
                 disabled={readOnly || disabled} value={value} onChange={next => onChange(next)}/>}/></Form.Item>
             <Form.Item label={labels.candidateUsers}><ValueExpression key={`${selected.id}:candidateUsers`} value={String(business.candidateUsers ?? '')}
               literalIdentity resolveNumericLiteral={resolveNumericLiteral}
               onValidityChange={propertyValidity('candidateUsers')}
               disabled={readOnly || disabled} variables={variableViews.users}
               onChange={candidateUsers => updateProperties({candidateUsers})}
-              renderLiteral={(value, onChange) => <TenantDirectorySelect kind="users" multiple maxCount={50}
+              renderLiteral={(value, onChange) => <UserSelect multiple maxCount={50} maxTagCount="responsive"
                 disabled={readOnly || disabled} value={value?.split(',').filter(Boolean) ?? []}
                 onChange={next => onChange(next.join(',') || undefined)}/>}/></Form.Item>
             <Form.Item label={labels.candidateGroups}><ValueExpression key={`${selected.id}:candidateGroups`} value={String(business.candidateGroups ?? '')}
@@ -404,7 +569,7 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
               onValidityChange={propertyValidity('candidateGroups')}
               disabled={readOnly || disabled} variables={variableViews.roles}
               onChange={candidateGroups => updateProperties({candidateGroups})}
-              renderLiteral={(value, onChange) => <TenantDirectorySelect kind="roles" multiple maxCount={50}
+              renderLiteral={(value, onChange) => <RoleSelect multiple maxCount={50} maxTagCount="responsive"
                 disabled={readOnly || disabled} value={value?.split(',').filter(Boolean) ?? []}
                 onChange={next => onChange(next.join(',') || undefined)}/>}/></Form.Item>
             <Form.Item label={labels.dueDate}><ValueExpression key={`${selected.id}:dueDate`} value={String(business.dueDate ?? '')}
@@ -436,7 +601,7 @@ const WorkflowDesigner = forwardRef<WorkflowDesignerHandle, WorkflowDesignerProp
               onChange={next => updateCondition(next ?? '')}/>
           </Form.Item>}
         </Form>}
-        {selected && isUserTask && formContract && <BindingEditor key={selected.id}
+        {selected && isUserTask && formContract && <BindingEditor key={selected.id} variables={formContract.variables} startBinding={formContract.startBinding}
           elementId={selected.id} binding={formContract.taskBindings[selected.id]}
           disabled={readOnly || disabled || !onFormContractChange} onChange={binding => {
             const taskBindings = {...formContract.taskBindings};

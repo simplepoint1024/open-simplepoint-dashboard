@@ -1,9 +1,10 @@
 package org.simplepoint.plugin.dna.runtime.api.error;
 
 import java.util.Objects;
+import org.simplepoint.remoting.RemoteBusinessException;
 
 /** Runtime failure with a stable code suitable for service boundaries. */
-public class DnaRuntimeException extends RuntimeException {
+public class DnaRuntimeException extends RemoteBusinessException {
 
   private final DnaRuntimeErrorCode errorCode;
 
@@ -24,6 +25,11 @@ public class DnaRuntimeException extends RuntimeException {
   ) {
     super(message, cause);
     this.errorCode = Objects.requireNonNull(errorCode, "errorCode");
+  }
+
+  @Override
+  public String remoteErrorCode() {
+    return "DNA_RUNTIME:" + errorCode.name();
   }
 
   /** Returns the stable language-neutral error code. */

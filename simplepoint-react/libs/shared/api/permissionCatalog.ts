@@ -1,7 +1,7 @@
 import type {QueryClient} from '@tanstack/react-query';
 import {getQueryScopeSnapshot, scopedQueryKey, type QueryScope} from './queryScope.ts';
 
-export interface PermissionField {type: string; title: string; operators: string[]; values: string[]}
+export interface PermissionField {type: string; title: string; operators: string[]; values: string[]; readOnly?: boolean}
 export interface PermissionPage {models: Array<{properties: Record<string, PermissionField>}>}
 export type PermissionCatalog = Record<string, PermissionPage>;
 export const permissionCatalogKey = ['permission-expression-catalog'] as const;

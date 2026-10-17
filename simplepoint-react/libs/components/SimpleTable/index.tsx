@@ -8,6 +8,7 @@ import {createIcon} from '@simplepoint/shared/types/icon';
 import type {ControlledSimpleTableProps, SimpleTableProps} from './types';
 import {useSimpleTableController} from './useSimpleTableController';
 import {hasRecordIdentity} from './recordIdentity';
+import {projectedFormData} from './formSchema';
 import {lazy, Suspense, useEffect, useMemo, useRef, useState} from 'react';
 import {serverErrorSchema} from '../../shared/validation/server';
 import {usePageSelected} from '@simplepoint/shared/page/hooks';
@@ -34,6 +35,9 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
   const [formDraft, setFormDraft] = useState<any>(() => (
     editingRecord ?? props.initialValues ?? {}
   ));
+
+  const formInput = useMemo(() => projectedFormData(schemaData?.schema, formSchema ?? schemaData?.schema, formDraft),
+    [schemaData?.schema, formSchema, formDraft]);
 
   // RJSF treats formData as controlled state. Recreating an empty object while a
   // request is in flight makes it discard the user's input when server-side
@@ -110,6 +114,7 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
             message={t('table.restrictedRecordIdentity', '部分记录的标识不可用，无法选择、展开或执行记录操作。请检查当前角色的字段权限。')}/>}
           {(() => {
             const tableProps = {
+              cards: props.cards,
               refresh: controller.table.refresh,
               pageable: pageData ?? emptyPage,
               schema: schemaData?.schema ?? [],
@@ -152,7 +157,7 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
 
       <Drawer
         rootClassName="sp-simple-table-drawer"
-        closable={!submitLoading}
+        closable={!submitLoading && !props.formCloseDisabled}
         title={props.drawerTitle ?? (
           <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32 }}>
             {createIcon(editingRecord ? 'EditOutlined' : 'PlusOutlined')}
@@ -161,8 +166,8 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
         placement="right"
         width={props.drawerWidth ?? 480}
         open={drawerOpen && selected}
-        maskClosable={!submitLoading}
-        keyboard={!submitLoading}
+        maskClosable={!submitLoading && !props.formCloseDisabled}
+        keyboard={!submitLoading && !props.formCloseDisabled}
         onClose={() => {
           if (!controller.drawer.canClose()) {
             return;
@@ -190,10 +195,21 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
         ) : (
           <Suspense fallback={<LoadingPlaceholder />}>
             {submitError && <Alert type="error" showIcon title={submitError} />}
-            <SForm
+            {props.renderForm ? props.renderForm({
+              formData: formInput, editingRecord, disabled: submitLoading || discard,
+              readOnly: Boolean(props.formReadOnly), submitting: submitLoading,
+              onChange: next => {
+                if (controller.status.isSubmitting() || discardRef.current) return;
+                controller.actions.clearFormViolations(); setFormDraft(next); setDirty(true);
+              },
+              onSubmit: async formData => {
+                if (!discardRef.current && controller.actions.beginFormSubmit()) await handleFormSubmit({formData} as any);
+              },
+            }) : <SForm
+              fields={props.formFields}
               schema={formSchema ?? schemaData.schema}
-              uiSchema={typeof props.formUiSchema === 'function' ? props.formUiSchema(formDraft, formSchema ?? schemaData.schema) : props.formUiSchema}
-              formData={formDraft}
+              uiSchema={typeof props.formUiSchema === 'function' ? props.formUiSchema(formDraft, formSchema ?? schemaData.schema, editingRecord) : props.formUiSchema}
+              formData={formInput}
               extraErrors={formErrors}
               onChange={(event) => {
                 if (controller.status.isSubmitting() || discardRef.current) return;
@@ -206,9 +222,10 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
               onError={controller.actions.handleFormError}
               submitLoading={submitLoading}
               submitDisabled={discard}
+              readonly={props.formReadOnly}
               disabled={submitLoading || discard}
               customValidate={props.formCustomValidate}
-            />
+            />}
           </Suspense>
         )}
         </LoadingBoundary>

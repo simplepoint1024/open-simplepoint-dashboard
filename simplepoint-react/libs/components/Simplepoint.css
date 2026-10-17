@@ -19,6 +19,33 @@
     min-width: 0;
 }
 
+/* Opt-in bounded layout. Natural-height tables keep their existing document flow. */
+.sp-data-table-fit {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sp-data-table-fit > .sp-data-table,
+.sp-data-table-root:fullscreen > .sp-data-table {
+    height: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.sp-data-table-fit > .sp-data-table-toolbar,
+.sp-data-table-fit > .ant-alert,
+.sp-data-table-fit .ant-table-header,
+.sp-data-table-fit .ant-table-pagination,
+.sp-data-table-root:fullscreen > .sp-data-table-toolbar,
+.sp-data-table-root:fullscreen > .ant-alert,
+.sp-data-table-root:fullscreen .ant-table-header,
+.sp-data-table-root:fullscreen .ant-table-pagination {
+    flex-shrink: 0;
+}
+
 .sp-data-table-toolbar {
     min-height: 32px;
     margin-bottom: 10px;
@@ -120,6 +147,8 @@
 }
 
 .sp-table-fill .ant-spin-nested-loading,
+.sp-data-table-fit > .sp-table-fill > .ant-spin,
+.sp-data-table-root:fullscreen > .sp-table-fill > .ant-spin,
 .sp-table-fill .ant-spin-container {
     height: 100%;
     min-height: 0;
@@ -177,7 +206,7 @@
     color: var(--ant-color-text-heading, rgba(0, 0, 0, 0.88));
     font-weight: 600;
     letter-spacing: 0;
-    background: linear-gradient(180deg, #fafcff 0%, var(--ant-color-fill-quaternary, #f5f7fa) 100%) !important;
+    background: linear-gradient(180deg, #fafcff 0%, var(--ant-color-fill-quaternary, #f5f7fa) 100%) var(--ant-color-bg-container, #fff) !important;
 }
 
 .sp-table-fill.ant-table-wrapper .ant-table-thead > tr > th::before {
@@ -352,7 +381,7 @@
 
 .theme-dark .sp-table-fill.ant-table-wrapper .ant-table-thead > tr > th,
 .theme-dark .sp-table-fill.ant-table-wrapper .ant-table-thead > tr > td {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.035)) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.035)) var(--ant-color-bg-container, #141414) !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
@@ -461,3 +490,7 @@
         padding: 7px 6px !important;
     }
 }
+
+/* Record actions stay lightweight; toolbar and dialog actions retain their own hierarchy. */
+.sp-table-row-action.ant-btn { min-width: 0; padding-inline: 4px; border-color: transparent; box-shadow: none; }
+.sp-table-button.ant-btn-icon-only { min-width: var(--ant-control-height, 32px); }

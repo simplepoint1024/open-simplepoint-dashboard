@@ -30,6 +30,7 @@ const readJson = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 const ignoredDirectories = new Set([
   '.git',
   '.gradle',
+  '.simplepoint', // Local release/source snapshots are not active backend modules.
   '.idea',
   'build',
   'dist',

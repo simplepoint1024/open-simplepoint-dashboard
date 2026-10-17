@@ -3,7 +3,6 @@ package org.simplepoint.plugin.dna.runtime.service.support;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.plugin.dna.runtime.api.DnaRuntimeApiVersion;
@@ -18,7 +17,7 @@ import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalSchemaDefinition;
 class PhysicalSchemaValidatorTest {
 
   private final PhysicalSchemaValidator validator = new PhysicalSchemaValidator(
-      new StandardLogicalValueConverter(new ObjectMapper())
+      new StandardLogicalValueConverter()
   );
 
   @Test

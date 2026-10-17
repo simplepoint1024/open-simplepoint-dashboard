@@ -28,6 +28,7 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 dependencies {
+    implementation(project(":simplepoint-events:simplepoint-events-rabbit"))
     implementation(project(":simplepoint-boot:simplepoint-boot-starter"))
     implementation(project(":simplepoint-boot:simplepoint-boot-config-consul-starter"))
 

@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.simplepoint.remoting.RemoteBusinessException;
 
 /**
  * Dispatches inbound service router requests to local providers.
@@ -53,6 +54,9 @@ public class ServiceInvocationDispatcher {
       return RemoteResponse.success(unwrapOptional(result));
     } catch (InvocationTargetException ex) {
       Throwable target = ex.getTargetException() == null ? ex : ex.getTargetException();
+      if (target instanceof RemoteBusinessException business) {
+        return RemoteResponse.failure(business.remoteErrorCode(), business.getMessage());
+      }
       return RemoteResponse.failure("REMOTE_SERVICE_ERROR", target.getMessage());
     } catch (Exception ex) {
       return RemoteResponse.failure("REMOTE_SERVICE_ERROR", ex.getMessage());

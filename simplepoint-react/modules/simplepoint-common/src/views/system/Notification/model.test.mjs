@@ -13,13 +13,13 @@ test('notification actions require the exact real source identity and server lif
 });
 test('notification dates preserve valid instant presentation without Invalid Date or masked truthiness', () => {
   const instant = '2026-10-01T12:30:00Z';
-  assert.equal(notificationDate(instant), new Date(instant).toLocaleString());
+  assert.equal(notificationDate(instant), new Intl.DateTimeFormat('zh-CN', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(new Date(instant)));
   for (const value of [undefined, null, '', ' ', '***', 'not-a-date', 1, false]) assert.equal(notificationDate(value), '-');
 });
 test('audience controls use actual platform registries and keep unknown discriminants read-only', () => {
   assert.deepEqual(notificationFormUi({}), {audienceId: {'ui:widget': 'hidden'}});
   assert.deepEqual(notificationFormUi({audienceType: 'USER'}), {audienceId: {'ui:widget': 'UserPicker'}});
-  assert.deepEqual(notificationFormUi({audienceType: 'TENANT'}), {audienceId: {'ui:widget': 'EntitySelect', 'ui:options': {endpoint: '/common/platform/tenants'}}});
+  assert.deepEqual(notificationFormUi({audienceType: 'TENANT'}), {audienceId: {'ui:widget': 'TenantSelect', 'ui:options': {directory: 'platform'}}});
   assert.deepEqual(notificationFormUi({audienceType: '***'}), {audienceId: {'ui:readonly': true}});
   assert.deepEqual(notificationFormUi({audienceType: 'USER', audienceId: '***'}, false), {audienceType: {'ui:readonly': true}, audienceId: {'ui:readonly': true}});
   assert.deepEqual(notificationFormUi({audienceType: 'USER'}, true, false), {audienceType: {'ui:readonly': true}, audienceId: {'ui:widget': 'UserPicker'}});

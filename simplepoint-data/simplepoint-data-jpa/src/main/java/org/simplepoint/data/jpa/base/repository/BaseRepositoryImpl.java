@@ -285,6 +285,13 @@ public class BaseRepositoryImpl<T extends BaseEntityImpl<I>, I extends Serializa
         }
       }
     }
+    if (sort.isUnsorted()) {
+      sort = org.simplepoint.core.query.DefaultTableOrder.forModel(getDomainClass(), name ->
+          org.simplepoint.core.query.DefaultTableOrder.exists(getDomainClass(), name)
+              && QueryCapabilities.readable(getDomainClass(), name)
+              && entityManager.getMetamodel().entity(getDomainClass()).getAttributes().stream()
+                  .anyMatch(attribute -> attribute.getName().equals(name) && !attribute.isAssociation() && !attribute.isCollection()));
+    }
     // A unique tie-breaker prevents row drift when equal sort values cross page boundaries.
     if (sort.getOrderFor("id") == null) {
       sort = sort.and(org.springframework.data.domain.Sort.by("id"));

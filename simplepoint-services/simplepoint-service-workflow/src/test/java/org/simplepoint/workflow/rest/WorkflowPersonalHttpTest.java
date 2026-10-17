@@ -145,9 +145,13 @@ class WorkflowPersonalHttpTest {
                   .content("{\"reason\":\"原始处理原因\"}"))
           .andExpect(status().isOk());
     }
-    verify(service).reject("task-1", "原始处理原因");
-    verify(service).withdraw("instance-1", "原始处理原因");
-    verify(service).cancel("instance-1", "原始处理原因");
+    verify(service).reject("task-1", "原始处理原因", null);
+    verify(service).withdraw("instance-1", "原始处理原因", null);
+    verify(service).cancel("instance-1", "原始处理原因", null);
+    mvc.perform(post("/tasks/task-1/reject").contentType(MediaType.APPLICATION_JSON)
+        .content("{\"reason\":\"精确重试\",\"idempotencyKey\":\"reject:task-1\"}"))
+        .andExpect(status().isOk());
+    verify(service).reject("task-1", "精确重试", "reject:task-1");
     mvc.perform(
             post("/instances/original/resubmit")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -197,7 +201,7 @@ class WorkflowPersonalHttpTest {
     verify(service).resubmissionForm("original");
     mvc.perform(get("/instances/instance-1/nodes/review").param("activeOnly", "invalid"))
         .andExpect(status().isBadRequest());
-    when(service.reject(eq("finished"), anyString()))
+    when(service.reject(eq("finished"), anyString(), org.mockito.ArgumentMatchers.isNull()))
         .thenThrow(new WorkflowException(WorkflowException.Code.CONFLICT, "任务已被处理"));
     mvc.perform(
             post("/tasks/finished/reject")

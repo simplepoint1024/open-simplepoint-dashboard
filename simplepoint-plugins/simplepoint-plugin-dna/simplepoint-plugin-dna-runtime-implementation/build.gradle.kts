@@ -1,4 +1,5 @@
 dependencies {
+    implementation(project(":simplepoint-platform:simplepoint-platform-resource-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-core-api"))
     implementation(project(":simplepoint-data:simplepoint-data-calcite:simplepoint-data-calcite-core"))
@@ -18,4 +19,9 @@ dependencies {
     testImplementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-core-implementation"))
     testRuntimeOnly("com.mysql:mysql-connector-j")
     testRuntimeOnly("org.postgresql:postgresql")
+}
+
+
+tasks.test {
+    systemProperty("simplepoint.dna.migrations", rootProject.file("doc/deployment/sql").absolutePath)
 }

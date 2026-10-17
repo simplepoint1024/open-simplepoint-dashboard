@@ -44,6 +44,16 @@ class ProjectionPagesTest {
   private static SessionFactory factory;
   private Session session;
 
+  @Entity(name = "NewestProjectionRow")
+  public static class NewestRow {
+    @Id String id;
+    String tenant;
+    String title;
+    int quantity;
+    java.time.Instant createdAt;
+  }
+
+
   @BeforeAll
   static void database() {
     factory =
@@ -55,6 +65,7 @@ class ProjectionPagesTest {
                     .applySetting("hibernate.hbm2ddl.auto", "create-drop")
                     .build())
             .addAnnotatedClass(Row.class)
+            .addAnnotatedClass(NewestRow.class)
             .buildMetadata()
             .buildSessionFactory();
   }
@@ -166,5 +177,27 @@ class ProjectionPagesTest {
                     (cb, criteria, root) -> null,
                     row -> new Summary(row.id, row.title, row.quantity)))
         .isInstanceOf(NullPointerException.class);
+  }
+
+  @Test void newestDefaultIsAppliedBeforePagingAndKeepsScopeAndExplicitSorting() {
+    for (int index = 0; index < 12; index++) {
+      var row = new NewestRow();
+      row.id = "%02d".formatted(99 - index);
+      row.tenant = index < 9 ? "visible" : "other";
+      row.title = "Record " + index;
+      row.quantity = index;
+      row.createdAt = java.time.Instant.parse("2026-01-01T00:00:00Z").plusSeconds(index);
+      session.persist(row);
+    }
+    session.flush();
+    java.util.function.Function<Pageable, Page<Summary>> read = page -> ProjectionPages.query(
+        session, NewestRow.class, Summary.class, Map.of(), page, "quantity", Set.of(),
+        (cb, query, root) -> cb.equal(root.get("tenant"), "visible"),
+        row -> new Summary(row.id, row.title, row.quantity));
+    var first = read.apply(PageRequest.of(0, 4));
+    assertThat(first.getTotalElements()).isEqualTo(9);
+    assertThat(first.getContent()).extracting(Summary::quantity).containsExactly(8, 7, 6, 5);
+    assertThat(read.apply(PageRequest.of(1, 4)).getContent()).extracting(Summary::quantity).containsExactly(4, 3, 2, 1);
+    assertThat(read.apply(PageRequest.of(0, 4, Sort.by("quantity"))).getContent()).extracting(Summary::quantity).containsExactly(0, 1, 2, 3);
   }
 }

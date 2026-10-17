@@ -45,5 +45,8 @@
   "dna.dataQuality.severity.INFO": "信息 (INFO)",
   "dna.dataQuality.severity.WARNING": "警告 (WARNING)",
   "dna.dataQuality.severity.ERROR": "错误 (ERROR)",
-  "dna.dataQuality.severity.CRITICAL": "严重 (CRITICAL)"
+  "dna.dataQuality.severity.CRITICAL": "严重 (CRITICAL)",
+  "dna.dataQuality.status.passed": "通过",
+  "dna.dataQuality.status.failed": "未通过",
+  "dna.dataQuality.status.error": "执行错误"
 }

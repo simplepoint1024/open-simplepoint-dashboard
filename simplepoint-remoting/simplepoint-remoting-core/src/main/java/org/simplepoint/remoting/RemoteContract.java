@@ -38,4 +38,12 @@ public @interface RemoteContract {
    * @return the contract version
    */
   String version() default "1";
+
+  /**
+   * Contract-owned, stateless decoder with a public no-argument constructor.
+   * Remote responses cannot choose which Java class is instantiated.
+   *
+   * @return the decoder for declared business errors
+   */
+  Class<? extends RemoteErrorDecoder> errorDecoder() default NoRemoteErrorDecoder.class;
 }

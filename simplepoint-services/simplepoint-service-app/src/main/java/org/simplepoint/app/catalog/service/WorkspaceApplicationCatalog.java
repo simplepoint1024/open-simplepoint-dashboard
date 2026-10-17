@@ -41,7 +41,13 @@ public class WorkspaceApplicationCatalog {
   }
 
   /** Input for an application and its required main page. */
-  public record CreateApplication(String name, String description, String mainPageName) {}
+  public record CreateApplication(String name, String description, String mainPageName,
+      boolean navigationGroup) {
+    /** Keeps callers without an application directory source compatible. */
+    public CreateApplication(String name, String description, String mainPageName) {
+      this(name, description, mainPageName, false);
+    }
+  }
 
   /** Input for an additional application page. */
   public record CreatePage(String name, String description) {}
@@ -79,13 +85,38 @@ public class WorkspaceApplicationCatalog {
       String status,
       int sortOrder,
       boolean resourceRegistered,
-      String runtimePath) {}
+      String runtimePath,
+      String formId) {}
 
   /** Application metadata and its page directory. */
   public record ApplicationDetail(ApplicationSummary application, List<PageSummary> pages) {}
 
+  /** Bounded publication selector; identities are still validated again when publishing. */
+  @TableQuery(value = {
+      @QueryField("id"), @QueryField("name"), @QueryField("kind"), @QueryField("status"),
+      @QueryField("formId"), @QueryField("formVersion"), @QueryField("sortOrder")
+  }, maxPageSize = 100)
+  public record PublicationPage(
+      String id, String name, String kind, String status, String formId, Integer formVersion,
+      int sortOrder) {}
+
+  /** Queries publication destinations without materializing the application's page directory. */
+  public Page<PublicationPage> publicationPages(
+      String applicationId, Map<String, String> parameters, Pageable page) {
+    String tenant = tenantId();
+    findApplication(tenant, applicationId);
+    return ProjectionPages.query(
+        em, WorkspaceApplicationPage.class, PublicationPage.class, parameters, page,
+        "sortOrder", Set.of("name"),
+        (cb, criteria, root) -> cb.and(
+            cb.equal(root.get("tenantId"), tenant),
+            cb.equal(root.get("applicationId"), applicationId)),
+        row -> new PublicationPage(row.getId(), row.getName(), row.getKind(), row.getStatus(),
+            row.getFormId(), row.getFormVersion(), row.getSortOrder()));
+  }
+
   /** Current actor's creation capabilities. */
-  public record Permissions(boolean canCreateApplication, boolean canAddPage) {}
+  public record Permissions(boolean canCreateApplication, boolean canAddPage, boolean canDesignForm) {}
 
   /** Resolves workspace-bound application and page creation rights. */
   public Permissions permissions() {
@@ -96,7 +127,8 @@ public class WorkspaceApplicationCatalog {
     boolean administrator = Boolean.TRUE.equals(context.getIsAdministrator());
     return new Permissions(
         administrator || resources.contains("app.workbench.apps.create"),
-        administrator || resources.contains("app.workbench.pages.create"));
+        administrator || resources.contains("app.workbench.pages.create"),
+        administrator || resources.contains("app.workbench.forms.edit"));
   }
 
   /** Returns readable scalar fields and allowed query operators. */
@@ -200,6 +232,7 @@ public class WorkspaceApplicationCatalog {
     app.setTenantId(tenantId);
     app.setName(name);
     app.setDescription(description);
+    app.setNavigationGroup(command.navigationGroup());
     app.setStatus("DRAFT");
     app.setMainPageId(mainId);
     app.setCreatedAt(now);
@@ -302,7 +335,8 @@ public class WorkspaceApplicationCatalog {
         page.getStatus(),
         page.getSortOrder(),
         registered,
-        registered ? "/app/runtime/" + page.getApplicationId() + "/" + page.getId() : null);
+        registered ? "/app/runtime/" + page.getApplicationId() + "/" + page.getId() : null,
+        page.getFormId());
   }
 
   private static String tenantId() {

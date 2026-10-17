@@ -16,13 +16,13 @@ import org.junit.jupiter.api.Test;
 import org.simplepoint.data.calcite.core.query.DefaultCalciteQueryEngine;
 import org.simplepoint.data.datasource.jdbc.SimpleDataSource;
 import org.simplepoint.plugin.dna.runtime.api.DnaRuntimeApiVersion;
+import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.model.RuntimeMetadataTarget;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordMutationType;
 import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalSchemaDefinition;
 import org.simplepoint.plugin.dna.runtime.service.schema.ManagedRuntimeDataSourceProvider;
 import org.simplepoint.plugin.dna.runtime.service.schema.ManagedRuntimeDataSourceProvider.ManagedRuntimeDataSource;
 import org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaTarget;
-import org.simplepoint.plugin.dna.runtime.service.schema.RuntimeSchemaDialect;
 
 class RuntimeCalciteRecordBackendTest {
 
@@ -30,7 +30,7 @@ class RuntimeCalciteRecordBackendTest {
   void commitsCommandGroupThroughCalciteAndReadsItBack() throws Exception {
     Fixture fixture = fixture();
     RecordBatchExecutionResult result = fixture.backend().execute(
-        fixture.model(),
+        fixture.model(), new RecordWriteAdmission("tenant-a", 0),
         List.of(
             insert("first", "tenant-a"),
             insert("second", "tenant-a")
@@ -59,7 +59,7 @@ class RuntimeCalciteRecordBackendTest {
     Fixture fixture = fixture();
 
     assertThatThrownBy(() -> fixture.backend().execute(
-        fixture.model(),
+        fixture.model(), new RecordWriteAdmission("tenant-a", 0),
         List.of(
             insert("will-rollback", "tenant-a"),
             new RecordSqlStatement(
@@ -82,6 +82,25 @@ class RuntimeCalciteRecordBackendTest {
     }
   }
 
+  @Test
+  void inspectionRequiresDatabaseAggregationAndAlwaysRestoresTheOrdinaryPlanner() throws Exception {
+    Fixture fixture = fixture();
+    fixture.backend().execute(fixture.model(), new RecordWriteAdmission("tenant-a", 0), List.of(insert("first", "tenant-a")), 10_000);
+    var count = new RecordSelectPlan("SELECT COUNT(*) FROM \"runtime\".\"records\"", List.of(), List.of(), 1);
+    var result = fixture.backend().aggregateQuery(fixture.model(), count, 10_000);
+    assertThat(result.rows().getFirst().getFirst()).isEqualTo(1L);
+    assertThat(result.analysis().pushedDownOperators()).contains("Aggregate");
+
+    // COLLECT has a local implementation but is not supported by the JDBC dialect. Ordinary
+    // queries can use it; a management inspection must fail rather than transfer record values.
+    var local = new RecordSelectPlan("SELECT COLLECT(\"title\") FROM \"runtime\".\"records\"",
+        List.of(), List.of(), 1);
+    assertThat(fixture.backend().query(fixture.model(), local, 10_000).rows()).hasSize(1);
+    assertThatThrownBy(() -> fixture.backend().aggregateQuery(fixture.model(), local, 10_000))
+        .isInstanceOf(DnaRuntimeException.class);
+    assertThat(fixture.backend().query(fixture.model(), local, 10_000).rows()).hasSize(1);
+  }
+
   private static Fixture fixture() throws Exception {
     JdbcDataSource h2 = new JdbcDataSource();
     h2.setURL("jdbc:h2:mem:record-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
@@ -100,7 +119,7 @@ class RuntimeCalciteRecordBackendTest {
         false,
         null,
         null,
-        mock(RuntimeSchemaDialect.class),
+        H2RecordWriteFenceFixture.prepare(dataSource, "tenant-a", "model-1"),
         null,
         null,
         "PUBLIC"

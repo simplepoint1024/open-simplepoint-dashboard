@@ -37,7 +37,7 @@ export async function smokeExpressionModes({clickMenu, clickReady, clickText, fi
   await poll(() => evaluate(`document.querySelector('${drawer} .workflow-designer__element-id')?.textContent.includes('review')`), 'selected real task');
   };
   const indices = {assignee: 3, candidateUsers: 4, candidateGroups: 5, dueDate: 6, priority: 7};
-  const field = key => `${drawer} .workflow-designer__properties .ant-form-item:nth-of-type(${indices[key]})`;
+  const field = key => `${drawer} .workflow-designer__properties > form > .ant-form-item:nth-of-type(${indices[key]})`;
   const mode = (key, label) => clickText(field(key) + ' .ant-segmented-item', label);
   const advancedText = key => evaluate(`document.querySelector('${field(key)} .cm-content').cmTile.root.view.state.doc.toString()`);
   let phase = 0;

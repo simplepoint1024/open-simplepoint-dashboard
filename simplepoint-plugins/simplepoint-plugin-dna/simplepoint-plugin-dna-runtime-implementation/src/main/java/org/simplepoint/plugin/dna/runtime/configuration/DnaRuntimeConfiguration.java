@@ -16,7 +16,8 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties({
     DnaRuntimePlacementProperties.class,
     DnaRuntimeExecutionProperties.class,
-    DnaRuntimePublicationProperties.class
+    DnaRuntimePublicationProperties.class,
+    DnaFormRuntimeRemoteProperties.class
 })
 public class DnaRuntimeConfiguration {
 

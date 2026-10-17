@@ -70,8 +70,20 @@ public interface WorkflowCenterService {
   /** Starts a process instance. */
   ProcessInstanceSummary start(String definitionId, StartProcessCommand command);
 
+  /** Pages published process definitions bound to the exact authorized form version. */
+  PageResult<org.simplepoint.plugin.workflow.api.model.WorkflowModels.BoundDefinition>
+      boundDefinitions(
+          String provider, String formId, int formVersion, String keyword, int page, int size);
+
   /** Reads the explicit published version used to prepare a start form. */
   RuntimeForm startForm(String definitionId, Integer version);
+
+  /** Preflights business values and directory identities without creating engine state. */
+  RuntimeForm validateStartForm(
+      String definitionId,
+      int version,
+      java.util.Map<String, Object> variables,
+      java.util.List<String> ccUserIds);
 
   /** Reads a task's authorized form from its instance's pinned definition version. */
   RuntimeForm taskForm(String taskId);
@@ -91,8 +103,14 @@ public interface WorkflowCenterService {
   /** Rejects the current approval and ends this instance, preserving its history. */
   ProcessInstanceSummary reject(String taskId, String reason);
 
+  /** Retries the exact actor-owned decision without advancing the engine twice. */
+  ProcessInstanceSummary reject(String taskId, String reason, String idempotencyKey);
+
   /** Lets only the original starter withdraw a still-running instance. */
   ProcessInstanceSummary withdraw(String processInstanceId, String reason);
+
+  /** Retries the exact actor-owned decision without advancing the engine twice. */
+  ProcessInstanceSummary withdraw(String processInstanceId, String reason, String idempotencyKey);
 
   /** Pages process instances started by the current user. */
   PageResult<ProcessInstanceSummary> startedInstances(String keyword, int page, int size);
@@ -121,4 +139,7 @@ public interface WorkflowCenterService {
 
   /** Terminates a running process instance. */
   ProcessInstanceSummary cancel(String processInstanceId, String reason);
+
+  /** Retries the exact actor-owned decision without advancing the engine twice. */
+  ProcessInstanceSummary cancel(String processInstanceId, String reason, String idempotencyKey);
 }

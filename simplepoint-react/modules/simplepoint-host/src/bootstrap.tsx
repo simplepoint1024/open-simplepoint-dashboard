@@ -7,8 +7,10 @@ import {applyInitialHtmlAttributes} from "@/utils/initHtmlAttributes.ts";
 import {I18nProvider} from "@/layouts/i18n/I18nProvider.tsx";
 import {isHttpError} from '@simplepoint/shared/api/client';
 import {bindQueryScope} from '@simplepoint/shared/api/queryScope';
+import {registerApplicationWorkflow} from '@simplepoint/components/ApplicationWorkflow/register';
 
 applyInitialHtmlAttributes();
+registerApplicationWorkflow();
 
 const queryClient = new QueryClient({
   defaultOptions: {

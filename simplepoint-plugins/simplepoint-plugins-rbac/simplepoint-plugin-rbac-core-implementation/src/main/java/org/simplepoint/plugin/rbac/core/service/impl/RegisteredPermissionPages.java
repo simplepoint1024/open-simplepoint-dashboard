@@ -34,6 +34,7 @@ final class RegisteredPermissionPages {
     if (requestedCode != null) {
       for (var row : em.createQuery(query + " and r.code=:code", Object[].class).setParameter("code", requestedCode)
           .setMaxResults(1).getResultList()) if (!consume.test(row)) return;
+      managed(em, java.util.List.of(requestedCode), projection, consume);
       return;
     }
     var requested = codes.stream().filter(Objects::nonNull).filter(code -> !code.isBlank()).distinct().toList();
@@ -42,6 +43,28 @@ final class RegisteredPermissionPages {
       var batch = requested.subList(start, Math.min(start + BATCH_SIZE, requested.size()));
       for (var row : em.createQuery(query + " and r.code in :codes", Object[].class).setParameter("codes", batch)
           .setMaxResults(batch.size()).getResultList()) if (!consume.test(row)) return;
+    }
+    managed(em, requested, projection, consume);
+  }
+
+  /** Managed model discovery is always tenant- and grant-bound, including in platform catalog mode. */
+  static void managed(EntityManager em, java.util.List<String> codes, Projection projection,
+      Predicate<Object[]> consume) {
+    String tenant = caller().getAttribute("X-Tenant-Id");
+    if (tenant == null || tenant.isBlank() || em.getMetamodel().getEntities().stream()
+        .noneMatch(entity -> entity.getJavaType() == org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource.class)) return;
+    String columns = projection == Projection.EXPRESSION ? "r.code,r.permissionMetadata"
+        : "r.code,null,r.name,null,null,r.permissionMetadata";
+    for (int start = 0; start < codes.size(); start += BATCH_SIZE) {
+      var batch = codes.subList(start, Math.min(start + BATCH_SIZE, codes.size()));
+      for (var row : em.createQuery("select " + columns + " from TenantResource r where r.tenantId=:tenant "
+          + "and r.enabled=true and r.formallyOffline=false and r.managedOwner is not null "
+          + "and r.type='PAGE' and r.permissionMetadata is not null and r.code in :codes", Object[].class)
+          .setParameter("tenant", tenant).setParameter("codes", batch).setMaxResults(batch.size()).getResultList()) {
+        Object[] projected = projection == Projection.FIELDS
+            ? new Object[] {row[0], row[1], row[2], row[3], row[4], row[5], true} : row;
+        if (!consume.test(projected)) return;
+      }
     }
   }
 }

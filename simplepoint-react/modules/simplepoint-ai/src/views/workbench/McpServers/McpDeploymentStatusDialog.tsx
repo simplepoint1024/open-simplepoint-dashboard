@@ -590,7 +590,7 @@ const McpDeploymentStatusDialog = ({
             title: t("ai.runtime.field.startedAt", "启动时间"),
             dataIndex: "startedAt",
             width: 180,
-            render: formatDateTime,
+            render: (value?: string) => formatDateTime(value),
           },
         ].filter(column => !!querySchema?.properties[column.dataIndex])}
       />

@@ -1,0 +1,160 @@
+import assert from 'node:assert/strict';
+
+export async function smokeAppFormRuntime({clickMenu, clickText, fill, poll, evaluate, fixture, workspace}) {
+  workspace.enable(); fixture.enable(workspace.tenantId);
+  await evaluate(`localStorage.setItem('sp.tenantId',${JSON.stringify(workspace.tenantId)});window.dispatchEvent(new CustomEvent('sp-set-tenant',{detail:${JSON.stringify(workspace.tenantId)}}));`);
+  await clickMenu('表单运行测试');
+  const root = '.nb-tab-panel-active';
+  const name = root + ' #form_customer-main_name';
+  await poll(() => evaluate(`!!document.querySelector('${name}')`), 'published form with custom main scene ID');
+  await clickText(root + ' button', '提交');
+  await poll(() => evaluate(`!!document.querySelector('${root} .ant-form-item-has-error')`), 'required submission validation');
+  assert.equal(fixture.writes.length, 0);
+  const payload = root + ' #form_customer-main_payload';
+  await fill(payload, '{"a":1,"a":2}');
+  await clickText(root + ' button', '保存草稿');
+  await poll(() => evaluate(`!!document.querySelector('${payload}').closest('.ant-form-item-has-error')`), 'duplicate JSON key is rejected by platform validation');
+  assert.equal(fixture.writes.length, 0);
+  await fill(payload, '{}');
+  await clickText(root + ' button', '提交');
+  await poll(() => evaluate(`!!document.querySelector('${payload}').closest('.ant-form-item-has-error')`), 'required JSON rejects empty objects');
+  assert.equal(fixture.writes.length, 0);
+  const exactJson = '{"z":9007199254740993,"a":0.12345678901234567890123456789,"label":"日本"}';
+  await fill(payload, exactJson);
+  await clickText(root + ' button', '保存草稿');
+  await poll(() => fixture.records.size === 1, 'incomplete draft persisted');
+  await poll(() => evaluate(`!document.querySelector('${name}').disabled`), 'draft save completed');
+  assert.equal(fixture.records.get('record-1').values.payload, exactJson);
+  assert.equal(fixture.records.get('record-1').values.approved, false);
+  assert.equal(fixture.records.get('record-1').values.amount, '9999999999999999999.12345678');
+  assert.equal(fixture.records.get('record-1').values.serial, '9223372036854775807');
+  assert.equal(fixture.records.get('record-1').values.code, 'CUSTOMER-001');
+  for (const id of ['readonly', 'maskedDate', 'maskedBoolean', 'maskedLong', 'maskedJson', 'retiredChoice']) {
+    assert.equal(await evaluate(`document.querySelector('${root} #form_customer-main_${id}').value`),
+      id === 'retiredChoice' ? 'retired' : '***', 'protected values render verbatim without type coercion');
+  }
+  assert.equal(await evaluate(`document.querySelector('${root} #form_customer-main_code').disabled`), true);
+  await fill(name, '客户一');
+  assert.equal(await evaluate(`document.querySelector('${root} #form_customer-main_readonly').disabled`), true);
+  await clickMenu('首页');
+  await clickMenu('表单运行测试');
+  await poll(() => evaluate(`document.querySelector('${name}')?.value==='客户一'`), 'retained draft values');
+  const dialog = '.sp-form-runtime-dialog:not([style*="display: none"]) .ant-modal';
+  const drawer = '.sp-form-runtime-drawer.ant-drawer-open';
+  const discard = '.sp-form-runtime-discard:not([style*="display: none"]) .ant-modal';
+  const openAddress = async () => {
+    await clickText(root + ' button', '编辑地址');
+    await poll(() => evaluate(`!!document.querySelector('${dialog} #form_address_detail')`), 'designed dialog scene');
+  };
+  const openCity = async () => {
+    await clickText(dialog + ' button', '选择城市');
+    await poll(() => evaluate(`!!document.querySelector('${drawer} #form_city_city')`), 'nested designed drawer');
+  };
+  await openAddress(); await fill(dialog + ' #form_address_detail', '尚未确认地址');
+  await clickMenu('首页');
+  await poll(() => evaluate(`!document.querySelector('${dialog}')`), 'background scene overlay hidden');
+  await clickMenu('表单运行测试');
+  await poll(() => evaluate(`document.querySelector('${dialog} #form_address_detail')?.value==='尚未确认地址'`), 'dialog draft retained');
+  await openCity(); await fill(drawer + ' #form_city_city', 'Discard city');
+  await clickText(drawer + ' button', '取消');
+  await clickText(discard + ' button', '放弃修改');
+  await poll(() => evaluate(`document.querySelector('${dialog} #form_address_detail')?.value==='尚未确认地址'`), 'drawer cancel preserves parent draft');
+  await openCity();
+  assert.equal(await evaluate(`document.querySelector('${drawer} #form_city_code').disabled`), true,
+    'nested scenes share the persisted record write boundary');
+  await fill(drawer + ' #form_city_city', 'Discard with parent');
+  await clickText(drawer + ' button', '确认');
+  await poll(() => evaluate(`!!document.querySelector('${dialog} #form_address_detail')`), 'drawer merges into dialog only');
+  await clickText(dialog + ' button', '取消'); await clickText(discard + ' button', '放弃修改');
+  await poll(() => evaluate(`!document.querySelector('${dialog}')`), 'dialog cancellation discards nested edits');
+  assert.equal(fixture.writes.length, 1, 'local scene actions never create records');
+  await openAddress();
+  assert.equal(await evaluate(`document.querySelector('${dialog} #form_address_detail').value`), '');
+  await fill(dialog + ' #form_address_detail', 'Tokyo'); await openCity();
+  assert.equal(await evaluate(`document.querySelector('${drawer} #form_city_city').value`), '');
+  await fill(drawer + ' #form_city_city', 'Shibuya'); await clickText(drawer + ' button', '确认');
+  await poll(() => evaluate(`!!document.querySelector('${dialog} #form_address_detail')`), 'nested scene applied');
+  await clickText(dialog + ' .ant-tabs-tab', '备注'); await fill(dialog + ' #form_address_note', '住所メモ');
+  await clickText(dialog + ' button', '确认');
+  await poll(() => evaluate(`!document.querySelector('${dialog}')`), 'dialog applies all nested and tab values');
+  try {
+    await poll(() => evaluate(`[...document.querySelectorAll('${root} button')].some(b=>b.textContent.replaceAll(' ','').includes('提交') && !b.disabled)`), 'main scene ready after applying dialog');
+  } catch (error) {
+    console.error('Scene apply diagnostics', await evaluate(`({route:location.hash,text:document.querySelector('${root}')?.textContent,inputs:[...document.querySelectorAll('input')].map(input=>({id:input.id,value:input.value}))})`));
+    throw error;
+  }
+  await evaluate(`(() => {const button=[...document.querySelectorAll('${root} button')].find(b=>b.textContent.replaceAll(' ','').includes('提交'));button.click();button.click();})()`);
+  await poll(() => fixture.records.get('record-1')?.state === 'SUBMITTED', 'draft submitted in place');
+  await poll(() => evaluate(`document.querySelector('${name}')?.value===''`), 'successful submission starts a new form');
+  assert.equal(fixture.records.size, 1);
+  assert.deepEqual(fixture.records.get('record-1').values, {name: '客户一', payload: exactJson, detail: 'Tokyo', city: 'Shibuya', note: '住所メモ',
+    approved: false, amount: '9999999999999999999.12345678', serial: '9223372036854775807', code: 'CUSTOMER-001',
+    readonly: '***', maskedDate: '***', maskedBoolean: '***', maskedLong: '***', maskedJson: '***', retiredChoice: 'retired'});
+  assert.deepEqual(fixture.writes.map(write => write.method), ['POST', 'PUT']);
+  assert.equal(fixture.writes[1].path.split('/').at(-1), 'record-1');
+  await fill(name, '客户二'); await openAddress();
+  await fill(dialog + ' #form_address_detail', 'Kobe'); fixture.loseSaveResponse();
+  await clickText(dialog + ' button', '保存草稿');
+  await poll(() => evaluate(`document.querySelector('${dialog} .ant-alert-error')?.textContent.includes('保存响应')`), 'uncertain save outcome stays visible inside the scene');
+  assert.equal(await evaluate(`document.querySelector('${dialog} #form_address_detail').disabled`), true);
+  await clickText(dialog + ' .ant-alert button', '重试');
+  await poll(() => evaluate(`!document.querySelector('${root} .ant-alert-error') && !document.querySelector('${name}').disabled`), 'receipt replay restores draft');
+  assert.equal(fixture.records.size, 2);
+  assert.equal(fixture.records.get('record-2').values.detail, 'Kobe');
+  await poll(() => evaluate(`!document.querySelector('${dialog}')`), 'successful retry closes its saved scene');
+  assert.deepEqual(fixture.writes[2].data, fixture.writes[3].data);
+  await fill(name, ''); await clickText(root + ' button', '保存草稿');
+  await poll(() => fixture.records.get('record-2')?.values.name === null, 'cleared field stored as null');
+  await poll(() => evaluate(`!document.querySelector('${name}').disabled`), 'cleared draft saved');
+  const beforeRetry = fixture.writes.length;
+  await fill(name, '原修改请求'); fixture.loseSaveResponse();
+  await clickText(root + ' button', '保存草稿');
+  await poll(() => evaluate(`document.querySelector('${root} .ant-alert-error')?.textContent.includes('保存响应')`), 'committed update response lost');
+  assert.equal(await evaluate(`document.querySelector('${name}').disabled`), true);
+  fixture.reviseRecord('record-2', {name: null, detail: '后续修改'});
+  fixture.tightenPolicy();
+  const latestVersion = fixture.records.get('record-2').version;
+  await clickText(root + ' .ant-alert button', '重试');
+  await poll(() => evaluate(`!document.querySelector('${root} .ant-alert-error') && !document.querySelector('${name}').disabled`), 'update receipt recovers after a later edit');
+  assert.deepEqual(fixture.writes[beforeRetry].data, fixture.writes[beforeRetry + 1].data);
+  assert.equal(fixture.records.get('record-2').version, latestVersion, 'replay never repeats the update');
+  assert.equal(fixture.records.get('record-2').values.detail, '后续修改');
+  assert.equal(await evaluate(`document.querySelector('${name}').value`), '', 'editor loads current data instead of replaying old values');
+  // Another page activates stricter writes while this page keeps the same immutable form version.
+  await fill(name, '保留策略变更前的编辑');
+  const approved = root + ' #form_customer-main_approved';
+  await evaluate(`document.querySelector('${approved}').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
+  const choicesId = await evaluate(`document.querySelector('${approved}').getAttribute('aria-controls')`);
+  await clickText(`.ant-select-dropdown:not(.ant-select-dropdown-hidden):has([id="${choicesId}"]) .ant-select-item-option`, '已审核');
+  await clickText(root + ' button', '保存草稿');
+  await poll(() => evaluate(`document.querySelector('${root} .ant-alert-error')?.textContent.includes('写入规则')`), 'old-page write is refused by the activated policy');
+  assert.equal(fixture.records.get('record-2').values.approved, false);
+  await clickText(root + ' .ant-alert button', '检查表单版本');
+  await poll(() => evaluate(`!!document.querySelector('${root} .ant-alert-warning')`), 'policy revision is detected without changing the bound form version');
+  assert.equal(await evaluate(`document.querySelector('${name}').value`), '保留策略变更前的编辑');
+  await clickText(root + ' .ant-alert-warning button', '加载新版本');
+  await clickText('.ant-modal-confirm button', '确定');
+  await poll(() => evaluate(`document.querySelector('${name}')?.value==='' && !document.querySelector('${root} .ant-alert-warning')`), 'policy adoption clears the old editor only after confirmation');
+  await fill(name, '未保存内容'); fixture.publish();
+  await clickText(root + ' button', '保存草稿');
+  await poll(() => evaluate(`document.querySelector('${root} .ant-alert-error')?.textContent.includes('版本')`), 'stale publication rejected');
+  await clickText(root + ' .ant-alert button', '检查表单版本');
+  await poll(() => evaluate(`document.querySelector('${root} .ant-alert-warning')?.textContent.includes('表单已更新')`), 'new version discovered');
+  assert.equal(await evaluate(`document.querySelector('${name}').value`), '未保存内容');
+  assert.equal(fixture.records.get('record-2').values.name, null);
+  await clickText(root + ' .ant-alert-warning button', '加载新版本');
+  await clickText('.ant-modal-confirm button', '确定');
+  await poll(() => evaluate(`document.querySelector('${name}')?.value==='' && !document.querySelector('${root} .ant-alert-warning')`), 'new publication loaded after explicit discard');
+  await fill(name, '旧授权上下文草稿');
+  await evaluate(`localStorage.setItem(${JSON.stringify('sp.contextId:' + workspace.tenantId)},'form-new-context');window.dispatchEvent(new CustomEvent('sp-set-context-id',{detail:{tenantId:${JSON.stringify(workspace.tenantId)},contextId:'form-new-context'}}));`);
+  await poll(() => evaluate(`document.querySelector('${name}')?.value===''`), 'authorization scope clears old local form state');
+  const recordCount = fixture.records.size;
+  await fill(name, 'JSON 清空测试'); await fill(payload, '{"a":1}');
+  await clickText(root + ' button', '保存草稿');
+  await poll(() => fixture.records.size === recordCount + 1, 'JSON draft created');
+  await poll(() => evaluate(`!document.querySelector('${payload}').disabled`), 'JSON draft ready');
+  const jsonRecord = [...fixture.records.values()].find(record => record.values.name === 'JSON 清空测试');
+  await fill(payload, ''); await clickText(root + ' button', '保存草稿');
+  await poll(() => jsonRecord.values.payload === null, 'cleared JSON editor sends SQL null instead of malformed JSON');
+  console.log('PASS: platform JSON syntax/required checks and lossless payload, typed choices with exact decimals/long integers, published form draft/submit identity, nested dialog/drawer apply/cancel, tab values, scene-local receipt replay, readonly rules, duplicate clicks, null clearing and publication/auth boundaries');
+}

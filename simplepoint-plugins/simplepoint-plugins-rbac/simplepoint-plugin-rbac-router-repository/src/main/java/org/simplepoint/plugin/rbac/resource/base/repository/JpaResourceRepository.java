@@ -30,6 +30,10 @@ public interface JpaResourceRepository extends BaseRepository<Resource, String>,
   Collection<Resource> findAllByCodes(@Param("codes") Collection<String> codes);
 
   @Override
+  @Query("select r from Resource r where r.path in :paths")
+  Collection<Resource> findAllByPaths(@Param("paths") Collection<String> paths);
+
+  @Override
   @Query("""
       select r
       from Resource r

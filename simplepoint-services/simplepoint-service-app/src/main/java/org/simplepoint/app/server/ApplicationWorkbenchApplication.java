@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 
 /** Application workbench service entry point. */
 @Boot
+@org.springframework.scheduling.annotation.EnableScheduling
 @EnableCaching
 @EnableRepository
 @EnableMethodSecurity

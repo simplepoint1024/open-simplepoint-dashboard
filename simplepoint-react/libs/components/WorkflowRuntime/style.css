@@ -1,9 +1,18 @@
+.workflow-workspace-boundary,
 .workflow-personal-page {
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
+
+.workflow-workspace-boundary > .workflow-personal-page,
+.workflow-personal-page > .sp-data-table-fit { flex: 1; }
+.workflow-workspace-boundary > .ant-alert,
+.workflow-personal-page > .ant-alert { flex-shrink: 0; }
 
 /* Bound portals to the device viewport, even when the host has horizontal overflow. */
 .workflow-progress-detail.ant-drawer,

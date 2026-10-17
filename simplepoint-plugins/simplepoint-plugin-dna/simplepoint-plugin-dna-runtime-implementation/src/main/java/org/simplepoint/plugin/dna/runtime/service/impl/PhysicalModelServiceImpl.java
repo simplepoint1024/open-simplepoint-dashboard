@@ -42,11 +42,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PhysicalModelServiceImpl implements PhysicalModelService {
 
-  private static final Set<PhysicalModelStatus> VERSIONABLE_STATES = Set.of(
-      PhysicalModelStatus.DRAFT,
-      PhysicalModelStatus.ACTIVE,
-      PhysicalModelStatus.FAILED
-  );
+  private static final Set<PhysicalModelStatus> VERSIONABLE_STATES =
+      Set.of(PhysicalModelStatus.DRAFT, PhysicalModelStatus.ACTIVE, PhysicalModelStatus.FAILED);
 
   private final PhysicalModelRepository modelRepository;
   private final PhysicalModelBindingRepository bindingRepository;
@@ -68,8 +65,7 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
       final PhysicalSchemaCodec schemaCodec,
       final PhysicalSchemaValidator schemaValidator,
       final RuntimeRequestContext requestContext,
-      final DnaRuntimeAuditPublisher auditPublisher
-  ) {
+      final DnaRuntimeAuditPublisher auditPublisher) {
     this.modelRepository = modelRepository;
     this.bindingRepository = bindingRepository;
     this.versionRepository = versionRepository;
@@ -89,82 +85,78 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
       throw invalidArgument("Registration command is required");
     }
     RuntimeActor actor = requestContext.requireActor();
-    if (modelExists(
-        actor.tenantId(),
-        command.appId(),
-        command.formId()
-    )) {
+    if (modelExists(actor.tenantId(), command.appId(), command.formId())) {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.PHYSICAL_MODEL_ALREADY_EXISTS,
-          "A physical model already exists for this form"
-      );
+          "A physical model already exists for this form");
     }
 
-    PhysicalBindingTarget target = bindingTargetResolver.resolve(
-        new PhysicalPlacementRequest(
-            actor.tenantId(),
-            command.appId(),
-            command.formId(),
-            command.placementKey()
-        )
-    );
+    PhysicalBindingTarget target =
+        bindingTargetResolver.resolve(
+            new PhysicalPlacementRequest(
+                actor.tenantId(), command.appId(), command.formId(), command.placementKey()));
     String modelId = UUID.randomUUID().toString();
     String tableName = tableNamingStrategy.tableName(modelId);
     String catalogName = emptyIfNull(target.catalogName());
     String schemaName = emptyIfNull(target.schemaName());
-    if (bindingExists(
-        target.dataSourceId(),
-        catalogName,
-        schemaName,
-        tableName
-    )) {
+    if (bindingExists(target.dataSourceId(), catalogName, schemaName, tableName)) {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.PHYSICAL_BINDING_CONFLICT,
-          "The generated physical target is already bound"
-      );
+          "The generated physical target is already bound");
     }
 
+    validateOwner(actor, command, target);
     schemaValidator.validate(command.initialSchema());
     EncodedSchema encoded = schemaCodec.encode(command.initialSchema());
     PhysicalModelEntity model = newModel(modelId, command, actor);
-    PhysicalModelBindingEntity binding = newBinding(
-        modelId,
-        tableName,
-        catalogName,
-        schemaName,
-        target,
-        actor
-    );
-    PhysicalModelVersionEntity version = newVersion(
-        modelId,
-        1,
-        command.initialSchema().contractVersion(),
-        encoded,
-        actor
-    );
+    PhysicalModelBindingEntity binding =
+        newBinding(modelId, tableName, catalogName, schemaName, target, actor);
+    PhysicalModelVersionEntity version =
+        newVersion(modelId, 1, command.initialSchema().contractVersion(), encoded, actor);
 
     try {
       modelRepository.save(model);
       bindingRepository.save(binding);
       versionRepository.save(version);
-      auditPublisher.publish(successEvent(
-          DnaRuntimeAuditEventType.PHYSICAL_MODEL_REGISTERED,
-          model,
-          actor,
-          target.dataSourceId(),
-          1,
-          elapsedMillis(startedAt)
-      ));
+      auditPublisher.publish(
+          successEvent(
+              DnaRuntimeAuditEventType.PHYSICAL_MODEL_REGISTERED,
+              model,
+              actor,
+              target.dataSourceId(),
+              1,
+              elapsedMillis(startedAt)));
       modelRepository.flush();
       return toView(model, version);
     } catch (DataIntegrityViolationException exception) {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.PHYSICAL_MODEL_REGISTRATION_CONFLICT,
           "Physical model registration conflicts with an existing model",
-          exception
-      );
+          exception);
     } catch (DataAccessException exception) {
       throw persistenceFailure("Physical model registration failed", exception);
+    }
+  }
+
+  private void validateOwner(
+      RuntimeActor actor, PhysicalModelRegistrationCommand command, PhysicalBindingTarget target) {
+    var owner = command.initialSchema().owner();
+    if (owner == null) {
+      return;
+    }
+    var parent = requireModel(actor.tenantId(), owner.parentModelId(), false);
+    var binding = requireBinding(actor.tenantId(), parent.getId());
+    var schema =
+        schemaCodec.decode(
+            requireVersion(actor.tenantId(), parent.getId(), parent.getLatestVersion())
+                .getSchemaJson());
+    if (!parent.getAppId().equals(command.appId())
+        || schema.owner() != null
+        || !binding.getDataSourceId().equals(target.dataSourceId())
+        || !java.util.Objects.equals(binding.getCatalogName(), emptyIfNull(target.catalogName()))
+        || !java.util.Objects.equals(binding.getSchemaName(), emptyIfNull(target.schemaName()))) {
+      throw invalidArgument(
+          "Owned models require one application, one datasource/schema and one ownership level");
     }
   }
 
@@ -175,20 +167,40 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
     RuntimeActor actor = requestContext.requireActor();
     PhysicalModelEntity model = requireModel(actor.tenantId(), modelId, false);
     requireBinding(actor.tenantId(), modelId);
-    PhysicalModelVersionEntity version = requireVersion(
-        actor.tenantId(),
-        modelId,
-        model.getLatestVersion()
-    );
+    PhysicalModelVersionEntity version =
+        requireVersion(actor.tenantId(), modelId, model.getLatestVersion());
+    return toView(model, version);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public PhysicalModelView getByForm(final String appId, final String formId) {
+    RuntimeActor actor = requestContext.requireActor();
+    String applicationId = requireOwnerId(appId, "appId");
+    String ownerFormId = requireOwnerId(formId, "formId");
+    PhysicalModelEntity model;
+    try {
+      model =
+          modelRepository
+              .findActiveByForm(actor.tenantId(), applicationId, ownerFormId)
+              .orElseThrow(
+                  () ->
+                      new DnaRuntimeException(
+                          DnaRuntimeErrorCode.PHYSICAL_MODEL_NOT_FOUND,
+                          "Physical model was not found in the active tenant"));
+    } catch (DataAccessException exception) {
+      throw persistenceFailure("Physical model lookup failed", exception);
+    }
+    requireBinding(actor.tenantId(), model.getId());
+    PhysicalModelVersionEntity version =
+        requireVersion(actor.tenantId(), model.getId(), model.getLatestVersion());
     return toView(model, version);
   }
 
   @Override
   @Transactional
   public PhysicalModelVersionView createVersion(
-      final String physicalModelId,
-      final PhysicalModelVersionCommand command
-  ) {
+      final String physicalModelId, final PhysicalModelVersionCommand command) {
     long startedAt = System.nanoTime();
     String modelId = requireModelId(physicalModelId);
     if (command == null) {
@@ -203,75 +215,70 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
     if (!VERSIONABLE_STATES.contains(model.getStatus())) {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.PHYSICAL_MODEL_STATE_CONFLICT,
-          "A schema version cannot be created while the model is " + model.getStatus()
-      );
+          "A schema version cannot be created while the model is " + model.getStatus());
     }
     if (model.getStatus() != PhysicalModelStatus.DRAFT) {
       PhysicalModelTransitions.requireTransition(model.getStatus(), PhysicalModelStatus.DRAFT);
       model.setStatus(PhysicalModelStatus.DRAFT);
     }
 
+    var previousSchema =
+        schemaCodec.decode(
+            requireVersion(actor.tenantId(), modelId, model.getLatestVersion()).getSchemaJson());
+    if (!java.util.Objects.equals(previousSchema.owner(), command.schema().owner())) {
+      throw invalidArgument("A physical model owner relation is immutable");
+    }
     int nextVersion = model.getLatestVersion() + 1;
     schemaValidator.validate(command.schema());
     EncodedSchema encoded = schemaCodec.encode(command.schema());
-    PhysicalModelVersionEntity version = newVersion(
-        modelId,
-        nextVersion,
-        command.schema().contractVersion(),
-        encoded,
-        actor
-    );
+    PhysicalModelVersionEntity version =
+        newVersion(modelId, nextVersion, command.schema().contractVersion(), encoded, actor);
     model.setLatestVersion(nextVersion);
     model.setUpdatedBy(actor.actorId());
 
     try {
       versionRepository.save(version);
       modelRepository.save(model);
-      auditPublisher.publish(successEvent(
-          DnaRuntimeAuditEventType.PHYSICAL_MODEL_VERSION_CREATED,
-          model,
-          actor,
-          binding.getDataSourceId(),
-          nextVersion,
-          elapsedMillis(startedAt)
-      ));
+      auditPublisher.publish(
+          successEvent(
+              DnaRuntimeAuditEventType.PHYSICAL_MODEL_VERSION_CREATED,
+              model,
+              actor,
+              binding.getDataSourceId(),
+              nextVersion,
+              elapsedMillis(startedAt)));
       modelRepository.flush();
       return toVersionView(version);
     } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException exception) {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.PHYSICAL_MODEL_VERSION_CONFLICT,
           "The physical model was changed by another request",
-          exception
-      );
+          exception);
     } catch (DataAccessException exception) {
       throw persistenceFailure("Physical model version creation failed", exception);
     }
   }
 
   private PhysicalModelEntity requireModel(
-      final String tenantId,
-      final String modelId,
-      final boolean forUpdate
-  ) {
+      final String tenantId, final String modelId, final boolean forUpdate) {
     try {
       return (forUpdate
-          ? modelRepository.findActiveByIdForUpdate(tenantId, modelId)
-          : modelRepository.findActiveById(tenantId, modelId))
-          .orElseThrow(() -> new DnaRuntimeException(
-              DnaRuntimeErrorCode.PHYSICAL_MODEL_NOT_FOUND,
-              "Physical model was not found in the active tenant"
-          ));
+              ? modelRepository.findActiveByIdForUpdate(tenantId, modelId)
+              : modelRepository.findActiveById(tenantId, modelId))
+          .orElseThrow(
+              () ->
+                  new DnaRuntimeException(
+                      DnaRuntimeErrorCode.PHYSICAL_MODEL_NOT_FOUND,
+                      "Physical model was not found in the active tenant"));
     } catch (DataAccessException exception) {
       throw persistenceFailure("Physical model lookup failed", exception);
     }
   }
 
-  private PhysicalModelBindingEntity requireBinding(
-      final String tenantId,
-      final String modelId
-  ) {
+  private PhysicalModelBindingEntity requireBinding(final String tenantId, final String modelId) {
     try {
-      return bindingRepository.findActiveByModel(tenantId, modelId)
+      return bindingRepository
+          .findActiveByModel(tenantId, modelId)
           .orElseThrow(() -> inconsistentModel(modelId, "binding"));
     } catch (DataAccessException exception) {
       throw persistenceFailure("Physical model binding lookup failed", exception);
@@ -279,23 +286,17 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
   }
 
   private PhysicalModelVersionEntity requireVersion(
-      final String tenantId,
-      final String modelId,
-      final int versionNumber
-  ) {
+      final String tenantId, final String modelId, final int versionNumber) {
     try {
-      return versionRepository.findActiveVersion(tenantId, modelId, versionNumber)
+      return versionRepository
+          .findActiveVersion(tenantId, modelId, versionNumber)
           .orElseThrow(() -> inconsistentModel(modelId, "latest version"));
     } catch (DataAccessException exception) {
       throw persistenceFailure("Physical model version lookup failed", exception);
     }
   }
 
-  private boolean modelExists(
-      final String tenantId,
-      final String appId,
-      final String formId
-  ) {
+  private boolean modelExists(final String tenantId, final String appId, final String formId) {
     try {
       return modelRepository.existsActiveByForm(tenantId, appId, formId);
     } catch (DataAccessException exception) {
@@ -307,15 +308,9 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
       final String dataSourceId,
       final String catalogName,
       final String schemaName,
-      final String tableName
-  ) {
+      final String tableName) {
     try {
-      return bindingRepository.existsActiveTarget(
-          dataSourceId,
-          catalogName,
-          schemaName,
-          tableName
-      );
+      return bindingRepository.existsActiveTarget(dataSourceId, catalogName, schemaName, tableName);
     } catch (DataAccessException exception) {
       throw persistenceFailure("Physical binding uniqueness check failed", exception);
     }
@@ -324,8 +319,7 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
   private PhysicalModelEntity newModel(
       final String modelId,
       final PhysicalModelRegistrationCommand command,
-      final RuntimeActor actor
-  ) {
+      final RuntimeActor actor) {
     PhysicalModelEntity entity = new PhysicalModelEntity();
     entity.setId(modelId);
     entity.setTenantId(actor.tenantId());
@@ -345,8 +339,7 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
       final String catalogName,
       final String schemaName,
       final PhysicalBindingTarget target,
-      final RuntimeActor actor
-  ) {
+      final RuntimeActor actor) {
     PhysicalModelBindingEntity entity = new PhysicalModelBindingEntity();
     entity.setId(UUID.randomUUID().toString());
     entity.setTenantId(actor.tenantId());
@@ -366,8 +359,7 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
       final int versionNumber,
       final String contractVersion,
       final EncodedSchema encoded,
-      final RuntimeActor actor
-  ) {
+      final RuntimeActor actor) {
     PhysicalModelVersionEntity entity = new PhysicalModelVersionEntity();
     entity.setId(UUID.randomUUID().toString());
     entity.setTenantId(actor.tenantId());
@@ -382,9 +374,7 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
   }
 
   private PhysicalModelView toView(
-      final PhysicalModelEntity model,
-      final PhysicalModelVersionEntity version
-  ) {
+      final PhysicalModelEntity model, final PhysicalModelVersionEntity version) {
     return new PhysicalModelView(
         model.getId(),
         model.getAppId(),
@@ -396,13 +386,10 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
         model.getLockVersion(),
         toVersionView(version),
         model.getCreatedAt(),
-        model.getUpdatedAt()
-    );
+        model.getUpdatedAt());
   }
 
-  private PhysicalModelVersionView toVersionView(
-      final PhysicalModelVersionEntity version
-  ) {
+  private PhysicalModelVersionView toVersionView(final PhysicalModelVersionEntity version) {
     return new PhysicalModelVersionView(
         version.getId(),
         version.getPhysicalModelId(),
@@ -410,8 +397,7 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
         schemaCodec.decode(version.getSchemaJson()),
         version.getSchemaChecksum(),
         version.getCreatedBy(),
-        version.getCreatedAt()
-    );
+        version.getCreatedAt());
   }
 
   private static DnaRuntimeAuditEvent successEvent(
@@ -420,8 +406,7 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
       final RuntimeActor actor,
       final String dataSourceId,
       final int modelVersion,
-      final long durationMillis
-  ) {
+      final long durationMillis) {
     return new DnaRuntimeAuditEvent(
         UUID.randomUUID().toString(),
         eventType,
@@ -436,8 +421,7 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
         null,
         durationMillis,
         DnaRuntimeAuditOutcome.SUCCEEDED,
-        null
-    );
+        null);
   }
 
   private static String requireModelId(final String modelId) {
@@ -445,6 +429,13 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
       throw invalidArgument("A valid physical model id is required");
     }
     return modelId.trim();
+  }
+
+  private static String requireOwnerId(final String value, final String name) {
+    if (value == null || value.isBlank() || value.length() > 64) {
+      throw invalidArgument(name + " is required");
+    }
+    return value.trim();
   }
 
   private static long elapsedMillis(final long startedAt) {
@@ -462,28 +453,18 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
   private static DnaRuntimeException versionConflict(final String modelId) {
     return new DnaRuntimeException(
         DnaRuntimeErrorCode.PHYSICAL_MODEL_VERSION_CONFLICT,
-        "Physical model lock version does not match: " + modelId
-    );
+        "Physical model lock version does not match: " + modelId);
   }
 
   private static DnaRuntimeException inconsistentModel(
-      final String modelId,
-      final String missingPart
-  ) {
+      final String modelId, final String missingPart) {
     return new DnaRuntimeException(
         DnaRuntimeErrorCode.PERSISTENCE_FAILED,
-        "Physical model " + modelId + " is missing its " + missingPart
-    );
+        "Physical model " + modelId + " is missing its " + missingPart);
   }
 
   private static DnaRuntimeException persistenceFailure(
-      final String message,
-      final DataAccessException cause
-  ) {
-    return new DnaRuntimeException(
-        DnaRuntimeErrorCode.PERSISTENCE_FAILED,
-        message,
-        cause
-    );
+      final String message, final DataAccessException cause) {
+    return new DnaRuntimeException(DnaRuntimeErrorCode.PERSISTENCE_FAILED, message, cause);
   }
 }

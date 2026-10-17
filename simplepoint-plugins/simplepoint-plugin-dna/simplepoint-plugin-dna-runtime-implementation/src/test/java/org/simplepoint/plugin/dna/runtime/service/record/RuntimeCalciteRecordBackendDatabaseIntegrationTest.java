@@ -15,9 +15,11 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.time.Instant;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.UUID;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
@@ -26,7 +28,11 @@ import org.junit.jupiter.api.Test;
 import org.simplepoint.core.datascopeannotation.DataScopeCondition;
 import org.simplepoint.data.calcite.core.query.DefaultCalciteQueryEngine;
 import org.simplepoint.data.datasource.jdbc.SimpleDataSource;
+import org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect;
+import org.simplepoint.plugin.dna.core.service.dialect.MysqlJdbcDatabaseDialect;
+import org.simplepoint.plugin.dna.core.service.dialect.PostgresqlJdbcDatabaseDialect;
 import org.simplepoint.plugin.dna.runtime.api.DnaRuntimeApiVersion;
+import org.simplepoint.plugin.dna.runtime.api.dialect.DatabaseIdentity;
 import org.simplepoint.plugin.dna.runtime.api.model.RuntimeMetadataTarget;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordCreateMutation;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordDeleteMutation;
@@ -35,12 +41,14 @@ import org.simplepoint.plugin.dna.runtime.api.record.RecordUpdateMutation;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldDefinition;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldType;
 import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalSchemaDefinition;
+import org.simplepoint.plugin.dna.runtime.service.schema.JdbcPhysicalSchemaBackend;
 import org.simplepoint.plugin.dna.runtime.service.schema.ManagedRuntimeDataSourceProvider;
 import org.simplepoint.plugin.dna.runtime.service.schema.ManagedRuntimeDataSourceProvider.ManagedRuntimeDataSource;
 import org.simplepoint.plugin.dna.runtime.service.schema.MysqlRuntimeSchemaDialect;
 import org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaSnapshotCodec;
 import org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaTarget;
 import org.simplepoint.plugin.dna.runtime.service.schema.PostgresqlRuntimeSchemaDialect;
+import org.simplepoint.plugin.dna.runtime.service.schema.RecordWriteFenceProvisioner;
 import org.simplepoint.plugin.dna.runtime.service.schema.RuntimeSchemaDialect;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext.RuntimeActor;
 import org.simplepoint.plugin.dna.runtime.service.support.StandardLogicalValueConverter;
@@ -105,14 +113,24 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
     RuntimeSchemaDialect runtimeDialect = postgresql
         ? new PostgresqlRuntimeSchemaDialect(snapshotCodec)
         : new MysqlRuntimeSchemaDialect(snapshotCodec);
+    JdbcDatabaseDialect core = postgresql ? new PostgresqlJdbcDatabaseDialect() : new MysqlJdbcDatabaseDialect();
+    JdbcDatabaseDialect.SupportContext context;
+    DatabaseIdentity database;
+    try (Connection connection = dataSource.getConnection()) {
+      var metadata = connection.getMetaData();
+      context = new JdbcDatabaseDialect.SupportContext(core.code(), metadata.getDriverName(), metadata.getDatabaseProductName(),
+          metadata.getDatabaseProductVersion(), catalog, schema, metadata.getIdentifierQuoteString(), Map.of());
+      database = new DatabaseIdentity(metadata.getDatabaseProductName(), metadata.getDatabaseProductVersion(),
+          metadata.getDatabaseMajorVersion(), metadata.getDatabaseMinorVersion());
+    }
     ManagedRuntimeDataSourceProvider provider = mock(ManagedRuntimeDataSourceProvider.class);
     when(provider.open(any())).thenReturn(new ManagedRuntimeDataSource(
         dataSource,
         false,
-        null,
-        null,
+        context,
+        core,
         runtimeDialect,
-        null,
+        database,
         catalog,
         schema
     ));
@@ -120,10 +138,12 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
         provider,
         new DefaultCalciteQueryEngine()
     );
+    new RecordWriteFencePreparation(new RecordWriteFenceProvisioner(new JdbcPhysicalSchemaBackend(provider, snapshotCodec)),
+        backend).prepare(new RuntimeActor("tenant-a", "publisher"), model.target());
     try {
       String committedId = UUID.randomUUID().toString();
       RecordBatchExecutionResult committed = backend.execute(
-          model,
+          model, new RecordWriteAdmission("tenant-a", 0),
           List.of(insert(table, committedId)),
           15_000
       );
@@ -131,7 +151,7 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
       assertThat(committed.pushedStatementCount()).isGreaterThan(0);
 
       assertThatThrownBy(() -> backend.execute(
-          model,
+          model, new RecordWriteAdmission("tenant-a", 0),
           List.of(
               insert(table, UUID.randomUUID().toString()),
               updateMissing(table, UUID.randomUUID().toString())
@@ -146,7 +166,7 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
       }
 
       RecordSqlCompiler compiler = new RecordSqlCompiler(
-          new StandardLogicalValueConverter(new ObjectMapper())
+          new StandardLogicalValueConverter()
       );
       RecordAccessContext access = access();
       RecordSqlStatement created = compiler.mutation(
@@ -155,8 +175,8 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
           new RecordCreateMutation("create", Map.of("title", "service-create")),
           Instant.parse("2026-09-30T01:02:03.456Z")
       );
-      backend.execute(model, List.of(created), 15_000);
-      backend.execute(model, List.of(compiler.mutation(
+      backend.execute(model, new RecordWriteAdmission("tenant-a", 0), List.of(created), 15_000);
+      backend.execute(model, new RecordWriteAdmission("tenant-a", 0), List.of(compiler.mutation(
           model,
           access,
           new RecordUpdateMutation(
@@ -167,7 +187,7 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
           ),
           Instant.parse("2026-09-30T02:03:04.567Z")
       )), 15_000);
-      backend.execute(model, List.of(compiler.mutation(
+      backend.execute(model, new RecordWriteAdmission("tenant-a", 0), List.of(compiler.mutation(
           model,
           access,
           new RecordDeleteMutation("delete", created.recordId(), 1),
@@ -177,14 +197,16 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
           model,
           new RecordSelectPlan(
               "SELECT \"id\" FROM \"runtime\".\"" + table
-                  + "\" WHERE \"created_at\" = CAST(? AS TIMESTAMP)",
-              List.of("2026-09-30T01:02:03"),
+                  + "\" WHERE \"created_at\" = CAST(? AS TIMESTAMP(6))",
+              List.of("2026-09-30T01:02:03.456"),
               List.of(),
               10
           ),
           15_000
       );
       assertThat(timestampQuery.rows()).hasSize(1);
+      var creation = backend.query(model, compiler.creation(model, access, created.recordId()), 15_000);
+      assertThat(creation.rows().getFirst()).containsExactly(created.recordId());
       try (Connection connection = dataSource.getConnection();
            var prepared = connection.prepareStatement(
                "SELECT record_version, deleted_at, title, created_at, updated_at FROM "
@@ -196,10 +218,12 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
           assertThat(result.getLong(1)).isEqualTo(2L);
           assertThat(result.getObject(2)).isNotNull();
           assertThat(result.getString(3)).isEqualTo("service-update");
-          assertThat(result.getTimestamp(4).toInstant())
-              .isEqualTo(Instant.parse("2026-09-30T01:02:03Z"));
-          assertThat(result.getTimestamp(5).toInstant())
-              .isEqualTo(Instant.parse("2026-09-30T03:04:05Z"));
+          // MySQL DATETIME has no zone; the runtime stores UTC civil values.
+          Calendar utc = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+          assertThat(result.getTimestamp(4, utc).toInstant())
+              .isEqualTo(Instant.parse("2026-09-30T01:02:03.456Z"));
+          assertThat(result.getTimestamp(5, utc).toInstant())
+              .isEqualTo(Instant.parse("2026-09-30T03:04:05.678Z"));
         }
       }
     } finally {

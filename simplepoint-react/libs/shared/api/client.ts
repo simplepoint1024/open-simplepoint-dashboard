@@ -10,8 +10,7 @@ import {
   getFeedbackBridge,
   waitForFeedbackBridge,
 } from '@simplepoint/shared/api/feedbackBridge';
-import {isMachineErrorCode, selectApiErrorMessage} from './errorMessage';
-import {serverValidationMessage} from '../validation/server';
+import {isMachineErrorCode, localizedServerMessage, selectApiErrorMessage} from './errorMessage';
 import {redirectToLogin} from './session';
 import {createRequestSignal} from './requestSignal';
 import {
@@ -262,12 +261,13 @@ function extractFromArray(values: unknown): string | undefined {
 }
 
 function extractServerMessage(data: unknown, text?: string): string | undefined {
-  const validation = serverValidationMessage(data, (key, fallback, params) => t(key, typeof fallback === 'string' ? fallback : key, params));
-  if (validation) return validation;
+  const translated = localizedServerMessage(data, (key, fallback, params) => t(key, typeof fallback === 'string' ? fallback : key, params));
+  if (translated) return translated;
   if (typeof data === 'string') {
     return usefulMessage(data);
   }
   if (isPlainObject(data)) {
+    if (typeof data.messageKey === 'string' && /^[a-zA-Z][a-zA-Z0-9._-]{0,199}$/.test(data.messageKey)) return undefined;
     const directMessage = firstString(
       data.userMessage,
       data.message,

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "maxProcesses": 1,
+  "maxParticipants": 1,
+  "annotationFormat": "text/plain",
+  "prohibitedElements": ["scriptTask", "serviceTask", "businessRuleTask", "sendTask", "receiveTask", "callActivity", "manualTask"],
+  "unsupportedCollaborationElements": ["participantMultiplicity", "messageFlow"],
+  "diagramTypes": ["Participant", "Lane", "DataObjectReference", "DataStoreReference", "Group", "TextAnnotation"],
+  "replacementEntries": [
+    "replace-with-user-task", "replace-with-exclusive-gateway", "replace-with-parallel-gateway",
+    "replace-with-inclusive-gateway", "replace-with-none-start", "replace-with-none-end",
+    "replace-with-none-start-event", "replace-with-none-end-event",
+    "replace-with-collapsed-subprocess", "replace-with-expanded-subprocess", "replace-with-subprocess",
+    "replace-with-sequence-flow", "replace-with-default-flow", "replace-with-conditional-flow",
+    "replace-with-data-object-reference", "replace-with-data-store-reference"
+  ]
+}

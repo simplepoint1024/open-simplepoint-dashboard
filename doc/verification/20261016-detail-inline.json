@@ -1,0 +1,207 @@
+{
+  "verifiedAt": "2026-10-16T09:03:58.486Z",
+  "release": "20261016-detail-inline1",
+  "changes": {
+    "detailEditing": "Add prepends a row and immediately edits it inline; edit/done/delete use owning form fields and aggregate draft",
+    "designerProperties": "Icon tabs registered by component; detail fields and indexes have separate tabs; detail schema edits validate independently from form scenes",
+    "fieldValidation": "Required, minimum/maximum Unicode code-point length, bounded RE2 pattern and custom hint; server write enforcement, defaults and immutable document checksum",
+    "recordActions": "Shared lightweight icon-and-text appearance, including fallback icons for legacy actions",
+    "ordering": "Creation descending before server pagination with stable identity tie-break; explicit user sorts and ordinal sequences retained; SQL results retain query order",
+    "standards": "Mandatory development rules recorded in AGENTS.md"
+  },
+  "verification": {
+    "frontendUnitTests": {
+      "passed": 116,
+      "failed": 0
+    },
+    "typecheckModules": 8,
+    "backend": [
+      {
+        "module": "simplepoint-plugin-app-form-implementation",
+        "tests": 203,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 2
+      },
+      {
+        "module": "simplepoint-data-jpa",
+        "tests": 46,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-core",
+        "tests": 347,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-plugin-dna-runtime-implementation",
+        "tests": 97,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 15
+      },
+      {
+        "module": "simplepoint-plugin-rbac-core-implementation",
+        "tests": 160,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-service-dna",
+        "tests": 41,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-plugin-workflow-implementation",
+        "tests": 371,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      {
+        "module": "simplepoint-plugin-personal-implementation",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "backendTotals": {
+      "tests": 1278,
+      "skipped": 18,
+      "failed": 0
+    },
+    "browser": "57 exposed modules plus targeted designer, property-tab validation, Unicode inline edit/delete, publication recovery and published record CRUD scenarios",
+    "nativeUiAudit": {
+      "files": 155,
+      "reviewed": 40,
+      "unreviewed": 0
+    },
+    "bundleBudgets": "passed",
+    "i18n": "passed",
+    "liveUi": [
+      {
+        "code": "office_daily_report",
+        "inlineAddEditDelete": true,
+        "newestFirst": true,
+        "unicodeDraftPreserved": true,
+        "iconTextActions": true,
+        "scroll": {
+          "width": 1016,
+          "scrollWidth": 1860,
+          "height": 305,
+          "scrollHeight": 627
+        }
+      },
+      {
+        "code": "office_expense_claim",
+        "inlineAddEditDelete": true,
+        "newestFirst": true,
+        "unicodeDraftPreserved": true,
+        "iconTextActions": true,
+        "scroll": {
+          "width": 1016,
+          "scrollWidth": 1780,
+          "height": 305,
+          "scrollHeight": 627
+        }
+      }
+    ],
+    "liveDesignerTabs": true,
+    "liveData": {
+      "aggregateCrud": true,
+      "unicodeRoundTrip": true,
+      "detailPrependEditDelete": true,
+      "newestBeforePagination": true,
+      "updatingOlderRecordDoesNotMoveItFirst": true,
+      "activeTemporaryRecords": 0
+    }
+  },
+  "deployment": {
+    "services": [
+      {
+        "service": "authorization",
+        "version": "20261016-detail-inline1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 258,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "common",
+        "version": "20261016-detail-inline1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 317,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "auditing",
+        "version": "20261016-detail-inline1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 246,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "dna",
+        "version": "20261016-detail-inline1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 294,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "ai",
+        "version": "20261016-detail-inline1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 326,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "app",
+        "version": "20261016-detail-inline1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 261,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "workflow",
+        "version": "20261016-detail-inline1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 298,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "mcp-gateway",
+        "version": "20261016-detail-inline1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 180,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "host",
+        "version": "20261016-detail-inline1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 226,
+        "jarHashesMatch": true
+      }
+    ],
+    "allNineServiceHealth": "passing",
+    "rabbitmq": "healthy",
+    "sourceDigest": "7b2f9e5798fedbdcf3eafbf5890008473b99c1e701c1310b8136dfba7ebafd15",
+    "rollbackImagesAndDatabaseBackup": true
+  }
+}

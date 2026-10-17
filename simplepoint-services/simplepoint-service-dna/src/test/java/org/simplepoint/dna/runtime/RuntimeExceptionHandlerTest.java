@@ -32,6 +32,7 @@ class RuntimeExceptionHandlerTest {
       assertThat(response.getBody().category()).isEqualTo(code.category().name());
       assertThat(response.getBody().message()).isEqualTo("safe message");
       assertThat(response.getBody().timestamp()).isNotNull();
+      assertThat(response.getBody().messageKey()).isEqualTo("dna.runtime.error." + code.name());
     });
   }
 }

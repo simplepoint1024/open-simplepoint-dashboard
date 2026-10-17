@@ -23,7 +23,11 @@ import org.simplepoint.security.entity.ResourceType;
 @IdClass(TenantResourceKey.class)
 @Table(name = "simpoint_saas_tenant_resources", uniqueConstraints = {
     @UniqueConstraint(name = "uq_tenant_resource_code", columnNames = {"tenant_id", "code"}),
-    @UniqueConstraint(name = "uq_tenant_resource_source", columnNames = {"tenant_id", "platform_resource_id"})
+    @UniqueConstraint(name = "uq_tenant_resource_source", columnNames = {"tenant_id", "platform_resource_id"}),
+    @UniqueConstraint(
+        name = "uq_tenant_resource_managed_key",
+        columnNames = {"tenant_id", "managed_owner", "managed_key"}
+    )
 })
 public class TenantResource {
   @Id
@@ -43,6 +47,36 @@ public class TenantResource {
   @Schema(description = "租户自建页面所绑定的已授权平台页面 ID")
   @Column(name = "target_resource_id", length = 36)
   private String targetResourceId;
+
+  /** Service identity that owns this generated resource. */
+  @Schema(description = "服务托管资源的所有者", accessMode = Schema.AccessMode.READ_ONLY)
+  @Column(name = "managed_owner", length = 64)
+  private String managedOwner;
+
+  /** Stable aggregate-local identity supplied by the owning service. */
+  @Schema(description = "服务托管资源的稳定业务键", accessMode = Schema.AccessMode.READ_ONLY)
+  @Column(name = "managed_key", length = 160)
+  private String managedKey;
+
+  /** Platform page whose trusted component renders a managed page. */
+  @Schema(description = "服务托管页面的受信运行时宿主页", accessMode = Schema.AccessMode.READ_ONLY)
+  @Column(name = "managed_host_resource_id", length = 36)
+  private String managedHostResourceId;
+
+  /** Trusted permission catalog published atomically with a managed page generation. */
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
+  @Column(name = "permission_metadata", columnDefinition = "TEXT")
+  private String permissionMetadata;
+
+  /** Monotonic publication fence; formal offline cannot be undone by an old activation. */
+  @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+  @Column(name = "lifecycle_generation", nullable = false)
+  private long lifecycleGeneration;
+
+  @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+  @Column(name = "formally_offline", nullable = false)
+  private boolean formallyOffline;
 
   @Column(name = "parent_id", length = 36)
   private String parentId;
@@ -95,9 +129,16 @@ public class TenantResource {
     return platformResourceId != null;
   }
 
+  public boolean isManaged() {
+    return managedOwner != null;
+  }
+
   @JsonProperty("origin")
-  @Schema(description = "PLATFORM 平台来源或 TENANT 租户自建", accessMode = Schema.AccessMode.READ_ONLY)
+  @Schema(description = "PLATFORM 平台来源、MANAGED 服务托管或 TENANT 租户自建", accessMode = Schema.AccessMode.READ_ONLY)
   public TenantResourceOrigin getOrigin() {
-    return isPlatformSource() ? TenantResourceOrigin.PLATFORM : TenantResourceOrigin.TENANT;
+    if (isPlatformSource()) {
+      return TenantResourceOrigin.PLATFORM;
+    }
+    return isManaged() ? TenantResourceOrigin.MANAGED : TenantResourceOrigin.TENANT;
   }
 }

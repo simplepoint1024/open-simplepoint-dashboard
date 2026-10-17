@@ -1,4 +1,12 @@
 /* RJSF form — uniform field sizing and spacing */
+.sp-form-display-value {
+    display: block;
+    min-height: 32px;
+    padding-block: 4px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--ant-color-text);
+}
 .rjsf .form-group {
     margin-bottom: 16px;
 }

@@ -1,8 +1,12 @@
 import type {ItemType} from "antd/es/menu/interface";
-import {App as AntdApp, Avatar, Button, Dropdown, MenuProps, Tooltip, Popconfirm, Tag} from "antd";
+import {App as AntdApp, Avatar, Button, Dropdown, Popover, MenuProps, Tooltip, Popconfirm} from "antd";
 import {ApartmentOutlined, CreditCardOutlined, DesktopOutlined, DownOutlined, EditOutlined, FontSizeOutlined, FullscreenExitOutlined, FullscreenOutlined, GithubOutlined, GlobalOutlined, HomeOutlined, LogoutOutlined, MoonOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SearchOutlined, SettingOutlined, SunOutlined, UserOutlined} from "@simplepoint/shared/types/icon";
 import React, {useEffect, useRef, useState} from 'react';
 import TableActions from '@simplepoint/components/Table/Actions';
+import TenantSelect from '@simplepoint/components/TenantSelect';
+import {TenantMark, TenantTypeTag} from '@simplepoint/components/TenantSelect/Identity';
+import RoleSelect from '@simplepoint/components/RoleSelect';
+import type {EntityOption} from '@simplepoint/components/EntitySelect/query';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {userDisplayName} from '@simplepoint/shared/utils/userIdentity';
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
@@ -12,6 +16,7 @@ import { getTenantId, setTenantId } from '@/store/tenant';
 import { getRoleId, setRoleId } from '@/store/role';
 import { setContextId } from '@/store/contextId';
 import { ensureContextId } from '@simplepoint/shared/api/contextId';
+import {switchAuthorizedContext} from '@simplepoint/shared/api/contextSwitch';
 import { clearClientCaches, redirectToLogout } from '@simplepoint/shared/api/session';
 import {NotificationButton} from './NotificationButton';
 import {useNavigationGuard} from './NavigationGuard';
@@ -64,45 +69,9 @@ function tenantDisplayName(
     return tenant.tenantName || t('tenant.platformSpace', '平台工作台');
   }
   if (normalizedTenantType(tenant) === 'PERSONAL') {
-    return t('tenant.personalSpace', '个人空间');
+    return t('tenant.mySpace', '我的空间');
   }
   return tenant.tenantName || t('tenant.unknown', '未选择');
-}
-
-const TenantMark: React.FC<{
-  tenant?: Pick<CurrentTenant, 'tenantLogo' | 'tenantName' | 'tenantType'>;
-  size?: number;
-  className?: string;
-}> = ({tenant, size = 20, className}) => {
-  const fallbackLogo = normalizedTenantType(tenant) === 'PLATFORM' ? '/svg.svg' : undefined;
-  return (
-    <Avatar
-      className={className}
-      shape="square"
-      size={size}
-      src={tenant?.tenantLogo || fallbackLogo}
-      icon={!tenant?.tenantLogo && !fallbackLogo ? <ApartmentOutlined/> : undefined}
-      alt={tenant?.tenantName || 'Tenant'}
-    />
-  );
-};
-
-function TenantTypeTag({
-  tenant,
-  t,
-}: {
-  tenant?: Pick<CurrentTenant, 'tenantType'>;
-  t: (key: string, fallback?: string) => string;
-}) {
-  const type = normalizedTenantType(tenant);
-  return (
-    <Tag
-      color={type === 'PLATFORM' ? 'purple' : type === 'PERSONAL' ? 'blue' : 'green'}
-      className="nb-tenant-type-tag"
-    >
-      {tenantTypeLabel(t, tenant)}
-    </Tag>
-  );
 }
 
 function roleDisplayName(
@@ -120,7 +89,9 @@ export const TenantSwitcherTop: React.FC = () => {
   const confirmWorkspaceChange = useNavigationGuard();
   const {message} = AntdApp.useApp();
   const { t } = useI18n();
-  const { data, isFetching, refetch } = useCurrentTenants();
+  const { data } = useCurrentTenants();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const switching = useRef(false);
   const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
 
   // 同步外部切换
@@ -134,73 +105,39 @@ export const TenantSwitcherTop: React.FC = () => {
     }
   }, []);
 
-  // 第一次登录默认选第一个
-  useEffect(() => {
-    if (tenantId) return;
-    const first = data?.[0];
-    if (first?.tenantId) {
-      setTenantId(first.tenantId);
-      setTenantIdState(first.tenantId);
-    }
-  }, [data, tenantId]);
-
   const currentTenant = (data || []).find((x) => x.tenantId === tenantId);
   const currentName = tenantDisplayName(t, currentTenant);
   const currentType = currentTenant ? tenantTypeLabel(t, currentTenant) : t('tenant.type.unknown', '租户');
 
-  const menu: MenuProps = {
-    items: isFetching
-      ? [{ key: 'loading', disabled: true, label: t('loading', '加载中...') }]
-      : (data || []).map((it) => ({
-          key: it.tenantId,
-          label: (
-            <div className="nb-tenant-menu-item">
-              <div className="nb-tenant-menu-main">
-                <span className="nb-tenant-menu-identity">
-                  <TenantMark tenant={it} />
-                  <span className="nb-tenant-menu-name">{tenantDisplayName(t, it)}</span>
-                </span>
-                <TenantTypeTag tenant={it} t={t} />
-              </div>
-            </div>
-          ),
-        })),
-    onClick: async (info: any) => {
-      const nextId = String(info?.key || '');
-      if (!nextId || nextId === tenantId) return;
-      if (!await confirmWorkspaceChange()) return;
-      const nextTenant = (data || []).find((x) => x.tenantId === nextId);
-      const nextType = tenantTypeLabel(t, nextTenant);
-      const nextName = tenantDisplayName(t, nextTenant);
-
-      // 先清理目标工作空间的旧角色和授权上下文，再广播租户变化。
-      // App 的租户监听器是同步执行的；若顺序反过来，它可能读到旧角色，
-      // 随后的上下文请求会因角色已变化而被丢弃，并让首页一直停在 loading。
-      setRoleId(undefined, nextId);
-      setContextId(undefined, nextId);
-      setTenantId(nextId);
-      setTenantIdState(nextId);
-
-      // 预热授权上下文（best-effort，不阻断切换；真正的当前态由 App 内部按最新 tenant 决定）
-      await ensureContextId(nextId, { force: true });
-
-      message.success(`${t('tenant.switchDone', '已切换租户，后续请求将生效')} · ${nextType}: ${nextName}`).then(_ => {});
-    },
+  const changeTenant = async (nextId?: string, option?: EntityOption) => {
+    if (!nextId || nextId === tenantId || switching.current) return;
+    switching.current = true;
+    const previous = tenantId;
+    try {
+      const changed = await switchAuthorizedContext({confirm: confirmWorkspaceChange,
+        current: () => getTenantId() === previous,
+        authorize: () => ensureContextId(nextId, {force: true, roleId: '', persist: false}),
+        unavailable: t('error.operationFailed', '操作失败，请重试'),
+        commit: contextId => {
+          setPickerOpen(false);
+          setRoleId(undefined, nextId);
+          setContextId(contextId, nextId);
+          setTenantId(nextId);
+          setTenantIdState(nextId);
+        }});
+      if (changed) message.success(`${t('tenant.switchDone', '已切换租户，后续请求将生效')} · ${option?.label ?? ''}`);
+    } catch (error) {
+      message.error(resolveApiErrorMessage(error, t('error.operationFailed', '操作失败，请重试')));
+    } finally {switching.current = false;}
   };
 
   return (
-    <Dropdown
-      menu={menu}
-      trigger={['click']}
-      placement="bottomLeft"
-      destroyOnHidden
-      onOpenChange={(open) => {
-        if (open) {
-          // 用户手动点击打开时强制刷新一次租户列表
-          try { void refetch(); } catch {}
-        }
-      }}
-    >
+    <Popover title={<TenantTypeTag type={currentTenant?.tenantType}/>} open={pickerOpen} onOpenChange={setPickerOpen} trigger="click" placement="bottom" destroyOnHidden
+      content={pickerOpen && <div style={{width: 'min(340px, 75vw)'}}>
+        <TenantSelect directory="current" value={tenantId} allowClear={false} autoFocus defaultOpen
+          ariaLabel={t('label.workspace', '工作空间')} onChange={(id, option) => {void changeTenant(id, option);}}/>
+      </div>}>
+
       <button
         type="button"
         className="nb-context-switcher nb-tenant-switcher"
@@ -208,14 +145,14 @@ export const TenantSwitcherTop: React.FC = () => {
         onMouseDown={(e) => { try { e.stopPropagation(); } catch {} }}
         title={`${t('label.tenant', '租户')} · ${currentType}: ${currentName}`}
       >
-        <TenantMark tenant={currentTenant} size={19} className="nb-tenant-current-logo" />
+        <TenantMark type={currentTenant?.tenantType} logo={currentTenant?.tenantLogo} size={19} className="nb-tenant-current-logo" />
         <span className="nb-context-label">{t('label.workspace', '工作空间')}</span>
         <span className="nb-tenant-current-name">
           {currentName}
         </span>
         <DownOutlined className="nb-context-arrow" />
       </button>
-    </Dropdown>
+    </Popover>
   );
 };
 
@@ -228,7 +165,9 @@ export const RoleSwitcherTop: React.FC = () => {
   const { t } = useI18n();
   const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
   const [roleId, setRoleIdState] = useState<string | undefined>(() => getRoleId(getTenantId()));
-  const { data, isFetching, refetch } = useCurrentRoles(tenantId);
+  const { data, isFetching } = useCurrentRoles(tenantId);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const switching = useRef(false);
 
   useEffect(() => {
     const handleTenantChange = (event: Event) => {
@@ -282,41 +221,25 @@ export const RoleSwitcherTop: React.FC = () => {
     : roleDisplayName(t, currentRole);
   const switchable = roles.length > 1;
 
-  const menu: MenuProps = {
-    items: isFetching
-      ? [{ key: 'loading', disabled: true, label: t('loading', '加载中...') }]
-      : roles.length === 0
-        ? [{ key: 'empty', disabled: true, label: t('role.none', '无可用角色') }]
-      : [
-          {
-            key: '__all__',
-            label: t('role.allRoles', '全部角色'),
-          },
-          ...roles.map((role) => ({
-            key: role.roleId,
-            label: (
-              <div className="nb-role-menu-item">
-                <span className="nb-role-menu-name">{roleDisplayName(t, role)}</span>
-              </div>
-            ),
-          })),
-        ],
-    onClick: async (info: any) => {
-      if (!tenantId) return;
-      const nextRoleId = info?.key === '__all__' ? undefined : String(info?.key || '');
-      if ((nextRoleId ?? '') === (roleId ?? '')) return;
-      if (!await confirmWorkspaceChange()) return;
-
-      setRoleId(nextRoleId, tenantId);
-      setRoleIdState(nextRoleId);
-      const nextContextId = await ensureContextId(tenantId, { force: true, roleId: nextRoleId });
-      window.dispatchEvent(new CustomEvent('sp-set-context-id', {
-        detail: { tenantId, roleId: nextRoleId, contextId: nextContextId },
-      }));
-
-      const nextRole = roles.find((role) => role.roleId === nextRoleId);
-      message.success(`${t('role.switchDone', '已切换角色')} · ${roleDisplayName(t, nextRole)}`).then(_ => {});
-    },
+  const changeRole = async (nextRoleId?: string, option?: EntityOption) => {
+    if (!tenantId || switching.current || (nextRoleId ?? '') === (roleId ?? '')) return;
+    switching.current = true;
+    const capturedTenant = tenantId, previousRole = roleId;
+    try {
+      const changed = await switchAuthorizedContext({confirm: confirmWorkspaceChange,
+        current: () => getTenantId() === capturedTenant && getRoleId(capturedTenant) === previousRole,
+        authorize: () => ensureContextId(capturedTenant, {force: true, roleId: nextRoleId ?? '', persist: false}),
+        unavailable: t('error.operationFailed', '操作失败，请重试'),
+        commit: contextId => {
+          setPickerOpen(false);
+          setRoleId(nextRoleId, capturedTenant);
+          setRoleIdState(nextRoleId);
+          setContextId(contextId, capturedTenant, nextRoleId);
+        }});
+      if (changed) message.success(`${t('role.switchDone', '已切换角色')} · ${option?.label ?? t('role.allRoles', '全部角色')}`);
+    } catch (error) {
+      message.error(resolveApiErrorMessage(error, t('error.operationFailed', '操作失败，请重试')));
+    } finally {switching.current = false;}
   };
 
   if (!tenantId) {
@@ -324,18 +247,15 @@ export const RoleSwitcherTop: React.FC = () => {
   }
 
   return (
-    <Dropdown
-      menu={menu}
-      trigger={['click']}
-      placement="bottomLeft"
-      destroyOnHidden
-      disabled={!switchable}
-      onOpenChange={(open) => {
-        if (open) {
-          try { void refetch(); } catch {}
-        }
-      }}
-    >
+    <Popover title={t('label.role', '角色')} open={pickerOpen && switchable} onOpenChange={setPickerOpen} trigger="click" placement="bottom" destroyOnHidden
+      content={pickerOpen && <div style={{width: 'min(340px, 75vw)'}}>
+        <RoleSelect directory="current" value={roleId} allowClear autoFocus defaultOpen
+          placeholder={t('role.allRoles', '全部角色')} ariaLabel={t('label.role', '角色')}
+          onChange={(id, option) => {void changeRole(id, option);}}/>
+        <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'allRoles', sort: 0, type: 'link',
+          text: t('role.allRoles', '全部角色'), disabled: !roleId, onClick: () => {void changeRole();}}]}/>
+      </div>}>
+
       <button
         type="button"
         className={`nb-context-switcher nb-role-switcher${switchable ? '' : ' nb-role-switcher-disabled'}`}
@@ -349,7 +269,7 @@ export const RoleSwitcherTop: React.FC = () => {
         <span className="nb-role-current-name">{currentName}</span>
         {switchable && <DownOutlined className="nb-context-arrow" />}
       </button>
-    </Dropdown>
+    </Popover>
   );
 };
 
@@ -407,7 +327,16 @@ export const HeaderLogo: React.FC<{ navigate: (path: string) => void }> = ({ nav
         tabIndex={0}
         onKeyDown={e => e.key === 'Enter' && navigate('/dashboard')}
       >
-        <img src={logo} alt={currentTenant?.tenantName || 'Logo'} className="nb-header-logo-image" />
+        <img
+          src={logo}
+          alt={currentTenant?.tenantName || 'Logo'}
+          className="nb-header-logo-image"
+          onError={event => {
+            const image = event.currentTarget;
+            const fallback = new URL('/svg.svg', window.location.origin).href;
+            if (image.src !== fallback) image.src = fallback;
+          }}
+        />
         <LogoTitle />
       </div>
     </div>

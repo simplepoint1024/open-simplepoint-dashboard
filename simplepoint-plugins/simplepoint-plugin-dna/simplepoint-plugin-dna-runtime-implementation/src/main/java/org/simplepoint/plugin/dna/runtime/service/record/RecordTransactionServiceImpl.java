@@ -8,6 +8,7 @@ import org.simplepoint.plugin.dna.runtime.api.audit.DnaRuntimeAuditEventType;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordCommandResult;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordCreateMutation;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordDeleteMutation;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordMutation;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordMutationResult;
@@ -24,6 +25,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class RecordTransactionServiceImpl implements RecordTransactionService {
 
+  private static final String VALIDATION_RECORD_ID = "00000000-0000-5000-8000-000000000000";
+
   private final RuntimeRequestContext requestContext;
   private final RuntimeRecordModelResolver modelResolver;
   private final RuntimeRecordAccessPolicy accessPolicy;
@@ -32,6 +35,7 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
   private final RecordAuditSupport audit;
   private final RecordAdmissionController admission;
   private final RecordExecutionObserver observer;
+  private final RecordRequestFingerprint fingerprints;
 
   /** Creates the transaction service. */
   public RecordTransactionServiceImpl(
@@ -42,7 +46,8 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
       final RuntimeCalciteRecordBackend backend,
       final RecordAuditSupport audit,
       final RecordAdmissionController admission,
-      final RecordExecutionObserver observer
+      final RecordExecutionObserver observer,
+      final RecordRequestFingerprint fingerprints
   ) {
     this.requestContext = requestContext;
     this.modelResolver = modelResolver;
@@ -52,16 +57,119 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
     this.audit = audit;
     this.admission = admission;
     this.observer = observer;
+    this.fingerprints = fingerprints;
+  }
+
+  @Override
+  public RecordTransactionResult findResult(final RecordTransactionCommand command) {
+    if (command.idempotencyKey() == null) {
+      throw new IllegalArgumentException("An idempotency key is required to look up an operation");
+    }
+    PreparedRecordTransaction prepared = prepare(command);
+    // Apply current schema, field and resource policy before revealing any receipt metadata.
+    command.mutations().forEach(mutation -> compiler.mutation(
+        prepared.model(), prepared.access(), mutation, Instant.EPOCH));
+    long startedAt = System.nanoTime();
+    try (RecordAdmissionController.Permit ignored = admission.enter(prepared.access().actor().tenantId())) {
+      List<RecordCommandResult> results = backend.findResult(prepared.model(),
+          RecordOperationIdentity.of(prepared.access().actor(), command, fingerprints.of(command)), command.timeoutMs());
+      if (results != null && results.size() != command.mutations().size()) {
+        throw new DnaRuntimeException(DnaRuntimeErrorCode.PERSISTENCE_FAILED, "Record operation receipt size is invalid");
+      }
+      audit.success(DnaRuntimeAuditEventType.RECORD_QUERIED, prepared.model(), prepared.access(),
+          results == null ? 0 : 1, elapsed(startedAt));
+      observer.record("receipt", "succeeded", prepared.model(), prepared.access(), elapsed(startedAt));
+      if (results == null) {
+        return null;
+      }
+      List<RecordMutationResult> mutations = new ArrayList<>(results.size());
+      for (int index = 0; index < results.size(); index++) {
+        mutations.add(new RecordMutationResult(command.mutations().get(index).reference(), results.get(index)));
+      }
+      return new RecordTransactionResult(mutations, elapsed(startedAt));
+    } catch (DnaRuntimeException failure) {
+      audit.failure(DnaRuntimeAuditEventType.RECORD_QUERIED, prepared.model(), prepared.access(),
+          elapsed(startedAt), failure.errorCode());
+      observer.record("receipt", "failed", prepared.model(), prepared.access(), elapsed(startedAt));
+      throw failure;
+    }
   }
 
   @Override
   public RecordTransactionResult execute(final RecordTransactionCommand command) {
     long startedAt = System.nanoTime();
+    return executeAuthorized(prepare(command), startedAt, null, null);
+  }
+
+  /** Resolves the model and current resource policy before touching idempotency state. */
+  PreparedRecordTransaction prepare(final RecordTransactionCommand command) {
     RuntimeActor actor = requestContext.requireActor();
-    RuntimeRecordModel model = modelResolver.resolve(actor, command.physicalModelId());
+    RuntimeRecordModel model = modelResolver.resolve(
+        actor,
+        command.physicalModelId(),
+        command.schemaReference()
+    );
     RecordAccessContext access = accessPolicy.authorize(actor, model);
-    try (RecordAdmissionController.Permit ignored = admission.enter(actor.tenantId())) {
-      return executeAdmitted(command, startedAt, model, access);
+    return new PreparedRecordTransaction(command, model, access);
+  }
+
+  /** Validates create values and write scope before a durable idempotency key is reserved. */
+  void validatePreparedCreate(final PreparedRecordTransaction prepared) {
+    RecordCreateMutation create = requireSingleCreate(prepared);
+    compiler.mutation(
+        prepared.model(),
+        prepared.access(),
+        create,
+        Instant.EPOCH,
+        VALIDATION_RECORD_ID
+    );
+  }
+
+  /** Executes one already authorized create with a durable server-derived identity. */
+  RecordCommandResult executePreparedCreate(
+      final PreparedRecordTransaction prepared,
+      final String recordId,
+      final Instant operationAt
+  ) {
+    requireSingleCreate(prepared);
+    return executeAuthorized(prepared, System.nanoTime(), recordId, operationAt)
+        .results().getFirst().result();
+  }
+
+  /** Finds a committed create by its server-derived identity, including soft-deleted rows. */
+  boolean hasCommittedCreate(
+      final PreparedRecordTransaction prepared,
+      final String recordId
+  ) {
+    try (RecordAdmissionController.Permit ignored = admission.enter(
+        prepared.access().actor().tenantId()
+    )) {
+      CalciteQueryResult result = backend.query(
+          prepared.model(),
+          compiler.creation(prepared.model(), prepared.access(), recordId),
+          prepared.command().timeoutMs()
+      );
+      return !result.rows().isEmpty();
+    }
+  }
+
+  private RecordTransactionResult executeAuthorized(
+      final PreparedRecordTransaction prepared,
+      final long startedAt,
+      final String createRecordId,
+      final Instant operationAt
+  ) {
+    RuntimeRecordModel model = prepared.model();
+    RecordAccessContext access = prepared.access();
+    try (RecordAdmissionController.Permit ignored = admission.enter(access.actor().tenantId())) {
+      return executeAdmitted(
+          prepared.command(),
+          startedAt,
+          model,
+          access,
+          createRecordId,
+          operationAt
+      );
     } catch (DnaRuntimeException exception) {
       if (exception.errorCode() == DnaRuntimeErrorCode.RECORD_RATE_LIMITED) {
         audit.failure(
@@ -81,24 +189,29 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
       final RecordTransactionCommand command,
       final long startedAt,
       final RuntimeRecordModel model,
-      final RecordAccessContext access
+      final RecordAccessContext access,
+      final String createRecordId,
+      final Instant operationAt
   ) {
     try {
       List<RecordSqlStatement> statements = new ArrayList<>(command.mutations().size());
-      for (RecordMutation mutation : command.mutations()) {
-        statements.add(compiler.mutation(model, access, mutation, Instant.now()));
+      for (int index = 0; index < command.mutations().size(); index++) {
+        RecordMutation mutation = command.mutations().get(index);
+        Instant mutationAt = operationAt == null ? Instant.now() : operationAt;
+        String preferredId = index == 0 ? createRecordId : null;
+        statements.add(compiler.mutation(model, access, mutation, mutationAt, preferredId));
       }
-      RecordBatchExecutionResult execution = backend.execute(
-          model,
-          statements,
-          command.timeoutMs()
-      );
+      var writeAdmission = new RecordWriteAdmission(access.actor().tenantId(), command.writePolicyVersion(), access.resourceGeneration());
+      RecordBatchExecutionResult execution = command.idempotencyKey() == null
+          ? backend.execute(model, writeAdmission, statements, command.timeoutMs())
+          : backend.execute(model, writeAdmission, statements, command.timeoutMs(),
+              RecordOperationIdentity.of(access.actor(), command, fingerprints.of(command)));
       List<RecordMutationResult> results = new ArrayList<>(statements.size());
       for (int index = 0; index < statements.size(); index++) {
         RecordSqlStatement statement = statements.get(index);
         results.add(new RecordMutationResult(
             command.mutations().get(index).reference(),
-            new RecordCommandResult(
+            execution.replayedResults() != null ? execution.replayedResults().get(index) : new RecordCommandResult(
                 statement.mutationType(),
                 statement.recordId(),
                 statement.resultVersion(),
@@ -106,13 +219,15 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
                 statement.updatedAt()
             )
         ));
-        audit.success(
-            auditType(statement.mutationType()),
-            model,
-            access,
-            execution.affectedRows().get(index),
-            execution.executionTimeMs()
-        );
+        if (execution.replayedResults() == null) {
+          audit.success(
+              auditType(statement.mutationType()),
+              model,
+              access,
+              execution.affectedRows().get(index),
+              execution.executionTimeMs()
+          );
+        }
       }
       audit.success(
           DnaRuntimeAuditEventType.RECORD_TRANSACTION_SUCCEEDED,
@@ -220,5 +335,15 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
 
   private static long elapsed(final long startedAt) {
     return Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L);
+  }
+
+  private static RecordCreateMutation requireSingleCreate(
+      final PreparedRecordTransaction prepared
+  ) {
+    if (prepared.command().mutations().size() != 1
+        || !(prepared.command().mutations().getFirst() instanceof RecordCreateMutation create)) {
+      throw new IllegalArgumentException("Prepared create requires exactly one create mutation");
+    }
+    return create;
   }
 }

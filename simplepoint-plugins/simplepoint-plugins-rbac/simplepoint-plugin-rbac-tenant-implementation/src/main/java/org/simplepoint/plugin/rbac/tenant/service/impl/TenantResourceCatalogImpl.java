@@ -64,6 +64,15 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
   }
 
   @Override
+  @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+  public void lockForGrantModification(String tenantId) {
+    if (em.find(org.simplepoint.plugin.rbac.tenant.api.entity.Tenant.class, tenantId,
+        jakarta.persistence.LockModeType.PESSIMISTIC_WRITE) == null) {
+      throw new org.springframework.security.access.AccessDeniedException("Tenant unavailable");
+    }
+  }
+
+  @Override
   public TenantResourceMode mode(String tenantId) {
     if (tenantId == null || tenantId.isBlank()) {
       return TenantResourceMode.PLATFORM;
@@ -325,6 +334,8 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
                     new org.simplepoint.core.schema.ProjectionTableSchema.Choice(
                         "PLATFORM", "i18n:tenant.resources.platform"),
                     new org.simplepoint.core.schema.ProjectionTableSchema.Choice(
+                        "MANAGED", "i18n:tenant.resources.managed"),
+                    new org.simplepoint.core.schema.ProjectionTableSchema.Choice(
                         "TENANT", "i18n:tenant.resources.tenant"))));
   }
 
@@ -413,8 +424,9 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
         root.get("sort"),
         "origin",
         cb.<String>selectCase()
-            .when(cb.isNull(root.get("platformResourceId")), "TENANT")
-            .otherwise("PLATFORM"));
+            .when(cb.isNotNull(root.get("platformResourceId")), "PLATFORM")
+            .when(cb.isNotNull(root.get("managedOwner")), "MANAGED")
+            .otherwise("TENANT"));
   }
 
   @Override
@@ -626,6 +638,9 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
     if (entry.isPlatformSource() && mutation.type() != entry.getType()) {
       throw badRequest("平台来源资源的类型不能修改");
     }
+    if (entry.isManaged()) {
+      throw badRequest("服务托管资源只能由所属服务修改");
+    }
     if (!entry.isPlatformSource()
         && (mutation.type() == ResourceType.ACTION
             || mutation.type() == ResourceType.API
@@ -650,6 +665,9 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
     }
     if (entry.isPlatformSource()) {
       throw badRequest("平台来源资源不可删除，可停用或由平台撤销授权");
+    }
+    if (entry.isManaged()) {
+      throw badRequest("服务托管资源只能由所属服务停用");
     }
     if (!em.createQuery(
             "select r.id from TenantResource r where r.tenantId = :tenant and r.parentId = :parent",
@@ -802,6 +820,24 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
   @Override
   public Set<String> effectivePlatformCodes(String tenantId, Collection<String> requested) {
     return new TenantResourceReadQuery(em, tenantId).authorizationCodes(requested, true);
+  }
+
+  @Override
+  public Set<String> managedGrantableCodes(String tenantId, Collection<String> requested) {
+    return new TenantResourceReadQuery(em, tenantId).managedGrantableCodes(requested);
+  }
+
+  @Override
+  public Set<String> activeManagedGrantableCodes(String tenantId) {
+    return new TenantResourceReadQuery(em, tenantId).activeManagedGrantableCodes();
+  }
+
+  @Override
+  public List<TenantResource> managedNavigationResources(
+      String tenantId,
+      Collection<String> heldCodes
+  ) {
+    return new TenantResourceReadQuery(em, tenantId).managedNavigationResources(heldCodes);
   }
 
   private List<TenantResource> entries(String tenantId) {

@@ -1,0 +1,145 @@
+{
+  "verifiedAt": "2026-10-16T03:17:58.802Z",
+  "release": "20261016-workspace2",
+  "deployed": [
+    {
+      "service": "common",
+      "health": "healthy",
+      "consul": "passing",
+      "jarHashesMatch": true
+    },
+    {
+      "service": "auditing",
+      "health": "healthy",
+      "consul": "passing",
+      "jarHashesMatch": true
+    },
+    {
+      "service": "dna",
+      "health": "healthy",
+      "consul": "passing",
+      "jarHashesMatch": true
+    },
+    {
+      "service": "ai",
+      "health": "healthy",
+      "consul": "passing",
+      "jarHashesMatch": true
+    },
+    {
+      "service": "app",
+      "health": "healthy",
+      "consul": "passing",
+      "jarHashesMatch": true
+    },
+    {
+      "service": "workflow",
+      "health": "healthy",
+      "consul": "passing",
+      "jarHashesMatch": true
+    },
+    {
+      "service": "host",
+      "health": "healthy",
+      "consul": "passing",
+      "jarHashesMatch": true
+    }
+  ],
+  "allNineServicesHealthy": true,
+  "workspacePreference": {
+    "passed": true,
+    "at": "2026-10-16T03:17:25.692Z",
+    "switchedViaHeader": true,
+    "actualLogoutPost": true,
+    "freshAuthentication": true,
+    "savedWorkspaceRestored": true,
+    "browserLocalPreference": true,
+    "accountIsolationFixturePassed": true,
+    "revokedMembershipFallbackPassed": true,
+    "credentialsAndAuthorizationClearedOnLogout": true
+  },
+  "applicationPageActions": {
+    "passed": true,
+    "topLevelDesignButtonRemoved": true,
+    "serverDerivedDesignCapability": true,
+    "platformActionRenderer": true,
+    "results": [
+      {
+        "name": "会议室申请",
+        "formId": "3b24f99d-03e7-4ac9-a139-f161078976c5",
+        "pageId": "a90c5bca-3c9d-49dd-bf04-3a06c59a0d0c",
+        "designerDirect": true,
+        "publicationTargetSelected": true,
+        "runtimeUrl": "#/app/runtime/06165401-1851-4bda-bb6a-f0511a1cab7a/a90c5bca-3c9d-49dd-bf04-3a06c59a0d0c",
+        "documentRetained": true
+      },
+      {
+        "name": "日报填写",
+        "formId": "65dfdb3e-6466-492c-9f1b-6241446f4362",
+        "pageId": "ec7df87d-acdc-4541-b75a-1a63eb7a2659",
+        "designerDirect": true,
+        "publicationTargetSelected": true,
+        "runtimeUrl": "#/app/runtime/06165401-1851-4bda-bb6a-f0511a1cab7a/ec7df87d-acdc-4541-b75a-1a63eb7a2659",
+        "documentRetained": true
+      },
+      {
+        "name": "财务报销",
+        "formId": "6ddc39a7-8687-41de-8b85-7efca89117a8",
+        "pageId": "cd442ce8-9844-4674-9c0a-3ac210c647f3",
+        "designerDirect": true,
+        "publicationTargetSelected": true,
+        "runtimeUrl": "#/app/runtime/06165401-1851-4bda-bb6a-f0511a1cab7a/cd442ce8-9844-4674-9c0a-3ac210c647f3",
+        "documentRetained": true
+      }
+    ],
+    "unboundPage": "Select or create a form; selected page is preselected for publication"
+  },
+  "cleanup": {
+    "removed": {
+      "applications": 22,
+      "pages": 48,
+      "forms": 22,
+      "physicalTables": 29,
+      "physicalRows": 190,
+      "formSubmissions": 27,
+      "workflowDefinitions": 14,
+      "workflowInstances": 45,
+      "workflowNotifications": 95
+    },
+    "offline": {
+      "pages": 42,
+      "resources": 210,
+      "activeGrants": 0,
+      "allParticipantsCompleted": true,
+      "generationTombstonesRetained": true
+    },
+    "backupVerified": true,
+    "remainingBusinessApplication": "人力办公",
+    "preservedForms": [
+      "会议室申请",
+      "日报填写",
+      "财务报销"
+    ],
+    "physicalDataAndPlatformResourceContentsMatchBackup": true,
+    "retained": "Offline generation tombstones and durable audit receipts; no test application definitions or physical business tables remain"
+  },
+  "preservedBusinessVerification": {
+    "parentRows": 7,
+    "detailRows": 12,
+    "processInstances": 7,
+    "pendingOfficeTasks": 0,
+    "attachmentDownloadSha256": "295016e79b41b396618dd1aaebb0ac5f163be5e6402a2a734bcedc4f9c1137be",
+    "menuNavigationAndColdUrlPassed": true
+  },
+  "validation": {
+    "workspaceAndSessionTests": 6,
+    "appServiceTests": 40,
+    "typecheck": "8 frontend modules passed",
+    "workbenchBrowser": "passed",
+    "workspaceBrowser": "passed",
+    "moduleBrowser": "57 exposed modules passed",
+    "uiStandards": "155 files; 40/40 exceptions reviewed; 0 unreviewed",
+    "bundleGate": "passed",
+    "i18n": "passed"
+  }
+}

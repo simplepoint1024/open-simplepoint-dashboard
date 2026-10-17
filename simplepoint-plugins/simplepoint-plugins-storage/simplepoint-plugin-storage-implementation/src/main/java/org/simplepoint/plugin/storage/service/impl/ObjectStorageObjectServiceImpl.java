@@ -198,6 +198,17 @@ public class ObjectStorageObjectServiceImpl
   }
 
   @Override
+  public org.simplepoint.plugin.storage.api.model.ObjectStorageSourceMetadata inspectSource(
+      String id, String tenantId, String sourceServiceName) {
+    var object = repository.findActiveByIdAndTenantId(requireValue(id, "对象 ID 不能为空"),
+        requireValue(tenantId, "租户不能为空"))
+        .filter(item -> requireValue(sourceServiceName, "来源不能为空").equals(item.getSourceServiceName()))
+        .orElseThrow(() -> new NoSuchElementException("附件不存在或不属于当前业务"));
+    return new org.simplepoint.plugin.storage.api.model.ObjectStorageSourceMetadata(object.getId(),
+        object.getOriginalFileName(), object.getContentLength() == null ? 0 : object.getContentLength(), object.getCreatedBy());
+  }
+
+  @Override
   public ObjectStorageSourceContent downloadSource(
       final String id,
       final String tenantId,

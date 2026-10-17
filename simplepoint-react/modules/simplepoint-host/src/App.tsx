@@ -1,3 +1,5 @@
+import {useUserInfo} from '@/fetches/user';
+import {rememberedWorkspace, rememberWorkspace, selectInitialWorkspace, workspaceUserId} from '@simplepoint/shared/preferences/workspace';
 import '@/App.css';
 import '@simplepoint/components/Simplepoint.css';
 import 'antd/dist/reset.css';
@@ -87,7 +89,10 @@ const App: React.FC = () => {
         {key: 'Alt + ←', desc: t('shortcuts.browserBack', '返回上一页（浏览器）')},
     ], [t]);
 
-    // 1) 租户优先：先取已存租户；没有则拉取 currentTenants 选第一个
+    // Restore only after resolving the account and its current memberships.
+    const workspaceUserQuery = useUserInfo();
+    const workspaceOwner = workspaceUserQuery.isFetchedAfterMount ? workspaceUserId(workspaceUserQuery.data) : undefined;
+    const [restoredWorkspaceOwner, setRestoredWorkspaceOwner] = useState<string>();
     const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
     const [roleId, setRoleIdState] = useState<string | undefined>(() => getRoleId(getTenantId()));
     const [contextReady, setContextReady] = useState(false);
@@ -103,9 +108,9 @@ const App: React.FC = () => {
         refetch: refetchTenants,
     } = useCurrentTenants();
     const selectedTenantExists = useMemo(() => {
-        if (!tenantId || !currentTenants) return false;
+        if (!workspaceOwner || restoredWorkspaceOwner !== workspaceOwner || !tenantId || !currentTenants) return false;
         return currentTenants.some((tenant) => tenant.tenantId === tenantId);
-    }, [tenantId, currentTenants]);
+    }, [tenantId, currentTenants, workspaceOwner, restoredWorkspaceOwner]);
 
     // 当前选中租户的类型（用于路由鉴权：PERSONAL 租户访问 requireOrgTenant 路由时显示错误页）
     const currentTenantType = useMemo(() => {
@@ -122,7 +127,16 @@ const App: React.FC = () => {
     }, [scopeTenantId, scopeRoleId]);
 
     useEffect(() => {
-        if (!currentTenants) return;
+        if (!currentTenants || !workspaceOwner) return;
+        if (restoredWorkspaceOwner !== workspaceOwner) {
+            const next = selectInitialWorkspace(rememberedWorkspace(workspaceOwner), tenantId,
+                currentTenants.map(tenant => tenant.tenantId));
+            setTenantId(next);
+            rememberWorkspace(workspaceOwner, next);
+            setTenantIdState(next);
+            setRestoredWorkspaceOwner(workspaceOwner);
+            return;
+        }
 
         if (selectedTenantExists) return;
 
@@ -143,7 +157,7 @@ const App: React.FC = () => {
             setTenantIdState(undefined);
             setContextId(undefined);
         }
-    }, [tenantId, currentTenants, selectedTenantExists]);
+    }, [tenantId, currentTenants, selectedTenantExists, workspaceOwner, restoredWorkspaceOwner]);
 
     // 2) 上下文其次：tenant 确定后，优先加载/刷新 contextId
     useEffect(() => {
@@ -213,11 +227,11 @@ const App: React.FC = () => {
     // 每个 path 对应的刷新 key
     const refreshKeyMap = useRefreshKeyMap();
 
-    const bootstrapError = tenantsError ?? routesError;
+    const bootstrapError = workspaceUserQuery.error ?? tenantsError ?? routesError;
     const redirectingToLogin = isHttpError(bootstrapError)
         && bootstrapError.status === 401
         && !bootstrapError.sessionActive;
-    const bootstrapFailed = (tenantsFailed || routesFailed) && !redirectingToLogin;
+    const bootstrapFailed = (workspaceUserQuery.isError || tenantsFailed || routesFailed) && !redirectingToLogin;
 
     // 全局 loading 状态：租户、上下文、路由任一未就绪都保持 loading
     const showLoading = useGlobalLoading(
@@ -227,6 +241,7 @@ const App: React.FC = () => {
     );
 
     const retryBootstrap = () => {
+        if (workspaceUserQuery.isError) void workspaceUserQuery.refetch();
         void refetchTenants();
         if (routesEnabled) {
             void refetchRoutes();

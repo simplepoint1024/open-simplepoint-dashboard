@@ -21,6 +21,7 @@ const API_SCOPE_RULES: ReadonlyArray<{ scope: ApiScope; prefix: string }> = [
   { scope: 'global', prefix: '/common/ops/microapps' },
   { scope: 'global', prefix: '/common/tenants/current-roles' },
   { scope: 'global', prefix: '/common/tenants/current' },
+  { scope: 'global', prefix: '/common/current-directory' },
   { scope: 'global', prefix: '/common/tenants/page' },
   { scope: 'global', prefix: '/common/users/picker' },
   { scope: 'global', prefix: '/common/platform/dna' },
@@ -171,7 +172,9 @@ const inflight = new Map<string, Promise<string | undefined>>();
 
 export async function ensureContextId(
   tenantId: TenantId | undefined,
-  opts?: { force?: boolean; signal?: AbortSignal; throwOnError?: boolean; roleId?: RoleId }
+  opts?: { force?: boolean; signal?: AbortSignal; throwOnError?: boolean; roleId?: RoleId;
+    /** Workspace switch preflight must not publish even a cached/global context before commit. */
+    persist?: boolean }
 ): Promise<ContextId | undefined> {
   const normalizedTenantId = tenantId?.trim();
   if (!normalizedTenantId) {
@@ -185,7 +188,8 @@ export async function ensureContextId(
     if (cached) return cached;
   }
 
-  const key = normalizedRoleId ? `${normalizedTenantId}:${normalizedRoleId}` : normalizedTenantId;
+  const scopeKey = normalizedRoleId ? `${normalizedTenantId}:${normalizedRoleId}` : normalizedTenantId;
+  const key = opts?.persist === false ? `preflight:${scopeKey}` : scopeKey;
   const existing = inflight.get(key);
   if (existing) return existing;
 
@@ -211,7 +215,7 @@ export async function ensureContextId(
 
       const text = await res.text();
       const ctx = parseContextId(text, res.headers.get('content-type'));
-      if (ctx) setStoredContextId(ctx, normalizedTenantId, normalizedRoleId);
+      if (ctx && opts?.persist !== false) setStoredContextId(ctx, normalizedTenantId, normalizedRoleId);
       return ctx;
     } catch (e) {
       if (opts?.throwOnError) throw e;

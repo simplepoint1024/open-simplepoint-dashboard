@@ -132,7 +132,7 @@ public class DnaDataModelCatalog {
     String pattern = "%" + search.replace("!", "!!").replace("%", "!%")
         .replace("_", "!_") + "%";
     List<DnaDataModel> models = em.createQuery("select m from DnaDataModel m where " + condition
-            + " order by m.updatedAt desc, m.id desc", DnaDataModel.class)
+            + " order by m.createdAt desc, m.id desc", DnaDataModel.class)
         .setParameter("type", type).setParameter("search", search).setParameter("pattern", pattern)
         .setFirstResult(boundedPage * boundedSize).setMaxResults(boundedSize).getResultList();
     long total = em.createQuery("select count(m) from DnaDataModel m where " + condition, Long.class)
@@ -144,15 +144,16 @@ public class DnaDataModelCatalog {
   /** Schema-driven page query; filters, advanced groups, sort and count share one validated contract. */
   public Page<Summary> query(Map<String, String> filters, Pageable requested) {
     platformScope();
-    Pageable page = requested.getSort().isSorted() ? requested : PageRequest.of(
-        requested.getPageNumber(), requested.getPageSize(), Sort.by(Sort.Direction.DESC, "updatedAt"));
+    Pageable page = requested;
     ProjectionQuery query = ProjectionQuery.prepare(DnaDataModel.class, filters, page);
     var cb = em.getCriteriaBuilder();
     var selection = cb.createQuery(DnaDataModel.class);
     Root<DnaDataModel> root = selection.from(DnaDataModel.class);
     selection.select(root).where(cb.isNull(root.get("deletedAt")),
         query.predicate(cb, queryFields(root)));
-    selection.orderBy(query.orders(cb, queryFields(root), root.get("id")));
+    var orders = query.orders(cb, queryFields(root), root.get("id"));
+    if (requested.getSort().isUnsorted() && QueryCapabilities.readable(DnaDataModel.class, "createdAt")) orders.addFirst(cb.desc(root.get("createdAt")));
+    selection.orderBy(orders);
     List<DnaDataModel> models = em.createQuery(selection)
         .setFirstResult((int) page.getOffset()).setMaxResults(page.getPageSize()).getResultList();
     var countQuery = cb.createQuery(Long.class);

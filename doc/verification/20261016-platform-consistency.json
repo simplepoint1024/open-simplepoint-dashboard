@@ -1,0 +1,206 @@
+{
+  "verifiedAt": "2026-10-16T02:17:15.130Z",
+  "scope": "平台全局一致性六项优化及回归发现的关联缺陷修复",
+  "improvements": [
+    "DNA 数据模型和运行时治理复用平台读取取消、权限作用域、操作锁与保留页签规则；标准编辑由 SimpleTable 管理",
+    "SimpleTable/DataTable 共用账户同步偏好存储；保留本地未同步编辑；隔离过期读取和用户切换；HashRouter 使用页面自身标识",
+    "统一列表、表单详情、系统审计元数据和各业务页面的日期时间展示；区分日历日期、本地时间和带时区瞬时值",
+    "DNA 与工作流状态复用平台语义颜色，领域内维护完整标签，未知状态保持中性",
+    "App、DNA、工作流异常保留诊断 code 并提供稳定 messageKey 和中英文翻译",
+    "迁移 SQL 控制台原生控件例外登记，强制检查禁止过期例外；全局规则写入 AGENTS.md"
+  ],
+  "additionalFixes": [
+    "条件表单投影保留 dependencies/dependentSchemas、组合条件和本地引用中的合法字段值，继续剔除已移除的字段",
+    "表格列设置面板按需加载，保持页签归属和草稿恢复，并保留原有首屏体积预算",
+    "全局顶部工具菜单允许收缩，在窄窗口使用已有溢出菜单，避免页面横向溢出",
+    "流程浏览器测试跟随当前发起流程按钮文案，避免缺失按钮被当作已启用"
+  ],
+  "validation": {
+    "frontendUnit": {
+      "tests": 685,
+      "passed": 685,
+      "failed": 0
+    },
+    "backendServiceTests": {
+      "app": 38,
+      "dna": 41,
+      "workflow": 11,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "相关三个服务测试；非全仓后端测试"
+    },
+    "typecheck": {
+      "modules": 8,
+      "passed": true,
+      "metadataFollowup": "App 类型检查与全部前端构建通过"
+    },
+    "uiAudit": {
+      "sourceFiles": 154,
+      "reviewedControls": 40,
+      "totalNativeControls": 40,
+      "unreviewed": 0,
+      "staleExceptions": 0
+    },
+    "i18n": {
+      "literalCalls": 3400,
+      "reviewedDynamicCalls": 61,
+      "passed": true
+    },
+    "bundle": {
+      "passed": true,
+      "commonPackageSynchronousGzipBytes": 73137,
+      "commonPageBudgetBytes": 92160,
+      "settingsLazyLoaded": true
+    },
+    "browser": {
+      "exposedModules": 57,
+      "apiMode": "isolated fixtures",
+      "cache": "disabled",
+      "passed": true,
+      "targeted": [
+        "DNA 慢响应与页签切换",
+        "运行时详情视口和分页",
+        "账户表格偏好恢复",
+        "表格设置面板归属和恢复",
+        "组织选择条件表单投影",
+        "流程发起与任务操作"
+      ]
+    },
+    "production": {
+      "menus": {
+        "passed": true,
+        "allThreeBusinessMenus": true,
+        "tabSwitching": true,
+        "coldUrlWithoutSavedTabs": true
+      },
+      "businessData": {
+        "passed": true,
+        "expenseRows": 5,
+        "timestampFilter": true,
+        "timestampSort": true,
+        "deletedRowsExcluded": true,
+        "systemSchemaReadOnly": true,
+        "errorMessageKey": true
+      },
+      "detail": {
+        "passed": true,
+        "checks": [
+          "direct resource list",
+          "actual common error translation",
+          "unified readonly datetime",
+          "bounded horizontal and vertical detail scroll",
+          "no business writes",
+          "document has no horizontal overflow",
+          "overflow tools remain reachable"
+        ],
+        "viewports": [
+          {
+            "viewportWidth": 1440,
+            "viewportHeight": 1000,
+            "width": 1021,
+            "scrollWidth": 1813,
+            "height": 94,
+            "maxHeight": "320px",
+            "overflowX": "auto",
+            "overflowY": "scroll"
+          },
+          {
+            "viewportWidth": 1024,
+            "viewportHeight": 700,
+            "width": 884,
+            "scrollWidth": 1813,
+            "height": 94,
+            "maxHeight": "315px",
+            "overflowX": "auto",
+            "overflowY": "scroll"
+          }
+        ]
+      },
+      "engineHistory": {
+        "records": 7,
+        "detailRows": 12,
+        "orphanDetails": 0,
+        "verifiedExistingFlowCases": 7,
+        "pendingOfficeTasks": 0,
+        "freshAttachmentDownloadSha256": "295016e79b41b396618dd1aaebb0ac5f163be5e6402a2a734bcedc4f9c1137be"
+      }
+    }
+  },
+  "deployment": {
+    "passed": true,
+    "at": "2026-10-16T02:16:33.752Z",
+    "version": "20261016-consistency3",
+    "sourceDigest": "7ba79cb81e65fb49cc559953d338a631490d2f02545188942470c66519d365f7",
+    "services": [
+      {
+        "service": "common",
+        "version": "20261016-consistency2",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 317,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "auditing",
+        "version": "20261016-consistency2",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 246,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "dna",
+        "version": "20261016-consistency2",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 294,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "ai",
+        "version": "20261016-consistency2",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 326,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "app",
+        "version": "20261016-consistency2",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 260,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "workflow",
+        "version": "20261016-consistency2",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 298,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "host",
+        "version": "20261016-consistency3",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 226,
+        "jarHashesMatch": true
+      }
+    ],
+    "allNineServiceHealth": "passing",
+    "rabbitmq": "healthy"
+  },
+  "rollback": {
+    "databaseBackupVerified": true,
+    "previousImagesTagged": true,
+    "sourceSnapshot": true,
+    "oldFrontendAssetsArchived": true,
+    "databaseMigrations": 0
+  },
+  "limits": [
+    "本轮真实环境验证为只读回归，未重新创建业务记录或发起真实审批。",
+    "浏览器新增、编辑、提交、重试等变更场景使用隔离 API 测试数据；真实环境核对已有完整流程和主从表记录，并重新下载附件校验。"
+  ]
+}

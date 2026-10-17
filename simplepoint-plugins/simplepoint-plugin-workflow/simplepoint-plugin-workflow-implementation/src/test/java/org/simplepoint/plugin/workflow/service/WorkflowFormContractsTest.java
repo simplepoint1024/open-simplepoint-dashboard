@@ -20,6 +20,20 @@ class WorkflowFormContractsTest {
 
   private final WorkflowFormContracts contracts = new WorkflowFormContracts(new ObjectMapper());
 
+  @Test
+  void exactDecimalsRoundTripAsTextAndRejectLossyOrUnboundedRepresentations() {
+    var contract = contract(List.of(variable("amount", "decimal", "both", true, null)));
+    String exact = "9007199254740993.12345678901234567890";
+    var wire = contracts.submission(contract, Map.of("amount", exact), Map.of(), "start");
+    var engine = contracts.engineVariables(contract, wire);
+    assertThat(engine.get("amount")).isEqualTo(new java.math.BigDecimal(exact));
+    assertThat(contracts.project(contract, engine, "task")).containsEntry("amount", exact);
+    for (Object invalid : List.of(1.25, 1, "1e2", "01", "-", " 1", "9".repeat(39), "0." + "0".repeat(38) + "1")) {
+      assertThatThrownBy(() -> contracts.submission(contract, Map.of("amount", invalid), Map.of(), "start"))
+          .isInstanceOf(WorkflowException.class);
+    }
+  }
+
   @TestFactory
   Stream<DynamicTest> sharedRoleAuthoritiesMatchBothScalarAndArrayFormContracts() throws Exception {
     List<RoleCase> cases;

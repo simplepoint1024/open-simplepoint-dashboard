@@ -74,6 +74,11 @@ AI 用户与运维指南：
 
 - [模型兼容 API](ai/model_api.md)
 
+代码审查与演进：
+
+- [全仓代码组织审查与拆分计划（2026-10-13）](reviews/code-organization-review-20261013.md)
+- [数据权限实现评估（2026-09-21）](reviews/data-permission-review-20260921.md)
+
 ### **architecture/**
 存放系统整体架构相关文档，包括：
 - 系统架构图
@@ -245,6 +250,8 @@ AI 用户与运维指南：
 
 - DNA 联邦查询平台设计：`doc/design/dna_federated_query_platform.md`
 - DNA 表单引擎数据底座实施计划：`doc/design/dna_form_engine_data_foundation_plan.md`
+- 应用工作台与表单引擎完整实施计划：`doc/design/application_form_engine_plan.md`
+- 表单引擎架构评审（2026-10-13）：`doc/reviews/application-form-engine-design-review-20261013.md`
 - 流程中心设计与交付基线：`doc/design/workflow_center.md`
 - DNA 表单 Runtime 支持矩阵与运维指南：`doc/architecture/dna_form_runtime_operations.md`
 - 服务拓扑：`doc/architecture/service_topology.md`
@@ -280,3 +287,6 @@ AI 用户与运维指南：
 ### ✔ 生成 API 文档模板
 
 你想让我继续生成子目录的 README 模板吗？
+
+
+2026-10-14：表单数据底座的物理模型详情改为 `GET /platform/dna/runtime/models/{modelId}` 读取持久元数据和最新定义，按租户和软删除边界查询；不依赖数据源连通或迁移计划生成。迁移计划保留为独立的服务端 Schema 操作。RuntimeGovernance 四个页签传递剩余高度，表格内部滚动并保留分页栏。本次没有数据库结构迁移。

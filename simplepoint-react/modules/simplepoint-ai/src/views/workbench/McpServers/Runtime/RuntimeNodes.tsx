@@ -128,7 +128,7 @@ const RuntimeNodes = ({active = true, nodesUrl}: RuntimeNodesProps) => {
       title: t('ai.runtime.field.lastHeartbeat', '最后心跳'),
       dataIndex: 'lastHeartbeatAt',
       width: 175,
-      render: formatDateTime,
+      render: (value?: string) => formatDateTime(value),
     },
     {
       title: t('ai.runtime.field.lastError', '最后错误'),

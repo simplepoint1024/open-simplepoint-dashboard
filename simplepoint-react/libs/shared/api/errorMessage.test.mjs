@@ -1,6 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {selectApiErrorMessage} from './errorMessage.ts';
+import {localizedServerMessage, selectApiErrorMessage, translatedServerMessage} from './errorMessage.ts';
+import {createTranslator} from '../i18n/translator.ts';
+
+test('generic envelope keys never hide actionable localized annotation validation details', () => {
+  const translate = createTranslator({'form.validation.failed': 'Check the form', 'form.validation.minLength': 'Enter at least {limit} characters'});
+  assert.equal(localizedServerMessage({code: 'VALIDATION_FAILED', messageKey: 'form.validation.failed', fieldErrors: [
+    {field: 'name', keyword: 'minLength', params: {limit: 4, rejectedValue: 'private'}}]}, translate), 'Enter at least 4 characters');
+});
+
+test('server localization keys use only known bounded keys and never interpolate untrusted parameters', () => {
+  const translate = (key, fallback) => key === 'workflow.modeling.multiCount' ? 'A bounded whole number is required' : fallback;
+  assert.equal(translatedServerMessage({messageKey: 'workflow.modeling.multiCount', parameters: {unsafe: '<script>'}}, translate),
+    'A bounded whole number is required');
+  for (const data of [null, [], 'text', {}, {messageKey: 'unknown.key'}, {messageKey: '<script>'}, {messageKey: 'a'.repeat(201)}]) {
+    assert.equal(translatedServerMessage(data, translate), undefined);
+  }
+  assert.equal(translatedServerMessage({messageKey: 'unknown.key'}, key => key), undefined);
+});
 
 test('structured error codes use the caller localized fallback', () => {
   assert.equal(selectApiErrorMessage({

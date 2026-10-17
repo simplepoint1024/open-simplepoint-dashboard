@@ -64,6 +64,8 @@ test('an explicitly cleared fixed position overrides a new default', () => {
 
 test('default table display preferences expose every supported switch', () => {
   assert.deepEqual(DEFAULT_TABLE_DISPLAY_SETTINGS, {
+    viewMode: 'table',
+    cardRows: 3,
     size: 'middle',
     bordered: true,
     striped: true,
@@ -83,4 +85,10 @@ test('invalid persisted appearance and width values are safely normalized', () =
     [{key: 'name', label: 'Name', visible: true}],
     [{key: 'name', label: 'Name', visible: true, width: 99999}],
   )[0].width, 1200);
+});
+
+test('card preferences reject unknown modes and unbounded row counts', () => {
+  assert.equal(normalizeTableDisplaySettings({viewMode: 'unknown', cardRows: 100}).viewMode, 'table');
+  assert.equal(normalizeTableDisplaySettings({cardRows: 100}).cardRows, 3);
+  assert.equal(normalizeTableDisplaySettings({viewMode: 'cards', cardRows: 4}).cardRows, 4);
 });

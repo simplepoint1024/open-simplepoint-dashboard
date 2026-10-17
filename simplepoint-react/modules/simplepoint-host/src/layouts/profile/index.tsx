@@ -1,9 +1,9 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {App, Avatar, Descriptions, Divider, Empty, Input, Skeleton, Space, Tag, Typography} from 'antd';
 import type {WidgetProps} from '@rjsf/utils';
 import {ApartmentOutlined, IdcardOutlined, LockOutlined, LinkOutlined, RightOutlined,
   SafetyCertificateOutlined, UserOutlined} from '@simplepoint/shared/types/icon';
-import dayjs from 'dayjs';
 import {useQueryClient} from '@tanstack/react-query';
 import SForm from '@simplepoint/components/SForm/Lazy';
 import type {SFormHandle} from '@simplepoint/components/SForm';
@@ -33,7 +33,7 @@ const passwordUi = {
   confirmPassword: {'ui:widget': 'ProfilePassword', 'ui:options': {autocomplete: 'new-password'}},
 };
 const detailUi = {birthdate: {'ui:widget': 'date'}, profile: {'ui:widget': 'textarea'}};
-const formatDate = (value?: string | null) => value ? dayjs(value).format('YYYY-MM-DD HH:mm') : '-';
+const formatDate = (value?: string | null) => value ? formatDateTime(value) : '-';
 
 export const Profile: React.FC = () => {
   const {message} = App.useApp();

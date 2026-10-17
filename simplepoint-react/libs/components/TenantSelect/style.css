@@ -1,0 +1,24 @@
+.sp-tenant-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  vertical-align: middle;
+}
+.sp-tenant-mark {
+  flex: none;
+  background: var(--ant-color-primary-bg, #e6f4ff);
+  color: var(--ant-color-primary, #1677ff);
+}
+.sp-tenant-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-tenant-type {
+  flex: none;
+  margin-inline-end: 0;
+}

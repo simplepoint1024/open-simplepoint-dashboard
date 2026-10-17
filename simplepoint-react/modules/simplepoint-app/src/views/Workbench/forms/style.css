@@ -1,0 +1,9 @@
+.app-form-workspace { height: 100%; min-height: 0; overflow: auto; padding: 16px; }
+.app-form-workspace-heading { margin-bottom: 16px; }
+.app-form-editor > .ant-alert { margin-bottom: 12px; }
+
+.app-form-workspace:has(.app-form-editor) { display: flex; flex-direction: column; overflow: hidden; padding: 12px; }
+.app-form-editor { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; overflow: hidden; border: 1px solid var(--ant-color-border-secondary); border-radius: 6px; background: var(--ant-color-bg-container); }
+.app-form-editor-identity { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; max-width: 100%; }
+.app-form-editor-name { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.app-form-editor-identity .ant-tag { flex-shrink: 0; margin-inline-end: 0; }

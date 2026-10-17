@@ -649,6 +649,96 @@
         "organizations.type.department",
         "organizations.type.team"
       ]
+    },
+    {
+      "file": "libs/components/FormRuntime/RecordMetadata.tsx",
+      "expression": "`app.runtime.record.${field}`",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "app.runtime.record.tenantId",
+        "app.runtime.record.createOrgDeptId",
+        "app.runtime.record.createdBy",
+        "app.runtime.record.createdAt",
+        "app.runtime.record.updatedBy",
+        "app.runtime.record.updatedAt",
+        "app.runtime.record.deletedAt"
+      ]
+    },
+    {
+      "file": "libs/components/FormDesigner/Properties.tsx",
+      "expression": "tab.labelKey",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "app.designer.groupLayout",
+        "app.designer.fields",
+        "app.designer.indexes",
+        "app.designer.componentSettings"
+      ]
+    },
+    {
+      "file": "modules/simplepoint-dna/src/views/platform/RuntimeGovernance/ModelDefinition.tsx",
+      "expression": "'dna.runtime.definition.' + key",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "dna.runtime.definition.invalid",
+        "dna.runtime.definition.empty",
+        "dna.runtime.definition.emptyText",
+        "dna.runtime.definition.title",
+        "dna.runtime.definition.fields",
+        "dna.runtime.definition.indexes",
+        "dna.runtime.definition.name",
+        "dna.runtime.definition.code",
+        "dna.runtime.definition.type",
+        "dna.runtime.definition.required",
+        "dna.runtime.definition.length",
+        "dna.runtime.definition.precision",
+        "dna.runtime.definition.default",
+        "dna.runtime.definition.identity",
+        "dna.runtime.definition.indexFields",
+        "dna.runtime.definition.unique",
+        "dna.runtime.definition.yes",
+        "dna.runtime.definition.no",
+        "dna.runtime.definition.owner",
+        "dna.runtime.definition.parentModel",
+        "dna.runtime.definition.parentField",
+        "dna.runtime.definition.type.STRING",
+        "dna.runtime.definition.type.TEXT",
+        "dna.runtime.definition.type.BOOLEAN",
+        "dna.runtime.definition.type.INT32",
+        "dna.runtime.definition.type.INT64",
+        "dna.runtime.definition.type.DECIMAL",
+        "dna.runtime.definition.type.DATE",
+        "dna.runtime.definition.type.TIME",
+        "dna.runtime.definition.type.DATETIME",
+        "dna.runtime.definition.type.UUID",
+        "dna.runtime.definition.type.JSON",
+        "dna.runtime.definition.type.BINARY"
+      ],
+      "reason": "Read-only DNA model fields and logical types use the versioned schema contract."
+    },
+    {
+      "file": "modules/simplepoint-dna/src/views/platform/RuntimeGovernance/ModelDefinition.tsx",
+      "expression": "'dna.runtime.definition.type.' + value",
+      "expectedOccurrences": 1,
+      "mode": "finite",
+      "resolvedKeys": [
+        "dna.runtime.definition.type.STRING",
+        "dna.runtime.definition.type.TEXT",
+        "dna.runtime.definition.type.BOOLEAN",
+        "dna.runtime.definition.type.INT32",
+        "dna.runtime.definition.type.INT64",
+        "dna.runtime.definition.type.DECIMAL",
+        "dna.runtime.definition.type.DATE",
+        "dna.runtime.definition.type.TIME",
+        "dna.runtime.definition.type.DATETIME",
+        "dna.runtime.definition.type.UUID",
+        "dna.runtime.definition.type.JSON",
+        "dna.runtime.definition.type.BINARY"
+      ],
+      "reason": "Read-only DNA model fields and logical types use the versioned schema contract."
     }
   ]
 }

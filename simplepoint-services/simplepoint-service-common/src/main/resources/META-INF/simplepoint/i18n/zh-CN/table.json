@@ -150,5 +150,16 @@
   "table.actionUnavailable": "此操作暂不可用，请刷新页面后重试",
   "table.selectionExpired": "所选记录已不可用，请重新选择",
   "table.selectAtLeast": "请至少选择 {count} 条记录",
-  "table.selectAtMost": "最多选择 {count} 条记录"
+  "table.selectAtMost": "最多选择 {count} 条记录",
+  "table.more": "更多操作",
+  "table.help": "帮助",
+  "table.view.table": "切换为列表",
+  "table.view.cards": "切换为卡片",
+  "table.view.rows": "每页卡片行数",
+  "table.view.rowCount": "{count} 行/页",
+  "table.view.selectRecord": "选择记录",
+  "table.preferences.retry": "表格设置暂未同步，点击重试",
+  "table.resizeConfigurationWidth": "调整配置面板宽度",
+  "table.collapseConfiguration": "收起面板",
+  "table.expandConfiguration": "展开面板"
 }

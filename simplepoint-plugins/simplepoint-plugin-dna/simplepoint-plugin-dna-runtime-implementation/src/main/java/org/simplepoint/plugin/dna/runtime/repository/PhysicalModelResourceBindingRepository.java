@@ -27,6 +27,17 @@ public interface PhysicalModelResourceBindingRepository
       @Param("resourceCode") String resourceCode
   );
 
+  /** Includes the retired identity even when Hibernate's soft-delete filter is enabled. */
+  @Query(value = """
+      select * from {h-schema}simpoint_dna_model_resource_bindings
+      where tenant_id = :tenantId and physical_model_id = :modelId and resource_code = :resourceCode
+      """, nativeQuery = true)
+  Optional<PhysicalModelResourceBindingEntity> findIncludingDeleted(
+      @Param("tenantId") String tenantId,
+      @Param("modelId") String modelId,
+      @Param("resourceCode") String resourceCode
+  );
+
   /** Lists active resource bindings for one model. */
   @Query("""
       select binding from PhysicalModelResourceBindingEntity binding

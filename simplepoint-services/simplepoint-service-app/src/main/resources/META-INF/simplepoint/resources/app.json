@@ -61,8 +61,64 @@
               "publicAccess": false,
               "grantable": true,
               "disabled": false
+            },
+            {
+              "code": "app.workbench.forms.create",
+              "name": "新建表单",
+              "label": "新建表单",
+              "title": "app.form.create",
+              "alias": "i18n:app.form.create",
+              "type": "ACTION",
+              "icon": "PlusOutlined",
+              "sort": 20,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "app.workbench.forms.edit",
+              "name": "编辑表单",
+              "label": "编辑表单",
+              "title": "app.form.edit",
+              "alias": "i18n:app.form.edit",
+              "type": "ACTION",
+              "icon": "EditOutlined",
+              "sort": 30,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "app.workbench.forms.publish",
+              "name": "发布表单",
+              "label": "发布表单",
+              "title": "app.form.publish",
+              "alias": "i18n:app.form.publish",
+              "type": "ACTION",
+              "icon": "CloudUploadOutlined",
+              "sort": 40,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
             }
           ]
+        },
+        {
+          "code": "app.runtime.host",
+          "name": "应用运行页宿主",
+          "label": "应用运行页宿主",
+          "title": "app.runtime.host",
+          "type": "PAGE",
+          "path": "/app/runtime-host",
+          "component": "app/FormRuntime",
+          "routeKind": "hidden",
+          "description": "app.runtime.host",
+          "sort": 9990,
+          "publicAccess": false,
+          "requireOrgTenant": true,
+          "grantable": false,
+          "disabled": false,
+          "scopeTypes": ["TENANT"]
         },
         {
           "code": "app.templates.view",

@@ -1,0 +1,54 @@
+{
+  "verifiedAt": "2026-10-16T07:03:18.276Z",
+  "release": "20261016-designer-toolbar1",
+  "applicationServiceDeployed": true,
+  "allNineServicesHealthy": true,
+  "toolbar": {
+    "buttons": [
+      "返回",
+      "预览",
+      "操作"
+    ],
+    "dropdown": [
+      "撤销",
+      "重做",
+      "重载",
+      "保存",
+      "发布",
+      "历史"
+    ],
+    "hoverAndClick": true,
+    "platformRenderer": "TableActions"
+  },
+  "checks": {
+    "passed": true,
+    "at": "2026-10-16T07:02:41.861Z",
+    "labels": [
+      "返回",
+      "预览",
+      "操作"
+    ],
+    "menuActions": [
+      "撤销",
+      "重做",
+      "重载",
+      "保存",
+      "发布",
+      "历史"
+    ],
+    "hoverAndClick": true,
+    "disabledSaveWhenClean": true,
+    "historyAndPublishOpen": true,
+    "inactivePageClosesMenu": true,
+    "headerFits1024": true,
+    "titleAndStatusCentered": true,
+    "previewAndReload": true,
+    "returnsToApplication": true,
+    "businessMutations": 0,
+    "typecheck": "8 modules passed",
+    "uiStandards": "155 files; 40/40 reviewed; 0 unreviewed",
+    "bundleLimits": "passed",
+    "designerRegression": "real browser: hover/click, disabled clean save, saving/conflicts/reload, background retention, publication recovery, designed record CRUD and readonly actions passed"
+  },
+  "scope": "Single-row designer toolbar and shared action menu; no business data changes"
+}

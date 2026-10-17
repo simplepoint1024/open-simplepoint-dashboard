@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Alert, App, Descriptions, Modal, Tag, Typography, Upload} from 'antd';
 import type {UploadFile} from 'antd/es/upload/interface';
@@ -32,7 +33,7 @@ const formatBytes = (value: unknown) => {
   return `${amount.toFixed(amount >= 10 || unit === 0 ? 0 : 2)} ${units[unit]}`;
 };
 const dateTime = (value: unknown) => typeof value === 'string' && !Number.isNaN(Date.parse(value))
-  ? new Date(value).toLocaleString() : String(value ?? '—');
+  ? formatDateTime(value) : String(value ?? '—');
 
 export default function ObjectStorage() {
   const scope = useQueryScope();
@@ -188,8 +189,8 @@ function StorageSession({section}: {section: Section}) {
         ? t('storage.quota.invalidLimit', '配额数值超出安全范围') : undefined}
       initialValues={section === 'provider-configs' ? {type: 'MINIO', region: 'us-east-1',
         pathStyleAccess: true, enabled: true, defaultProvider: false} : {enabled: true}}
-      formUiSchema={section === 'quotas' ? {tenantId: {'ui:widget': 'EntitySelect',
-        'ui:options': {endpoint: api['platform.tenants'].baseUrl, allowClear: false}}} : undefined}
+      formUiSchema={section === 'quotas' ? {tenantId: {'ui:widget': 'TenantSelect',
+        'ui:options': {directory: 'platform'}}} : undefined}
       formCustomValidate={section === 'provider-configs' ? ((data, errors) => {
         if (data.type !== 'S3' && !data.endpoint?.trim() && (!data.id || writable(schema, 'endpoint'))) {
           (errors.endpoint ?? errors).addError(t('storage.provider.endpointRequired', '当前平台必须配置 Endpoint'));

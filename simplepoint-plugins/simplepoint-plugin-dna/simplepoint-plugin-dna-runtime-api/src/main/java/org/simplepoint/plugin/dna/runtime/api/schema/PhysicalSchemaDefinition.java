@@ -9,20 +9,30 @@ import org.simplepoint.plugin.dna.runtime.api.DnaRuntimeApiVersion;
 public record PhysicalSchemaDefinition(
     String contractVersion,
     List<LogicalFieldDefinition> fields,
-    List<LogicalIndexDefinition> indexes
-) {
+    List<LogicalIndexDefinition> indexes,
+    @com.fasterxml.jackson.annotation.JsonInclude(
+            com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        OwnedModelRelation owner) {
 
-  private static final Set<String> SYSTEM_FIELDS = Set.of(
-      "id",
-      "tenant_id",
-      "record_version",
-      "created_by",
-      "created_org_dept_id",
-      "created_at",
-      "updated_by",
-      "updated_at",
-      "deleted_at"
-  );
+  private static final Set<String> SYSTEM_FIELDS =
+      Set.of(
+          "id",
+          "tenant_id",
+          "record_version",
+          "created_by",
+          "created_org_dept_id",
+          "created_at",
+          "updated_by",
+          "updated_at",
+          "deleted_at");
+
+  /** Preserves compatibility for callers without optional snapshot or scene metadata. */
+  public PhysicalSchemaDefinition(
+      String contractVersion,
+      List<LogicalFieldDefinition> fields,
+      List<LogicalIndexDefinition> indexes) {
+    this(contractVersion, fields, indexes, null);
+  }
 
   /** Validates contract version, stable field identity, and index references. */
   public PhysicalSchemaDefinition {
@@ -33,6 +43,15 @@ public record PhysicalSchemaDefinition(
     indexes = indexes == null ? List.of() : List.copyOf(indexes);
     validateFields(fields);
     validateIndexes(fields, indexes);
+    if (owner != null
+        && fields.stream()
+            .noneMatch(
+                field ->
+                    field.fieldId().equals(owner.parentFieldId())
+                        && field.type() == LogicalFieldType.UUID
+                        && !field.nullable())) {
+      throw new IllegalArgumentException("Owned model requires a non-null UUID parent reference");
+    }
   }
 
   private static void validateFields(final List<LogicalFieldDefinition> fields) {
@@ -55,9 +74,7 @@ public record PhysicalSchemaDefinition(
   }
 
   private static void validateIndexes(
-      final List<LogicalFieldDefinition> fields,
-      final List<LogicalIndexDefinition> indexes
-  ) {
+      final List<LogicalFieldDefinition> fields, final List<LogicalIndexDefinition> indexes) {
     Set<String> fieldCodes = new HashSet<>();
     fields.forEach(field -> fieldCodes.add(field.code()));
     Set<String> indexCodes = new HashSet<>();

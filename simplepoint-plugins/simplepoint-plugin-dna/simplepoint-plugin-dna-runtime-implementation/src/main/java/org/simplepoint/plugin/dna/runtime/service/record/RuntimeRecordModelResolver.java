@@ -4,6 +4,7 @@ import java.util.List;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.model.PhysicalModelStatus;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordSchemaReference;
 import org.simplepoint.plugin.dna.runtime.entity.PhysicalModelBindingEntity;
 import org.simplepoint.plugin.dna.runtime.entity.PhysicalModelEntity;
 import org.simplepoint.plugin.dna.runtime.entity.PhysicalModelVersionEntity;
@@ -40,7 +41,11 @@ public class RuntimeRecordModelResolver {
 
   /** Resolves one active model without exposing placement outside the implementation. */
   @Transactional(readOnly = true)
-  RuntimeRecordModel resolve(final RuntimeActor actor, final String modelId) {
+  RuntimeRecordModel resolve(
+      final RuntimeActor actor,
+      final String modelId,
+      final RecordSchemaReference schemaReference
+  ) {
     PhysicalModelEntity model = modelRepository.findActiveById(actor.tenantId(), modelId)
         .orElseThrow(RuntimeRecordModelResolver::notFound);
     if (model.getStatus() != PhysicalModelStatus.ACTIVE || model.getActiveVersion() == null) {
@@ -53,17 +58,32 @@ public class RuntimeRecordModelResolver {
         actor.tenantId(),
         model.getId()
     ).orElseThrow(RuntimeRecordModelResolver::inconsistent);
-    PhysicalModelVersionEntity version = versionRepository.findActiveVersion(
+    PhysicalModelVersionEntity activeVersion = versionRepository.findActiveVersion(
         actor.tenantId(),
         model.getId(),
         model.getActiveVersion()
     ).orElseThrow(RuntimeRecordModelResolver::inconsistent);
+    PhysicalModelVersionEntity requestedVersion = schemaReference.version() == model.getActiveVersion()
+        ? activeVersion
+        : versionRepository.findActiveVersion(
+            actor.tenantId(),
+            model.getId(),
+            schemaReference.version()
+        ).orElseThrow(RuntimeRecordModelResolver::incompatible);
+    if (!requestedVersion.getSchemaChecksum().equals(schemaReference.checksum())) {
+      throw incompatible();
+    }
+    var activeSchema = schemaCodec.decode(activeVersion.getSchemaJson());
+    var requestedSchema = schemaCodec.decode(requestedVersion.getSchemaJson());
+    RecordSchemaCompatibility.requireCompatible(requestedSchema, activeSchema);
     return new RuntimeRecordModel(
         model.getId(),
         model.getAppId(),
         model.getFormId(),
         model.getActiveVersion(),
-        schemaCodec.decode(version.getSchemaJson()),
+        activeSchema,
+        requestedVersion.getVersionNumber(),
+        requestedSchema,
         new PhysicalSchemaTarget(
             model.getId(),
             new org.simplepoint.plugin.dna.runtime.api.model.RuntimeMetadataTarget(
@@ -77,10 +97,6 @@ public class RuntimeRecordModelResolver {
   }
 
   /** Resolves and preserves caller order for a bounded list of model ids. */
-  List<RuntimeRecordModel> resolveAll(final RuntimeActor actor, final List<String> modelIds) {
-    return modelIds.stream().map(modelId -> resolve(actor, modelId)).toList();
-  }
-
   private static DnaRuntimeException notFound() {
     return new DnaRuntimeException(
         DnaRuntimeErrorCode.PHYSICAL_MODEL_NOT_FOUND,
@@ -92,6 +108,13 @@ public class RuntimeRecordModelResolver {
     return new DnaRuntimeException(
         DnaRuntimeErrorCode.PERSISTENCE_FAILED,
         "Active physical model metadata is inconsistent"
+    );
+  }
+
+  private static DnaRuntimeException incompatible() {
+    return new DnaRuntimeException(
+        DnaRuntimeErrorCode.RECORD_SCHEMA_INCOMPATIBLE,
+        "Requested record schema does not belong to the active physical model"
     );
   }
 }

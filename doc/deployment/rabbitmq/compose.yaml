@@ -1,0 +1,20 @@
+# Merge into the platform infrastructure compose; pre-generate definitions with service users.
+services:
+  rabbitmq:
+    image: rabbitmq:4.2-management@sha256:7f79e00af50ce38297eb63a90bfee895d060b57520a22b30620085482a816318
+    hostname: simplepoint-mq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "+S 2:2"
+    volumes:
+      - platform-rabbitmq:/var/lib/rabbitmq
+      - ${SIMPLEPOINT_MQ_CONFIG:?required}:/etc/rabbitmq/rabbitmq.conf:ro
+      - ${SIMPLEPOINT_MQ_DEFINITIONS:?required}:/etc/rabbitmq/definitions.json:ro
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    mem_limit: 1g
+volumes:
+  platform-rabbitmq: {}

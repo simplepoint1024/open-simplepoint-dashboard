@@ -16,7 +16,7 @@ export function createNotificationLifecycleFixture() {
   rows[520].status = 'DRAFT'; rows[520].publishAt = '***';
   const users = Array.from({length: 521}, (_, index) => ({id: 'notification-user-' + index, name: 'Recipient' + index,
     email: 'recipient' + index + '@example.test', phoneNumber: null}));
-  const tenants = Array.from({length: 521}, (_, index) => ({id: 'notification-tenant-' + index, name: 'AudienceTenant' + index}));
+  const tenants = Array.from({length: 521}, (_, index) => ({id: 'notification-tenant-' + index, name: 'AudienceTenant' + index, tenantType: 'ORGANIZATION'}));
   const fields = Object.fromEntries(Object.entries(schema.schema['x-query'].fields).map(([name, definition]) => [name,
     {type: definition.javaType === 'Instant' ? 'date-time' : 'string'}]));
   const reads = [], writes = [];

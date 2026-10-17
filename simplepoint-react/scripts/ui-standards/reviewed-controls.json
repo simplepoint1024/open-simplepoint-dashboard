@@ -154,10 +154,10 @@
       ]
     },
     {
-      "file": "modules/simplepoint-dna/src/views/platform/SqlConsole/index.tsx",
+      "file": "modules/simplepoint-dna/src/views/platform/SqlConsole/SqlMetadataExplorer.tsx",
       "component": "Button",
-      "fingerprint": "c8d411b816c6d76c8abdf41dedefc896676e9660980281b23cffed39d61b5319",
-      "reviewedAtLine": 1365,
+      "fingerprint": "f78829e836e4e593bfb973e28624c3d962872d68e194f71217fc42da2a203d73",
+      "reviewedAtLine": 140,
       "category": "local-editor-command",
       "reason": "This control inserts text, formats the local SQL draft or opens editor options. SQL execute/explain/export and remote retries separately use platform actions and actual permissions.",
       "evidence": [

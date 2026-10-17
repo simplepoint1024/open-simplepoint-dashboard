@@ -33,6 +33,7 @@ public interface JpaRoleResourceGrantRepository extends JpaRepository<RoleResour
   void unauthorized(String roleId, Set<String> resourceCodes);
 
   @Override
+  @Query("from RoleResourceGrant grant where grant.roleId in ?1 and grant.deletedAt is null")
   List<RoleResourceGrant> findByRoleIdIn(Collection<String> roleIds);
 
   @Override
@@ -40,18 +41,24 @@ public interface JpaRoleResourceGrantRepository extends JpaRepository<RoleResour
       select distinct grant.tenantId
       from RoleResourceGrant grant
       where grant.resourceCode in ?1
+        and grant.deletedAt is null
         and grant.tenantId is not null
         and grant.tenantId <> ''
       """)
   Set<String> findTenantIdsByResourceCodes(Collection<String> resourceCodes);
 
   @Override
-  Optional<RoleResourceGrant> findFirstByTenantIdAndRoleId(String tenantId, String roleId);
+  default Optional<RoleResourceGrant> findFirstByTenantIdAndRoleId(String tenantId, String roleId) {
+    return findFirstByTenantIdAndRoleIdAndDeletedAtIsNull(tenantId, roleId);
+  }
+
+  /** Returns only an effective grant, independently of request-scoped Hibernate filters. */
+  Optional<RoleResourceGrant> findFirstByTenantIdAndRoleIdAndDeletedAtIsNull(String tenantId, String roleId);
 
   @Override
   @Modifying
   @Query("update RoleResourceGrant grant set grant.dataScopeId = :dataScopeId, grant.fieldScopeId = :fieldScopeId "
-      + "where grant.tenantId = :tenantId and grant.roleId = :roleId")
+      + "where grant.tenantId = :tenantId and grant.roleId = :roleId and grant.deletedAt is null")
   void updateScopeForRole(@Param("tenantId") String tenantId, @Param("roleId") String roleId,
                           @Param("dataScopeId") String dataScopeId, @Param("fieldScopeId") String fieldScopeId);
 

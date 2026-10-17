@@ -21,7 +21,9 @@ export function createWorkflowPersonalFixture({xml, contract, definition}) {
     priority: 50, createdAt: now, outcome: 'PENDING', instanceStatus: 'RUNNING', handledByMe: false}));
   const events = new Map(matters.map(item => [item.id, [{id: item.id + '-start', actionType: 'STARTED', actorName: '张三', occurredAt: now}]]));
   const failures = new Set();
+  let listDelay = 0;
   let sequence = 0;
+  let diagramXml = xml;
   const result = (rows, fields, url, fixed) => fixturePage(rows, fields, url, fixed);
   const addAction = (matter, action, comment, task) => {
     events.get(matter.id).push({id: 'event-' + ++sequence, actionType: action, actorName: '李四', comment,
@@ -37,8 +39,12 @@ export function createWorkflowPersonalFixture({xml, contract, definition}) {
       instanceStatus: matter.status, createdAt: now, handledAt: later, handledByMe: true, assigned: false, claimable: false, actionable: false});
     addAction(matter, action, comment, task);
   };
-  return {matters, tasks, fail(action) {failures.add(action);}, async handle(req, url, data, respond, expectedFailure) {
+  return {matters, tasks, diagram(source) {diagramXml = source;}, fail(action) {failures.add(action);}, delayLists(milliseconds) {listDelay = milliseconds;}, async handle(req, url, data, respond, expectedFailure) {
     const path = url.pathname;
+    if (/^\/workflow\/(inbox\/(pending|completed)|matters\/(started|copied|all))$/.test(path)) {
+      if (listDelay) await new Promise(resolve => setTimeout(resolve, listDelay));
+      if (failures.delete(path)) {expectedFailure(503); return respond({message: '列表暂时不可用（测试）'}, 503), true;}
+    }
     if (path === '/workflow/overview') {
       const pending = tasks.filter(row => row.outcome === 'PENDING'), active = matters.filter(row => row.status === 'RUNNING');
       return respond({tenantWorkspace: req.headers['x-tenant-id'] !== '__platform__', canViewTodos: true, canViewMatters: true,
@@ -71,7 +77,7 @@ export function createWorkflowPersonalFixture({xml, contract, definition}) {
     if (!matter) throw Error('Unknown personal workflow fixture: ' + path);
     const operation = taskMatch?.[2] ?? instanceMatch[2];
     if (operation === 'form') return respond({definitionVersion: 1, formContract: contract, values: {approved: false}}), true;
-    if (operation === 'progress') return respond({matter, diagram: {instance: matter, bpmnXml: xml,
+    if (operation === 'progress') return respond({matter, diagram: {instance: matter, bpmnXml: diagramXml,
       activities: [{id: matter.id + '-review', activityId: 'review', activityName: '审批', activityType: 'userTask',
         taskId: tasks.find(row => row.processInstanceId === matter.id)?.taskId, status: matter.status === 'RUNNING' ? 'ACTIVE' : 'COMPLETED',
         startedAt: now, endedAt: matter.endedAt}],

@@ -12,11 +12,12 @@ export interface QueryValueProps {
   javaType?: string;
   format?: string;
   multiline?: boolean;
+  maxLength?: number;
   options?: Array<{value: string; label: string}>;
 }
 
 /** Typed input shared by header filters and the condition-tree editor. Dates use browser timezone. */
-export default function QueryValue({op, value, onChange, type, javaType, format, options, multiline}: QueryValueProps) {
+export default function QueryValue({op, value, onChange, type, javaType, format, options, multiline, maxLength = 2000}: QueryValueProps) {
   const {t} = useI18n();
   if (nullOps.includes(op)) return null;
   const numeric = isNumericQueryType(type, javaType);
@@ -40,9 +41,9 @@ export default function QueryValue({op, value, onChange, type, javaType, format,
           : javaType === 'LocalDateTime' ? d.format('YYYY-MM-DDTHH:mm:ss') : d.toISOString())} />
     : numeric ? <InputNumber style={{width: '100%'}} stringMode precision={type === 'integer' ? 0 : undefined}
         value={v === undefined ? null : String(v)} onChange={n => change(n == null ? undefined : normalize(String(n)))} />
-    : multiline ? <Input.TextArea value={v === undefined ? '' : String(v)} maxLength={2000} allowClear
+    : multiline ? <Input.TextArea value={v === undefined ? '' : String(v)} maxLength={maxLength} allowClear
         autoSize={{minRows: 1, maxRows: 4}} onChange={e => change(e.target.value)}/>
-      : <Input value={v === undefined ? '' : String(v)} maxLength={2000} allowClear onChange={e => change(e.target.value)} />;
+      : <Input value={v === undefined ? '' : String(v)} maxLength={maxLength} allowClear onChange={e => change(e.target.value)} />;
   if (range) {
     const values = Array.isArray(value) ? value : [];
     return <Space.Compact style={{width: '100%'}}>

@@ -9,8 +9,8 @@ export async function smokeEntitySelect({clickMenu, clickReady, clickText, fill,
   const choose = async (id, keyword, label) => {
     await evaluate(`document.querySelector('#${id}').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
     await fill(`#${id}`, keyword);
-    await poll(() => evaluate(`[...document.querySelectorAll('${popup} .ant-select-item-option')].some(element => element.textContent === ${JSON.stringify(label)})`), `server selector finds ${label}`);
-    await clickText(`${popup} .ant-select-item-option`, label);
+    await poll(() => evaluate(`[...document.querySelectorAll('${popup} .sp-tenant-name')].some(element => element.textContent === ${JSON.stringify(label)})`), `server selector finds ${label}`);
+    await clickText(`${popup} .sp-tenant-name`, label);
   };
   await clickMenu('契约测试 Role');
   await poll(() => evaluate(`!!document.querySelector('.nb-tab-panel-active tr[data-row-key="Role-000"]')`), 'role selection row');
@@ -21,6 +21,7 @@ export async function smokeEntitySelect({clickMenu, clickReady, clickText, fill,
   await clickMenu('契约测试 StorageQuota');
   await clickText('.nb-tab-panel-active button', '新增配额');
   await poll(() => evaluate(`!!document.querySelector('.sp-simple-table-drawer.ant-drawer-open input#root_tenantId')`), 'quota tenant selector');
+  assert.equal(await evaluate(`document.querySelector('#root_tenantId').closest('[data-domain-select="tenant"]').dataset.directory`), 'platform');
   await choose('root_tenantId', 'Tenant239', 'Tenant239');
   assert.ok(fixture.requests.some(params => params.has('name') && params.get('size') === '20'));
   await clickReady('.sp-simple-table-drawer.ant-drawer-open .ant-drawer-close');

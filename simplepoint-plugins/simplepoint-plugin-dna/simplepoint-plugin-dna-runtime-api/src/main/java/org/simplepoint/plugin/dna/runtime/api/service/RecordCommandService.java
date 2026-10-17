@@ -11,6 +11,12 @@ public interface RecordCommandService {
   /** Creates one record and returns its server-owned identity and version. */
   RecordCommandResult create(RecordCreateCommand command);
 
+  /** Finds an authorized committed create without reserving a key or writing a record. */
+  RecordCommandResult findCreateResult(RecordCreateCommand command);
+
+  /** Finds the committed result of the exact keyed update under current authorization, or null. */
+  RecordCommandResult findUpdateResult(RecordUpdateCommand command);
+
   /** Updates one record when its current version matches. */
   RecordCommandResult update(RecordUpdateCommand command);
 

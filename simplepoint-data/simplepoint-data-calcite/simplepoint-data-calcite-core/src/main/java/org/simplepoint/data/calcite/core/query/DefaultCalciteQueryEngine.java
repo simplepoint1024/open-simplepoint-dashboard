@@ -26,8 +26,8 @@ import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlInsert;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -519,6 +519,12 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
       throw new IllegalArgumentException("schemaConfigurer 不能为空");
     }
     Properties properties = new Properties();
+    if (schemaConfigurer.typeSystem() != null) {
+      properties.setProperty(CalciteConnectionProperty.TYPE_SYSTEM.camelName(), schemaConfigurer.typeSystem().getName());
+    }
+    if (schemaConfigurer.timeZone() != null) {
+      properties.setProperty(CalciteConnectionProperty.TIME_ZONE.camelName(), schemaConfigurer.timeZone().getId());
+    }
     properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), "false");
     try (Connection connection = DriverManager.getConnection(CALCITE_JDBC_URL, properties)) {
       CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);

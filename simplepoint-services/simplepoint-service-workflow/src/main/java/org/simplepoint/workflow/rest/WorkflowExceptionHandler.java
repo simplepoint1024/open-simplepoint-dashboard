@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.simplepoint.plugin.workflow.api.WorkflowException;
+import org.simplepoint.plugin.workflow.api.WorkflowModelingException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -26,6 +27,11 @@ public class WorkflowExceptionHandler {
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("code", "WORKFLOW_" + exception.getCode().name());
     body.put("message", exception.getMessage());
+    body.put("messageKey", "workflow.error." + exception.getCode().name());
+    if (exception instanceof WorkflowModelingException modeling) {
+      body.put("messageKey", modeling.getMessageKey());
+      body.put("elementId", modeling.getElementId());
+    }
     body.put("timestamp", Instant.now());
     return ResponseEntity.status(status).body(body);
   }

@@ -10,6 +10,7 @@ import org.simplepoint.app.catalog.service.WorkspaceApplicationCatalog.CreateApp
 import org.simplepoint.app.catalog.service.WorkspaceApplicationCatalog.CreatePage;
 import org.simplepoint.app.catalog.service.WorkspaceApplicationCatalog.PageSummary;
 import org.simplepoint.app.catalog.service.WorkspaceApplicationCatalog.Permissions;
+import org.simplepoint.app.catalog.service.WorkspaceApplicationCatalog.PublicationPage;
 import org.simplepoint.core.http.Response;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -69,6 +70,16 @@ public class WorkspaceApplicationController {
   @Operation(summary = "创建应用及其主页面")
   public Response<ApplicationDetail> create(@RequestBody CreateApplication command) {
     return Response.okay(catalog.create(command));
+  }
+
+  /** Returns bounded tenant-owned publication targets for the platform entity selector. */
+  @GetMapping("/{id}/publication-pages")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.forms.publish')")
+  @Operation(summary = "分页查询表单发布目标页面")
+  public Response<Page<PublicationPage>> publicationPages(
+      @PathVariable("id") String id,
+      @RequestParam Map<String, String> parameters, Pageable page) {
+    return Response.okay(catalog.publicationPages(id, parameters, page));
   }
 
   /** Adds a page under the captured application and tenant. */

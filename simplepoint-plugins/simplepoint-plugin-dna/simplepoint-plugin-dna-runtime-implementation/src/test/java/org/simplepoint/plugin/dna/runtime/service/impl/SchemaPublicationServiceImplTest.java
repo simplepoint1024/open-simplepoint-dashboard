@@ -32,10 +32,12 @@ import org.simplepoint.plugin.dna.runtime.configuration.DnaRuntimePublicationPro
 import org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationStateService.PersistedStep;
 import org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationStateService.PublicationClaim;
 import org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationStateService.PublicationWork;
+import org.simplepoint.plugin.dna.runtime.service.record.RecordWriteFencePreparation;
 import org.simplepoint.plugin.dna.runtime.service.schema.InitialSchemaPlan;
 import org.simplepoint.plugin.dna.runtime.service.schema.JdbcPhysicalSchemaBackend;
 import org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaTarget;
 import org.simplepoint.plugin.dna.runtime.service.schema.PlannedSchemaStep;
+import org.simplepoint.plugin.dna.runtime.service.schema.RecordJournalProvisioner;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext.RuntimeActor;
 
@@ -48,6 +50,8 @@ class SchemaPublicationServiceImplTest {
   private JdbcPhysicalSchemaBackend backend;
   private RuntimeMetadataCacheInvalidator cacheInvalidator;
   private SchemaPublicationServiceImpl service;
+  private RecordJournalProvisioner journal;
+  private RecordWriteFencePreparation writeFences;
 
   @BeforeEach
   void setUp() {
@@ -56,12 +60,16 @@ class SchemaPublicationServiceImplTest {
     backend = mock(JdbcPhysicalSchemaBackend.class);
     cacheInvalidator = mock(RuntimeMetadataCacheInvalidator.class);
     when(requestContext.requireActor()).thenReturn(ACTOR);
+    journal = mock(RecordJournalProvisioner.class);
+    writeFences = mock(RecordWriteFencePreparation.class);
     service = new SchemaPublicationServiceImpl(
         requestContext,
         stateService,
         backend,
         cacheInvalidator,
-        new DnaRuntimePublicationProperties()
+        new DnaRuntimePublicationProperties(),
+        journal,
+        writeFences
     );
   }
 
@@ -101,9 +109,11 @@ class SchemaPublicationServiceImplTest {
 
     service.publish("model-1", new SchemaPublicationCommand(1, 0));
 
-    InOrder order = inOrder(stateService, backend, cacheInvalidator);
+    InOrder order = inOrder(stateService, backend, cacheInvalidator, journal, writeFences);
     order.verify(stateService).ready(ACTOR, work.migrationId(), work.executionToken(), plan);
     order.verify(stateService).start(ACTOR, work.migrationId(), work.executionToken());
+    order.verify(journal).prepare(work.target());
+    order.verify(writeFences).prepare(ACTOR, work.target());
     order.verify(stateService).beginStep(
         ACTOR,
         work.migrationId(),
@@ -185,8 +195,27 @@ class SchemaPublicationServiceImplTest {
 
     service.publish("model-1", new SchemaPublicationCommand(1, 0));
 
+    verify(journal).prepare(work.target());
+    verify(writeFences).prepare(ACTOR, work.target());
     verify(backend, never()).plan(any(), anyString(), any(), any());
     verify(stateService, never()).ready(any(), anyString(), anyString(), any());
+  }
+
+  @Test
+  void resolvesPublicationByIdempotentTarget() {
+    service.getByTargetVersion("model-1", 1);
+
+    verify(stateService).getByTargetVersion("tenant-a", "model-1", 1);
+  }
+
+  @Test
+  void rejectsAnInvalidTargetVersionBeforeReadingState() {
+    assertThatThrownBy(() -> service.getByTargetVersion("model-1", 0))
+        .isInstanceOfSatisfying(DnaRuntimeException.class, exception ->
+            org.assertj.core.api.Assertions.assertThat(exception.errorCode())
+                .isEqualTo(DnaRuntimeErrorCode.INVALID_ARGUMENT));
+
+    verify(stateService, never()).getByTargetVersion(anyString(), anyString(), any(Integer.class));
   }
 
   @Test

@@ -24,6 +24,10 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.simplepoint.remoting.NoRemoteErrorDecoder;
+import org.simplepoint.remoting.RemoteBusinessException;
+import org.simplepoint.remoting.RemoteContract;
+import org.simplepoint.remoting.RemoteErrorDecoder;
 import org.springframework.context.ApplicationContext;
 
 /**
@@ -32,6 +36,8 @@ import org.springframework.context.ApplicationContext;
 public class ServiceRouterInvocationHandler implements InvocationHandler {
 
   private final Class<?> serviceInterface;
+
+  private final RemoteErrorDecoder errorDecoder;
 
   private final RoutedServiceMetadata metadata;
 
@@ -74,6 +80,7 @@ public class ServiceRouterInvocationHandler implements InvocationHandler {
       final ApplicationContext applicationContext
   ) {
     this.serviceInterface = serviceInterface;
+    this.errorDecoder = createErrorDecoder(serviceInterface);
     this.metadata = metadata;
     this.localServiceRegistry = localServiceRegistry;
     this.serviceDiscovery = serviceDiscovery;
@@ -97,12 +104,26 @@ public class ServiceRouterInvocationHandler implements InvocationHandler {
         }
       }
       return invokeRemote(method, args);
+    } catch (RemoteBusinessException ex) {
+      throw ex;
     } catch (Exception ex) {
       Object fallback = fallbackBean();
       if (fallback != null) {
         return invokeFallback(fallback, method, args);
       }
       throw ex;
+    }
+  }
+
+  private static RemoteErrorDecoder createErrorDecoder(final Class<?> serviceInterface) {
+    RemoteContract contract = serviceInterface.getAnnotation(RemoteContract.class);
+    if (contract == null) {
+      return new NoRemoteErrorDecoder();
+    }
+    try {
+      return contract.errorDecoder().getConstructor().newInstance();
+    } catch (ReflectiveOperationException ex) {
+      throw new IllegalArgumentException("Cannot initialize contract error decoder: " + serviceInterface.getName(), ex);
     }
   }
 
@@ -125,12 +146,18 @@ public class ServiceRouterInvocationHandler implements InvocationHandler {
           throw new ServiceRouterException("Remote provider returned empty response");
         }
         if (!response.success()) {
+          RemoteBusinessException business = errorDecoder.decode(response.errorCode(), response.message());
+          if (business != null) {
+            throw business;
+          }
           throw new ServiceRouterException(response.errorCode() + ": " + response.message());
         }
         if (method.getReturnType() == void.class) {
           return null;
         }
         return convertResponseData(response.data(), method);
+      } catch (RemoteBusinessException ex) {
+        throw ex;
       } catch (RuntimeException ex) {
         last = ex;
       }

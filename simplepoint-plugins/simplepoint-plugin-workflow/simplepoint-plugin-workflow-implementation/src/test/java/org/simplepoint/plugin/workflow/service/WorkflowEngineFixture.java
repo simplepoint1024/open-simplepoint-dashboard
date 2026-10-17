@@ -76,6 +76,9 @@ abstract class WorkflowEngineFixture {
             .addAnnotatedClass(WorkflowInstanceWatcherEntity.class)
             .addAnnotatedClass(WorkflowNotificationOutboxEntity.class)
             .addAnnotatedClass(WorkflowActionEntity.class)
+            .addAnnotatedClass(org.simplepoint.plugin.workflow.entity.WorkflowOperationReceiptEntity.class)
+            .addAnnotatedClass(org.simplepoint.plugin.workflow.entity.WorkflowBusinessLinkEntity.class)
+            .addAnnotatedClass(org.simplepoint.plugin.workflow.entity.WorkflowFormBindingEntity.class)
             .addAnnotatedClass(WorkflowEngineSignalEntity.class)
             .addAnnotatedClass(WorkflowInboxReadModel.class)
             .addAnnotatedClass(WorkflowCandidateReadModel.class)
@@ -139,7 +142,7 @@ abstract class WorkflowEngineFixture {
             new BpmnDefinitionValidator(),
             new ObjectMapper(),
             tenants,
-            List.of());
+            formProviders());
     var authorization = new AuthorizationContext();
     authorization.setScopeType(AuthorizationScopeType.TENANT);
     authorization.setUserId("actor");
@@ -175,6 +178,10 @@ abstract class WorkflowEngineFixture {
         }
       }
     }
+  }
+
+  protected List<org.simplepoint.plugin.workflow.api.service.WorkflowFormProvider> formProviders() {
+    return List.of();
   }
 
   /**

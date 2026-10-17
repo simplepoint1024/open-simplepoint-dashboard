@@ -1,0 +1,7 @@
+
+.sp-form-image-placeholder { min-height: 100px; display: grid; place-content: center; background: var(--ant-color-fill-quaternary); font-size: 32px; }
+.sp-form-markdown { max-height: 480px; overflow: auto; overflow-wrap: anywhere; }
+.sp-form-markdown pre { overflow-x: auto; padding: 12px; background: var(--ant-color-fill-quaternary); }
+.sp-form-markdown table { border-collapse: collapse; }
+.sp-form-markdown td, .sp-form-markdown th { padding: 6px 12px; border: 1px solid var(--ant-color-border); }
+.sp-form-transfer { min-width: 280px; max-width: 100%; overflow-x: auto; }

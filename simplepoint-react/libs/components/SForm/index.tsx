@@ -1,3 +1,4 @@
+import {validateBusinessPatterns} from '../../shared/validation/businessPattern';
 import {Form, Widgets, Templates} from "@rjsf/antd";
 import {FormProps} from "@rjsf/core";
 import type RjsfForm from '@rjsf/core';
@@ -7,17 +8,21 @@ import validator from "@rjsf/validator-ajv8";
 import {RJSFValidationError, SubmitButtonProps} from "@rjsf/utils";
 import {forwardRef, lazy, memo, Suspense, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type ComponentType} from "react";
 import type {WidgetProps} from "@rjsf/utils";
-import type {BaseInputTemplateProps} from '@rjsf/utils';
+import type {BaseInputTemplateProps, FieldTemplateProps} from '@rjsf/utils';
 import {useI18n} from "@simplepoint/shared/hooks/useI18n";
 import {dateFormValue} from './dateValue';
 import {isNumericSchema, numericInputSchema, numericFormValue} from './numericValue';
 import {guardFormSubmit} from './submitCapture';
 import {validateDecimalFields} from './decimalValue';
+import {jsonFieldIssue} from './jsonValue';
 import {beginPreparation} from './preparation';
 import {flushSync} from 'react-dom';
 import {commitFormInput} from './inputCommit';
 import {submitButtonState} from './submitButton';
 import {localizeValidationErrors} from '../../shared/validation/messages';
+import {displayOnlyProjection} from './displayOnly';
+import DisplayValue from './fields/DisplayValue';
+import {schemaUi, mergeUiSchema} from './schemaUi';
 
 // Keep optional widget dependencies out of forms which do not use them.
 const lazyWidget = (load: () => Promise<{default: ComponentType<WidgetProps>}>) => {
@@ -34,11 +39,20 @@ const OrgTreeMultiSelect = lazyWidget(() => import('./widgets/OrgTreeMultiSelect
 const OrganizationSelect = lazyWidget(() => import('./widgets/OrganizationSelectWidget'));
 const RemoteSelect = lazyWidget(() => import('./widgets/RemoteSelect'));
 const EntitySelectWidget = lazyWidget(() => import('./widgets/EntitySelectWidget'));
+const FormAttachmentsWidget = lazyWidget(() => import('./widgets/FormAttachmentsWidget'));
 const OssFileWidget = lazyWidget(() => import('./widgets/OssFileWidget'));
 const OssImageWidget = lazyWidget(() => import('./widgets/OssImageWidget'));
 const PermissionExpression = lazyWidget(() => import('./widgets/PermissionExpression'));
 const UserPicker = lazyWidget(() => import('./widgets/UserPicker'));
 const TenantDirectory = lazyWidget(() => import('./widgets/TenantDirectoryWidget'));
+const UserSelect = lazyWidget(() => import('./widgets/DomainSelectWidget').then(module => ({default: module.UserSelectWidget})));
+const RoleSelect = lazyWidget(() => import('./widgets/DomainSelectWidget').then(module => ({default: module.RoleSelectWidget})));
+const TenantSelect = lazyWidget(() => import('./widgets/DomainSelectWidget').then(module => ({default: module.TenantSelectWidget})));
+const Switch = lazyWidget(() => import('./widgets/StandardInputs').then(module => ({default: module.SwitchInput})));
+const Rating = lazyWidget(() => import('./widgets/StandardInputs').then(module => ({default: module.RatingInput})));
+const Time = lazyWidget(() => import('./widgets/StandardInputs').then(module => ({default: module.TimeInput})));
+const Cascader = lazyWidget(() => import('./widgets/StandardInputs').then(module => ({default: module.CascaderInput})));
+const Transfer = lazyWidget(() => import('./widgets/StandardInputs').then(module => ({default: module.TransferInput})));
 const Decimal = lazyWidget(() => import('./widgets/DecimalWidget'));
 
 type SFormProps = Omit<FormProps, "validator">& {
@@ -50,8 +64,8 @@ type SFormProps = Omit<FormProps, "validator">& {
   onBeforeSubmit?: () => boolean | void;
 };
 
-/** Allows a surrounding dialog's standard confirmation button to submit the platform form. */
-export type SFormHandle = {submit: () => void};
+/** Dispatches platform validation; false means the form is not ready, not a validation failure. */
+export type SFormHandle = {submit: () => boolean};
 
 // 自定义提交按钮
 const CustomSubmitButton = (props: SubmitButtonProps) => {
@@ -69,8 +83,12 @@ const AntdBaseInput = Templates.BaseInputTemplate!;
 const ValidatedBaseInput = (props: BaseInputTemplateProps) => <AntdBaseInput {...props}
   schema={numericInputSchema(props.schema)}
   onChange={isNumericSchema(props.schema) ? (value: unknown) => props.onChange(numericFormValue(props.schema, value)) : props.onChange}/>;
+const DefaultFieldTemplate = Templates.FieldTemplate!;
 const formTemplates = {
   BaseInputTemplate: ValidatedBaseInput,
+  // RJSF assumes custom fields own their labels. DisplayValue uses the platform field layout.
+  FieldTemplate: (props: FieldTemplateProps) => <DefaultFieldTemplate {...props}
+    displayLabel={props.schema['x-display-only'] === true ? true : props.displayLabel}/>,
   ButtonTemplates: {
     SubmitButton: CustomSubmitButton
   },
@@ -83,7 +101,7 @@ const defaultValidationError = (_errors: RJSFValidationError[]) => {};
 const dateWidget = (Widget: ComponentType<WidgetProps>) => (props: WidgetProps) => <Widget {...props}
   value={props.value === '' || props.value == null ? undefined : props.value} onChange={value => props.onChange(dateFormValue(props.schema, value))}/>;
 
-const defaultWidgets = {
+const defaultWidgets = {Switch, Rating, Time, Cascader, Transfer,
   DateWidget: dateWidget(Widgets.DateWidget),
   DateTimeWidget: dateWidget(Widgets.DateTimeWidget),
   IconPicker,
@@ -94,21 +112,24 @@ const defaultWidgets = {
   EntitySelect: EntitySelectWidget,
   UserPicker,
   TenantDirectory,
+  UserSelect,
+  RoleSelect,
+  TenantSelect,
   Decimal,
   OssFile: OssFileWidget,
+  FormAttachments: FormAttachmentsWidget,
   OssImage: OssImageWidget,
 } as const;
 
 // 抽离 textarea 的 autosize 常量，避免重复创建对象
-const TEXTAREA_AUTOSIZE = { minRows: 4, maxRows: 16 } as const;
 
 const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
   const formRef = useRef<RjsfForm>(null);
-  useImperativeHandle(ref, () => ({submit: () => formRef.current?.submit()}), []);
   const {t, locale, ensure} = useI18n();
   const lastFailures = useRef<RJSFValidationError[]>([]);
   const lastTranslator = useRef(t);
-  const {schema, uiSchema, validate, customValidate, transformErrors: customTransformErrors, hideSubmit, submitLoading, submitDisabled, onBeforeSubmit, ...rest} = props as any;
+  const {schema: sourceSchema, uiSchema: sourceUiSchema, validate, customValidate, transformErrors: customTransformErrors, hideSubmit, submitLoading, submitDisabled, onBeforeSubmit, ...rest} = props as any;
+  const {schema, uiSchema} = useMemo(() => displayOnlyProjection(sourceSchema, sourceUiSchema), [sourceSchema, sourceUiSchema]);
   useEffect(() => {void ensure(['common', ...(props.i18nNamespaces ?? [])]);}, [ensure, locale, props.i18nNamespaces]);
   useEffect(() => {
     const changed = lastTranslator.current !== t;
@@ -119,6 +140,11 @@ const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
   const preparations = useRef(new Set<symbol>()), mounted = useRef(true);
   const [preparing, setPreparing] = useState(false);
   const available = useRef(false); available.current = !submitLoading && !submitDisabled && !rest.disabled;
+  useImperativeHandle(ref, () => ({submit: () => {
+    if (!formRef.current || !mounted.current || !available.current || preparations.current.size) return false;
+    formRef.current.submit();
+    return true;
+  }}), []);
   const inputWritable = useRef(false); inputWritable.current = !rest.disabled && !rest.readonly;
   // Opt-in for CodeMirror-like native callbacks; ordinary React widgets keep
   // their normal batching. A clean form's disabled save button must not block edits.
@@ -128,33 +154,7 @@ const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
   const prepare = useCallback(() => beginPreparation(preparations.current, mounted.current && available.current,
     busy => {if (mounted.current) setPreparing(busy);}), []);
 
-  // 从 schema.x-ui.widget 自动生成基础 uiSchema（含通用映射与 textarea 特例）
-  const autoUiSchema = useMemo(() => {
-    const result: any = {};
-    if (!schema || typeof schema !== 'object') return result;
-    const propsDef = (schema as any).properties || {};
-    for (const k of Object.keys(propsDef)) {
-      const fieldSchema = propsDef[k];
-      const xui = fieldSchema?.['x-ui'];
-      const normalizedXui = xui && typeof xui === 'object' ? xui : {};
-      const widget = normalizedXui['ui:widget']
-        ?? normalizedXui.widget;
-      const uiOptions = normalizedXui['ui:options'] ?? normalizedXui.options;
-      if (!widget || typeof widget !== 'string') continue;
-      if (widget === 'textarea') {
-        result[k] = {
-          'ui:widget': 'textarea',
-          'ui:options': { autoSize: TEXTAREA_AUTOSIZE, ...(uiOptions || {}) },
-        };
-      } else {
-        result[k] = {
-          'ui:widget': widget,
-          ...(uiOptions ? { 'ui:options': uiOptions } : {}),
-        };
-      }
-    }
-    return result;
-  }, [schema]);
+  const autoUiSchema = useMemo(() => schemaUi(schema), [schema]);
 
   // 若未显式设置 icon 的 widget，则默认启用 IconPicker
   const withIconPicker = useMemo(() => {
@@ -168,11 +168,7 @@ const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
     return result;
   }, [schema, autoUiSchema, uiSchema]);
 
-  // 合并优先级：props.uiSchema >
-  const mergedUiSchema = useMemo(() => ({
-    ...withIconPicker,
-    ...(uiSchema || {})
-  }) as any, [withIconPicker, uiSchema]);
+  const mergedUiSchema = useMemo(() => mergeUiSchema(withIconPicker, uiSchema), [withIconPicker, uiSchema]);
 
   // 需要进行 JSON 校验的字段集合（通过 x-ui.format === 'json' 标记）
   const jsonKeys = useMemo(() => {
@@ -188,6 +184,7 @@ const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
   }, [schema]);
 
   const mergedValidate = (formData: any, errors: any, validationUiSchema?: any) => {
+    validateBusinessPatterns(schema, formData, errors, t('form.validation.pattern', '填写内容不符合格式要求'));
     validateDecimalFields(schema, formData, errors, (issue, rule) => issue === 'scale'
       ? t('form.decimal.scale', '最多支持 {scale} 位小数', {scale: rule.scale})
       : issue === 'minimum' ? t('form.decimal.minimum', '数值必须{comparison} {minimum}',
@@ -198,13 +195,8 @@ const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
     // 内部 JSON 字段校验
     jsonKeys.forEach((k) => {
       const v = formData?.[k];
-      if (v && typeof v === 'string') {
-        try {
-          JSON.parse(v);
-        } catch (_) {
-          errors[k]?.addError?.(t('form.jsonInvalid', 'JSON格式不正确'));
-        }
-      }
+      const issue = jsonFieldIssue(v, Boolean((schema.properties?.[k] as any)?.['x-json-value']), schema.required?.includes(k) ?? false);
+      if (issue) errors[k]?.addError?.(issue === 'required' ? t('form.required', '这是必填项') : t('form.jsonInvalid', 'JSON格式不正确'));
     });
     // 外部自定义校验
     const validated = typeof validate === 'function' ? validate(formData, errors, validationUiSchema) ?? errors : errors;
@@ -240,6 +232,7 @@ const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
       showErrorList={false}
       transformErrors={transformErrors}
       templates={mergedTemplates}
+      fields={{...rest.fields, DisplayValue}}
       widgets={resolvedWidgets as any}
     />
   );

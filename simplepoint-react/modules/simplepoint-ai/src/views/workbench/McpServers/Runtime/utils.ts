@@ -22,11 +22,7 @@ export const formatCpu = (nanoCpus?: number) => {
   return `${(nanoCpus / 1_000_000_000).toFixed(2)} CPU`;
 };
 
-export const formatDateTime = (value?: string) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-};
+export {formatDateTime} from '@simplepoint/shared/format/temporal';
 
 export const statusColor = (status?: string) => {
   switch (status) {

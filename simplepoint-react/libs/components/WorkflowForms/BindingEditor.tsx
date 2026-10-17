@@ -1,14 +1,17 @@
-import {Alert, Modal, Select, Space, Typography} from 'antd';
+import {Alert, Modal, Space, Typography} from 'antd';
 import {useRef, useState} from 'react';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import TableActions from '../Table/Actions';
-import type {WorkflowFormBinding} from '../WorkflowDesigner/contracts';
+import type {WorkflowFormBinding, WorkflowVariable} from '../WorkflowDesigner/contracts';
+import SForm from '../SForm/Lazy';
 import {useWorkflowFormAdapters} from './useWorkflowFormAdapters';
 import {usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
 
 /** The design integration point appears only for real registered adapters or an existing saved binding. */
-export default function BindingEditor({elementId, binding, onChange, disabled}: {
+export default function BindingEditor({elementId, binding, startBinding, variables = [], onChange, disabled}: {
   elementId: string; binding?: WorkflowFormBinding;
+  variables?: readonly WorkflowVariable[];
+  startBinding?: WorkflowFormBinding;
   onChange: (binding?: WorkflowFormBinding) => void; disabled?: boolean;
 }) {
   const {t} = useI18n();
@@ -23,13 +26,14 @@ export default function BindingEditor({elementId, binding, onChange, disabled}: 
   const adapter = adapters.find(adapter => adapter.provider === provider);
   return <Space direction="vertical" style={{width: '100%'}}>
     <Typography.Text strong>{t('workflow.form.binding', '表单绑定')}</Typography.Text>
-    {providers.length > 0 && <Select disabled={disabled || !!unbindTarget} style={{width: '100%'}} value={provider}
-      options={providers.map(item => ({value: item.provider, label: item.provider}))}
-      onChange={next => {
+    {providers.length > 0 && <SForm hideSubmit disabled={disabled || !!unbindTarget}
+      schema={{type: 'object', properties: {provider: {type: 'string', title: t('workflow.form.provider', '表单引擎'),
+        oneOf: providers.map(item => ({const: item.provider, title: item.provider}))}}}}
+      formData={{provider}} onChange={event => {
         // Provider selection itself does not destroy the previous binding; its editor must emit a new one.
-        setChosenProvider(next);
+        setChosenProvider(event.formData?.provider);
       }}/>}
-    {adapter?.renderBindingEditor ? adapter.renderBindingEditor({elementId,
+    {adapter?.renderBindingEditor ? adapter.renderBindingEditor({elementId, variables, startBinding,
       binding: binding?.provider === provider ? binding : undefined, readOnly: Boolean(disabled || unbindTarget),
       onChange: next => {if (!disabled && !targetRef.current && selected) onChange(next);}})
       : <Alert type="warning" showIcon title={t('workflow.form.providerUnavailable', '此流程绑定的表单提供方尚未接入，暂时不能提交')}

@@ -21,6 +21,7 @@ import {createIcon} from '@simplepoint/shared/types/icon';
 import {useSideNavigation} from "@/hooks/routes";
 import {useLocation, useNavigate} from "react-router";
 import {findRouteChainByPath, flattenRoutes, getRouteKey, RouteInfo} from "@/store/routes";
+import {menuSyncIdentity} from '@/store/routes/identity';
 import {aboutMeItem, HeaderLogo, HeaderSearchBar, RoleSwitcherTop, TenantSwitcherTop, toolsSwitcherGroupItem} from "@/layouts/navigation-bar/top-bar.tsx";
 import {useI18n} from "@/layouts/i18n/useI18n.ts";
 import MenuSearchModal from "@/layouts/navigation-bar/menu-search-modal.tsx";
@@ -420,8 +421,8 @@ const NavigateBar: React.FC<{
     return () => window.removeEventListener('sp-set-tenant', handleWorkspaceChange as EventListener);
   }, [getDashboardTab, navigate, persistTabs]);
 
-  // 个人流程/消息链接允许创建首个页签，但只接受当前已授权菜单的目标。
-  // 其他页面仍保留原有的已保存页签恢复策略；页签存储不授予访问权限。
+  // 已授权菜单允许从 URL 创建首个页签。页签缓存可能尚未写入或已被清理，
+  // 不能据此把合法业务地址重定向到首页；页签存储本身不授予访问权限。
   const initialSynced = useRef(false);
   useEffect(() => {
     if (initialSynced.current || !routesReady) return;
@@ -433,12 +434,13 @@ const NavigateBar: React.FC<{
       return;
     }
     const exists = tabs.some(t => t.key === current);
-    if (!exists && !isWorkflowEntryLocation(getCurrentLocation(), workflowTargets)) {
+    const menuEntry = leafNodes.some(route => route.path === current && !route.disabled);
+    if (!exists && !menuEntry && !isWorkflowEntryLocation(getCurrentLocation(), workflowTargets)) {
       const target = tabs[0]?.key || DASHBOARD_PATH;
       if (target && target !== current) navigate(target, {replace: true});
     }
     initialSynced.current = true;
-  }, [tabs, getCurrentPath, getCurrentLocation, workflowTargets, location.pathname, navigate, routesReady]);
+  }, [tabs, getCurrentPath, getCurrentLocation, workflowTargets, leafNodes, location.pathname, navigate, routesReady]);
 
   // 菜单变化时，用最新映射更新已有标签文字，并保持 dashboard 固定首位
   useEffect(() => {
@@ -552,13 +554,14 @@ const NavigateBar: React.FC<{
 
   // Menu open keys: fully user-controlled after initial sync from active route
   const [openMenuKeys, setOpenMenuKeys] = useState<string[]>([]);
-  const lastSyncedPath = useRef<string>('');
+  const lastSyncedMenu = useRef<string>('');
 
   // When active route changes (tab switch, navigation), sync open keys to match new route
   useEffect(() => {
-    if (activeKey !== lastSyncedPath.current) {
-      lastSyncedPath.current = activeKey;
-      const chainKeys = activeMenuChain.slice(0, -1).map(menu => getRouteKey(menu)).filter((k): k is string => !!k);
+    const chainKeys = activeMenuChain.slice(0, -1).map(menu => getRouteKey(menu)).filter((k): k is string => !!k);
+    const identity = menuSyncIdentity(activeKey, chainKeys);
+    if (identity !== lastSyncedMenu.current) {
+      lastSyncedMenu.current = identity;
       setOpenMenuKeys(chainKeys);
     }
   }, [activeKey, activeMenuChain]);

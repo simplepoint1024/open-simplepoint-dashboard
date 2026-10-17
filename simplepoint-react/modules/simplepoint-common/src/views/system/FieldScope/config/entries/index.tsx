@@ -87,6 +87,7 @@ export default function FieldEntries({value = EMPTY, onChange, disabled, canInte
   const fieldMetadata = useMemo(() => selectedPage.data?.models.flatMap((model, group) => Object.entries(model.properties).map(([field, metadata]) => ({
     pageCode: selected?.pageCode,
     resource: model.model, field, title: labels.field(field, metadata, selected?.pageCode),
+    readOnly: metadata.readOnly,
     group: selectedPage.data!.models.length > 1 ? labels.model(model.model, group) : '',
   }))) ?? [], [selectedPage.data, selected?.pageCode, labels]);
   // Editing access changes the queryable value, not the parsed/translated metadata index.
@@ -130,7 +131,7 @@ export default function FieldEntries({value = EMPTY, onChange, disabled, canInte
               {title: t('field-scopes.title.entry.access', '访问级别'), dataIndex: 'accessName', width: 400, render: (_, row) =>
                 <Radio.Group name={keyOf(row)} aria-label={row.title} value={configured.get(keyOf(row))?.access}
                   disabled={disabled || readOnlyEntries || readOnlyAccess || (!configured.has(keyOf(row)) && (!allowNew || value.length >= 500))}
-                  options={options}
+                  options={options.map(option => ({...option, disabled: row.readOnly && option.value === 'EDITABLE'}))}
                   onChange={event => setAccess(row, event.target.value)} />},
               {title: '', width: 50, render: (_, row) => <TableActions selectedKeys={[keyOf(row)]} selectedRows={[row]}
                 buttons={[{key: 'clearField', sort: 0, type: 'text', size: 'small', icon: 'UndoOutlined', iconOnly: true,

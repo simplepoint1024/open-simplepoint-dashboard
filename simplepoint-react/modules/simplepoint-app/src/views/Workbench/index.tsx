@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import DataTable from '@simplepoint/components/DataTable';
 import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
 import TableActions from '@simplepoint/components/Table/Actions';
@@ -9,9 +10,12 @@ import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
 import {usePageRetention} from '@simplepoint/shared/page/hooks';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {Alert, App, Drawer, Modal, Space, Tag, Typography} from 'antd';
+import {Alert, App, Drawer, Modal, Space, Spin, Tag, Typography} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useNavigate} from 'react-router';
+
+const PageFormDesigner = lazy(() => import('./forms/PageFormDesigner'));
 
 type ApplicationSummary = {
   id: string;
@@ -31,11 +35,12 @@ type ApplicationPage = {
   status: 'DRAFT' | 'PUBLISHED';
   resourceRegistered: boolean;
   runtimePath?: string;
+  formId?: string;
 };
 
 type ApplicationDetail = {application: ApplicationSummary; pages: ApplicationPage[]};
-type Permissions = {canCreateApplication: boolean; canAddPage: boolean};
-type CreateApplicationValues = {name: string; description?: string; mainPageName: string};
+type Permissions = {canCreateApplication: boolean; canAddPage: boolean; canDesignForm: boolean};
+type CreateApplicationValues = {name: string; description?: string; mainPageName: string; navigationGroup?: boolean};
 type CreatePageValues = {name: string; description?: string};
 
 const endpoint = '/app/applications';
@@ -46,6 +51,7 @@ export default function Workbench() {
 }
 
 function WorkbenchSession() {
+  const navigate = useNavigate();
   const {t, ensure, locale} = useI18n();
   const {message} = App.useApp();
   const operation = useOperationScope();
@@ -58,19 +64,20 @@ function WorkbenchSession() {
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [detailId, setDetailId] = useState<string>();
+  const [workspace, setWorkspace] = useState<{id: string; name: string; page: ApplicationPage}>();
   const [pageTarget, setPageTarget] = useState<{id: string; name: string}>();
   const [writeError, setWriteError] = useState('');
   const [dirty, setDirty] = useState(false);
   const [discard, setDiscard] = useState<'app' | 'page'>();
-  const locked = operation.busy || createOpen || addPageOpen || !!detailId;
+  const locked = operation.busy || createOpen || addPageOpen || !!detailId || !!workspace;
   usePageRetention(!locked, createOpen || addPageOpen || operation.busy);
 
   useEffect(() => { void ensure(['app-workbench']); }, [ensure, locale]);
 
   const permissionsQuery = useData(['app', 'permissions'], ({signal}) => get<Permissions>(endpoint + '/permissions', undefined, {signal}),
-    {retry: false, staleTime: 30_000});
+    {retry: false, staleTime: 30_000, enabled: !workspace});
   const permissions = permissionsQuery.data;
-  const table = useRemoteList<ApplicationSummary>(endpoint, operation.selected);
+  const table = useRemoteList<ApplicationSummary>(endpoint, operation.selected && !workspace);
   const error = !!table.error;
   const load = table.refresh;
   const detailQuery = useData(['app', 'detail', detailId], ({signal}) => get<ApplicationDetail>(endpoint + '/' + encodeURIComponent(detailId!), undefined, {signal}),
@@ -146,7 +153,7 @@ function WorkbenchSession() {
       key: 'status', width: 110, render: statusTag},
     {title: t('app.application.updatedAt', '更新时间'), dataIndex: 'updatedAt',
       key: 'updatedAt', width: 190,
-      render: (value: string) => value ? new Date(value).toLocaleString(locale) : '—'},
+      render: (value: string) => value ? formatDateTime(value, locale) : '—'},
     {title: t('app.application.actions', '操作'), key: 'actions', width: 100,
       render: (_, record) => <TableActions<ApplicationSummary>
         selectedKeys={[record.id]} selectedRows={[record]}
@@ -164,11 +171,36 @@ function WorkbenchSession() {
         ? t('app.page.main', '主页面') : kind === 'ATTACHED' ? t('app.page.attached', '附属页面') : '—'},
     {title: t('app.page.status', '状态'), dataIndex: 'status',
       key: 'status', width: 105, render: statusTag},
-    {title: t('app.page.entry', '打开'), key: 'entry', width: 120,
-      render: (_, record) => record.resourceRegistered && record.runtimePath
-        ? <a href={record.runtimePath}>{t('app.page.open', '打开页面')}</a>
-        : <Typography.Text type="secondary">{t('app.page.unavailable', '发布后可用')}</Typography.Text>},
-  ], [t]);
+    {title: t('app.application.actions', '操作'), key: 'actions', width: 215,
+      render: (_, record) => <TableActions<ApplicationPage> selectedKeys={[record.id]} selectedRows={[record]}
+        buttons={[
+          ...(permissions?.canDesignForm && !permissionsQuery.error ? [{key: 'design', sort: 0,
+            text: t('app.designer.openForms', '设计表单'), icon: 'EditOutlined', type: 'link' as const,
+            argumentMinSize: 1, argumentMaxSize: 1,
+            disabled: !operation.selected || saving || addPageOpen || !!detailQuery.error}] : []),
+          ...(record.resourceRegistered && record.runtimePath ? [{key: 'open', sort: 1,
+            text: t('app.page.open', '打开页面'), icon: 'ExportOutlined', type: 'link' as const,
+            argumentMinSize: 1, argumentMaxSize: 1,
+            disabled: !operation.selected || saving || addPageOpen || !!detailQuery.error}] : []),
+        ]}
+        onButtonEvents={{
+          design: () => {
+            if (!permissions?.canDesignForm || permissionsQuery.error || !detail || detailQuery.error
+              || !operation.isSelected() || savingRef.current || addPageOpen) return;
+            setWorkspace({id: detail.application.id, name: detail.application.name, page: record});
+            setDetailId(undefined);
+          },
+          open: () => {
+            if (!operation.isSelected() || savingRef.current || addPageOpen || detailQuery.error || !record.runtimePath) return;
+            setDetailId(undefined);
+            navigate(record.runtimePath);
+          },
+        }}/>
+    },
+  ], [t, navigate, operation.selected, operation.isSelected, saving, addPageOpen, permissions, permissionsQuery.error, detail, detailQuery.error]);
+
+  if (workspace) return <Suspense fallback={<Spin/>}><PageFormDesigner application={workspace} page={workspace.page}
+    onClose={() => {setDetailId(workspace.id); setWorkspace(undefined);}}/></Suspense>;
 
   return (
     <section className="app-workbench" style={{height: '100%', minHeight: 0}}>
@@ -205,6 +237,7 @@ function WorkbenchSession() {
           name: {type: 'string', pattern: '\\S', maxLength: 120, title: t('app.application.name', '应用名称')},
           description: {type: 'string', maxLength: 500, title: t('app.application.description', '说明')},
           mainPageName: {type: 'string', pattern: '\\S', maxLength: 120, title: t('app.application.mainPage', '主页面')},
+          navigationGroup: {type: 'boolean', default: false, title: t('app.application.navigationGroup', '独立菜单目录')},
         }}} uiSchema={{description: {'ui:widget': 'textarea'}}} formData={applicationValues}
           onChange={({formData}) => {if (!savingRef.current) {setApplicationValues(formData ?? {}); setDirty(true);}}}
           onSubmit={({formData}) => void createApplication(formData as CreateApplicationValues)}/>
@@ -236,9 +269,7 @@ function WorkbenchSession() {
               status: {type: 'string', enum: ['DRAFT', 'PUBLISHED']},
             }}}
             columns={pageColumns} dataSource={detail.pages} pagination={{pageSize: 20, disabled: saving || addPageOpen}}/>
-          <Typography.Paragraph type="secondary" style={{marginTop: 16}}>
-            {t('app.page.draftHint', '主页面与附属页面先保存为草稿；表单设计、发布和资源授权将在下一阶段接入。')}
-          </Typography.Paragraph>
+
         </>}
       </Drawer>
 

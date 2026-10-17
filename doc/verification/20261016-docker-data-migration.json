@@ -1,0 +1,221 @@
+{
+  "verifiedAt": "2026-10-16T10:15:52.616Z",
+  "containerCount": 21,
+  "runningCount": 19,
+  "imageCount": 92,
+  "volumeCount": 34,
+  "checksumComparison": {
+    "docker": "completed, no differences",
+    "containerd": "interrupted at user request; incomplete; no differences found before interruption",
+    "coldCopy": "both completed successfully"
+  },
+  "mounts": [
+    {
+      "target": "/var/lib/docker",
+      "source": "/dev/sda1[/docker]",
+      "fstype": "ext4",
+      "options": "rw,noatime"
+    },
+    {
+      "target": "/var/lib/containerd",
+      "source": "/dev/sda1[/containerd]",
+      "fstype": "ext4",
+      "options": "rw,noatime"
+    }
+  ],
+  "consul": [
+    {
+      "service": "authorization",
+      "status": "passing"
+    },
+    {
+      "service": "common",
+      "status": "passing"
+    },
+    {
+      "service": "auditing",
+      "status": "passing"
+    },
+    {
+      "service": "dna",
+      "status": "passing"
+    },
+    {
+      "service": "ai",
+      "status": "passing"
+    },
+    {
+      "service": "app",
+      "status": "passing"
+    },
+    {
+      "service": "workflow",
+      "status": "passing"
+    },
+    {
+      "service": "mcp-gateway",
+      "status": "passing"
+    },
+    {
+      "service": "host",
+      "status": "passing"
+    }
+  ],
+  "webHttpStatus": 200,
+  "autostartMountDependenciesVerified": true,
+  "userConfirmedExclusions": {
+    "e1494c879b80": "Docker stop propagated to coder-compose.service; its ExecStop=compose down removed the container before copying. User confirmed Coder is retired and should remain deleted. Coder autostart disabled; volume retained."
+  },
+  "containers": [
+    {
+      "name": "/simplepoint203-auditing-1",
+      "image": "sha256:f49d31aba04ff037323443e2b079872b699102f80d8503272802b7b4bce159e7",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-tool-image-verifier-1",
+      "image": "sha256:e65b6a26628fd544961dd91b836ec531a4ba209235ff71242a816f558c7d4000",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-app-1",
+      "image": "sha256:faadf6449edbf1557ad0d84c5709af79670706089d80a592afa6590c303f1d61",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-common-1",
+      "image": "sha256:574d531a297fffca540c62f6c1d7270238d65736f9f43ea4ef7f016bfc495732",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-rabbitmq-1",
+      "image": "sha256:7f79e00af50ce38297eb63a90bfee895d060b57520a22b30620085482a816318",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/azure-devops-mcp",
+      "image": "sha256:5e2f100453ee6c476236cf4cfb2833cf42436c9dbf021a055ef029e64d2aed75",
+      "status": "running"
+    },
+    {
+      "name": "/simplepoint203-edge-1",
+      "image": "sha256:73c75df4075c918f91017fdda46ad81e55e5af77ba3a64ca3d5014bd9244fe7f",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-mcp-gateway-1",
+      "image": "sha256:f6df760fc50372baed4da6bda1b66a81648ca90e8eb6fe6d37cd8b9b322a8e0f",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-tool-egress-proxy-1",
+      "image": "sha256:5852ddc8677ed3b1d5de3e8cc2167571715b813106d57c97f231669f13894621",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-tool-runtime-1",
+      "image": "sha256:99a39ae88fbf6d443f1e7caa4bdc891a155ffdc5bf1cf04bf8d42f5ad88f6e72",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-docker-socket-proxy-1",
+      "image": "sha256:1f3a6f303320723d199d2316a3e82b2e2685d86c275d5e3deeaf182573b47476",
+      "status": "running"
+    },
+    {
+      "name": "/simplepoint203-minio-init-1",
+      "image": "sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727",
+      "status": "exited"
+    },
+    {
+      "name": "/simplepoint203-runtime-pki-1",
+      "image": "sha256:7e91606caef0f88a645fb76ec48d6f5dc497fe531e9ec3261eb686b82854cd13",
+      "status": "exited"
+    },
+    {
+      "name": "/simplepoint203-minio-1",
+      "image": "sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-ai-1",
+      "image": "sha256:b7866363f34ebf975653351bdc91efcfd266f2c037b63097aff91dfc00ab8566",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-dna-1",
+      "image": "sha256:bc9959193565bf48e3610d687006c04009eaccf22befffabae47bcb69489f8cf",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-authorization-1",
+      "image": "sha256:ce5bd78df463efbc3d173432554b326481c1b8549d4bf8f2c1e4d974f522076a",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-workflow-1",
+      "image": "sha256:ca1074e8af7c8626c700089712b2f8274017511b8a814b397d1ea88898b29d85",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/simplepoint203-postgres-endpoint-1",
+      "image": "sha256:c5a091e1e735a90aa941a5828529dbe6c6157407a8047a9aa473faa133361b82",
+      "status": "running"
+    },
+    {
+      "name": "/simplepoint203-host-1",
+      "image": "sha256:2004ef46cb23868fcf1c948adb97b7b7d8296c459331e30fa58924acc8d2748d",
+      "status": "running",
+      "health": "healthy"
+    },
+    {
+      "name": "/permission-alpha-mysql",
+      "image": "sha256:24989179f58856db763f418010c1169fecc944e3ec1ea7e921572d83eb070f70",
+      "status": "running"
+    }
+  ],
+  "disk": "Filesystem        1B-blocks         Used    Available Use% Mounted on\n/dev/nvme0n1p3 241391857664 206109376512  22945918976  90% /\n/dev/sda1      983350071296 224426549248 708896555008  25% /data\n",
+  "spaceBeforeCleanup": {
+    "/": {
+      "totalBytes": 241391857664,
+      "usedBytes": 206109560832,
+      "availableBytes": 22945734656
+    },
+    "/data": {
+      "totalBytes": 983350071296,
+      "usedBytes": 224426422272,
+      "availableBytes": 708896681984
+    }
+  },
+  "spaceAfterCleanup": {
+    "/": {
+      "totalBytes": 241391857664,
+      "usedBytes": 92510265344,
+      "availableBytes": 136545030144
+    },
+    "/data": {
+      "totalBytes": 983350071296,
+      "usedBytes": 224426426368,
+      "availableBytes": 708896677888
+    }
+  },
+  "rootBytesReclaimed": 113599295488,
+  "originalDirectoriesRemoved": true,
+  "postgresqlDependencyRestored": true,
+  "coderAutostart": "disabled at user request",
+  "rebootTestPerformed": false
+}

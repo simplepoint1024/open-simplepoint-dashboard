@@ -190,8 +190,7 @@ class WorkflowVersionContractTest {
     var binding = new Binding("future-forms", "form1", 1, Map.of());
     var contract = new WorkflowFormContract(1, List.of(), binding, Map.of());
     service.updateDraft(id, new UpdateDraftCommand(1, "Bound form", null, null, initial.bpmnXml(), contract));
-    service.publish(id, new PublishDefinitionCommand(2, null));
-    assertThatThrownBy(() -> service.start(id, new StartProcessCommand(1, null, null, Map.of(), List.of())))
+    assertThatThrownBy(() -> service.publish(id, new PublishDefinitionCommand(2, null)))
         .isInstanceOf(WorkflowException.class).hasMessageContaining("尚未接入");
   }
 

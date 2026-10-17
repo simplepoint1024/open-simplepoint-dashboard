@@ -1,9 +1,12 @@
 package org.simplepoint.plugin.dna.runtime.service.schema;
 
+import java.math.BigDecimal;
 import java.sql.Types;
 import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Set;
+import org.apache.calcite.sql.SqlDialectFactory;
+import org.apache.calcite.sql.SqlDialects;
 import org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect;
 import org.simplepoint.plugin.dna.runtime.api.dialect.CapabilityConstraintOperator;
 import org.simplepoint.plugin.dna.runtime.api.dialect.CapabilityConstraintType;
@@ -14,6 +17,7 @@ import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldDefinition;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldType;
+import org.simplepoint.plugin.dna.runtime.api.schema.LogicalJsonValues;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalValueKind;
 import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalColumnSnapshot;
 import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalSchemaDefinition;
@@ -23,6 +27,9 @@ import org.springframework.stereotype.Component;
 /** MySQL 8 executable schema dialect backed by real database integration tests. */
 @Component
 public class MysqlRuntimeSchemaDialect extends AbstractRuntimeSchemaDialect {
+
+  private static final BigDecimal JSON_MIN_INTEGER = new BigDecimal("-9223372036854775808");
+  private static final BigDecimal JSON_MAX_INTEGER = new BigDecimal("18446744073709551615");
 
   private static final int MYSQL_MAX_ROW_BYTES = 65_535;
 
@@ -40,8 +47,35 @@ public class MysqlRuntimeSchemaDialect extends AbstractRuntimeSchemaDialect {
   }
 
   @Override
+  public void validateRecordJson(final String canonical) {
+    for (var number : LogicalJsonValues.numbers(canonical)) {
+      boolean nativeInteger = number.stripTrailingZeros().scale() <= 0
+          && number.compareTo(JSON_MIN_INTEGER) >= 0
+          && number.compareTo(JSON_MAX_INTEGER) <= 0;
+      double floating = number.doubleValue();
+      if (!nativeInteger && (!Double.isFinite(floating) || BigDecimal.valueOf(floating).compareTo(number) != 0)) {
+        throw new DnaRuntimeException(DnaRuntimeErrorCode.VALUE_CONVERSION_FAILED,
+            "JSON number cannot be represented exactly by the target database");
+      }
+    }
+  }
+
+  @Override
+  public SqlDialectFactory recordSqlDialectFactory() {
+    return metadata -> new MysqlRuntimeRecordSqlDialect(SqlDialects.createContext(metadata));
+  }
+
+  @Override
   public String dialectId() {
     return "mysql";
+  }
+
+  @Override
+  public RecordWriteFenceSql recordWriteFenceSql(final JdbcDatabaseDialect coreDialect,
+      final JdbcDatabaseDialect.SupportContext context, final PhysicalSchemaTarget model) {
+    String id = coreDialect.quoteIdentifier("id", context);
+    return RecordWriteFenceSql.compile(qualifiedTable(coreDialect, context, RecordWriteFenceSchema.target(model)),
+        field -> coreDialect.quoteIdentifier(field, context), " ON DUPLICATE KEY UPDATE " + id + " = " + id);
   }
 
   @Override

@@ -1,0 +1,83 @@
+{
+  "passed": true,
+  "version": "20261016-preview-float1",
+  "changes": [
+    "Device switch moved from modal title to floating upper-right control within preview form",
+    "Blue selected segment and animated thumb; visible while scrolling",
+    "PC/iPad/Phone inputs preserved"
+  ],
+  "validation": {
+    "typecheckModules": 8,
+    "designerBrowserRegression": "passed",
+    "uiAudit": "passed",
+    "productionAppBuild": "passed",
+    "live": {
+      "passed": true,
+      "at": "2026-10-16T11:28:34.513Z",
+      "views": [
+        {
+          "device": "PC",
+          "width": 1120,
+          "inHeader": false,
+          "insideForm": true,
+          "rightInset": 16,
+          "top": 180,
+          "headerBottom": 144,
+          "bottom": 216,
+          "contentTop": 224,
+          "background": "rgb(22, 119, 255)",
+          "color": "rgb(255, 255, 255)",
+          "primary": "rgb(22, 119, 255)"
+        },
+        {
+          "device": "iPad",
+          "width": 768,
+          "inHeader": false,
+          "insideForm": true,
+          "rightInset": 16,
+          "top": 180,
+          "headerBottom": 144,
+          "bottom": 216,
+          "contentTop": 224,
+          "background": "rgb(22, 119, 255)",
+          "color": "rgb(255, 255, 255)",
+          "primary": "rgb(22, 119, 255)"
+        },
+        {
+          "device": "Phone",
+          "width": 390,
+          "inHeader": false,
+          "insideForm": true,
+          "rightInset": 16,
+          "top": 180,
+          "headerBottom": 144,
+          "bottom": 216,
+          "contentTop": 224,
+          "background": "rgb(22, 119, 255)",
+          "color": "rgb(255, 255, 255)",
+          "primary": "rgb(22, 119, 255)"
+        }
+      ],
+      "pinnedOnScroll": true,
+      "businessMutations": 0
+    }
+  },
+  "deployment": {
+    "passed": true,
+    "at": "2026-10-16T11:27:52.480Z",
+    "version": "20261016-preview-float1",
+    "sourceDigest": "53c5d4aaf3e7803362c428cde55496cedc0498c6ebf832ae16d6e51811412c10",
+    "services": [
+      {
+        "service": "app",
+        "version": "20261016-preview-float1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 261,
+        "jarHashesMatch": true
+      }
+    ],
+    "allNineServiceHealth": "passing",
+    "rabbitmq": "healthy"
+  }
+}

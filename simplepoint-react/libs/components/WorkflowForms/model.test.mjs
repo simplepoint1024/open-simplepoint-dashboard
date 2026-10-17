@@ -12,8 +12,9 @@ test('runtime forms filter stage-owned fields and use shared directory widgets',
   const schema = runtimeSchema(variables, 'start');
   assert.deepEqual(schema.required, ['approver']);
   assert.equal(schema.properties.approved, undefined);
-  assert.equal(schema.properties.approver['x-ui'].widget, 'TenantDirectory');
-  assert.deepEqual(variableSchema(variables[2])['x-ui'].options, {kind: 'roles', multiple: true});
+  assert.equal(schema.properties.approver['x-ui'].widget, 'UserSelect');
+  assert.deepEqual(variableSchema(variables[2])['x-ui'].options, {multiple: true});
+  assert.equal(variableSchema(variables[2])['x-ui'].widget, 'RoleSelect');
 });
 
 test('JSON mode retains scalar types and refuses non-objects or unbounded input', () => {
@@ -43,4 +44,15 @@ test('optional fields still validate explicitly provided values; omission is not
   assert.equal(variablesIssue(optional, {}, 'start'), undefined);
   assert.equal(variablesIssue(optional, {flag: false}, 'start'), undefined);
   assert.ok(variablesIssue(optional, {flag: ''}, 'start'));
+});
+
+
+test('exact decimal inputs never coerce large integers or currency into JavaScript Number', () => {
+  const decimal = {name: 'amount', label: 'Amount', type: 'decimal', scope: 'both', required: true};
+  const exact = '9007199254740993.12345678901234567890';
+  assert.equal(variableSchema(decimal).type, 'string');
+  assert.equal(variablesIssue([decimal], {amount: exact}, 'start'), undefined);
+  for (const invalid of [1.25, 1, '1e2', '01', '-', ' 1', '9'.repeat(39), '0.' + '0'.repeat(38) + '1']) {
+    assert.ok(variablesIssue([decimal], {amount: invalid}, 'start'));
+  }
 });

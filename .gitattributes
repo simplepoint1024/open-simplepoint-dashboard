@@ -1,0 +1,2 @@
+# Preserve ANTLR's reproducible formatting; authored sources retain whitespace checks.
+simplepoint-react/libs/calculation/src/generated/*.ts linguist-generated=true whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab

@@ -4,7 +4,7 @@ import type {ExpressionVariable} from '../ExpressionEditor/model';
 export type WorkflowVariable = {
   name: string;
   label: string;
-  type: 'string' | 'number' | 'boolean' | 'date' | 'date-time' | 'user' | 'users' | 'role' | 'roles';
+  type: 'string' | 'number' | 'decimal' | 'boolean' | 'date' | 'date-time' | 'user' | 'users' | 'role' | 'roles';
   scope: 'start' | 'task' | 'both';
   required: boolean;
   defaultValue?: unknown;
@@ -22,7 +22,8 @@ export const emptyFormContract = (): WorkflowFormContract => ({schemaVersion: 1,
 const reservedVariableNames = new Set(['initiator', 'workflowDefinitionId', 'workflowVersion', 'workflowTitle',
   'execution', 'task', 'processEngine', 'processEngineConfiguration', 'delegateTask', 'class', 'Runtime',
   'ProcessBuilder', 'new', 'true', 'false', 'null', 'and', 'or', 'not', 'eq', 'ne', 'gt', 'lt', 'ge', 'le',
-  'empty', 'div', 'mod', 'instanceof', '__proto__', 'constructor', 'prototype'].map(value => value.toLowerCase()));
+  'empty', 'div', 'mod', 'instanceof', '__proto__', 'constructor', 'prototype',
+  'loopCounter', 'nrOfInstances', 'nrOfActiveInstances', 'nrOfCompletedInstances'].map(value => value.toLowerCase()));
 
 export function reservedVariable(name: string): boolean {return reservedVariableNames.has(name.toLowerCase());}
 
@@ -31,11 +32,15 @@ export type WorkflowRuntimeForm = {
   formContract: WorkflowFormContract;
   binding?: WorkflowFormBinding;
   values: Record<string, unknown>;
+  definitionId?: string;
+  processInstanceId?: string;
+  businessKey?: string;
+  protectedVariables?: string[];
 };
 
 export function expressionVariables(contract: WorkflowFormContract): ExpressionVariable[] {
   return contract.variables.map(variable => ({name: variable.name, label: variable.label, kind: variable.type,
-    type: variable.type === 'number' || variable.type === 'boolean' ? variable.type
+    type: variable.type === 'decimal' ? 'number' : variable.type === 'number' || variable.type === 'boolean' ? variable.type
       : variable.type === 'users' || variable.type === 'roles' ? 'array' : 'string'}));
 }
 
@@ -45,6 +50,7 @@ export type WorkflowFormBinding = {
   formId: string;
   version: number;
   variableMappings: Record<string, string>;
+  sceneId?: string;
 };
 
 export type WorkflowFormAdapter = {
@@ -52,9 +58,18 @@ export type WorkflowFormAdapter = {
   /** Adapters are registered explicitly by the application; bindings never trigger arbitrary module loading. */
   renderBindingEditor?: (context: {
     elementId: string;
+    variables: readonly WorkflowVariable[];
+    startBinding?: WorkflowFormBinding;
     binding?: WorkflowFormBinding;
     readOnly: boolean;
     onChange: (binding?: WorkflowFormBinding) => void;
+  }) => ReactNode;
+  /** Business-owned starts enter the owning application instead of fabricating workflow business keys. */
+  renderStartEntry?: (context: {
+    definitionId: string;
+    form: WorkflowRuntimeForm;
+    previousInstanceId?: string;
+    onClose: () => void;
   }) => ReactNode;
   renderStartForm?: (context: {
     binding: WorkflowFormBinding;

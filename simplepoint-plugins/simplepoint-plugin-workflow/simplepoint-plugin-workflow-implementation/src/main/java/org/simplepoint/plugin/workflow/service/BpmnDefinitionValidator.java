@@ -10,6 +10,7 @@ import org.flowable.common.engine.impl.de.odysseus.el.util.SimpleContext;
 import org.flowable.common.engine.impl.el.FlowableExpressionFactory;
 import org.simplepoint.plugin.workflow.api.WorkflowException;
 import org.simplepoint.plugin.workflow.api.WorkflowException.Code;
+import org.simplepoint.plugin.workflow.api.model.WorkflowFormContract;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -25,29 +26,36 @@ public class BpmnDefinitionValidator {
   static final String FLOWABLE_NAMESPACE = "http://flowable.org/bpmn";
   private static final int MAX_XML_LENGTH = 2_000_000;
   private static final Pattern KEY = Pattern.compile("[A-Za-z][A-Za-z0-9_-]{2,79}");
-  private static final Pattern UNSAFE_EXPRESSION = Pattern.compile(
-      "(?i)(?:@|\\bnew\\s|\\bclass\\b|\\bT\\s*\\(|\\bRuntime\\b|\\bProcessBuilder\\b|"
-          + "\\bgetClass\\b|\\bforName\\b|[A-Za-z_$][A-Za-z0-9_$]*\\s*\\(|[\\]\\)]\\s*\\("
-          + "|\\b(?:execution|task|processEngine|processEngineConfiguration|delegateTask)\\b)"
-  );
-  private static final Pattern QUOTED_TEXT = Pattern.compile("\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*'");
-  private static final Pattern REFLECTIVE_INDEX = Pattern.compile("(?i)\\[\\s*['\"](?:class|getClass|forName)['\"]\\s*\\]");
-  private static final Pattern REFLECTIVE_LITERAL = Pattern.compile("(?i)['\"](?:class|getClass|forName)['\"]");
-  private static final Pattern NON_TEMPORAL_LITERAL = Pattern.compile(
-      "\\$\\{\\s*(?:true|false|-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)\\s*\\}"
-  );
-  private static final Set<String> PROHIBITED_ELEMENTS = Set.of(
-      "scriptTask", "serviceTask", "businessRuleTask", "sendTask", "receiveTask",
-      "callActivity", "manualTask"
-  );
-  private static final List<String> PROHIBITED_FLOWABLE_ATTRIBUTES = List.of(
-      "class", "delegateExpression", "expression", "type", "resultVariable"
-  );
-  private final FlowableExpressionFactory expressionFactory = new FlowableExpressionFactory();
-  private final WorkflowPriorityLiteralPreview priorityPreview = new WorkflowPriorityLiteralPreview();
+  private static final Pattern UNSAFE_EXPRESSION =
+      Pattern.compile(
+          "(?i)(?:@|\\bnew\\s|\\bclass\\b|\\bT\\s*\\(|\\bRuntime\\b|\\bProcessBuilder\\b|"
+              + "\\bgetClass\\b|\\bforName\\b|[A-Za-z_$][A-Za-z0-9_$]*\\s*\\(|[\\]\\)]\\s*\\("
+              + "|\\b(?:execution|task|processEngine|processEngineConfiguration|delegateTask)\\b)");
+  private static final Pattern QUOTED_TEXT =
+      Pattern.compile("\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*'");
+  private static final Pattern REFLECTIVE_INDEX =
+      Pattern.compile("(?i)\\[\\s*['\"](?:class|getClass|forName)['\"]\\s*\\]");
+  private static final Pattern REFLECTIVE_LITERAL =
+      Pattern.compile("(?i)['\"](?:class|getClass|forName)['\"]");
+  private static final Pattern NON_TEMPORAL_LITERAL =
+      Pattern.compile(
+          "\\$\\{\\s*(?:true|false|-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)\\s*\\}");
+  private static final Set<String> PROHIBITED_ELEMENTS =
+      Set.copyOf(BpmnModelingContract.INSTANCE.prohibitedElements());
+  private static final List<String> PROHIBITED_FLOWABLE_ATTRIBUTES =
+      List.of("class", "delegateExpression", "expression", "type", "resultVariable");
+  private final FlowableExpressionFactory expressionFactory = new ExactWorkflowExpressionFactory();
+  private final WorkflowPriorityLiteralPreview priorityPreview =
+      new WorkflowPriorityLiteralPreview();
 
   /** Validates XML and returns the stable process identity found in it. */
   public ValidatedProcess validate(final String xml, final String expectedKey) {
+    return validate(xml, expectedKey, null);
+  }
+
+  /** The saved form contract constrains collection types and iteration-local name collisions. */
+  public ValidatedProcess validate(
+      final String xml, final String expectedKey, final WorkflowFormContract contract) {
     if (xml == null || xml.isBlank()) {
       throw invalid("BPMN XML 不能为空");
     }
@@ -56,7 +64,7 @@ public class BpmnDefinitionValidator {
     }
     Document document = parse(xml);
     NodeList processes = document.getElementsByTagNameNS(BPMN_NAMESPACE, "process");
-    if (processes.getLength() != 1) {
+    if (processes.getLength() != BpmnModelingContract.INSTANCE.maxProcesses()) {
       throw invalid("一个流程定义必须且只能包含一个 BPMN process");
     }
     Element process = (Element) processes.item(0);
@@ -71,7 +79,11 @@ public class BpmnDefinitionValidator {
       throw invalid("流程必须设置为可执行");
     }
     rejectFlowableExtensionElements(document);
+    BpmnDiagramPolicy.validate(document);
+    BpmnStandardLoopPolicy.validate(document, this::validateCondition);
     inspectElements(document);
+    BpmnMultiInstancePolicy.validate(document, this::validateCondition, contract);
+    BpmnExecutionSurfacePolicy.validate(document);
     requireStartAndEnd(document);
     Set<String> taskIds = new java.util.LinkedHashSet<>();
     NodeList tasks = document.getElementsByTagNameNS(BPMN_NAMESPACE, "userTask");
@@ -84,7 +96,7 @@ public class BpmnDefinitionValidator {
     return new ValidatedProcess(key, normalized(process.getAttribute("name")), Set.copyOf(taskIds));
   }
 
-  private Document parse(final String xml) {
+  static Document parse(final String xml) {
     try {
       DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
       factory.setNamespaceAware(true);
@@ -136,9 +148,10 @@ public class BpmnDefinitionValidator {
   }
 
   private void validateUserTask(final Element element) {
-    boolean assigned = hasText(element.getAttributeNS(FLOWABLE_NAMESPACE, "assignee"))
-        || hasText(element.getAttributeNS(FLOWABLE_NAMESPACE, "candidateUsers"))
-        || hasText(element.getAttributeNS(FLOWABLE_NAMESPACE, "candidateGroups"));
+    boolean assigned =
+        hasText(element.getAttributeNS(FLOWABLE_NAMESPACE, "assignee"))
+            || hasText(element.getAttributeNS(FLOWABLE_NAMESPACE, "candidateUsers"))
+            || hasText(element.getAttributeNS(FLOWABLE_NAMESPACE, "candidateGroups"));
     if (!assigned) {
       throw invalid("用户任务 " + element.getAttribute("id") + " 必须设置办理人或候选范围");
     }
@@ -147,7 +160,8 @@ public class BpmnDefinitionValidator {
     validateAssignment(element.getAttributeNS(FLOWABLE_NAMESPACE, "candidateGroups"), true, true);
     String dueDate = element.getAttributeNS(FLOWABLE_NAMESPACE, "dueDate");
     validateCondition(dueDate);
-    // Only an exact numeric/boolean scalar is rejected here; variable and temporal expressions are never evaluated.
+    // Only an exact numeric/boolean scalar is rejected here; variable and temporal expressions are
+    // never evaluated.
     if (NON_TEMPORAL_LITERAL.matcher(dueDate.trim()).matches()) {
       throw invalid("到期时间常量必须是日期或时长文本，不能使用布尔值或数值");
     }
@@ -177,9 +191,12 @@ public class BpmnDefinitionValidator {
       String identifier = id.trim();
       // Role.authority is not an ASCII-only ID in the platform's RBAC contract.
       // Fixed authorities are resolved against this tenant again before a runtime commit.
-      boolean valid = roles ? !identifier.isBlank() && identifier.length() <= 100
-          && identifier.codePoints().noneMatch(Character::isISOControl)
-          : identifier.matches("[A-Za-z0-9_][A-Za-z0-9_.:@-]{0,99}");
+      boolean valid =
+          roles
+              ? !identifier.isBlank()
+                  && identifier.length() <= 100
+                  && identifier.codePoints().noneMatch(Character::isISOControl)
+              : identifier.matches("[A-Za-z0-9_][A-Za-z0-9_.:@-]{0,99}");
       if (!valid) {
         throw invalid("办理人或候选范围包含无效标识");
       }
@@ -194,18 +211,28 @@ public class BpmnDefinitionValidator {
     if (value.length() > 500) {
       throw invalid("条件或人员表达式包含不允许的调用");
     }
-    String code = QUOTED_TEXT.matcher(value).replaceAll(match -> {
-      int before = match.start() - 1;
-      int after = match.end();
-      while (before >= 0 && Character.isWhitespace(value.charAt(before))) {
-        before--;
-      }
-      while (after < value.length() && Character.isWhitespace(value.charAt(after))) {
-        after++;
-      }
-      boolean indexed = before >= 0 && value.charAt(before) == '[' && after < value.length() && value.charAt(after) == ']';
-      return indexed && REFLECTIVE_LITERAL.matcher(match.group()).matches() ? match.group() : " ";
-    });
+    String code =
+        QUOTED_TEXT
+            .matcher(value)
+            .replaceAll(
+                match -> {
+                  int before = match.start() - 1;
+                  int after = match.end();
+                  while (before >= 0 && Character.isWhitespace(value.charAt(before))) {
+                    before--;
+                  }
+                  while (after < value.length() && Character.isWhitespace(value.charAt(after))) {
+                    after++;
+                  }
+                  boolean indexed =
+                      before >= 0
+                          && value.charAt(before) == '['
+                          && after < value.length()
+                          && value.charAt(after) == ']';
+                  return indexed && REFLECTIVE_LITERAL.matcher(match.group()).matches()
+                      ? match.group()
+                      : " ";
+                });
     if (UNSAFE_EXPRESSION.matcher(code).find() || REFLECTIVE_INDEX.matcher(code).find()) {
       throw invalid("条件或人员表达式包含不允许的调用");
     }
@@ -250,6 +277,5 @@ public class BpmnDefinitionValidator {
   }
 
   /** Parsed process attributes needed by publication. */
-  public record ValidatedProcess(String key, String name, Set<String> userTaskIds) {
-  }
+  public record ValidatedProcess(String key, String name, Set<String> userTaskIds) {}
 }

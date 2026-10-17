@@ -376,6 +376,48 @@ class FieldScopeCatalogDatabaseTest {
     verify(tenantCatalog, never()).activeResources("tenant");
   }
 
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+  void generatedPagesExposeTenantScopedFieldsAndKeepTreePagination(boolean custom) throws Exception {
+    var tenantCatalog = mock(TenantResourceCatalog.class);
+    when(tenantCatalog.mode("tenant")).thenReturn(custom ? TenantResourceMode.CUSTOM : TenantResourceMode.PLATFORM);
+    var dependency = FieldScopeCatalog.class.getDeclaredField("tenantResources");
+    dependency.setAccessible(true); dependency.set(catalog, tenantCatalog);
+    resource("static", ResourceType.PAGE, null, metadata(true, true));
+    if (custom) tenantResource("tenant", "static", "static", null, ResourceType.PAGE);
+    var group = tenantResource("tenant", "office", "office", null, ResourceType.GROUP);
+    group.setManagedOwner("app");
+    for (String name : List.of("daily", "expense")) {
+      var row = tenantResource("tenant", name, name, "office", ResourceType.PAGE);
+      row.setManagedOwner("app"); row.setPermissionMetadata(modelMetadata("dna.runtime.record." + name, "created_by", "amount"));
+      var foreign = tenantResource("other", name, name, null, ResourceType.PAGE);
+      foreign.setManagedOwner("app"); foreign.setPermissionMetadata("invalid foreign metadata");
+    }
+    var hidden = tenantResource("tenant", "hidden", "hidden", "office", ResourceType.PAGE);
+    hidden.setManagedOwner("app"); hidden.setPermissionMetadata("invalid ungranted metadata");
+    var context = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    context.getResources().addAll(java.util.Set.of("static", "daily", "expense"));
+    resetEvidence();
+    assertThat(catalog.pages()).containsOnlyKeys("static", "daily", "expense");
+    assertThat(catalog.pages("daily").get("daily").models()).extracting(PermissionModelDescriptor::model)
+        .containsExactly("dna.runtime.record.daily");
+    catalog.requireAuthorizedFields(Map.of("dna.runtime.record.daily", java.util.Set.of("amount")));
+    assertThat(catalog.resolveLegacyFields(Map.of("dna.runtime.record.daily", java.util.Set.of("amount"))))
+        .containsEntry("dna.runtime.record.daily", "dna.runtime.record.daily");
+    var ids = new java.util.HashSet<String>();
+    for (int page = 0; page < 2; page++) {
+      var root = catalog.nodes(null, PageRequest.of(page, 1));
+      assertThat(root.getTotalElements()).isEqualTo(2);
+      assertThat(root.getContent()).hasSize(1); ids.add(root.getContent().getFirst().id());
+    }
+    assertThat(ids).containsExactlyInAnyOrder("static", "office");
+    assertThat(catalog.nodes("office", PageRequest.of(0, 10)).getContent()).extracting(node -> node.pageCode())
+        .containsExactlyInAnyOrder("daily", "expense");
+    assertThat(catalog.nodes(null, PageRequest.of(2, 1)).getContent()).isEmpty();
+    assertThat(new PermissionExpressionService(session).catalog("daily")).containsOnlyKeys("daily");
+    assertBoundedCatalogSql();
+  }
+
   @Test void blankCallerIdentityCannotLoadEvenExplicitlyGrantedMetadata() {
     resource("page", ResourceType.PAGE, null, metadata(true, true)); resetEvidence();
     var context = new AuthorizationContext(); context.setUserId(" "); context.setResources(java.util.Set.of("page"));

@@ -1,3 +1,4 @@
+import {rememberWorkspace, workspaceUserId} from '@simplepoint/shared/preferences/workspace';
 import { getStoredTenantId, setStoredTenantId } from '@simplepoint/shared/api/contextId';
 
 export type TenantId = string;
@@ -10,6 +11,7 @@ export function getTenantId(): TenantId | undefined {
 
 export function setTenantId(tenantId: TenantId | undefined) {
   setStoredTenantId(tenantId);
+  try {rememberWorkspace(workspaceUserId(JSON.parse(sessionStorage.getItem('sp.userinfo') ?? 'null')), tenantId);} catch {}
 
   try {
     window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: tenantId }));

@@ -1,5 +1,6 @@
 dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("com.h2database:h2")
     implementation(project(":simplepoint-plugin:simplepoint-plugin-api"))
     implementation(project(":simplepoint-remoting:simplepoint-remoting-core"))
     implementation(project(":simplepoint-security:simplepoint-security-core"))

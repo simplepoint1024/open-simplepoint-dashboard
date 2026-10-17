@@ -150,5 +150,16 @@
   "table.actionUnavailable": "This action is unavailable. Refresh the page and try again.",
   "table.selectionExpired": "The selected records are no longer available. Select them again.",
   "table.selectAtLeast": "Select at least {count} records",
-  "table.selectAtMost": "Select at most {count} records"
+  "table.selectAtMost": "Select at most {count} records",
+  "table.more": "More actions",
+  "table.help": "Help",
+  "table.view.table": "Switch to list",
+  "table.view.cards": "Switch to cards",
+  "table.view.rows": "Card rows per page",
+  "table.view.rowCount": "{count} rows/page",
+  "table.view.selectRecord": "Select record",
+  "table.preferences.retry": "Table settings are not synchronized. Click to retry.",
+  "table.resizeConfigurationWidth": "Resize configuration panel width",
+  "table.collapseConfiguration": "Collapse panel",
+  "table.expandConfiguration": "Expand panel"
 }

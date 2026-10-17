@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import {ReloadOutlined} from '@simplepoint/shared/types/icon';
 import {get, useData} from '@simplepoint/shared/api/methods';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
@@ -23,7 +24,7 @@ type McpGatewayStatusCardProps = {
 const formatCheckedAt = (value?: string) => {
   if (!value) return '-';
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? value : formatDateTime(date);
 };
 
 const McpGatewayStatusCard = ({statusUrl}: McpGatewayStatusCardProps) => {

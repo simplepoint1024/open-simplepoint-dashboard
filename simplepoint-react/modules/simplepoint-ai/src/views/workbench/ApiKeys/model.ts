@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 /** Only actual one-time output may enter the reveal dialog; never copy a masked placeholder. */
 export function issuedKeyOf(result: unknown): string | undefined {
   if (!result || typeof result !== 'object') return undefined;
@@ -8,7 +9,7 @@ export function issuedKeyOf(result: unknown): string | undefined {
 export function apiKeyDate(value: unknown): string {
   if (typeof value !== 'string' || !value.trim() || value === '***') return '—';
   const parsed = new Date(value);
-  return Number.isFinite(parsed.getTime()) ? parsed.toLocaleString() : '—';
+  return Number.isFinite(parsed.getTime()) ? formatDateTime(value) : '—';
 }
 
 /** Only schema-writable policy inputs, never list projections, counters or secrets. */

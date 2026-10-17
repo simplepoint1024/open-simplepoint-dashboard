@@ -12,9 +12,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import org.simplepoint.core.query.QueryCapabilities;
+import org.simplepoint.core.query.DefaultTableOrder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
@@ -42,26 +42,28 @@ public final class ProjectionPages {
       Function<R, T> project) {
     Objects.requireNonNull(boundary, "A domain authorization boundary is required");
     Pageable page = requested;
-    if (requested.isPaged()
-        && requested.getSort().isUnsorted()
-        && QueryCapabilities.readable(outputType, defaultOrder)) {
-      page =
-          PageRequest.of(
-              requested.getPageNumber(),
-              requested.getPageSize(),
-              Sort.by(Sort.Direction.DESC, defaultOrder));
-    }
+    var defaultSort = DefaultTableOrder.forModel(rowType, name ->
+        DefaultTableOrder.exists(rowType, name) && QueryCapabilities.readable(outputType, name));
+    if (defaultSort.isUnsorted() && DefaultTableOrder.exists(rowType, defaultOrder)
+        && QueryCapabilities.readable(outputType, defaultOrder)) defaultSort = Sort.by(Sort.Direction.DESC, defaultOrder);
     var compiled = ProjectionQuery.prepareIgnoringCase(outputType, filters, page, ignoreCase);
     var cb = em.getCriteriaBuilder();
     var query = cb.createQuery(rowType);
     var root = query.from(rowType);
+    var orders = compiled.orders(cb, fields(outputType, root), root.get("id"));
+    if (requested.getSort().isUnsorted() && defaultSort.isSorted()) {
+      var order = defaultSort.iterator().next();
+      var value = root.get(order.getProperty());
+      orders.addFirst(order.isAscending() ? cb.asc(value) : cb.desc(value));
+      orders.addFirst(cb.asc(cb.selectCase().when(cb.isNull(value), 1).otherwise(0)));
+    }
     query
         .select(root)
         .where(
             cb.and(
                 Objects.requireNonNull(boundary.apply(cb, query, root)),
                 compiled.predicate(cb, fields(outputType, root))))
-        .orderBy(compiled.orders(cb, fields(outputType, root), root.get("id")));
+        .orderBy(orders);
     var rows =
         em.createQuery(query)
             .setFirstResult((int) page.getOffset())

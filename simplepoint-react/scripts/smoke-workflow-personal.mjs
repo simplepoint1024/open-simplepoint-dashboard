@@ -48,7 +48,7 @@ export async function smokeWorkflowPersonal({clickText, clickReady, fill, poll, 
   const beforeApprove = fixture.writes.length;
   await clickText(`${task} button`, '通过');
   await poll(() => fixture.writes.length === beforeApprove + 1 && visible(task).then(v => !v), 'approve closes current task');
-  assert.deepEqual(fixture.writes.at(-1).data, {variables: {approved: false}, comment: '材料完整，同意'});
+  assert.deepEqual(fixture.writes.at(-1).data, {variables: {approved: false}, comment: '材料完整，同意', idempotencyKey: 'complete:task1'});
   await outcome('task1', '通过');
   await clickText(`${row('task1')} button`, '进度');
   await poll(() => evaluate(`document.querySelector('${progress} .workflow-node-history')?.textContent.includes('材料完整，同意')`), 'processed node shows actual comment');
@@ -72,9 +72,10 @@ export async function smokeWorkflowPersonal({clickText, clickReady, fill, poll, 
   await evaluate(`(()=>{const button=document.querySelector('${reject} form.rjsf button[type="submit"]');button.click();button.click();})()`);
   await poll(() => fixture.writes.length === beforeReject + 1, 'same-frame rejection single flight');
   await poll(() => evaluate(`document.querySelector('${reject} .ant-alert-error')?.textContent.includes('驳回失败')`), 'failed rejection keeps target and reason');
-  await clickText(`${reject} button`, '确认驳回');
+  assert.equal(await evaluate(`document.querySelector('${reject} textarea#root_reason').disabled`), true);
+  await clickText(`${reject} button`, '重试');
   await poll(async () => !await visible(reject) && !await visible(task), 'rejection succeeds');
-  assert.deepEqual(fixture.writes.at(-1).data, {reason: '请补充附件'});
+  assert.deepEqual(fixture.writes.at(-1).data, {reason: '请补充附件', idempotencyKey: 'reject:taskreject'});
   await outcome('taskreject', '驳回');
   await clickText(`${page} .ant-segmented-item`, '待办');
   await clickText(`${row('taskclaim')} button`, '认领');
@@ -89,9 +90,16 @@ export async function smokeWorkflowPersonal({clickText, clickReady, fill, poll, 
     await clickText(`${row(id)} button`, label);
     await poll(() => visible(`${operation} textarea#root_reason`), label + ' uses bounded reason form');
     await fill(`${operation} textarea#root_reason`, reason);
+    fixture.personal.fail(id === 'instancewithdraw' ? 'withdraw' : 'cancel');
+    const before = fixture.writes.length;
     await clickText(`${operation} button`, '确认操作');
+    await poll(() => evaluate(`document.querySelector('${operation} textarea#root_reason')?.disabled && !!document.querySelector('${operation} .ant-alert-error')`), 'uncertain operation freezes its original reason');
+    const original = structuredClone(fixture.writes.at(-1).data);
+    await clickText(`${operation} button`, '重试');
     await poll(async () => !await visible(operation), label + ' finished');
-    assert.deepEqual(fixture.writes.at(-1).data, {reason});
+    assert.equal(fixture.writes.length, before + 2);
+    assert.deepEqual(fixture.writes.at(-1).data, original);
+    assert.deepEqual(original, {reason, idempotencyKey: `${id === 'instancewithdraw' ? 'withdraw' : 'cancel'}:${id}`});
   }
   await clickText(`${row('instancereject')} button`, '修改后重新发起');
   const start = '.workflow-process-start .ant-modal';

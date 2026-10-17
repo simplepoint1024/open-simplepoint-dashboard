@@ -20,7 +20,7 @@ const App = () => {
     },
     executedAt: {
       width: 180,
-      render: formatDateTime,
+      render: (value?: string) => formatDateTime(value),
     },
     queryText: {
       width: 320,

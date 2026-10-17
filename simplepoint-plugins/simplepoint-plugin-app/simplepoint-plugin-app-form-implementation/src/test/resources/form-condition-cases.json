@@ -1,0 +1,802 @@
+[
+  {
+    "name": "decimal exact beyond JS number",
+    "condition": {
+      "operator": "GREATER_THAN",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "DECIMAL",
+          "value": "9007199254740993.000000000000000000"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "9007199254740993.000000000000000001"
+    },
+    "expected": true
+  },
+  {
+    "name": "integer equality uses magnitude",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "INTEGER",
+          "value": "9223372036854775807"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "9223372036854775807"
+    },
+    "expected": true
+  },
+  {
+    "name": "numeric invalid actual has no lexical fallback",
+    "condition": {
+      "operator": "GREATER_THAN",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "DECIMAL",
+          "value": "10"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "not-a-number"
+    },
+    "expected": false
+  },
+  {
+    "name": "missing number cannot satisfy ordering",
+    "condition": {
+      "operator": "LESS_THAN_OR_EQUAL",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "DECIMAL",
+          "value": "10"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": null
+    },
+    "expected": false
+  },
+  {
+    "name": "negative decimal exact",
+    "condition": {
+      "operator": "LESS_THAN",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "DECIMAL",
+          "value": "-0.000000000000000001"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "-0.000000000000000002"
+    },
+    "expected": true
+  },
+  {
+    "name": "boolean false is a value",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "BOOLEAN",
+          "value": "false"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": false
+    },
+    "expected": true
+  },
+  {
+    "name": "boolean strings are not booleans",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "BOOLEAN",
+          "value": "false"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "false"
+    },
+    "expected": false
+  },
+  {
+    "name": "text digits preserve spelling",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "STRING",
+          "value": "1"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "01"
+    },
+    "expected": false
+  },
+  {
+    "name": "text does not coerce numbers",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "STRING",
+          "value": "1"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": 1
+    },
+    "expected": false
+  },
+  {
+    "name": "unicode text",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "STRING",
+          "value": "東京都・客户"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "東京都・客户"
+    },
+    "expected": true
+  },
+  {
+    "name": "time seconds optional",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "TIME",
+          "value": "12:00:00.000"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "12:00"
+    },
+    "expected": true
+  },
+  {
+    "name": "time nanos exact",
+    "condition": {
+      "operator": "GREATER_THAN",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "TIME",
+          "value": "12:00:00.000000001"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "12:00:00.000000002"
+    },
+    "expected": true
+  },
+  {
+    "name": "datetime equivalent timezone",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "DATETIME",
+          "value": "2026-10-13T12:00:00Z"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "2026-10-13T20:00:00+08:00"
+    },
+    "expected": true
+  },
+  {
+    "name": "datetime offset order crosses date",
+    "condition": {
+      "operator": "LESS_THAN",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "DATETIME",
+          "value": "2026-10-13T17:00:00Z"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "2026-10-14T00:30:00+09:00"
+    },
+    "expected": true
+  },
+  {
+    "name": "datetime nanos before epoch",
+    "condition": {
+      "operator": "GREATER_THAN",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "DATETIME",
+          "value": "1969-12-31T23:59:59.000000001Z"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "1969-12-31T23:59:59.000000002Z"
+    },
+    "expected": true
+  },
+  {
+    "name": "invalid calendar date",
+    "condition": {
+      "operator": "LESS_THAN",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "DATE",
+          "value": "2026-03-01"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "2026-02-29"
+    },
+    "expected": false
+  },
+  {
+    "name": "leap date valid",
+    "condition": {
+      "operator": "LESS_THAN",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "DATE",
+          "value": "2024-03-01"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "2024-02-29"
+    },
+    "expected": true
+  },
+  {
+    "name": "UUID case insensitive",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "UUID",
+          "value": "d349b755-fbdc-4c9a-a533-81c4e2d09c1a"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "D349B755-FBDC-4C9A-A533-81C4E2D09C1A"
+    },
+    "expected": true
+  },
+  {
+    "name": "JSON compares exact text",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "JSON",
+          "value": "{\"id\":9223372036854775807}"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "{\"id\":9223372036854775807}"
+    },
+    "expected": true
+  },
+  {
+    "name": "JSON formatting does not change structure",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "JSON",
+          "value": "{\"id\":1}"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "{ \"id\": 1 }"
+    },
+    "expected": true
+  },
+  {
+    "name": "null empty",
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": null
+    },
+    "expected": true
+  },
+  {
+    "name": "blank empty",
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": " \t\n"
+    },
+    "expected": true
+  },
+  {
+    "name": "zero nonempty",
+    "condition": {
+      "operator": "IS_NOT_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": 0
+    },
+    "expected": true
+  },
+  {
+    "name": "false nonempty",
+    "condition": {
+      "operator": "IS_NOT_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": false
+    },
+    "expected": true
+  },
+  {
+    "name": "empty array",
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": []
+    },
+    "expected": true
+  },
+  {
+    "name": "empty object",
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": {}
+    },
+    "expected": true
+  },
+  {
+    "name": "not equals missing",
+    "condition": {
+      "operator": "NOT_EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "STRING",
+          "value": "anything"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": null
+    },
+    "expected": true
+  },
+  {
+    "name": "typed set and nested boolean group",
+    "condition": {
+      "operator": "AND",
+      "values": [],
+      "children": [
+        {
+          "operator": "IN",
+          "fieldId": "value",
+          "values": [
+            {
+              "kind": "INTEGER",
+              "value": "3"
+            },
+            {
+              "kind": "INTEGER",
+              "value": "9223372036854775807"
+            }
+          ],
+          "children": []
+        },
+        {
+          "operator": "NOT",
+          "values": [],
+          "children": [
+            {
+              "operator": "IS_EMPTY",
+              "fieldId": "value",
+              "values": [],
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "values": {
+      "value": "9223372036854775807"
+    },
+    "expected": true
+  },
+  {
+    "name": "nonbreaking space empty",
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": " "
+    },
+    "expected": true
+  },
+  {
+    "name": "BOM whitespace empty",
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": "﻿"
+    },
+    "expected": true
+  },
+  {
+    "name": "ideographic space empty",
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": "　"
+    },
+    "expected": true
+  },
+  {
+    "name": "control separator is not whitespace",
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": "\u001c"
+    },
+    "expected": false
+  },
+  {
+    "name": "DNA microsecond time wire equality",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "TIME",
+          "value": "23:59:59.123456"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "23:59:59.123456"
+    },
+    "expected": true
+  },
+  {
+    "name": "DNA microsecond time below nanosecond threshold",
+    "condition": {
+      "operator": "LESS_THAN",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "TIME",
+          "value": "00:00:00.000001001"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "00:00:00.000001"
+    },
+    "expected": true
+  },
+  {
+    "name": "DNA UTC wire equivalent offset",
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "DATETIME",
+          "value": "2026-10-14T09:02:03.123456+08:00"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "2026-10-14T01:02:03.123456Z"
+    },
+    "expected": true
+  },
+  {
+    "name": "DNA pre-epoch microsecond wire ordering",
+    "condition": {
+      "operator": "LESS_THAN",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "DATETIME",
+          "value": "1960-01-01T00:00:00.999999001Z"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "1960-01-01T00:00:00.999999Z"
+    },
+    "expected": true
+  },
+  {
+    "name": "JSON empty object",
+    "types": {
+      "value": "JSON"
+    },
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": "{}"
+    },
+    "expected": true
+  },
+  {
+    "name": "JSON empty array",
+    "types": {
+      "value": "JSON"
+    },
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": "[]"
+    },
+    "expected": true
+  },
+  {
+    "name": "JSON null string",
+    "types": {
+      "value": "JSON"
+    },
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": "null"
+    },
+    "expected": true
+  },
+  {
+    "name": "JSON false is present",
+    "types": {
+      "value": "JSON"
+    },
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": "false"
+    },
+    "expected": false
+  },
+  {
+    "name": "JSON empty text",
+    "types": {
+      "value": "JSON"
+    },
+    "condition": {
+      "operator": "IS_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": "\" \\u3000\""
+    },
+    "expected": true
+  },
+  {
+    "name": "JSON string container is present",
+    "types": {
+      "value": "JSON"
+    },
+    "condition": {
+      "operator": "IS_NOT_EMPTY",
+      "fieldId": "value",
+      "values": [],
+      "children": []
+    },
+    "values": {
+      "value": "\"[]\""
+    },
+    "expected": true
+  },
+  {
+    "name": "JSON structure ignores key order",
+    "types": {
+      "value": "JSON"
+    },
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "JSON",
+          "value": "{\"a\":1.0,\"b\":2}"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "{\"b\":2,\"a\":1}"
+    },
+    "expected": true
+  },
+  {
+    "name": "JSON array preserves order",
+    "types": {
+      "value": "JSON"
+    },
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "JSON",
+          "value": "[2,1]"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "[1,2]"
+    },
+    "expected": false
+  },
+  {
+    "name": "JSON exact integers remain distinct",
+    "types": {
+      "value": "JSON"
+    },
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "JSON",
+          "value": "9007199254740992"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "9007199254740993"
+    },
+    "expected": false
+  },
+  {
+    "name": "JSON exact decimals remain distinct",
+    "types": {
+      "value": "JSON"
+    },
+    "condition": {
+      "operator": "EQUALS",
+      "fieldId": "value",
+      "values": [
+        {
+          "kind": "JSON",
+          "value": "0.12345678901234567891"
+        }
+      ],
+      "children": []
+    },
+    "values": {
+      "value": "0.12345678901234567890"
+    },
+    "expected": false
+  }
+]

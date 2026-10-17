@@ -27,6 +27,9 @@ public interface ResourceRepository extends BaseRepository<Resource, String> {
    */
   Collection<Resource> findAllByCodes(Collection<String> codes);
 
+  /** Finds resources by exact route paths. */
+  Collection<Resource> findAllByPaths(Collection<String> paths);
+
   /**
    * Finds direct children for a parent resource.
    */

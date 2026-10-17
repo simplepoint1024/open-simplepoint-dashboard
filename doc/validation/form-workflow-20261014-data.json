@@ -1,0 +1,281 @@
+{
+  "verifiedAt": "2026-10-14T12:59:11.569Z",
+  "runtimeRelease": "20261014-engine5",
+  "purpose": "Synthetic acceptance records only; no credentials or real customer values",
+  "checks": {
+    "rows": 12,
+    "uniqueBusinessLinks": true,
+    "allTerminal": true,
+    "apiDatabaseStatusConsistent": true
+  },
+  "scenarios": [
+    {
+      "name": "采购审批、版本演进与主子表",
+      "applicationId": "65a1aff5-dbc7-430c-a5c4-9d70d2304e13",
+      "pageId": "1d862d97-3fd4-4ecf-8a8c-bbb2af51fc18",
+      "formId": "6f1a7998-1208-4617-b864-df61c094251d",
+      "definitionId": "03f7075c-a708-43f9-95e6-ca659bc7f2a4"
+    },
+    {
+      "name": "客户档案更新审批",
+      "applicationId": "4d98a944-7c8e-43da-a19e-5d1b830d2028",
+      "pageId": "174fb073-0b40-455c-8f0c-4cba7f0ed43d",
+      "formId": "718334da-e05f-4748-b1ed-d6a492f0934d",
+      "definitionId": "9ff5956e-c798-4e4e-bb6f-39c1afc6a57a"
+    },
+    {
+      "name": "巡检精确分支",
+      "applicationId": "2e9d5475-c954-47c4-a191-10855ccce8c5",
+      "pageId": "b998740f-17fa-42ab-8a90-17a9560b45b3",
+      "formId": "c242f9b7-b682-4486-a25a-7c3186424797",
+      "definitionId": "9ccfced4-3302-42e9-871e-f9141e488634"
+    }
+  ],
+  "submissions": [
+    {
+      "id": "af0fafcd58635e5f5337751377793b13d83738c6469837a75ae8dad907dfe67c",
+      "application_id": "65a1aff5-dbc7-430c-a5c4-9d70d2304e13",
+      "page_id": "f9792278-9222-462e-bf93-7569b8f6cf58",
+      "form_id": "6f1a7998-1208-4617-b864-df61c094251d",
+      "form_version": 1,
+      "definition_id": "03f7075c-a708-43f9-95e6-ca659bc7f2a4",
+      "definition_version": 1,
+      "previous_submission_id": null,
+      "record_id": "957e65f2-b9cb-58b3-b6d7-d08dcc7d0c4c",
+      "record_version": 0,
+      "process_instance_id": "84c1d50a-c7cb-11f1-8ce5-fab04de5ca91",
+      "process_status": "COMPLETED",
+      "status": "SUCCEEDED",
+      "step": "TERMINAL",
+      "business_links": 1
+    },
+    {
+      "id": "078557ac56ce18bd161c5e1e0c6a315e693b564e098a9ba6e0e78a951e61d2fa",
+      "application_id": "65a1aff5-dbc7-430c-a5c4-9d70d2304e13",
+      "page_id": "f9792278-9222-462e-bf93-7569b8f6cf58",
+      "form_id": "6f1a7998-1208-4617-b864-df61c094251d",
+      "form_version": 1,
+      "definition_id": "03f7075c-a708-43f9-95e6-ca659bc7f2a4",
+      "definition_version": 1,
+      "previous_submission_id": null,
+      "record_id": "ac692d0e-4106-5366-a556-1f80e9b26dd7",
+      "record_version": 0,
+      "process_instance_id": "9339721d-c7cb-11f1-8ce5-fab04de5ca91",
+      "process_status": "REJECTED",
+      "status": "SUCCEEDED",
+      "step": "TERMINAL",
+      "business_links": 1
+    },
+    {
+      "id": "fe21a748b29b301c2625c6fd12ffeaef098b01a4c2f360f0b6f7dc77e5dd4cd0",
+      "application_id": "65a1aff5-dbc7-430c-a5c4-9d70d2304e13",
+      "page_id": "f9792278-9222-462e-bf93-7569b8f6cf58",
+      "form_id": "6f1a7998-1208-4617-b864-df61c094251d",
+      "form_version": 1,
+      "definition_id": "03f7075c-a708-43f9-95e6-ca659bc7f2a4",
+      "definition_version": 1,
+      "previous_submission_id": "078557ac56ce18bd161c5e1e0c6a315e693b564e098a9ba6e0e78a951e61d2fa",
+      "record_id": "ac692d0e-4106-5366-a556-1f80e9b26dd7",
+      "record_version": 1,
+      "process_instance_id": "a245d51c-c7cb-11f1-8ce5-fab04de5ca91",
+      "process_status": "COMPLETED",
+      "status": "SUCCEEDED",
+      "step": "TERMINAL",
+      "business_links": 1
+    },
+    {
+      "id": "04326f94b5dff22e8832478f5c6c025f8a2bae134e35a8489e7b577734d6809e",
+      "application_id": "65a1aff5-dbc7-430c-a5c4-9d70d2304e13",
+      "page_id": "1d862d97-3fd4-4ecf-8a8c-bbb2af51fc18",
+      "form_id": "6f1a7998-1208-4617-b864-df61c094251d",
+      "form_version": 1,
+      "definition_id": "03f7075c-a708-43f9-95e6-ca659bc7f2a4",
+      "definition_version": 1,
+      "previous_submission_id": null,
+      "record_id": "16c9ca31-a7f3-52da-8129-ac042d0e8bd3",
+      "record_version": 0,
+      "process_instance_id": "b0abe5fe-c7cb-11f1-8ce5-fab04de5ca91",
+      "process_status": "WITHDRAWN",
+      "status": "SUCCEEDED",
+      "step": "TERMINAL",
+      "business_links": 1
+    },
+    {
+      "id": "8d1fd1a09b8bfaa3745ee511fd65a632ba308a07ebc637a42e1a07af568fe8e8",
+      "application_id": "65a1aff5-dbc7-430c-a5c4-9d70d2304e13",
+      "page_id": "1d862d97-3fd4-4ecf-8a8c-bbb2af51fc18",
+      "form_id": "6f1a7998-1208-4617-b864-df61c094251d",
+      "form_version": 1,
+      "definition_id": "03f7075c-a708-43f9-95e6-ca659bc7f2a4",
+      "definition_version": 1,
+      "previous_submission_id": null,
+      "record_id": "6cc21fe2-4aaa-59b1-a2cf-066f550ad724",
+      "record_version": 0,
+      "process_instance_id": "b0e879dc-c7cb-11f1-8ce5-fab04de5ca91",
+      "process_status": "CANCELED",
+      "status": "SUCCEEDED",
+      "step": "TERMINAL",
+      "business_links": 1
+    },
+    {
+      "id": "e21d52df6bdac8d37669bec1a692875d17b4e0d480b8db7dd25ca7d23a8799fc",
+      "application_id": "4d98a944-7c8e-43da-a19e-5d1b830d2028",
+      "page_id": "174fb073-0b40-455c-8f0c-4cba7f0ed43d",
+      "form_id": "718334da-e05f-4748-b1ed-d6a492f0934d",
+      "form_version": 1,
+      "definition_id": "9ff5956e-c798-4e4e-bb6f-39c1afc6a57a",
+      "definition_version": 1,
+      "previous_submission_id": null,
+      "record_id": "3e74c6be-5985-5629-93ed-107724ac5d9b",
+      "record_version": 1,
+      "process_instance_id": "4e473a8a-c7cd-11f1-b3a4-d696b0425c66",
+      "process_status": "COMPLETED",
+      "status": "SUCCEEDED",
+      "step": "TERMINAL",
+      "business_links": 1
+    },
+    {
+      "id": "da5eade3347b6ede0971edfd7b61d2afb3e761b5b208bdf774e4b3ecd668dcb0",
+      "application_id": "2e9d5475-c954-47c4-a191-10855ccce8c5",
+      "page_id": "b998740f-17fa-42ab-8a90-17a9560b45b3",
+      "form_id": "c242f9b7-b682-4486-a25a-7c3186424797",
+      "form_version": 1,
+      "definition_id": "9ccfced4-3302-42e9-871e-f9141e488634",
+      "definition_version": 1,
+      "previous_submission_id": null,
+      "record_id": "66bd9150-5f93-5df6-8359-62fea6ca0500",
+      "record_version": 0,
+      "process_instance_id": "4fa51cf0-c7cd-11f1-b3a4-d696b0425c66",
+      "process_status": "COMPLETED",
+      "status": "SUCCEEDED",
+      "step": "TERMINAL",
+      "business_links": 1
+    },
+    {
+      "id": "7a547b6be1dd137f0930c3857d9b003565d8e6bcd451cfe61db43f9c3f685a40",
+      "application_id": "2e9d5475-c954-47c4-a191-10855ccce8c5",
+      "page_id": "b998740f-17fa-42ab-8a90-17a9560b45b3",
+      "form_id": "c242f9b7-b682-4486-a25a-7c3186424797",
+      "form_version": 1,
+      "definition_id": "9ccfced4-3302-42e9-871e-f9141e488634",
+      "definition_version": 1,
+      "previous_submission_id": null,
+      "record_id": "87dc7f37-eb9f-5437-9b25-fe51f6b51309",
+      "record_version": 0,
+      "process_instance_id": "4fede5d2-c7cd-11f1-b3a4-d696b0425c66",
+      "process_status": "COMPLETED",
+      "status": "SUCCEEDED",
+      "step": "TERMINAL",
+      "business_links": 1
+    },
+    {
+      "id": "b099b141438597a0e224217536e10ae752d2f38862a93e50d582e67b3d5c7a1e",
+      "application_id": "65a1aff5-dbc7-430c-a5c4-9d70d2304e13",
+      "page_id": "1d862d97-3fd4-4ecf-8a8c-bbb2af51fc18",
+      "form_id": "6f1a7998-1208-4617-b864-df61c094251d",
+      "form_version": 1,
+      "definition_id": "03f7075c-a708-43f9-95e6-ca659bc7f2a4",
+      "definition_version": 1,
+      "previous_submission_id": null,
+      "record_id": "98f20c94-dbe5-546c-8588-f906637e1637",
+      "record_version": 0,
+      "process_instance_id": "d36ac98e-c7cd-11f1-b3a4-d696b0425c66",
+      "process_status": "COMPLETED",
+      "status": "SUCCEEDED",
+      "step": "TERMINAL",
+      "business_links": 1
+    },
+    {
+      "id": "908e9d9145b0f23ff39ca76510832320dfa29f1b0b7e5bb699d8152e80b05a1d",
+      "application_id": "65a1aff5-dbc7-430c-a5c4-9d70d2304e13",
+      "page_id": "1d862d97-3fd4-4ecf-8a8c-bbb2af51fc18",
+      "form_id": "6f1a7998-1208-4617-b864-df61c094251d",
+      "form_version": 1,
+      "definition_id": "12aca06e-67e1-43cc-96d3-d030e9f1dc53",
+      "definition_version": 1,
+      "previous_submission_id": null,
+      "record_id": "7c8da977-597e-5874-b67f-c015939b2ea8",
+      "record_version": 0,
+      "process_instance_id": "d014c0aa-c7cd-11f1-b3a4-d696b0425c66",
+      "process_status": "COMPLETED",
+      "status": "SUCCEEDED",
+      "step": "TERMINAL",
+      "business_links": 1
+    },
+    {
+      "id": "4ba03dc1954abd7680bd4ba90aff1de181935a9cf6525e3668961cf81d5fdc09",
+      "application_id": "65a1aff5-dbc7-430c-a5c4-9d70d2304e13",
+      "page_id": "1d862d97-3fd4-4ecf-8a8c-bbb2af51fc18",
+      "form_id": "6f1a7998-1208-4617-b864-df61c094251d",
+      "form_version": 1,
+      "definition_id": "03f7075c-a708-43f9-95e6-ca659bc7f2a4",
+      "definition_version": 1,
+      "previous_submission_id": null,
+      "record_id": "e6bae5ca-677c-544a-b131-be70d1da777d",
+      "record_version": 0,
+      "process_instance_id": "b340ba52-c7ce-11f1-9e6d-eed383675eae",
+      "process_status": "COMPLETED",
+      "status": "SUCCEEDED",
+      "step": "TERMINAL",
+      "business_links": 1
+    },
+    {
+      "id": "c8a1164b4b29b191644d9e3663df9f609741c93e692da10a68446ea9529a5db4",
+      "application_id": "65a1aff5-dbc7-430c-a5c4-9d70d2304e13",
+      "page_id": "1d862d97-3fd4-4ecf-8a8c-bbb2af51fc18",
+      "form_id": "6f1a7998-1208-4617-b864-df61c094251d",
+      "form_version": 1,
+      "definition_id": "03f7075c-a708-43f9-95e6-ca659bc7f2a4",
+      "definition_version": 1,
+      "previous_submission_id": null,
+      "record_id": "064eb2a1-68e6-570b-895b-c602624181cf",
+      "record_version": 0,
+      "process_instance_id": "d791c174-c7ce-11f1-9e6d-eed383675eae",
+      "process_status": "COMPLETED",
+      "status": "SUCCEEDED",
+      "step": "TERMINAL",
+      "business_links": 1
+    }
+  ],
+  "recovery": {
+    "submissionId": "b099b141438597a0e224217536e10ae752d2f38862a93e50d582e67b3d5c7a1e",
+    "before": "DATA_COMMITTED",
+    "recordId": "98f20c94-dbe5-546c-8588-f906637e1637",
+    "recoveredProcessId": "d36ac98e-c7cd-11f1-b3a4-d696b0425c66",
+    "lostResponseStatus": 500,
+    "bypassDeniedStatus": 403
+  },
+  "browser": {
+    "submissionId": "4ba03dc1954abd7680bd4ba90aff1de181935a9cf6525e3668961cf81d5fdc09",
+    "checks": [
+      "Actual runtime submits Unicode parent/detail values and exact decimals with one request per double click",
+      "Standard SimpleTable history opens the immutable readonly business snapshot",
+      "Personal inbox renders business snapshot alongside editable approval fields and completes the real task"
+    ],
+    "errors": [],
+    "failedResponses": []
+  },
+  "browserResponseLoss": {
+    "submissionId": "c8a1164b4b29b191644d9e3663df9f609741c93e692da10a68446ea9529a5db4",
+    "checks": [
+      "Dropped the committed HTTPS response; frozen form retries the identical command and receives the original process",
+      "Double click sends one command; explicit retry replays the same immutable body after the committed response is dropped",
+      "Standard SimpleTable history opens the immutable readonly business snapshot",
+      "Personal inbox renders business snapshot alongside editable approval fields and completes the real task"
+    ],
+    "expectedTransportFailures": [
+      {
+        "path": "/app/runtime/applications/65a1aff5-dbc7-430c-a5c4-9d70d2304e13/pages/1d862d97-3fd4-4ecf-8a8c-bbb2af51fc18/submissions",
+        "error": "net::ERR_CONNECTION_CLOSED"
+      }
+    ]
+  },
+  "permissions": [
+    "ordinary tenant user cannot discover or start workflows for an ungranted APP page",
+    "explicit page grants enable real ordinary-user submission and assigned-task snapshot; another actor cannot read the owned submission",
+    "revoking the APP page also denies snapshot access and rolls back approval without consuming the task",
+    "valid authentication in a different tenant cannot read submission metadata, snapshots or linked process business evidence",
+    "submission history filters by actor before pagination and exposes no stored authority or business snapshot payload",
+    "ordinary user permission lifecycle verified through the real gateway and service-to-service boundary"
+  ]
+}

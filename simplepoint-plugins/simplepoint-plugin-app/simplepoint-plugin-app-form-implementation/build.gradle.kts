@@ -1,0 +1,49 @@
+dependencies {
+    implementation("com.google.re2j:re2j:1.8")
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-api"))
+    implementation(project(":simplepoint-platform:simplepoint-platform-resource-api"))
+    api(project(":simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-api"))
+    implementation(project(":simplepoint-core"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-workflow:simplepoint-plugin-workflow-api"))
+    implementation(project(":simplepoint-data:simplepoint-data-jpa"))
+    implementation("org.springframework.boot:spring-boot-autoconfigure")
+    implementation("org.springframework:spring-tx")
+    implementation("com.fasterxml.jackson.core:jackson-databind")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("com.h2database:h2")
+    testRuntimeOnly("org.postgresql:postgresql")
+}
+
+tasks.test {
+    systemProperty(
+        "simplepoint.app-form.policy-protocol-migration",
+        rootProject.file("doc/deployment/sql/20261014-app-form-policy-protocol.sql").absolutePath
+    )
+    systemProperty(
+        "simplepoint.app-form.policy-cancellation-migration",
+        rootProject.file("doc/deployment/sql/20261014-app-form-policy-cancellation.sql").absolutePath
+    )
+    systemProperty(
+        "simplepoint.app-form.bootstrap-schema",
+        rootProject.file("simplepoint-services/simplepoint-service-app/src/main/resources/schema.sql").absolutePath
+    )
+    systemProperty(
+        "simplepoint.app-form.policy-publication-migration",
+        rootProject.file("doc/deployment/sql/20261014-app-form-policy-publications.sql").absolutePath
+    )
+    systemProperty(
+        "simplepoint.app-form.resource-generation-migration",
+        rootProject.file("doc/deployment/sql/20261013-app-form-resource-generations.sql").absolutePath
+    )
+    systemProperty(
+        "simplepoint.app-form.release-migration",
+        rootProject.file("doc/deployment/sql/20261013-app-form-release-intent.sql").absolutePath
+    )
+    systemProperty(
+        "simplepoint.app-form.migration",
+        rootProject.file("doc/deployment/sql/20261013-app-form-domain.sql").absolutePath
+    )
+}

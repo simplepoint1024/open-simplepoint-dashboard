@@ -1,0 +1,207 @@
+{
+  "browser": {
+    "passed": true,
+    "at": "2026-10-15T10:18:31.391Z",
+    "layout": {
+      "width": 767,
+      "scrollWidth": 1786,
+      "height": 300,
+      "scrollHeight": 1880,
+      "drawerWidth": 831,
+      "drawerScroll": 831,
+      "columns": [
+        48,
+        179.984375,
+        180,
+        180,
+        274.46875,
+        180,
+        180,
+        180,
+        180,
+        203.515625
+      ]
+    },
+    "checks": [
+      "list is route entry; no Form/Data/Submission tabs",
+      "designed create/edit form",
+      "dirty close guard",
+      "503 exact idempotent retry",
+      "create/edit persisted",
+      "40 detail rows scroll on both axes",
+      "readonly detail and editor contain overflow",
+      "approval history remains reachable"
+    ]
+  },
+  "crudVerified": true,
+  "cleaned": [
+    "0e289c82-b085-5751-b285-fd3a60f156cf",
+    "afd716e6-595e-5654-94e7-c6273ebb947a"
+  ],
+  "pages": {
+    "employee": {
+      "passed": true,
+      "results": [
+        {
+          "code": "office_meeting_room",
+          "buttons": [
+            "新增",
+            "编辑",
+            "删除",
+            "详情",
+            "提交审批",
+            "审批记录"
+          ]
+        },
+        {
+          "code": "office_daily_report",
+          "buttons": [
+            "新增",
+            "编辑",
+            "删除",
+            "详情",
+            "提交审批",
+            "审批记录"
+          ]
+        },
+        {
+          "code": "office_expense_claim",
+          "buttons": [
+            "新增",
+            "编辑",
+            "删除",
+            "详情",
+            "提交审批",
+            "审批记录"
+          ]
+        }
+      ]
+    },
+    "finance": {
+      "passed": true,
+      "results": [
+        {
+          "code": "office_expense_claim",
+          "buttons": [
+            "详情"
+          ]
+        }
+      ]
+    }
+  },
+  "verification": {
+    "deployment": "20261015-office-list1",
+    "frontendTestsPassed": 91,
+    "frontendTypecheckModules": 8,
+    "backendTestsPassed": [
+      "app-form-implementation",
+      "service-app"
+    ],
+    "javaScopedCheckstyle": "passed",
+    "i18n": "passed",
+    "originalBusinessData": "7 main records, 12 details, 7 process instances retained; no pending office tasks",
+    "serviceHealth": "9 containers and Consul passing"
+  },
+  "responsiveRecheck": {
+    "passed": true,
+    "at": "2026-10-15T11:16:21.624Z",
+    "results": [
+      {
+        "code": "office_daily_report",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "layout": {
+          "width": 1021,
+          "scrollWidth": 1785,
+          "height": 94,
+          "maxHeight": "320px",
+          "scrollLeft": 200,
+          "drawerWidth": 1085,
+          "drawerScroll": 1085
+        }
+      },
+      {
+        "code": "office_daily_report",
+        "viewport": {
+          "width": 900,
+          "height": 700
+        },
+        "layout": {
+          "width": 767,
+          "scrollWidth": 1785,
+          "height": 94,
+          "maxHeight": "315px",
+          "scrollLeft": 200,
+          "drawerWidth": 831,
+          "drawerScroll": 831
+        }
+      },
+      {
+        "code": "office_daily_report",
+        "viewport": {
+          "width": 600,
+          "height": 400
+        },
+        "layout": {
+          "width": 485,
+          "scrollWidth": 1785,
+          "height": 94,
+          "maxHeight": "180px",
+          "scrollLeft": 200,
+          "drawerWidth": 549,
+          "drawerScroll": 549
+        }
+      },
+      {
+        "code": "office_expense_claim",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "layout": {
+          "width": 1021,
+          "scrollWidth": 1813,
+          "height": 94,
+          "maxHeight": "320px",
+          "scrollLeft": 200,
+          "drawerWidth": 1085,
+          "drawerScroll": 1085
+        }
+      },
+      {
+        "code": "office_expense_claim",
+        "viewport": {
+          "width": 900,
+          "height": 700
+        },
+        "layout": {
+          "width": 767,
+          "scrollWidth": 1813,
+          "height": 94,
+          "maxHeight": "315px",
+          "scrollLeft": 200,
+          "drawerWidth": 831,
+          "drawerScroll": 831
+        }
+      },
+      {
+        "code": "office_expense_claim",
+        "viewport": {
+          "width": 600,
+          "height": 400
+        },
+        "layout": {
+          "width": 485,
+          "scrollWidth": 1813,
+          "height": 94,
+          "maxHeight": "180px",
+          "scrollLeft": 200,
+          "drawerWidth": 549,
+          "drawerScroll": 549
+        }
+      }
+    ]
+  }
+}

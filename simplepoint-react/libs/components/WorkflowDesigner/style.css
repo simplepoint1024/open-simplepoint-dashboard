@@ -50,6 +50,10 @@
   overflow-wrap: anywhere;
 }
 
+.workflow-diagram-properties .ant-alert {
+  margin-bottom: 12px;
+}
+
 .workflow-designer__error {
   margin: 8px;
 }

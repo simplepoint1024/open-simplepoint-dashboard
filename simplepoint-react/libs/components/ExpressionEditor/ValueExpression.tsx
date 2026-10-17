@@ -8,10 +8,11 @@ const AdvancedEditor = lazy(() => import('./AdvancedEditor'));
 export type NumericLiteralResolver = (expression: string) => Promise<string>;
 export type LiteralPreview = {value?: string; issue?: string};
 export type LiteralResolver = (value: string) => Promise<LiteralPreview>;
+export type ValueExpressionDraft = {value: string; mode: ValueExpressionMode; editedAdvanced?: {value: string; issue?: string}};
 
 /** A fixed-value control and variable selector with a lossless, explicit advanced expression mode. */
 export default function ValueExpression({value = '', onChange, variables, disabled, renderLiteral, onValidityChange,
-  literalIdentity = false, resolveNumericLiteral, resolveLiteral, literalPreviewFailure, validateValue}: {
+  literalIdentity = false, resolveNumericLiteral, resolveLiteral, literalPreviewFailure, validateValue, initialDraft, onDraftChange}: {
   value?: string;
   onChange: (value?: string) => void;
   variables: readonly ExpressionVariable[];
@@ -26,6 +27,8 @@ export default function ValueExpression({value = '', onChange, variables, disabl
   literalPreviewFailure?: string;
   /** Optional domain checks run synchronously at input and submission-notification boundaries. */
   validateValue?: (value: string) => string | undefined;
+  initialDraft?: ValueExpressionDraft;
+  onDraftChange?: (draft: ValueExpressionDraft) => void;
 }) {
   const {t} = useI18n();
   const validityRef = useRef(onValidityChange);
@@ -36,7 +39,9 @@ export default function ValueExpression({value = '', onChange, variables, disabl
     || viewDraft.current.onChange !== onChange)) viewDraft.current = undefined;
   const names = useMemo(() => new Set(variables.map(item => item.name)), [variables]);
   const presentation = useMemo(() => valueExpressionPresentation(value, names), [value, names]);
-  const [requestedMode, setMode] = useState<ValueExpressionMode>(presentation.defaultMode);
+  const saved = initialDraft?.value === value ? initialDraft : undefined;
+  const [requestedMode, setMode] = useState<ValueExpressionMode>(saved?.mode ?? presentation.defaultMode);
+  const draftChangeRef = useRef(onDraftChange); draftChangeRef.current = onDraftChange;
   const numericIdentity = literalIdentity && presentation.numericLiteral;
   const fieldLiteralFor = (source: string, view: ReturnType<typeof valueExpressionPresentation>) =>
     !!resolveLiteral && !!source && (!view.expression || view.constant != null || /^\$\{\s*null\s*\}$/.test(source.trim()));
@@ -64,7 +69,8 @@ export default function ValueExpression({value = '', onChange, variables, disabl
     });
     return () => {current = false;};
   }, [mode, needsResolution, resolver, value]);
-  const [editedAdvanced, setEditedAdvanced] = useState<{value: string; issue?: string}>();
+  const [editedAdvanced, setEditedAdvanced] = useState<{value: string; issue?: string} | undefined>(saved?.editedAdvanced);
+  useEffect(() => {draftChangeRef.current?.({value, mode: requestedMode, editedAdvanced});}, [value, requestedMode, editedAdvanced]);
   const syntaxIssue = editedAdvanced?.value === value ? editedAdvanced.issue
     : presentation.expression ? expressionIssue(value) : undefined;
   const validationIssue = syntaxIssue || valueIssue || resolution?.issue;
@@ -79,6 +85,7 @@ export default function ValueExpression({value = '', onChange, variables, disabl
     if (disabled) return;
     setEditedAdvanced(undefined);
     const nextValue = next ?? '';
+    draftChangeRef.current?.({value: nextValue, mode: requestedMode});
     viewDraft.current = {source: value, value: nextValue, onChange};
     validityRef.current?.(!((/^(?:\$|#)\{/.test(nextValue.trim()) && expressionIssue(nextValue)) || validateValue?.(nextValue)));
     onChange(next);
@@ -99,6 +106,7 @@ export default function ValueExpression({value = '', onChange, variables, disabl
         setError(t('workflow.editor.keepAdvanced', '当前表达式不能转换为普通配置，请继续使用高级模式')); return;
       }
       // A mode is an editing view, not an implicit assignment or modeler command.
+      draftChangeRef.current?.({value: currentValue, mode: next as ValueExpressionMode, editedAdvanced});
       setMode(next as ValueExpressionMode);
     }}/>
     {(validationIssue || error) && <Alert type="warning" showIcon title={validationIssue || error}/>}
@@ -111,6 +119,7 @@ export default function ValueExpression({value = '', onChange, variables, disabl
           viewDraft.current = {source: value, value: next, onChange};
           // An actual advanced edit is syntax, unlike the preview of an existing fixed value.
           setEditedAdvanced({value: next, issue}); setError('');
+          draftChangeRef.current?.({value: next, mode: 'advanced', editedAdvanced: {value: next, issue}});
           validityRef.current?.(!issue); onChange(next || undefined);
         }}/></Suspense>
     </> : mode === 'variable' ? <Select style={{width: '100%'}} disabled={disabled}

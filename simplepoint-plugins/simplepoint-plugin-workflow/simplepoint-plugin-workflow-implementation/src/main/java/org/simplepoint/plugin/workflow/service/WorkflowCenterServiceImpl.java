@@ -37,9 +37,11 @@ import org.flowable.task.api.history.HistoricTaskInstance;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.plugin.workflow.api.WorkflowException;
 import org.simplepoint.plugin.workflow.api.WorkflowException.Code;
+import org.simplepoint.plugin.workflow.api.WorkflowModelingException;
 import org.simplepoint.plugin.workflow.api.constants.WorkflowResourceCodes;
 import org.simplepoint.plugin.workflow.api.constants.WorkflowVariableNames;
 import org.simplepoint.plugin.workflow.api.model.WorkflowAuditTrail;
+import org.simplepoint.plugin.workflow.api.model.WorkflowFormContext;
 import org.simplepoint.plugin.workflow.api.model.WorkflowFormContract;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.ActivityState;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.CompleteTaskCommand;
@@ -64,6 +66,7 @@ import org.simplepoint.plugin.workflow.api.model.WorkflowResubmission;
 import org.simplepoint.plugin.workflow.api.service.WorkflowCenterService;
 import org.simplepoint.plugin.workflow.api.service.WorkflowFormProvider;
 import org.simplepoint.plugin.workflow.entity.WorkflowActionEntity;
+import org.simplepoint.plugin.workflow.entity.WorkflowBusinessLinkEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowDefinitionEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowDefinitionVersionEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowInstanceEntity;
@@ -90,6 +93,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   private final ObjectMapper objectMapper;
   private final TenantService tenantService;
   private final WorkflowFormContracts formContracts;
+  private final WorkflowOperationJournal operations;
   private final Map<String, WorkflowFormProvider> formProviders;
 
   /** Creates the workflow domain service. */
@@ -112,6 +116,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     this.objectMapper = objectMapper;
     this.tenantService = tenantService;
     this.formContracts = new WorkflowFormContracts(objectMapper);
+    this.operations = new WorkflowOperationJournal(entityManager, objectMapper);
     this.formProviders =
         formProviders.stream()
             .collect(
@@ -121,7 +126,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   @Override
   public PageResult<DefinitionSummary> definitions(
       final String keyword, final int page, final int size) {
-    String tenant = tenantId();
+    final String tenant = tenantId();
     final PageBounds bounds = PageBounds.of(page, size);
     Search search = Search.of(keyword);
     String where =
@@ -133,7 +138,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
             .createQuery(
                 "select d from WorkflowDefinitionEntity d where "
                     + where
-                    + " order by d.updatedAt desc, d.id desc",
+                    + " order by d.createdAt desc, d.id desc",
                 WorkflowDefinitionEntity.class)
             .setParameter("tenant", tenant)
             .setParameter("search", search.value())
@@ -157,7 +162,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   public PageResult<DefinitionSummary> queryDefinitions(
       Map<String, String> filters, org.springframework.data.domain.Pageable page) {
     requireAuthority(WorkflowResourceCodes.DEFINITIONS_VIEW);
-    String tenant = tenantId();
+    final String tenant = tenantId();
     Map<String, String> columns = new LinkedHashMap<>(filters == null ? Map.of() : filters);
     Search keyword = Search.of(columns.remove("keyword"));
     return WorkflowReadPages.query(
@@ -219,7 +224,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   @Transactional
   public DefinitionDetail createDefinition(final CreateDefinitionCommand command) {
     requireAuthority(WorkflowResourceCodes.DEFINITIONS_CREATE);
-    String tenant = tenantId();
+    final String tenant = tenantId();
     if (command == null) {
       throw invalid("请填写流程定义");
     }
@@ -275,13 +280,13 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     WorkflowDefinitionEntity definition = requireDefinition(definitionId, true);
     requireRevision(definition, command.expectedRevision());
     String xml = required(command.bpmnXml(), "BPMN XML 不能为空", 2_000_000);
-    var validated = bpmnValidator.validate(xml, definition.getKey());
     // Omitted contracts preserve existing integrations for older API clients, rather than clearing
     // them.
     String contract =
         command.formContract() == null
             ? definition.getDraftFormContract()
             : formContracts.write(command.formContract());
+    var validated = bpmnValidator.validate(xml, definition.getKey(), formContracts.read(contract));
     formContracts.validateTaskBindings(formContracts.read(contract), validated.userTaskIds());
     definition.setDraftFormContract(formContracts.write(formContracts.read(contract)));
     definition.setName(required(command.name(), "流程名称不能为空", 160));
@@ -302,26 +307,42 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     }
     WorkflowDefinitionEntity definition = requireDefinition(definitionId, true);
     requireRevision(definition, command.expectedRevision());
-    var validated = bpmnValidator.validate(definition.getDraftXml(), definition.getKey());
+    var validated =
+        bpmnValidator.validate(
+            definition.getDraftXml(),
+            definition.getKey(),
+            formContracts.read(definition.getDraftFormContract()));
     formContracts.validateTaskBindings(
         formContracts.read(definition.getDraftFormContract()), validated.userTaskIds());
     definition.setDraftFormContract(
         formContracts.write(formContracts.read(definition.getDraftFormContract())));
+    validatePublishedBindings(formContracts.read(definition.getDraftFormContract()));
     String checksum = snapshotChecksum(definition);
+    var execution = BpmnExecutionCompiler.compile(definition.getDraftXml());
     if (checksum.equals(definition.getPublishedChecksum()) && definition.getLatestVersion() > 0) {
-      return versionSummary(requireVersion(definition, definition.getLatestVersion()));
+      var latest = requireVersion(definition, definition.getLatestVersion());
+      if (execution.matchesDeployment(
+          repositoryService.getDeploymentResourceNames(latest.getFlowableDeploymentId()))) {
+        return versionSummary(latest);
+      }
     }
     int nextVersion = definition.getLatestVersion() + 1;
     String comment = optional(command.comment(), 500, "发布说明");
     try {
-      Deployment deployment =
+      var deploymentBuilder =
           repositoryService
               .createDeployment()
               .tenantId(definition.getTenantId())
               .name(definition.getName() + " v" + nextVersion)
               .category(definition.getCategory())
-              .addString(definition.getKey() + ".bpmn20.xml", definition.getDraftXml())
-              .deploy();
+              .addString(definition.getKey() + ".bpmn20.xml", execution.xml());
+      if (execution.transformed()) {
+        deploymentBuilder.addString(BpmnExecutionCompiler.MANIFEST_RESOURCE, execution.manifest());
+      }
+      if (execution.diagramData()) {
+        deploymentBuilder.addString(BpmnExecutionCompiler.DIAGRAM_RESOURCE, execution.manifest());
+      }
+      Deployment deployment = deploymentBuilder.deploy();
       List<ProcessDefinition> deployed =
           repositoryService.createProcessDefinitionQuery().deploymentId(deployment.getId()).list();
       if (deployed.size() != 1 || !definition.getKey().equals(deployed.get(0).getKey())) {
@@ -347,6 +368,18 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
       version.setPublishedBy(userId());
       version.setPublishedAt(Instant.now());
       entityManager.persist(version);
+      var startBinding = formContracts.read(version.getFormContract()).startBinding();
+      if (startBinding != null) {
+        var index = new org.simplepoint.plugin.workflow.entity.WorkflowFormBindingEntity();
+        index.setId(version.getId());
+        index.setTenantId(version.getTenantId());
+        index.setDefinitionId(definitionId);
+        index.setDefinitionVersion(nextVersion);
+        index.setProvider(startBinding.provider());
+        index.setFormId(startBinding.formId());
+        index.setFormVersion(startBinding.version());
+        entityManager.persist(index);
+      }
       definition.setLatestVersion(nextVersion);
       definition.setPublishedChecksum(checksum);
       definition.setStatus("PUBLISHED");
@@ -399,7 +432,15 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   public ProcessInstanceSummary start(
       final String definitionId, final StartProcessCommand command) {
     requireAuthority(WorkflowResourceCodes.INSTANCES_START);
-    return startInternal(definitionId, command, null);
+    return operations.execute(
+        tenantId(),
+        userId(),
+        "START",
+        definitionId,
+        command == null ? null : command.idempotencyKey(),
+        command,
+        () -> requireDefinition(definitionId, true),
+        () -> startInternal(definitionId, command, null));
   }
 
   private ProcessInstanceSummary startInternal(
@@ -413,7 +454,8 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
             ? definition.getLatestVersion()
             : command.version();
     WorkflowDefinitionVersionEntity version = requireVersion(definition, requestedVersion);
-    String businessKey = command == null ? null : optional(command.businessKey(), 160, "业务标识");
+    requireExecutableVersion(version);
+    final String businessKey = command == null ? null : optional(command.businessKey(), 160, "业务标识");
     String versionName =
         version.getDefinitionName() == null ? definition.getName() : version.getDefinitionName();
     String title = command == null ? versionName : optional(command.title(), 240, "事项标题");
@@ -424,7 +466,24 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     WorkflowFormContract contract = formContracts.read(version.getFormContract());
     variables = formContracts.submission(contract, variables, Map.of(), "start");
     validateDirectoryVariables(contract, variables, definition.getTenantId());
-    validateExternalForm(contract.startBinding(), "start", null, variables);
+    validateExternalForm(
+        contract.startBinding(),
+        "start",
+        null,
+        variables,
+        new WorkflowFormContext(
+            tenantId(),
+            userId(),
+            definitionId,
+            requestedVersion,
+            null,
+            businessKey,
+            formAuthority()));
+    String businessLink = businessLink(contract.startBinding(), businessKey);
+    if (businessLink != null
+        && entityManager.find(WorkflowBusinessLinkEntity.class, businessLink) != null) {
+      throw conflict("此业务提交已发起流程，请使用原提交操作重试或查看已关联事项");
+    }
     String starter = userId();
     Set<String> watchers = copiedUsers(command, definition.getTenantId(), starter);
     variables.put("initiator", starter);
@@ -434,7 +493,9 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     try {
       ProcessInstance process =
           runtimeService.startProcessInstanceById(
-              version.getFlowableProcessDefinitionId(), businessKey, variables);
+              version.getFlowableProcessDefinitionId(),
+              businessKey,
+              formContracts.engineVariables(contract, variables));
       WorkflowInstanceEntity instance = new WorkflowInstanceEntity();
       instance.setProcessInstanceId(process.getId());
       instance.setTenantId(definition.getTenantId());
@@ -459,6 +520,15 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
         instance.setEndedAt(Instant.now());
       }
       entityManager.persist(instance);
+      if (businessLink != null) {
+        var link = new WorkflowBusinessLinkEntity();
+        link.setId(businessLink);
+        link.setTenantId(tenantId());
+        link.setProvider(contract.startBinding().provider());
+        link.setBusinessKey(businessKey);
+        link.setProcessInstanceId(process.getId());
+        entityManager.persist(link);
+      }
       recordAction(instance, null, previousId == null ? "STARTED" : "RESUBMITTED", null);
       persistWatchers(instance, watchers);
       enqueueCopiedNotifications(instance, watchers);
@@ -489,14 +559,15 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
       throw conflict("原流程历史尚不可用，请刷新后重试");
     }
     RuntimeForm form =
-        new RuntimeForm(
+        runtimeForm(
             version.getVersion(),
             contract,
             contract.startBinding(),
-            formContracts.project(
-                contract,
-                history.getProcessVariables() == null ? Map.of() : history.getProcessVariables(),
-                "start"));
+            history.getProcessVariables() == null ? Map.of() : history.getProcessVariables(),
+            "start",
+            source.getDefinitionId(),
+            source.getProcessInstanceId(),
+            source.getBusinessKey());
     List<String> watchers =
         entityManager
             .createQuery(
@@ -518,6 +589,19 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   @Transactional
   public ProcessInstanceSummary resubmit(String processInstanceId, StartProcessCommand command) {
     requireAuthority(WorkflowResourceCodes.INSTANCES_START);
+    return operations.execute(
+        tenantId(),
+        userId(),
+        "RESUBMIT",
+        processInstanceId,
+        command == null ? null : command.idempotencyKey(),
+        command,
+        () -> requireLockedInstance(processInstanceId),
+        () -> resubmitInternal(processInstanceId, command));
+  }
+
+  private ProcessInstanceSummary resubmitInternal(
+      String processInstanceId, StartProcessCommand command) {
     WorkflowInstanceEntity source = requireLockedInstance(processInstanceId);
     requireResubmission(source);
     if (command == null
@@ -562,6 +646,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     WorkflowDefinitionVersionEntity version =
         requireVersion(
             requireDefinition(source.getDefinitionId(), false), source.getDefinitionVersion());
+    requireExecutableVersion(version);
     if (repositoryService
             .createProcessDefinitionQuery()
             .processDefinitionId(version.getFlowableProcessDefinitionId())
@@ -574,6 +659,54 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   }
 
   @Override
+  public PageResult<org.simplepoint.plugin.workflow.api.model.WorkflowModels.BoundDefinition>
+      boundDefinitions(
+          String provider, String formId, int formVersion, String keyword, int page, int size) {
+    requireAuthority(WorkflowResourceCodes.INSTANCES_START);
+    final String tenant = tenantId();
+    provider = required(provider, "表单提供方不能为空", 80);
+    formId = required(formId, "表单标识不能为空", 160);
+    if (formVersion < 1) {
+      throw invalid("表单版本无效");
+    }
+    var bounds = PageBounds.of(page, size);
+    String search =
+        hasText(keyword) ? "%" + escapeLike(required(keyword.trim(), "搜索条件无效", 160)) + "%" : "%";
+    String from =
+        " from WorkflowDefinitionEntity definition, WorkflowFormBindingEntity binding,"
+            + " WorkflowDefinitionVersionEntity version where definition.tenantId = :tenant and"
+            + " binding.tenantId = :tenant and binding.definitionId = definition.id and"
+            + " binding.definitionVersion = definition.latestVersion and binding.id = version.id"
+            + " and definition.status = 'PUBLISHED' and binding.provider = :provider and"
+            + " binding.formId = :form and binding.formVersion = :version and"
+            + " version.definitionName like :search escape '!'";
+    var query =
+        entityManager.createQuery(
+            "select version" + from + " order by version.publishedAt desc, version.id",
+            WorkflowDefinitionVersionEntity.class);
+    var count = entityManager.createQuery("select count(definition)" + from, Long.class);
+    for (var target : List.of(query, count)) {
+      target
+          .setParameter("tenant", tenant)
+          .setParameter("provider", provider)
+          .setParameter("form", formId)
+          .setParameter("version", formVersion)
+          .setParameter("search", search);
+    }
+    var rows =
+        query.setFirstResult(bounds.offset()).setMaxResults(bounds.size()).getResultList().stream()
+            .map(
+                definition ->
+                    new org.simplepoint.plugin.workflow.api.model.WorkflowModels.BoundDefinition(
+                        definition.getDefinitionId(),
+                        definition.getDefinitionName(),
+                        definition.getVersion(),
+                        definition.getDefinitionDescription()))
+            .toList();
+    return new PageResult<>(rows, bounds.page(), bounds.size(), count.getSingleResult());
+  }
+
+  @Override
   public RuntimeForm startForm(final String definitionId, final Integer requestedVersion) {
     requireAuthority(WorkflowResourceCodes.INSTANCES_START);
     WorkflowDefinitionEntity definition = requireDefinition(definitionId, false);
@@ -581,12 +714,31 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
         requireVersion(
             definition,
             requestedVersion == null ? definition.getLatestVersion() : requestedVersion);
+    requireExecutableVersion(version);
     WorkflowFormContract contract = formContracts.read(version.getFormContract());
-    return new RuntimeForm(
+    return runtimeForm(
         version.getVersion(),
         contract,
         contract.startBinding(),
-        formContracts.project(contract, Map.of(), "start"));
+        Map.of(),
+        "start",
+        definitionId,
+        null,
+        null);
+  }
+
+  @Override
+  public RuntimeForm validateStartForm(
+      String definitionId, int version, Map<String, Object> variables, List<String> ccUserIds) {
+    requireRuntimeView();
+    RuntimeForm form = startForm(definitionId, version);
+    var validated =
+        formContracts.submission(form.formContract(), safeVariables(variables), Map.of(), "start");
+    validateDirectoryVariables(form.formContract(), validated, tenantId());
+    copiedUsers(
+        new StartProcessCommand(version, null, null, Map.of(), ccUserIds), tenantId(), userId());
+    return new RuntimeForm(
+        form.definitionVersion(), form.formContract(), form.binding(), validated);
   }
 
   @Override
@@ -603,18 +755,21 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
         requireVersion(
             requireDefinition(instance.getDefinitionId(), false), instance.getDefinitionVersion());
     WorkflowFormContract contract = formContracts.read(version.getFormContract());
-    return new RuntimeForm(
+    return runtimeForm(
         version.getVersion(),
         contract,
         contract.taskBindings().get(task.getTaskDefinitionKey()),
-        formContracts.project(
-            contract, runtimeService.getVariables(instance.getProcessInstanceId()), "task"));
+        runtimeService.getVariables(instance.getProcessInstanceId()),
+        "task",
+        instance.getDefinitionId(),
+        instance.getProcessInstanceId(),
+        instance.getBusinessKey());
   }
 
   @Override
   public PageResult<TaskSummary> pendingTasks(
       final String keyword, final int page, final int size) {
-    String tenant = tenantId();
+    final String tenant = tenantId();
     String user = userId();
     final PageBounds bounds = PageBounds.of(page, size);
     List<String> groups = roles();
@@ -651,7 +806,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   @Override
   public PageResult<TaskSummary> completedTasks(
       final String keyword, final int page, final int size) {
-    String tenant = tenantId();
+    final String tenant = tenantId();
     String user = userId();
     PageBounds bounds = PageBounds.of(page, size);
     var query =
@@ -681,7 +836,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   @Transactional
   public TaskSummary claim(final String taskId) {
     requireAuthority(WorkflowResourceCodes.TASKS_CLAIM);
-    String tenant = tenantId();
+    final String tenant = tenantId();
     String user = userId();
     List<String> groups = roles();
     WorkflowInstanceEntity instance =
@@ -706,7 +861,19 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   @Transactional
   public ProcessInstanceSummary complete(final String taskId, final CompleteTaskCommand command) {
     requireAuthority(WorkflowResourceCodes.TASKS_COMPLETE);
-    String tenant = tenantId();
+    return operations.execute(
+        tenantId(),
+        userId(),
+        "COMPLETE",
+        taskId,
+        command == null ? null : command.idempotencyKey(),
+        command,
+        () -> lockTaskInstance(taskId),
+        () -> completeInternal(taskId, command));
+  }
+
+  private ProcessInstanceSummary completeInternal(String taskId, CompleteTaskCommand command) {
+    final String tenant = tenantId();
     String user = userId();
     List<String> groups = roles();
     WorkflowInstanceEntity instance =
@@ -731,13 +898,37 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
               safeVariables(command == null ? null : command.variables()),
               runtimeService.getVariables(instance.getProcessInstanceId()),
               "task");
+      if (contract.startBinding() != null) {
+        var provider = formProviders.get(contract.startBinding().provider());
+        if (provider == null) {
+          throw conflict("此流程绑定的表单提供方尚未接入");
+        }
+        if (provider.protectsMappedVariables()) {
+          formContracts.protectMappedVariables(
+              contract, variables, runtimeService.getVariables(instance.getProcessInstanceId()));
+        }
+      }
       validateDirectoryVariables(contract, variables, tenant);
+      var taskBinding = contract.taskBindings().get(task.getTaskDefinitionKey());
+      if (taskBinding == null
+          && contract.startBinding() != null
+          && formProviders.get(contract.startBinding().provider()).protectsMappedVariables()) {
+        taskBinding = contract.startBinding();
+      }
       validateExternalForm(
-          contract.taskBindings().get(task.getTaskDefinitionKey()),
+          taskBinding,
           "task",
           task.getTaskDefinitionKey(),
-          variables);
-      taskService.complete(taskId, user, variables);
+          variables,
+          new WorkflowFormContext(
+              tenantId(),
+              userId(),
+              instance.getDefinitionId(),
+              instance.getDefinitionVersion(),
+              instance.getProcessInstanceId(),
+              instance.getBusinessKey(),
+              formAuthority()));
+      taskService.complete(taskId, user, formContracts.engineVariables(contract, variables));
       recordAction(instance, task, "APPROVED", comment);
     } catch (FlowableException exception) {
       throw new WorkflowException(Code.ENGINE_FAILURE, "任务提交失败", exception);
@@ -760,9 +951,28 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   @Override
   @Transactional
   public ProcessInstanceSummary reject(final String taskId, final String reason) {
+    return reject(taskId, reason, null);
+  }
+
+  @Override
+  @Transactional
+  public ProcessInstanceSummary reject(String taskId, String reason, String idempotencyKey) {
+    requireAuthority(WorkflowResourceCodes.TASKS_COMPLETE);
+    return operations.execute(
+        tenantId(),
+        userId(),
+        "REJECT",
+        taskId,
+        idempotencyKey,
+        java.util.Collections.singletonMap("reason", reason),
+        () -> lockTaskInstance(taskId),
+        () -> rejectInternal(taskId, reason));
+  }
+
+  private ProcessInstanceSummary rejectInternal(String taskId, String reason) {
     requireAuthority(WorkflowResourceCodes.TASKS_COMPLETE);
     String normalizedReason = required(reason, "请填写驳回原因", 500);
-    String tenant = tenantId();
+    final String tenant = tenantId();
     WorkflowInstanceEntity instance =
         requireLockedInstance(requireTask(taskId, tenant).getProcessInstanceId());
     requireRunning(instance);
@@ -776,6 +986,28 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   @Override
   @Transactional
   public ProcessInstanceSummary withdraw(final String processInstanceId, final String reason) {
+    return withdraw(processInstanceId, reason, null);
+  }
+
+  @Override
+  @Transactional
+  public ProcessInstanceSummary withdraw(
+      String processInstanceId, String reason, String idempotencyKey) {
+    if (!WorkflowAccess.canViewPersonalMatters()) {
+      requireAuthority(WorkflowResourceCodes.INSTANCES_STARTED_VIEW);
+    }
+    return operations.execute(
+        tenantId(),
+        userId(),
+        "WITHDRAW",
+        processInstanceId,
+        idempotencyKey,
+        java.util.Collections.singletonMap("reason", reason),
+        () -> requireLockedInstance(processInstanceId),
+        () -> withdrawInternal(processInstanceId, reason));
+  }
+
+  private ProcessInstanceSummary withdrawInternal(String processInstanceId, String reason) {
     if (!WorkflowAccess.canViewPersonalMatters()) {
       requireAuthority(WorkflowResourceCodes.INSTANCES_STARTED_VIEW);
     }
@@ -784,6 +1016,19 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
       throw forbidden("仅流程发起人可以撤回流程");
     }
     return terminate(instance, "WITHDRAWN", required(reason, "请填写撤回原因", 500), null);
+  }
+
+  private void lockTaskInstance(String taskId) {
+    var task =
+        historyService
+            .createHistoricTaskInstanceQuery()
+            .taskId(taskId)
+            .taskTenantId(tenantId())
+            .singleResult();
+    if (task == null) {
+      throw new WorkflowException(Code.NOT_FOUND, "流程任务不存在");
+    }
+    requireLockedInstance(task.getProcessInstanceId());
   }
 
   private Task claimForDecision(
@@ -811,7 +1056,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   public PageResult<ProcessInstanceSummary> copiedInstances(
       final String keyword, final int page, final int size) {
     requireAuthority(WorkflowResourceCodes.INSTANCES_STARTED_VIEW);
-    String tenant = tenantId();
+    final String tenant = tenantId();
     String user = userId();
     final PageBounds bounds = PageBounds.of(page, size);
     Search search = Search.of(keyword);
@@ -972,6 +1217,26 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   @Override
   @Transactional
   public ProcessInstanceSummary cancel(final String processInstanceId, final String reason) {
+    return cancel(processInstanceId, reason, null);
+  }
+
+  @Override
+  @Transactional
+  public ProcessInstanceSummary cancel(
+      String processInstanceId, String reason, String idempotencyKey) {
+    requireAuthority(WorkflowResourceCodes.INSTANCES_CANCEL);
+    return operations.execute(
+        tenantId(),
+        userId(),
+        "CANCEL",
+        processInstanceId,
+        idempotencyKey,
+        java.util.Collections.singletonMap("reason", reason),
+        () -> requireLockedInstance(processInstanceId),
+        () -> cancelInternal(processInstanceId, reason));
+  }
+
+  private ProcessInstanceSummary cancelInternal(String processInstanceId, String reason) {
     requireAuthority(WorkflowResourceCodes.INSTANCES_CANCEL);
     WorkflowInstanceEntity instance = requireLockedInstance(processInstanceId);
     if (!allowed(WorkflowResourceCodes.INSTANCES_VIEW)
@@ -1066,7 +1331,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
       final String starter,
       final int page,
       final int size) {
-    String tenant = tenantId();
+    final String tenant = tenantId();
     PageBounds bounds = PageBounds.of(page, size);
     Search search = Search.of(keyword);
     String status = normalizeStatus(requestedStatus);
@@ -1318,6 +1583,28 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     return instance;
   }
 
+  /** Never reinterpret running instances or silently start an old, non-executing loop model. */
+  private void requireExecutableVersion(WorkflowDefinitionVersionEntity version) {
+    BpmnExecutionSurfacePolicy.validate(BpmnDefinitionValidator.parse(version.getBpmnXml()));
+    String owner = BpmnExecutionCompiler.standardLoopOwner(version.getBpmnXml());
+    if (owner != null
+        && !repositoryService
+            .getDeploymentResourceNames(version.getFlowableDeploymentId())
+            .contains(BpmnExecutionCompiler.MANIFEST_RESOURCE)) {
+      throw new WorkflowModelingException(
+          "loopRepublish", "此历史版本尚未启用标准循环执行，请联系流程管理员检查配置并重新发布；原版本和运行中的事项不会被修改", owner);
+    }
+    String dataOwner =
+        BpmnDiagramCompilation.owner(BpmnDefinitionValidator.parse(version.getBpmnXml()));
+    if (dataOwner != null
+        && !repositoryService
+            .getDeploymentResourceNames(version.getFlowableDeploymentId())
+            .contains(BpmnExecutionCompiler.DIAGRAM_RESOURCE)) {
+      throw new WorkflowModelingException(
+          "diagramRepublish", "此历史版本的数据图形尚未与执行变量隔离，请联系流程管理员检查并重新发布；原版本和运行中的事项不会被修改", dataOwner);
+    }
+  }
+
   private Map<String, WorkflowInstanceEntity> instancesByIds(final Collection<String> ids) {
     Set<String> normalized =
         ids == null
@@ -1387,7 +1674,8 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
       final WorkflowFormContract.Binding binding,
       final String stage,
       final String taskDefinitionKey,
-      final Map<String, Object> variables) {
+      final Map<String, Object> variables,
+      final WorkflowFormContext context) {
     if (binding == null) {
       return;
     }
@@ -1396,7 +1684,89 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
       throw conflict("此流程绑定的表单提供方尚未接入，暂时不能提交");
     }
     provider.validateSubmission(
-        binding, stage, taskDefinitionKey, java.util.Collections.unmodifiableMap(variables));
+        binding,
+        stage,
+        taskDefinitionKey,
+        java.util.Collections.unmodifiableMap(variables),
+        context);
+  }
+
+  private org.simplepoint.plugin.workflow.api.model.WorkflowInvocationContext formAuthority() {
+    var authority = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    return new org.simplepoint.plugin.workflow.api.model.WorkflowInvocationContext(
+        tenantId(),
+        userId(),
+        Boolean.TRUE.equals(authority.getIsAdministrator()),
+        authority.getResources() == null ? Set.of() : Set.copyOf(authority.getResources()),
+        Set.copyOf(roles()));
+  }
+
+  private RuntimeForm runtimeForm(
+      int version,
+      WorkflowFormContract contract,
+      WorkflowFormContract.Binding binding,
+      Map<String, Object> source,
+      String stage,
+      String definition,
+      String instance,
+      String businessKey) {
+    var projected = formContracts.project(contract, source, stage);
+    Set<String> protectedVariables = Set.of();
+    if (contract.startBinding() != null) {
+      var provider = formProviders.get(contract.startBinding().provider());
+      if (provider == null || provider.protectsMappedVariables()) {
+        if (binding == null && "task".equals(stage)) {
+          binding = contract.startBinding();
+        }
+        protectedVariables = Set.copyOf(contract.startBinding().variableMappings().values());
+        protectedVariables.forEach(projected::remove);
+      }
+    }
+    return new RuntimeForm(
+        version,
+        contract,
+        binding,
+        projected,
+        instance,
+        businessKey,
+        definition,
+        protectedVariables);
+  }
+
+  private void validatePublishedBindings(WorkflowFormContract contract) {
+    if (contract.startBinding() != null) {
+      validatePublishedBinding(contract.startBinding(), "start", null, contract);
+    }
+    contract
+        .taskBindings()
+        .forEach((task, binding) -> validatePublishedBinding(binding, "task", task, contract));
+  }
+
+  private void validatePublishedBinding(
+      WorkflowFormContract.Binding binding,
+      String stage,
+      String task,
+      WorkflowFormContract contract) {
+    var provider = formProviders.get(binding.provider());
+    if (provider == null) {
+      throw conflict("此流程绑定的表单提供方尚未接入，暂时不能发布");
+    }
+    provider.validateBinding(binding, stage, task, contract, tenantId());
+  }
+
+  private String businessLink(WorkflowFormContract.Binding binding, String businessKey) {
+    if (binding == null || !formProviders.get(binding.provider()).requiresBusinessReference()) {
+      return null;
+    }
+    if (businessKey == null) {
+      throw invalid("绑定业务表单的流程必须引用已接受的表单提交");
+    }
+    try {
+      return checksum(
+          objectMapper.writeValueAsString(List.of(tenantId(), binding.provider(), businessKey)));
+    } catch (IOException failure) {
+      throw new WorkflowException(Code.VALIDATION, "业务提交标识无效", failure);
+    }
   }
 
   private void validateDirectoryVariables(

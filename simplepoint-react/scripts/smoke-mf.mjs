@@ -1,9 +1,14 @@
+import {smokeWorkspacePreference} from './workspace-preference-fixture.mjs';
+import {smokeHeaderLayout} from './header-layout-fixture.mjs';
 // Production-artifact smoke test with isolated API fixtures (no real account or
 // backend writes). MF_SMOKE_EDGE tests deployed remotes; MF_SMOKE_HOST_DIST
 // points to static/ extracted from the running host JAR (its HTTP paths require login).
 import assert from 'node:assert/strict';
-import {createPageReloader, createReadyControlClicker} from './cdp-navigation.mjs';
+import {createPageReloader, createReadyControlClicker, createReadyTextClicker} from './cdp-navigation.mjs';
 import {smokeWorkflowFormCommit} from './smoke-workflow-form-commit.mjs';
+import {smokeWorkflowStandardLoop} from './smoke-workflow-standard-loop.mjs';
+import {smokeWorkflowDiagram} from './smoke-workflow-diagram.mjs';
+import {smokeWorkflowImport} from './smoke-workflow-import.mjs';
 import {personalNavigation, createPersonalFixture} from './personal-fixture.mjs';
 const personalFixture = createPersonalFixture();
 import {createAssignmentFixture} from './assignment-fixture.mjs';
@@ -61,6 +66,8 @@ import {createMcpLifecycleFixture, mcpLifecycleRoute} from './mcp-lifecycle-fixt
 import {smokeMcpLifecycle} from './smoke-mcp-lifecycle.mjs';
 const mcpLifecycleFixture = createMcpLifecycleFixture();
 import {createRuntimeFixture, runtimeRoute} from './runtime-fixture.mjs';
+import {createDnaRuntimeFixture, dnaRuntimeRoute, smokeDnaRuntimeDetails} from './dna-runtime-details-fixture.mjs';
+const dnaRuntimeFixture = createDnaRuntimeFixture();
 import {smokeRuntime} from './smoke-runtime.mjs';
 import {smokeRuntimeMutations} from './smoke-runtime-mutations.mjs';
 import {createMcpCapabilitiesFixture, mcpCapabilitiesRoute} from './mcp-capabilities-fixture.mjs';
@@ -80,7 +87,13 @@ import {smokeJdbcArtifacts} from './smoke-jdbc-artifacts.mjs';
 const jdbcArtifactFixture = createJdbcArtifactFixture();
 import {createAppWorkbenchFixture, appWorkbenchRoute} from './app-workbench-fixture.mjs';
 import {smokeAppWorkbench} from './smoke-app-workbench.mjs';
+import {createFormDesignerFixture} from './form-designer-fixture.mjs';
+import {smokeFormDesigner} from './smoke-form-designer.mjs';
+const formDesignerFixture = createFormDesignerFixture();
 const appWorkbenchFixture = createAppWorkbenchFixture();
+import {createAppFormRuntimeFixture, appFormRuntimeRoute} from './app-form-runtime-fixture.mjs';
+import {smokeAppFormRuntime} from './smoke-app-form-runtime.mjs';
+const appFormRuntimeFixture = createAppFormRuntimeFixture();
 import {createRedisFixture, redisRoute} from './redis-fixture.mjs';
 import {smokeRedis} from './smoke-redis.mjs';
 import {smokeRedisMutations} from './smoke-redis-mutations.mjs';
@@ -107,10 +120,15 @@ const redisFixture = createRedisFixture();
 const runtimeFixture = createRuntimeFixture();
 import {createEntitySelectFixture} from './entity-select-fixture.mjs';
 import {smokeEntitySelect} from './smoke-entity-select.mjs';
+import {createDomainSelectFixture} from './domain-select-fixture.mjs';
+import {smokeDomainSelect} from './smoke-domain-select.mjs';
+const domainSelectFixture = createDomainSelectFixture();
 import {createWorkflowFixture, workflowRoutes} from './workflow-fixture.mjs';
 import {smokeWorkflow} from './smoke-workflow.mjs';
 import {smokeWorkflowLifecycle} from './smoke-workflow-lifecycle.mjs';
 import {smokeWorkflowPersonal} from './smoke-workflow-personal.mjs';
+import {smokeWorkflowScroll} from './smoke-workflow-scroll.mjs';
+import {smokeWorkflowMultiInstance} from './smoke-workflow-multi-instance.mjs';
 import {smokeExpressionModes} from './smoke-expression-modes.mjs';
 import {smokeConditionModes} from './smoke-condition-modes.mjs';
 import {smokeHostPreferences} from './smoke-host-preferences.mjs';
@@ -123,8 +141,8 @@ import {smokeTenantResources} from './smoke-tenant-resources.mjs';
 const tenantResourceFixture = createTenantResourceFixture();
 const workflowFixture = createWorkflowFixture();
 const workflowTenant = 'workflow-smoke-tenant';
-const initialWorkflowWorkspace = ['MF_SMOKE_WORKFLOW_PERSONAL_ONLY', 'MF_SMOKE_WORKFLOW_LIFECYCLE_ONLY',
-  'MF_SMOKE_WORKFLOW_FORM_COMMIT_ONLY', 'MF_SMOKE_WORKFLOW_ONLY'].some(key => process.env[key] === '1');
+const initialWorkflowWorkspace = ['MF_SMOKE_WORKFLOW_SCROLL_ONLY', 'MF_SMOKE_WORKFLOW_PERSONAL_ONLY', 'MF_SMOKE_WORKFLOW_LIFECYCLE_ONLY',
+  'MF_SMOKE_WORKFLOW_FORM_COMMIT_ONLY', 'MF_SMOKE_WORKFLOW_MULTI_ONLY', 'MF_SMOKE_WORKFLOW_LOOP_ONLY', 'MF_SMOKE_WORKFLOW_DIAGRAM_ONLY', 'MF_SMOKE_WORKFLOW_IMPORT_ONLY', 'MF_SMOKE_WORKFLOW_ONLY'].some(key => process.env[key] === '1');
 const entitySelectFixture = createEntitySelectFixture();
 import {createUserAssignmentFixture, tenantAssignmentRoute} from './user-assignment-fixture.mjs';
 import {smokeUserAssignment} from './smoke-user-assignment.mjs';
@@ -197,13 +215,18 @@ const json = (res, data, status = 200) => {
   res.writeHead(status, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'});
   res.end(JSON.stringify(data));
 };
+let workspacePreferenceUser = 'smoke';
 const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
     const pathname = url.pathname;
+    if (process.env.MF_SMOKE_WORKSPACE_PREFERENCE_ONLY === '1' && pathname === '/logout') {
+      assert.equal(req.method, 'POST');res.writeHead(200, {'Content-Type':'text/html'});res.end('Logged out');return;
+    }
     const record = {url: req.url, method: req.method, start: performance.now()};
     const respond = (data, status = 200) => {record.end = performance.now(); json(res, data, status);};
     if (!/\.(js|css|ico|woff2?|png|svg|json|map)$/.test(pathname)) apiRequests.push(record);
+    if (await domainSelectFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await dataScopeFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await exactDecimalFixture.handle(req, url, respond)) return;
     if (await aiConfigurationFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}),
@@ -220,6 +243,8 @@ const server = createServer(async (req, res) => {
     if (await workflowFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await dnaWorkbenchFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await jdbcArtifactFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await appFormRuntimeFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await formDesignerFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await appWorkbenchFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await mcpCapabilitiesFixture.handle(req, url, respond)) return;
     if (await jdbcUserFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
@@ -228,6 +253,7 @@ const server = createServer(async (req, res) => {
     if (await knowledgeFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await dictionaryLifecycleFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await apiKeyFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await dnaRuntimeFixture.handle(req, url, respond)) return;
     if (await runtimeFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await entitySelectFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await commonMainFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
@@ -244,7 +270,7 @@ const server = createServer(async (req, res) => {
     if (pathname === '/common/platform/tenants/users/capabilities') return respond({canConfigureMembers: false});
     if (pathname === '/common/data-scopes/presentation') return respond({pages: {}, dataRules: {'preview-old': '原组织范围', 'preview-new': '新组织范围'}, fieldRules: {}, organizations: {}});
     if (pathname === '/common/data-scopes/expression/catalog') return respond({});
-    if (pathname === '/userinfo') return respond({sub: 'smoke', preferred_username: 'smoke', name: 'MF smoke'});
+    if (pathname === '/userinfo') return respond({sub: workspacePreferenceUser, preferred_username: workspacePreferenceUser, name: 'MF smoke'});
     if (pathname === '/dna/platform/dna/federation/sql-console/workbench-permissions') return respond({canExecute: true, canExplain: true});
     if (pathname === '/common/platform/object-storage/providers') return respond([]);
     if (pathname === '/common/platform/object-storage/provider-configs/schema') return respond({
@@ -311,7 +337,7 @@ const server = createServer(async (req, res) => {
       authorizationContext: {scopeType: [tenantResourceFixture.tenantId, workflowTenant].filter(Boolean).includes(req.headers['x-tenant-id']) ? 'TENANT' : 'PLATFORM',
         actorRole: [tenantResourceFixture.tenantId, workflowTenant].filter(Boolean).includes(req.headers['x-tenant-id']) ? 'TENANT_OWNER' : 'PLATFORM_ADMIN',
         resources: [...new Set([...remotes.map(p => `${p.remote}.view`), ...(req.headers['x-tenant-id'] === tenantResourceFixture.tenantId ? tenantResourceRoutes.map(route => route.code) : [])])]},
-      routes: [...personalNavigation, ...workflowRoutes, ...pages.map((p, id) => ({id: String(id + 1), code: `${p.remote}.view`, type: 'PAGE', routeKind: 'item', path: `/smoke/${p.remote}`, component: `${p.remote}/${p.expose}`, title: '', label: p.label, icon: 'AppstoreOutlined', scopeTypes: ['PLATFORM']})), ...cacheTestRoutes, storageRoute, sqlRoute, organizationRoute, memberRoute, tenantAssignmentRoute, organizationSelectionRoute, ...commonMainRoutes, aiProviderRoute, exactDecimalRoute, applicationResourceRoute, resourceManagementRoute, runtimeRoute, redisRoute, knowledgeRoute, apiKeyRoute, mcpCapabilitiesRoute, jdbcUserRoute, ...storageCrudRoutes, metadataRoute, ...jdbcArtifactRoutes, appWorkbenchRoute, catalogRoute, billingRoute, mcpLifecycleRoute, ...(tenantResourceFixture.isActive() ? tenantResourceRoutes : [])],
+      routes: [...personalNavigation, ...workflowRoutes, ...pages.map((p, id) => ({id: String(id + 1), code: `${p.remote}.view`, type: 'PAGE', routeKind: 'item', path: `/smoke/${p.remote}`, component: `${p.remote}/${p.expose}`, title: '', label: p.label, icon: 'AppstoreOutlined', scopeTypes: ['PLATFORM']})), ...cacheTestRoutes, storageRoute, sqlRoute, dnaRuntimeRoute, organizationRoute, memberRoute, tenantAssignmentRoute, organizationSelectionRoute, ...commonMainRoutes, aiProviderRoute, exactDecimalRoute, applicationResourceRoute, resourceManagementRoute, runtimeRoute, redisRoute, knowledgeRoute, apiKeyRoute, mcpCapabilitiesRoute, jdbcUserRoute, ...storageCrudRoutes, metadataRoute, ...jdbcArtifactRoutes, appWorkbenchRoute, appFormRuntimeRoute, catalogRoute, billingRoute, mcpLifecycleRoute, ...(tenantResourceFixture.isActive() ? tenantResourceRoutes : [])],
     });
     if (pathname === '/common/i18n/languages/mapping') return respond({'zh-CN': '简体中文', 'en-US': 'English'});
     if (pathname === '/common/i18n/messages/mapping') {
@@ -392,7 +418,7 @@ const server = createServer(async (req, res) => {
     }
     if (pathname.startsWith('/common/users/preferences')) {
       const key = url.searchParams.get('key') || '';
-      if (key.includes('/common/personal/') || key.startsWith('sp.table.views.')) {
+      if (key.includes('/common/personal/') || key.startsWith('sp.table.views.') || key.startsWith('sp.data-table.')) {
         if (key.startsWith('sp.table.views.') && req.method === 'GET' && queryViewFailure) {
           expectedUploadFailures.push({url: origin + req.url, status: 500});
           return json(res, {message: 'View preference load failed (test)'}, 500);
@@ -442,7 +468,8 @@ const server = createServer(async (req, res) => {
     let file = path.resolve(directory, relative || 'index.html');
     if (!file.startsWith(`${directory}/`)) {res.writeHead(403); res.end(); return;}
     if (!remote && !path.extname(relative)) file = path.join(directory, 'index.html');
-    const mime = {'.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.html': 'text/html', '.ico': 'image/x-icon'};
+    const mime = {'.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.html': 'text/html',
+      '.ico': 'image/x-icon', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2'};
     const originalBody = await readFile(file);
     const body = simulateNewRelease && pathname === '/'
       ? originalBody.toString().replace(/\/assets\/js\/index\.[a-f0-9]+\.js/, '/assets/js/index.ffffffffffff.js')
@@ -509,11 +536,7 @@ try {
     if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails));
     return result.result.value;
   };
-  const clickText = async (selector, text) => {
-    const match = `[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>!e.disabled && e.getClientRects().length && e.textContent.replaceAll(' ','')===${JSON.stringify(text.replaceAll(' ', ''))})`;
-    await poll(() => evaluate(`!!(${match})`), 'enabled visible action ' + text);
-    await evaluate(`(${match}).click()`);
-  };
+  const clickText = createReadyTextClicker({evaluate, poll});
   const clickReady = createReadyControlClicker({evaluate, poll});
   const fill = async (selector, value) => evaluate(`(() => {const e=document.querySelector(${JSON.stringify(selector)});Object.getOwnPropertyDescriptor(e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
   await send('Runtime.enable');
@@ -526,6 +549,7 @@ try {
     localStorage.setItem(${JSON.stringify('sp.contextId:' + (initialWorkflowWorkspace ? workflowTenant : '__platform__'))}, 'smoke-context');
     localStorage.setItem('sp.nav.tabs', JSON.stringify(${JSON.stringify(cacheTestRoutes.map(route => ({key: route.path, location: route.path, label: route.label, closable: true})))}));
   `});
+  if (process.env.MF_SMOKE_WORKSPACE_PREFERENCE_ONLY === '1') domainSelectFixture.enable();
   await send('Page.navigate', {url: origin});
   const clickMenu = async label => {
     await poll(() => evaluate(`!![...document.querySelectorAll('.ant-menu-item')].find(e => e.textContent.trim() === ${JSON.stringify(label)})`), `menu ${label}`);
@@ -541,7 +565,24 @@ try {
       input.dispatchEvent(new Event('change', {bubbles: true}));
     })()`);
   };
-  if (process.env.MF_SMOKE_DATA_SCOPE_ONLY === '1') {
+  if (process.env.MF_SMOKE_WORKSPACE_PREFERENCE_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440,height:900,deviceScaleFactor:1,mobile:false});
+    await smokeWorkspacePreference({send,evaluate,poll,clickReady,clickText,origin,setUser: user => {workspacePreferenceUser=user;}});
+    assert.deepEqual(exceptions, []);assert.deepEqual(warnings, []);
+  } else if (process.env.MF_SMOKE_ORGANIZATION_SELECTION_ONLY === '1') {
+    await smokeOrganizationSelection({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: organizationSelectionFixture});
+    console.log('PASS: organization selection draft and query lifecycle');
+  } else if (process.env.MF_SMOKE_DNA_RUNTIME_DETAILS_ONLY === '1') {
+    dnaRuntimeFixture.enable();
+    await smokeDnaRuntimeDetails({clickMenu, clickReady, clickText, poll, evaluate, send, fixture: dnaRuntimeFixture, preferences: personalTablePreferences});
+    console.log('PASS: physical model details use persisted metadata and Runtime tab heights retain pagination at multiple viewport sizes');
+  } else if (process.env.MF_SMOKE_DOMAIN_SELECT_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeDomainSelect({clickReady, clickText, fill, poll, evaluate, fixture: domainSelectFixture, reload, send});
+    assert.deepEqual(exceptions, []);
+    assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: targeted shared domain selection with real production components');
+  } else if (process.env.MF_SMOKE_DATA_SCOPE_ONLY === '1') {
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
     await clickMenu('首页');
     await smokeDataScope({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: dataScopeFixture});
@@ -679,6 +720,21 @@ try {
     assert.ok(warnings.every(message => message.startsWith('[API]') && /\/redis\/entries/.test(message)));
     assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
     console.log('PASS: targeted Redis production artifacts with isolated API fixtures');
+  } else if (process.env.MF_SMOKE_APP_FORM_RUNTIME_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeAppFormRuntime({clickMenu, clickText, fill, poll, evaluate, fixture: appFormRuntimeFixture, workspace: tenantResourceFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/app\/runtime/.test(message)));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+  } else if (process.env.MF_SMOKE_FORM_DESIGNER_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeFormDesigner({clickMenu, clickReady, clickText, fill, poll, evaluate, reload, send, fixture: formDesignerFixture,
+      applications: appWorkbenchFixture, workspace: tenantResourceFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && /\/app\/(?:runtime\/)?applications\//.test(message)));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
   } else if (process.env.MF_SMOKE_APP_WORKBENCH_ONLY === '1') {
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
     await clickMenu('首页');
@@ -727,6 +783,37 @@ try {
     assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/billing/summary')));
     assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
     console.log('PASS: targeted billing with production artifacts and isolated API fixtures');
+  } else if (process.env.MF_SMOKE_WORKFLOW_IMPORT_ONLY === '1') {
+    await smokeWorkflowImport({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture});
+    assert.deepEqual(exceptions, []); assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+    console.log('PASS: targeted workflow import integrity with production modeler and isolated fixtures');
+  } else if (process.env.MF_SMOKE_WORKFLOW_DIAGRAM_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    await smokeWorkflowDiagram({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture});
+    assert.deepEqual(exceptions, []);
+    assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+  } else if (process.env.MF_SMOKE_WORKFLOW_LOOP_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    await smokeWorkflowStandardLoop({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture});
+    assert.deepEqual(exceptions, []);
+    // bpmn-js 18.31's native replace action calls diagram-js 15.28's deprecated getPad.
+    // Keep the real menu covered, without suppressing logs or accepting unrelated warnings.
+    assert.ok(warnings.length <= 1 && warnings.every(message => message.startsWith(
+      'Error: ContextPad#getPad is deprecated and will be removed in future library versions, cf. https://github.com/bpmn-io/diagram-js/pull/888\n')));
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+  } else if (process.env.MF_SMOKE_WORKFLOW_MULTI_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    await smokeWorkflowMultiInstance({clickMenu, clickReady, clickText, fill, poll, evaluate, send, fixture: workflowFixture});
+    assert.deepEqual(exceptions, []);
+    assert.deepEqual(warnings, []);
+    assert.deepEqual(network.filter(r => r.status >= 400), []);
+  } else if (process.env.MF_SMOKE_WORKFLOW_SCROLL_ONLY === '1') {
+    await smokeWorkflowScroll({poll, evaluate, send, clickText, fixture: workflowFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/workflow/inbox/pending')));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
   } else if (process.env.MF_SMOKE_WORKFLOW_PERSONAL_ONLY === '1') {
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
     await clickMenu('首页');
@@ -737,7 +824,7 @@ try {
         await writeFile(process.env.MF_SMOKE_WORKFLOW_PERSONAL_SCREENSHOT, Buffer.from(screenshot.data, 'base64'));
       } : undefined});
     assert.deepEqual(exceptions, []);
-    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/workflow/tasks/taskreject/reject')));
+    assert.ok(warnings.every(message => message.startsWith('[API]') && ['/workflow/tasks/taskreject/reject', '/workflow/instances/instancewithdraw/withdraw', '/workflow/instances/instancecancel/cancel'].some(path => message.includes(path))));
     console.log('PASS: targeted consolidated personal workflow with production artifacts and isolated tenant APIs');
   } else if (process.env.MF_SMOKE_WORKFLOW_LIFECYCLE_ONLY === '1') {
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
@@ -1579,6 +1666,7 @@ try {
   await smokeHomeCustomization({clickMenu, clickReady, clickText, fill, poll, evaluate, reload, fixture: homeFixture});
   await smokeOrganizationMembers({clickMenu, clickReady, clickText, fill, poll, evaluate, send, reload, fixture: memberFixture});
   await smokeTenantResources({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture: tenantResourceFixture});
+  await smokeHeaderLayout({send, evaluate, poll});
   simulateNewRelease = true;
   await evaluate(`window.__smokeDateNow = Date.now; Date.now = () => window.__smokeDateNow() + 301000; document.dispatchEvent(new Event('visibilitychange'));`);
   await poll(() => evaluate(`document.body.textContent.includes('有新版本可用')`), 'release update prompt');

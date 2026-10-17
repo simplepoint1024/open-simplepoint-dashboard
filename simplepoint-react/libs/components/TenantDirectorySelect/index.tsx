@@ -19,7 +19,7 @@ const option = (row: Record<string, unknown>, unnamed: string): EntityOption | u
 
 /** User IDs and role authorities use the same authorized, paged, scope-keyed selector. */
 export default function TenantDirectorySelect({kind, ...props}: TenantDirectorySelectProps) {
-  const {t} = useI18n();
+  const {t, locale} = useI18n();
   const endpoint = `/common/tenant-directory/${kind}`;
   const source = useMemo<EntitySelectSource>(() => {
     const toOption = (row: Record<string, unknown>): EntityOption | undefined => {
@@ -29,7 +29,7 @@ export default function TenantDirectorySelect({kind, ...props}: TenantDirectoryS
       return item;
     };
     return {
-      key: `tenant-directory.${kind}`,
+      key: JSON.stringify(['tenant-directory', kind, locale]),
       searchParams: (keyword, page, size) => ({keyword: keyword.trim(), page, size}),
       option: toOption,
       resolve: async (ids, signal) => {
@@ -45,6 +45,6 @@ export default function TenantDirectorySelect({kind, ...props}: TenantDirectoryS
         return options;
       },
     };
-  }, [endpoint, kind, t]);
+  }, [endpoint, kind, locale, t]);
   return <EntitySelect {...props} endpoint={endpoint} source={source}/>;
 }

@@ -1,0 +1,4 @@
+.sp-resizable-sidebar { min-width: 0; min-height: 0; overflow: hidden; }
+.sp-resizable-sidebar-main, .sp-resizable-sidebar-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden !important; }
+.sp-resizable-sidebar-main > *, .sp-resizable-sidebar-panel > * { flex: 1; min-width: 0; min-height: 0; }
+.sp-resizable-sidebar .ant-splitter-bar-collapse-bar { z-index: 2; }

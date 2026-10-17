@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import {useEffect, useRef, useState} from 'react';
 import {Alert, Tag} from 'antd';
 import TableActions from '@simplepoint/components/Table/Actions';
@@ -38,7 +39,7 @@ export function Priority({value}: {value: number}) {
   const {priorities} = usePersonalLabels();
   return <Tag color={['default', 'blue', 'orange', 'red'][value]}>{priorities[value]}</Tag>;
 }
-export function formatTime(value?: string | null) { return value ? new Date(value).toLocaleString() : '—'; }
+export function formatTime(value?: string | null) { return value ? formatDateTime(value) : '—'; }
 export function ErrorNotice({error, retry}: {error: unknown; retry?: () => void}) {
   const {t} = usePersonalLabels();
   if (!error) return null;

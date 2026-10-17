@@ -223,6 +223,9 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     if (dto == null) {
       throw new IllegalArgumentException("角色资源授权参数不能为空");
     }
+    if (tenantResourceCatalog != null) {
+      tenantResourceCatalog.lockForGrantModification(resolveCurrentTenantScope());
+    }
     validateRoleBelongsToCurrentTenant(dto.getRoleId());
     getRepository().lockForAuthorization(resolveCurrentTenantScope(), dto.getRoleId());
     scopePolicyValidator.validate(resolveCurrentTenantScope(), dto.getDataScopeId(), dto.getFieldScopeId());
@@ -240,6 +243,12 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
             .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
             .map(Resource::getCode)
             .collect(Collectors.toSet());
+    if (tenantResourceCatalog != null) {
+      accessibleGrantableCodes = new LinkedHashSet<>(accessibleGrantableCodes);
+      accessibleGrantableCodes.addAll(
+          tenantResourceCatalog.managedGrantableCodes(tenantId, resourceCodes)
+      );
+    }
     if (!accessibleGrantableCodes.containsAll(resourceCodes)) {
       Set<String> rejected = new LinkedHashSet<>(resourceCodes);
       rejected.removeAll(accessibleGrantableCodes);

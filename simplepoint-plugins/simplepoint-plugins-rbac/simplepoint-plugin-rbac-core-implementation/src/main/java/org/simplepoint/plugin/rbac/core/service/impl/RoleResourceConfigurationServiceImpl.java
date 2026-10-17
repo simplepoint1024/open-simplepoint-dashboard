@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HexFormat;
 import java.util.LinkedHashSet;
@@ -113,6 +114,10 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
       return listCustom(tenant, roleId, search, state, resourceType,
           parentId, rootsOnly, navigationOnly, page);
     }
+    if (tenantResourceCatalog != null) {
+      return listPlatformAndManaged(tenant, roleId, search, state, resourceType,
+          parentId, rootsOnly, navigationOnly, page);
+    }
     var cb = em.getCriteriaBuilder();
     var query = cb.createQuery(Resource.class);
     var resource = query.from(Resource.class);
@@ -206,6 +211,9 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
   @Transactional(rollbackFor = Exception.class)
   public void save(String roleId, Patch patch) {
     final String tenant = requireRole(roleId);
+    if (tenantResourceCatalog != null) {
+      tenantResourceCatalog.lockForGrantModification(tenant);
+    }
     if (custom(tenant)) {
       saveCustom(tenant, roleId, patch);
       return;
@@ -231,12 +239,27 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
     Map<String, Row> current = new java.util.HashMap<>();
     List<String> requestedIds = List.copyOf(ids);
     for (int start = 0; start < requestedIds.size(); start += QUERY_BATCH) {
+      List<String> batch = requestedIds.subList(
+          start,
+          Math.min(start + QUERY_BATCH, requestedIds.size())
+      );
+      if (tenantResourceCatalog != null) {
+        List<TenantResource> managed = em.createQuery(
+                "select resource from TenantResource resource "
+                    + "where resource.tenantId = :tenant and resource.enabled = true "
+                    + "and resource.managedOwner is not null and resource.id in :ids",
+                TenantResource.class
+            )
+            .setParameter("tenant", tenant)
+            .setParameter("ids", batch)
+            .getResultList();
+        rowsCustom(managed, tenant, roleId).forEach(row -> current.put(row.id(), row));
+      }
       var cb = em.getCriteriaBuilder();
       var query = cb.createQuery(Resource.class);
       var resource = query.from(Resource.class);
       query.select(resource).where(visible(cb, query, resource, tenant),
-          resource.get("id").in(requestedIds.subList(start,
-              Math.min(start + QUERY_BATCH, requestedIds.size()))));
+          resource.get("id").in(batch));
       rows(em.createQuery(query).getResultList(), tenant, roleId)
           .forEach(row -> current.put(row.id(), row));
     }
@@ -263,7 +286,9 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
     if (resourceId == null || resourceId.isBlank()) {
       throw badRequest("请选择资源目录");
     }
-    if (custom(tenant)) return previewCustom(resourceId, granted, subtreeCustom(tenant, roleId, resourceId));
+    if (custom(tenant) || managedResource(tenant, resourceId)) {
+      return previewCustom(resourceId, granted, subtreeCustom(tenant, roleId, resourceId));
+    }
     return preview(resourceId, granted, subtree(tenant, roleId, resourceId));
   }
 
@@ -271,7 +296,7 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
   public List<Row> subtreeRows(String roleId, String resourceId) {
     String tenant = requireRole(roleId);
     if (resourceId == null || resourceId.isBlank()) throw badRequest("请选择资源目录");
-    if (custom(tenant)) {
+    if (custom(tenant) || managedResource(tenant, resourceId)) {
       List<TenantResource> items = subtreeCustom(tenant, roleId, resourceId).resources();
       List<Row> result = new ArrayList<>(items.size());
       for (int start = 0; start < items.size(); start += QUERY_BATCH) {
@@ -292,11 +317,14 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
   @Transactional(rollbackFor = Exception.class)
   public void saveSubtree(String roleId, BulkCommand command) {
     String tenant = requireRole(roleId);
+    if (tenantResourceCatalog != null) {
+      tenantResourceCatalog.lockForGrantModification(tenant);
+    }
     if (command == null || command.resourceId() == null || command.resourceId().isBlank()
         || command.granted() == null || command.revision() == null) {
       throw badRequest("批量资源变更缺少目录、授权状态或版本");
     }
-    if (custom(tenant)) {
+    if (custom(tenant) || managedResource(tenant, command.resourceId())) {
       saveSubtreeCustom(tenant, roleId, command);
       return;
     }
@@ -324,6 +352,241 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
   private boolean custom(String tenant) {
     return tenantResourceCatalog != null
         && tenantResourceCatalog.mode(tenant) == TenantResourceMode.CUSTOM;
+  }
+
+  private boolean managedResource(final String tenant, final String resourceId) {
+    if (tenantResourceCatalog == null || resourceId == null || resourceId.isBlank()) {
+      return false;
+    }
+    return !em.createQuery(
+            "select resource.id from TenantResource resource "
+                + "where resource.tenantId = :tenant and resource.id = :id "
+                + "and resource.enabled = true and resource.managedOwner is not null",
+            String.class
+        )
+        .setParameter("tenant", tenant)
+        .setParameter("id", resourceId)
+        .setMaxResults(1)
+        .getResultList()
+        .isEmpty();
+  }
+
+  private Page<Row> listPlatformAndManaged(
+      String tenant,
+      String roleId,
+      String search,
+      String state,
+      ResourceType type,
+      String parentId,
+      boolean rootsOnly,
+      boolean navigationOnly,
+      Pageable page
+  ) {
+    var cb = em.getCriteriaBuilder();
+    var platformCount = cb.createQuery(Long.class);
+    var countedPlatform = platformCount.from(Resource.class);
+    platformCount.select(cb.count(countedPlatform)).where(filters(
+        cb,
+        platformCount,
+        countedPlatform,
+        tenant,
+        roleId,
+        search,
+        state,
+        type,
+        parentId,
+        rootsOnly,
+        navigationOnly
+    ));
+    long platformTotal = em.createQuery(platformCount).getSingleResult();
+    var managedCount = cb.createQuery(Long.class);
+    var countedManaged = managedCount.from(TenantResource.class);
+    managedCount.select(cb.count(countedManaged)).where(managedFilters(
+        cb,
+        managedCount,
+        countedManaged,
+        tenant,
+        roleId,
+        search,
+        state,
+        type,
+        parentId,
+        rootsOnly,
+        navigationOnly
+    ));
+    long managedTotal = em.createQuery(managedCount).getSingleResult();
+    long total = platformTotal + managedTotal;
+    if (page.getOffset() >= total) {
+      return new PageImpl<>(List.of(), page, total);
+    }
+    int prefixSize = Math.toIntExact(Math.min(
+        Integer.MAX_VALUE,
+        Math.min(total, page.getOffset() + page.getPageSize())
+    ));
+
+    var platformQuery = cb.createQuery(Resource.class);
+    var platform = platformQuery.from(Resource.class);
+    platformQuery.select(platform).where(filters(
+        cb,
+        platformQuery,
+        platform,
+        tenant,
+        roleId,
+        search,
+        state,
+        type,
+        parentId,
+        rootsOnly,
+        navigationOnly
+    ));
+    platformQuery.orderBy(
+        cb.asc(platform.get("sort")),
+        cb.asc(platform.get("name")),
+        cb.asc(platform.get("code")),
+        cb.asc(platform.get("id"))
+    );
+    List<Resource> platformResources = em.createQuery(platformQuery)
+        .setMaxResults(Math.toIntExact(Math.min(platformTotal, prefixSize)))
+        .getResultList();
+
+    var managedQuery = cb.createQuery(TenantResource.class);
+    var managed = managedQuery.from(TenantResource.class);
+    managedQuery.select(managed).where(managedFilters(
+        cb,
+        managedQuery,
+        managed,
+        tenant,
+        roleId,
+        search,
+        state,
+        type,
+        parentId,
+        rootsOnly,
+        navigationOnly
+    ));
+    managedQuery.orderBy(
+        cb.asc(managed.get("sort")),
+        cb.asc(managed.get("name")),
+        cb.asc(managed.get("code")),
+        cb.asc(managed.get("id"))
+    );
+    List<TenantResource> managedResources = em.createQuery(managedQuery)
+        .setMaxResults(Math.toIntExact(Math.min(managedTotal, prefixSize)))
+        .getResultList();
+
+    List<CatalogItem> merged = new ArrayList<>(
+        platformResources.size() + managedResources.size()
+    );
+    platformResources.forEach(resource -> merged.add(CatalogItem.platform(resource)));
+    managedResources.forEach(resource -> merged.add(CatalogItem.managed(resource)));
+    merged.sort(CatalogItem.ORDER);
+    int from = Math.toIntExact(page.getOffset());
+    int to = Math.min(merged.size(), from + page.getPageSize());
+    List<CatalogItem> selected = merged.subList(Math.min(from, merged.size()), to);
+    Set<String> platformIds = selected.stream().filter(item -> !item.managed())
+        .map(CatalogItem::id).collect(Collectors.toCollection(LinkedHashSet::new));
+    Set<String> managedIds = selected.stream().filter(CatalogItem::managed)
+        .map(CatalogItem::id).collect(Collectors.toCollection(LinkedHashSet::new));
+    Map<String, Row> platformRows = rows(
+        platformResources.stream().filter(resource -> platformIds.contains(resource.getId())).toList(),
+        tenant,
+        roleId
+    ).stream().collect(Collectors.toMap(Row::id, row -> row));
+    Map<String, Row> managedRows = rowsCustom(
+        managedResources.stream().filter(resource -> managedIds.contains(resource.getId())).toList(),
+        tenant,
+        roleId
+    ).stream().collect(Collectors.toMap(Row::id, row -> row));
+    return new PageImpl<>(selected.stream()
+        .map(item -> item.managed() ? managedRows.get(item.id()) : platformRows.get(item.id()))
+        .filter(Objects::nonNull)
+        .toList(), page, total);
+  }
+
+  private Predicate managedFilters(
+      CriteriaBuilder cb,
+      CommonAbstractCriteria query,
+      Root<TenantResource> resource,
+      String tenant,
+      String roleId,
+      String search,
+      String state,
+      ResourceType type,
+      String parentId,
+      boolean rootsOnly,
+      boolean navigationOnly
+  ) {
+    List<Predicate> predicates = new ArrayList<>();
+    predicates.add(cb.equal(resource.get("tenantId"), tenant));
+    predicates.add(cb.isTrue(resource.get("enabled")));
+    predicates.add(cb.isNotNull(resource.get("managedOwner")));
+    if (!search.isEmpty()) {
+      String pattern = "%" + search.replace("!", "!!").replace("%", "!%")
+          .replace("_", "!_").toLowerCase(java.util.Locale.ROOT) + "%";
+      predicates.add(cb.or(
+          cb.like(cb.lower(resource.get("code")), pattern, '!'),
+          cb.like(cb.lower(resource.get("name")), pattern, '!'),
+          cb.like(cb.lower(resource.get("path")), pattern, '!')
+      ));
+    }
+    if (type != null) {
+      predicates.add(cb.equal(resource.get("type"), type));
+    }
+    if (navigationOnly) {
+      predicates.add(navigationTypeCustom(cb, resource));
+    }
+    if (parentId != null) {
+      predicates.add(cb.equal(resource.get("parentId"), parentId));
+    } else if (rootsOnly) {
+      predicates.add(cb.isNull(resource.get("parentId")));
+    }
+    if (!"all".equals(state)) {
+      var grant = query.subquery(Integer.class);
+      var assignment = grant.from(RoleResourceGrant.class);
+      grant.select(cb.literal(1)).where(
+          cb.equal(assignment.get("tenantId"), tenant),
+          cb.equal(assignment.get("roleId"), roleId),
+          cb.equal(assignment.get("resourceCode"), resource.get("code")),
+          cb.isNull(assignment.get("deletedAt"))
+      );
+      predicates.add("granted".equals(state)
+          ? cb.exists(grant) : cb.not(cb.exists(grant)));
+    }
+    return cb.and(predicates.toArray(Predicate[]::new));
+  }
+
+  private record CatalogItem(
+      boolean managed,
+      String id,
+      Integer sort,
+      String name,
+      String code
+  ) {
+    private static final Comparator<CatalogItem> ORDER = Comparator
+        .comparing(CatalogItem::sort, Comparator.nullsLast(Comparator.naturalOrder()))
+        .thenComparing(CatalogItem::name, Comparator.nullsLast(String::compareTo))
+        .thenComparing(CatalogItem::code, Comparator.nullsLast(String::compareTo))
+        .thenComparing(CatalogItem::id);
+
+    private static CatalogItem platform(final Resource resource) {
+      return new CatalogItem(
+          false,
+          resource.getId(),
+          resource.getSort(),
+          resource.getName(),
+          resource.getCode()
+      );
+    }
+
+    private static CatalogItem managed(final TenantResource resource) {
+      return new CatalogItem(
+          true,
+          resource.getId(),
+          resource.getSort(),
+          resource.getName(),
+          resource.getCode()
+      );
+    }
   }
 
   private Page<Row> listCustom(String tenant, String roleId, String search, String state,
@@ -666,11 +929,24 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
               .setParameter("tenant", tenant).setParameter("ids", ids).getResultList();
           level = rowsCustom(entries, tenant, roleId);
         } else {
+          level = new ArrayList<>();
+          if (tenantResourceCatalog != null) {
+            var entries = em.createQuery(
+                    "select resource from TenantResource resource "
+                        + "where resource.tenantId = :tenant and resource.enabled = true "
+                        + "and resource.managedOwner is not null and resource.id in :ids",
+                    TenantResource.class
+                )
+                .setParameter("tenant", tenant)
+                .setParameter("ids", ids)
+                .getResultList();
+            level.addAll(rowsCustom(entries, tenant, roleId));
+          }
           var cb = em.getCriteriaBuilder();
           var query = cb.createQuery(Resource.class);
           var resource = query.from(Resource.class);
           query.select(resource).where(resource.get("id").in(ids), visible(cb, query, resource, tenant));
-          level = rows(em.createQuery(query).getResultList(), tenant, roleId);
+          level.addAll(rows(em.createQuery(query).getResultList(), tenant, roleId));
         }
         result.addAll(level);
         level.stream().map(Row::parentId).filter(Objects::nonNull).forEach(parents::add);
@@ -863,6 +1139,17 @@ public class RoleResourceConfigurationServiceImpl implements RoleResourceConfigu
             var descriptor = PermissionPageDescriptor.fromJson(resource.getPermissionMetadata());
             if (descriptor != null) result.put(resource.getCode(), descriptor);
           });
+      if (tenantResourceCatalog != null) {
+        em.createQuery("select r.code,r.permissionMetadata from TenantResource r where r.tenantId=:tenant "
+            + "and r.enabled=true and r.formallyOffline=false and r.managedOwner is not null "
+            + "and r.type='PAGE' and r.permissionMetadata is not null and r.code in :codes", Object[].class)
+            .setParameter("tenant", roles.requireManagementTenant())
+            .setParameter("codes", values.subList(offset, Math.min(offset + QUERY_BATCH, values.size())))
+            .setMaxResults(QUERY_BATCH).getResultList().forEach(row -> {
+              var descriptor = PermissionPageDescriptor.fromJson((String) row[1]);
+              if (descriptor != null) result.put((String) row[0], descriptor);
+            });
+      }
     }
     return result;
   }

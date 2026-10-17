@@ -14,6 +14,9 @@ public interface PhysicalModelService {
   /** Reads a model only from the current authenticated tenant. */
   PhysicalModelView get(String physicalModelId);
 
+  /** Resolves the stable model owned by one APP form for timeout recovery. */
+  PhysicalModelView getByForm(String appId, String formId);
+
   /** Appends an immutable target schema version using optimistic locking. */
   PhysicalModelVersionView createVersion(
       String physicalModelId,

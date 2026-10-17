@@ -48,6 +48,14 @@ final class ResourceDirectoryQuery {
     return completePresentation(ids, true, false);
   }
 
+  /** Loads active platform parents for tenant-managed route nodes without granting the parents. */
+  List<Resource> navigationAncestors(Set<String> parentIds) {
+    if (parentIds == null || parentIds.isEmpty()) return List.of();
+    Set<String> included = new LinkedHashSet<>(parentIds);
+    includeAncestors(new LinkedHashSet<>(parentIds), included);
+    return completePresentation(included, true, false);
+  }
+
   private Set<String> completeSeeds(Set<String> codes, boolean licensed, boolean routes, boolean allowDisabled) {
     var result = new LinkedHashSet<String>(); var cb = em.getCriteriaBuilder();
     var requested = codes == null ? null : new ArrayList<>(codes);

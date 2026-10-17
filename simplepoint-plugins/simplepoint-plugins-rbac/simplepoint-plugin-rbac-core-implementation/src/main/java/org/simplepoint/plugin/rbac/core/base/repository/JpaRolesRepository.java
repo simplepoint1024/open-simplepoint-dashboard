@@ -54,6 +54,6 @@ public interface JpaRolesRepository extends BaseRepository<Role, String>, RoleRe
                     @Param("resourceCodes") Set<String> resourceCodes);
 
   @Override
-  @Query("select resourceCode from RoleResourceGrant where tenantId = :tenantId and roleId = :roleId")
+  @Query("select resourceCode from RoleResourceGrant where tenantId = :tenantId and roleId = :roleId and deletedAt is null")
   Collection<String> authorized(@Param("tenantId") String tenantId, @Param("roleId") String roleId);
 }

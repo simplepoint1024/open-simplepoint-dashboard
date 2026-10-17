@@ -3,7 +3,6 @@ package org.simplepoint.plugin.dna.runtime.service.support;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,7 +17,7 @@ import org.simplepoint.plugin.dna.runtime.api.schema.LogicalValueKind;
 class StandardLogicalValueConverterTest {
 
   private final StandardLogicalValueConverter converter =
-      new StandardLogicalValueConverter(new ObjectMapper());
+      new StandardLogicalValueConverter();
 
   @Test
   void canonicalizesJsonObjectKeysAndUtcDateTime() {
@@ -58,6 +57,13 @@ class StandardLogicalValueConverterTest {
           .isEqualTo(DnaRuntimeErrorCode.VALUE_CONVERSION_FAILED);
       assertThat(exception.getMessage()).doesNotContain("9223372036854775807");
     });
+  }
+
+  @Test
+  void stringStorageLengthCountsUnicodeCodePoints() {
+    var text = field(LogicalFieldType.STRING, true);
+    assertThat(converter.normalize(text, "😀".repeat(128)).canonicalValue()).isEqualTo("😀".repeat(128));
+    assertFailure(() -> converter.normalize(text, "😀".repeat(129)));
   }
 
   private static void assertFailure(final Runnable operation) {

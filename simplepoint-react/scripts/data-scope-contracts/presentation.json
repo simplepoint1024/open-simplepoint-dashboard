@@ -29,7 +29,8 @@
                 "is:null",
                 "is:not:null"
               ],
-              "values": []
+              "values": [],
+              "readOnly": false
             },
             "id": {
               "type": "java.lang.String",
@@ -42,7 +43,8 @@
                 "is:null",
                 "is:not:null"
               ],
-              "values": []
+              "values": [],
+              "readOnly": true
             },
             "code": {
               "type": "java.lang.String",
@@ -63,7 +65,8 @@
                 "is:null",
                 "is:not:null"
               ],
-              "values": []
+              "values": [],
+              "readOnly": false
             },
             "type": {
               "type": "java.lang.String",
@@ -84,7 +87,8 @@
                 "is:null",
                 "is:not:null"
               ],
-              "values": []
+              "values": [],
+              "readOnly": false
             },
             "createdBy": {
               "type": "java.lang.String",
@@ -97,13 +101,15 @@
                 "is:null",
                 "is:not:null"
               ],
-              "values": []
+              "values": [],
+              "readOnly": true
             },
             "createdAt": {
               "type": "java.time.Instant",
               "title": "createdAt",
               "operators": [],
-              "values": []
+              "values": [],
+              "readOnly": true
             },
             "description": {
               "type": "java.lang.String",
@@ -124,13 +130,15 @@
                 "is:null",
                 "is:not:null"
               ],
-              "values": []
+              "values": [],
+              "readOnly": false
             },
             "updatedAt": {
               "type": "java.time.Instant",
               "title": "updatedAt",
               "operators": [],
-              "values": []
+              "values": [],
+              "readOnly": true
             },
             "enabled": {
               "type": "java.lang.Boolean",
@@ -143,7 +151,8 @@
                 "is:null",
                 "is:not:null"
               ],
-              "values": []
+              "values": [],
+              "readOnly": false
             },
             "sort": {
               "type": "java.lang.Integer",
@@ -162,7 +171,8 @@
                 "is:null",
                 "is:not:null"
               ],
-              "values": []
+              "values": [],
+              "readOnly": false
             },
             "name": {
               "type": "java.lang.String",
@@ -183,7 +193,8 @@
                 "is:null",
                 "is:not:null"
               ],
-              "values": []
+              "values": [],
+              "readOnly": false
             }
           }
         }

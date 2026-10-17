@@ -16,7 +16,11 @@ public record PermissionModelDescriptor(String model, boolean data, boolean fiel
     String owner, String department, Map<String, Field> properties) {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  public record Field(String type, String title, List<String> operators, List<String> values) {}
+  public record Field(String type, String title, List<String> operators, List<String> values, boolean readOnly) {
+    public Field(String type, String title, List<String> operators, List<String> values) {
+      this(type, title, operators, values, false);
+    }
+  }
 
   public PermissionModelDescriptor {
     properties = properties == null ? Map.of() : Map.copyOf(properties);
@@ -50,7 +54,9 @@ public record PermissionModelDescriptor(String model, boolean data, boolean fiel
         }
         fields.putIfAbsent(field.getName(), new Field(type.getName(), schema == null || schema.title().isBlank()
             ? field.getName() : schema.title(), operators,
-            type.isEnum() ? Arrays.stream(type.getEnumConstants()).map(value -> ((Enum<?>) value).name()).toList() : List.of()));
+            type.isEnum() ? Arrays.stream(type.getEnumConstants()).map(value -> ((Enum<?>) value).name()).toList() : List.of(),
+            schema != null && schema.accessMode() == Schema.AccessMode.READ_ONLY
+                || json != null && json.access() == com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY));
       }
     }
     return new PermissionModelDescriptor(model.getName(), policy == null || policy.data(),

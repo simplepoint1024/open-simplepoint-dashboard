@@ -174,6 +174,11 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
     }
     List<String> all = List.copyOf(codes);
     Set<String> pages = new LinkedHashSet<>();
+    snapshot.load(codes);
+    snapshot.tenantEntries.values().stream()
+        .filter(item -> item.getType() == ResourceType.PAGE && codes.contains(item.getCode()))
+        .map(TenantResource::getCode)
+        .forEach(pages::add);
     for (int start = 0; start < all.size(); start += LOOKUP_BATCH_SIZE) {
       pages.addAll(em.createQuery("select r.code from Resource r where r.code in :codes"
           + " and r.type = :type and r.deletedAt is null and r.disabled = false", String.class)
@@ -197,8 +202,15 @@ public class CurrentUserAccessServiceImpl implements CurrentUserAccessService {
           tenantEntries.put(entry.getId(), entry); remember(virtual(entry)); lookedUp.add(entry.getCode());
         }
       } else {
-        for (int start = 0; start < missing.size(); start += LOOKUP_BATCH_SIZE) {
-          var loaded = resources.findAllByCodes(missing.subList(start, Math.min(start + LOOKUP_BATCH_SIZE, missing.size())));
+        if (tenantResourceCatalog != null && tenant != null) {
+          for (var entry : tenantResourceCatalog.managedNavigationResources(tenant, missing)) {
+            tenantEntries.put(entry.getId(), entry);
+            remember(virtual(entry));
+          }
+        }
+        List<String> unresolved = missing.stream().filter(code -> !byCode.containsKey(code)).toList();
+        for (int start = 0; start < unresolved.size(); start += LOOKUP_BATCH_SIZE) {
+          var loaded = resources.findAllByCodes(unresolved.subList(start, Math.min(start + LOOKUP_BATCH_SIZE, unresolved.size())));
           if (loaded != null) for (var row : loaded) if (row.getDeletedAt() == null && !Boolean.TRUE.equals(row.getDisabled())) remember(row);
         }
       }

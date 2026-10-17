@@ -22,7 +22,7 @@ export type WorkflowResubmission = {source: WorkflowMatter; form: WorkflowRuntim
 export type WorkflowAuditEvent = {id: string; actionType: string; actorName?: string; comment?: string;
   activityId?: string; activityName?: string; occurredAt: string};
 export type WorkflowAuditTrail = {events: PageResult<WorkflowAuditEvent>; recordedFromStart: boolean};
-export type WorkflowStartCommand = {version?: number; businessKey?: string; title?: string;
+export type WorkflowStartCommand = {idempotencyKey?: string; version?: number; businessKey?: string; title?: string;
   variables?: Record<string, unknown>; ccUserIds?: string[]};
 
 export type PageResult<T> = {content: T[]; page: number; size: number; totalElements: number};
@@ -167,7 +167,7 @@ export const workflowApi = {
   resubmissionForm: (id: string, signal?: AbortSignal) =>
     get<WorkflowResubmission>(`${root}/instances/${encodeURIComponent(id)}/resubmission-form`, undefined, {...quiet, signal}),
   resubmit: (id: string, data: WorkflowStartCommand, signal?: AbortSignal) =>
-    post<ProcessInstance>(`${root}/instances/${encodeURIComponent(id)}/resubmit`, data, {...quiet, signal}),
+    post<ProcessInstance>(`${root}/instances/${encodeURIComponent(id)}/resubmit`, {...data, idempotencyKey: data.idempotencyKey ?? `resubmit:${id}`}, {...quiet, signal}),
   actions: (id: string, page: number, signal?: AbortSignal) =>
     get<WorkflowAuditTrail>(`${root}/instances/${encodeURIComponent(id)}/actions`, {page, size: 20}, {...quiet, signal}),
   startForm: (id: string, version?: number, signal?: AbortSignal) => get<WorkflowRuntimeForm>(`${root}/definitions/${id}/start-form`,
@@ -178,8 +178,8 @@ export const workflowApi = {
   completedTasks: (keyword: string, page: number, size: number, signal?: AbortSignal) =>
     get<PageResult<TaskSummary>>(`${root}/tasks/completed`, {keyword, page, size}, {...quiet, signal}),
   claim: (id: string, signal?: AbortSignal) => post<TaskSummary>(`${root}/tasks/${id}/claim`, {}, {...quiet, signal}),
-  complete: (id: string, data: {variables?: Record<string, unknown>; comment?: string}, signal?: AbortSignal) =>
-    post<ProcessInstance>(`${root}/tasks/${id}/complete`, data, {...quiet, signal}),
+  complete: (id: string, data: {variables?: Record<string, unknown>; comment?: string; idempotencyKey?: string}, signal?: AbortSignal) =>
+    post<ProcessInstance>(`${root}/tasks/${id}/complete`, {...data, idempotencyKey: data.idempotencyKey ?? `complete:${id}`}, {...quiet, signal}),
   startedInstances: (keyword: string, page: number, size: number, signal?: AbortSignal) =>
     get<PageResult<ProcessInstance>>(`${root}/instances/started`, {keyword, page, size}, {...quiet, signal}),
   copiedInstances: (keyword: string, page: number, size: number, signal?: AbortSignal) =>
@@ -193,9 +193,9 @@ export const workflowApi = {
     get<PageResult<NodeExecution>>(`${root}/instances/${encodeURIComponent(id)}/nodes/${encodeURIComponent(node)}`,
       {page, size: 20, activeOnly}, {...quiet, signal}),
   cancel: (id: string, reason: string, signal?: AbortSignal) =>
-    post<ProcessInstance>(`${root}/instances/${id}/cancel`, {reason}, {...quiet, signal}),
+    post<ProcessInstance>(`${root}/instances/${id}/cancel`, {reason, idempotencyKey: `cancel:${id}`}, {...quiet, signal}),
   reject: (id: string, reason: string, signal?: AbortSignal) =>
-    post<ProcessInstance>(`${root}/tasks/${encodeURIComponent(id)}/reject`, {reason}, {...quiet, signal}),
+    post<ProcessInstance>(`${root}/tasks/${encodeURIComponent(id)}/reject`, {reason, idempotencyKey: `reject:${id}`}, {...quiet, signal}),
   withdraw: (id: string, reason: string, signal?: AbortSignal) =>
-    post<ProcessInstance>(`${root}/instances/${encodeURIComponent(id)}/withdraw`, {reason}, {...quiet, signal}),
+    post<ProcessInstance>(`${root}/instances/${encodeURIComponent(id)}/withdraw`, {reason, idempotencyKey: `withdraw:${id}`}, {...quiet, signal}),
 };

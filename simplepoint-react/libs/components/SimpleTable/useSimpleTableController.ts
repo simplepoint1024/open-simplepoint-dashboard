@@ -103,7 +103,12 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   const [submitViolations, setSubmitViolations] = useState<FieldViolation[]>();
   const [selectionResetKey, setSelectionResetKey] = useState(0);
   useEffect(() => {setSubmitError(undefined); setSubmitViolations(undefined);}, [props.drawerOpen, innerDrawerOpen]);
-  const [deletion, setDeletion] = useState<{keys: React.Key[]; scope: string; error?: string}>();
+  const [deletion, setDeletion] = useState<{
+    keys: React.Key[];
+    rows: T[];
+    scope: string;
+    error?: string;
+  }>();
   const confirmingDelete = !!deletion && deletion.scope === session;
   const submissionLock = useRef(false);
   const formSubmission = useRef<FormSubmission<{action: SimpleTableSubmitAction; editingRecord: any | null}> | undefined>(undefined);
@@ -170,7 +175,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   [rawSchemaData, props.schemaTransform]);
 
   const drawerOpen = props.drawerOpen ?? innerDrawerOpen;
-  const interactionLocked = drawerOpen || submitLoading || confirmingDelete;
+  const interactionLocked = drawerOpen || operation.busy || submitLoading || confirmingDelete;
   useLayoutEffect(() => {props.onInteractionLockChange?.(interactionLocked);}, [props.onInteractionLockChange, interactionLocked]);
   // Custom routes remain protected unless their owner explicitly opts in.
   usePageRetention(props.allowTabEviction === true && !interactionLocked, interactionLocked);
@@ -178,8 +183,10 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     props.onDrawerOpenChange?.(open);
     if (props.drawerOpen === undefined) setInnerDrawerOpen(open);
   };
-  const canCloseDrawer = () => operation.current() && operation.isSelected() && !operation.isBusy();
-  const setDrawerOpen = (open: boolean) => {if (canCloseDrawer()) updateDrawerOpen(open);};
+  const canCloseDrawer = () => !props.formCloseDisabled && operation.current() && operation.isSelected() && !operation.isBusy();
+  const setDrawerOpen = (open: boolean) => {
+    if (operation.current() && operation.isSelected() && !operation.isBusy() && (open || !props.formCloseDisabled)) updateDrawerOpen(open);
+  };
 
   const editingRecord = props.editingRecord ?? innerEditing;
   const setEditingRecord = (rec: any | null) => {
@@ -284,8 +291,9 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   };
 
   const handleTableChange = (pagination: any, _tableFilters: any, sorter: any, extra?: {action?: string}) => {
-    setPage(extra?.action === 'sort' || pagination?.pageSize !== size ? 1 : pagination?.current ?? 1);
+    setPage(extra?.action === 'sort' ? 1 : pagination?.current ?? 1);
     setSize(pagination?.pageSize ?? size);
+    if (extra?.action === 'paginate') return;
     const list = (Array.isArray(sorter) ? sorter : [sorter]).filter(s => s?.field && s?.order);
     if (list.length > 3) {message.warning(t('table.query.maxSort', '最多支持三个排序字段')); return;}
     const sorts = list.map(s => `${Array.isArray(s.field) ? s.field.join('.') : s.field},${s.order === 'ascend' ? 'asc' : 'desc'}`);
@@ -306,13 +314,28 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     setDrawerOpen(true);
   };
 
-  const handleEdit = (_keys: React.Key[], rows: any[]) => {
+  const handleEdit = async (_keys: React.Key[], rows: any[]) => {
     const button = schemaData?.buttons?.find((item: TableButtonProps) => item.key === 'edit');
     if (!button || schemaError || !operation.current() || !operation.isSelected() || operation.isBusy() || drawerOpen || confirmingDelete
       || rows?.length !== 1 || !hasRecordIdentity(rows[0]) || props.isButtonDisabled?.(button, _keys, rows)) return;
     props.onInteractionLockChange?.(true);
-    setEditingRecord(rows?.[0] ?? null);
-    setDrawerOpen(true);
+    if (!props.loadEditingRecord) {
+      setEditingRecord(rows[0]); setDrawerOpen(true); return;
+    }
+    const request = operation.begin();
+    if (!request) {props.onInteractionLockChange?.(false); return;}
+    let opened = false;
+    try {
+      const record = await props.loadEditingRecord(rows[0], request.signal);
+      if (!operation.current(request.signal) || !operation.isSelected()) return;
+      if (!hasRecordIdentity(record) || (record as {id?: unknown}).id !== rows[0].id) throw new Error("Editing record identity changed");
+      // This request owns the operation lock; the user-action guard would reject its completion.
+      setEditingRecord(record); updateDrawerOpen(true); opened = true;
+    } catch (error) {
+      if (operation.current(request.signal)) message.error(resolveApiErrorMessage(error, t('table.loadFail', '加载失败')));
+      props.onInteractionLockChange?.(false);
+    } finally {operation.finish(request); if (!opened) props.onInteractionLockChange?.(false);}
+
   };
 
   const handleDelete = (keys: React.Key[], rows: any[]) => {
@@ -321,7 +344,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
       || !keys.length || rows?.length !== keys.length || rows.some(row => !hasRecordIdentity(row))
       || props.isButtonDisabled?.(button, keys, rows)) return;
     props.onInteractionLockChange?.(true);
-    setDeletion({keys: [...keys], scope: session});
+    setDeletion({keys: [...keys], rows: [...rows], scope: session});
   };
 
   const confirmDelete = async () => {
@@ -330,7 +353,14 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     const request = operation.begin(); if (!request) return;
     submissionLock.current = true; setSubmitLoading(true); setDeletion({...deletion, error: undefined});
     try {
-      await del(props.baseUrl, deletion.keys as any, {signal: request.signal, notifyOnError: false});
+      if (props.deleteRows) {
+        await props.deleteRows(deletion.rows, request.signal);
+      } else {
+        await del(props.baseUrl, deletion.keys as any, {
+          signal: request.signal,
+          notifyOnError: false,
+        });
+      }
       if (!operation.current(request.signal)) return;
       setDeletion(undefined);
       setSelectionResetKey(previous => previous + 1);
@@ -386,7 +416,12 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
 
       let result: unknown;
       if (props.onSubmit) {
-        result = await props.onSubmit(action, submittedData, capturedEditing);
+        result = await props.onSubmit(
+          action,
+          submittedData,
+          capturedEditing,
+          beforeSubmitContext,
+        );
       } else if (action === 'edit') {
         submittedData = defaultCrudData(schemaData?.schema, { ...capturedEditing, ...submittedData }, capturedEditing);
         if (props.defaultSubmitDataTransform) submittedData = props.defaultSubmitDataTransform(submittedData, beforeSubmitContext);

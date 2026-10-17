@@ -59,13 +59,13 @@ public class RuntimeModelController {
   }
 
   @GetMapping("/{modelId}")
-  public Response<PhysicalModelView> get(@PathVariable final String modelId) {
+  public Response<PhysicalModelView> get(@PathVariable(name = "modelId") final String modelId) {
     return Response.okay(modelService.get(modelId));
   }
 
   @PostMapping("/{modelId}/versions")
   public Response<PhysicalModelVersionView> createVersion(
-      @PathVariable final String modelId,
+      @PathVariable(name = "modelId") final String modelId,
       @RequestBody final PhysicalModelVersionCommand command
   ) {
     return Response.okay(modelService.createVersion(modelId, command));
@@ -73,15 +73,15 @@ public class RuntimeModelController {
 
   @GetMapping("/{modelId}/plan")
   public Response<SchemaPlanView> plan(
-      @PathVariable final String modelId,
-      @RequestParam final int targetVersion
+      @PathVariable(name = "modelId") final String modelId,
+      @RequestParam(name = "targetVersion") final int targetVersion
   ) {
     return Response.okay(planService.plan(modelId, targetVersion));
   }
 
   @PostMapping("/{modelId}/publish")
   public Response<SchemaPublicationView> publish(
-      @PathVariable final String modelId,
+      @PathVariable(name = "modelId") final String modelId,
       @RequestBody final SchemaPublicationCommand command
   ) {
     return Response.okay(publicationService.publish(modelId, command));
@@ -104,7 +104,7 @@ public class RuntimeModelController {
 
   @GetMapping("/{modelId}/bindings")
   public Response<List<PhysicalModelResourceBindingView>> bindings(
-      @PathVariable final String modelId
+      @PathVariable(name = "modelId") final String modelId
   ) {
     return Response.okay(accessService.list(modelId));
   }

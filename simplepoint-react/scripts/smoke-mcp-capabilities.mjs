@@ -22,13 +22,24 @@ export async function smokeMcpCapabilities({clickMenu, clickReady, clickText, fi
   await send('Input.dispatchMouseEvent', {type: 'mousePressed', ...point, button: 'left', clickCount: 1});
   await send('Input.dispatchMouseEvent', {type: 'mouseReleased', ...point, button: 'left', clickCount: 1});
   await poll(() => evaluate(`document.activeElement===document.querySelector('${selector}') && document.querySelector('${selector}')?.getAttribute('aria-expanded')==='true'`), 'READY selector is focused and open before typing');
+  await evaluate(`window.__mcpSearchInput=document.querySelector('${selector}');window.__mcpSearchEvents=[];
+    window.__mcpScopeTrace=()=>window.__mcpSearchEvents.push('scope');
+    window.__mcpInputTrace=event=>window.__mcpSearchEvents.push(event.type);
+    window.addEventListener('sp-set-context-id',window.__mcpScopeTrace);
+    window.__mcpSearchInput.addEventListener('blur',window.__mcpInputTrace);
+    window.__mcpSearchInput.addEventListener('input',window.__mcpInputTrace);`);
   await send('Input.insertText', {text: 'Server519'});
   try {
     await poll(() => evaluate(`!!document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option[title="Server519"]')`), 'READY selector uses bounded server search');
   } catch (error) {
-    console.error('READY selector state', await evaluate(`(()=>{const input=document.querySelector('${selector}');return {value:input?.value,open:input?.getAttribute('aria-expanded'),focused:document.activeElement===input,options:[...document.querySelectorAll('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option')].map(option=>option.title)};})()`));
+    console.error('READY selector state', await evaluate(`(()=>{const input=document.querySelector('${selector}');return {value:input?.value,open:input?.getAttribute('aria-expanded'),focused:document.activeElement===input,sameInput:window.__mcpSearchInput===input,previousConnected:window.__mcpSearchInput?.isConnected,events:window.__mcpSearchEvents,options:[...document.querySelectorAll('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option')].map(option=>option.title)};})()`));
     console.error('READY directory requests', fixture.requests.filter(request => request.path.endsWith('/servers')).map(request => request.params.toString()));
     throw error;
+  } finally {
+    await evaluate(`window.removeEventListener('sp-set-context-id',window.__mcpScopeTrace);
+      window.__mcpSearchInput?.removeEventListener('blur',window.__mcpInputTrace);
+      window.__mcpSearchInput?.removeEventListener('input',window.__mcpInputTrace);
+      delete window.__mcpScopeTrace;delete window.__mcpInputTrace;delete window.__mcpSearchInput;delete window.__mcpSearchEvents;`);
   }
   await clickReady('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option[title="Server519"]');
   await poll(() => evaluate(`document.querySelector('${page} tr[data-row-key="typed-tool"]')?.textContent.includes('Server-519')`), 'capabilities switch to the selected server');

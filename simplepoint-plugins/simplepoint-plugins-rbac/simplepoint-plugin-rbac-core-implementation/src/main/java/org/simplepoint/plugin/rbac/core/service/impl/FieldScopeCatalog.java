@@ -51,8 +51,13 @@ public class FieldScopeCatalog {
       if (after != null) query.setParameter("after", after);
       var rows = query.setMaxResults(100).getResultList();
       for (var row : rows) if (!consume.test((String) row[1])) return;
-      if (rows.size() < 100) return;
+      if (rows.size() < 100) break;
       after = (String) rows.getLast()[0];
+    }
+    var context = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    if (context != null && context.getUserId() != null && context.getResources() != null) {
+      RegisteredPermissionPages.managed(entityManager, new java.util.ArrayList<>(context.getResources()),
+          RegisteredPermissionPages.Projection.EXPRESSION, row -> consume.test((String) row[1]));
     }
   }
 
@@ -119,7 +124,9 @@ public class FieldScopeCatalog {
       if (descriptor == null) return;
       var models = descriptor.models().stream().filter(model -> model.fields() && !model.properties().isEmpty()).toList();
       if (models.isEmpty()) return;
-      String title = platformTitle(row[1], row[4], row[2], row[3]);
+      String title = row.length > 6 && Boolean.TRUE.equals(row[6])
+          ? java.util.Objects.toString(sourceText(org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource.class, "name", row[2]), "")
+          : platformTitle(row[1], row[4], row[2], row[3]);
       result.put(code, new org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.PageFields(title, models));
     });
     return result;
@@ -158,7 +165,7 @@ public class FieldScopeCatalog {
     boolean custom = tenantResources != null && tenant != null
         && tenantResources.mode(tenant) == org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode.CUSTOM;
     return custom ? customNodes(parentId, pageable, context.getResources(), tenant)
-        : platformNodes(parentId, pageable, context.getResources());
+        : platformNodes(parentId, pageable, context.getResources(), tenant);
   }
 
   private record Edge(String id, String parentId) {}
@@ -166,13 +173,64 @@ public class FieldScopeCatalog {
 
   /** Keep only authorized page edges and their ancestors; fetch presentation for the requested SQL page. */
   private org.springframework.data.domain.Page<org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.ResourceNode> platformNodes(
-      String parentId, org.springframework.data.domain.Pageable pageable, java.util.Collection<String> codes) {
+      String parentId, org.springframework.data.domain.Pageable pageable, java.util.Collection<String> codes, String tenant) {
     if (codes == null || codes.isEmpty()) return org.springframework.data.domain.Page.empty(pageable);
     Map<String, Edge> allowed = new LinkedHashMap<>();
     Map<String, String> pageCodes = new java.util.HashMap<>();
     eligiblePages(codes).forEach(page -> {allowed.put(page.edge().id(), page.edge()); pageCodes.put(page.edge().id(), page.code());});
     expandAncestors(allowed, null);
-    return pagedNodes(parentId, pageable, allowed, pageCodes, null);
+    var managed = new LinkedHashMap<String, Edge>();
+    if (tenantResources != null && tenant != null) {
+      managedPages(codes, tenant).forEach(page -> {
+        managed.put(page.edge().id(), page.edge()); pageCodes.put(page.edge().id(), page.code());
+      });
+      expandAncestors(managed, tenant);
+    }
+    if (managed.isEmpty()) return pagedNodes(parentId, pageable, allowed, pageCodes, null);
+    var platformIds = new java.util.HashSet<>(allowed.keySet());
+    allowed.putAll(managed);
+    // Some managed pages are attached directly to an existing platform directory.
+    expandAncestors(allowed, null);
+    platformIds.addAll(allowed.keySet()); platformIds.removeAll(managed.keySet());
+    var first = pagedNodes(parentId, pageable, allowed, pageCodes, null, platformIds);
+    long managedOffset = Math.max(0, pageable.getOffset() - first.getTotalElements());
+    int remaining = pageable.getPageSize() - first.getContent().size();
+    var second = pagedNodes(parentId, new CatalogWindow(managedOffset, Math.max(1, remaining)),
+        allowed, pageCodes, tenant, managed.keySet());
+    var content = new java.util.ArrayList<>(first.getContent());
+    if (remaining > 0) content.addAll(second.getContent());
+    return new org.springframework.data.domain.PageImpl<>(content, pageable, first.getTotalElements() + second.getTotalElements());
+  }
+
+  private List<CatalogPage> managedPages(java.util.Collection<String> codes, String tenant) {
+    if (codes == null || codes.isEmpty()) return List.of();
+    var pages = new java.util.ArrayList<CatalogPage>();
+    var requested = new java.util.ArrayList<>(new java.util.LinkedHashSet<>(codes));
+    for (int start = 0; start < requested.size(); start += 100) {
+      entityManager.createQuery("select r.id,r.parentId,r.code,r.permissionMetadata from TenantResource r "
+          + "where r.tenantId=:tenant and r.enabled=true and r.formallyOffline=false and r.managedOwner is not null "
+          + "and r.type='PAGE' and r.permissionMetadata is not null and r.code in :codes", Object[].class)
+          .setParameter("tenant", tenant).setParameter("codes", requested.subList(start, Math.min(start + 100, requested.size())))
+          .setMaxResults(100).getResultList().forEach(row -> {
+            var descriptor = org.simplepoint.core.permission.PermissionPageDescriptor.fromJson((String) row[3]);
+            if (descriptor.models().stream().anyMatch(model -> model.fields() && !model.properties().isEmpty())) {
+              pages.add(new CatalogPage(new Edge((String) row[0], (String) row[1]), (String) row[2]));
+            }
+          });
+    }
+    return pages;
+  }
+
+  /** Offset window for merging two independently ordered, SQL-paginated catalog sources. */
+  private static final class CatalogWindow extends org.springframework.data.domain.AbstractPageRequest {
+    private final long offset;
+    CatalogWindow(long offset, int size) { super(0, size); this.offset = offset; }
+    @Override public long getOffset() { return offset; }
+    @Override public org.springframework.data.domain.Sort getSort() { return org.springframework.data.domain.Sort.unsorted(); }
+    @Override public org.springframework.data.domain.Pageable next() { return new CatalogWindow(offset + getPageSize(), getPageSize()); }
+    @Override public org.springframework.data.domain.Pageable previous() { return new CatalogWindow(Math.max(0, offset - getPageSize()), getPageSize()); }
+    @Override public org.springframework.data.domain.Pageable first() { return new CatalogWindow(0, getPageSize()); }
+    @Override public org.springframework.data.domain.Pageable withPage(int page) { return new CatalogWindow((long) page * getPageSize(), getPageSize()); }
   }
 
   private List<CatalogPage> eligiblePages(java.util.Collection<String> codes) {
@@ -200,7 +258,9 @@ public class FieldScopeCatalog {
       String parentId, org.springframework.data.domain.Pageable pageable, java.util.Collection<String> codes, String tenant) {
     var pageCodes = new java.util.HashMap<String, String>();
     var allowed = new LinkedHashMap<String, Edge>();
-    var eligibleCodes = new java.util.ArrayList<>(eligiblePages(codes).stream().map(CatalogPage::code).collect(java.util.stream.Collectors.toSet()));
+    var eligible = new java.util.LinkedHashSet<>(eligiblePages(codes).stream().map(CatalogPage::code).toList());
+    managedPages(codes, tenant).forEach(page -> eligible.add(page.code()));
+    var eligibleCodes = new java.util.ArrayList<>(eligible);
     for (int start = 0; start < eligibleCodes.size(); start += 100) {
       entityManager.createQuery("select r.id,r.parentId,r.code from TenantResource r"
               + " where r.tenantId=:tenant and r.enabled=true and r.code in :codes", Object[].class)
@@ -255,9 +315,15 @@ public class FieldScopeCatalog {
   private org.springframework.data.domain.Page<org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.ResourceNode> pagedNodes(
       String parentId, org.springframework.data.domain.Pageable pageable, Map<String, Edge> allowed,
       Map<String, String> pageCodes, String tenant) {
+    return pagedNodes(parentId, pageable, allowed, pageCodes, tenant, allowed.keySet());
+  }
+
+  private org.springframework.data.domain.Page<org.simplepoint.plugin.rbac.core.api.service.FieldScopeService.ResourceNode> pagedNodes(
+      String parentId, org.springframework.data.domain.Pageable pageable, Map<String, Edge> allowed,
+      Map<String, String> pageCodes, String tenant, java.util.Set<String> sourceIds) {
     if (allowed.isEmpty()) return org.springframework.data.domain.Page.empty(pageable);
     boolean roots = parentId == null || parentId.isBlank();
-    var candidates = allowed.values().stream().filter(edge -> roots ? edge.parentId() == null || !allowed.containsKey(edge.parentId())
+    var candidates = allowed.values().stream().filter(edge -> sourceIds.contains(edge.id())).filter(edge -> roots ? edge.parentId() == null || !allowed.containsKey(edge.parentId())
         : parentId.equals(edge.parentId())).map(Edge::id).collect(java.util.stream.Collectors.toSet());
     long total = candidates.size();
     if (pageable.getOffset() >= total) return new org.springframework.data.domain.PageImpl<>(List.of(), pageable, total);

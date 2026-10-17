@@ -1,5 +1,5 @@
 import {createIcon} from "@simplepoint/shared/types/icon";
-import {RouteInfo, MenuItemType} from "@/store/routes";
+import {getRouteKey, RouteInfo, MenuItemType} from "@/store/routes";
 import type {MenuProps} from "antd";
 import I18nText from '@/i18n/Text';
 import {cancelPrefetchLazyComponent, prefetchLazyComponent} from '@/utils/lazyComponent';
@@ -14,7 +14,6 @@ const toMenuItem = (
   children?: MenuItemType[],
 ): MenuItemType => {
   const existsChildren = !!children && children.length > 0;
-  const keyText = route.title ?? route.label ?? '';
   const component = route.component;
   const isExternal = typeof component === 'string' && component.startsWith('external:');
   const externalUrl = isExternal ? component!.slice('external:'.length) : undefined;
@@ -25,7 +24,7 @@ const toMenuItem = (
   const cancelPrefetch = () => cancelPrefetchLazyComponent(component, remoteRegistryKey);
 
   return {
-    key: route.uuid || route.path || (route.id != null ? String(route.id) : '') || keyText,
+    key: getRouteKey(route),
     label: (
       <span
         onPointerEnter={prefetch}

@@ -20,6 +20,10 @@ import org.simplepoint.remoting.RemoteContract;
 @RemoteContract(name = "common.object-storage-source")
 public interface ObjectStorageSourceService {
 
+  /** Validates a source reference without loading its content. */
+  org.simplepoint.plugin.storage.api.model.ObjectStorageSourceMetadata inspectSource(
+      String id, String tenantId, String sourceServiceName);
+
   /**
    * Downloads one bounded object after verifying its storage tenant and source service.
    *

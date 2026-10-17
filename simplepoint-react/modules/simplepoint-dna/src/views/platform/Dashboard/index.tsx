@@ -206,7 +206,7 @@ const App = () => {
         title: t("dna.dashboard.column.createdAt", "时间"),
         dataIndex: "createdAt",
         width: 180,
-        render: formatDateTime,
+        render: (value?: string) => formatDateTime(value),
       },
     ],
     [t],

@@ -20,8 +20,18 @@ import org.simplepoint.plugin.workflow.api.model.WorkflowFormContract.Variable;
 /** Validates bounded, provider-neutral form contracts and their typed runtime submissions. */
 public final class WorkflowFormContracts {
 
-  private static final Set<String> TYPES = Set.of(
-      "string", "number", "boolean", "date", "date-time", "user", "users", "role", "roles");
+  private static final Set<String> TYPES =
+      Set.of(
+          "string",
+          "number",
+          "decimal",
+          "boolean",
+          "date",
+          "date-time",
+          "user",
+          "users",
+          "role",
+          "roles");
   private final ObjectMapper mapper;
 
   /** Uses the application's JSON mapper, without accepting polymorphic Java objects. */
@@ -69,12 +79,14 @@ public final class WorkflowFormContracts {
     Set<String> names = new LinkedHashSet<>();
     List<Variable> normalized = new ArrayList<>();
     for (Variable variable : variables) {
-      if (variable == null || variable.name() == null
+      if (variable == null
+          || variable.name() == null
           || !variable.name().matches("[A-Za-z_][A-Za-z0-9_]{0,79}")
-          || WorkflowVariableNames.isReserved(variable.name()) || !names.add(variable.name())) {
+          || WorkflowVariableNames.isReserved(variable.name())
+          || !names.add(variable.name())) {
         throw invalid("流程变量名无效、重复或使用了系统保留名");
       }
-      String label = text(variable.label(), 160, "变量名称");
+      final String label = text(variable.label(), 160, "变量名称");
       if (variable.type() == null || !TYPES.contains(variable.type())) {
         throw invalid("不支持的流程变量类型");
       }
@@ -83,27 +95,40 @@ public final class WorkflowFormContracts {
         throw invalid("流程变量使用阶段无效");
       }
       validateValue(variable, variable.defaultValue());
-      normalized.add(new Variable(variable.name(), label, variable.type(), scope,
-          variable.required(), variable.defaultValue()));
+      normalized.add(
+          new Variable(
+              variable.name(),
+              label,
+              variable.type(),
+              scope,
+              variable.required(),
+              variable.defaultValue()));
     }
     Map<String, Binding> tasks = new java.util.TreeMap<>();
     if (contract.taskBindings() != null) {
       if (contract.taskBindings().size() > 100) {
         throw invalid("任务表单绑定不能超过 100 个");
       }
-      contract.taskBindings().forEach((key, value) -> {
-        if (key == null || !key.matches("[A-Za-z_][A-Za-z0-9_.-]{0,127}")) {
-          throw invalid("任务表单绑定的元素标识无效");
-        }
-        tasks.put(key, binding(value, names));
-      });
+      contract
+          .taskBindings()
+          .forEach(
+              (key, value) -> {
+                if (key == null || !key.matches("[A-Za-z_][A-Za-z0-9_.-]{0,127}")) {
+                  throw invalid("任务表单绑定的元素标识无效");
+                }
+                tasks.put(key, binding(value, names));
+              });
     }
-    return new WorkflowFormContract(1, List.copyOf(normalized),
-        contract.startBinding() == null ? null : binding(contract.startBinding(), names), tasks);
+    return new WorkflowFormContract(
+        1,
+        List.copyOf(normalized),
+        contract.startBinding() == null ? null : binding(contract.startBinding(), names),
+        tasks);
   }
 
   /** A bound task must exist in the exact BPMN snapshot being saved or published. */
-  public void validateTaskBindings(final WorkflowFormContract contract, final Set<String> userTaskIds) {
+  public void validateTaskBindings(
+      final WorkflowFormContract contract, final Set<String> userTaskIds) {
     if (!userTaskIds.containsAll(contract.taskBindings().keySet())) {
       throw invalid("表单绑定指向了不存在的用户任务，请调整绑定后重试");
     }
@@ -111,60 +136,124 @@ public final class WorkflowFormContracts {
 
   /** Declared forms are stage-specific; legacy JSON forms retain only safe user-owned names. */
   public Map<String, Object> project(
-      final WorkflowFormContract contract, final Map<String, Object> source, final String stage
-  ) {
+      final WorkflowFormContract contract, final Map<String, Object> source, final String stage) {
     Map<String, Object> values = new LinkedHashMap<>();
     if (contract.variables().isEmpty()) {
-      source.forEach((name, value) -> {
-        if (name.matches("[A-Za-z_][A-Za-z0-9_.-]{0,79}") && !WorkflowVariableNames.isReserved(name)) {
-          values.put(name, value);
-        }
-      });
+      source.forEach(
+          (name, value) -> {
+            if (name.matches("[A-Za-z_][A-Za-z0-9_.-]{0,79}")
+                && !WorkflowVariableNames.isReserved(name)) {
+              values.put(name, value);
+            }
+          });
       return values;
     }
     for (Variable variable : contract.variables()) {
       if (editable(variable, stage)) {
-        Object value = source.containsKey(variable.name())
-            ? source.get(variable.name()) : variable.defaultValue();
+        Object value =
+            source.containsKey(variable.name())
+                ? source.get(variable.name())
+                : variable.defaultValue();
         if (value != null) {
-          values.put(variable.name(), value);
+          values.put(
+              variable.name(),
+              "decimal".equals(variable.type()) && value instanceof java.math.BigDecimal decimal
+                  ? decimal.toPlainString()
+                  : value);
         }
       }
     }
     return values;
   }
 
-  /** Checks required fields against merged runtime values, while returning only the submitted update. */
+  /**
+   * Checks required fields against merged runtime values, while returning only the submitted
+   * update.
+   */
   public Map<String, Object> submission(
       final WorkflowFormContract contract,
       final Map<String, Object> submitted,
       final Map<String, Object> current,
-      final String stage
-  ) {
+      final String stage) {
     // Compatibility for existing advanced-only processes without declarations.
     if (contract.variables().isEmpty()) {
       return submitted;
     }
     Map<String, Variable> allowed = new LinkedHashMap<>();
-    contract.variables().stream().filter(variable -> editable(variable, stage))
+    contract.variables().stream()
+        .filter(variable -> editable(variable, stage))
         .forEach(variable -> allowed.put(variable.name(), variable));
-    submitted.forEach((name, value) -> {
-      Variable variable = allowed.get(name);
-      if (variable == null) {
-        throw invalid("当前阶段不允许填写变量: " + name);
-      }
-      validateValue(variable, value);
-    });
+    submitted.forEach(
+        (name, value) -> {
+          Variable variable = allowed.get(name);
+          if (variable == null) {
+            throw invalid("当前阶段不允许填写变量: " + name);
+          }
+          validateValue(variable, value);
+        });
     Map<String, Object> result = new LinkedHashMap<>(submitted);
     for (Variable variable : allowed.values()) {
-      Object value = result.containsKey(variable.name()) ? result.get(variable.name())
-          : current.containsKey(variable.name()) ? current.get(variable.name()) : variable.defaultValue();
-      if (variable.required() && (value == null || value instanceof String text && text.isBlank()
-          || value instanceof List<?> list && list.isEmpty())) {
+      Object value =
+          result.containsKey(variable.name())
+              ? result.get(variable.name())
+              : current.containsKey(variable.name())
+                  ? current.get(variable.name())
+                  : variable.defaultValue();
+      if (variable.required()
+          && (value == null
+              || value instanceof String text && text.isBlank()
+              || value instanceof List<?> list && list.isEmpty())) {
         throw invalid("请填写流程变量: " + variable.label());
       }
-      if (!current.containsKey(variable.name()) && !result.containsKey(variable.name()) && value != null) {
+      if (!current.containsKey(variable.name())
+          && !result.containsKey(variable.name())
+          && value != null) {
         result.put(variable.name(), value);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Keeps provider-owned business facts unchanged while allowing independent approval variables.
+   */
+  public void protectMappedVariables(
+      WorkflowFormContract contract, Map<String, Object> submitted, Map<String, Object> current) {
+    var definitions =
+        contract.variables().stream()
+            .collect(java.util.stream.Collectors.toMap(Variable::name, variable -> variable));
+    for (String mapped : contract.startBinding().variableMappings().values()) {
+      if (!submitted.containsKey(mapped)) {
+        continue;
+      }
+      Object old = current.get(mapped);
+      Object next = submitted.get(mapped);
+      var definition = definitions.get(mapped);
+      boolean same = java.util.Objects.equals(old, next);
+      if (definition != null
+          && Set.of("decimal", "number").contains(definition.type())
+          && old != null
+          && next != null) {
+        same =
+            new java.math.BigDecimal(old.toString())
+                    .compareTo(new java.math.BigDecimal(next.toString()))
+                == 0;
+      }
+      if (!same) {
+        throw invalid("业务表单快照映射的流程变量不能在审批时改写: " + mapped);
+      }
+    }
+  }
+
+  /** Exact numeric wire values remain strings until the engine transaction boundary. */
+  public Map<String, Object> engineVariables(
+      WorkflowFormContract contract, Map<String, Object> submitted) {
+    Map<String, Object> result = new LinkedHashMap<>(submitted);
+    for (Variable variable : contract.variables()) {
+      Object value = submitted.get(variable.name());
+      if ("decimal".equals(variable.type()) && value != null) {
+        validateValue(variable, value);
+        result.put(variable.name(), new java.math.BigDecimal((String) value));
       }
     }
     return result;
@@ -188,37 +277,64 @@ public final class WorkflowFormContracts {
       if (binding.variableMappings().size() > 100) {
         throw invalid("表单变量映射不能超过 100 个");
       }
-      binding.variableMappings().forEach((field, variable) -> {
-        text(field, 160, "表单字段");
-        if (!names.contains(variable)) {
-          throw invalid("表单映射必须指向已声明的流程变量");
-        }
-        mappings.put(field, variable);
-      });
+      binding
+          .variableMappings()
+          .forEach(
+              (field, variable) -> {
+                text(field, 160, "表单字段");
+                if (!names.contains(variable)) {
+                  throw invalid("表单映射必须指向已声明的流程变量");
+                }
+                mappings.put(field, variable);
+              });
     }
-    return new Binding(provider, id, binding.version(), mappings);
+    return new Binding(
+        provider,
+        id,
+        binding.version(),
+        mappings,
+        binding.sceneId() == null ? null : text(binding.sceneId(), 160, "表单场景"));
   }
 
   private static void validateValue(final Variable variable, final Object value) {
     if (value == null) {
       return;
     }
-    boolean valid = switch (variable.type()) {
-      case "number" -> value instanceof Number number && Double.isFinite(number.doubleValue());
-      case "boolean" -> value instanceof Boolean;
-      case "users", "roles" -> value instanceof List<?> list && list.size() <= 50
-          && list.stream().allMatch(item -> item instanceof String text
-              && ("roles".equals(variable.type()) ? roleValue(text) : directoryValue(text)))
-          && new LinkedHashSet<>(list).size() == list.size();
-      case "user" -> value instanceof String text && directoryValue(text);
-      case "role" -> value instanceof String text && roleValue(text);
-      case "date", "date-time" -> temporal(value, variable.type());
-      case "string" -> value instanceof String text && text.length() <= 4000;
-      default -> false;
-    };
+    boolean valid =
+        switch (variable.type()) {
+          case "decimal" -> decimal(value);
+          case "number" -> value instanceof Number number && Double.isFinite(number.doubleValue());
+          case "boolean" -> value instanceof Boolean;
+          case "users", "roles" ->
+              value instanceof List<?> list
+                  && list.size() <= 50
+                  && list.stream()
+                      .allMatch(
+                          item ->
+                              item instanceof String text
+                                  && ("roles".equals(variable.type())
+                                      ? roleValue(text)
+                                      : directoryValue(text)))
+                  && new LinkedHashSet<>(list).size() == list.size();
+          case "user" -> value instanceof String text && directoryValue(text);
+          case "role" -> value instanceof String text && roleValue(text);
+          case "date", "date-time" -> temporal(value, variable.type());
+          case "string" -> value instanceof String text && text.length() <= 4000;
+          default -> false;
+        };
     if (!valid) {
       throw invalid("流程变量类型或长度无效: " + variable.label());
     }
+  }
+
+  private static boolean decimal(Object value) {
+    if (!(value instanceof String text)
+        || text.length() > 80
+        || !text.matches("-?(0|[1-9][0-9]*)(\\.[0-9]+)?")) {
+      return false;
+    }
+    var number = new java.math.BigDecimal(text);
+    return number.precision() <= 38 && number.scale() <= 38;
   }
 
   private static boolean directoryValue(final String value) {
@@ -226,8 +342,11 @@ public final class WorkflowFormContracts {
   }
 
   private static boolean roleValue(final String value) {
-    return !value.isBlank() && value.length() <= 100 && value.equals(value.trim())
-        && !value.contains(",") && value.codePoints().noneMatch(Character::isISOControl);
+    return !value.isBlank()
+        && value.length() <= 100
+        && value.equals(value.trim())
+        && !value.contains(",")
+        && value.codePoints().noneMatch(Character::isISOControl);
   }
 
   private static boolean temporal(final Object value, final String type) {

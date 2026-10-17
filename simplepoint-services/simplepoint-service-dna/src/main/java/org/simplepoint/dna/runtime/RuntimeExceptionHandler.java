@@ -18,6 +18,7 @@ public class RuntimeExceptionHandler {
         exception.errorCode().name(),
         exception.errorCode().category().name(),
         exception.getMessage(),
+        "dna.runtime.error." + exception.errorCode().name(),
         Instant.now()
     ));
   }
@@ -37,6 +38,6 @@ public class RuntimeExceptionHandler {
   }
 
   /** Language-neutral transport error without database details or business values. */
-  public record RuntimeError(String code, String category, String message, Instant timestamp) {
+  public record RuntimeError(String code, String category, String message, String messageKey, Instant timestamp) {
   }
 }

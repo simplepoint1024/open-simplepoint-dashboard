@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import DataTable from '../DataTable';
 import SForm from '../SForm/Lazy';
 import TableActions from '../Table/Actions';
@@ -11,7 +12,7 @@ import {type WorkflowInboxItem, workflowApi} from '@simplepoint/shared/workflow/
 import {useRemoteList} from '../DataTable/useRemoteList';
 import './style.css';
 import {usePageRetention} from '@simplepoint/shared/page/hooks';
-import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
+import {isHttpError, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useMutationScope} from './useMutationScope';
 import {useWorkflowRefresh} from './useWorkflowRefresh';
 import {WorkflowStatus} from './Status';
@@ -47,6 +48,8 @@ function TasksSession() {
   const [diagramId, setDiagramId] = useState<string>();
   const [variables, setVariables] = useState<Record<string, unknown>>({});
   const [variablesValid, setVariablesValid] = useState(false);
+  const [uncertain, setUncertain] = useState<{action: 'complete'; command: {variables: Record<string, unknown>; comment?: string}}
+    | {action: 'reject'; reason: string}>();
   const variablesEditorRef = useRef<WorkflowVariablesEditorHandle>(null);
   const [formSession, setFormSession] = useState(0);
   const [dirty, setDirty] = useState(false), [discardOpen, setDiscardOpen] = useState(false), [error, setError] = useState('');
@@ -103,39 +106,44 @@ function TasksSession() {
 
   const complete = async (values: CompleteValues) => {
     const target = targetRef.current;
-    if (!target?.taskId || !target.actionable || !taskForm.data || taskForm.isFetching || submittingRef.current) return;
+    if (!target?.taskId || !target.actionable || !taskForm.data || taskForm.isFetching || submittingRef.current
+      || uncertain?.action === 'reject') return;
     let currentVariables: Record<string, unknown>;
     try {
       if (!variablesEditorRef.current) return;
-      currentVariables = variablesEditorRef.current.getValues(taskForm.data);
+      currentVariables = uncertain?.action === 'complete' ? uncertain.command.variables : variablesEditorRef.current.getValues(taskForm.data);
     } catch (reason) {setError((reason as Error).message); return;}
     const request = mutation.begin(); if (!request) return;
     submittingRef.current = true;
     setSubmitting(true);
     setError('');
+    const command = uncertain?.action === 'complete' ? uncertain.command : {
+      comment: values.comment?.trim() || undefined, variables: currentVariables,
+    };
     try {
-      await workflowApi.complete(target.taskId, {
-        comment: values.comment?.trim() || undefined,
-        variables: currentVariables,
-      }, request.signal);
+      await workflowApi.complete(target.taskId, command, request.signal);
       if (!mutation.current(request.signal)) return;
       targetRef.current = undefined;
       setCompleteTarget(undefined);
+      setUncertain(undefined);
       setCompleteData({});
       setDirty(false); setDiscardOpen(false);
       clearLink();
       await refreshWorkflow();
       if (mutation.current(request.signal)) message.success(t('workflow.task.approved', '审批已通过'));
     } catch (reason) {
-      if (mutation.current(request.signal)) setError(resolveApiErrorMessage(reason, t('workflow.task.completeFailed', '任务提交失败')));
+      if (mutation.current(request.signal)) {
+        if (!isHttpError(reason) || reason.status === 0 || reason.status >= 500) setUncertain({action: 'complete', command});
+        setError(resolveApiErrorMessage(reason, t('workflow.task.completeFailed', '任务提交失败')));
+      }
     } finally {
       submittingRef.current = false; if (mutation.current()) setSubmitting(false);
     }
   };
   const reject = async (reason?: string) => {
     const target = targetRef.current;
-    if (!target?.taskId || !target.actionable || submittingRef.current) return;
-    const normalized = reason?.trim();
+    if (!target?.taskId || !target.actionable || submittingRef.current || uncertain?.action === 'complete') return;
+    const normalized = uncertain?.action === 'reject' ? uncertain.reason : reason?.trim();
     if (!normalized) {setError(t('workflow.task.reasonRequired', '请填写驳回原因')); return;}
     const request = mutation.begin(); if (!request) return;
     submittingRef.current = true; setSubmitting(true); setError('');
@@ -143,17 +151,21 @@ function TasksSession() {
       await workflowApi.reject(target.taskId, normalized, request.signal);
       if (!mutation.current(request.signal)) return;
       targetRef.current = undefined; setCompleteTarget(undefined); setRejectOpen(false); setRejectData({});
+      setUncertain(undefined);
       setCompleteData({}); setDirty(false); setDiscardOpen(false);
       clearLink();
       await refreshWorkflow();
       if (mutation.current(request.signal)) message.success(t('workflow.task.rejected', '审批已驳回'));
-    } catch (reason) {
-      if (mutation.current(request.signal)) setError(resolveApiErrorMessage(reason, t('workflow.task.rejectFailed', '驳回失败，已保留填写内容')));
+    } catch (cause) {
+      if (mutation.current(request.signal)) {
+        if (!isHttpError(cause) || cause.status === 0 || cause.status >= 500) setUncertain({action: 'reject', reason: normalized});
+        setError(resolveApiErrorMessage(cause, t('workflow.task.rejectFailed', '驳回失败，已保留填写内容')));
+      }
     } finally {submittingRef.current = false; if (mutation.current()) setSubmitting(false);}
   };
-  const abandon = () => {if (submittingRef.current) return; targetRef.current = undefined; setCompleteTarget(undefined);
+  const abandon = () => {if (submittingRef.current || uncertain) return; targetRef.current = undefined; setCompleteTarget(undefined);
     setCompleteData({}); setDirty(false); setDiscardOpen(false); setError(''); setRejectOpen(false); setRejectData({}); clearLink();};
-  const close = () => {if (submittingRef.current) return; if (dirty) setDiscardOpen(true); else abandon();};
+  const close = () => {if (submittingRef.current || uncertain) return; if (dirty) setDiscardOpen(true); else abandon();};
 
   const statusTag = (value: string) => <WorkflowStatus value={value}/>;
   const columns: ColumnsType<WorkflowInboxItem> = [
@@ -175,7 +187,7 @@ function TasksSession() {
     {title: view === 'pending' ? t('workflow.task.createdAt', '到达时间')
       : t('workflow.task.completedAt', '完成时间'),
     dataIndex: view === 'pending' ? 'createdAt' : 'handledAt', key: view === 'pending' ? 'createdAt' : 'handledAt', width: 190,
-    render: (value?: string) => value ? new Date(value).toLocaleString(locale) : '—'},
+    render: (value?: string) => value ? formatDateTime(value, locale) : '—'},
     {title: t('workflow.task.priority', '优先级'), dataIndex: 'priority', key: 'priority', width: 90,
       render: (value: number) => value >= 75 ? <Tag color="red">{value}</Tag> : value},
     {title: t('workflow.actions', '操作'), key: 'actions', width: view === 'pending' ? 230 : 100,
@@ -208,7 +220,7 @@ function TasksSession() {
         action={<TableActions selectedKeys={[]} selectedRows={[]}
           buttons={[{key: 'retry', sort: 10, text: t('workflow.retry', '重试'), argumentMinSize: 0, argumentMaxSize: 0}]}
           onButtonEvents={{retry: tasks.retry}}/>}/>}
-      <DataTable {...tasks.tableProps} rowKey="id" storageKey={`personal.workflow.${view}`} columns={tasks.columns(columns)} scroll={{x: 1550}}
+      <DataTable {...tasks.tableProps} fitContainer rowKey="id" storageKey={`personal.workflow.${view}`} columns={tasks.columns(columns)} scroll={{x: 1550}}
         toolbarExtra={<Space wrap>
           <Segmented value={view} disabled={locked} options={[
             {label: t('workflow.tasks.pending', '待办'), value: 'pending'},
@@ -217,7 +229,7 @@ function TasksSession() {
         </Space>}/>
 
     <Drawer rootClassName="workflow-task-editor" title={completeTarget?.title} open={Boolean(completeTarget) && mutation.selected} width={640}
-      destroyOnHidden={!completeTarget} closable={!submitting} maskClosable={!submitting} keyboard={!submitting} onClose={close}>
+      destroyOnHidden={!completeTarget} closable={!submitting && !uncertain} maskClosable={false} keyboard={!submitting && !uncertain} onClose={close}>
       {error && <Alert type="error" showIcon title={error}/>}
       {completeTarget && <Descriptions size="small" column={2} items={[
         {key: 'flow', label: t('workflow.definition.name', '流程名称'), children: completeTarget.definitionName},
@@ -227,31 +239,37 @@ function TasksSession() {
       <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
         {key: 'progress', sort: 1, text: t('workflow.action.diagram', '进度')},
         {key: 'reject', sort: 2, text: t('workflow.action.reject', '驳回'), danger: true},
-      ]} isButtonDisabled={() => submitting} onButtonEvents={{
+      ]} isButtonDisabled={() => submitting || !!uncertain} onButtonEvents={{
         progress: () => setDiagramId(completeTarget?.processInstanceId), reject: () => setRejectOpen(true),
       }}/>
       {taskForm.isFetching ? <Spin/> : taskForm.isError ? <Alert type="error" showIcon
         title={t('workflow.form.loadFailed', '流程表单加载失败，请关闭后重试')}/> : taskForm.data && <>
       <Suspense fallback={<Spin/>}><VariablesEditor ref={variablesEditorRef} key={completeTarget?.id} form={taskForm.data}
         stage="task" taskId={completeTarget?.taskId} value={variables} onChange={next => {setVariables(next); setDirty(true);}}
-        onValidityChange={setVariablesValid} onDirtyChange={setDirty} disabled={submitting}/></Suspense>
+        onValidityChange={setVariablesValid} onDirtyChange={setDirty} disabled={submitting || !!uncertain}/></Suspense>
       <SForm schema={completeSchema} uiSchema={{comment: {'ui:widget': 'textarea'},
         'ui:submitButtonOptions': {submitText: t('workflow.action.approve', '通过')}}}
-        formData={completeData} submitLoading={submitting} disabled={submitting} submitDisabled={!variablesValid}
+        formData={completeData} hideSubmit={!!uncertain} submitLoading={submitting} disabled={submitting || !!uncertain} submitDisabled={!variablesValid}
         onChange={(event: {formData?: CompleteValues}) => {setCompleteData(event.formData ?? {}); setDirty(true);}}
         onSubmit={(event: {formData?: CompleteValues}) => void complete(event.formData ?? {})}/></>}
+      {uncertain?.action === 'complete' && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', sort: 0,
+        icon: 'ReloadOutlined', text: t('workflow.retry', '重试'), disabled: submitting}]}
+        onButtonEvents={{retry: () => void complete(completeData)}}/>}
     </Drawer>
 
     <Modal wrapClassName="workflow-task-rejection" open={rejectOpen && mutation.selected} title={t('workflow.action.reject', '驳回')} footer={null}
-      closable={!submitting} maskClosable={!submitting} keyboard={!submitting} onCancel={() => {if (!submittingRef.current) setRejectOpen(false);}}>
+      closable={!submitting && !uncertain} maskClosable={false} keyboard={!submitting && !uncertain}
+      onCancel={() => {if (!submittingRef.current && !uncertain) setRejectOpen(false);}}>
       <Alert type="warning" showIcon title={t('workflow.task.rejectHint', '驳回将结束本轮审批，并保留全部处理记录。')}/>
       {error && <Alert type="error" showIcon title={error}/>}
       <SForm schema={{type: 'object', required: ['reason'], properties: {
         reason: {type: 'string', title: t('workflow.task.rejectReason', '驳回原因'), minLength: 1, maxLength: 500},
       }}} uiSchema={{reason: {'ui:widget': 'textarea'}, 'ui:submitButtonOptions': {submitText: t('workflow.action.confirmReject', '确认驳回')}}}
-        formData={rejectData} disabled={submitting} submitLoading={submitting}
+        formData={rejectData} hideSubmit={!!uncertain} disabled={submitting || !!uncertain} submitLoading={submitting}
         onChange={(event: {formData?: {reason?: string}}) => {setRejectData(event.formData ?? {}); setDirty(true);}}
         onSubmit={(event: {formData?: {reason?: string}}) => void reject(event.formData?.reason)}/>
+      {uncertain?.action === 'reject' && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', sort: 0,
+        icon: 'ReloadOutlined', text: t('workflow.retry', '重试'), disabled: submitting}]} onButtonEvents={{retry: () => void reject()}}/>}
     </Modal>
 
     {diagramId && <ProgressDrawer id={diagramId} onClose={() => {setDiagramId(undefined); clearLink();}}/>}

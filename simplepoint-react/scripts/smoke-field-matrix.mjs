@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {committedReactFiber} from './cdp-react-probe.mjs';
 import {fieldMatrixModel as model, fieldMatrixTranslationNamespaces} from './common-main-fixture.mjs';
 
 /** Genuine HTTP-exported protection schemas through the native SForm and default CRUD writer. */
@@ -300,7 +301,7 @@ export async function smokeFieldLifecycle({clickMenu, clickReady, clickText, fil
   await evaluate(`(async()=>{if(!window.spI18n?.ensure)throw Error('Actual i18n provider missing');
     await window.spI18n.ensure(${JSON.stringify(fieldMatrixTranslationNamespaces)});
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return true;})()`);
-  const rowsProbe = `let fiber=document.querySelector('${drawer} [data-row-key="${model}#name"]')[Object.keys(document.querySelector('${drawer} [data-row-key="${model}#name"]')).find(k=>k.startsWith('__reactFiber$'))],rows;
+  const rowsProbe = `let fiber=(${committedReactFiber.toString()})(document.querySelector('${drawer} [data-row-key="${model}#name"]')),rows;
     while(fiber){if(fiber.memoizedProps?.dataSource?.some(r=>r.resource===${JSON.stringify(model)}&&r.pageCode==='matrix.page519'))rows=fiber.memoizedProps.dataSource;fiber=fiber.return;}if(!rows)throw Error('Actual field table metadata source missing');`;
   await evaluate(`(()=>{${rowsProbe}window.__matrixRows=rows;window.__matrixTranslator=window.spI18n?.t;return true;})()`);
   await evaluate(`(()=>{document.querySelector('${drawer} [data-row-key="${model}#name"] input[value="VISIBLE"]').click();document.querySelector('${drawer} [data-row-key="${model}#description"] input[value="MASKED"]').click();return true;})()`);

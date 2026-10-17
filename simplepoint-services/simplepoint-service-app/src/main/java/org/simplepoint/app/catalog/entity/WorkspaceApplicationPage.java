@@ -47,6 +47,12 @@ public class WorkspaceApplicationPage {
   @Column(name = "resource_code", length = 160)
   private String resourceCode;
 
+  @Column(name = "form_id", length = 36)
+  private String formId;
+
+  @Column(name = "form_version")
+  private Integer formVersion;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 

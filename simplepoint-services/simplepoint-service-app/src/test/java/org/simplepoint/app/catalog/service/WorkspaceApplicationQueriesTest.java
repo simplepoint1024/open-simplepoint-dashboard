@@ -105,6 +105,27 @@ class WorkspaceApplicationQueriesTest {
   }
 
   @Test
+  void pageDesignEntryCarriesTheBoundFormIdentitySeparatelyFromTheRuntimeRoute() {
+    var created = catalog.create(new CreateApplication("Design entry", null, "Selected page"));
+    var page = session.find(WorkspaceApplicationPage.class, created.application().mainPageId());
+    page.setFormId("form-selected");
+    page.setFormVersion(3);
+    page.setResourceId("resource-selected");
+    page.setStatus("PUBLISHED");
+    session.flush();
+
+    var summary = catalog.detail(created.application().id()).pages().getFirst();
+    assertThat(summary.formId()).isEqualTo("form-selected");
+    assertThat(summary.resourceRegistered()).isTrue();
+    assertThat(summary.runtimePath()).isEqualTo(
+        "/app/runtime/" + created.application().id() + "/" + page.getId());
+
+    var draft = catalog.addPage(created.application().id(), new CreatePage("Unbound page", null));
+    assertThat(draft.formId()).isNull();
+    assertThat(draft.runtimePath()).isNull();
+  }
+
+  @Test
   void aggregateAndJoinedTextFiltersAreAppliedBeforeBothCountAndPagination() {
     var filters = Map.of("attachedPageCount", "than:equal:greater:2", "mainPageName", "like:PAGE");
     var first =
@@ -124,6 +145,25 @@ class WorkspaceApplicationQueriesTest {
     assertThat(numeric.getContent())
         .extracting(ApplicationSummary::attachedPageCount)
         .containsExactly(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 1L, 1L);
+  }
+
+  @Test
+  void publicationDestinationsArePagedFilteredAndOwnedByTheApplicationAndTenant() {
+    var app = catalog.create(new CreateApplication("Publication", null, "Main"));
+    for (int index = 0; index < 26; index++) {
+      catalog.addPage(app.application().id(), new CreatePage("Destination " + index, null));
+    }
+    var first = catalog.publicationPages(app.application().id(), Map.of(), PageRequest.of(0, 10));
+    var second = catalog.publicationPages(app.application().id(), Map.of(), PageRequest.of(1, 10));
+    assertThat(first.getTotalElements()).isEqualTo(27);
+    assertThat(first.getContent()).hasSize(10).doesNotContainAnyElementsOf(second.getContent());
+    var exact = catalog.publicationPages(app.application().id(),
+        Map.of("id", "equals:" + first.getContent().getFirst().id()), PageRequest.of(0, 10));
+    assertThat(exact.getContent()).hasSize(1);
+    context("b", Map.of());
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> catalog.publicationPages(
+        app.application().id(), Map.of(), PageRequest.of(0, 10)))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
   }
 
   @Test

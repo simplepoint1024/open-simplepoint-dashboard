@@ -193,14 +193,6 @@ public class TenantMemberServiceImpl implements TenantMemberService {
       throw new AccessDeniedException("当前字段权限不允许搜索成员信息");
     }
     DataScopeCondition dataScope = organizationScope();
-    if (page.getSort().isUnsorted()
-        && org.simplepoint.core.query.QueryCapabilities.readable(TenantMemberView.class, "name")) {
-      page =
-          org.springframework.data.domain.PageRequest.of(
-              page.getPageNumber(),
-              page.getPageSize(),
-              org.springframework.data.domain.Sort.by("name"));
-    }
     return scopedMemberPage(tenantId, orgId, search, filters, page, subtree, dataScope);
   }
 
@@ -224,6 +216,9 @@ public class TenantMemberServiceImpl implements TenantMemberService {
             data.getRestriction(),
             memberPageScope(data, result, tenantId, orgId, search, subtree, subtreeIds, scope)));
     var fields = result.fields();
+    var orders = input.orders(cb, fields, result.member().get("id"));
+    if (page.getSort().isUnsorted() && org.simplepoint.core.query.QueryCapabilities.readable(TenantMemberView.class, "createdAt"))
+      orders.addFirst(cb.desc(result.member().get("createdAt")));
     data.select(
             cb.construct(
                 TenantMemberView.class,
@@ -235,7 +230,7 @@ public class TenantMemberServiceImpl implements TenantMemberService {
                 fields.get("enabled"),
                 fields.get("userType"),
                 result.member().get("revision")))
-        .orderBy(input.orders(cb, fields, result.member().get("id")));
+        .orderBy(orders);
     var rows =
         em.createQuery(data)
             .setFirstResult((int) page.getOffset())

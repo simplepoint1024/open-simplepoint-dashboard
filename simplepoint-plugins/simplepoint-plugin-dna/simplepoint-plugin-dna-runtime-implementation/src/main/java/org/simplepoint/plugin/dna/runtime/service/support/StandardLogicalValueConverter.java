@@ -1,11 +1,5 @@
 package org.simplepoint.plugin.dna.runtime.service.support;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.DecimalNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -14,12 +8,12 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.util.Base64;
-import java.util.Comparator;
 import java.util.UUID;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldDefinition;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldType;
+import org.simplepoint.plugin.dna.runtime.api.schema.LogicalJsonValues;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalValue;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalValueConverter;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalValueKind;
@@ -28,13 +22,6 @@ import org.springframework.stereotype.Component;
 /** Strict database-neutral value conversion with no silent lossy coercion. */
 @Component
 public class StandardLogicalValueConverter implements LogicalValueConverter {
-
-  private final ObjectMapper objectMapper;
-
-  /** Creates a strict converter with an isolated JSON mapper. */
-  public StandardLogicalValueConverter(final ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper.copy();
-  }
 
   @Override
   public LogicalValue normalize(
@@ -67,7 +54,7 @@ public class StandardLogicalValueConverter implements LogicalValueConverter {
       };
     } catch (DnaRuntimeException exception) {
       throw exception;
-    } catch (RuntimeException | JsonProcessingException exception) {
+    } catch (RuntimeException exception) {
       throw conversionFailure(field.code(), field.type(), exception);
     }
   }
@@ -77,7 +64,7 @@ public class StandardLogicalValueConverter implements LogicalValueConverter {
       final Object rawValue
   ) {
     String text = requireString(rawValue);
-    if (text.length() > field.length()) {
+    if (text.codePointCount(0, text.length()) > field.length()) {
       throw conversionFailure(field.code(), field.type());
     }
     return value(LogicalValueKind.STRING, text);
@@ -128,10 +115,9 @@ public class StandardLogicalValueConverter implements LogicalValueConverter {
   }
 
   private static String normalizeTime(final Object rawValue) {
-    if (rawValue instanceof LocalTime time) {
-      return time.toString();
-    }
-    return LocalTime.parse(requireString(rawValue)).toString();
+    LocalTime time = rawValue instanceof LocalTime value ? value : LocalTime.parse(requireString(rawValue));
+    requireMicroseconds(time.getNano());
+    return time.toString();
   }
 
   private static String normalizeDateTime(final Object rawValue) {
@@ -150,7 +136,14 @@ public class StandardLogicalValueConverter implements LogicalValueConverter {
         instant = OffsetDateTime.parse(text).toInstant();
       }
     }
+    requireMicroseconds(instant.getNano());
     return instant.toString();
+  }
+
+  private static void requireMicroseconds(final int nanos) {
+    if (nanos % 1000 != 0) {
+      throw new IllegalArgumentException("Stored temporal values require microsecond precision");
+    }
   }
 
   private static String normalizeUuid(final Object rawValue) {
@@ -159,36 +152,8 @@ public class StandardLogicalValueConverter implements LogicalValueConverter {
     return uuid.toString();
   }
 
-  private String normalizeJson(final Object rawValue) throws JsonProcessingException {
-    JsonNode tree = rawValue instanceof String value
-        ? objectMapper.readTree(value) : objectMapper.valueToTree(rawValue);
-    if (tree == null || tree.isMissingNode()) {
-      throw new IllegalArgumentException("JSON value is missing");
-    }
-    return objectMapper.writeValueAsString(sortJson(tree));
-  }
-
-  private JsonNode sortJson(final JsonNode source) {
-    if (source.isObject()) {
-      ObjectNode result = objectMapper.createObjectNode();
-      source.properties().stream()
-          .sorted(Comparator.comparing(java.util.Map.Entry::getKey))
-          .forEach(entry -> result.set(entry.getKey(), sortJson(entry.getValue())));
-      return result;
-    }
-    if (source.isArray()) {
-      ArrayNode result = objectMapper.createArrayNode();
-      source.forEach(child -> result.add(sortJson(child)));
-      return result;
-    }
-    if (source.isNumber()) {
-      BigDecimal number = source.decimalValue().stripTrailingZeros();
-      if (number.scale() < 0) {
-        number = number.setScale(0);
-      }
-      return DecimalNode.valueOf(number);
-    }
-    return source;
+  private static String normalizeJson(final Object rawValue) {
+    return LogicalJsonValues.canonicalize(rawValue);
   }
 
   private static String normalizeBinary(final Object rawValue) {

@@ -1,7 +1,7 @@
 package org.simplepoint.plugin.workflow.api;
 
 /** Stable workflow-domain failure exposed through the service REST adapter. */
-public class WorkflowException extends RuntimeException {
+public class WorkflowException extends org.simplepoint.remoting.RemoteBusinessException {
 
   private final Code code;
 
@@ -15,6 +15,11 @@ public class WorkflowException extends RuntimeException {
   public WorkflowException(final Code code, final String message, final Throwable cause) {
     super(message, cause);
     this.code = code;
+  }
+
+  @Override
+  public String remoteErrorCode() {
+    return "WORKFLOW:" + code.name();
   }
 
   public Code getCode() {

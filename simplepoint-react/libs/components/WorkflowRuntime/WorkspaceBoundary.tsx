@@ -22,5 +22,8 @@ export default function WorkspaceBoundary({kind, children}: {kind: 'todos' | 'ma
   if (!(kind === 'todos' ? query.data.canViewTodos : query.data.canViewMatters)) return <Alert type="info" showIcon
     title={t('workflow.personal.permissionRequired', '尚未开通此工作流功能，请联系管理员授权')}/>;
   // A transient summary refresh failure must not unmount a user's typed form. Each actual operation remains server-authorized.
-  return <>{query.error && <Alert type="warning" showIcon title={t('workflow.loadFailed', '数据加载失败')} action={retry}/>} {children}</>;
+  return <div className="workflow-workspace-boundary">
+    {query.error && <Alert type="warning" showIcon title={t('workflow.loadFailed', '数据加载失败')} action={retry}/>}
+    {children}
+  </div>;
 }

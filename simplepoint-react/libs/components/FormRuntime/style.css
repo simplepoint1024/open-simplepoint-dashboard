@@ -1,0 +1,84 @@
+.sp-form-runtime-grid {
+  container: form-runtime / inline-size;
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  column-gap: 0;
+  margin-inline: -8px;
+  align-items: start;
+}
+
+.sp-form-runtime-grid > section {
+  padding-inline: 8px;
+  box-sizing: border-box;
+}
+
+.sp-form-runtime-field,
+.sp-form-runtime-display {
+  min-width: 0;
+}
+
+.sp-form-detail {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.sp-form-detail > .sp-data-table-root {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sp-form-runtime-display .ant-typography:last-child {
+  margin-bottom: 16px;
+}
+
+.sp-form-runtime-container,
+.sp-form-runtime-action {
+  min-width: 0;
+  margin-bottom: 16px;
+}
+
+.sp-form-runtime-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+}
+
+.sp-form-runtime-field .ant-form-item-row,
+.sp-form-detail-editor .ant-form-item-row { flex-wrap: nowrap; }
+.sp-form-runtime-field .ant-form-item-control,
+.sp-form-detail-editor .ant-form-item-control { min-width: 0; }
+.sp-form-runtime-field .ant-form-item-label,
+.sp-form-detail-editor .ant-form-item-label {
+  max-width: 40%;
+  padding-inline-end: 8px;
+  white-space: normal;
+}
+.sp-form-runtime-field .ant-form-item-label > label,
+.sp-form-detail-editor .ant-form-item-label > label {
+  height: auto;
+  min-height: 32px;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 22px;
+}
+
+/* Adapt to the actual form width in drawers, nested scenes and device previews. */
+@container form-runtime (max-width: 768px) {
+  .sp-form-runtime-field,
+  .sp-form-runtime-display,
+  .sp-form-runtime-container,
+  .sp-form-runtime-action {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+.sp-form-runtime-matrix { display: grid; gap: 12px; min-width: 0; }
+.sp-form-runtime-matrix > .sp-form-runtime-container { min-width: 0; margin: 0; padding: 8px; border: 1px solid var(--ant-color-border-secondary); border-radius: 4px; }
+
+.sp-form-detail-cell { min-width: 0; }
+.sp-form-detail-cell .ant-form-item, .sp-form-detail-cell .form-group { margin-bottom: 0; }
+.sp-form-detail-cell .ant-form-item-control { min-width: 0; width: 100%; }
+.sp-form-detail-cell .ant-form-item-label { display: none; }

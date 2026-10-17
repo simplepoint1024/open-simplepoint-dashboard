@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import DataTable from '@simplepoint/components/DataTable';
 import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
 import SForm from '@simplepoint/components/SForm/Lazy';
@@ -6,6 +7,7 @@ import TableActions from '@simplepoint/components/Table/Actions';
 import type {
   WorkflowDesignerHandle,
   WorkflowDesignerValidation,
+  WorkflowImportState,
 } from '@simplepoint/components/WorkflowDesigner';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {usePageRetention} from '@simplepoint/shared/page/hooks';
@@ -16,8 +18,8 @@ import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {useData} from '@simplepoint/shared/api/methods';
 import {useQueryClient} from '@tanstack/react-query';
 import {scopedQueryOptions} from '@simplepoint/shared/api/queryScope';
-import type {WorkflowVariablesEditorHandle} from '@simplepoint/components/WorkflowForms/VariablesEditor';
-import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
+import StartProcess from '@simplepoint/components/WorkflowRuntime/StartProcess';
+import {isHttpError, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {emptyFormContract, expressionVariables, type WorkflowFormContract} from '@simplepoint/components/WorkflowDesigner/contracts';
 import {
   type DefinitionDetail,
@@ -31,7 +33,6 @@ import {useMutationScope} from '../useMutationScope';
 
 type Draft = {name: string; category?: string; description?: string; bpmnXml: string; formContract: WorkflowFormContract};
 type CreateValues = {key?: string; name?: string; category?: string; description?: string};
-type StartValues = {title?: string; businessKey?: string; ccUserIds?: string[]};
 type CopyTarget = {definitionId: string; version: number; expectedRevision: number;
   historySession?: AbortController; editorSession?: AbortController};
 type DiscardKind = 'editor' | 'create' | 'start';
@@ -40,7 +41,6 @@ type FormSchema = ComponentProps<typeof SForm>['schema'];
 
 const WorkflowDesigner = lazy(() => import('@simplepoint/components/WorkflowDesigner'));
 const ContractEditor = lazy(() => import('@simplepoint/components/WorkflowForms/ContractEditor'));
-const VariablesEditor = lazy(() => import('@simplepoint/components/WorkflowForms/VariablesEditor'));
 
 export default function Definitions() {
   const scope = useQueryScope();
@@ -68,7 +68,7 @@ function DefinitionsSession() {
   const {message} = App.useApp(), mutation = useMutationScope();
   const [createOpen, setCreateOpen] = useState(false);
   const [createData, setCreateData] = useState<CreateValues>({});
-  const [createDirty, setCreateDirty] = useState(false), [startDirty, setStartDirty] = useState(false);
+  const [createDirty, setCreateDirty] = useState(false);
   const [discardKind, setDiscardKind] = useState<DiscardKind>('editor');
   const [editor, setEditor] = useState<DefinitionDetail>();
   const [editorMode, setEditorMode] = useState<'metadata' | 'design'>('metadata');
@@ -96,18 +96,15 @@ function DefinitionsSession() {
   const [startVersion, setStartVersion] = useState<number>();
   const [draft, setDraft] = useState<Draft>();
   const [validation, setValidation] = useState<WorkflowDesignerValidation>();
+  const [importState, setImportState] = useState<WorkflowImportState>('loading');
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishData, setPublishData] = useState<{comment?: string}>({});
   const [startTarget, setStartTarget] = useState<DefinitionSummary>();
-  const [startData, setStartData] = useState<StartValues>({});
   const [variablesOpen, setVariablesOpen] = useState(false);
   const [variablesBlocked, setVariablesBlocked] = useState(false);
-  const [startVariables, setStartVariables] = useState<Record<string, unknown>>({});
-  const [variablesValid, setVariablesValid] = useState(false);
-  const variablesEditorRef = useRef<WorkflowVariablesEditorHandle>(null);
 
   const overlay = !!editor || !!history || createOpen || publishOpen || !!startTarget || variablesOpen || !!copyTarget || discardOpen;
   const locked = overlay || saving || copyPending;
@@ -119,13 +116,6 @@ function DefinitionsSession() {
     ({signal}) => workflowApi.permissions(signal));
   const permissions = permissionsQuery.data;
   const load = definitions.refresh;
-  const startForm = useData(['workflow', 'start-form', startTarget?.id, startVersion],
-    ({signal}) => workflowApi.startForm(startTarget!.id, startVersion, signal),
-    {enabled: Boolean(startTarget), retry: false, staleTime: Infinity, gcTime: 120_000,
-      refetchOnWindowFocus: false, refetchOnReconnect: false});
-  useEffect(() => {
-    setStartVariables(startForm.data?.values ?? {});
-  }, [startForm.data, startTarget?.id, startVersion]);
   const declarations = useMemo(() => expressionVariables(draft?.formContract ?? emptyFormContract()), [draft?.formContract]);
   const metadataData = useMemo(() => ({name: draft?.name, category: draft?.category, description: draft?.description}),
     [draft?.name, draft?.category, draft?.description]);
@@ -147,6 +137,7 @@ function DefinitionsSession() {
         formContract: detail.formContract ?? emptyFormContract(),
       });
       setValidation(undefined);
+      setImportState('loading');
       setDirty(false);
       setWriteError(''); setDiscardOpen(false);
       setPublishData({});
@@ -182,18 +173,18 @@ function DefinitionsSession() {
     if (savingRef.current || copyPendingRef.current) return;
     if (kind === 'editor') return abandonEditor();
     if (kind === 'create') {setCreateOpen(false); setCreateData({}); setCreateDirty(false);}
-    else {setStartTarget(undefined); setStartData({}); setStartVariables({}); setStartDirty(false); setVariablesValid(false);}
+    else setStartTarget(undefined);
     setDiscardOpen(false); setWriteError('');
   };
   const closeDraft = (kind: 'create' | 'start') => {
     if (savingRef.current) return;
-    if (kind === 'create' ? createDirty : startDirty) {setDiscardKind(kind); setDiscardOpen(true);}
+    if (kind === 'create' && createDirty) {setDiscardKind(kind); setDiscardOpen(true);}
     else abandonDraft(kind);
   };
 
   const saveDraft = async (metadata?: CreateValues) => {
     if (!editor || !draft || !editor.permissions.canEdit || savingRef.current || copyPendingRef.current) return;
-    if (validation && !validation.valid) {
+    if (editorMode !== 'design' && validation && !validation.valid) {
       message.error(validation.errors[0] ?? t('workflow.definition.invalid', '流程结构不完整'));
       return;
     }
@@ -217,14 +208,23 @@ function DefinitionsSession() {
       await load();
       if (mutation.current(request.signal)) message.success(t('workflow.definition.saved', '流程草稿已保存'));
     } catch (error) {
-      if (mutation.current(request.signal)) setWriteError(resolveApiErrorMessage(error, t('workflow.definition.saveFailed', '流程草稿保存失败，请刷新后重试')));
+      if (mutation.current(request.signal)) {
+        focusModelingError(error);
+        setWriteError(resolveApiErrorMessage(error, t('workflow.definition.saveFailed', '流程草稿保存失败，请刷新后重试')));
+      }
     } finally {
       savingRef.current = false; if (mutation.current()) setSaving(false);
     }
   };
 
+  const focusModelingError = (error: unknown) => {
+    if (!isHttpError(error) || !error.data || typeof error.data !== 'object') return;
+    const {elementId} = error.data as Record<string, unknown>;
+    if (typeof elementId === 'string' && elementId.length <= 256) designerRef.current?.focusElement(elementId);
+  };
+
   const publish = async (values: {comment?: string}) => {
-    if (!editor?.permissions.canPublish || savingRef.current || copyPendingRef.current || dirty) return;
+    if (!editor?.permissions.canPublish || savingRef.current || copyPendingRef.current || dirty || importState !== 'ready') return;
     const request = mutation.begin(); if (!request) return;
     savingRef.current = true; setSaving(true); setWriteError('');
     try {
@@ -239,8 +239,11 @@ function DefinitionsSession() {
       setPublishData({});
       await load();
       if (mutation.current(request.signal)) message.success(t('workflow.definition.published', '流程版本已发布'));
-    } catch {
-      if (mutation.current(request.signal)) setWriteError(t('workflow.definition.publishFailed', '流程发布失败，请检查模型和权限'));
+    } catch (error) {
+      if (mutation.current(request.signal)) {
+        focusModelingError(error);
+        setWriteError(resolveApiErrorMessage(error, t('workflow.definition.publishFailed', '流程发布失败，请检查模型和权限')));
+      }
     } finally {
       savingRef.current = false; if (mutation.current()) setSaving(false);
     }
@@ -277,35 +280,6 @@ function DefinitionsSession() {
     }
   };
 
-  const startProcess = async (data: StartValues) => {
-    if (!startTarget || permissions?.canStart !== true || !startForm.data || startForm.isFetching || savingRef.current || copyPendingRef.current) return;
-    let currentVariables: Record<string, unknown>;
-    try {
-      if (!variablesEditorRef.current) return;
-      currentVariables = variablesEditorRef.current.getValues(startForm.data);
-    } catch (reason) {setWriteError((reason as Error).message); return;}
-    const request = mutation.begin(); if (!request) return;
-    savingRef.current = true; setSaving(true); setWriteError('');
-    try {
-      await workflowApi.start(startTarget.id, {
-        version: startForm.data.definitionVersion,
-        title: data.title?.trim() || startTarget.name,
-        businessKey: data.businessKey?.trim() || undefined,
-        variables: currentVariables,
-        ccUserIds: data.ccUserIds,
-      }, request.signal);
-      if (!mutation.current(request.signal)) return;
-      setStartTarget(undefined);
-      setStartData({});
-      setStartDirty(false);
-      message.success(t('workflow.instance.started', '流程已发起'));
-    } catch {
-      if (mutation.current(request.signal)) setWriteError(t('workflow.instance.startFailed', '流程发起失败'));
-    } finally {
-      savingRef.current = false; if (mutation.current()) setSaving(false);
-    }
-  };
-
   const cancelCopy = () => {if (copyPendingRef.current) return; copyTargetRef.current = undefined;
     setCopyTarget(undefined); setWriteError('');};
   const submitCopy = async () => {
@@ -320,6 +294,7 @@ function DefinitionsSession() {
         || editorRequest.current !== target.editorSession) return;
       copyTargetRef.current = undefined; setCopyTarget(undefined);
       setEditor(detail); setEditorMode('design'); setHistory(undefined); setVersionPreview(undefined);
+      setImportState('loading');
       setPublishData({});
       setDraft({name: detail.definition.name, category: detail.definition.category, description: detail.definition.description,
         bpmnXml: detail.bpmnXml, formContract: detail.formContract ?? emptyFormContract()});
@@ -349,7 +324,7 @@ function DefinitionsSession() {
         ? <Typography.Link disabled={locked || !mutation.selected} onClick={() => {void openHistory(row.id);}}>{`v${value}`}</Typography.Link> : '—'},
     {title: t('workflow.definition.status', '状态'), key: 'status', width: 210, render: (_, row) => status(row)},
     {title: t('workflow.updatedAt', '更新时间'), dataIndex: 'updatedAt', key: 'updatedAt', width: 190,
-      render: (value: string) => new Date(value).toLocaleString(locale)},
+      render: (value: string) => formatDateTime(value, locale)},
     {title: t('workflow.actions', '操作'), key: 'actions', width: 260, fixed: 'right', render: (_, row) =>
       <TableActions selectedKeys={[row.id]} selectedRows={[row]} buttons={[
         {key: 'edit', sort: 10, text: t('workflow.action.editMetadata', '基础信息'), type: 'link',
@@ -362,7 +337,7 @@ function DefinitionsSession() {
       ]} isButtonDisabled={() => locked || !mutation.selected} onButtonEvents={{
         edit: () => { void openEditor(row.id); },
         design: () => {void openEditor(row.id, 'design');},
-        start: () => {if (locked || savingRef.current) return; setWriteError(''); setStartDirty(false); setStartTarget(row); setStartVersion(row.latestVersion); setStartData({title: row.name}); },
+        start: () => {if (locked || savingRef.current) return; setWriteError(''); setStartTarget(row); setStartVersion(row.latestVersion); },
       }}/>} as const,
   ], [locale, openEditor, openHistory, permissions?.canStart, t, locked, mutation.selected]);
 
@@ -373,7 +348,7 @@ function DefinitionsSession() {
       render: (value?: string) => value || '—'},
     {title: t('workflow.publish.user', '发布人'), dataIndex: 'publishedBy', key: 'publishedBy', width: 150},
     {title: t('workflow.publish.time', '发布时间'), dataIndex: 'publishedAt', key: 'publishedAt', width: 190,
-      render: (value: string) => new Date(value).toLocaleString(locale)},
+      render: (value: string) => formatDateTime(value, locale)},
     {title: t('workflow.actions', '操作'), key: 'actions', width: 260, render: (_, row) =>
       <TableActions selectedKeys={[row.id]} selectedRows={[row]}
         buttons={[
@@ -398,9 +373,7 @@ function DefinitionsSession() {
         }, start: () => {
           if (!history || savingRef.current || copyPendingRef.current || copyTargetRef.current) return;
           setWriteError('');
-          setStartDirty(false);
           setStartTarget(history.definition); setStartVersion(row.version);
-          setStartData({title: history.definition.name});
         }, copy: () => {
           if (!history?.permissions.canCopyVersion || copyPendingRef.current || savingRef.current || copyTargetRef.current) return;
           const target = {definitionId: history.definition.id, version: row.version, expectedRevision: history.definition.draftRevision,
@@ -418,13 +391,6 @@ function DefinitionsSession() {
       description: {type: 'string', title: t('workflow.definition.description', '说明'), maxLength: 1000},
     },
   }), [t]);
-
-  const startSchema = useMemo<FormSchema>(() => ({type: 'object', properties: {
-    title: {type: 'string', title: t('workflow.instance.title', '事项标题'), maxLength: 240},
-    businessKey: {type: 'string', title: t('workflow.instance.businessKey', '业务标识'), maxLength: 160},
-    ccUserIds: {type: 'array', title: t('workflow.instance.ccUsers', '抄送人'), maxItems: 50,
-      uniqueItems: true, items: {type: 'string'}},
-  }}), [t]);
 
   const metadataSchema = useMemo<FormSchema>(() => ({type: 'object', required: ['name'], properties: {
     name: {type: 'string', title: t('workflow.definition.name', '流程名称'), minLength: 1, maxLength: 160, pattern: '\\S'},
@@ -466,12 +432,12 @@ function DefinitionsSession() {
       onClose={closeEditor}
       extra={editor && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
         ...(editorMode === 'design' ? [{key: 'variables', sort: 5,
-          text: t('workflow.variable.configure', '配置变量'), disabled: saving || copyPending,
+          text: t('workflow.variable.configure', '配置变量'), disabled: saving || copyPending || importState !== 'ready',
           argumentMinSize: 0, argumentMaxSize: 0}] : []),
         ...(editor.permissions.canEdit ? [{key: 'save', sort: 10, text: t('workflow.action.save', '保存草稿'),
           type: 'primary' as const, loading: saving, disabled: saving || copyPending, argumentMinSize: 0, argumentMaxSize: 0}] : []),
         ...(editorMode === 'design' && editor.permissions.canPublish ? [{key: 'publish', sort: 20, text: t('workflow.action.publish', '发布'),
-          disabled: dirty || saving || copyPending, loading: saving, argumentMinSize: 0, argumentMaxSize: 0}] : []),
+          disabled: dirty || saving || copyPending || importState !== 'ready', loading: saving, argumentMinSize: 0, argumentMaxSize: 0}] : []),
       ]} onButtonEvents={{variables: () => setVariablesOpen(true),
         save: () => {if (editorMode === 'metadata') metadataFormRef.current?.submit(); else void saveDraft();},
         publish: () => setPublishOpen(true)}}/>}>
@@ -493,6 +459,7 @@ function DefinitionsSession() {
         </div> : <Suspense fallback={<Spin size="large"/>}>
         {dirty && <Alert type="info" showIcon title={t('workflow.publish.saveFirst', '请先保存当前设计，再发布新版本')}/>}
         <WorkflowDesigner ref={designerRef} xml={draft.bpmnXml} readOnly={!editor.permissions.canEdit} disabled={saving || copyPending}
+          onImportStateChange={setImportState}
           resolveNumericLiteral={resolveNumericLiteral}
           resolvePriorityLiteral={resolvePriorityLiteral}
           height="100%" variables={declarations} formContract={draft.formContract}
@@ -558,22 +525,8 @@ function DefinitionsSession() {
       {writeError && <Alert type="error" showIcon title={writeError}/>}
     </Modal>
 
-    <Modal title={t('workflow.action.start', '发起流程')} open={Boolean(startTarget) && mutation.selected} footer={null}
-      destroyOnHidden={!startTarget} closable={!saving} maskClosable={!saving} keyboard={!saving}
-      onCancel={() => closeDraft('start')}>
-      {writeError && <Alert type="error" showIcon title={writeError}/>}
-      {startVersion && <Typography.Paragraph>{`${startTarget?.name} · v${startVersion}`}</Typography.Paragraph>}
-      {startForm.isFetching ? <Spin/> : startForm.isError ? <Alert type="error" showIcon
-        title={t('workflow.form.loadFailed', '流程表单加载失败，请关闭后重试')}/> : startForm.data && <>
-      <Suspense fallback={<Spin/>}><VariablesEditor ref={variablesEditorRef} key={`${startTarget?.id}:${startForm.data.definitionVersion}`}
-        form={startForm.data} stage="start" value={startVariables} onChange={setStartVariables}
-        onValidityChange={setVariablesValid} onDirtyChange={setStartDirty} disabled={saving}/></Suspense>
-      <SForm schema={startSchema} uiSchema={{ccUserIds: {'ui:widget': 'TenantDirectory',
-        'ui:options': {kind: 'users', multiple: true}}}}
-        formData={startData} submitLoading={saving} disabled={saving} submitDisabled={!variablesValid}
-        onChange={(event: {formData?: StartValues}) => {setStartData(event.formData ?? {}); setStartDirty(true);}}
-        onSubmit={(event: {formData?: StartValues}) => void startProcess(event.formData ?? {})}/></>}
-    </Modal>
+    {startTarget && <StartProcess initialDefinition={{id: startTarget.id, name: startTarget.name, version: startVersion}}
+      onClose={() => setStartTarget(undefined)}/>}
     <Modal wrapClassName="workflow-copy-confirmation" open={!!copyTarget && mutation.selected}
       destroyOnHidden={!copyTarget}
       title={t('workflow.version.copyConfirm', '将此历史版本复制为当前草稿？')} closable={!copyPending} maskClosable={!copyPending} keyboard={!copyPending}

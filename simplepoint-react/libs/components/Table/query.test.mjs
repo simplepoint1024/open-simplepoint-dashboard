@@ -43,3 +43,16 @@ test('saved views reject removed fields, unauthorized operations and excessive s
   assert.throws(() => validateNode({field: 'amount', op: 'between', value: [1]}, contract));
   assert.throws(() => validateNode({op: 'and', children: []}, contract));
 });
+
+test('saved views accept stable form field identities containing hyphens', () => {
+  const formContract = {
+    ...contract,
+    fields: {...contract.fields, 'name-field': {operators: ['equals'], sortable: true}},
+  };
+
+  validateView({
+    name: 'form view',
+    filters: {'name-field': 'equals:Ada'},
+    sort: 'name-field,asc',
+  }, formContract);
+});

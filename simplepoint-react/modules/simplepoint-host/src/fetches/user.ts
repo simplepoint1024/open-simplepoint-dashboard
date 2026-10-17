@@ -80,6 +80,7 @@ export function useUserInfo() {
         if (result.data) {
             try {
                 sessionStorage.setItem('sp.userinfo', JSON.stringify(result.data));
+                window.dispatchEvent(new Event('sp-userinfo-changed'));
             } catch (e) {
                 console.warn('[user] Failed to cache userinfo:', e);
             }

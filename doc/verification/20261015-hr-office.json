@@ -1,0 +1,313 @@
+{
+  "verifiedAt": "2026-10-15T09:44:50.220Z",
+  "applicationId": "06165401-1851-4bda-bb6a-f0511a1cab7a",
+  "physicalTables": [
+    {
+      "form_id": "3b24f99d-03e7-4ac9-a139-f161078976c5",
+      "display_name": "会议室申请",
+      "status": "ACTIVE",
+      "schema_name": "app_forms",
+      "table_name": "spf_7qckhtbbv5923v0q48a15zy35z",
+      "rows": 1
+    },
+    {
+      "form_id": "65dfdb3e-6466-492c-9f1b-6241446f4362",
+      "display_name": "日报填写",
+      "status": "ACTIVE",
+      "schema_name": "app_forms",
+      "table_name": "spf_0gvv60rrc48r6979kc80cpgrvr",
+      "rows": 1
+    },
+    {
+      "form_id": "6ddc39a7-8687-41de-8b85-7efca89117a8",
+      "display_name": "财务报销",
+      "status": "ACTIVE",
+      "schema_name": "app_forms",
+      "table_name": "spf_31gp3naq7q8t0akh0081jxg84x",
+      "rows": 5
+    },
+    {
+      "form_id": "ab18bf52-8875-3cc8-aed6-afda6306f825",
+      "display_name": "费用明细",
+      "status": "ACTIVE",
+      "schema_name": "app_forms",
+      "table_name": "spf_1kxkfkrre980ztbs5144kzwjmm",
+      "rows": 10,
+      "orphans": 0
+    },
+    {
+      "form_id": "d605a077-bd7d-3ffc-b390-0182ceca30c9",
+      "display_name": "工作明细",
+      "status": "ACTIVE",
+      "schema_name": "app_forms",
+      "table_name": "spf_2zxsknzrf184pbw9c649a4bxnt",
+      "rows": 2,
+      "orphans": 0
+    }
+  ],
+  "cases": [
+    {
+      "code": "office_meeting_room",
+      "id": "fb1baa43fe45742badf7964f0336c903e800e3192f8ec12b449c48c04de0b4b1",
+      "title": "【验收】平台季度方案评审",
+      "recordId": "37ae0a5e-f04f-5f8a-b5ae-6e852393979c",
+      "processInstanceId": "d4b97d00-c879-11f1-b1c8-f21b1c47f781",
+      "approvals": [
+        {
+          "actor": "administration",
+          "taskId": "d4bde9d9-c879-11f1-b1c8-f21b1c47f781",
+          "taskName": "行政核实场地及会务安排"
+        }
+      ],
+      "status": "COMPLETED",
+      "finalStatus": "COMPLETED",
+      "detailRows": 0
+    },
+    {
+      "code": "office_daily_report",
+      "id": "262a5165c61f501814f037965ac785589d8c4e833edc77cc115ba8726890444d",
+      "title": "【验收】平台研发工作日报",
+      "recordId": "2d335f31-c193-57b9-a901-8024b0206b3e",
+      "processInstanceId": "e3de4a01-c879-11f1-b1c8-f21b1c47f781",
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "e3de4a0a-c879-11f1-b1c8-f21b1c47f781",
+          "taskName": "部门负责人确认日报"
+        }
+      ],
+      "status": "COMPLETED",
+      "finalStatus": "COMPLETED",
+      "detailRows": 2
+    },
+    {
+      "code": "office_expense_claim",
+      "id": "13c8930c1802d6617a45c8fb6988a818a8c6f0b50f16e2b85b26898996c78146",
+      "title": "【验收】客户现场交付差旅报销（普通）",
+      "recordId": "65fc7b88-c2ba-5345-989a-0712fddbbec8",
+      "processInstanceId": "f2caa1e2-c879-11f1-b1c8-f21b1c47f781",
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "f2cb3e2c-c879-11f1-b1c8-f21b1c47f781",
+          "taskName": "部门负责人审核"
+        },
+        {
+          "actor": "finance",
+          "taskId": "f30057f6-c879-11f1-b1c8-f21b1c47f781",
+          "taskName": "财务复核"
+        }
+      ],
+      "status": "COMPLETED",
+      "finalStatus": "COMPLETED",
+      "detailRows": 2
+    },
+    {
+      "code": "office_expense_claim",
+      "id": "704fa36f3b88fe1fa1e9c663fbdca0695462be22b38b8ea006f41bdd4ebe88c4",
+      "title": "【验收】客户现场交付差旅报销（大额）",
+      "recordId": "7359d49f-a3f5-5ec0-9d06-4d3ab0343954",
+      "processInstanceId": "25c7003e-c87a-11f1-b1c8-f21b1c47f781",
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "25c70048-c87a-11f1-b1c8-f21b1c47f781",
+          "taskName": "部门负责人审核"
+        },
+        {
+          "actor": "director",
+          "taskId": "25f3b5a2-c87a-11f1-b1c8-f21b1c47f781",
+          "taskName": "分管负责人审批"
+        },
+        {
+          "actor": "finance",
+          "taskId": "2623512a-c87a-11f1-b1c8-f21b1c47f781",
+          "taskName": "财务复核"
+        }
+      ],
+      "status": "COMPLETED",
+      "finalStatus": "COMPLETED",
+      "detailRows": 2
+    },
+    {
+      "code": "office_expense_claim",
+      "id": "eaa2370c0162fb9b3d6add8f92e16167da4205ac449309d7c7e09016e356292b",
+      "title": "【验收】报销驳回与修订申请",
+      "recordId": "6bd61826-28bf-58cf-ab08-01c3a517d2fb",
+      "processInstanceId": "3434b252-c87a-11f1-b1c8-f21b1c47f781",
+      "status": "REJECTED",
+      "finalStatus": "REJECTED",
+      "detailRows": 2
+    },
+    {
+      "code": "office_expense_claim",
+      "id": "b83cf0587ac14037560f05c00ee28e6a6f860f4ed0acc1059cfd8c466b62bc63",
+      "title": "【验收】报销补充材料后重新申请",
+      "recordId": "fad506c9-84d9-51e8-9cbe-a6450f2c77ff",
+      "processInstanceId": "43551282-c87a-11f1-b1c8-f21b1c47f781",
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "4355128c-c87a-11f1-b1c8-f21b1c47f781",
+          "taskName": "部门负责人审核"
+        },
+        {
+          "actor": "finance",
+          "taskId": "43860da6-c87a-11f1-b1c8-f21b1c47f781",
+          "taskName": "财务复核"
+        }
+      ],
+      "status": "COMPLETED",
+      "finalStatus": "COMPLETED",
+      "detailRows": 2
+    },
+    {
+      "code": "office_expense_claim",
+      "id": "4a22a6006341329008fd0b4a74beaefa41cddff5695139ab7f6df83923f07071",
+      "recordId": "04eab2d6-3dec-52e4-98e9-2729623a3028",
+      "processInstanceId": "38ba452e-c87b-11f1-b1c8-f21b1c47f781",
+      "finalStatus": "COMPLETED",
+      "detailRows": 2
+    }
+  ],
+  "downloadSha256": "295016e79b41b396618dd1aaebb0ac5f163be5e6402a2a734bcedc4f9c1137be",
+  "browser": {
+    "at": "2026-10-15T09:45:33.451Z",
+    "checks": [
+      "add detail 5.50",
+      "second detail 2.50 gives 8.00",
+      "remove first row gives 2.50",
+      "visible labels have no horizontal clipping",
+      "completed snapshot at 640px uses full-width fields with inline labels and no clipping"
+    ],
+    "passed": true
+  },
+  "checks": [
+    "meeting end must follow start",
+    "daily report requires detail rows",
+    "daily hours must equal exact detail sum",
+    "expense cannot tamper with routing amount",
+    "expense requires attachments",
+    "expense rejects forged storage reference",
+    "meeting: employee → administration → completed, immutable record",
+    "daily: parent + two detail rows → manager → completed",
+    "expense <= 5000: manager → finance, attachment bytes verified",
+    "expense > 5000: manager → director → finance, exact amount routing",
+    "rejection → linked new revision → completed; original business evidence preserved",
+    "administration cannot access financial form; applicant cannot approve any stage"
+  ],
+  "pendingOfficeTasks": 0,
+  "forms": {
+    "office_meeting_room": {
+      "formId": "3b24f99d-03e7-4ac9-a139-f161078976c5",
+      "pageId": "a90c5bca-3c9d-49dd-bf04-3a06c59a0d0c",
+      "version": 1,
+      "workflowId": "fb184c7b-5ad1-487a-8d34-c456f523634d",
+      "workflowVersion": 1,
+      "resourceCode": "app.runtime.page.b3530d9592d633d2969aa9aea871ba12"
+    },
+    "office_daily_report": {
+      "formId": "65dfdb3e-6466-492c-9f1b-6241446f4362",
+      "pageId": "ec7df87d-acdc-4541-b75a-1a63eb7a2659",
+      "version": 2,
+      "workflowId": "8989da46-c7c7-40fa-b8c1-a535f349166c",
+      "workflowVersion": 1,
+      "resourceCode": "app.runtime.page.38a1c3f547393f0b9fd4cbc8b51f533b"
+    },
+    "office_expense_claim": {
+      "formId": "6ddc39a7-8687-41de-8b85-7efca89117a8",
+      "pageId": "cd442ce8-9844-4674-9c0a-3ac210c647f3",
+      "version": 1,
+      "workflowId": "4182121f-91fe-48ea-88e7-278ac8c8836e",
+      "workflowVersion": 1,
+      "resourceCode": "app.runtime.page.d8877e3c4134348dad7f69271cd93691"
+    }
+  },
+  "testAccounts": {
+    "employee": {
+      "email": "office.employee@example.test",
+      "userId": "5acfe791-1ff2-4a7b-b74d-30bd275cce30",
+      "authority": "ROLE_Office_employee",
+      "scope": "SELF"
+    },
+    "manager": {
+      "email": "office.manager@example.test",
+      "userId": "f30aa6f1-8759-4d60-9445-c7f3352b63f2",
+      "authority": "ROLE_Office_manager",
+      "scope": "DEPT_AND_BELOW"
+    },
+    "administration": {
+      "email": "office.administration@example.test",
+      "userId": "3e8c2480-e768-44e5-a8dc-d7c069fd6e66",
+      "authority": "ROLE_Office_administration",
+      "scope": "ALL"
+    },
+    "finance": {
+      "email": "office.finance@example.test",
+      "userId": "b5c8ea22-bc3b-47ec-bf73-54476e66f5cd",
+      "authority": "ROLE_Office_finance",
+      "scope": "ALL"
+    },
+    "director": {
+      "email": "office.director@example.test",
+      "userId": "6356e8b3-c593-4932-9f6f-4eefe586e1ae",
+      "authority": "ROLE_Office_director",
+      "scope": "ALL"
+    }
+  },
+  "browserSubmission": {
+    "recordId": "04eab2d6-3dec-52e4-98e9-2729623a3028",
+    "submissionId": "4a22a6006341329008fd0b4a74beaefa41cddff5695139ab7f6df83923f07071",
+    "processInstanceId": "38ba452e-c87b-11f1-b1c8-f21b1c47f781",
+    "upload": {
+      "id": "b4ce09fd-297f-4b45-a9da-3e9537b7e0e8",
+      "name": "报销仿真凭证-4800.pdf",
+      "size": 863
+    },
+    "checks": [
+      "three business menu items visible",
+      "real browser PDF upload",
+      "detail dialog edit persisted",
+      "unchanged total merged correctly",
+      "browser submission accepted"
+    ],
+    "at": "2026-10-15T09:32:54.369Z",
+    "browserApprovals": [
+      {
+        "actor": "manager",
+        "taskId": "38ba4538-c87b-11f1-b1c8-f21b1c47f781",
+        "at": "2026-10-15T09:35:19.288Z"
+      },
+      {
+        "actor": "finance",
+        "taskId": "bc83744f-c87b-11f1-b650-3a2662c1e573",
+        "at": "2026-10-15T09:36:40.170Z"
+      }
+    ]
+  },
+  "rules": {
+    "expenseAdditionalApprovalAboveCny": "5000.00",
+    "roomAvailability": "manual administrative review",
+    "paymentExecution": false
+  },
+  "deployment": {
+    "app": "20261015-office5",
+    "common": "20261015-office5",
+    "workflow": "20261015-office5",
+    "otherSixServices": "20261015-office1",
+    "health": "all nine services and Consul passing",
+    "artifactVerification": "exact app/common/workflow JAR hashes and immutable image/source identity checked"
+  },
+  "testSummary": {
+    "backendModules": [
+      "app-form-implementation",
+      "service-app",
+      "storage-implementation"
+    ],
+    "frontendTypecheckModules": 8,
+    "frontendTestsPassed": 78,
+    "fullBackendSuiteRerun": false,
+    "scopedCheckstylePassed": true,
+    "preexistingServiceAppCheckstyleViolations": 57
+  }
+}

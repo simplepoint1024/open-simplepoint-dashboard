@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import {lazy, Suspense, useEffect, useState} from 'react';
 import {Alert, Descriptions, Drawer, Empty, Segmented, Space, Spin, Timeline, Typography} from 'antd';
 import {useData} from '@simplepoint/shared/api/methods';
@@ -12,6 +13,7 @@ import {initialProgressSelection} from './progressSelection';
 
 const ProcessStatusDiagram = lazy(() => import('../ProcessStatusDiagram'));
 const ActionTimeline = lazy(() => import('./ActionTimeline'));
+const BusinessSnapshot = lazy(() => import('../ApplicationWorkflow/SnapshotView'));
 
 export default function ProgressDrawer(props: {id: string; onClose: () => void}) {
   const scope = useQueryScope();
@@ -31,7 +33,7 @@ function ProgressSession({id, onClose, onNavigate, onBack}: {
 }) {
   const {t, locale} = useI18n(), selected = usePageSelected();
   const [node, setNode] = useState<string>(), [page, setPage] = useState(0), [activeOnly, setActiveOnly] = useState(false);
-  const [section, setSection] = useState<'nodes' | 'actions'>('nodes');
+  const [section, setSection] = useState<'nodes' | 'actions' | 'business'>('nodes');
   const query = useData(['workflow', 'progress', id], ({signal}) => workflowApi.progress(id, signal), {retry: false});
   const progress = query.data, diagram = progress?.diagram;
   useEffect(() => {
@@ -47,7 +49,7 @@ function ProgressSession({id, onClose, onNavigate, onBack}: {
   const history = useData(['workflow', 'node-history', id, node, page, activeOnly],
     ({signal}) => workflowApi.nodeHistory(id, node!, page, activeOnly, signal), {enabled: Boolean(node) && section === 'nodes', retry: false});
   const pick = (value: string) => {setNode(value); setPage(0); setActiveOnly(Boolean(diagram?.activeActivityIds.includes(value)));};
-  const date = (value?: string) => value ? new Date(value).toLocaleString(locale) : '—';
+  const date = (value?: string) => value ? formatDateTime(value, locale) : '—';
   const unavailable = t('workflow.identity.unavailable', '用户信息不可用');
   const name = diagram?.activities.find(activity => activity.activityId === node)?.activityName;
   return <Drawer rootClassName="workflow-progress-detail" title={progress?.matter.title ?? t('workflow.diagram.title', '流程进度')}
@@ -73,11 +75,14 @@ function ProgressSession({id, onClose, onNavigate, onBack}: {
         ...(progress.matter.nextInstanceId ? [{key: 'nextMatter', sort: 2,
           text: t('workflow.resubmit.next', '查看重新发起的事项'), onClick: () => onNavigate(progress.matter.nextInstanceId!)}] : []),
       ]}/>
-      <Segmented value={section} onChange={value => setSection(value as 'nodes' | 'actions')} options={[
+      <Segmented value={section} onChange={value => setSection(value as 'nodes' | 'actions' | 'business')} options={[
         {value: 'nodes', label: t('workflow.audit.nodes', '审批节点')},
         {value: 'actions', label: t('workflow.audit.title', '流程操作记录')},
+        ...(progress.matter.businessKey?.startsWith('app-form:') ? [{value: 'business', label: t('app.submission.snapshot', '业务快照')}] : []),
       ]}/>
-      {section === 'actions' ? <Suspense fallback={<Spin/>}><ActionTimeline id={id} onSelectNode={activity => {
+      {section === 'business' ? <Suspense fallback={<Spin/>}><BusinessSnapshot
+        url={`/app/workflow/instances/${encodeURIComponent(id)}/business-form`}/></Suspense>
+      : section === 'actions' ? <Suspense fallback={<Spin/>}><ActionTimeline id={id} onSelectNode={activity => {
         setNode(activity); setPage(0); setActiveOnly(false); setSection('nodes');
       }}/></Suspense> : <>
       <Typography.Paragraph type="secondary">{t('workflow.diagram.nodeHint', '点击图中的节点，或使用下方节点按钮，查看当前审批人与逐次处理记录。')}</Typography.Paragraph>

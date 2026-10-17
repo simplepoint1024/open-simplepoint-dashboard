@@ -175,7 +175,7 @@ const RuntimePools = ({active = true, poolsUrl, secretsUrl, serversUrl, canManag
       title: t('ai.runtime.field.lastActivity', '最后活动'),
       dataIndex: 'lastActivityAt',
       width: 175,
-      render: formatDateTime,
+      render: (value?: string) => formatDateTime(value),
     },
     {
       title: t('ai.runtime.field.lastError', '最后错误'),

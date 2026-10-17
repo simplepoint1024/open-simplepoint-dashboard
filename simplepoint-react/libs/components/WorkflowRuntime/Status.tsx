@@ -1,4 +1,4 @@
-import {Tag} from 'antd';
+import StatusTag from '../StatusTag';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 
 export function WorkflowStatus({value}: {value: string}) {
@@ -12,6 +12,6 @@ export function WorkflowStatus({value}: {value: string}) {
     STARTED: t('workflow.status.STARTED', '发起'), CLAIMED: t('workflow.status.CLAIMED', '认领'),
     RESUBMITTED: t('workflow.status.RESUBMITTED', '重新发起'),
   };
-  return <Tag color={value === 'APPROVED' || value === 'COMPLETED' ? 'green'
-    : value === 'REJECTED' ? 'red' : value === 'RUNNING' || value === 'ACTIVE' ? 'blue' : 'default'}>{labels[value] ?? value}</Tag>;
+  return <StatusTag label={labels[value] ?? value} tone={value === 'APPROVED' || value === 'COMPLETED' ? 'success'
+    : value === 'REJECTED' ? 'error' : value === 'RUNNING' || value === 'ACTIVE' ? 'processing' : 'neutral'}/>;
 }

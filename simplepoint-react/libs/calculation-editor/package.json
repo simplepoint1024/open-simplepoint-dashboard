@@ -1,0 +1,9 @@
+{
+  "name": "@simplepoint/calculation-editor",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {".": "./src/index.tsx", "./style.css": "./src/style.css"},
+  "peerDependencies": {"react": ">=19"},
+  "dependencies": {"@simplepoint/calculation": "workspace:*"},
+  "scripts": {"typecheck": "tsc -p tsconfig.json --noEmit"}
+}

@@ -291,18 +291,22 @@ public class ResourceServiceImpl
     }
 
     Set<String> resourceCodes = normalizeCodes(context.getResources());
+    Set<String> managedCodes = tenantResourceCatalog == null || !hasText(activeTenantId)
+        ? Set.of()
+        : tenantResourceCatalog.managedGrantableCodes(activeTenantId, resourceCodes);
     resourceCodes.addAll(findPublicAccessCodes());
     resourceCodes.retainAll(filterAccessibleCodes(
         resourceCodes,
         context.getScopeType(),
         Boolean.TRUE.equals(context.getIsAdministrator())
     ));
+    resourceCodes.addAll(managedCodes);
     if (resourceCodes.isEmpty()) {
       return withScopeContext(ServiceResourceRouteResult.EMPTY, context);
     }
-    Collection<Resource> resources = directoryQuery().navigation(resourceCodes, false).stream()
-        .filter(this::isRouteResource)
-        .toList();
+    List<Resource> resources = new ArrayList<>(directoryQuery().navigation(resourceCodes, false));
+    mergeManagedRoutes(resources, activeTenantId, resourceCodes);
+    resources = resources.stream().filter(this::isRouteResource).toList();
     Set<ServiceResourceRouteResult.ServiceEntry> services = new HashSet<>();
     return withScopeContext(ServiceResourceRouteResult.of(
         services,
@@ -311,30 +315,70 @@ public class ResourceServiceImpl
   }
 
   private ServiceResourceRouteResult customRoutes(AuthorizationContext context, String tenantId) {
+    Set<String> held = normalizeCodes(context.getResources());
+    Map<String, TenantResource> catalog = new java.util.LinkedHashMap<>();
+    for (TenantResource item : tenantResourceCatalog.navigationResources(tenantId, held)) {
+      catalog.put(item.getId(), item);
+    }
+    for (TenantResource item : tenantResourceCatalog.managedNavigationResources(tenantId, held)) {
+      catalog.put(item.getId(), item);
+    }
     List<Resource> resources = new ArrayList<>();
-    for (TenantResource item : tenantResourceCatalog.navigationResources(tenantId, normalizeCodes(context.getResources()))) {
-      Resource resource = new Resource();
-      resource.setId(item.getId());
-      resource.setCode(item.getCode());
-      resource.setName(item.getName());
-      resource.setType(item.getType());
-      resource.setPath(item.getPath());
-      resource.setComponent(item.getComponent());
-      resource.setRouteKind(item.getRouteKind());
-      resource.setParentId(item.getParentId());
-      resource.setIcon(item.getIcon());
-      resource.setSort(item.getSort());
-      resource.setDescription(item.getDescription());
-      resource.setGrantable(item.isGrantable());
-      resource.setDisabled(false);
-      resource.setPublicAccess(false);
-      resource.setRequireOrgTenant(true);
-      resource.setScopeTypes(Set.of(ResourceScopeType.TENANT));
+    for (TenantResource item : catalog.values()) {
+      Resource resource = tenantRoute(item);
       if (isRouteResource(resource)) resources.add(resource);
     }
     Set<ServiceResourceRouteResult.ServiceEntry> services = new HashSet<>();
     return withScopeContext(ServiceResourceRouteResult.of(services,
         buildResourceTree(resources, services, true, loadRemoteEntriesByServiceName(), TenantResource.class)), context);
+  }
+
+  private void mergeManagedRoutes(
+      final List<Resource> resources,
+      final String tenantId,
+      final Set<String> heldCodes
+  ) {
+    if (tenantResourceCatalog == null || !hasText(tenantId) || heldCodes.isEmpty()) {
+      return;
+    }
+    List<TenantResource> managed = tenantResourceCatalog.managedNavigationResources(
+        tenantId,
+        heldCodes
+    );
+    if (managed.isEmpty()) return;
+    Set<String> parentIds = managed.stream()
+        .map(TenantResource::getParentId)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+    Map<String, Resource> merged = new java.util.LinkedHashMap<>();
+    resources.forEach(resource -> merged.put(resource.getId(), resource));
+    directoryQuery().navigationAncestors(parentIds)
+        .forEach(resource -> merged.putIfAbsent(resource.getId(), resource));
+    managed.stream().map(ResourceServiceImpl::tenantRoute)
+        .forEach(resource -> merged.put(resource.getId(), resource));
+    resources.clear();
+    resources.addAll(merged.values());
+  }
+
+  private static Resource tenantRoute(final TenantResource item) {
+    Resource resource = new Resource();
+    resource.setId(item.getId());
+    resource.setCode(item.getCode());
+    resource.setName(item.getName());
+    resource.setType(item.getType());
+    resource.setPath(item.getPath());
+    resource.setComponent(item.getComponent());
+    resource.setRouteKind(item.getRouteKind());
+    resource.setParentId(item.getParentId());
+    resource.setIcon(item.getIcon());
+    resource.setSort(item.getSort());
+    resource.setDescription(item.getDescription());
+    resource.setGrantable(item.isGrantable());
+    resource.setDisabled(false);
+    resource.setPublicAccess(false);
+    resource.setRequireOrgTenant(true);
+    resource.setScopeTypes(Set.of(ResourceScopeType.TENANT));
+    return resource;
   }
 
   @Override

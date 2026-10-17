@@ -16,6 +16,10 @@ plugins {
 }
 
 val frontendRootDir = layout.projectDirectory.dir("simplepoint-react").asFile
+val workflowModelingContractFile = layout.projectDirectory.file(
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-api/" +
+        "src/main/resources/META-INF/simplepoint/workflow/modeling.json"
+)
 
 node {
     download.set(true)
@@ -51,6 +55,9 @@ fun registerFrontendBuildTask(taskName: String, scriptName: String, moduleName: 
             include("libs/**", "modules/$moduleName/**")
             exclude("**/node_modules/**", "**/dist/**")
         })
+        // The shared modeler imports the authoritative server contract outside the frontend tree.
+        // A policy-only change must invalidate every potentially affected frontend artifact.
+        inputs.file(workflowModelingContractFile).withPathSensitivity(PathSensitivity.RELATIVE)
         outputs.dir(frontendRootDir.resolve("modules/$moduleName/dist"))
     }
 }
@@ -100,23 +107,26 @@ subprojects {
     version = rootProject.version
 
     dependencies {
-        implementation(platform("org.springframework.boot:spring-boot-dependencies:${rootProject.libs.versions.spring.boot.get()}"))
-        implementation(platform("org.springframework.cloud:spring-cloud-dependencies:${rootProject.libs.versions.spring.cloud.get()}"))
-        implementation(platform("org.springframework.security:spring-security-bom:${rootProject.libs.versions.spring.security.get()}"))
-        implementation(platform("com.fasterxml.jackson:jackson-bom:${rootProject.libs.versions.jackson.get()}"))
-        implementation(platform("org.springdoc:springdoc-openapi-bom:${rootProject.libs.versions.openapi.get()}"))
-        implementation(platform ("com.github.victools:jsonschema-generator-bom:${rootProject.libs.versions.jsonschema.generator.get()}"))
+        // Standalone libraries must not inherit platform runtime dependencies.
+        if (project.name != "simplepoint-calculation") {
+            implementation(platform("org.springframework.boot:spring-boot-dependencies:${rootProject.libs.versions.spring.boot.get()}"))
+            implementation(platform("org.springframework.cloud:spring-cloud-dependencies:${rootProject.libs.versions.spring.cloud.get()}"))
+            implementation(platform("org.springframework.security:spring-security-bom:${rootProject.libs.versions.spring.security.get()}"))
+            implementation(platform("com.fasterxml.jackson:jackson-bom:${rootProject.libs.versions.jackson.get()}"))
+            implementation(platform("org.springdoc:springdoc-openapi-bom:${rootProject.libs.versions.openapi.get()}"))
+            implementation(platform ("com.github.victools:jsonschema-generator-bom:${rootProject.libs.versions.jsonschema.generator.get()}"))
 
-        implementation("com.fasterxml.jackson.core:jackson-databind")
-        implementation("com.fasterxml.jackson.core:jackson-core")
-        implementation("com.fasterxml.jackson.core:jackson-annotations")
-        implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+            implementation("com.fasterxml.jackson.core:jackson-databind")
+            implementation("com.fasterxml.jackson.core:jackson-core")
+            implementation("com.fasterxml.jackson.core:jackson-annotations")
+            implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
-        implementation("jakarta.persistence:jakarta.persistence-api")
-        implementation("cn.hutool:hutool-all:${rootProject.libs.versions.hutool.get()}")
+            implementation("jakarta.persistence:jakarta.persistence-api")
+            implementation("cn.hutool:hutool-all:${rootProject.libs.versions.hutool.get()}")
 
-        compileOnly("org.projectlombok:lombok:${rootProject.libs.versions.lombok.get()}")
-        annotationProcessor("org.projectlombok:lombok:${rootProject.libs.versions.lombok.get()}")
+            compileOnly("org.projectlombok:lombok:${rootProject.libs.versions.lombok.get()}")
+            annotationProcessor("org.projectlombok:lombok:${rootProject.libs.versions.lombok.get()}")
+        }
 
         testImplementation(enforcedPlatform("org.junit:junit-bom:${rootProject.libs.versions.junit.get()}"))
         testImplementation("org.junit.jupiter:junit-jupiter")

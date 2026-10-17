@@ -1,3 +1,5 @@
+import {canCreateParticipants, modelingCapabilities} from './modelingCapabilities.ts';
+
 type Entry = {group?: string; className?: string; title?: string;
   action?: Record<string, (event: unknown, element?: unknown) => unknown>};
 type Entries = Record<string, Entry>;
@@ -6,18 +8,14 @@ type Factory = {createShape: (attributes: {type: string}) => unknown};
 type Create = {start: (event: unknown, shape: unknown, options?: {source: unknown}) => void};
 type AutoPlace = {append: (source: unknown, shape: unknown) => void};
 
-const replacements = new Set([
-  'replace-with-user-task', 'replace-with-exclusive-gateway', 'replace-with-parallel-gateway',
-  'replace-with-inclusive-gateway', 'replace-with-none-start', 'replace-with-none-end',
-  'replace-with-none-start-event', 'replace-with-none-end-event',
-  'replace-with-collapsed-subprocess', 'replace-with-expanded-subprocess', 'replace-with-subprocess',
-  'replace-with-sequence-flow', 'replace-with-default-flow', 'replace-with-conditional-flow',
-]);
+const replacements = new Set(modelingCapabilities.replacementEntries);
+type Shape = {id?: string; type?: string};
+type CreationEvent = {context: {shape?: Shape; shapes?: Shape[]; elements?: Shape[]}};
 
 /** Use bpmn-js provider hooks, not CSS hiding or monkey-patching. Imported legacy diagrams
  * remain readable/editable; new task creation always creates an actual human UserTask. */
 export class PlatformModelingProvider {
-  static $inject = ['palette', 'contextPad', 'popupMenu', 'create', 'elementFactory', 'injector', 'workflowDesignLabels'];
+  static $inject = ['palette', 'contextPad', 'popupMenu', 'create', 'elementFactory', 'injector', 'workflowDesignLabels', 'eventBus', 'elementRegistry'];
   create: Create;
   factory: Factory;
   autoPlace?: AutoPlace;
@@ -25,12 +23,19 @@ export class PlatformModelingProvider {
 
   constructor(palette: ProviderRegistry, contextPad: ProviderRegistry, popupMenu: ProviderRegistry,
     create: Create, factory: Factory, injector: {get: (name: string, strict: boolean) => AutoPlace | undefined},
-    labels: {userTask: string}) {
+    labels: {userTask: string},
+    eventBus: {on: (event: string[], priority: number, callback: (event: CreationEvent) => false | undefined) => void},
+    elementRegistry: {getAll: () => Shape[]}) {
     this.create = create; this.factory = factory; this.autoPlace = injector.get('autoPlace', false); this.labels = labels;
     // Lower priority applies our updater after the built-in providers have supplied entries.
     palette.registerProvider(500, this);
     contextPad.registerProvider(500, this);
     popupMenu.registerProvider('bpmn-replace', 500, this);
+    // Keep the real pool tool. Rules protect drag, paste and multi-shape creation before commands run.
+    eventBus.on(['commandStack.shape.create.canExecute', 'commandStack.elements.create.canExecute'], 2000, event => {
+      const {shape, shapes, elements} = event.context;
+      if (!canCreateParticipants(elementRegistry.getAll(), elements ?? shapes ?? (shape ? [shape] : []))) return false;
+    });
   }
 
   userTask(source?: unknown): Entry {
@@ -46,7 +51,6 @@ export class PlatformModelingProvider {
       const next = {...entries};
       delete next['create.task'];
       delete next['create.intermediate-event'];
-      delete next['create.participant'];
       next['create.user-task'] = this.userTask();
       return next;
     };
@@ -67,8 +71,12 @@ export class PlatformModelingProvider {
 
   getPopupMenuEntries() {
     return (entries: Entries): Entries => Object.fromEntries(Object.entries(entries)
-      .filter(([key]) => !key.startsWith('replace-with-') || replacements.has(key)
-        || /^replace-with-data-(?:object|store)/.test(key)));
+      .filter(([key]) => !key.startsWith('replace-with-') || replacements.has(key)));
+  }
+
+  getPopupMenuHeaderEntries() {
+    return (entries: Entries): Entries => Object.fromEntries(Object.entries(entries)
+      .filter(([key]) => key !== 'toggle-participant-multiplicity'));
   }
 }
 

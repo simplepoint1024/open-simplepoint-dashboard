@@ -1,13 +1,14 @@
 import {readFileSync} from 'node:fs';
 import {createWorkflowPersonalFixture, definitionFields} from './workflow-personal-fixture.mjs';
 import {fixtureSchema, fixturePage} from './query-fixture.mjs';
+import {workflowDiagramXml} from './workflow-diagram-fixture.mjs';
 const numericLiterals = JSON.parse(readFileSync(new URL('../libs/components/ExpressionEditor/numericLiterals.fixture.json', import.meta.url), 'utf8'));
 const priorityLiterals = JSON.parse(readFileSync(new URL('../libs/components/ExpressionEditor/priorityLiterals.fixture.json', import.meta.url), 'utf8'));
 
-export const workflowRoutes = ['Definitions', 'Tasks', 'Instances'].map((expose, index) => ({
+export const workflowRoutes = ['Definitions', 'Tasks', 'Instances', 'Management'].map((expose, index) => ({
   id: `workflow-${expose}`, code: 'workflow.view', type: 'PAGE', routeKind: 'item',
   path: `/smoke/workflow-${expose.toLowerCase()}`, component: `workflow/${expose}`,
-  label: ['流程定义测试', '流程任务测试', '流程事项测试'][index], scopeTypes: ['PLATFORM', 'TENANT'],
+  label: ['流程定义测试', '流程任务测试', '流程事项测试', '流程运行管理测试'][index], scopeTypes: ['PLATFORM', 'TENANT'],
 }));
 
 const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -55,6 +56,28 @@ export function createWorkflowFixture() {
   const detail = () => ({definition: {...definition}, bpmnXml: draftXml, formContract: structuredClone(draftContract), versions, permissions});
   const personal = createWorkflowPersonalFixture({xml, contract, definition});
   return {writes, requests, personal, numericPreviewCompletions, priorityPreviewCompletions, snapshot: () => structuredClone({definition, versions, instance, draftContract}),
+    diagramConfiguration(options) {draftXml = workflowDiagramXml(xml, options);},
+    importConfiguration(kind) {
+      const original = workflowDiagramXml(xml);
+      const sources = {
+        reference: original.replace('<bpmn:group id="group"/>', '<bpmn:group id="group" categoryValueRef="missingCategory"/>'),
+        unsupported: original.replace('</bpmn:process>', '<bpmn:futureTask id="unsupported"/></bpmn:process>'),
+        invalid: '<bpmn:definitions>invalid XML',
+        missingDiagram: xml.replace(/<bpmndi:BPMNDiagram[\s\S]*<\/bpmndi:BPMNDiagram>/, ''),
+      };
+      if (!(kind in sources)) throw new Error('Unknown import fixture');
+      draftXml = sources[kind];
+      return draftXml;
+    },
+    standardLoopConfiguration(loopXml) {
+      draftXml = xml.replace('</bpmn:userTask>', loopXml + '</bpmn:userTask>');
+    },
+    multiInstanceConfiguration(loopXml = '') {
+      draftContract.variables.push(
+        {name: 'reviewers', label: '审批人员集合', type: 'users', scope: 'start', required: true},
+        {name: 'groups', label: '审批角色集合', type: 'roles', scope: 'start', required: false});
+      draftXml = xml.replace('</bpmn:userTask>', loopXml + '</bpmn:userTask>');
+    },
     delayPriorityPreview(value, milliseconds) {priorityPreviewDelays.set(value, milliseconds);},
     failPriorityPreview(value) {failPriorityPreview = value;},
     delayNumericPreview(expression, milliseconds) {numericPreviewDelays.set(expression, milliseconds);},

@@ -12,8 +12,19 @@ record RecordAccessContext(
     Set<String> writableFields,
     Set<String> maskedFields,
     DataScopeCondition rowScope,
-    String organizationId
+    String organizationId,
+    long resourceGeneration
 ) {
+
+  RecordAccessContext(RuntimeActor actor, String resourceCode, Set<String> readableFields,
+      Set<String> writableFields, Set<String> maskedFields, DataScopeCondition rowScope, String organizationId) {
+    this(actor, resourceCode, readableFields, writableFields, maskedFields, rowScope, organizationId, 0);
+  }
+
+  RecordAccessContext withGeneration(long generation) {
+    return new RecordAccessContext(actor, resourceCode, readableFields, writableFields,
+        maskedFields, rowScope, organizationId, generation);
+  }
 
   RecordAccessContext {
     readableFields = Set.copyOf(readableFields);

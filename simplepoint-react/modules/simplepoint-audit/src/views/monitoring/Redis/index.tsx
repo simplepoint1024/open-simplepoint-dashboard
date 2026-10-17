@@ -1,3 +1,4 @@
+import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {Alert, App as AntApp, Descriptions, Input, Modal, Space, Spin, Tag, Typography} from 'antd';
 import SForm from '@simplepoint/components/SForm/Lazy';
@@ -171,7 +172,7 @@ function RedisTable({pattern, onBlockedChange}: {pattern: string; onBlockedChang
   const shownBoolean = (value: unknown) => typeof value === 'boolean'
     ? value ? t('common.yes', '是') : t('common.no', '否') : String(value ?? '--');
   const time = (value?: string | null) => value && Number.isFinite(Date.parse(value))
-    ? new Date(value).toLocaleString(locale) : value ?? '--';
+    ? formatDateTime(value, locale) : value ?? '--';
   const definitions: ColumnsType<RedisRow> = [
     {title: t('monitoring.redis.key', 'Key'), dataIndex: 'key', key: 'key', width: 270,
       render: value => <Text code copyable={{text: value}}>{value}</Text>},

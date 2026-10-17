@@ -58,11 +58,14 @@
     "antd": "^6.5.1",
     "bpmn-js": "^18.31.0",
     "dayjs": "^1.11.21",
+    "re2js": "2.8.6",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-highlight-words": "^0.21.0",
+    "react-markdown": "10.1.0",
     "react-resizable": "^4.0.2",
     "react-router": "^8.2.0",
+    "remark-gfm": "4.0.1",
     "sql-formatter": "^15.9.0"
   },
   "devDependencies": {

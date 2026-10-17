@@ -1,4 +1,11 @@
-export type EntityOption = {value: string; label: string; disabled?: boolean; title?: string};
+export type EntityOption = {
+  value: string;
+  /** Keep searchable/accessibility text separate from rich rendering and submitted identity. */
+  label: string;
+  disabled?: boolean;
+  title?: string;
+  metadata?: Readonly<Record<string, unknown>>;
+};
 
 export function entitySearchParams(keyword: string, page: number, size = 20) {
   const name = keyword.trim();

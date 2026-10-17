@@ -32,6 +32,10 @@ public class WorkspaceApplication {
   @Column(length = 60)
   private String icon;
 
+  /** Opt-in stable application directory for newly published managed pages. */
+  @Column(name = "navigation_group", nullable = false, updatable = false)
+  private boolean navigationGroup;
+
   @Column(length = 20, nullable = false)
   private String status;
 

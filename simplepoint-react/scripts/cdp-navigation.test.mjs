@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {runInNewContext} from 'node:vm';
-import {createPageReloader, createReadyControlClicker} from './cdp-navigation.mjs';
+import {createPageReloader, createReadyControlClicker, createReadyTextClicker} from './cdp-navigation.mjs';
 
 test('reload waits for the new main-frame loader to load, not an old or child document', async () => {
   let frame = {id: 'main', loaderId: 'old'};
@@ -82,4 +82,36 @@ test('ready click propagates execution failures and readiness timeouts without r
   const timeout = new Error('control never ready');
   const absent = createReadyControlClicker({evaluate: () => false, poll: async check => {assert.equal(await check(), false); throw timeout;}});
   await assert.rejects(absent('button'), error => error === timeout);
+});
+
+test('text click waits for both a disabled segmented parent and its radio to unlock', async () => {
+  let parentDisabled = true, inputDisabled = true, clicks = 0, reads = 0;
+  const label = {textContent: '已 办', disabled: undefined, getClientRects: () => [{}],
+    classList: {contains: () => false}, closest: () => parentDisabled ? {} : null,
+    querySelector: selector => {assert.equal(selector, 'input:disabled'); return inputDisabled ? {} : null;}, click: () => clicks++};
+  const click = createReadyTextClicker({
+    evaluate: expression => runInNewContext(expression, {document: {querySelectorAll: () => {reads++; return [label];}}}),
+    poll: async check => {
+      assert.equal(await check(), false); parentDisabled = false;
+      assert.equal(await check(), false); inputDisabled = false;
+      assert.equal(await check(), true);
+    },
+  });
+  await click('.ant-segmented-item', '已办');
+  assert.equal(clicks, 1); assert.equal(reads, 3);
+});
+
+test('text click chooses only matching visible non-loading controls in one browser task', async () => {
+  const clicked = [];
+  const control = (id, options = {}) => ({disabled: options.disabled, textContent: options.text ?? '保 存',
+    getClientRects: () => options.hidden ? [] : [{}], classList: {contains: () => !!options.loading},
+    closest: () => null, querySelector: () => null, click: () => clicked.push(id)});
+  let controls = [control('hidden', {hidden:true}), control('disabled', {disabled:true}),
+    control('loading', {loading:true}), control('different', {text:'删除'}), control('ready')];
+  const click = createReadyTextClicker({
+    evaluate: expression => runInNewContext(expression, {document: {querySelectorAll: () => {
+      const result = controls; controls = []; return result;
+    }}}), poll: async check => assert.equal(await check(), true),
+  });
+  await click('button', '保存'); assert.deepEqual(clicked, ['ready']);
 });

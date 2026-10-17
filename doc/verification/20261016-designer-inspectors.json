@@ -1,0 +1,145 @@
+{
+  "at": "2026-10-16T11:22:28.628Z",
+  "passed": true,
+  "version": "20261016-inspector1",
+  "scope": [
+    "Shared resizable/collapsible component sidebar; shared right ResourceDrawer with bounded mouse/keyboard resize and width/tab retention",
+    "Borderless icon-only designer actions and icon palette group headings without a redundant title",
+    "PC 1120px, iPad 768px and Phone 390px layout previews with segmented icons; input values and detail editing preserved",
+    "Form runtime responds to its containing width in both previews and published forms"
+  ],
+  "validation": {
+    "typecheckModules": 8,
+    "productionBuild": "seven frontend modules and common package; nine service distributions",
+    "uiAudit": {
+      "reviewed": 40,
+      "unreviewed": 0
+    },
+    "i18n": "passed",
+    "bundleBudgets": "passed",
+    "drawerBoundsUnitTests": 2,
+    "fixtureBrowser": {
+      "productionArtifacts": true,
+      "isolatedApis": true,
+      "designer": "Inspector drag/collapse/restore, toolbar/palette, three viewport widths, phone field reflow, retained inputs, nested layouts, detail editing, all 12 components, draft lifecycle, publication and published CRUD",
+      "configuration": "Dictionary bottom drawer resize, cleanup, nested CRUD, retention and permissions"
+    },
+    "realEnvironment": {
+      "passed": true,
+      "at": "2026-10-16T11:22:20.966Z",
+      "inspectors": "real drag, collapse, width and active tab restoration; keyboard bounds and 1024px viewport clamp",
+      "toolbar": "borderless icons",
+      "palette": "group icons without redundant title",
+      "views": [
+        {
+          "device": "PC",
+          "width": 1120,
+          "overflow": 0,
+          "detailWidth": 1088,
+          "detailScroll": 788,
+          "inlineEditors": 9
+        },
+        {
+          "device": "iPad",
+          "width": 768,
+          "overflow": 0,
+          "detailWidth": 736,
+          "detailScroll": 1140,
+          "inlineEditors": 9
+        },
+        {
+          "device": "Phone",
+          "width": 390,
+          "overflow": 0,
+          "detailWidth": 358,
+          "detailScroll": 1518,
+          "inlineEditors": 9
+        }
+      ],
+      "businessMutations": 0
+    },
+    "backendTests": "Not rerun for this UI-only change; service packaging passed"
+  },
+  "deployment": {
+    "passed": true,
+    "at": "2026-10-16T11:21:13.218Z",
+    "version": "20261016-inspector1",
+    "sourceDigest": "3b987e3c338a66a4a7a2c4c44c06a1a3de2b219abac16d1f537ea85b50558b02",
+    "services": [
+      {
+        "service": "authorization",
+        "version": "20261016-inspector1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 258,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "common",
+        "version": "20261016-inspector1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 317,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "auditing",
+        "version": "20261016-inspector1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 246,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "dna",
+        "version": "20261016-inspector1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 294,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "ai",
+        "version": "20261016-inspector1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 326,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "app",
+        "version": "20261016-inspector1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 261,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "workflow",
+        "version": "20261016-inspector1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 298,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "mcp-gateway",
+        "version": "20261016-inspector1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 180,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "host",
+        "version": "20261016-inspector1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 226,
+        "jarHashesMatch": true
+      }
+    ],
+    "allNineServiceHealth": "passing",
+    "rabbitmq": "healthy"
+  }
+}

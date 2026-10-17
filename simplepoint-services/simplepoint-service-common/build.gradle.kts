@@ -47,6 +47,7 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 dependencies {
+    implementation(project(":simplepoint-events:simplepoint-events-rabbit"))
     implementation(project(":simplepoint-core"))
     implementation(libs.swagger.annotations)
     api(project(":simplepoint-core"))

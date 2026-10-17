@@ -2,7 +2,8 @@ import {Alert, Empty, Segmented, Spin} from 'antd';
 import {lazy, Suspense, useEffect, useMemo, useRef, useState} from 'react';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import ConditionEditor from '../Table/ConditionEditor';
-import TenantDirectorySelect from '../TenantDirectorySelect';
+import UserSelect from '../UserSelect';
+import RoleSelect from '../RoleSelect';
 import type {QueryContract, QueryNode} from '../Table/query';
 import {comparisonOperators, conditionExpression, conditionAvailable, conditionLimits, parseConditionExpression, expressionIssue,
   type ExpressionVariable} from './model';
@@ -102,7 +103,8 @@ export default function ConditionExpression({value = '', onChange, variables, di
           renderValue={(node, change, input) => {
             const variable = variableIndex.get(node.field ?? '');
             if (!['user', 'role'].includes(variable?.kind ?? '') || node.op.startsWith('is:')) return input;
-            return <TenantDirectorySelect kind={variable?.kind === 'role' ? 'roles' : 'users'}
+            const IdentitySelect = variable?.kind === 'role' ? RoleSelect : UserSelect;
+            return <IdentitySelect
               disabled={disabled} allowClear value={typeof node.value === 'string' ? node.value : undefined}
               onChange={value => change({...node, value})}/>;
           }}

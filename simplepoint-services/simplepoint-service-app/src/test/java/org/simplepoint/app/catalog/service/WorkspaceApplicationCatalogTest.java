@@ -31,6 +31,20 @@ class WorkspaceApplicationCatalogTest {
   }
 
   @Test
+  void designEntryRequiresTheActualFormEditingCapability() {
+    tenantContext("tenant-a");
+    assertThat(catalog.permissions().canDesignForm()).isFalse();
+    AuthorizationContext context = new AuthorizationContext();
+    context.setScopeType(AuthorizationScopeType.TENANT);
+    context.setAttributes(Map.of("X-Tenant-Id", "tenant-a"));
+    context.setResources(List.of("app.workbench.forms.edit"));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    assertThat(catalog.permissions().canDesignForm()).isTrue();
+    assertThat(catalog.permissions().canCreateApplication()).isFalse();
+    assertThat(catalog.permissions().canAddPage()).isFalse();
+  }
+
+  @Test
   void createPersistsOneDraftApplicationAndExactlyOneMainPageInCurrentTenant() {
     tenantContext("tenant-a");
     List<Object> persisted = new ArrayList<>();
